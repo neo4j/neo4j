@@ -27,6 +27,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,8 +73,10 @@ import org.neo4j.test.mockito.mock.Link;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -405,15 +416,11 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ExecutionResultSerializer serializer = getSerializerWith( output );
 
-        List<Coordinate> points = new ArrayList<>();
-        points.add( new Coordinate( 1, 2 ) );
-        points.add( new Coordinate( 2, 3 ) );
         Result executionResult = mockExecutionResult(
                 map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) ),
                 map( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) ),
                 map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, 78.9, mockWGS84_3D() ) ),
-                map( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) ),
-                map( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) ) );
+                map( "geom", SpatialMocks.mockPoint( 123, 456, 789, mockCartesian_3D() ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
@@ -425,25 +432,88 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":" +
                         "{\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}" +
-                        "}}],\"meta\":[null]}," +
+                        "}}],\"meta\":[{\"type\":\"point\"}]}," +
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":" +
                         "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
-                        "}}],\"meta\":[null]}," +
+                        "}}],\"meta\":[{\"type\":\"point\"}]}," +
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6,78.9],\"crs\":" +
                         "{\"name\":\"WGS-84-3D\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/epsg/4979/ogcwkt/\",\"type\":\"ogcwkt\"}" +
-                        "}}],\"meta\":[null]}," +
+                        "}}],\"meta\":[{\"type\":\"point\"}]}," +
                       "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0,789.0],\"crs\":" +
                         "{\"name\":\"cartesian-3D\",\"type\":\"link\",\"properties\":" +
                           "{\"href\":\"http://spatialreference.org/ref/sr-org/9157/ogcwkt/\",\"type\":\"ogcwkt\"}" +
-                        "}}],\"meta\":[null]}," +
-                      "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
-                        "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
-                          "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}" +
-                        "}}],\"meta\":[null]}" +
-                      "]}],\"errors\":[]}",
+                        "}}],\"meta\":[{\"type\":\"point\"}]}" +
+                        "]}],\"errors\":[]}",
                 result );
+    }
+
+    @Test
+    public void shouldSerializeTemporalAsListOfMapsOfProperties() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = getSerializerWith( output );
+
+        Result executionResult = mockExecutionResult(
+                map( "temporal", LocalDate.of( 2018, 3, 12 ) ),
+                map( "temporal", ZonedDateTime.of( 2018, 3, 12, 13, 2, 10, 10, ZoneId.of( "UTC+1" ) ) ),
+                map( "temporal", OffsetTime.of( 12, 2, 4, 71, ZoneOffset.UTC ) ),
+                map( "temporal", LocalDateTime.of( 2018, 3, 12, 13, 2, 10, 10 ) ),
+                map( "temporal", LocalTime.of( 13, 2, 10, 10 ) ),
+                map( "temporal", Duration.of( 12, ChronoUnit.HOURS ) ) );
+
+        // when
+        serializer.statementResult( executionResult, false );
+        serializer.finish();
+
+        // then
+        String result = output.toString( UTF_8.name() );
+        assertEquals( "{\"results\":[{\"columns\":[\"temporal\"],\"data\":[" +
+                        "{\"row\":[{\"type\":\"date\",\"value\":\"2018-03-12\"}],\"meta\":[{\"type\":\"date\"}]}," +
+                        "{\"row\":[{\"type\":\"datetime\",\"value\":\"2018-03-12T13:02:10.000000010+01:00[UTC+01:00]\"}],\"meta\":[{\"type\":\"datetime\"}]}," +
+                        "{\"row\":[{\"type\":\"time\",\"value\":\"12:02:04.000000071Z\"}],\"meta\":[{\"type\":\"time\"}]}," +
+                        "{\"row\":[{\"type\":\"localdatetime\",\"value\":\"2018-03-12T13:02:10.000000010\"}],\"meta\":[{\"type\":\"localdatetime\"}]}," +
+                        "{\"row\":[{\"type\":\"localtime\",\"value\":\"13:02:10.000000010\"}],\"meta\":[{\"type\":\"localtime\"}]}," +
+                        "{\"row\":[{\"type\":\"duration\",\"value\":\"PT12H\"}],\"meta\":[{\"type\":\"duration\"}]}" +
+                        "]}],\"errors\":[]}",
+                result );
+    }
+
+    @Test
+    public void shouldErrorWhenSerializingUnknownGeometryType() throws Exception
+    {
+        // given
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ExecutionResultSerializer serializer = getSerializerWith( output );
+
+        List<Coordinate> points = new ArrayList<>();
+        points.add( new Coordinate( 1, 2 ) );
+        points.add( new Coordinate( 2, 3 ) );
+        Result executionResult = mockExecutionResult(
+                map( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) ) );
+
+        // when
+        try
+        {
+            serializer.statementResult( executionResult, false );
+            fail( "should have thrown exception" );
+        }
+        catch ( RuntimeException e )
+        {
+            serializer.errors( asList( new Neo4jError( Status.Statement.ExecutionFailed, e ) ) );
+        }
+
+        // then
+        String result = output.toString( UTF_8.name() );
+        assertThat( result, startsWith( "{\"results\":[{\"columns\":[\"geom\"],\"data\":[" +
+                "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":" +
+                "{\"name\":\"cartesian\",\"type\":\"link\",\"properties\":" +
+                "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}]," +
+                "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\"," +
+                "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"," +
+                "\"stackTrace\":\"java.lang.IllegalArgumentException: Unsupported Geometry type: type=MockGeometry, value=LineString" ) );
     }
 
     @Test

@@ -40,8 +40,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "0001-10-02T00:00+01:00", getSingle( data, "row" ).asText() );
-        assertEquals( "datetime", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "0001-10-02T00:00+01:00", "datetime" );
     }
 
     @Test
@@ -52,8 +51,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "23:19:55-07:00", getSingle( data, "row" ).asText() );
-        assertEquals( "time", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "23:19:55-07:00", "time" );
     }
 
     @Test
@@ -64,8 +62,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "1984-10-21T12:34", getSingle( data, "row" ).asText() );
-        assertEquals( "localdatetime", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "1984-10-21T12:34", "localdatetime" );
     }
 
     @Test
@@ -76,8 +73,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "1984-10-11", getSingle( data, "row" ).asText() );
-        assertEquals( "date", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "1984-10-11", "date" );
     }
 
     @Test
@@ -88,8 +84,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "12:31:14.645876123", getSingle( data, "row" ).asText() );
-        assertEquals( "localtime", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "12:31:14.645876123", "localtime" );
     }
 
     @Test
@@ -100,25 +95,36 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertEquals( "P17D", getSingle( data, "row" ).asText() );
-        assertEquals( "duration", getSingle( data, "meta" ).get( "type" ).asText() );
+        assertTemporalEquals( data, "P17D", "duration" );
     }
 
     @Test
     public void shouldOnlyGetNodeTypeInMetaAsNodeProperties() throws Throwable
     {
-        HTTP.Response response =
-                runQuery( "CREATE (account {creationTime: localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})}) RETURN account" );
+        HTTP.Response response = runQuery(
+                "CREATE (account {name: \\\"zhen\\\", creationTime: localdatetime({year: 1984, month: 10, day: 21, hour: 12, minute: 34})}) RETURN account" );
 
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
 
         JsonNode row = getSingle( data, "row" );
-        assertThat( row.get( "creationTime" ).asText(), equalTo( "1984-10-21T12:34" ) );
+        assertThat( row.get( "creationTime" ).get( "type" ).asText(), equalTo( "localdatetime" ) );
+        assertThat( row.get( "creationTime" ).get( "value" ).asText(), equalTo( "1984-10-21T12:34" ) );
+        assertThat( row.get( "name" ).asText(), equalTo( "zhen" ) );
 
         JsonNode meta = getSingle( data, "meta" );
         assertThat( meta.get( "type" ).asText(), equalTo( "node" ) );
+    }
+
+    private void assertTemporalEquals( JsonNode data, String value, String type )
+    {
+        JsonNode row = getSingle( data, "row" );
+        assertThat( row.get( "type" ).asText(), equalTo( type ) );
+        assertThat( row.get( "value" ).asText(), equalTo( value ) );
+
+        JsonNode meta = getSingle( data, "meta" );
+        assertEquals( type, meta.get( "type" ).asText() );
     }
 
     private static JsonNode getSingleData( HTTP.Response response ) throws JsonParseException

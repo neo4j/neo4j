@@ -282,8 +282,8 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public static int getLocalHttpPort()
     {
-        ConnectorPortRegister connectorPortRegister = server().getDatabase().getGraph().getDependencyResolver()
-                .resolveDependency( ConnectorPortRegister.class );
+        ConnectorPortRegister connectorPortRegister =
+                server().getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 
