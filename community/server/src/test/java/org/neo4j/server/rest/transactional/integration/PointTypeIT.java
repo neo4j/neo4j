@@ -38,8 +38,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.server.HTTP.POST;
-import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
@@ -74,16 +72,16 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldReturnPoint2DWithXAndY() throws Exception
     {
-        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, Cartesian );
+        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, Cartesian, "point2d" );
     }
 
     @Test
     public void shouldReturnPoint2DWithLatitudeAndLongitude() throws Exception
     {
-        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84 );
+        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point2d" );
     }
 
-    private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs ) throws Exception
+    private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception
     {
         HTTP.Response response = runQuery( query );
 
@@ -94,16 +92,16 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, element );
         assertCoordinatesEqual( expectedCoordinate, element );
         assertCrsEqual( expectedCrs, element );
+
+        assertTypeEqual( expectedType, response );
     }
 
-    private static HTTP.Response runQuery( String query )
+    private static void assertTypeEqual( String expectedType, HTTP.Response response ) throws JsonParseException
     {
-        return POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
-    }
-
-    private static void assertNoErrors( HTTP.Response response ) throws JsonParseException
-    {
-        assertEquals( 0, response.get( "errors" ).size() );
+        JsonNode data = response.get( "results" ).get( 0 ).get( "data" );
+        JsonNode meta = data.get( 0 ).get( "meta" );
+        assertEquals( 1, meta.size() );
+        assertEquals( expectedType, meta.get( 0 ).get( "type" ).asText() );
     }
 
     private static JsonNode extractSingleElement( HTTP.Response response ) throws JsonParseException

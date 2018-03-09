@@ -24,6 +24,13 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,11 +44,17 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.storable.PointValue;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 public class Neo4jJsonCodec extends ObjectMapper
 {
+    private enum Neo4jJsonMetaType
+    {
+        node, relationship, datetime, time, localdatetime, date, localtime, duration, point2d, point3d
+    }
+
     private TransitionalPeriodTransactionMessContainer container;
 
     public Neo4jJsonCodec( TransitionalPeriodTransactionMessContainer container )
@@ -88,20 +101,22 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             Geometry geom = (Geometry) value;
             Object coordinates = (geom instanceof Point) ? ((Point) geom).getCoordinate() : geom.getCoordinates();
-            writeMap( out,
-                    genericMap( new LinkedHashMap<>(), "type", geom.getGeometryType(),
-                            "coordinates", coordinates, "crs", geom.getCRS() ) );
+            writeMap( out, genericMap( new LinkedHashMap<>(), "type", geom.getGeometryType(), "coordinates", coordinates, "crs", geom.getCRS() ) );
         }
         else if ( value instanceof Coordinate )
         {
             Coordinate coordinate = (Coordinate) value;
-            writeIterator( out, coordinate.getCoordinate().iterator());
+            writeIterator( out, coordinate.getCoordinate().iterator() );
         }
         else if ( value instanceof CRS )
         {
             CRS crs = (CRS) value;
-            writeMap( out, genericMap(new LinkedHashMap<>(), "name", crs.getType(), "type", "link", "properties",
-                    genericMap(new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
+            writeMap( out, genericMap( new LinkedHashMap<>(), "name", crs.getType(), "type", "link", "properties",
+                    genericMap( new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
+        }
+        else if ( value instanceof Temporal || value instanceof TemporalAmount )
+        {
+            super.writeValue( out, value.toString() );
         }
         else
         {
@@ -223,7 +238,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             Node node = (Node) value;
             try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( container ) )
             {
-                writeNodeOrRelationshipMeta( out, node.getId(), "node", stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
+                writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.node.name(), stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
             }
         }
         else if ( value instanceof Relationship )
@@ -231,7 +246,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             Relationship relationship = (Relationship) value;
             try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( container ) )
             {
-                writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
+                writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.relationship.name(),
                         transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
             }
         }
@@ -254,10 +269,78 @@ public class Neo4jJsonCodec extends ObjectMapper
                 writeMeta( out, map.get( key ) );
             }
         }
+        else if ( value instanceof Geometry )
+        {
+            writeGeometryTypeMeta( out, (Geometry) value );
+        }
+        else if ( value instanceof Temporal )
+        {
+            writeTemporalTypeMeta( out, (Temporal) value );
+        }
+        else if ( value instanceof TemporalAmount )
+        {
+            writeTypeMeta( out, Neo4jJsonMetaType.duration.name() );
+        }
         else
         {
             out.writeNull();
         }
+    }
+
+    private void writeGeometryTypeMeta( JsonGenerator out, Geometry value ) throws IOException
+    {
+        Neo4jJsonMetaType type = null;
+        if ( value instanceof PointValue )
+        {
+            PointValue p = (PointValue) value;
+            int size = p.coordinate().length;
+            if ( size == 2 )
+            {
+                type = Neo4jJsonMetaType.point2d;
+            }
+            else if ( size == 3 )
+            {
+                type = Neo4jJsonMetaType.point3d;
+            }
+        }
+        if ( type == null )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Unsupported Geometry type: type=%s, value=%s", value.getClass().getSimpleName(), value.toString() ) );
+        }
+        writeTypeMeta( out, type.name() );
+    }
+
+    private void writeTemporalTypeMeta( JsonGenerator out, Temporal value ) throws IOException
+    {
+        Neo4jJsonMetaType type = null;
+        if ( value instanceof ZonedDateTime )
+        {
+            type = Neo4jJsonMetaType.datetime;
+        }
+        else if ( value instanceof LocalDate )
+        {
+            type = Neo4jJsonMetaType.date;
+        }
+        else if ( value instanceof OffsetTime )
+        {
+            type = Neo4jJsonMetaType.time;
+        }
+        else if ( value instanceof LocalDateTime )
+        {
+            type = Neo4jJsonMetaType.localdatetime;
+        }
+        else if ( value instanceof LocalTime )
+        {
+            type = Neo4jJsonMetaType.localtime;
+        }
+
+        if ( type == null )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Unsupported Temporal type: type=%s, value=%s", value.getClass().getSimpleName(), value.toString() ) );
+        }
+        writeTypeMeta( out, type.name() );
     }
 
     private void writeMetaPath( JsonGenerator out, Path value ) throws IOException
@@ -273,6 +356,20 @@ public class Neo4jJsonCodec extends ObjectMapper
         finally
         {
             out.writeEndArray();
+        }
+    }
+
+    private void writeTypeMeta( JsonGenerator out, String type )
+            throws IOException
+    {
+        out.writeStartObject();
+        try
+        {
+            out.writeStringField( "type", type );
+        }
+        finally
+        {
+            out.writeEndObject();
         }
     }
 

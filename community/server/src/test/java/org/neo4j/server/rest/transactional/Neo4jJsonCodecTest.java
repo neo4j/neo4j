@@ -296,4 +296,16 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         //Then
         verify( jsonGenerator, times( 3 ) ).writeEndObject();
     }
+
+    @Test
+    public void testDateTimeWriting() throws Throwable
+    {
+        // Given
+
+
+
+        // When
+
+        // Then
+    }
 }
