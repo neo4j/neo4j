@@ -658,10 +658,6 @@ public class BoltCausalClusteringIT
                             parameters( "name", "Webber", "title", "Mr" ) );
                     tx.success();
                 }
-                catch ( SessionExpiredException ignored )
-                {
-                    // expected
-                }
                 return s.lastBookmark();
             } );
 
