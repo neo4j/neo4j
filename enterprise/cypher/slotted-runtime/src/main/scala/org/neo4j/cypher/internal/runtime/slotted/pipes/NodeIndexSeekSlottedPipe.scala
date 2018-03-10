@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.indexQuery
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
+import org.neo4j.values.virtual.NodeValue
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
@@ -38,11 +38,11 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     indexMode: IndexSeekMode = IndexSeek,
                                     slots: SlotConfiguration,
                                     argumentSize: SlotConfiguration.Size)
-                                   (val id: Id = Id.INVALID_ID) extends Pipe {
+                                   (val id: Id = Id.INVALID_ID) extends Pipe with NodeIndexSeeker {
 
   private val offset = slots.getLongOffsetFor(ident)
 
-  private val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
+  override val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
   private var reference: IndexReference = CapableIndexReference.NO_INDEX
 
@@ -53,14 +53,12 @@ case class NodeIndexSeekSlottedPipe(ident: String,
     reference
   }
 
-  private def indexFactory(context: QueryContext) = indexMode.indexFactory(reference(context))
-
   valueExpr.expressions.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val index = indexFactory(state.query)(state)
+    val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
+    val resultNodes: Iterator[NodeValue] = indexSeek(state, indexReference, baseContext)
     resultNodes.map { node =>
       val context = SlottedExecutionContext(slots)
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)

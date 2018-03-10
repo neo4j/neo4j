@@ -101,10 +101,7 @@ trait QueryContext extends TokenContext {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  //TODO this should be `Seq[AnyValue]`
-  def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue]
-
-  def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue]
+  def indexSeek(index: IndexReference, queries: Seq[IndexQuery]): Iterator[NodeValue]
 
   def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue]
 
@@ -114,7 +111,7 @@ trait QueryContext extends TokenContext {
 
   def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator
 
-  def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue]
+  def lockingUniqueIndexSeek(index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 

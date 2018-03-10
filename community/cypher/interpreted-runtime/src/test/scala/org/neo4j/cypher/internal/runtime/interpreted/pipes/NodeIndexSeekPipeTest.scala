@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, Windows
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
-import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.NodeValue
 
@@ -253,12 +253,14 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     result.map(_("n")).toList should equal(List(node))
   }
 
-  private def indexFor(values: (Seq[Any], Iterator[NodeValue])*): QueryContext = {
+  private def indexFor(values: (Seq[AnyRef], Iterator[NodeValue])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any())).thenReturn(Iterator.empty)
 
     values.foreach {
-      case (searchTerm, result) => when(query.indexSeek(any(), ArgumentMatchers.eq(searchTerm))).thenReturn(result)
+      case (searchTerm, result) =>
+        val indexQueries = searchTerm.map(v => IndexQuery.exact(-1, v))
+        when(query.indexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(result)
     }
 
     query

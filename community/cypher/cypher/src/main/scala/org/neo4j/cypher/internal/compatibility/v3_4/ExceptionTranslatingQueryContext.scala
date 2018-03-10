@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -100,7 +100,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(descriptor: IndexDescriptor) =
     translateException(inner.dropIndexRule(descriptor))
 
-  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] =
+  override def indexSeek(index: IndexReference, values: Seq[IndexQuery]): Iterator[NodeValue] =
     translateException(inner.indexSeek(index, values))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
@@ -198,7 +198,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelTypeName(id: Int) =
     translateException(inner.getRelTypeName(id))
 
-  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]) =
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] =
     translateException(inner.lockingUniqueIndexSeek(index, values))
 
   override def getImportURL(url: URL) =
@@ -227,9 +227,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
-
-  override def indexSeekByRange(index: IndexReference, value: Any) =
-    translateException(inner.indexSeekByRange(index, value))
 
   override def indexScanByContains(index: IndexReference, value: String) =
     translateException(inner.indexScanByContains(index, value))

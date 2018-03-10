@@ -98,14 +98,27 @@ public abstract class IndexQuery
         }
 
         ValueGroup valueGroup = from != null ? from.valueGroup() : to.valueGroup();
-        if ( valueGroup == ValueGroup.GEOMETRY )
+        switch ( valueGroup )
         {
+        case NUMBER:
+            return new NumberRangePredicate( propertyKeyId,
+                                             (NumberValue)from, fromInclusive,
+                                             (NumberValue)to, toInclusive );
+
+        case TEXT:
+            return new TextRangePredicate( propertyKeyId,
+                                           (TextValue)from, fromInclusive,
+                                           (TextValue)to, toInclusive );
+
+        case GEOMETRY:
             PointValue pFrom = (PointValue)from;
             PointValue pTo = (PointValue)to;
             CoordinateReferenceSystem crs = pFrom != null ? pFrom.getCoordinateReferenceSystem() : pTo.getCoordinateReferenceSystem();
             return new GeometryRangePredicate( propertyKeyId, crs, pFrom, fromInclusive, pTo, toInclusive );
+
+        default:
+            return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
         }
-        return new RangePredicate<>( propertyKeyId, valueGroup, from, fromInclusive, to, toInclusive );
     }
 
     /**
