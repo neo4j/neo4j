@@ -156,7 +156,11 @@ public class ImportCommand implements AdminCommand
                     "File containing all arguments, used as an alternative to supplying all arguments on the command line directly."
                             + "Each argument can be on a separate line or multiple arguments per line separated by space."
                             + "Arguments containing spaces needs to be quoted."
-                            + "Supplying other arguments in addition to this file argument is not supported." ) );
+                            + "Supplying other arguments in addition to this file argument is not supported." ) )
+            .withArgument( new OptionalNamedArg( "high-io",
+                    "true/false",
+                    null,
+                    "Ignore environment-based heuristics, and assume that the target storage subsystem can support parallel IO with high throughput." ) );
     }
 
     static

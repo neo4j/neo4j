@@ -20,15 +20,14 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;
@@ -157,7 +156,7 @@ public interface Configuration
      * Enabling will probably increase concurrent I/O to a point which reduces performance if underlying storage
      * isn't great at concurrent I/O, especially if also {@link #parallelRecordWrites()} is enabled.
      */
-    default boolean parallelRecordReadsWhenWriting()
+    default boolean highIO()
     {
         // Defaults to false since some environments sees less performance with this enabled
         return false;
@@ -253,9 +252,9 @@ public interface Configuration
         }
 
         @Override
-        public boolean parallelRecordReadsWhenWriting()
+        public boolean highIO()
         {
-            return defaults.parallelRecordReadsWhenWriting();
+            return defaults.highIO();
         }
 
         @Override
