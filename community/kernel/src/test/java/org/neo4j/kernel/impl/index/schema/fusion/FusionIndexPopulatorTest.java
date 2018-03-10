@@ -183,7 +183,6 @@ public class FusionIndexPopulatorTest
         }
     }
 
-
     /* verifyDeferredConstraints */
     @Test
     public void verifyDeferredConstraintsMustThrowIfAnyThrow() throws Exception
@@ -204,7 +203,6 @@ public class FusionIndexPopulatorTest
             doAnswer( invocation -> null ).when( populator ).verifyDeferredConstraints( any() );
         }
     }
-
 
     /* close */
     @Test
@@ -313,7 +311,6 @@ public class FusionIndexPopulatorTest
             }
         }
     }
-
 
     /* markAsFailed */
     @Test
