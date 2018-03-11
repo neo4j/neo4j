@@ -43,21 +43,19 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -96,8 +94,7 @@ public class SchemaImpl implements Schema
     public SchemaImpl( Supplier<KernelTransaction> transactionSupplier )
     {
         this.transactionSupplier = transactionSupplier;
-        //TODO this should be updated once writes are ported
-        this.actions = new GDBSchemaActions( () -> transactionSupplier.get().acquireStatement() );
+        this.actions = new GDBSchemaActions( transactionSupplier );
     }
 
     @Override
@@ -157,7 +154,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final TokenRead tokenRead,
-                                 Iterator<CapableIndexReference> indexes )
+            Iterator<CapableIndexReference> indexes )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( tokenRead, index ), indexes ),
@@ -220,7 +217,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexState getIndexState( final IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
 
@@ -229,14 +226,14 @@ public class SchemaImpl implements Schema
             InternalIndexState indexState = schemaRead.indexGetState( reference );
             switch ( indexState )
             {
-                case POPULATING:
-                    return POPULATING;
-                case ONLINE:
-                    return ONLINE;
-                case FAILED:
-                    return FAILED;
-                default:
-                    throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
+            case POPULATING:
+                return POPULATING;
+            case ONLINE:
+                return ONLINE;
+            case FAILED:
+                return FAILED;
+            default:
+                throw new IllegalArgumentException( String.format( "Illegal index state %s", indexState ) );
             }
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -249,7 +246,7 @@ public class SchemaImpl implements Schema
     @Override
     public IndexPopulationProgress getIndexPopulationProgress( IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
@@ -267,7 +264,7 @@ public class SchemaImpl implements Schema
     @Override
     public String getIndexFailure( IndexDefinition index )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             SchemaRead schemaRead = transaction.schemaRead();
@@ -291,7 +288,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints()
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             return asConstraintDefinitions( transaction.schemaRead().constraintsGetAll(), transaction.tokenRead() );
@@ -301,7 +298,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( final Label label )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -318,7 +315,7 @@ public class SchemaImpl implements Schema
     @Override
     public Iterable<ConstraintDefinition> getConstraints( RelationshipType type )
     {
-        KernelTransaction transaction = safeAcquireTransaction();
+        KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
         try ( Statement ignore = transaction.acquireStatement() )
         {
             TokenRead tokenRead = transaction.tokenRead();
@@ -332,17 +329,9 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static SchemaIndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
-            throws SchemaRuleNotFoundException
-    {
-        int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( readOperations, index.getPropertyKeys() );
-        assertValidLabel( index.getLabel(), labelId );
-        assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        return readOperations.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
-    }
 
-    private static CapableIndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead, IndexDefinition index )
+    private static CapableIndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
+            IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = tokenRead.nodeLabel( index.getLabel().name() );
@@ -360,7 +349,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static void assertValidProperties( Iterable<String> properties , int[] propertyIds )
+    private static void assertValidProperties( Iterable<String> properties, int[] propertyIds )
     {
         for ( int i = 0; i < propertyIds.length; i++ )
         {
@@ -373,7 +362,8 @@ public class SchemaImpl implements Schema
     }
 
     private Iterable<ConstraintDefinition> asConstraintDefinitions(
-            Iterator<? extends ConstraintDescriptor> constraints, TokenRead tokenRead )
+            Iterator<? extends ConstraintDescriptor> constraints,
+            TokenRead tokenRead )
     {
         // Intentionally create an eager list so that used statement can be closed
         List<ConstraintDefinition> definitions = new ArrayList<>();
@@ -403,7 +393,7 @@ public class SchemaImpl implements Schema
             LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
             Label label = Label.label( lookup.labelGetName( schemaDescriptor.getLabelId() ) );
             String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() )
-                    .mapToObj( lookup::propertyKeyGetName ).toArray(String[]::new);
+                    .mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
             if ( constraint instanceof NodeExistenceConstraintDescriptor )
             {
                 return new NodePropertyExistenceConstraintDefinition( actions, label, propertyKeys );
@@ -429,7 +419,7 @@ public class SchemaImpl implements Schema
         throw new IllegalArgumentException( "Unknown constraint " + constraint );
     }
 
-    private KernelTransaction safeAcquireTransaction()
+    private static KernelTransaction safeAcquireTransaction( Supplier<KernelTransaction> transactionSupplier )
     {
         KernelTransaction transaction = transactionSupplier.get();
         if ( transaction.isTerminated() )
@@ -442,44 +432,38 @@ public class SchemaImpl implements Schema
 
     private static class GDBSchemaActions implements InternalSchemaActions
     {
-        private final Supplier<Statement> ctxSupplier;
+        private final Supplier<KernelTransaction> transactionSupplier;
 
-        GDBSchemaActions( Supplier<Statement> statementSupplier )
+        GDBSchemaActions( Supplier<KernelTransaction> transactionSupplier )
         {
-            this.ctxSupplier = statementSupplier;
+            this.transactionSupplier = transactionSupplier;
         }
 
         @Override
         public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
                     IndexDefinition indexDefinition = new IndexDefinitionImpl( this, label, propertyKeys, false );
-                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-                    int labelId = tokenWriteOperations.labelGetOrCreateForName( indexDefinition.getLabel().name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWriteOperations, indexDefinition );
+                    TokenWrite tokenWrite = transaction.tokenWrite();
+                    int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-                    statement.schemaWriteOperations().indexCreate( descriptor );
+                    transaction.schemaWrite().indexCreate( descriptor );
                     return indexDefinition;
                 }
-                catch ( AlreadyIndexedException | AlreadyConstrainedException | RepeatedPropertyInCompositeSchemaException e )
-                {
-                    throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-                }
+
                 catch ( IllegalTokenNameException e )
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( TooManyLabelsException e )
+                catch ( SchemaKernelException e )
                 {
-                    throw new IllegalStateException( e );
-                }
-                catch ( InvalidTransactionTypeKernelException e )
-                {
-                    throw new ConstraintViolationException( e.getMessage(), e );
+                    throw new ConstraintViolationException(
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
             }
         }
@@ -487,12 +471,13 @@ public class SchemaImpl implements Schema
         @Override
         public void dropIndexDefinitions( IndexDefinition indexDefinition )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    statement.schemaWriteOperations().indexDrop(
-                            getIndexDescriptor( statement.readOperations(), indexDefinition ) );
+                    transaction.schemaWrite().indexDrop( getIndexReference(
+                            transaction.schemaRead(), transaction.tokenRead(), indexDefinition ) );
                 }
                 catch ( NotFoundException e )
                 {
@@ -501,9 +486,9 @@ public class SchemaImpl implements Schema
                 catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
                 {
                     throw new ConstraintViolationException( e.getUserMessage(
-                            new StatementTokenNameLookup( statement.readOperations() ) ) );
+                            new SilentTokenNameLookup( transaction.tokenRead() ) ) );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -513,15 +498,15 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
-                            indexDefinition.getLabel().name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
-                            statement.tokenWriteOperations(), indexDefinition );
-                    statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+                    TokenWrite tokenWrite = transaction.tokenWrite();
+                    int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
+                    transaction.schemaWrite().uniquePropertyConstraintCreate(
                             SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
@@ -529,7 +514,7 @@ public class SchemaImpl implements Schema
                         RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
                 catch ( IllegalTokenNameException e )
                 {
@@ -539,7 +524,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -549,15 +534,15 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName(
-                            indexDefinition.getLabel().name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
-                            statement.tokenWriteOperations(), indexDefinition );
-                    statement.schemaWriteOperations().nodeKeyConstraintCreate(
+                    TokenWrite tokenWrite = transaction.tokenWrite();
+                    int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
+                    transaction.schemaWrite().nodeKeyConstraintCreate(
                             SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new NodeKeyConstraintDefinition( this, indexDefinition );
                 }
@@ -565,7 +550,7 @@ public class SchemaImpl implements Schema
                         RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
                 catch ( IllegalTokenNameException e )
                 {
@@ -575,7 +560,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -585,22 +570,23 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKeys )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds(
-                            statement.tokenWriteOperations(), propertyKeys );
-                    statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
-                                    SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                    TokenWrite tokenWrite = transaction.tokenWrite();
+                    int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
+                    transaction.schemaWrite().nodePropertyExistenceConstraintCreate(
+                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |
                         RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
                 catch ( IllegalTokenNameException e )
                 {
@@ -610,7 +596,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -620,13 +606,15 @@ public class SchemaImpl implements Schema
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int typeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-                    int[] propertyKeyId = getOrCreatePropertyKeyIds( statement.tokenWriteOperations(), propertyKey );
-                    statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
+                    TokenWrite tokenWrite = transaction.tokenWrite();
+                    int typeId = tokenWrite.relationshipTypeGetOrCreateForName( type.name() );
+                    int[] propertyKeyId = getOrCreatePropertyKeyIds( tokenWrite, propertyKey );
+                    transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
                             SchemaDescriptorFactory.forRelType( typeId, propertyKeyId ) );
                     return new RelationshipPropertyExistenceConstraintDefinition( this, type, propertyKey );
                 }
@@ -634,13 +622,13 @@ public class SchemaImpl implements Schema
                         RepeatedPropertyInCompositeSchemaException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
                 catch ( IllegalTokenNameException e )
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -650,21 +638,23 @@ public class SchemaImpl implements Schema
         @Override
         public void dropPropertyUniquenessConstraint( Label label, String[] properties )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.readOperations().labelGetForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
-                    statement.schemaWriteOperations().constraintDrop(
+                    TokenRead tokenRead = transaction.tokenRead();
+                    int labelId = tokenRead.nodeLabel( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, properties );
+                    transaction.schemaWrite().constraintDrop(
                             ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -674,21 +664,23 @@ public class SchemaImpl implements Schema
         @Override
         public void dropNodeKeyConstraint( Label label, String[] properties )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.readOperations().labelGetForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
-                    statement.schemaWriteOperations().constraintDrop(
+                    TokenRead tokenRead = transaction.tokenRead();
+                    int labelId = tokenRead.nodeLabel( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, properties );
+                    transaction.schemaWrite().constraintDrop(
                             ConstraintDescriptorFactory.nodeKeyForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -698,21 +690,23 @@ public class SchemaImpl implements Schema
         @Override
         public void dropNodePropertyExistenceConstraint( Label label, String[] properties )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int labelId = statement.readOperations().labelGetForName( label.name() );
-                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( statement.readOperations(), properties );
-                    statement.schemaWriteOperations().constraintDrop(
+                    TokenRead tokenRead = transaction.tokenRead();
+                    int labelId = tokenRead.nodeLabel( label.name() );
+                    int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, properties );
+                    transaction.schemaWrite().constraintDrop(
                             ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -722,21 +716,24 @@ public class SchemaImpl implements Schema
         @Override
         public void dropRelationshipPropertyExistenceConstraint( RelationshipType type, String propertyKey )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
                 {
-                    int typeId = statement.readOperations().relationshipTypeGetForName( type.name() );
-                    int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
-                    statement.schemaWriteOperations().constraintDrop(
+                    TokenRead tokenRead = transaction.tokenRead();
+
+                    int typeId = tokenRead.relationshipType( type.name() );
+                    int propertyKeyId = tokenRead.propertyKey( propertyKey );
+                    transaction.schemaWrite().constraintDrop(
                             ConstraintDescriptorFactory.existsForRelType( typeId, propertyKeyId ) );
                 }
                 catch ( DropConstraintFailureException e )
                 {
                     throw new ConstraintViolationException(
-                            e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+                            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( InvalidTransactionTypeKernelException e )
+                catch ( SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -746,16 +743,22 @@ public class SchemaImpl implements Schema
         @Override
         public String getUserMessage( KernelException e )
         {
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+            try ( Statement ignore = transaction.acquireStatement() )
             {
-                return e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) );
+                return e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) );
             }
         }
 
         @Override
         public void assertInOpenTransaction()
         {
-            ctxSupplier.get().close();
+            KernelTransaction transaction = transactionSupplier.get();
+            if ( transaction.isTerminated() )
+            {
+                Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+                throw new TransactionTerminatedException( terminationReason );
+            }
         }
     }
 }
