@@ -19,9 +19,64 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+
 /**
  * Surface for creating and dropping indexes and constraints.
  */
 public interface SchemaWrite
 {
+    /**
+     * Create index from label descriptor
+     *
+     * @param descriptor description of the index
+     * @return the newly created index
+     */
+    CapableIndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    /**
+     * Drop the given index
+     *
+     * @param index the index to drop
+     */
+    void indexDrop( CapableIndexReference index ) throws SchemaKernelException;
+
+    /**
+     * Create unique property constraint
+     *
+     * @param descriptor description of the constraint
+     */
+    ConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    /**
+     * Create node key constraint
+     *
+     * @param descriptor description of the constraint
+     */
+    ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    /**
+     * Create node property existence constraint
+     *
+     * @param descriptor description of the constraint
+     */
+    ConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+
+    /**
+     * Create relationship property existence constraint
+     *
+     * @param descriptor description of the constraint
+     */
+    ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor descriptor )
+            throws SchemaKernelException;
+
+    /**
+     * Drop constraint
+     *
+     * @param descriptor description of the constraint
+     */
+    void constraintDrop( ConstraintDescriptor descriptor ) throws SchemaKernelException;
 }

@@ -31,6 +31,10 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface CapableIndexReference extends IndexReference, IndexCapability
 {
+    String providerKey();
+
+    String providerVersion();
+
     CapableIndexReference NO_INDEX = new CapableIndexReference()
     {
         @Override
@@ -83,7 +87,7 @@ public interface CapableIndexReference extends IndexReference, IndexCapability
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<CapableIndexReference> sortByType( Iterator<CapableIndexReference> indexes )
+    static Iterator<CapableIndexReference> sortByType( Iterator<CapableIndexReference> indexes )
     {
         List<CapableIndexReference> materialized = Iterators.asList( indexes );
         return Iterators.concat(
