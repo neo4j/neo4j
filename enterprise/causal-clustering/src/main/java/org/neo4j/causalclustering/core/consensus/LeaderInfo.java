@@ -17,31 +17,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.core.consensus;
 
-import java.util.Map;
-import java.util.Optional;
+import java.io.Serializable;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
-/**
- * Provides a read-only service for the eventually consistent topology information.
- */
-public interface TopologyService extends Lifecycle
+public class LeaderInfo implements Serializable
 {
-    String localDBName();
 
-    CoreTopology allCoreServers();
+    private static final long serialVersionUID = 7983780359510842910L;
 
-    CoreTopology localCoreServers();
+    public static final LeaderInfo INITIAL = new LeaderInfo( null, -1 );
 
-    ReadReplicaTopology allReadReplicas();
+    private final MemberId memberId;
+    private final long term;
 
-    ReadReplicaTopology localReadReplicas();
+    public LeaderInfo( MemberId memberId, long term )
+    {
+        this.memberId = memberId;
+        this.term = term;
+    }
 
-    Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
+    public MemberId memberId()
+    {
+        return memberId;
+    }
 
-    Map<MemberId,RoleInfo> allCoreRoles();
+    public long term()
+    {
+        return term;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LeaderInfo{" + "memberId=" + memberId + ", term=" + term + '}';
+    }
 }

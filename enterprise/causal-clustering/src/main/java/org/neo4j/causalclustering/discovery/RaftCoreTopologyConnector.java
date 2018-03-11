@@ -21,29 +21,33 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.core.consensus.RaftMachine.BootstrapException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
- * Makes the Raft aware of changes to the core topology.
+ * Makes the Raft aware of changes to the core topology and vice versa
  */
-public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener
+public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreTopologyService.Listener, LeaderListener
 {
     private final CoreTopologyService coreTopologyService;
     private final RaftMachine raftMachine;
+    private final String dbName;
 
-    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine )
+    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine, String dbName )
     {
         this.coreTopologyService = coreTopologyService;
         this.raftMachine = raftMachine;
+        this.dbName = dbName;
     }
 
     @Override
     public void start()
     {
-        coreTopologyService.addCoreTopologyListener( this );
+        coreTopologyService.addLocalCoreTopologyListener( this );
+        raftMachine.registerListener( this );
     }
 
     @Override
@@ -51,5 +55,17 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     {
         Set<MemberId> targetMembers = coreTopology.members().keySet();
         raftMachine.setTargetMembershipSet( targetMembers );
+    }
+
+    @Override
+    public void onLeaderSwitch( LeaderInfo leaderInfo )
+    {
+        coreTopologyService.setLeader( leaderInfo, dbName );
+    }
+
+    @Override
+    public String dbName()
+    {
+        return this.dbName;
     }
 }

@@ -19,29 +19,27 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Map;
-import java.util.Optional;
-
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-/**
- * Provides a read-only service for the eventually consistent topology information.
- */
-public interface TopologyService extends Lifecycle
+public enum RoleInfo
 {
-    String localDBName();
+    //TODO: Factor out for the Role which already exists in cc.consensus.roles
+    LEADER,
+    FOLLOWER,
+    READ_REPLICA,
+    UNKNOWN;
 
-    CoreTopology allCoreServers();
-
-    CoreTopology localCoreServers();
-
-    ReadReplicaTopology allReadReplicas();
-
-    ReadReplicaTopology localReadReplicas();
-
-    Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
-
-    Map<MemberId,RoleInfo> allCoreRoles();
+    @Override
+    public String toString()
+    {
+        switch ( this )
+        {
+            case LEADER:
+                return "LEADER";
+            case FOLLOWER:
+                return "FOLLOWER";
+            case READ_REPLICA:
+                return "READ REPLICA";
+            default:
+                return "UNKNOWN";
+        }
+    }
 }

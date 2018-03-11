@@ -17,31 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.core.consensus;
 
-import java.util.Map;
-import java.util.Optional;
-
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-/**
- * Provides a read-only service for the eventually consistent topology information.
- */
-public interface TopologyService extends Lifecycle
+public interface LeaderListener
 {
-    String localDBName();
-
-    CoreTopology allCoreServers();
-
-    CoreTopology localCoreServers();
-
-    ReadReplicaTopology allReadReplicas();
-
-    ReadReplicaTopology localReadReplicas();
-
-    Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
-
-    Map<MemberId,RoleInfo> allCoreRoles();
+    void onLeaderSwitch( LeaderInfo leaderInfo );
 }

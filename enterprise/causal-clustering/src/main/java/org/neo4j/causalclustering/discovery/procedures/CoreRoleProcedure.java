@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery.procedures;
 
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.discovery.RoleInfo;
 
 public class CoreRoleProcedure extends RoleProcedure
 {
@@ -32,8 +33,8 @@ public class CoreRoleProcedure extends RoleProcedure
     }
 
     @Override
-    Role role()
+    RoleInfo role()
     {
-        return raft.isLeader() ? Role.LEADER : Role.FOLLOWER;
+        return raft.isLeader() ? RoleInfo.LEADER : RoleInfo.FOLLOWER;
     }
 }

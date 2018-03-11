@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
@@ -47,6 +48,7 @@ public class ComparableRaftState implements ReadableRaftState
     private final Log log;
     protected long term;
     protected MemberId leader;
+    private LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private long leaderCommit = -1;
     private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
@@ -106,6 +108,12 @@ public class ComparableRaftState implements ReadableRaftState
     public MemberId leader()
     {
         return leader;
+    }
+
+    @Override
+    public LeaderInfo leaderInfo()
+    {
+        return leaderInfo;
     }
 
     @Override

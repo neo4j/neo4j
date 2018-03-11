@@ -25,12 +25,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.management.CausalClustering;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeReadReplicaTopology;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
@@ -46,9 +52,12 @@ public class TypicallyConnectToRandomReadReplicaStrategyTest
         TopologyService topologyService =
                 fakeTopologyService( fakeCoreTopology( theCoreMemberId ), fakeReadReplicaTopology( memberIDs( 100 ) ) );
 
+        Config config = mock( Config.class );
+        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
+
         TypicallyConnectToRandomReadReplicaStrategy connectionStrategy =
                 new TypicallyConnectToRandomReadReplicaStrategy();
-        connectionStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
+        connectionStrategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         List<MemberId> responses = new ArrayList<>();
 
