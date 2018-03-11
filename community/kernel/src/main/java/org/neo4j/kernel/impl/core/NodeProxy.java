@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -750,10 +752,16 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
             nodes.allRelationships( relationships );
+            PrimitiveIntSet seen = Primitive.intSet();
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {
-                types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
+                int type = relationships.type();
+                if ( !seen.contains( type ) )
+                {
+                    types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
+                    seen.add( type );
+                }
             }
 
             return types;
