@@ -23,6 +23,10 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -41,19 +45,33 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
  */
 public interface ConstraintSemantics
 {
+    @Deprecated
     void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 
+    @Deprecated
+    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
+
+    @Deprecated
     void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
+
+    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
             RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException;
 
+    void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException;
+
     ConstraintDescriptor readConstraint( ConstraintRule rule );
 
-    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
+    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor,
+            long indexId );
 
     ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
             throws CreateConstraintFailureException;

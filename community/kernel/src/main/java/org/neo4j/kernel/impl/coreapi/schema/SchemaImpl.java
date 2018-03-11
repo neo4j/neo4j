@@ -372,8 +372,8 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private Iterable<ConstraintDefinition> asConstraintDefinitions( Iterator<? extends ConstraintDescriptor> constraints,
-           TokenRead tokenRead)
+    private Iterable<ConstraintDefinition> asConstraintDefinitions(
+            Iterator<? extends ConstraintDescriptor> constraints, TokenRead tokenRead )
     {
         // Intentionally create an eager list so that used statement can be closed
         List<ConstraintDefinition> definitions = new ArrayList<>();
@@ -757,7 +757,5 @@ public class SchemaImpl implements Schema
         {
             ctxSupplier.get().close();
         }
-
-
     }
 }

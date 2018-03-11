@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.Arrays;
+
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
-class DefaultCapableIndexReference implements CapableIndexReference
+public class DefaultCapableIndexReference implements CapableIndexReference
 {
     private final int label;
     private final int[] properties;
@@ -34,9 +38,8 @@ class DefaultCapableIndexReference implements CapableIndexReference
     private final IndexProvider.Descriptor providerDescriptor;
     private final IndexCapability capability;
 
-    DefaultCapableIndexReference( boolean unique, IndexCapability indexCapability,
-            IndexProvider.Descriptor providerDescriptor, int label,
-            int... properties )
+    public DefaultCapableIndexReference( boolean unique, IndexCapability indexCapability,
+                IndexProvider.Descriptor providerDescriptor, int label, int... properties )
     {
         this.unique = unique;
         this.capability = indexCapability;
@@ -85,5 +88,53 @@ class DefaultCapableIndexReference implements CapableIndexReference
     public IndexValueCapability valueCapability( ValueGroup... valueGroups )
     {
         return capability.valueCapability( valueGroups );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        DefaultCapableIndexReference that = (DefaultCapableIndexReference) o;
+
+        if ( label != that.label )
+        {
+            return false;
+        }
+        if ( unique != that.unique )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( properties, that.properties ) )
+        {
+            return false;
+        }
+        return providerDescriptor != null ? providerDescriptor.equals( that.providerDescriptor )
+                                          : that.providerDescriptor == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = label;
+        result = 31 * result + Arrays.hashCode( properties );
+        result = 31 * result + (unique ? 1 : 0);
+        result = 31 * result + (providerDescriptor != null ? providerDescriptor.hashCode() : 0);
+        return result;
+    }
+
+    public static CapableIndexReference fromDescriptor( SchemaIndexDescriptor descriptor )
+    {
+        boolean unique =  descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
+        final LabelSchemaDescriptor schema = descriptor.schema();
+        return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, null,
+                schema.getLabelId(), schema.getPropertyIds() );
     }
 }

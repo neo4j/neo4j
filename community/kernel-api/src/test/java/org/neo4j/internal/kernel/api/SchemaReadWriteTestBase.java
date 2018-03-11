@@ -373,7 +373,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-
     @Test
     public void shouldSeeNodeKeyConstraintFromTransaction() throws Exception
     {

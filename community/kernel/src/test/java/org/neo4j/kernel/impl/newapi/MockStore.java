@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
@@ -590,9 +591,15 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public long indexGetCommittedId( CapableIndexReference index ) throws SchemaKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
     {
-        return null;
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
@@ -623,5 +630,11 @@ public class MockStore extends Read implements TestRule
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
+    {
+        return null;
     }
 }

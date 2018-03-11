@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -164,7 +165,8 @@ public class KernelTransactionTestBase
                 transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory );
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
+                new StandardConstraintSemantics() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -121,6 +122,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             new GlobalKernelTransactionPool( allTransactions, factory );
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
+    private final ConstraintSemantics constraintSemantics;
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -142,7 +144,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore,
             VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier )
+            CollectionsFactorySupplier collectionsFactorySupplier,
+            ConstraintSemantics constraintSemantics )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -170,6 +173,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         doBlockNewTransactions();
         this.cursorsSupplier = cursorsSupplier;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
+        this.constraintSemantics = constraintSemantics;
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
@@ -367,7 +371,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             cursorsSupplier.get(), autoIndexing,
-                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier );
+                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics );
             this.transactions.add( tx );
             return tx;
         }

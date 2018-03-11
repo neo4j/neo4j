@@ -69,6 +69,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -188,7 +189,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier )
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -219,7 +221,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         allStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
-                        this, new KernelToken( storeLayer, this ), cursors, autoIndexing );
+                        this, new KernelToken( storeLayer, this ), cursors, autoIndexing, constraintIndexCreator,
+                        constraintSemantics );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -787,7 +790,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SchemaWrite schemaWrite()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return operations;
     }
 
     @Override

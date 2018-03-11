@@ -33,7 +33,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     private final int relTypeId;
     private final int[] propertyIds;
 
-    RelationTypeSchemaDescriptor( int relTypeId, int... propertyIds )
+    public RelationTypeSchemaDescriptor( int relTypeId, int... propertyIds )
     {
         this.relTypeId = relTypeId;
         this.propertyIds = propertyIds;
