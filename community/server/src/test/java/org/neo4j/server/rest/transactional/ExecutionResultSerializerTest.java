@@ -471,12 +471,12 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         // then
         String result = output.toString( UTF_8.name() );
         assertEquals( "{\"results\":[{\"columns\":[\"temporal\"],\"data\":[" +
-                        "{\"row\":[{\"type\":\"date\",\"value\":\"2018-03-12\"}],\"meta\":[{\"type\":\"date\"}]}," +
-                        "{\"row\":[{\"type\":\"datetime\",\"value\":\"2018-03-12T13:02:10.000000010+01:00[UTC+01:00]\"}],\"meta\":[{\"type\":\"datetime\"}]}," +
-                        "{\"row\":[{\"type\":\"time\",\"value\":\"12:02:04.000000071Z\"}],\"meta\":[{\"type\":\"time\"}]}," +
-                        "{\"row\":[{\"type\":\"localdatetime\",\"value\":\"2018-03-12T13:02:10.000000010\"}],\"meta\":[{\"type\":\"localdatetime\"}]}," +
-                        "{\"row\":[{\"type\":\"localtime\",\"value\":\"13:02:10.000000010\"}],\"meta\":[{\"type\":\"localtime\"}]}," +
-                        "{\"row\":[{\"type\":\"duration\",\"value\":\"PT12H\"}],\"meta\":[{\"type\":\"duration\"}]}" +
+                        "{\"row\":[\"2018-03-12\"],\"meta\":[{\"type\":\"date\"}]}," +
+                        "{\"row\":[\"2018-03-12T13:02:10.000000010+01:00[UTC+01:00]\"],\"meta\":[{\"type\":\"datetime\"}]}," +
+                        "{\"row\":[\"12:02:04.000000071Z\"],\"meta\":[{\"type\":\"time\"}]}," +
+                        "{\"row\":[\"2018-03-12T13:02:10.000000010\"],\"meta\":[{\"type\":\"localdatetime\"}]}," +
+                        "{\"row\":[\"13:02:10.000000010\"],\"meta\":[{\"type\":\"localtime\"}]}," +
+                        "{\"row\":[\"PT12H\"],\"meta\":[{\"type\":\"duration\"}]}" +
                         "]}],\"errors\":[]}",
                 result );
     }

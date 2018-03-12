@@ -287,7 +287,6 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 
-
     public static HTTP.Response runQuery( String query )
     {
         return POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );

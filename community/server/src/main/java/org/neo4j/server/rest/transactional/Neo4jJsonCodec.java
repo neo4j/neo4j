@@ -114,23 +114,14 @@ public class Neo4jJsonCodec extends ObjectMapper
             writeMap( out, genericMap( new LinkedHashMap<>(), "name", crs.getType(), "type", "link", "properties",
                     genericMap( new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
         }
-        else if ( value instanceof Temporal )
+        else if ( value instanceof Temporal || value instanceof TemporalAmount )
         {
-            writeObject( out, parseTemporalType( (Temporal) value ), value.toString() );
-        }
-        else if ( value instanceof TemporalAmount )
-        {
-            writeObject( out, Neo4jJsonMetaType.duration, value.toString() );
+            super.writeValue( out, value.toString() );
         }
         else
         {
             super.writeValue( out, value );
         }
-    }
-
-    private void writeObject( JsonGenerator out, Neo4jJsonMetaType type, String value ) throws IOException
-    {
-        writeMap( out, genericMap( new LinkedHashMap<>(), "type", type.name(), "value", value ) );
     }
 
     private void writeMap( JsonGenerator out, Map value ) throws IOException
@@ -280,7 +271,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else if ( value instanceof Geometry )
         {
-            writeGeometryTypeMeta( out, (Geometry) value );
+            writeObjectMeta( out, parseGeometryType( (Geometry) value ) );
         }
         else if ( value instanceof Temporal )
         {
@@ -296,7 +287,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
     }
 
-    private void writeGeometryTypeMeta( JsonGenerator out, Geometry value ) throws IOException
+    private Neo4jJsonMetaType parseGeometryType( Geometry value ) throws IOException
     {
         Neo4jJsonMetaType type = null;
         if ( value instanceof Point )
@@ -308,7 +299,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             throw new IllegalArgumentException(
                     String.format( "Unsupported Geometry type: type=%s, value=%s", value.getClass().getSimpleName(), value ) );
         }
-        writeObjectMeta( out, type );
+        return type;
     }
 
     private Neo4jJsonMetaType parseTemporalType( Temporal value )

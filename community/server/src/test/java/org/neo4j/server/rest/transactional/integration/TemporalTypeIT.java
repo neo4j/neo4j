@@ -109,8 +109,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
         JsonNode data = getSingleData( response );
 
         JsonNode row = getSingle( data, "row" );
-        assertThat( row.get( "creationTime" ).get( "type" ).asText(), equalTo( "localdatetime" ) );
-        assertThat( row.get( "creationTime" ).get( "value" ).asText(), equalTo( "1984-10-21T12:34" ) );
+        assertThat( row.get( "creationTime" ).asText(), equalTo( "1984-10-21T12:34" ) );
         assertThat( row.get( "name" ).asText(), equalTo( "zhen" ) );
 
         JsonNode meta = getSingle( data, "meta" );
@@ -120,8 +119,7 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     private void assertTemporalEquals( JsonNode data, String value, String type )
     {
         JsonNode row = getSingle( data, "row" );
-        assertThat( row.get( "type" ).asText(), equalTo( type ) );
-        assertThat( row.get( "value" ).asText(), equalTo( value ) );
+        assertThat( row.asText(), equalTo( value ) );
 
         JsonNode meta = getSingle( data, "meta" );
         assertEquals( type, meta.get( "type" ).asText() );

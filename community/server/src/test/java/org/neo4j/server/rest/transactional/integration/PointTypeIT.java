@@ -72,13 +72,13 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldReturnPoint2DWithXAndY() throws Exception
     {
-        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, Cartesian, "point2d" );
+        testPoint( "RETURN point({x: 42.05, y: 90.99})", new double[]{42.05, 90.99}, Cartesian, "point" );
     }
 
     @Test
     public void shouldReturnPoint2DWithLatitudeAndLongitude() throws Exception
     {
-        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point2d" );
+        testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point" );
     }
 
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception
