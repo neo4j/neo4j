@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -451,6 +452,7 @@ public class SchemaImpl implements Schema
         public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
+
             try ( Statement ignore = transaction.acquireStatement() )
             {
                 try
@@ -468,7 +470,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
@@ -496,7 +498,7 @@ public class SchemaImpl implements Schema
                     throw new ConstraintViolationException( e.getUserMessage(
                             new SilentTokenNameLookup( transaction.tokenRead() ) ) );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -532,7 +534,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -568,7 +570,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -604,7 +606,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalStateException( e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -636,7 +638,7 @@ public class SchemaImpl implements Schema
                 {
                     throw new IllegalArgumentException( e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -662,7 +664,7 @@ public class SchemaImpl implements Schema
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -688,7 +690,7 @@ public class SchemaImpl implements Schema
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -714,7 +716,7 @@ public class SchemaImpl implements Schema
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
@@ -741,7 +743,7 @@ public class SchemaImpl implements Schema
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
                 }
-                catch ( SchemaKernelException e )
+                catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }

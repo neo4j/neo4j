@@ -772,24 +772,35 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExplicitIndexRead indexRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+
         return operations.indexRead();
     }
 
     @Override
-    public ExplicitIndexWrite indexWrite()
+    public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
     {
-       return operations;
+        accessCapability.assertCanWrite();
+        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        upgradeToDataWrites();
+
+        return operations;
     }
 
     @Override
     public SchemaRead schemaRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations.schemaRead();
     }
 
     @Override
-    public SchemaWrite schemaWrite()
+    public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
+        accessCapability.assertCanWrite();
+        currentStatement.assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
+
+        upgradeToSchemaWrites();
         return operations;
     }
 
