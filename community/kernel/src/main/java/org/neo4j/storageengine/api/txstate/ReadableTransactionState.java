@@ -142,14 +142,6 @@ public interface ReadableTransactionState
 
     PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( SchemaIndexDescriptor index,
-                                                             Number lower, boolean includeLower,
-                                                             Number upper, boolean includeUpper );
-
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor index,
-                                                             String lower, boolean includeLower,
-                                                             String upper, boolean includeUpper );
-
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
                                                             Value lower, boolean includeLower,
                                                             Value upper, boolean includeUpper );
