@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -313,7 +314,7 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return Iterators.map( this::indexGetCapability, iterator );
+        return Iterators.map( DefaultCapableIndexReference::fromDescriptor, iterator );
     }
 
     @Override
@@ -337,6 +338,7 @@ public class AllStoreHolder extends Read
     @Override
     public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
     {
+        assertValidIndex( index );
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
         return indexGetState( indexDescriptor( index ) );
@@ -1014,5 +1016,13 @@ public class AllStoreHolder extends Read
         ctx.put( Context.THREAD, Thread.currentThread() );
         ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
         return ctx;
+    }
+
+    private void assertValidIndex( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        if ( index == CapableIndexReference.NO_INDEX )
+        {
+            throw new IndexNotFoundKernelException( "No index was found" );
+        }
     }
 }

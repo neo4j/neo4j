@@ -795,12 +795,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public void indexDrop( CapableIndexReference index ) throws SchemaKernelException
     {
+        assertValidIndex( index );
+
         acquireExclusiveLabelLock( index.label() );
         ktx.assertOpen();
         org.neo4j.kernel.api.schema.LabelSchemaDescriptor descriptor = labelDescriptor( index );
         try
         {
-
             SchemaIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
 
             if ( existingIndex == null )
@@ -1113,6 +1114,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         catch ( UniquePropertyValueValidationException | TransactionFailureException | AlreadyConstrainedException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
+        }
+    }
+
+    private void assertValidIndex( CapableIndexReference index ) throws NoSuchIndexException
+    {
+        if ( index == CapableIndexReference.NO_INDEX )
+        {
+            throw new NoSuchIndexException( new org.neo4j.kernel.api.schema.LabelSchemaDescriptor( index.label(), index.properties() ) );
         }
     }
 }

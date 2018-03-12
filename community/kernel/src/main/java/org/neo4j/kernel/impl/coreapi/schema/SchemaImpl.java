@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
@@ -338,7 +339,14 @@ public class SchemaImpl implements Schema
         int[] propertyKeyIds = PropertyNameUtils.getPropertyIds( tokenRead, index.getPropertyKeys() );
         assertValidLabel( index.getLabel(), labelId );
         assertValidProperties( index.getPropertyKeys(), propertyKeyIds );
-        return schemaRead.index( labelId, propertyKeyIds );
+        CapableIndexReference reference = schemaRead.index( labelId, propertyKeyIds );
+        if ( reference == CapableIndexReference.NO_INDEX )
+        {
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, new org.neo4j.kernel.api.schema
+                    .LabelSchemaDescriptor( labelId, propertyKeyIds ));
+        }
+
+        return reference;
     }
 
     private static void assertValidLabel( Label label, int labelId )
