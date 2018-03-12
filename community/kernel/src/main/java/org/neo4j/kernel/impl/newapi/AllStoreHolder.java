@@ -90,6 +90,8 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.filter;
+import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -432,7 +434,15 @@ public class AllStoreHolder extends Read
 
     SchemaIndexDescriptor indexGetForSchema( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor descriptor )
     {
-        return storeReadLayer.indexGetForSchema( descriptor );
+        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
+        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            rules = filter(
+                    SchemaDescriptor.equalTo( descriptor ),
+                    ktx.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ) );
+        }
+        return singleOrNull( rules );
     }
 
     private boolean checkIndexState( SchemaIndexDescriptor index, ReadableDiffSets<SchemaIndexDescriptor> diffSet )
