@@ -302,7 +302,7 @@ public class AllStoreHolder extends Read
             }
         }
 
-        return indexDescriptor != null ? fromDescriptor( indexDescriptor ) : CapableIndexReference.NO_INDEX;
+        return indexDescriptor != null ? indexGetCapability( indexDescriptor ) : CapableIndexReference.NO_INDEX;
     }
 
     @Override
