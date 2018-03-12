@@ -80,7 +80,7 @@ public class ModifierProtocolRepositoryTest
     }
 
     @Test
-    public void shouldCompareModifierProtocolsByListOrder() throws Throwable
+    public void shouldCompareModifierProtocolsByListOrder()
     {
         List<ModifierSupportedProtocols> supportedProtocols = asList(
                 new ModifierSupportedProtocols( COMPRESSION, asList( LZO.implementation(), SNAPPY.implementation(), LZ4.implementation() ) ) );

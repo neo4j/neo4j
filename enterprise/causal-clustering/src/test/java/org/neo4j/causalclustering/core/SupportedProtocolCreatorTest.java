@@ -44,7 +44,7 @@ public class SupportedProtocolCreatorTest
     private NullLogProvider log = NullLogProvider.getInstance();
 
     @Test
-    public void shouldReturnRaftProtocol() throws Throwable
+    public void shouldReturnRaftProtocol()
     {
         // given
         Config config = Config.defaults();
@@ -57,7 +57,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldReturnEmptyVersionSupportedRaftProtocolIfNoVersionsConfigured() throws Throwable
+    public void shouldReturnEmptyVersionSupportedRaftProtocolIfNoVersionsConfigured()
     {
         // given
         Config config = Config.defaults();
@@ -70,7 +70,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldFilterUnknownRaftImplementations() throws Throwable
+    public void shouldFilterUnknownRaftImplementations()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.raft_implementations, "1, 2, 3" );
@@ -84,7 +84,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldReturnConfiguredRaftProtocolVersions() throws Throwable
+    public void shouldReturnConfiguredRaftProtocolVersions()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.raft_implementations, "1" );
@@ -97,7 +97,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowIfVersionsSpecifiedButAllUnknown() throws Throwable
+    public void shouldThrowIfVersionsSpecifiedButAllUnknown()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.raft_implementations, String.valueOf( Integer.MAX_VALUE ) );
@@ -109,7 +109,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldNotReturnModifiersIfNoVersionsSpecified() throws Throwable
+    public void shouldNotReturnModifiersIfNoVersionsSpecified()
     {
         // given
         Config config = Config.defaults();
@@ -123,7 +123,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldReturnACompressionModifierIfCompressionVersionsSpecified() throws Throwable
+    public void shouldReturnACompressionModifierIfCompressionVersionsSpecified()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation() );
@@ -138,7 +138,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldReturnCompressionWithVersionsSpecified() throws Throwable
+    public void shouldReturnCompressionWithVersionsSpecified()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation() );
@@ -153,7 +153,7 @@ public class SupportedProtocolCreatorTest
     }
 
     @Test
-    public void shouldReturnCompressionWithVersionsSpecifiedCaseInsensitive() throws Throwable
+    public void shouldReturnCompressionWithVersionsSpecifiedCaseInsensitive()
     {
         // given
         Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation().toLowerCase() );

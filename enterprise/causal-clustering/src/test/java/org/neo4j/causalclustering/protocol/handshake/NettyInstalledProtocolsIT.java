@@ -189,7 +189,7 @@ public class NettyInstalledProtocolsIT
         ChannelInboundHandler nettyHandler = new SimpleChannelInboundHandler<Object>()
         {
             @Override
-            protected void channelRead0( ChannelHandlerContext ctx, Object msg ) throws Exception
+            protected void channelRead0( ChannelHandlerContext ctx, Object msg )
             {
                 received.add( msg );
             }

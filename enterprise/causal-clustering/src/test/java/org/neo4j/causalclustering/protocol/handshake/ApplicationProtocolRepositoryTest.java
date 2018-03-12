@@ -110,7 +110,7 @@ public class ApplicationProtocolRepositoryTest
     }
 
     @Test
-    public void shouldIncludeAllProtocolsInSelectionIfEmptyVersionsProvided() throws Throwable
+    public void shouldIncludeAllProtocolsInSelectionIfEmptyVersionsProvided()
     {
         // when
         ProtocolSelection<Integer,Protocol.ApplicationProtocol> protocolSelection =
@@ -122,7 +122,7 @@ public class ApplicationProtocolRepositoryTest
     }
 
     @Test
-    public void shouldIncludeProtocolsInSelectionWithVersionsLimitedByThoseConfigured() throws Throwable
+    public void shouldIncludeProtocolsInSelectionWithVersionsLimitedByThoseConfigured()
     {
         // given
         Integer[] expectedRaftVersions = { 1 };
@@ -136,7 +136,7 @@ public class ApplicationProtocolRepositoryTest
     }
 
     @Test
-    public void shouldIncludeProtocolsInSelectionWithVersionsLimitedByThoseExisting() throws Throwable
+    public void shouldIncludeProtocolsInSelectionWithVersionsLimitedByThoseExisting()
     {
         // given
         Integer[] expectedRaftVersions = TestApplicationProtocols.allVersionsOf( RAFT );
@@ -152,7 +152,7 @@ public class ApplicationProtocolRepositoryTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowIfNoIntersectionBetweenExistingAndConfiguredVersions() throws Throwable
+    public void shouldThrowIfNoIntersectionBetweenExistingAndConfiguredVersions()
     {
         // given
         List<Integer> configuredRaftVersions = Arrays.asList( Integer.MAX_VALUE );

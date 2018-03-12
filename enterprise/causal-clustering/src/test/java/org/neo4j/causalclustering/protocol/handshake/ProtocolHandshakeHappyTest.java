@@ -164,7 +164,7 @@ public class ProtocolHandshakeHappyTest
     }
 
     @Test
-    public void shouldHandshakeApplicationProtocolOnClient() throws Throwable
+    public void shouldHandshakeApplicationProtocolOnClient()
     {
         // given
         Fixture fixture = new Fixture( parameters );
@@ -179,7 +179,7 @@ public class ProtocolHandshakeHappyTest
     }
 
     @Test
-    public void shouldHandshakeModifierProtocolsOnClient() throws Throwable
+    public void shouldHandshakeModifierProtocolsOnClient()
     {
         // given
         Fixture fixture = new Fixture( parameters );
@@ -201,7 +201,7 @@ public class ProtocolHandshakeHappyTest
     }
 
     @Test
-    public void shouldHandshakeApplicationProtocolOnServer() throws Throwable
+    public void shouldHandshakeApplicationProtocolOnServer()
     {
         // given
         Fixture fixture = new Fixture( parameters );
@@ -218,7 +218,7 @@ public class ProtocolHandshakeHappyTest
     }
 
     @Test
-    public void shouldHandshakeModifierProtocolsOnServer() throws Throwable
+    public void shouldHandshakeModifierProtocolsOnServer()
     {
         // given
         Fixture fixture = new Fixture( parameters );

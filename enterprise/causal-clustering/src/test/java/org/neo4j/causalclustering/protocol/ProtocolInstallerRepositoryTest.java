@@ -116,7 +116,7 @@ public class ProtocolInstallerRepositoryTest
     }
 
     @Test
-    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForClient() throws Throwable
+    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForClient()
     {
         // given
         Protocol.ModifierProtocol expected = TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING;
@@ -132,7 +132,7 @@ public class ProtocolInstallerRepositoryTest
     }
 
     @Test
-    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForServer() throws Throwable
+    public void shouldReturnModifierProtocolsForProtocolWithSharedInstallerForServer()
     {
         // given
         Protocol.ModifierProtocol expected = TestModifierProtocols.LZ4_HIGH_COMPRESSION_VALIDATING;

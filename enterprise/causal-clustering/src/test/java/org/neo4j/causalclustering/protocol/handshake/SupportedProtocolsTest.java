@@ -36,7 +36,7 @@ import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCa
 public class SupportedProtocolsTest
 {
     @Test
-    public void shouldMutuallySupportIntersectionOfParameterVersionsSuperset() throws Throwable
+    public void shouldMutuallySupportIntersectionOfParameterVersionsSuperset()
     {
         // given
         ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 1, 2 ) );
@@ -49,7 +49,7 @@ public class SupportedProtocolsTest
     }
 
     @Test
-    public void shouldMutuallySupportIntersectionOfParameterVersionsSubset() throws Throwable
+    public void shouldMutuallySupportIntersectionOfParameterVersionsSubset()
     {
         // given
         ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 4, 5, 6 ) );
@@ -62,7 +62,7 @@ public class SupportedProtocolsTest
     }
 
     @Test
-    public void shouldMutuallySupportParameterIfEmptyVersions() throws Throwable
+    public void shouldMutuallySupportParameterIfEmptyVersions()
     {
         // given
         ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, emptyList() );
@@ -75,7 +75,7 @@ public class SupportedProtocolsTest
     }
 
     @Test
-    public void shouldMutuallySupportNothingIfParametersEmpty() throws Throwable
+    public void shouldMutuallySupportNothingIfParametersEmpty()
     {
         // given
         ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 1, 2 ) );
