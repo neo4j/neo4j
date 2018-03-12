@@ -24,12 +24,12 @@ import java.util.Set;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
-public class ProtocolSelection<T extends Protocol>
+public abstract class ProtocolSelection<U extends Comparable<U>, T extends Protocol<U>>
 {
     private final String identifier;
-    private final Set<Integer> versions;
+    private final Set<U> versions;
 
-    public ProtocolSelection( String identifier, Set<Integer> versions )
+    public ProtocolSelection( String identifier, Set<U> versions )
     {
         this.identifier = identifier;
         this.versions = Collections.unmodifiableSet( versions );
@@ -40,7 +40,7 @@ public class ProtocolSelection<T extends Protocol>
         return identifier;
     }
 
-    public Set<Integer> versions()
+    public Set<U> versions()
     {
         return versions;
     }

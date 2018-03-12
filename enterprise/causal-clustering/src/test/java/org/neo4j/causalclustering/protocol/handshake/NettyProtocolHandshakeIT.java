@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 import org.neo4j.logging.NullLog;
@@ -55,19 +54,19 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.CATCHUP;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.CATCHUP;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
 
 public class NettyProtocolHandshakeIT
 {
-    private SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftApplicationProtocol =
-            new SupportedProtocols<>( RAFT, emptyList() );
-    private SupportedProtocols<Protocol.ApplicationProtocol> supportedCatchupApplicationProtocol =
-            new SupportedProtocols<>( CATCHUP, emptyList() );
-    private Collection<SupportedProtocols<Protocol.ModifierProtocol>> supportedCompressionModifierProtocols =
-            asList( new SupportedProtocols<>( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ) );
-    private Collection<SupportedProtocols<Protocol.ModifierProtocol>> noSupportedModifierProtocols = emptyList();
+    private ApplicationSupportedProtocols supportedRaftApplicationProtocol =
+            new ApplicationSupportedProtocols( RAFT, emptyList() );
+    private ApplicationSupportedProtocols supportedCatchupApplicationProtocol =
+            new ApplicationSupportedProtocols( CATCHUP, emptyList() );
+    private Collection<ModifierSupportedProtocols> supportedCompressionModifierProtocols =
+            asList( new ModifierSupportedProtocols( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ) );
+    private Collection<ModifierSupportedProtocols> noSupportedModifierProtocols = emptyList();
 
     private ApplicationProtocolRepository raftApplicationProtocolRepository =
             new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedRaftApplicationProtocol );

@@ -26,21 +26,21 @@ import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
-public class SupportedProtocols<T extends Protocol>
+public abstract class SupportedProtocols<U extends Comparable<U>,T extends Protocol<U>>
 {
-    private final Protocol.Identifier<T> identifier;
-    private final List<Integer> versions;
+    private final Protocol.Category<T> category;
+    private final List<U> versions;
 
     /**
      * @param versions Empty means support everything
      */
-    public SupportedProtocols( Protocol.Identifier<T> identifier, List<Integer> versions )
+    public SupportedProtocols( Protocol.Category<T> category, List<U> versions )
     {
-        this.identifier = identifier;
+        this.category = category;
         this.versions = Collections.unmodifiableList( versions );
     }
 
-    public Set<Integer> mutuallySupportedVersionsFor( Set<Integer> requestedVersions )
+    public Set<U> mutuallySupportedVersionsFor( Set<U> requestedVersions )
     {
         if ( versions().isEmpty() )
         {
@@ -52,15 +52,15 @@ public class SupportedProtocols<T extends Protocol>
         }
     }
 
-    public Protocol.Identifier<T> identifier()
+    public Protocol.Category<T> identifier()
     {
-        return identifier;
+        return category;
     }
 
     /**
      * @return If an empty list then all versions of a matching protocol will be supported
      */
-    public List<Integer> versions()
+    public List<U> versions()
     {
         return versions;
     }

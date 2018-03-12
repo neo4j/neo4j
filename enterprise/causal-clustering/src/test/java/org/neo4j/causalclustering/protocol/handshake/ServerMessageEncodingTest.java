@@ -62,10 +62,10 @@ public class ServerMessageEncodingTest
         return asList(
                 new ApplicationProtocolRequest( "protocol", asSet( 3,7,13 ) ),
                 new InitialMagicMessage( "Magic string" ),
-                new ModifierProtocolRequest( "modifierProtocol", asSet( 1,4,7) ),
+                new ModifierProtocolRequest( "modifierProtocol", asSet( "Foo", "Bar", "Baz" ) ),
                 new SwitchOverRequest( "protocol", 38, emptyList() ),
                 new SwitchOverRequest( "protocol", 38,
-                        asList( Pair.of( "mod1", 1 ), Pair.of( "mod2" , 2) ) )
+                        asList( Pair.of( "mod1", "Foo" ), Pair.of( "mod2" , "Quux" ) ) )
                 );
     }
 

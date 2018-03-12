@@ -59,7 +59,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
@@ -73,9 +72,9 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols.RAFT_1;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
 
 @RunWith( Parameterized.class )
 public class NettyInstalledProtocolsIT
@@ -104,10 +103,10 @@ public class NettyInstalledProtocolsIT
 
     private static Parameters raft1WithCompressionModifier( Optional<ModifierProtocol> protocol )
     {
-        List<Integer> versions = Streams.ofOptional( protocol ).map( Protocol::version ).collect( Collectors.toList() );
+        List<String> versions = Streams.ofOptional( protocol ).map( Protocol::implementation ).collect( Collectors.toList() );
         return new Parameters( "Raft 1, modifiers: " + protocol,
-                new SupportedProtocols<>( RAFT, asList( RAFT_1.version() ) ),
-                asList( new SupportedProtocols<>( COMPRESSION, versions ) ) );
+                new ApplicationSupportedProtocols( RAFT, asList( RAFT_1.implementation() ) ),
+                asList( new ModifierSupportedProtocols( COMPRESSION, versions ) ) );
     }
 
     @Test
@@ -162,11 +161,11 @@ public class NettyInstalledProtocolsIT
     private static class Parameters
     {
         final String name;
-        final SupportedProtocols<ApplicationProtocol> applicationSupportedProtocol;
-        final Collection<SupportedProtocols<ModifierProtocol>> modifierSupportedProtocols;
+        final ApplicationSupportedProtocols applicationSupportedProtocol;
+        final Collection<ModifierSupportedProtocols> modifierSupportedProtocols;
 
-        Parameters( String name, SupportedProtocols<ApplicationProtocol> applicationSupportedProtocol,
-                Collection<SupportedProtocols<ModifierProtocol>> modifierSupportedProtocols )
+        Parameters( String name, ApplicationSupportedProtocols applicationSupportedProtocol,
+                Collection<ModifierSupportedProtocols> modifierSupportedProtocols )
         {
             this.name = name;
             this.applicationSupportedProtocol = applicationSupportedProtocol;

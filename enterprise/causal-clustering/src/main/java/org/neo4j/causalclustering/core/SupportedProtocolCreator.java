@@ -25,7 +25,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.stream.Streams;
@@ -39,37 +40,37 @@ public class SupportedProtocolCreator
         this.config = config;
     }
 
-    public SupportedProtocols<Protocol.ApplicationProtocol> createSupportedRaftProtocol()
+    public ApplicationSupportedProtocols createSupportedRaftProtocol()
     {
         List<Integer> raftVersions = config.get( CausalClusteringSettings.raft_versions );
-        return new SupportedProtocols<>( Protocol.ApplicationProtocolIdentifier.RAFT, raftVersions );
+        return new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, raftVersions );
     }
 
-    public List<SupportedProtocols<Protocol.ModifierProtocol>> createSupportedModifierProtocols()
+    public List<ModifierSupportedProtocols> createSupportedModifierProtocols()
     {
-        SupportedProtocols<Protocol.ModifierProtocol> supportedCompression = compressionProtocolVersions();
+        ModifierSupportedProtocols supportedCompression = compressionProtocolVersions();
 
         return Stream.of( supportedCompression )
                 .filter( supportedProtocols -> !supportedProtocols.versions().isEmpty() )
                 .collect( Collectors.toList() );
     }
 
-    private SupportedProtocols<Protocol.ModifierProtocol> compressionProtocolVersions()
+    private ModifierSupportedProtocols compressionProtocolVersions()
     {
-        return modifierProtocolVersions( CausalClusteringSettings.compression_versions, Protocol.ModifierProtocolIdentifier.COMPRESSION );
+        return modifierProtocolVersions( CausalClusteringSettings.compression_versions, Protocol.ModifierProtocolCategory.COMPRESSION );
     }
 
-    private SupportedProtocols<Protocol.ModifierProtocol> modifierProtocolVersions(
-            Setting<List<String>> compressionVersions, Protocol.ModifierProtocolIdentifier identifier )
+    private ModifierSupportedProtocols modifierProtocolVersions(
+            Setting<List<String>> compressionVersions, Protocol.ModifierProtocolCategory identifier )
     {
         List<String> compressionAlgorithms = config.get( compressionVersions );
-        List<Integer> versions = compressionAlgorithms.stream()
+        List<String> versions = compressionAlgorithms.stream()
                 .map( Protocol.ModifierProtocols::fromFriendlyName )
                 .flatMap( Streams::ofOptional )
-                .filter( protocol -> Objects.equals( protocol.identifier(), identifier.canonicalName() ) )
-                .map( Protocol.ModifierProtocols::version )
+                .filter( protocol -> Objects.equals( protocol.category(), identifier.canonicalName() ) )
+                .map( Protocol.ModifierProtocols::implementation )
                 .collect( Collectors.toList() );
 
-        return new SupportedProtocols<>( identifier, versions );
+        return new ModifierSupportedProtocols( identifier, versions );
     }
 }

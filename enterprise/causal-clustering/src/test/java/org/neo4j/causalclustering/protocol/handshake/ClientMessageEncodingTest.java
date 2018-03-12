@@ -57,7 +57,7 @@ public class ClientMessageEncodingTest
     {
         return Arrays.asList(
                 new ApplicationProtocolResponse( StatusCode.FAILURE, "protocol", 13 ),
-                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", 7 ),
+                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", "7" ),
                 new SwitchOverResponse( StatusCode.FAILURE )
                 );
     }

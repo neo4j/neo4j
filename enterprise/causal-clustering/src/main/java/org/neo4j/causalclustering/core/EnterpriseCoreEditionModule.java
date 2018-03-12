@@ -68,15 +68,14 @@ import org.neo4j.causalclustering.messaging.SenderService;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
-import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
-import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -241,8 +240,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
         SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config );
-        SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol = supportedProtocolCreator.createSupportedRaftProtocol();
-        Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+        ApplicationSupportedProtocols supportedApplicationProtocol = supportedProtocolCreator.createSupportedRaftProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
 
         ApplicationProtocolRepository applicationProtocolRepository =
                 new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedApplicationProtocol );

@@ -41,9 +41,9 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.COMPRESSION;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.GRATUITOUS_OBFUSCATION;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols.RAFT_1;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZ4;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZO;
@@ -63,43 +63,43 @@ public class ProtocolHandshakeHappyTest
     public static Collection<Parameters> data()
     {
         // Application protocols
-        SupportedProtocols<ApplicationProtocol> allRaft =
-                new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
-        SupportedProtocols<ApplicationProtocol> raft1 =
-                new SupportedProtocols<>( RAFT, singletonList( RAFT_1.version() ) );
-        SupportedProtocols<ApplicationProtocol> allRaftByDefault =
-                new SupportedProtocols<>( RAFT, emptyList() );
+        ApplicationSupportedProtocols allRaft =
+                new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
+        ApplicationSupportedProtocols raft1 =
+                new ApplicationSupportedProtocols( RAFT, singletonList( RAFT_1.implementation() ) );
+        ApplicationSupportedProtocols allRaftByDefault =
+                new ApplicationSupportedProtocols( RAFT, emptyList() );
 
         // Modifier protocols
-        Collection<SupportedProtocols<ModifierProtocol>> allModifiers = asList(
-                new SupportedProtocols<>( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ),
-                new SupportedProtocols<>( GRATUITOUS_OBFUSCATION, TestModifierProtocols.listVersionsOf( GRATUITOUS_OBFUSCATION ) )
+        Collection<ModifierSupportedProtocols> allModifiers = asList(
+                new ModifierSupportedProtocols( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ),
+                new ModifierSupportedProtocols( GRATUITOUS_OBFUSCATION, TestModifierProtocols.listVersionsOf( GRATUITOUS_OBFUSCATION ) )
                 );
-        Collection<SupportedProtocols<ModifierProtocol>> allCompressionModifiers = singletonList(
-                new SupportedProtocols<>( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ) );
-        Collection<SupportedProtocols<ModifierProtocol>> allObfuscationModifiers = singletonList(
-                new SupportedProtocols<>( GRATUITOUS_OBFUSCATION, TestModifierProtocols.listVersionsOf( GRATUITOUS_OBFUSCATION ) ) );
-        Collection<SupportedProtocols<ModifierProtocol>> allCompressionModifiersByDefault = singletonList(
-                new SupportedProtocols<>( COMPRESSION, emptyList() ) );
+        Collection<ModifierSupportedProtocols> allCompressionModifiers = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ) );
+        Collection<ModifierSupportedProtocols> allObfuscationModifiers = singletonList(
+                new ModifierSupportedProtocols( GRATUITOUS_OBFUSCATION, TestModifierProtocols.listVersionsOf( GRATUITOUS_OBFUSCATION ) ) );
+        Collection<ModifierSupportedProtocols> allCompressionModifiersByDefault = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, emptyList() ) );
 
-        List<SupportedProtocols<ModifierProtocol>> onlyLzoCompressionModifiers = singletonList(
-                new SupportedProtocols<>( COMPRESSION, singletonList( LZO.version() ) ) );
-        List<SupportedProtocols<ModifierProtocol>> onlySnappyCompressionModifiers = singletonList(
-                new SupportedProtocols<>( COMPRESSION, singletonList( SNAPPY.version() ) ) );
+        List<ModifierSupportedProtocols> onlyLzoCompressionModifiers = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, singletonList( LZO.implementation() ) ) );
+        List<ModifierSupportedProtocols> onlySnappyCompressionModifiers = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, singletonList( SNAPPY.implementation() ) ) );
 
-        Collection<SupportedProtocols<ModifierProtocol>> noModifiers = emptyList();
+        Collection<ModifierSupportedProtocols> noModifiers = emptyList();
 
         // Ordered modifier protocols
         ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( TestModifierProtocols.values(), allModifiers );
-        Integer[] lzoFirstVersions = { LZO.version(), LZ4.version(), SNAPPY.version() };
-        List<SupportedProtocols<ModifierProtocol>> lzoFirstCompressionModifiers = singletonList(
-                new SupportedProtocols<>( COMPRESSION, asList( lzoFirstVersions ) ) );
+        String[] lzoFirstVersions = { LZO.implementation(), LZ4.implementation(), SNAPPY.implementation() };
+        List<ModifierSupportedProtocols> lzoFirstCompressionModifiers = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, asList( lzoFirstVersions ) ) );
         ModifierProtocol preferredLzoFirstCompressionModifier =
                 modifierProtocolRepository.select( COMPRESSION.canonicalName(), asSet( lzoFirstVersions ) ).get();
 
-        Integer[] snappyFirstVersions = { SNAPPY.version(), LZ4.version(), LZO.version() };
-        List<SupportedProtocols<ModifierProtocol>> snappyFirstCompressionModifiers = singletonList(
-                new SupportedProtocols<>( COMPRESSION, asList( snappyFirstVersions ) ) );
+        String[] snappyFirstVersions = { SNAPPY.implementation(), LZ4.implementation(), LZO.implementation() };
+        List<ModifierSupportedProtocols> snappyFirstCompressionModifiers = singletonList(
+                new ModifierSupportedProtocols( COMPRESSION, asList( snappyFirstVersions ) ) );
         ModifierProtocol preferredSnappyFirstCompressionModifier =
                 modifierProtocolRepository.select( COMPRESSION.canonicalName(), asSet( snappyFirstVersions ) ).get();
 
@@ -277,17 +277,17 @@ public class ProtocolHandshakeHappyTest
 
     static class Parameters
     {
-        final SupportedProtocols<ApplicationProtocol> clientApplicationProtocol;
-        final SupportedProtocols<ApplicationProtocol> serverApplicationProtocol;
-        final Collection<SupportedProtocols<ModifierProtocol>> clientModifierProtocols;
-        final Collection<SupportedProtocols<ModifierProtocol>> serverModifierProtocols;
+        final ApplicationSupportedProtocols clientApplicationProtocol;
+        final ApplicationSupportedProtocols serverApplicationProtocol;
+        final Collection<ModifierSupportedProtocols> clientModifierProtocols;
+        final Collection<ModifierSupportedProtocols> serverModifierProtocols;
         final ApplicationProtocol expectedApplicationProtocol;
         final ModifierProtocol[] expectedModifierProtocols;
 
-        Parameters( SupportedProtocols<ApplicationProtocol> clientApplicationProtocol,
-                SupportedProtocols<ApplicationProtocol> serverApplicationProtocol,
-                Collection<SupportedProtocols<ModifierProtocol>> clientModifierProtocols,
-                Collection<SupportedProtocols<ModifierProtocol>> serverModifierProtocols,
+        Parameters( ApplicationSupportedProtocols clientApplicationProtocol,
+                ApplicationSupportedProtocols serverApplicationProtocol,
+                Collection<ModifierSupportedProtocols> clientModifierProtocols,
+                Collection<ModifierSupportedProtocols> serverModifierProtocols,
                 ApplicationProtocol expectedApplicationProtocol,
                 ModifierProtocol[] expectedModifierProtocols )
         {

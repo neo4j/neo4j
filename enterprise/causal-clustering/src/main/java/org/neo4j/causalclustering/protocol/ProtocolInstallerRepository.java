@@ -89,10 +89,10 @@ public class ProtocolInstallerRepository<O extends ProtocolInstaller.Orientation
         boolean duplicateIdentifier = modifierProtocolInstallers
                 .stream()
                 .flatMap( modifier -> modifier.protocols().stream() )
-                .anyMatch( protocol -> protocol.identifier().equals( modifierProtocol.identifier() ) );
+                .anyMatch( protocol -> protocol.category().equals( modifierProtocol.category() ) );
         if ( duplicateIdentifier )
         {
-            throw new IllegalArgumentException( "Attempted to install multiple versions of " + modifierProtocol.identifier() );
+            throw new IllegalArgumentException( "Attempted to install multiple versions of " + modifierProtocol.category() );
         }
     }
 

@@ -43,14 +43,13 @@ import org.neo4j.causalclustering.messaging.LoggingInbound;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
-import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
-import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -62,19 +61,19 @@ class RaftServerModule
     private final PlatformModule platformModule;
     private final ConsensusModule consensusModule;
     private final IdentityModule identityModule;
-    private final SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol;
+    private final ApplicationSupportedProtocols supportedApplicationProtocol;
     private final LocalDatabase localDatabase;
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
     private final TopologyService topologyService;
-    private final Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols;
+    private final Collection<ModifierSupportedProtocols> supportedModifierProtocols;
     private final RaftServer raftServer;
 
     private RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
             LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
-            CoreTopologyService topologyService, SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol,
-            Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols )
+            CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -94,8 +93,8 @@ class RaftServerModule
 
     static RaftServerModule createAndStart( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule,
             CoreServerModule coreServerModule, LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            MessageLogger<MemberId> messageLogger, CoreTopologyService topologyService, SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol,
-            Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols )
+            MessageLogger<MemberId> messageLogger, CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols )
     {
         return new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, pipelineBuilderFactory, messageLogger,
                         topologyService, supportedApplicationProtocol, supportedModifierProtocols );

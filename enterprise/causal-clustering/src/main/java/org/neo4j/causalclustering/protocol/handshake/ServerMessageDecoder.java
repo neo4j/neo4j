@@ -26,6 +26,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,12 +53,12 @@ public class ServerMessageDecoder extends ByteToMessageDecoder
         }
         case 1:
         {
-            ApplicationProtocolRequest applicationProtocolRequest = decodeProtocolRequest( ApplicationProtocolRequest::new, in );
+            ApplicationProtocolRequest applicationProtocolRequest = decodeProtocolRequest( ApplicationProtocolRequest::new, in, ByteBuf::readInt );
             out.add( applicationProtocolRequest );
             return;
         }
         case 2:
-            ModifierProtocolRequest modifierProtocolRequest = decodeProtocolRequest( ModifierProtocolRequest::new, in );
+            ModifierProtocolRequest modifierProtocolRequest = decodeProtocolRequest( ModifierProtocolRequest::new, in, StringMarshal::unmarshal );
             out.add( modifierProtocolRequest );
             return;
         case 3:
@@ -65,7 +66,7 @@ public class ServerMessageDecoder extends ByteToMessageDecoder
             String protocolName = StringMarshal.unmarshal( in );
             int version = in.readInt();
             int numberOfModifierProtocols = in.readInt();
-            List<Pair<String,Integer>> modifierProtocols = Stream.generate( () -> Pair.of( StringMarshal.unmarshal( in ), in.readInt() ) )
+            List<Pair<String,String>> modifierProtocols = Stream.generate( () -> Pair.of( StringMarshal.unmarshal( in ), StringMarshal.unmarshal( in ) ) )
                     .limit( numberOfModifierProtocols )
                     .collect( Collectors.toList() );
             out.add( new SwitchOverRequest( protocolName, version, modifierProtocols ) );
@@ -77,12 +78,13 @@ public class ServerMessageDecoder extends ByteToMessageDecoder
         }
     }
 
-    private <T extends BaseProtocolRequest> T decodeProtocolRequest( BiFunction<String, Set<Integer>, T> constructor, ByteBuf in )
+    private <U extends Comparable<U>, T extends BaseProtocolRequest<U>> T decodeProtocolRequest( BiFunction<String,Set<U>,T> constructor, ByteBuf in,
+            Function<ByteBuf,U> versionDecoder )
     {
         String protocolName = StringMarshal.unmarshal( in );
         int versionArrayLength = in.readInt();
 
-        Set<Integer> versions = Stream.generate( in::readInt ).limit( versionArrayLength ).collect( Collectors.toSet() );
+        Set<U> versions = Stream.generate( () -> versionDecoder.apply( in ) ).limit( versionArrayLength ).collect( Collectors.toSet() );
 
         return constructor.apply( protocolName, versions );
     }

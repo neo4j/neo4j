@@ -38,7 +38,7 @@ public class HandshakeServer implements ServerMessageHandler
     private final Channel channel;
     private final ApplicationProtocolRepository applicationProtocolRepository;
     private final ModifierProtocolRepository modifierProtocolRepository;
-    private final SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol;
+    private final SupportedProtocols<Integer,ApplicationProtocol> supportedApplicationProtocol;
     private final ProtocolStack.Builder protocolStackBuilder = ProtocolStack.builder();
     private final CompletableFuture<ProtocolStack> protocolStackFuture = new CompletableFuture<>();
     private boolean magicReceived;
@@ -103,7 +103,7 @@ public class HandshakeServer implements ServerMessageHandler
             {
                 ApplicationProtocol selectedProtocol = selected.get();
                 protocolStackBuilder.application( selectedProtocol );
-                response = new ApplicationProtocolResponse( SUCCESS, selectedProtocol.identifier(), selectedProtocol.version() );
+                response = new ApplicationProtocolResponse( SUCCESS, selectedProtocol.category(), selectedProtocol.implementation() );
                 channel.writeAndFlush( response );
             }
             else
@@ -128,7 +128,7 @@ public class HandshakeServer implements ServerMessageHandler
         {
             ModifierProtocol modifierProtocol = selected.get();
             protocolStackBuilder.modifier( modifierProtocol );
-            response = new ModifierProtocolResponse( SUCCESS, modifierProtocol.identifier(), modifierProtocol.version() );
+            response = new ModifierProtocolResponse( SUCCESS, modifierProtocol.category(), modifierProtocol.implementation() );
         }
         else
         {
@@ -167,7 +167,7 @@ public class HandshakeServer implements ServerMessageHandler
             channel.writeAndFlush( SwitchOverResponse.FAILURE );
             decline( String.format( "Switch over mismatch: requested %s version %s but negotiated %s version %s",
                     switchOverRequest.protocolName(), switchOverRequest.version(),
-                    protocolStack.applicationProtocol().identifier(), protocolStack.applicationProtocol().version() ) );
+                    protocolStack.applicationProtocol().category(), protocolStack.applicationProtocol().implementation() ) );
         }
         else if ( !switchOverModifiers.equals( protocolStack.modifierProtocols() ) )
         {
@@ -184,7 +184,7 @@ public class HandshakeServer implements ServerMessageHandler
         }
     }
 
-    private Set<Integer> supportedVersionsFor( ModifierProtocolRequest request )
+    private Set<String> supportedVersionsFor( ModifierProtocolRequest request )
     {
         return modifierProtocolRepository.supportedProtocolFor( request.protocolName() )
                 .map( supported -> supported.mutuallySupportedVersionsFor( request.versions() ) )

@@ -62,4 +62,10 @@ public class SwitchOverResponse implements ClientMessage
     {
         return Objects.hash( status );
     }
+
+    @Override
+    public String toString()
+    {
+        return "SwitchOverResponse{" + "status=" + status + '}';
+    }
 }

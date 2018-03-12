@@ -36,13 +36,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ApplicationProtocolRepositoryTest
 {
     private ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository(
-            TestApplicationProtocols.values(), new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) ) );
+            TestApplicationProtocols.values(), new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) ) );
 
     @Test
     public void shouldReturnEmptyIfUnknownVersion()
@@ -113,7 +113,7 @@ public class ApplicationProtocolRepositoryTest
     public void shouldIncludeAllProtocolsInSelectionIfEmptyVersionsProvided() throws Throwable
     {
         // when
-        ProtocolSelection<Protocol.ApplicationProtocol> protocolSelection =
+        ProtocolSelection<Integer,Protocol.ApplicationProtocol> protocolSelection =
                 applicationProtocolRepository.getAll( RAFT, emptyList() );
 
         // then
@@ -128,7 +128,7 @@ public class ApplicationProtocolRepositoryTest
         Integer[] expectedRaftVersions = { 1 };
 
         // when
-        ProtocolSelection<Protocol.ApplicationProtocol> protocolSelection =
+        ProtocolSelection<Integer,Protocol.ApplicationProtocol> protocolSelection =
                 applicationProtocolRepository.getAll( RAFT, asList( expectedRaftVersions ) );
 
         // then
@@ -144,7 +144,7 @@ public class ApplicationProtocolRepositoryTest
                 Stream.concat( Stream.of( expectedRaftVersions ), Stream.of( Integer.MAX_VALUE ) ).collect( Collectors.toList() );
 
         // when
-        ProtocolSelection<Protocol.ApplicationProtocol> protocolSelection =
+        ProtocolSelection<Integer,Protocol.ApplicationProtocol> protocolSelection =
                 applicationProtocolRepository.getAll( RAFT, configuredRaftVersions );
 
         // then
@@ -170,13 +170,13 @@ public class ApplicationProtocolRepositoryTest
         Protocol.ApplicationProtocol protocol = new Protocol.ApplicationProtocol()
         {
             @Override
-            public String identifier()
+            public String category()
             {
                 return "foo";
             }
 
             @Override
-            public int version()
+            public Integer implementation()
             {
                 return 1;
             }
@@ -184,7 +184,7 @@ public class ApplicationProtocolRepositoryTest
         Protocol.ApplicationProtocol[] protocols = {protocol, protocol};
 
         // when
-        new ApplicationProtocolRepository( protocols, new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) ) );
+        new ApplicationProtocolRepository( protocols, new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) ) );
 
         // then throw
     }

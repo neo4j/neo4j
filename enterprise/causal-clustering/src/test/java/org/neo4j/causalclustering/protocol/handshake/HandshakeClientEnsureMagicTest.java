@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.causalclustering.messaging.Channel;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 
@@ -39,7 +38,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZ4;
 
 @RunWith( Parameterized.class )
 public class HandshakeClientEnsureMagicTest
@@ -50,8 +51,8 @@ public class HandshakeClientEnsureMagicTest
     public static Collection<ClientMessage> data()
     {
         return asList(
-                new ApplicationProtocolResponse( StatusCode.SUCCESS, "protocol", 2 ),
-                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", 4 ),
+                new ApplicationProtocolResponse( StatusCode.SUCCESS, "protocol", RAFT_1.implementation() ),
+                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", LZ4.implementation() ),
                 new SwitchOverResponse( StatusCode.SUCCESS )
         );
     }
@@ -61,8 +62,8 @@ public class HandshakeClientEnsureMagicTest
 
     private Channel channel = mock( Channel.class );
 
-    private SupportedProtocols<Protocol.ApplicationProtocol> supportedApplicationProtocol =
-            new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
+    private ApplicationSupportedProtocols supportedApplicationProtocol =
+            new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
     private ApplicationProtocolRepository applicationProtocolRepository =
             new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedApplicationProtocol );
     private ModifierProtocolRepository modifierProtocolRepository =

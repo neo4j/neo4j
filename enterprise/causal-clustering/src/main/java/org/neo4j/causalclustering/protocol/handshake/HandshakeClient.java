@@ -38,9 +38,9 @@ public class HandshakeClient implements ClientMessageHandler
 {
     private Channel channel;
     private ApplicationProtocolRepository applicationProtocolRepository;
-    private SupportedProtocols<ApplicationProtocol> supportedApplicationProtocol;
-    private ProtocolRepository<ModifierProtocol> modifierProtocolRepository;
-    private Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols;
+    private ApplicationSupportedProtocols supportedApplicationProtocol;
+    private ModifierProtocolRepository modifierProtocolRepository;
+    private Collection<ModifierSupportedProtocols> supportedModifierProtocols;
     private ApplicationProtocol applicationProtocol;
     private List<Pair<String,Optional<ModifierProtocol>>> negotiatedModifierProtocols;
     private ProtocolStack protocolStack;
@@ -67,17 +67,17 @@ public class HandshakeClient implements ClientMessageHandler
         return future;
     }
 
-    private void sendProtocolRequests( Channel channel, SupportedProtocols<ApplicationProtocol> applicationProtocols,
-            Collection<SupportedProtocols<ModifierProtocol>> supportedModifierProtocols )
+    private void sendProtocolRequests( Channel channel, ApplicationSupportedProtocols applicationProtocols,
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols )
     {
         supportedModifierProtocols.forEach( modifierProtocol ->
                 {
-                    ProtocolSelection<ModifierProtocol> protocolSelection =
+                    ProtocolSelection<String,ModifierProtocol> protocolSelection =
                             modifierProtocolRepository.getAll( modifierProtocol.identifier(), modifierProtocol.versions() );
                     channel.write( new ModifierProtocolRequest( protocolSelection.identifier(), protocolSelection.versions() ) );
                 } );
 
-        ProtocolSelection<ApplicationProtocol> applicationProtocolSelection =
+        ProtocolSelection<Integer,ApplicationProtocol> applicationProtocolSelection =
                 applicationProtocolRepository.getAll( applicationProtocols.identifier(), applicationProtocols.versions() );
         channel.writeAndFlush( new ApplicationProtocolRequest( applicationProtocolSelection.identifier(), applicationProtocolSelection.versions() ) );
     }
@@ -118,7 +118,7 @@ public class HandshakeClient implements ClientMessageHandler
 
         if ( !protocol.isPresent() )
         {
-            ProtocolSelection<ApplicationProtocol> knownApplicationProtocolVersions =
+            ProtocolSelection<Integer,ApplicationProtocol> knownApplicationProtocolVersions =
                     applicationProtocolRepository.getAll( supportedApplicationProtocol.identifier(), supportedApplicationProtocol.versions() );
             decline( String.format(
                     "Mismatch of application protocols between client and server: Server protocol %s version %d: Client protocol %s versions %s",
@@ -162,13 +162,13 @@ public class HandshakeClient implements ClientMessageHandler
                     .collect( Collectors.toList() );
 
             protocolStack = new ProtocolStack( applicationProtocol, agreedModifierProtocols );
-            List<Pair<String,Integer>> switchOverModifierProtocols =
+            List<Pair<String,String>> switchOverModifierProtocols =
                     agreedModifierProtocols
                             .stream()
-                            .map( protocol -> Pair.of( protocol.identifier(), protocol.version() ) )
+                            .map( protocol -> Pair.of( protocol.category(), protocol.implementation() ) )
                             .collect( Collectors.toList() );
 
-            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.identifier(), applicationProtocol.version(), switchOverModifierProtocols ) );
+            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.category(), applicationProtocol.implementation(), switchOverModifierProtocols ) );
         }
     }
 

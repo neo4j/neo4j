@@ -27,7 +27,6 @@ import java.util.concurrent.CompletionException;
 
 import org.neo4j.causalclustering.messaging.Channel;
 import org.neo4j.causalclustering.protocol.Protocol;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 
@@ -38,11 +37,11 @@ import static java.util.Collections.emptyList;
  */
 public class ProtocolHandshakeSadTest
 {
-    private SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftApplicationProtocol =
-            new SupportedProtocols<>( ApplicationProtocolIdentifier.RAFT, emptyList() );
-    private SupportedProtocols<Protocol.ApplicationProtocol> supportedCatchupApplicationProtocol =
-            new SupportedProtocols<>( ApplicationProtocolIdentifier.CATCHUP, emptyList() );
-    private Collection<SupportedProtocols<Protocol.ModifierProtocol>> noModifiers = emptyList();
+    private ApplicationSupportedProtocols supportedRaftApplicationProtocol =
+            new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, emptyList() );
+    private ApplicationSupportedProtocols supportedCatchupApplicationProtocol =
+            new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.CATCHUP, emptyList() );
+    private Collection<ModifierSupportedProtocols> noModifiers = emptyList();
 
     private ApplicationProtocolRepository raftApplicationProtocolRepository =
             new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedRaftApplicationProtocol );

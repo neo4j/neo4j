@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.helpers.collection.Iterators;
 
 import static java.util.Collections.emptyList;
@@ -32,7 +31,7 @@ import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 
 public class SupportedProtocolsTest
 {
@@ -40,7 +39,7 @@ public class SupportedProtocolsTest
     public void shouldMutuallySupportIntersectionOfParameterVersionsSuperset() throws Throwable
     {
         // given
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocols = new SupportedProtocols<>( RAFT, Arrays.asList( 1, 2 ) );
+        ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 1, 2 ) );
 
         // when
         Set<Integer> mutuallySupported = supportedProtocols.mutuallySupportedVersionsFor( Iterators.asSet( 1, 2, 3 ) );
@@ -53,7 +52,7 @@ public class SupportedProtocolsTest
     public void shouldMutuallySupportIntersectionOfParameterVersionsSubset() throws Throwable
     {
         // given
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocols = new SupportedProtocols<>( RAFT, Arrays.asList( 4, 5, 6 ) );
+        ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 4, 5, 6 ) );
 
         // when
         Set<Integer> mutuallySupported = supportedProtocols.mutuallySupportedVersionsFor( Iterators.asSet( 4, 5 ) );
@@ -66,7 +65,7 @@ public class SupportedProtocolsTest
     public void shouldMutuallySupportParameterIfEmptyVersions() throws Throwable
     {
         // given
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocols = new SupportedProtocols<>( RAFT, emptyList() );
+        ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, emptyList() );
 
         // when
         Set<Integer> mutuallySupported = supportedProtocols.mutuallySupportedVersionsFor( Iterators.asSet( 7, 8 ) );
@@ -79,7 +78,7 @@ public class SupportedProtocolsTest
     public void shouldMutuallySupportNothingIfParametersEmpty() throws Throwable
     {
         // given
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedProtocols = new SupportedProtocols<>( RAFT, Arrays.asList( 1, 2 ) );
+        ApplicationSupportedProtocols supportedProtocols = new ApplicationSupportedProtocols( RAFT, Arrays.asList( 1, 2 ) );
 
         // when
         Set<Integer> mutuallySupported = supportedProtocols.mutuallySupportedVersionsFor( emptySet() );

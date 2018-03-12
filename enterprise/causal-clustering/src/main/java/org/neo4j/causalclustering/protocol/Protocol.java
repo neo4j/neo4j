@@ -23,22 +23,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface Protocol
+public interface Protocol<IMPL extends Comparable<IMPL>>
 {
-    String identifier();
+    String category();
 
-    int version();
+    IMPL implementation();
 
-    interface Identifier<T extends Protocol>
+    interface Category<T extends Protocol>
     {
         String canonicalName();
     }
 
-    interface ApplicationProtocol extends Protocol
+    interface ApplicationProtocol extends Protocol<Integer>
     {
     }
 
-    enum ApplicationProtocolIdentifier implements Identifier<ApplicationProtocol>
+    enum ApplicationProtocolCategory implements Category<ApplicationProtocol>
     {
         RAFT,
         CATCHUP;
@@ -52,43 +52,39 @@ public interface Protocol
 
     enum ApplicationProtocols implements ApplicationProtocol
     {
-        RAFT_1( ApplicationProtocolIdentifier.RAFT, 1 ),
-        CATCHUP_1( ApplicationProtocolIdentifier.CATCHUP, 1 );
+        RAFT_1( ApplicationProtocolCategory.RAFT, 1 ),
+        CATCHUP_1( ApplicationProtocolCategory.CATCHUP, 1 );
 
-        private final int version;
-        private final ApplicationProtocolIdentifier identifier;
+        private final Integer version;
+        private final ApplicationProtocolCategory identifier;
 
-        ApplicationProtocols( ApplicationProtocolIdentifier identifier, int version )
+        ApplicationProtocols( ApplicationProtocolCategory identifier, int version )
         {
             this.identifier = identifier;
             this.version = version;
         }
 
         @Override
-        public String identifier()
+        public String category()
         {
             return identifier.canonicalName();
         }
 
         @Override
-        public int version()
+        public Integer implementation()
         {
             return version;
         }
     }
 
-    interface ModifierProtocol extends Protocol
+    interface ModifierProtocol extends Protocol<String>
     {
-        /**
-         * Should be human readable when in a comma separated list
-         */
-        String friendlyName();
     }
 
-    enum ModifierProtocolIdentifier implements Identifier<ModifierProtocol>
+    enum ModifierProtocolCategory implements Category<ModifierProtocol>
     {
         COMPRESSION,
-        // Need a second Identifier for testing purposes.
+        // Need a second Category for testing purposes.
         GRATUITOUS_OBFUSCATION;
 
         @Override
@@ -100,41 +96,34 @@ public interface Protocol
 
     enum ModifierProtocols implements ModifierProtocol
     {
-        COMPRESSION_GZIP( ModifierProtocolIdentifier.COMPRESSION, 1, "Gzip" ),
-        COMPRESSION_SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 2, "Snappy" ),
-        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 3, "Snappy_validating" ),
-        COMPRESSION_LZ4( ModifierProtocolIdentifier.COMPRESSION, 4, "LZ4" ),
-        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolIdentifier.COMPRESSION, 5, "LZ4_high_compression" ),
-        COMPRESSION_LZ4_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 6, "LZ_validating" ),
-        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolIdentifier.COMPRESSION, 7, "LZ4_high_compression_validating" );
+        COMPRESSION_GZIP( ModifierProtocolCategory.COMPRESSION, "Gzip" ),
+        COMPRESSION_SNAPPY( ModifierProtocolCategory.COMPRESSION, "Snappy" ),
+        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolCategory.COMPRESSION, "Snappy_validating" ),
+        COMPRESSION_LZ4( ModifierProtocolCategory.COMPRESSION, "LZ4" ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolCategory.COMPRESSION, "LZ4_high_compression" ),
+        COMPRESSION_LZ4_VALIDATING( ModifierProtocolCategory.COMPRESSION, "LZ_validating" ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolCategory.COMPRESSION, "LZ4_high_compression_validating" );
 
-        private final int version;
-        private final ModifierProtocolIdentifier identifier;
+        // Should be human writable into a comma separated list
         private final String friendlyName;
+        private final ModifierProtocolCategory identifier;
 
-        ModifierProtocols( ModifierProtocolIdentifier identifier, int version, String friendlyName )
+        ModifierProtocols( ModifierProtocolCategory identifier, String friendlyName )
         {
-            this.version = version;
             this.identifier = identifier;
             this.friendlyName = friendlyName;
         }
 
         @Override
-        public int version()
-        {
-            return version;
-        }
-
-        @Override
-        public String identifier()
-        {
-            return identifier.canonicalName();
-        }
-
-        @Override
-        public String friendlyName()
+        public String implementation()
         {
             return friendlyName;
+        }
+
+        @Override
+        public String category()
+        {
+            return identifier.canonicalName();
         }
 
         public static Optional<ModifierProtocols> fromFriendlyName( String friendlyName )

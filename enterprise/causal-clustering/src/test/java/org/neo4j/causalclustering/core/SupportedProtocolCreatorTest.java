@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
 import org.neo4j.kernel.configuration.Config;
 
@@ -43,10 +45,10 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults();
 
         // when
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
+        ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
 
         // then
-        assertThat( supportedRaftProtocol.identifier(), equalTo( Protocol.ApplicationProtocolIdentifier.RAFT ) );
+        assertThat( supportedRaftProtocol.identifier(), equalTo( Protocol.ApplicationProtocolCategory.RAFT ) );
     }
 
     @Test
@@ -56,7 +58,7 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults();
 
         // when
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
+        ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
 
         // then
         assertThat( supportedRaftProtocol.versions(), empty() );
@@ -69,7 +71,7 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults( CausalClusteringSettings.raft_versions, "2,3,1" );
 
         // when
-        SupportedProtocols<Protocol.ApplicationProtocol> supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
+        ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config ).createSupportedRaftProtocol();
 
         // then
         assertThat( supportedRaftProtocol.versions(), contains( 2,3,1 ) );
@@ -82,7 +84,7 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults();
 
         // when
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedModifierProtocols =
+        List<ModifierSupportedProtocols> supportedModifierProtocols =
                 new SupportedProtocolCreator( config ).createSupportedModifierProtocols();
 
         // then
@@ -96,12 +98,12 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults( CausalClusteringSettings.compression_versions, "snappy" );
 
         // when
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedModifierProtocols =
+        List<ModifierSupportedProtocols> supportedModifierProtocols =
                 new SupportedProtocolCreator( config ).createSupportedModifierProtocols();
 
         // then
-        Stream<Protocol.Identifier<Protocol.ModifierProtocol>> identifiers = supportedModifierProtocols.stream().map( SupportedProtocols::identifier );
-        assertThat( identifiers, StreamMatchers.contains( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
+        Stream<Protocol.Category<Protocol.ModifierProtocol>> identifiers = supportedModifierProtocols.stream().map( SupportedProtocols::identifier );
+        assertThat( identifiers, StreamMatchers.contains( Protocol.ModifierProtocolCategory.COMPRESSION ) );
     }
 
     @Test
@@ -111,11 +113,11 @@ public class SupportedProtocolCreatorTest
         Config config = Config.defaults( CausalClusteringSettings.compression_versions, "snappy" );
 
         // when
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedModifierProtocols =
+        List<ModifierSupportedProtocols> supportedModifierProtocols =
                 new SupportedProtocolCreator( config ).createSupportedModifierProtocols();
 
         // then
-        List<Integer> versions = supportedModifierProtocols.get( 0 ).versions();
-        assertThat( versions, contains( Protocol.ModifierProtocols.COMPRESSION_SNAPPY.version() ) );
+        List<String> versions = supportedModifierProtocols.get( 0 ).versions();
+        assertThat( versions, contains( Protocol.ModifierProtocols.COMPRESSION_SNAPPY.implementation() ) );
     }
 }

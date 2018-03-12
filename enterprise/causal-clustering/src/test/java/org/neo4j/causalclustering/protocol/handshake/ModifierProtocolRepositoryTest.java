@@ -31,8 +31,12 @@ import org.neo4j.causalclustering.protocol.Protocol;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.COMPRESSION;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.GRATUITOUS_OBFUSCATION;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZ4;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZO;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.NAME_CLASH;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.SNAPPY;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
@@ -44,25 +48,27 @@ public class ModifierProtocolRepositoryTest
     public void shouldReturnModifierProtocolOfFirstConfiguredVersionRequestedAndSupported()
     {
         // given
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedProtocols = asList(
-                new SupportedProtocols<>( COMPRESSION, asList( 2, 1, 3 ) ),
-                new SupportedProtocols<>( GRATUITOUS_OBFUSCATION, asList( 1, 3, 2 ) ) );
+        List<ModifierSupportedProtocols> supportedProtocols = asList(
+                new ModifierSupportedProtocols( COMPRESSION, asList( LZO.implementation(), SNAPPY.implementation(), LZ4.implementation() ) ),
+                new ModifierSupportedProtocols( GRATUITOUS_OBFUSCATION, asList( NAME_CLASH.implementation() ) ) );
         ModifierProtocolRepository modifierProtocolRepository =
                 new ModifierProtocolRepository( TestProtocols.TestModifierProtocols.values(), supportedProtocols );
         // when
-        Optional<Protocol.ModifierProtocol> modifierProtocol =
-                modifierProtocolRepository.select( COMPRESSION.canonicalName(), asSet( 9, 1, 3, 2, 7 ) );
+        Optional<Protocol.ModifierProtocol> modifierProtocol = modifierProtocolRepository.select(
+                COMPRESSION.canonicalName(),
+                asSet( "bzip2", SNAPPY.implementation(), LZ4.implementation(), LZO.implementation(), "fast_lz" )
+        );
 
         // then
-        assertThat( modifierProtocol.map( Protocol::version ), OptionalMatchers.contains( 2 ) );
+        assertThat( modifierProtocol.map( Protocol::implementation), OptionalMatchers.contains( LZO.implementation() ) );
     }
 
     @Test
     public void shouldReturnModifierProtocolOfSingleConfiguredVersionIfOthersRequested()
     {
         // given
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedProtocols = asList(
-                new SupportedProtocols<>( COMPRESSION, asList( 2 ) ) );
+        List<ModifierSupportedProtocols> supportedProtocols = asList(
+                new ModifierSupportedProtocols( COMPRESSION, asList( LZO.implementation() ) ) );
         ModifierProtocolRepository modifierProtocolRepository =
                 new ModifierProtocolRepository( TestProtocols.TestModifierProtocols.values(), supportedProtocols );
         // when
@@ -70,20 +76,20 @@ public class ModifierProtocolRepositoryTest
                 modifierProtocolRepository.select( COMPRESSION.canonicalName(), asSet( TestProtocols.TestModifierProtocols.allVersionsOf( COMPRESSION ) ) );
 
         // then
-        assertThat( modifierProtocol.map( Protocol::version ), OptionalMatchers.contains( 2 ) );
+        assertThat( modifierProtocol.map( Protocol::implementation), OptionalMatchers.contains( LZO.implementation() ) );
     }
 
     @Test
     public void shouldCompareModifierProtocolsByListOrder() throws Throwable
     {
-        List<SupportedProtocols<Protocol.ModifierProtocol>> supportedProtocols = asList(
-                new SupportedProtocols<>( COMPRESSION, asList( 2, 1, 3 ) ) );
+        List<ModifierSupportedProtocols> supportedProtocols = asList(
+                new ModifierSupportedProtocols( COMPRESSION, asList( LZO.implementation(), SNAPPY.implementation(), LZ4.implementation() ) ) );
 
         Comparator<Protocol.ModifierProtocol> comparator =
                 ModifierProtocolRepository.getModifierProtocolComparator( supportedProtocols )
                 .apply( COMPRESSION.canonicalName() );
 
-        assertThat( comparator.compare( TestProtocols.TestModifierProtocols.LZO, TestProtocols.TestModifierProtocols.SNAPPY ), Matchers.greaterThan( 0 )  );
+        assertThat( comparator.compare( LZO, TestProtocols.TestModifierProtocols.SNAPPY ), Matchers.greaterThan( 0 )  );
         assertThat( comparator.compare( TestProtocols.TestModifierProtocols.SNAPPY, TestProtocols.TestModifierProtocols.LZ4 ), Matchers.greaterThan( 0 )  );
     }
 }

@@ -37,7 +37,7 @@ import org.neo4j.helpers.collection.Iterators;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 
 @RunWith( Parameterized.class )
 public class HandshakeServerEnsureMagicTest
@@ -47,7 +47,7 @@ public class HandshakeServerEnsureMagicTest
     {
         return asList(
                 new ApplicationProtocolRequest( RAFT.canonicalName(), Iterators.asSet( 1, 2 ) ),
-                new ModifierProtocolRequest( Protocol.ModifierProtocolIdentifier.COMPRESSION.canonicalName(), Iterators.asSet( 3, 4 ) ),
+                new ModifierProtocolRequest( Protocol.ModifierProtocolCategory.COMPRESSION.canonicalName(), Iterators.asSet( "3", "4" ) ),
                 new SwitchOverRequest( RAFT.canonicalName(), 2, emptyList() )
         );
     }
@@ -55,8 +55,8 @@ public class HandshakeServerEnsureMagicTest
     @Parameterized.Parameter
     public ServerMessage message;
 
-    private final SupportedProtocols<Protocol.ApplicationProtocol> supportedApplicationProtocol =
-            new SupportedProtocols<>( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
+    private final ApplicationSupportedProtocols supportedApplicationProtocol =
+            new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
 
     private Channel channel = mock( Channel.class );
     private ApplicationProtocolRepository applicationProtocolRepository =

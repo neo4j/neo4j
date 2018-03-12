@@ -22,12 +22,12 @@ package org.neo4j.causalclustering.protocol.handshake;
 import java.util.Objects;
 import java.util.Set;
 
-public abstract class BaseProtocolRequest
+public abstract class BaseProtocolRequest<IMPL extends Comparable<IMPL>> implements ServerMessage
 {
     private final String protocolName;
-    private final Set<Integer> versions;
+    private final Set<IMPL> versions;
 
-    BaseProtocolRequest( String protocolName, Set<Integer> versions )
+    BaseProtocolRequest( String protocolName, Set<IMPL> versions )
     {
         this.protocolName = protocolName;
         this.versions = versions;
@@ -38,7 +38,7 @@ public abstract class BaseProtocolRequest
         return protocolName;
     }
 
-    public Set<Integer> versions()
+    public Set<IMPL> versions()
     {
         return versions;
     }
@@ -62,5 +62,11 @@ public abstract class BaseProtocolRequest
     public int hashCode()
     {
         return Objects.hash( protocolName, versions );
+    }
+
+    @Override
+    public String toString()
+    {
+        return "BaseProtocolRequest{" + "protocolName='" + protocolName + '\'' + ", versions=" + versions + '}';
     }
 }

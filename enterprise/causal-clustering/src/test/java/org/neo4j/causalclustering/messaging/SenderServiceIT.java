@@ -45,10 +45,11 @@ import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
-import org.neo4j.causalclustering.protocol.handshake.SupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
@@ -69,9 +70,9 @@ public class SenderServiceIT
 {
     private final LogProvider logProvider = NullLogProvider.getInstance();
 
-    private final SupportedProtocols<Protocol.ApplicationProtocol> supportedApplicationProtocol =
-            new SupportedProtocols<>( Protocol.ApplicationProtocolIdentifier.RAFT, emptyList() );
-    private final Collection<SupportedProtocols<Protocol.ModifierProtocol>> supportedModifierProtocols = emptyList();
+    private final ApplicationSupportedProtocols supportedApplicationProtocol =
+            new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, emptyList() );
+    private final Collection<ModifierSupportedProtocols> supportedModifierProtocols = emptyList();
 
     private final ApplicationProtocolRepository applicationProtocolRepository =
             new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedApplicationProtocol );
