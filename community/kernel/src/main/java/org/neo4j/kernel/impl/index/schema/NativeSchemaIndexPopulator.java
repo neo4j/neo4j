@@ -77,6 +77,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
 
     private byte[] failureBytes;
     private boolean dropped;
+    private boolean closed;
 
     NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
                                 IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
@@ -108,6 +109,9 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public synchronized void create() throws IOException
     {
+        assertNotDropped();
+        assertNotClosed();
+
         gbpTreeFileUtil.deleteFileIfPresent( storeFile );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
 
@@ -132,6 +136,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         finally
         {
             dropped = true;
+            closed = true;
         }
     }
 
@@ -214,6 +219,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         finally
         {
             closeTree();
+            closed = true;
         }
     }
 
@@ -244,6 +250,14 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         if ( dropped )
         {
             throw new IllegalStateException( "Populator has already been dropped." );
+        }
+    }
+
+    private void assertNotClosed()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "Populator has already been closed." );
         }
     }
 
