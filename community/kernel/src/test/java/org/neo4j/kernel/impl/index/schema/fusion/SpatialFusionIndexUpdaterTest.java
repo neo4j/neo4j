@@ -47,6 +47,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 public class SpatialFusionIndexUpdaterTest
 {
@@ -62,7 +65,9 @@ public class SpatialFusionIndexUpdaterTest
         SchemaIndexDescriptor descriptor = mock( SchemaIndexDescriptor.class );
         IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
 
-        for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
+        for ( CoordinateReferenceSystem crs : asList( WGS84,
+                                                      Cartesian,
+                                                      Cartesian_3D ) )
         {
             updaterMap.put( crs, mock( IndexUpdater.class ) );
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
@@ -106,23 +111,23 @@ public class SpatialFusionIndexUpdaterTest
     @Test
     public void processMustSelectCorrectForChangeSameCRS() throws Exception
     {
-        PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 );
-        PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0 );
-        verifyChangeWithCorrectUpdaterNotMixed( fusionIndexAccessorUpdater, updaterMap.get( CoordinateReferenceSystem.Cartesian ), from, to );
-        reset( updaterMap.get( CoordinateReferenceSystem.Cartesian ) );
-        verifyChangeWithCorrectUpdaterNotMixed( fusionIndexPopulatorUpdater, updaterMap.get( CoordinateReferenceSystem.Cartesian ), from, to );
+        PointValue from = Values.pointValue( Cartesian, 1.0, 1.0 );
+        PointValue to = Values.pointValue( Cartesian, 2.0, 2.0 );
+        verifyChangeWithCorrectUpdaterNotMixed( fusionIndexAccessorUpdater, updaterMap.get( Cartesian ), from, to );
+        reset( updaterMap.get( Cartesian ) );
+        verifyChangeWithCorrectUpdaterNotMixed( fusionIndexPopulatorUpdater, updaterMap.get( Cartesian ), from, to );
     }
 
     @Test
     public void processMustSelectCorrectForChangeCRS() throws Exception
     {
-        PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 );
-        PointValue to = Values.pointValue( CoordinateReferenceSystem.WGS84, 2.0, 2.0 );
-        verifyChangeWithCorrectUpdaterMixed( fusionIndexAccessorUpdater, updaterMap.get( CoordinateReferenceSystem.Cartesian ),
-                updaterMap.get( CoordinateReferenceSystem.WGS84 ), from, to );
+        PointValue from = Values.pointValue( Cartesian, 1.0, 1.0 );
+        PointValue to = Values.pointValue( WGS84, 2.0, 2.0 );
+        verifyChangeWithCorrectUpdaterMixed( fusionIndexAccessorUpdater, updaterMap.get( Cartesian ),
+                updaterMap.get( WGS84 ), from, to );
         reset( updaterMap.values().toArray() );
-        verifyChangeWithCorrectUpdaterMixed( fusionIndexPopulatorUpdater, updaterMap.get( CoordinateReferenceSystem.Cartesian ),
-                updaterMap.get( CoordinateReferenceSystem.WGS84 ), from, to );
+        verifyChangeWithCorrectUpdaterMixed( fusionIndexPopulatorUpdater, updaterMap.get( Cartesian ),
+                updaterMap.get( WGS84 ), from, to );
     }
 
     @Test
@@ -155,18 +160,18 @@ public class SpatialFusionIndexUpdaterTest
     public void closeMustThrowIfWGSThrow() throws Exception
     {
         populateUpdaters();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( CoordinateReferenceSystem.WGS84 ), fusionIndexAccessorUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( WGS84 ), fusionIndexAccessorUpdater );
         reset( updaterMap.values().toArray() );
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( CoordinateReferenceSystem.WGS84 ), fusionIndexPopulatorUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( WGS84 ), fusionIndexPopulatorUpdater );
     }
 
     @Test
     public void closeMustThrowIfCartesianThrow() throws Exception
     {
         populateUpdaters();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( CoordinateReferenceSystem.Cartesian ), fusionIndexAccessorUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( Cartesian ), fusionIndexAccessorUpdater );
         reset( updaterMap.values().toArray() );
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( CoordinateReferenceSystem.Cartesian ), fusionIndexPopulatorUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updaterMap.get( Cartesian ), fusionIndexPopulatorUpdater );
     }
 
     @Test
@@ -183,22 +188,22 @@ public class SpatialFusionIndexUpdaterTest
     public void closeMustCloseIfWGSThrow() throws Exception
     {
         populateUpdaters();
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( CoordinateReferenceSystem.WGS84 ), fusionIndexAccessorUpdater,
-                updaterMap.get( CoordinateReferenceSystem.Cartesian ) );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( WGS84 ), fusionIndexAccessorUpdater,
+                updaterMap.get( Cartesian ) );
         reset( updaterMap.values().toArray() );
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( CoordinateReferenceSystem.WGS84 ), fusionIndexPopulatorUpdater,
-                updaterMap.get( CoordinateReferenceSystem.Cartesian ) );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( WGS84 ), fusionIndexPopulatorUpdater,
+                updaterMap.get( Cartesian ) );
     }
 
     @Test
     public void closeMustCloseIfCartesianThrow() throws Exception
     {
         populateUpdaters();
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( CoordinateReferenceSystem.Cartesian ), fusionIndexAccessorUpdater,
-                updaterMap.get( CoordinateReferenceSystem.WGS84 ) );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( Cartesian ), fusionIndexAccessorUpdater,
+                updaterMap.get( WGS84 ) );
         reset( updaterMap.values().toArray() );
-        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( CoordinateReferenceSystem.Cartesian ), fusionIndexPopulatorUpdater,
-                updaterMap.get( CoordinateReferenceSystem.WGS84 ) );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updaterMap.get( Cartesian ), fusionIndexPopulatorUpdater,
+                updaterMap.get( WGS84 ) );
     }
 
     private void verifyAddWithCorrectUpdater( SpatialFusionIndexUpdater fusionIndexUpdater, IndexUpdater indexUpdater, Value... numberValues )
@@ -259,9 +264,11 @@ public class SpatialFusionIndexUpdaterTest
 
     private void populateUpdaters() throws IOException, IndexEntryConflictException
     {
-        fusionIndexPopulatorUpdater.process( add( Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ) ) );
-        fusionIndexPopulatorUpdater.process( add( Values.pointValue( CoordinateReferenceSystem.WGS84, 1.0, 1.0 ) ) );
-        fusionIndexAccessorUpdater.process( add( Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0 ) ) );
-        fusionIndexAccessorUpdater.process( add( Values.pointValue( CoordinateReferenceSystem.WGS84, 1.0, 1.0 ) ) );
+        fusionIndexPopulatorUpdater.process( add( Values.pointValue( Cartesian, 1.0, 1.0 ) ) );
+        fusionIndexPopulatorUpdater.process( add( Values.pointValue( WGS84, 1.0, 1.0 ) ) );
+        fusionIndexPopulatorUpdater.process( add( Values.pointValue( Cartesian_3D, 1.0, 1.0, 2.0 ) ) );
+        fusionIndexAccessorUpdater.process( add( Values.pointValue( Cartesian, 1.0, 1.0 ) ) );
+        fusionIndexAccessorUpdater.process( add( Values.pointValue( WGS84, 1.0, 1.0 ) ) );
+        fusionIndexAccessorUpdater.process( add( Values.pointValue( Cartesian_3D, 1.0, 1.0, 2.0 ) ) );
     }
 }
