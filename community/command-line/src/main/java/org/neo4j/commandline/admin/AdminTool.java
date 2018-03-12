@@ -35,7 +35,6 @@ public class AdminTool
 {
     public static final int STATUS_SUCCESS = 0;
     public static final int STATUS_ERROR = 1;
-    // These fields are mutable for in-process AdminTool testing purposes.
     public static final String NEO4J_HOME = System.getenv().getOrDefault( "NEO4J_HOME", "" );
     public static final String NEO4J_CONF = System.getenv().getOrDefault( "NEO4J_CONF", "" );
     public static final String NEO4J_DEBUG = System.getenv().getOrDefault( "NEO4J_DEBUG", "" );

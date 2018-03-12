@@ -423,7 +423,7 @@ public abstract class SwitchToSlave
             throw new BranchedDataException( msg );
         }
         msgLog.info( "Checksum for last committed tx ok with lastTxId=" +
-                myLastCommittedTx + " with checksum=" + myChecksum, Boolean.TRUE );
+                myLastCommittedTx + " with checksum=" + myChecksum );
     }
 
     private void copyStoreFromMasterIfNeeded( URI masterUri, URI me, CancellationRequest cancellationRequest )
