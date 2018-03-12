@@ -40,15 +40,14 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -67,8 +66,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 public class IndexCRUDIT
@@ -145,9 +144,9 @@ public class IndexCRUDIT
     private GraphDatabaseAPI db;
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
+            singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = Label.label( "MYLABEL" );
 
@@ -183,12 +182,12 @@ public class IndexCRUDIT
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getPopulator(
-                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
             ).thenReturn( writer );
         when( mockedIndexProvider.getOnlineAccessor(
-                    anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
+                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
             ) ).thenReturn( writer );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+        when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         return writer;
     }

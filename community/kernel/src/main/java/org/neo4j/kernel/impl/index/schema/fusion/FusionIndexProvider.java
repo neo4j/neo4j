@@ -30,8 +30,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -43,32 +43,32 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 
 /**
- * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by four physical
+ * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
  * indexes, the number, spatial, temporal native indexes, and the general purpose lucene index.
  */
-public class FusionSchemaIndexProvider extends SchemaIndexProvider
+public class FusionIndexProvider extends IndexProvider
 {
     interface Selector
     {
         <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
     }
 
-    private final SchemaIndexProvider numberProvider;
-    private final SchemaIndexProvider spatialProvider;
-    private final SchemaIndexProvider temporalProvider;
-    private final SchemaIndexProvider luceneProvider;
+    private final IndexProvider numberProvider;
+    private final IndexProvider spatialProvider;
+    private final IndexProvider temporalProvider;
+    private final IndexProvider luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider numberProvider,
-            SchemaIndexProvider spatialProvider,
-            SchemaIndexProvider temporalProvider,
-            SchemaIndexProvider luceneProvider,
-            Selector selector,
-            Descriptor descriptor,
-            int priority,
-            IndexDirectoryStructure.Factory directoryStructure,
-            FileSystemAbstraction fs )
+    public FusionIndexProvider( IndexProvider numberProvider,
+                                IndexProvider spatialProvider,
+                                IndexProvider temporalProvider,
+                                IndexProvider luceneProvider,
+                                Selector selector,
+                                Descriptor descriptor,
+                                int priority,
+                                IndexDirectoryStructure.Factory directoryStructure,
+                                FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
         this.numberProvider = numberProvider;
@@ -80,7 +80,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator(
                 numberProvider.getPopulator( indexId, descriptor, samplingConfig ),
@@ -90,7 +90,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
+    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new FusionIndexAccessor(
@@ -101,7 +101,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         writeFailure( "number", builder, numberProvider, indexId, descriptor );
@@ -116,7 +116,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, SchemaIndexProvider provider, long indexId, IndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
     {
         try
         {
@@ -132,7 +132,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
         InternalIndexState numberState = numberProvider.getInitialState( indexId, descriptor );
         InternalIndexState spatialState = spatialProvider.getInitialState( indexId, descriptor );
@@ -153,12 +153,12 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability numberCapability = numberProvider.getCapability( indexDescriptor );
-        IndexCapability spatialCapability = spatialProvider.getCapability( indexDescriptor );
-        IndexCapability temporalCapability = temporalProvider.getCapability( indexDescriptor );
-        IndexCapability luceneCapability = luceneProvider.getCapability( indexDescriptor );
+        IndexCapability numberCapability = numberProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability spatialCapability = spatialProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability temporalCapability = temporalProvider.getCapability( schemaIndexDescriptor );
+        IndexCapability luceneCapability = luceneProvider.getCapability( schemaIndexDescriptor );
         return new UnionIndexCapability( numberCapability, spatialCapability, temporalCapability, luceneCapability )
         {
             @Override

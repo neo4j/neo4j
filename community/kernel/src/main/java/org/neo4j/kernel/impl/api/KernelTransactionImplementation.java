@@ -63,7 +63,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -400,7 +400,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( hasTxStateWithChanges() )
         {
-            for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
+            for ( SchemaIndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 // TODO logically, which statement should this operation be performed on?
                 constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );

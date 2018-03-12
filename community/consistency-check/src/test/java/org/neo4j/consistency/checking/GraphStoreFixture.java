@@ -52,7 +52,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -93,7 +93,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -188,7 +188,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            SchemaIndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
@@ -211,13 +211,13 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return labelScanStore;
     }
 
-    private SchemaIndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
-            Config config, LogProvider logProvider, Monitors monitors )
+    private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
+                                            Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
                 pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY, monitors ) );
-        return loadSchemaIndexProviders( extensions );
+        return loadIndexProviders( extensions );
     }
 
     public File directory()

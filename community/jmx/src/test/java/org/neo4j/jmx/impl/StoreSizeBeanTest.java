@@ -36,16 +36,16 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,8 +82,8 @@ public class StoreSizeBeanTest
     private final File storeDir = new File( "" );
     private final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build();
     private final ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
-    private final SchemaIndexProvider schemaIndexProvider = mockedSchemaIndexProvider( "providah1" );
-    private final SchemaIndexProvider schemaIndexProvider2 = mockedSchemaIndexProvider( "providah" );
+    private final IndexProvider indexProvider = mockedIndexProvider( "providah1" );
+    private final IndexProvider indexProvider2 = mockedIndexProvider( "providah" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
@@ -98,8 +98,8 @@ public class StoreSizeBeanTest
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( schemaIndexProvider,
-                Collections.singleton( schemaIndexProvider2 ) );
+        IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( indexProvider,
+                Collections.singleton( indexProvider2 ) );
 
         // Setup all dependencies
         Dependencies dependencies = new Dependencies();
@@ -107,7 +107,7 @@ public class StoreSizeBeanTest
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( logFiles );
         dependencies.satisfyDependency( explicitIndexProviderLookup );
-        dependencies.satisfyDependency( schemaIndexProviderMap );
+        dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
@@ -122,9 +122,9 @@ public class StoreSizeBeanTest
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
     }
 
-    private SchemaIndexProvider mockedSchemaIndexProvider( String name )
+    private IndexProvider mockedIndexProvider( String name )
     {
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( name, "1" ) );
         return provider;
     }
@@ -261,14 +261,14 @@ public class StoreSizeBeanTest
             createFileOfSize( schemaIndex, 2 );
             IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
             when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
-            when( schemaIndexProvider.directoryStructure() ).thenReturn( directoryStructure );
+            when( indexProvider.directoryStructure() ).thenReturn( directoryStructure );
         }
         {
             File schemaIndex = new File( storeDir, "schemaIndex2" );
             createFileOfSize( schemaIndex, 3 );
             IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
             when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
-            when( schemaIndexProvider2.directoryStructure() ).thenReturn( directoryStructure );
+            when( indexProvider2.directoryStructure() ).thenReturn( directoryStructure );
         }
 
         // Label scan store

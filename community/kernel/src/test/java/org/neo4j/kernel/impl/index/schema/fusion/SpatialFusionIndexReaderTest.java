@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -62,7 +62,8 @@ public class SpatialFusionIndexReaderTest
         readerMap = new HashMap<>();
         readerMap.put( CoordinateReferenceSystem.WGS84, mock( IndexReader.class ) );
         readerMap.put( CoordinateReferenceSystem.Cartesian, mock( IndexReader.class ) );
-        fusionIndexReader = new SpatialFusionIndexReader( readerMap, IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+        fusionIndexReader = new SpatialFusionIndexReader( readerMap, SchemaIndexDescriptorFactory
+                .forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     @Test

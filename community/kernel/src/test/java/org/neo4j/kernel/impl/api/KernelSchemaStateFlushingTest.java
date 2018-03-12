@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -85,7 +85,7 @@ public class KernelSchemaStateFlushingTest
     @Test
     public void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
-        IndexDescriptor descriptor = createIndex();
+        SchemaIndexDescriptor descriptor = createIndex();
 
         awaitIndexOnline( descriptor, "test" );
 
@@ -155,19 +155,19 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private IndexDescriptor createIndex() throws KernelException
+    private SchemaIndexDescriptor createIndex() throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate(
+            SchemaIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
             transaction.success();
             return descriptor;
         }
     }
 
-    private void dropIndex( IndexDescriptor descriptor ) throws KernelException
+    private void dropIndex( SchemaIndexDescriptor descriptor ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
@@ -177,7 +177,7 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private void awaitIndexOnline( IndexDescriptor descriptor, String keyForProbing )
+    private void awaitIndexOnline( SchemaIndexDescriptor descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );

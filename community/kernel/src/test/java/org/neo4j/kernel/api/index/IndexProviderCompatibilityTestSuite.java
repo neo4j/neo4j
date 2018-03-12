@@ -34,7 +34,7 @@ import java.util.List;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
@@ -62,7 +62,7 @@ import org.neo4j.values.storable.Values;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+    protected abstract IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
 
     public abstract boolean supportsSpatial();
 
@@ -75,8 +75,8 @@ public abstract class IndexProviderCompatibilityTestSuite
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
-        protected SchemaIndexProvider indexProvider;
-        protected IndexDescriptor descriptor;
+        protected IndexProvider indexProvider;
+        protected SchemaIndexDescriptor descriptor;
         final IndexProviderCompatibilityTestSuite testSuite;
         final List<NodeAndValue> valueSet1;
         final List<NodeAndValue> valueSet2;
@@ -90,7 +90,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
         }
 
-        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+        public Compatibility( IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;

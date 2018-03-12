@@ -36,12 +36,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
@@ -164,23 +164,23 @@ public class NonUniqueIndexTest
     {
         FileSystemAbstraction fs = resources.fileSystem();
         File storeDir = resources.directory().graphDbDir();
-        SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
+        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;
         PageCache pageCache = resources.pageCache();
         Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
-        SchemaIndexProvider indexProvider;
+        IndexProvider indexProvider;
         if ( useFusionIndex )
         {
-            indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+            indexProvider = NativeLuceneFusionIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
         }
         else
         {
-            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
+            indexProvider = LuceneIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
         }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
-                IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
+                SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
               IndexReader reader = accessor.newReader() )
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );

@@ -30,14 +30,14 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class IndexDescriptor implements LabelSchemaSupplier
+public class SchemaIndexDescriptor implements LabelSchemaSupplier
 {
     public enum Type
     {
@@ -45,12 +45,12 @@ public class IndexDescriptor implements LabelSchemaSupplier
         UNIQUE
     }
 
-    public enum Filter implements Predicate<IndexDescriptor>
+    public enum Filter implements Predicate<SchemaIndexDescriptor>
     {
         GENERAL
                 {
                     @Override
-                    public boolean test( IndexDescriptor index )
+                    public boolean test( SchemaIndexDescriptor index )
                     {
                         return index.type == Type.GENERAL;
                     }
@@ -58,7 +58,7 @@ public class IndexDescriptor implements LabelSchemaSupplier
         UNIQUE
                 {
                     @Override
-                    public boolean test( IndexDescriptor index )
+                    public boolean test( SchemaIndexDescriptor index )
                     {
                         return index.type == Type.UNIQUE;
                     }
@@ -66,7 +66,7 @@ public class IndexDescriptor implements LabelSchemaSupplier
         ANY
                 {
                     @Override
-                    public boolean test( IndexDescriptor index )
+                    public boolean test( SchemaIndexDescriptor index )
                     {
                         return true;
                     }
@@ -75,13 +75,13 @@ public class IndexDescriptor implements LabelSchemaSupplier
 
     public interface Supplier
     {
-        IndexDescriptor getIndexDescriptor();
+        SchemaIndexDescriptor getIndexDescriptor();
     }
 
     private final LabelSchemaDescriptor schema;
-    private final IndexDescriptor.Type type;
+    private final SchemaIndexDescriptor.Type type;
 
-    public IndexDescriptor( LabelSchemaDescriptor schema, Type type )
+    public SchemaIndexDescriptor( LabelSchemaDescriptor schema, Type type )
     {
         this.schema = schema;
         this.type = type;
@@ -126,9 +126,9 @@ public class IndexDescriptor implements LabelSchemaSupplier
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof IndexDescriptor )
+        if ( o instanceof SchemaIndexDescriptor )
         {
-            IndexDescriptor that = (IndexDescriptor)o;
+            SchemaIndexDescriptor that = (SchemaIndexDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );
         }
         return false;
@@ -153,9 +153,9 @@ public class IndexDescriptor implements LabelSchemaSupplier
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<IndexDescriptor> sortByType( Iterator<IndexDescriptor> indexes )
+    public static Iterator<SchemaIndexDescriptor> sortByType( Iterator<SchemaIndexDescriptor> indexes )
     {
-        List<IndexDescriptor> materialized = Iterators.asList( indexes );
+        List<SchemaIndexDescriptor> materialized = Iterators.asList( indexes );
         return Iterators.concat(
                 Iterators.filter( GENERAL, materialized.iterator() ),
                 Iterators.filter( UNIQUE, materialized.iterator() ) );

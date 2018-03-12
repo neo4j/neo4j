@@ -30,8 +30,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 
 import static org.neo4j.helpers.Format.duration;
@@ -44,14 +44,14 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaV
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final GBPTreeFileUtil gbpTreeFileUtil;
-    final IndexDescriptor descriptor;
+    final SchemaIndexDescriptor descriptor;
     private final long indexId;
-    private final SchemaIndexProvider.Monitor monitor;
+    private final IndexProvider.Monitor monitor;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
+                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;

@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -44,7 +44,7 @@ public class IndexAccessors implements Closeable
     private final List<IndexRule> onlineIndexRules = new ArrayList<>();
     private final List<IndexRule> notOnlineIndexRules = new ArrayList<>();
 
-    public IndexAccessors( SchemaIndexProviderMap providers,
+    public IndexAccessors( IndexProviderMap providers,
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
@@ -88,7 +88,7 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private SchemaIndexProvider provider( SchemaIndexProviderMap providers, IndexRule indexRule )
+    private IndexProvider provider( IndexProviderMap providers, IndexRule indexRule )
     {
         return providers.apply( indexRule.getProviderDescriptor() );
     }

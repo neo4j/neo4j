@@ -50,13 +50,13 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -83,8 +83,8 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 public class BuiltInProceduresTest
 {
-    private final List<IndexDescriptor> indexes = new LinkedList<>();
-    private final List<IndexDescriptor> uniqueIndexes = new LinkedList<>();
+    private final List<SchemaIndexDescriptor> indexes = new LinkedList<>();
+    private final List<SchemaIndexDescriptor> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
@@ -114,7 +114,7 @@ public class BuiltInProceduresTest
                         getIndexProviderDescriptorMap( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR ) ) ) );
     }
 
-    private Map<String,String> getIndexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> getIndexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
     {
         return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
     }
@@ -413,7 +413,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId, propId );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId, propId );
         indexes.add( index );
     }
 
@@ -422,7 +422,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -517,8 +517,8 @@ public class BuiltInProceduresTest
         when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( readOperations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
-        when( readOperations.indexGetProviderDescriptor( any( IndexDescriptor.class ) ) )
+        when( readOperations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+        when( readOperations.indexGetProviderDescriptor( any( SchemaIndexDescriptor.class ) ) )
                 .thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 

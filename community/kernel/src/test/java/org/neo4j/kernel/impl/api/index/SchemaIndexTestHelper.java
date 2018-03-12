@@ -28,8 +28,8 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -44,23 +44,23 @@ public class SchemaIndexTestHelper
     {
     }
 
-    public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
-            String key, final SchemaIndexProvider provider )
+    public static KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies> singleInstanceIndexProviderFactory(
+            String key, final IndexProvider provider )
     {
-        return new SingleInstanceSchemaIndexProviderFactory( key, provider );
+        return new SingleInstanceIndexProviderFactory( key, provider );
     }
 
-    public interface SingleInstanceSchemaIndexProviderFactoryDependencies
+    public interface SingleInstanceIndexProviderFactoryDependencies
     {
         Config config();
     }
 
-    private static class SingleInstanceSchemaIndexProviderFactory
-        extends KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies>
+    private static class SingleInstanceIndexProviderFactory
+        extends KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies>
     {
-        private final SchemaIndexProvider provider;
+        private final IndexProvider provider;
 
-        private SingleInstanceSchemaIndexProviderFactory( String key, SchemaIndexProvider provider )
+        private SingleInstanceIndexProviderFactory( String key, IndexProvider provider )
         {
             super( key );
             this.provider = provider;
@@ -68,7 +68,7 @@ public class SchemaIndexTestHelper
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                SingleInstanceSchemaIndexProviderFactoryDependencies dependencies )
+                SingleInstanceIndexProviderFactoryDependencies dependencies )
         {
             return provider;
         }
@@ -109,7 +109,7 @@ public class SchemaIndexTestHelper
         }
     }
 
-    public static void awaitIndexOnline( ReadOperations readOperations, IndexDescriptor index )
+    public static void awaitIndexOnline( ReadOperations readOperations, SchemaIndexDescriptor index )
             throws IndexNotFoundKernelException
     {
         long start = System.currentTimeMillis();

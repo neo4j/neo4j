@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
@@ -49,11 +49,11 @@ class SpatialFusionIndexAccessor implements IndexAccessor
 {
     private final Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap;
     private final long indexId;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final SpatialCRSSchemaIndex.Supplier indexFactory;
 
-    SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor,
+    SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, SpatialCRSSchemaIndex.Supplier indexFactory ) throws IOException
     {
         this.indexMap = indexMap;

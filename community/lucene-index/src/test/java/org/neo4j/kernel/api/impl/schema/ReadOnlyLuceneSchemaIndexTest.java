@@ -31,7 +31,7 @@ import java.io.IOException;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.rule.TestDirectory;
@@ -58,7 +58,7 @@ public class ReadOnlyLuceneSchemaIndexTest
                 fileSystemRule.get(), testDirectory.directory(), false );
         Config config = Config.defaults();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, IndexDescriptorFactory.forLabel( 0, 0 ),
+        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, SchemaIndexDescriptorFactory.forLabel( 0, 0 ),
                 samplingConfig, new ReadOnlyIndexPartitionFactory() );
     }
 

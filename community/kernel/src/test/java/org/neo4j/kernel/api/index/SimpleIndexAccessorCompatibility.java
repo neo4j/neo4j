@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
@@ -43,14 +43,14 @@ import static org.neo4j.internal.kernel.api.IndexQuery.stringSuffix;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public SimpleIndexAccessorCompatibility( IndexProviderCompatibilityTestSuite testSuite,
-            IndexDescriptor descriptor )
+            SchemaIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -145,7 +145,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -264,7 +264,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         @Test

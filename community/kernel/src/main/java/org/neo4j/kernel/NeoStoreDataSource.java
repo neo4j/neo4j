@@ -42,7 +42,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -126,8 +126,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -272,7 +271,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private Dependencies dependencies;
     private LifeSupport life;
-    private SchemaIndexProviderMap schemaIndexProviderMap;
+    private IndexProviderMap indexProviderMap;
     private File storeDir;
     private boolean readOnly;
     private final IdController idController;
@@ -386,15 +385,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         life.add( recoveryCleanupWorkCollector );
 
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection =
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection =
                 new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider =
-                dependencyResolver.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
+        IndexProvider defaultIndexProvider =
+                dependencyResolver.resolveDependency( IndexProvider.class, indexProviderSelection );
 
-        schemaIndexProviderMap =
-                new DefaultSchemaIndexProviderMap( defaultIndexProvider,
+        indexProviderMap =
+                new DefaultIndexProviderMap( defaultIndexProvider,
                         indexProviderSelection.lowerPrioritizedCandidates() );
-        dependencies.satisfyDependency( schemaIndexProviderMap );
+        dependencies.satisfyDependency( indexProviderMap );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );
@@ -563,7 +562,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 fs,
                 config,
                 logService,
-                schemaIndexProviderMap,
+                indexProviderMap,
                 indexProviders,
                 pageCache,
                 format, tailScanner ).migrate( storeDir );
@@ -579,7 +578,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, schemaIndexProviderMap, indexingServiceMonitor, databaseHealth,
+                        tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
                         explicitIndexProviderLookup, indexConfigStore,
                         explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors,
                         recoveryCleanupWorkCollector,

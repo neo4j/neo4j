@@ -34,7 +34,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -75,7 +75,7 @@ public class SpatialFusionIndexAccessorTest
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
         }
 
-        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( IndexDescriptor.class ), null, indexFactory );
+        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( SchemaIndexDescriptor.class ), null, indexFactory );
     }
 
     @Test

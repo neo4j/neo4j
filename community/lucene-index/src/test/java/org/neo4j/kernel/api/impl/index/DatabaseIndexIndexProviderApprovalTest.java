@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProviderApprovalTest;
+import org.neo4j.kernel.api.index.IndexProviderApprovalTest;
 
-public class DatabaseIndexIndexProviderApprovalTest extends SchemaIndexProviderApprovalTest
+public class DatabaseIndexIndexProviderApprovalTest extends IndexProviderApprovalTest
 {
     public DatabaseIndexIndexProviderApprovalTest( TestValue value )
     {

@@ -63,10 +63,10 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -128,7 +128,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
@@ -140,8 +140,8 @@ public class BatchInsertTest
 {
     private final int denseNodeThreshold;
     // This is the assumed internal index descriptor based on knowledge of what ids get assigned
-    private static final IndexDescriptor internalIndex = IndexDescriptorFactory.forLabel( 0, 0 );
-    private static final IndexDescriptor internalUniqueIndex = IndexDescriptorFactory.uniqueForLabel( 0, 0 );
+    private static final SchemaIndexDescriptor internalIndex = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+    private static final SchemaIndexDescriptor internalUniqueIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
     @Parameterized.Parameters
     public static Collection<Integer> data()
@@ -236,7 +236,7 @@ public class BatchInsertTest
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration() );
     }
 
-    private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
+    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
         return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), singletonList( provider ) );
     }
@@ -908,14 +908,14 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
@@ -927,7 +927,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(),
                 Values.of( "Jakewins" ) ) ) ) );
@@ -943,14 +943,14 @@ public class BatchInsertTest
     {
         // GIVEN
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
@@ -962,7 +962,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
@@ -979,14 +979,14 @@ public class BatchInsertTest
         long jakewins = dbWithIndexAndSingleIndexedNode();
 
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -996,7 +996,7 @@ public class BatchInsertTest
         // THEN
         verify( provider ).init();
         verify( provider ).start();
-        verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
         verify( populator ).add( argThat( matchesCollection(
                 add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
@@ -1457,14 +1457,14 @@ public class BatchInsertTest
     private long dbWithIndexAndSingleIndexedNode() throws Exception
     {
         IndexPopulator populator = mock( IndexPopulator.class );
-        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        IndexProvider provider = mock( IndexProvider.class );
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
 
-        BatchInserter inserter = newBatchInserterWithSchemaIndexProvider(
-                singleInstanceSchemaIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
+        BatchInserter inserter = newBatchInserterWithIndexProvider(
+                singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );

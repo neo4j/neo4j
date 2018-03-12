@@ -39,8 +39,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
@@ -50,7 +50,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implements SpatialCRSSchemaIndex.Supplier
+public class SpatialFusionIndexProvider extends IndexProvider implements SpatialCRSSchemaIndex.Supplier
 {
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -66,9 +66,10 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
-    public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
-            Config config )
+    public SpatialFusionIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+                                       IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
+                                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
+                                       Config config )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
@@ -97,7 +98,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
@@ -107,7 +108,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new SpatialFusionIndexAccessor( indexesFor( indexId ), indexId, descriptor, samplingConfig, this );
     }
@@ -118,7 +119,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -141,7 +142,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
         // loop through all files, check if file exists, then check state
         // if any have failed, return failed, else if any are populating return populating, else online
@@ -173,7 +174,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
         // Spatial indexes are not ordered, nor do they return complete values
         return IndexCapability.NO_CAPABILITY;
@@ -188,7 +189,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public SpatialCRSSchemaIndex get( IndexDescriptor descriptor,
+    public SpatialCRSSchemaIndex get( SchemaIndexDescriptor descriptor,
             Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
         return indexMap.computeIfAbsent( crs,
@@ -201,7 +202,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
      * provider/{indexId}/spatial/{crs-tableId}-{crs-code}/index-{indexId}
      * If a directory is found for a crs and it is missing the index file, the index will be marked as failed.
      */
-    private void findAndCreateSpatialIndex( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, IndexDescriptor descriptor )
+    private void findAndCreateSpatialIndex( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId, SchemaIndexDescriptor descriptor )
     {
         File directoryForIndex = this.directoryStructure().directoryForIndex( indexId );
         if ( directoryForIndex != null )

@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -95,9 +95,9 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-            SchemaIndexProvider schemaIndexProvider, DatabaseHealth databaseHealth, File storeDirectory,
-            Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
-            Monitors monitors )
+                                     IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+                                     Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+                                     Monitors monitors )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
@@ -117,7 +117,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
-                schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
+                indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
@@ -140,7 +140,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private File storeDirectory = new File( "/graph.db" );
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
-        private SchemaIndexProvider schemaIndexProvider = SchemaIndexProvider.NO_INDEX_PROVIDER;
+        private IndexProvider indexProvider = IndexProvider.NO_INDEX_PROVIDER;
         private Monitors monitors = new Monitors();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )
@@ -156,9 +156,9 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder indexProvider( SchemaIndexProvider schemaIndexProvider )
+        public Builder indexProvider( IndexProvider indexProvider )
         {
-            this.schemaIndexProvider = schemaIndexProvider;
+            this.indexProvider = indexProvider;
             return this;
         }
 
@@ -184,7 +184,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, schemaIndexProvider, databaseHealth, storeDirectory,
+            return get( fs, pageCache, indexProvider, databaseHealth, storeDirectory,
                     transactionApplierTransformer, monitors );
         }
     }
@@ -198,7 +198,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 LogProvider logProvider, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                LockService lockService, SchemaIndexProvider indexProvider,
+                LockService lockService, IndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
                 ExplicitIndexProviderLookup explicitIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
@@ -208,7 +208,7 @@ public class RecordStorageEngineRule extends ExternalResource
         {
             super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, new DefaultSchemaIndexProviderMap( indexProvider ),
+                    lockService, new DefaultIndexProviderMap( indexProvider ),
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
                     idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;

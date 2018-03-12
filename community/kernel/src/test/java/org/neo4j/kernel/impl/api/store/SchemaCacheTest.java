@@ -31,8 +31,8 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 
 public class SchemaCacheTest
@@ -201,7 +201,7 @@ public class SchemaCacheTest
 
         // When
         LabelSchemaDescriptor schema = forLabel( 1, 3 );
-        IndexDescriptor descriptor = cache.indexDescriptor( schema );
+        SchemaIndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
@@ -214,10 +214,10 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        SchemaIndexDescriptor schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
-        assertNull( indexDescriptor );
+        assertNull( schemaIndexDescriptor );
     }
 
     @Test
@@ -339,7 +339,7 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+        return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -49,15 +49,15 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>, IOException> implements IndexAccessor
 {
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
     TemporalIndexAccessor( long indexId,
-                           IndexDescriptor descriptor,
+                           SchemaIndexDescriptor descriptor,
                            IndexSamplingConfig samplingConfig,
                            PageCache pageCache,
                            FileSystemAbstraction fs,
                            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                           SchemaIndexProvider.Monitor monitor,
+                           IndexProvider.Monitor monitor,
                            TemporalIndexFiles temporalIndexFiles ) throws IOException
     {
         super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig, temporalIndexFiles ) );
@@ -172,15 +172,15 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     static class PartAccessor<KEY extends NativeSchemaKey> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
     {
         private final Layout<KEY,NativeSchemaValue> layout;
-        private final IndexDescriptor descriptor;
+        private final SchemaIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
 
         PartAccessor( PageCache pageCache,
                       FileSystemAbstraction fs,
                       TemporalIndexFiles.FileLayout<KEY> fileLayout,
                       RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                      SchemaIndexProvider.Monitor monitor,
-                      IndexDescriptor descriptor,
+                      IndexProvider.Monitor monitor,
+                      SchemaIndexDescriptor descriptor,
                       long indexId,
                       IndexSamplingConfig samplingConfig ) throws IOException
         {
@@ -202,8 +202,8 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-        private final SchemaIndexProvider.Monitor monitor;
-        private final IndexDescriptor descriptor;
+        private final IndexProvider.Monitor monitor;
+        private final SchemaIndexDescriptor descriptor;
         private final long indexId;
         private final IndexSamplingConfig samplingConfig;
         private final TemporalIndexFiles temporalIndexFiles;
@@ -211,8 +211,8 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         PartFactory( PageCache pageCache,
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                     SchemaIndexProvider.Monitor monitor,
-                     IndexDescriptor descriptor,
+                     IndexProvider.Monitor monitor,
+                     SchemaIndexDescriptor descriptor,
                      long indexId,
                      IndexSamplingConfig samplingConfig,
                      TemporalIndexFiles temporalIndexFiles )

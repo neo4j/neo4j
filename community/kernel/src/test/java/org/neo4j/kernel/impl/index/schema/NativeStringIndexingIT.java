@@ -30,8 +30,8 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IGNORE;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -60,7 +60,7 @@ public class NativeStringIndexingIT
     public void shouldHandleKeySizesCloseToTheSizeLimit() throws IOException, IndexEntryConflictException, IndexNotApplicableKernelException
     {
         // given
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 2 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
         try ( StringSchemaIndexAccessor accessor = new StringSchemaIndexAccessor( storage.pageCache(), storage.fileSystem(),
                 storage.directory().file( "index" ), new StringLayoutNonUnique(), IGNORE, EMPTY, descriptor, 0,
                 new IndexSamplingConfig( Config.defaults() ) ) )

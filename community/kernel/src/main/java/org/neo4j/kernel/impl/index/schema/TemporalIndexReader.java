@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -44,9 +44,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 
 class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,IOException> implements IndexReader
 {
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
-    TemporalIndexReader( IndexDescriptor descriptor, TemporalIndexAccessor accessor )
+    TemporalIndexReader( SchemaIndexDescriptor descriptor, TemporalIndexAccessor accessor )
     {
         super( new PartFactory( accessor ) );
         this.descriptor = descriptor;

@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class TestSchemaIndexProviderDescriptor
+import org.neo4j.kernel.api.index.IndexProvider;
+
+public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
 {
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" );
+    @Override
+    IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
-    private TestSchemaIndexProviderDescriptor()
-    {
-    }
+    IndexProvider getDefaultProvider();
+
+    void accept( Consumer<IndexProvider> visitor );
 }

@@ -28,7 +28,7 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
@@ -44,14 +44,15 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     @Override
     NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor,
+                schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Test
     public void respectIndexOrder() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
         processAll( someUpdates );
         Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
 
@@ -60,7 +61,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberSchemaIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {

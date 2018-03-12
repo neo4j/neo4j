@@ -34,8 +34,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -57,14 +57,14 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
     public SimpleIndexPopulatorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -271,7 +271,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100 ) );
         }
 
         @Test
@@ -310,7 +310,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 ) );
         }
 
         /**

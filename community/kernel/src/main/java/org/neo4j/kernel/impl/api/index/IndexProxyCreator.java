@@ -25,8 +25,8 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
 
@@ -39,13 +39,13 @@ class IndexProxyCreator
 {
     private final IndexSamplingConfig samplingConfig;
     private final IndexStoreView storeView;
-    private final SchemaIndexProviderMap providerMap;
+    private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
 
     IndexProxyCreator( IndexSamplingConfig samplingConfig,
             IndexStoreView storeView,
-            SchemaIndexProviderMap providerMap,
+            IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
             LogProvider logProvider )
     {
@@ -57,8 +57,8 @@ class IndexProxyCreator
     }
 
     IndexProxy createPopulatingIndexProxy( final long ruleId,
-            final IndexDescriptor descriptor,
-            final SchemaIndexProvider.Descriptor providerDescriptor,
+            final SchemaIndexDescriptor descriptor,
+            final IndexProvider.Descriptor providerDescriptor,
             final boolean flipToTentative,
             final IndexingService.Monitor monitor,
             final IndexPopulationJob populationJob )
@@ -103,8 +103,8 @@ class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    IndexProxy createRecoveringIndexProxy( long ruleId, IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor )
+    IndexProxy createRecoveringIndexProxy( long ruleId, SchemaIndexDescriptor descriptor,
+            IndexProvider.Descriptor providerDescriptor )
     {
         IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
         IndexProxy proxy = new RecoveringIndexProxy( indexMeta );
@@ -112,8 +112,8 @@ class IndexProxyCreator
     }
 
     IndexProxy createOnlineIndexProxy( long ruleId,
-            IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor )
+            SchemaIndexDescriptor descriptor,
+            IndexProvider.Descriptor providerDescriptor )
     {
         try
         {
@@ -135,8 +135,8 @@ class IndexProxyCreator
     }
 
     IndexProxy createFailedIndexProxy( long ruleId,
-            IndexDescriptor descriptor,
-            SchemaIndexProvider.Descriptor providerDescriptor,
+            SchemaIndexDescriptor descriptor,
+            IndexProvider.Descriptor providerDescriptor,
             IndexPopulationFailure populationFailure )
     {
         IndexPopulator indexPopulator = populatorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
@@ -154,31 +154,31 @@ class IndexProxyCreator
         return proxy;
     }
 
-    private String indexUserDescription( final IndexDescriptor descriptor,
-                                         final SchemaIndexProvider.Descriptor providerDescriptor )
+    private String indexUserDescription( final SchemaIndexDescriptor descriptor,
+                                         final IndexProvider.Descriptor providerDescriptor )
     {
         return format( "%s [provider: %s]",
                 descriptor.schema().userDescription( tokenNameLookup ), providerDescriptor.toString() );
     }
 
-    private IndexPopulator populatorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor, long ruleId,
-                                                  IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    private IndexPopulator populatorFromProvider( IndexProvider.Descriptor providerDescriptor, long ruleId,
+                                                  SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
+        IndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getPopulator( ruleId, descriptor, samplingConfig );
     }
 
-    private IndexAccessor onlineAccessorFromProvider( SchemaIndexProvider.Descriptor providerDescriptor,
-                                                      long ruleId, IndexDescriptor descriptor,
+    private IndexAccessor onlineAccessorFromProvider( IndexProvider.Descriptor providerDescriptor,
+                                                      long ruleId, SchemaIndexDescriptor descriptor,
                                                       IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SchemaIndexProvider indexProvider = providerMap.apply( providerDescriptor );
+        IndexProvider indexProvider = providerMap.apply( providerDescriptor );
         return indexProvider.getOnlineAccessor( ruleId, descriptor, samplingConfig );
     }
 
-    private IndexMeta indexMetaFromProvider( long ruleId, SchemaIndexProvider.Descriptor providerDescriptor, IndexDescriptor indexDescriptor )
+    private IndexMeta indexMetaFromProvider( long ruleId, IndexProvider.Descriptor providerDescriptor, SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( indexDescriptor );
-        return new IndexMeta( ruleId, indexDescriptor, providerDescriptor, indexCapability );
+        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( schemaIndexDescriptor );
+        return new IndexMeta( ruleId, schemaIndexDescriptor, providerDescriptor, indexCapability );
     }
 }

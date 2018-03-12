@@ -23,8 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -41,7 +41,7 @@ public class LuceneSchemaIndexBuilderTest
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
+    private final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
 
     @Test
     public void readOnlyIndexCreation() throws Exception

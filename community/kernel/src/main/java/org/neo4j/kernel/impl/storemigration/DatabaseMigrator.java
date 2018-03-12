@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -50,7 +50,7 @@ public class DatabaseMigrator
     private final FileSystemAbstraction fs;
     private final Config config;
     private final LogService logService;
-    private final SchemaIndexProviderMap schemaIndexProviderMap;
+    private final IndexProviderMap indexProviderMap;
     private final Map<String,IndexImplementation> indexProviders;
     private final PageCache pageCache;
     private final RecordFormats format;
@@ -58,7 +58,7 @@ public class DatabaseMigrator
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
-            Config config, LogService logService, SchemaIndexProviderMap schemaIndexProviderMap,
+            Config config, LogService logService, IndexProviderMap indexProviderMap,
             Map<String,IndexImplementation> indexProviders, PageCache pageCache,
             RecordFormats format, LogTailScanner tailScanner )
     {
@@ -66,7 +66,7 @@ public class DatabaseMigrator
         this.fs = fs;
         this.config = config;
         this.logService = logService;
-        this.schemaIndexProviderMap = schemaIndexProviderMap;
+        this.indexProviderMap = indexProviderMap;
         this.indexProviders = indexProviders;
         this.pageCache = pageCache;
         this.format = format;
@@ -91,7 +91,7 @@ public class DatabaseMigrator
                 new NativeLabelScanStoreMigrator( fs, pageCache, config );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
-        schemaIndexProviderMap.accept(
+        indexProviderMap.accept(
                 provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
         storeUpgrader.addParticipant( explicitIndexMigrator );
         storeUpgrader.addParticipant( storeMigrator );

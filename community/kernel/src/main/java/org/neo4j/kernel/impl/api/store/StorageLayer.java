@@ -45,9 +45,9 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -184,31 +184,31 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<SchemaIndexDescriptor> indexesGetAll()
     {
         return toIndexDescriptors( schemaCache.indexRules() );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
@@ -219,7 +219,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index )
+    public long indexGetCommittedId( SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
@@ -231,19 +231,19 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
     }
 
     @Override
-    public IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexCapability indexGetCapability( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getIndexCapability();
     }
@@ -588,7 +588,7 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( IndexDescriptor index )
+    private IndexRule indexRule( SchemaIndexDescriptor index )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
@@ -690,7 +690,7 @@ public class StorageLayer implements StoreReadLayer
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
+    private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
         return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }

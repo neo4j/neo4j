@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -70,7 +70,7 @@ public class FusionIndexReaderTest
         luceneReader = mock( IndexReader.class );
         allReaders = new IndexReader[]{nativeReader, spatialReader, temporalReader, luceneReader};
         fusionIndexReader = new FusionIndexReader( nativeReader, spatialReader, temporalReader, luceneReader, new FusionSelector(),
-                IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+                SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     /* close */

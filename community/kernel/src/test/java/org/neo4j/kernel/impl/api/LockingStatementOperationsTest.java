@@ -37,8 +37,8 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -207,11 +207,11 @@ public class LockingStatementOperationsTest
     {
         // given
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaWriteOps.indexCreate( state, descriptor ) ).thenReturn( index );
 
         // when
-        IndexDescriptor result = lockingOps.indexCreate( state, descriptor );
+        SchemaIndexDescriptor result = lockingOps.indexCreate( state, descriptor );
 
         // then
         assertSame( index, result );
@@ -223,7 +223,7 @@ public class LockingStatementOperationsTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
 
         // when
         lockingOps.indexDrop( state, index );
@@ -238,13 +238,13 @@ public class LockingStatementOperationsTest
     {
         // given
         int labelId = 1;
-        IndexDescriptor labelDescriptor = IndexDescriptorFactory.forLabel( labelId, 2, 3 );
+        SchemaIndexDescriptor labelDescriptor = SchemaIndexDescriptorFactory.forLabel( labelId, 2, 3 );
 
-        Iterator<IndexDescriptor> rules = Iterators.iterator( labelDescriptor );
+        Iterator<SchemaIndexDescriptor> rules = Iterators.iterator( labelDescriptor );
         when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
 
         // when
-        Iterator<IndexDescriptor> result = lockingOps.indexesGetAll( state );
+        Iterator<SchemaIndexDescriptor> result = lockingOps.indexesGetAll( state );
         Iterators.count( result );
 
         // then

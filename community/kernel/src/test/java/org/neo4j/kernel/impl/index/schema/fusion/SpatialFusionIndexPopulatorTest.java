@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -62,7 +62,7 @@ public class SpatialFusionIndexPopulatorTest
     public void setup() throws Exception
     {
         SpatialCRSSchemaIndex.Supplier indexSupplier = mock( SpatialCRSSchemaIndex.Supplier.class );
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 42, 1337 );
 
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {

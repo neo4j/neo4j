@@ -27,7 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
@@ -60,8 +60,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor,
-            IndexQuery[] query )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor,
+                            IndexQuery[] query )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
@@ -225,7 +225,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
+    private void prefixQuery( SchemaIndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -238,7 +238,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void stringRangeQuery( IndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
+    private void stringRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -252,7 +252,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void numericRangeQuery( IndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
+    private void numericRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -266,7 +266,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void geometricRangeQuery( IndexDescriptor descriptor, IndexQuery.GeometryRangePredicate predicate )
+    private void geometricRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.GeometryRangePredicate predicate )
     {
         if ( read.hasTxStateWithChanges() )
         {
@@ -279,7 +279,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void scanQuery( IndexDescriptor descriptor )
+    private void scanQuery( SchemaIndexDescriptor descriptor )
     {
         needsValues = true;
         if ( read.hasTxStateWithChanges() )
@@ -291,7 +291,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
+    private void seekQuery( SchemaIndexDescriptor descriptor, IndexQuery[] query )
     {
         needsValues = false;
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );

@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.Comparator;
-
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 /**
  * {@link Layout} for absolute date times.
@@ -33,9 +31,9 @@ class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
     private static final int ZONE_ID_FLAG = 0x0100_0000;
     private static final int ZONE_ID_MASK = 0x0000_FFFF;
 
-    public static Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    public static Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> of( SchemaIndexDescriptor descriptor )
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? ZonedDateTimeLayout.UNIQUE : ZonedDateTimeLayout.NON_UNIQUE;
+        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE ? ZonedDateTimeLayout.UNIQUE : ZonedDateTimeLayout.NON_UNIQUE;
     }
 
     private static final ZonedDateTimeLayout UNIQUE = new ZonedDateTimeLayout( "UTdt", 0, 1 );

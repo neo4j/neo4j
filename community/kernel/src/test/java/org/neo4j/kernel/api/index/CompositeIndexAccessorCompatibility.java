@@ -23,8 +23,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -37,14 +37,14 @@ import static org.neo4j.internal.kernel.api.IndexQuery.exists;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
-        " SchemaIndexProvider implementations. Each index provider that is to be tested by this suite" +
+        " IndexProvider implementations. Each index provider that is to be tested by this suite" +
         " must create their own test class extending IndexProviderCompatibilityTestSuite." +
         " The @Ignore annotation doesn't prevent these tests to run, it rather removes some annoying" +
         " errors or warnings in some IDEs about test classes needing a public zero-arg constructor." )
 public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatibility
 {
     public CompositeIndexAccessorCompatibility(
-            IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
+            IndexProviderCompatibilityTestSuite testSuite, SchemaIndexDescriptor descriptor )
     {
         super( testSuite, descriptor );
     }
@@ -110,7 +110,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.forLabel( 1000, 100, 200 ) );
         }
 
         @Test
@@ -152,7 +152,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
         {
-            super( testSuite, IndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
+            super( testSuite, SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100, 200 ) );
         }
 
         @Test

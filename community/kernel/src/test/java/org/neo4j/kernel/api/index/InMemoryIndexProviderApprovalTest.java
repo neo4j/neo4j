@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.index;
 
-public class InMemoryIndexIndexProviderApprovalTest extends SchemaIndexProviderApprovalTest
+public class InMemoryIndexProviderApprovalTest extends IndexProviderApprovalTest
 {
-    public InMemoryIndexIndexProviderApprovalTest( TestValue value )
+    public InMemoryIndexProviderApprovalTest( TestValue value )
     {
         super( value );
     }

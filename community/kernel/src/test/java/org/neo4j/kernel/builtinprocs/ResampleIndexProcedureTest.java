@@ -27,8 +27,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -85,7 +85,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
         when( operations.indexGetForSchema( any() ) ).thenReturn( index );
@@ -99,7 +99,7 @@ public class ResampleIndexProcedureTest
     public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
         when( operations.propertyKeyGetForName( "name" ) ).thenReturn( 0 );
         when( operations.propertyKeyGetForName( "lastName" ) ).thenReturn( 1 );
@@ -136,7 +136,7 @@ public class ResampleIndexProcedureTest
     public void shouldTriggerResampling()
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( 123, 456 );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 123, 456 );
         when( operations.indexGetForSchema( any() ) ).thenReturn( index );
 
         procedure.resampleIndex( ":Person(name)" );

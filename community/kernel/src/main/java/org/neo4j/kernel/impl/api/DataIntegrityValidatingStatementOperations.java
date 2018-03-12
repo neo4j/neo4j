@@ -44,13 +44,13 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 
 public class DataIntegrityValidatingStatementOperations implements
     KeyWriteOperations,
@@ -113,7 +113,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public IndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
@@ -122,11 +122,11 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, SchemaIndexDescriptor index ) throws DropIndexFailureException
     {
         try
         {
-            IndexDescriptor existingIndex =
+            SchemaIndexDescriptor existingIndex =
                     schemaReadDelegate.indexGetForSchema( state, index.schema() );
 
             if ( existingIndex == null )
@@ -150,7 +150,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor index ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, SchemaIndexDescriptor index ) throws DropIndexFailureException
     {
         schemaWriteDelegate.uniqueIndexDrop( state, index );
     }
@@ -228,7 +228,7 @@ public class DataIntegrityValidatingStatementOperations implements
             LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        IndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
+        SchemaIndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );
         if ( existingIndex != null )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
@@ -249,7 +249,7 @@ public class DataIntegrityValidatingStatementOperations implements
         }
     }
 
-    private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
+    private boolean constraintIndexHasOwner( KernelStatement state, SchemaIndexDescriptor descriptor )
     {
         return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
     }

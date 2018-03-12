@@ -26,21 +26,21 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
+public class FusionIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
-        SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
+        IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
-        return NativeLuceneFusionSchemaIndexProviderFactory
+        return NativeLuceneFusionIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, monitor, config, OperationalMode.single,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
     }

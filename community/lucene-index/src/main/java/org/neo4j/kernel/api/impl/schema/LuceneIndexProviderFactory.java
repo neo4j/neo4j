@@ -26,7 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -40,13 +40,13 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class LuceneSchemaIndexProviderFactory extends
-        KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>
+public class LuceneIndexProviderFactory extends
+        KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "lucene";
 
-    public static final SchemaIndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new SchemaIndexProvider.Descriptor( KEY, "1.0" );
+    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR =
+            new IndexProvider.Descriptor( KEY, "1.0" );
 
     public interface Dependencies
     {
@@ -59,38 +59,38 @@ public class LuceneSchemaIndexProviderFactory extends
         FileSystemAbstraction fileSystem();
     }
 
-    public LuceneSchemaIndexProviderFactory()
+    public LuceneIndexProviderFactory()
     {
         super( KEY );
     }
 
     @Override
-    public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    public LuceneIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         File storeDir = context.storeDir();
         Config config = dependencies.getConfig();
-        Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneSchemaIndexProvider.class );
+        Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneIndexProvider.class );
         Monitors monitors = dependencies.monitors();
         monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
-        SchemaIndexProvider.Monitor monitor = monitors.newMonitor( SchemaIndexProvider.Monitor.class, KEY );
+        IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         return create( fileSystemAbstraction, storeDir, monitor, config, operationalMode );
     }
 
-    public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-            SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
+    public static LuceneIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+                                              IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
     {
         return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode );
     }
 
-    public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
-            IndexDirectoryStructure.Factory directoryStructure, SchemaIndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode )
+    public static LuceneIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
+                                              IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
+                                              OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config,
+        return new LuceneIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config,
                 operationalMode );
     }
 }

@@ -24,7 +24,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
 class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
@@ -32,7 +32,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
     TemporalIndexPartReader( GBPTree<KEY,NativeSchemaValue> tree,
                              Layout<KEY,NativeSchemaValue> layout,
                              IndexSamplingConfig samplingConfig,
-                             IndexDescriptor descriptor )
+                             SchemaIndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }

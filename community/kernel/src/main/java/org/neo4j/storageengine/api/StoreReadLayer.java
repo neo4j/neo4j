@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -61,33 +61,33 @@ public interface StoreReadLayer
 
     /**
      * @param labelId label to list indexes for.
-     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
+     * @return {@link SchemaIndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
-     * @return all {@link IndexDescriptor} in storage.
+     * @return all {@link SchemaIndexDescriptor} in storage.
      */
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<SchemaIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId );
+    Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
+     * @param index {@link SchemaIndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
+    Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index );
 
     /**
-     * @param index {@link IndexDescriptor} to get schema rule id for.
+     * @param index {@link SchemaIndexDescriptor} to get schema rule id for.
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( IndexDescriptor index )
+    long indexGetCommittedId( SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -143,9 +143,9 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link SchemaIndexDescriptor} for matching index, or {@code null} if not found.
      */
-    IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
+    SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
@@ -154,16 +154,16 @@ public interface StoreReadLayer
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return index provider descriptor of a stored index.
      *
      * @param descriptor {@link LabelSchemaDescriptor} to get provider descriptor for.
-     * @return {@link SchemaIndexProvider.Descriptor} for index.
+     * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return capability of stored index.
@@ -172,7 +172,7 @@ public interface StoreReadLayer
      * @return {@link IndexCapability} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexCapability indexGetCapability( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.

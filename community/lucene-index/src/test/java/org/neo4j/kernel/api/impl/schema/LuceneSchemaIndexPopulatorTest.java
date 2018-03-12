@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -61,7 +61,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -71,14 +71,14 @@ public class LuceneSchemaIndexPopulatorTest
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     private IndexStoreView indexStoreView;
-    private LuceneSchemaIndexProvider provider;
+    private LuceneIndexProvider provider;
     private Directory directory;
     private IndexPopulator indexPopulator;
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
     private static final int propertyKeyId = 666;
-    private static final IndexDescriptor index = IndexDescriptorFactory.forLabel( 42, propertyKeyId );
+    private static final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 42, propertyKeyId );
 
     @Before
     public void before() throws Exception
@@ -86,8 +86,8 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
-                SchemaIndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
+        provider = new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
+                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         indexPopulator = provider.getPopulator( indexId, index, samplingConfig );

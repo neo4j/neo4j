@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.GraphState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -121,11 +121,11 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> indexChanges();
+    ReadableDiffSets<SchemaIndexDescriptor> indexChanges();
 
-    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -137,23 +137,23 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( SchemaIndexDescriptor index,
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( SchemaIndexDescriptor index,
                                                              PointValue lower, boolean includeLower,
                                                              PointValue upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor index,
                                                              String lower, boolean includeLower,
                                                              String upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

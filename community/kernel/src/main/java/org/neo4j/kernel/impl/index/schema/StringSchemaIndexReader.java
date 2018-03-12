@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -33,7 +33,7 @@ import org.neo4j.values.storable.ValueGroup;
 class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
     StringSchemaIndexReader( GBPTree<StringSchemaKey,NativeSchemaValue> tree, Layout<StringSchemaKey,NativeSchemaValue> layout,
-            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -46,7 +46,7 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( StringSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( StringIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

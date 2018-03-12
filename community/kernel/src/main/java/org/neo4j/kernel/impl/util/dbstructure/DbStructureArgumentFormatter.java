@@ -34,11 +34,11 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -52,8 +52,8 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
             LabelSchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
-            IndexDescriptor.class.getCanonicalName(),
-            IndexDescriptorFactory.class.getCanonicalName()
+            SchemaIndexDescriptor.class.getCanonicalName(),
+            SchemaIndexDescriptorFactory.class.getCanonicalName()
     );
 
     @Override
@@ -101,50 +101,54 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
                 builder.append( 'd' );
             }
         }
-        else if ( arg instanceof IndexDescriptor )
+        else if ( arg instanceof SchemaIndexDescriptor )
         {
-            IndexDescriptor descriptor = (IndexDescriptor) arg;
+            SchemaIndexDescriptor descriptor = (SchemaIndexDescriptor) arg;
+            String className = SchemaIndexDescriptorFactory.class.getSimpleName();
             int labelId = descriptor.schema().getLabelId();
             String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
-            builder.append( format( "IndexDescriptorFactory.%s( %d, %s )", methodName,
-                    labelId, asString( descriptor.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.%s( %d, %s )",
+                    className, methodName, labelId, asString( descriptor.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {
             LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) arg;
+            String className = SchemaDescriptorFactory.class.getSimpleName();
             int labelId = descriptor.getLabelId();
-            builder.append( format( "SchemaDescriptorFactory.forLabel( %d, %s )", labelId,
-                    asString( descriptor.getPropertyIds() ) ) );
+            builder.append( format( "%s.forLabel( %d, %s )",
+                    className, labelId, asString( descriptor.getPropertyIds() ) ) );
         }
         else if ( arg instanceof UniquenessConstraintDescriptor )
         {
             UniquenessConstraintDescriptor constraint = (UniquenessConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.uniqueForLabel( %d, %s )",
-                    labelId,
-                    asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.uniqueForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodeExistenceConstraintDescriptor )
         {
             NodeExistenceConstraintDescriptor constraint = (NodeExistenceConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.existsForLabel( %d, %s )",
-                    labelId, asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.existsForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof RelExistenceConstraintDescriptor )
         {
             RelationTypeSchemaDescriptor descriptor = ((RelExistenceConstraintDescriptor) arg).schema();
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int relTypeId = descriptor.getRelTypeId();
-            builder.append( format( "ConstraintDescriptorFactory.existsForReltype( %d, %s )", relTypeId,
-                    asString( descriptor.getPropertyIds() ) ) );
+            builder.append( format( "%s.existsForReltype( %d, %s )",
+                    className, relTypeId, asString( descriptor.getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodeKeyConstraintDescriptor )
         {
             NodeKeyConstraintDescriptor constraint = (NodeKeyConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.nodeKeyForLabel( %d, %s )",
-                    labelId,
-                    asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.nodeKeyForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else
         {

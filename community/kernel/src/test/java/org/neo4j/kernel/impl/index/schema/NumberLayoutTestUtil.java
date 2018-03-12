@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -55,9 +55,9 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
                     1234567890123456789L
             };
 
-    NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
+    NumberLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        super( indexDescriptor );
+        super( schemaIndexDescriptor );
     }
 
     @Override
@@ -77,13 +77,13 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
         return typeCompare;
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesNoDuplicateValues()
     {
         return generateAddUpdatesFor( ALL_EXTREME_VALUES );
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

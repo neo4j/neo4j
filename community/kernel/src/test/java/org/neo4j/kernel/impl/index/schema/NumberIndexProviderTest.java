@@ -23,25 +23,25 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Monitor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider.Monitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class NumberSchemaIndexProviderTest extends NativeSchemaIndexProviderTest
+public class NumberIndexProviderTest extends NativeIndexProviderTest
 {
     @Override
-    SchemaIndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            Monitor monitor, RecoveryCleanupWorkCollector collector )
+    IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                               Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
-        return new NumberSchemaIndexProvider( pageCache, fs, dir, monitor, collector, false );
+        return new NumberIndexProvider( pageCache, fs, dir, monitor, collector, false );
     }
 
     @Override
-    SchemaIndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            Monitor monitor, RecoveryCleanupWorkCollector collector )
+    IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                       Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
-        return new NumberSchemaIndexProvider( pageCache, fs, dir, monitor, collector, true );
+        return new NumberIndexProvider( pageCache, fs, dir, monitor, collector, true );
     }
 
     @Override

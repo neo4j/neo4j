@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupComman
 import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.api.index.IndexProvider.NO_INDEX_PROVIDER;
 
 public class HighIdTransactionApplierTest
 {

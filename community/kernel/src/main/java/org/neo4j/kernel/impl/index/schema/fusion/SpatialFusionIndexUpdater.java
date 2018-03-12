@@ -26,7 +26,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -40,17 +40,17 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     private final Map<CoordinateReferenceSystem,IndexUpdater> currentUpdaters = new HashMap<>();
     private final long indexId;
     private final SpatialCRSSchemaIndex.Supplier indexSupplier;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
     private final boolean populating;
 
     static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
-            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor )
+            SpatialCRSSchemaIndex.Supplier indexFactory, SchemaIndexDescriptor descriptor )
     {
         return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, false );
     }
 
     static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap, long indexId,
-            SpatialCRSSchemaIndex.Supplier indexFactory, IndexDescriptor descriptor )
+            SpatialCRSSchemaIndex.Supplier indexFactory, SchemaIndexDescriptor descriptor )
     {
         return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, true );
     }
@@ -58,7 +58,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap,
                                        long indexId,
                                        SpatialCRSSchemaIndex.Supplier indexSupplier,
-                                       IndexDescriptor descriptor,
+                                       SchemaIndexDescriptor descriptor,
                                        boolean populating )
     {
         this.indexMap = indexMap;

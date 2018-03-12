@@ -69,13 +69,13 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -135,8 +135,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
@@ -154,7 +154,7 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "lucene", "1.0" );
+    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "lucene", "1.0" );
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -568,7 +568,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
                             indexRule.getId(), descriptor, samplingConfig );

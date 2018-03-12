@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
@@ -60,8 +60,8 @@ public class DataIntegrityValidatingStatementOperationsTest
     public ExpectedException exception = ExpectedException.none();
 
     LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 7 );
-    IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 7 );
-    IndexDescriptor uniqueIndex = IndexDescriptorFactory.uniqueForLabel( 0, 7 );
+    SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 7 );
+    SchemaIndexDescriptor uniqueIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 0, 7 );
     private SchemaReadOperations innerRead;
     private SchemaWriteOperations innerWrite;
     private KeyWriteOperations innerKeyWrite;

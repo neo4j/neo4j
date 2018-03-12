@@ -19,9 +19,9 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 
@@ -49,23 +49,23 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForRelType( labelId, propertyId ) );
     }
 
-    public static IndexRule indexRule( long ruleId, int labelId, int propertyId, SchemaIndexProvider.Descriptor
+    public static IndexRule indexRule( long ruleId, int labelId, int propertyId, IndexProvider.Descriptor
             descriptor )
     {
-        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return IndexRule.indexRule( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     public static IndexRule constraintIndexRule( long ruleId, int labelId, int propertyId,
-            SchemaIndexProvider.Descriptor descriptor, long constraintId )
+                                                 IndexProvider.Descriptor descriptor, long constraintId )
     {
-        return IndexRule.constraintIndexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+        return IndexRule.constraintIndexRule( ruleId, SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
                 descriptor, constraintId );
     }
 
     public static IndexRule constraintIndexRule( long ruleId, int labelId, int propertyId,
-            SchemaIndexProvider.Descriptor descriptor )
+            IndexProvider.Descriptor descriptor )
     {
-        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
+        return IndexRule.indexRule( ruleId, SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
                 descriptor );
     }
 }

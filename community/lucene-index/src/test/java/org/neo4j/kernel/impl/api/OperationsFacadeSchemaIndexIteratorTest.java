@@ -39,16 +39,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -384,9 +380,9 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected SchemaIndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
+            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1, stringPropId2 );
         }
 
         @Override
@@ -405,7 +401,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExists( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.exists( stringPropId1 ),
                     IndexQuery.exists( stringPropId2 ) );
         }
@@ -414,7 +410,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExact( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.exact( stringPropId1, stringProp1Values[0] ),
                     IndexQuery.exact( stringPropId2, stringProp2Values[0] ) );
         }
@@ -448,9 +444,9 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected SchemaIndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
+            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1, numberPropId2 );
         }
 
         @Override
@@ -469,7 +465,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExists( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.exists( numberPropId1 ),
                     IndexQuery.exists( numberPropId2 ) );
         }
@@ -478,7 +474,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExact( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.exact( numberPropId1, numberProp1Values[0] ),
                     IndexQuery.exact( numberPropId2, numberProp2Values[0] ) );
         }
@@ -512,9 +508,9 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected SchemaIndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
+            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, stringPropId1 );
         }
 
         @Override
@@ -528,7 +524,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             // query for half the range
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.range( numberPropId1, stringProp1Values[0], true, stringProp1Values[numberOfNodes / 2], false ) );
         }
 
@@ -536,14 +532,14 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExists( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor, IndexQuery.exists( stringPropId1 ) );
+            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exists( stringPropId1 ) );
         }
 
         @Override
         PrimitiveLongIterator queryExact( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor, IndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
+            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
         }
 
         @Override
@@ -580,9 +576,9 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        protected IndexDescriptor extractIndexDescriptor()
+        protected SchemaIndexDescriptor extractIndexDescriptor()
         {
-            return IndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
+            return SchemaIndexDescriptorFactory.forLabel( indexedLabelId, numberPropId1 );
         }
 
         @Override
@@ -596,7 +592,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             // query for half the range
-            return readOperations.indexQuery( indexDescriptor,
+            return readOperations.indexQuery( schemaIndexDescriptor,
                     IndexQuery.range( numberPropId1, numberProp1Values[0], true, numberProp1Values[numberOfNodes / 2], false ) );
         }
 
@@ -604,14 +600,14 @@ public class OperationsFacadeSchemaIndexIteratorTest
         PrimitiveLongIterator queryExists( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor, IndexQuery.exists( numberPropId1 ) );
+            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exists( numberPropId1 ) );
         }
 
         @Override
         PrimitiveLongIterator queryExact( ReadOperations readOperations )
                 throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
-            return readOperations.indexQuery( indexDescriptor, IndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
+            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
         }
 
         @Override
@@ -660,7 +656,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        IndexDescriptor indexDescriptor;
+        SchemaIndexDescriptor schemaIndexDescriptor;
 
         IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
         {
@@ -716,10 +712,10 @@ public class OperationsFacadeSchemaIndexIteratorTest
                 stringPropId2 = readOp.propertyKeyGetForName( stringProp2 );
                 tx.success();
             }
-            indexDescriptor = extractIndexDescriptor();
+            schemaIndexDescriptor = extractIndexDescriptor();
         }
 
-        protected abstract IndexDescriptor extractIndexDescriptor();
+        protected abstract SchemaIndexDescriptor extractIndexDescriptor();
 
         void createIndex( DatabaseRule db )
         {

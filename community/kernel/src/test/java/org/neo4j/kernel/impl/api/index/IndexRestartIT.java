@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
@@ -59,7 +59,7 @@ public class IndexRestartIT
 
     private GraphDatabaseService db;
     private TestGraphDatabaseFactory factory;
-    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
+    private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
     private final Label myLabel = label( "MyLabel" );
 
     @Before
@@ -68,7 +68,7 @@ public class IndexRestartIT
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
         factory.setKernelExtensions( Collections.singletonList(
-            singleInstanceSchemaIndexProviderFactory( "test", provider )
+            singleInstanceIndexProviderFactory( "test", provider )
         ) );
     }
 

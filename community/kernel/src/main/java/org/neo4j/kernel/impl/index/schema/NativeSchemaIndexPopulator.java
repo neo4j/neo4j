@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
@@ -50,8 +50,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -79,7 +79,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     private boolean dropped;
 
     NativeSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
+                                IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();

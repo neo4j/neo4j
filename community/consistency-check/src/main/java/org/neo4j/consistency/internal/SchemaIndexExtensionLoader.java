@@ -25,32 +25,32 @@ import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**
- * Utility for loading {@link SchemaIndexProvider} instances from {@link KernelExtensions}.
+ * Utility for loading {@link IndexProvider} instances from {@link KernelExtensions}.
  */
 public class SchemaIndexExtensionLoader
 {
-    public static SchemaIndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
+    public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
     {
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider =
-                extensions.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
-        return new DefaultSchemaIndexProviderMap( defaultIndexProvider,
+        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        IndexProvider defaultIndexProvider =
+                extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
+        return new DefaultIndexProviderMap( defaultIndexProvider,
                 indexProviderSelection.lowerPrioritizedCandidates() );
     }
 

@@ -22,18 +22,17 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -48,17 +47,17 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
-    private final SchemaIndexProviderMap schemaIndexProviderMap;
+    private final IndexProviderMap indexProviderMap;
 
     public TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState,
                                             SchemaStorage schemaStorage, ConstraintSemantics constraintSemantics,
-                                            SchemaIndexProviderMap schemaIndexProviderMap )
+                                            IndexProviderMap indexProviderMap )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
         this.schemaStorage = schemaStorage;
         this.constraintSemantics = constraintSemantics;
-        this.schemaIndexProviderMap = schemaIndexProviderMap;
+        this.indexProviderMap = indexProviderMap;
     }
 
     @Override
@@ -178,16 +177,16 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( IndexDescriptor index )
+    public void visitAddedIndex( SchemaIndexDescriptor index )
     {
-        SchemaIndexProvider.Descriptor providerDescriptor =
-                schemaIndexProviderMap.getDefaultProvider().getProviderDescriptor();
+        IndexProvider.Descriptor providerDescriptor =
+                indexProviderMap.getDefaultProvider().getProviderDescriptor();
         IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );
     }
 
     @Override
-    public void visitRemovedIndex( IndexDescriptor index )
+    public void visitRemovedIndex( SchemaIndexDescriptor index )
     {
         IndexRule rule = schemaStorage.indexGetForSchema( index );
         if ( rule != null )

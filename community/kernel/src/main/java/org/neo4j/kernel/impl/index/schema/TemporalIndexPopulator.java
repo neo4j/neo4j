@@ -31,8 +31,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
@@ -47,12 +47,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     private final IndexSamplerWrapper sampler;
 
     TemporalIndexPopulator( long indexId,
-                            IndexDescriptor descriptor,
+                            SchemaIndexDescriptor descriptor,
                             IndexSamplingConfig samplingConfig,
                             TemporalIndexFiles temporalIndexFiles,
                             PageCache pageCache,
                             FileSystemAbstraction fs,
-                            SchemaIndexProvider.Monitor monitor )
+                            IndexProvider.Monitor monitor )
     {
         super( new PartFactory( pageCache, fs, temporalIndexFiles, indexId, descriptor, samplingConfig, monitor ) );
         this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
@@ -131,7 +131,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         private final DefaultNonUniqueIndexSampler generalSampler;
         private final UniqueIndexSampler uniqueSampler;
 
-        IndexSamplerWrapper( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        IndexSamplerWrapper( SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
         {
             switch ( descriptor.type() )
             {
@@ -178,7 +178,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
+                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
         }
@@ -225,12 +225,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         private final FileSystemAbstraction fs;
         private final TemporalIndexFiles temporalIndexFiles;
         private final long indexId;
-        private final IndexDescriptor descriptor;
+        private final SchemaIndexDescriptor descriptor;
         private final IndexSamplingConfig samplingConfig;
-        private final SchemaIndexProvider.Monitor monitor;
+        private final IndexProvider.Monitor monitor;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, long indexId,
-                IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor )
+                     SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
         {
             this.pageCache = pageCache;
             this.fs = fs;

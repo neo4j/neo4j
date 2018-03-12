@@ -54,8 +54,8 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -66,7 +66,7 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -117,11 +117,11 @@ public class BuiltInProcedures
             ReadOperations operations = statement.readOperations();
             TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
-            List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
+            List<SchemaIndexDescriptor> indexes = asList( operations.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( IndexDescriptor index : indexes )
+            for ( SchemaIndexDescriptor index : indexes )
             {
                 try
                 {
@@ -584,14 +584,14 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
-    private Map<String,String> indexProviderDescriptorMap( SchemaIndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> indexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
     {
         return MapUtil.stringMap(
                 "key", providerDescriptor.getKey(),
                 "version", providerDescriptor.getVersion() );
     }
 
-    private List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
+    private List<String> propertyNames( TokenNameLookup tokens, SchemaIndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );

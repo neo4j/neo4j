@@ -38,9 +38,9 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -55,7 +55,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
-public abstract class NativeSchemaIndexProviderTest
+public abstract class NativeIndexProviderTest
 {
     @Rule
     public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule();
@@ -63,9 +63,9 @@ public abstract class NativeSchemaIndexProviderTest
     private static final int indexId = 1;
     private static final int labelId = 1;
     private static final int propId = 1;
-    private SchemaIndexProvider provider;
+    private IndexProvider provider;
     private final AssertableLogProvider logging = new AssertableLogProvider();
-    private final SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
+    private final IndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
 
     @Before
     public void setup() throws IOException
@@ -104,7 +104,7 @@ public abstract class NativeSchemaIndexProviderTest
         provider = newProvider();
 
         // when
-        IndexDescriptor descriptor = descriptorUnique();
+        SchemaIndexDescriptor descriptor = descriptorUnique();
         try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -150,7 +150,7 @@ public abstract class NativeSchemaIndexProviderTest
         // given
         provider = newProvider();
 
-        int nonFailedIndexId = NativeSchemaIndexProviderTest.indexId;
+        int nonFailedIndexId = NativeIndexProviderTest.indexId;
         IndexPopulator nonFailedPopulator = provider.getPopulator( nonFailedIndexId, descriptor(), samplingConfig() );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true );
@@ -321,18 +321,18 @@ public abstract class NativeSchemaIndexProviderTest
 
     protected abstract Value someValue();
 
-    abstract SchemaIndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
+    abstract IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                        IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
 
-    abstract SchemaIndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
+    abstract IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
+                                                IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
 
-    private SchemaIndexProvider newProvider()
+    private IndexProvider newProvider()
     {
         return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE );
     }
 
-    private SchemaIndexProvider newReadOnlyProvider()
+    private IndexProvider newReadOnlyProvider()
     {
         return newReadOnlyProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, IMMEDIATE );
     }
@@ -342,14 +342,14 @@ public abstract class NativeSchemaIndexProviderTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private IndexDescriptor descriptor()
+    private SchemaIndexDescriptor descriptor()
     {
-        return IndexDescriptorFactory.forLabel( labelId, propId );
+        return SchemaIndexDescriptorFactory.forLabel( labelId, propId );
     }
 
-    private IndexDescriptor descriptorUnique()
+    private SchemaIndexDescriptor descriptorUnique()
     {
-        return IndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
     }
 
     private PageCache pageCache()

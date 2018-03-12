@@ -53,14 +53,14 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -68,7 +68,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -115,15 +115,15 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<SchemaIndexProvider.Descriptor> parameters()
+    public static Collection<IndexProvider.Descriptor> parameters()
     {
-        return asList( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR,
-                NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR,
+        return asList( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR,
+                NativeLuceneFusionIndexProviderFactory.DESCRIPTOR,
                 InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
     @Parameterized.Parameter( 0 )
-    public SchemaIndexProvider.Descriptor indexDescriptor;
+    public IndexProvider.Descriptor indexDescriptor;
 
     private IndexingService indexService;
     private int propertyId;
@@ -313,7 +313,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, neoStores, labelScanStore );
 
-            SchemaIndexProviderMap providerMap = getSchemaIndexProvider();
+            IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
@@ -382,7 +382,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexRule.indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
+                .map( index -> IndexRule.indexRule( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
                 .toArray( IndexRule[]::new );
     }
 
@@ -470,9 +470,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    private SchemaIndexProviderMap getSchemaIndexProvider()
+    private IndexProviderMap getIndexProviderMap()
     {
-        return embeddedDatabase.resolveDependency( SchemaIndexProviderMap.class );
+        return embeddedDatabase.resolveDependency( IndexProviderMap.class );
     }
 
     private JobScheduler getJobScheduler()

@@ -91,9 +91,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -641,7 +641,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
+        public PrimitiveLongResourceIterator indexQuery( SchemaIndexDescriptor index, IndexQuery... predicates )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return readOperations.indexQuery( index, predicates );
@@ -674,14 +674,14 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+        public long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
                 throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
         {
             return readOperations.nodeGetFromUniqueIndexSeek( index, predicates );
         }
 
         @Override
-        public long nodesCountIndexed( IndexDescriptor index, long nodeId, Value value )
+        public long nodesCountIndexed( SchemaIndexDescriptor index, long nodeId, Value value )
                 throws IndexNotFoundKernelException, IndexBrokenKernelException
         {
             return readOperations.nodesCountIndexed( index, nodeId, value );
@@ -827,56 +827,56 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
+        public SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
         {
             return readOperations.indexGetForSchema( descriptor );
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+        public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
         {
             return readOperations.indexesGetForLabel( labelId );
         }
 
         @Override
-        public Iterator<IndexDescriptor> indexesGetAll()
+        public Iterator<SchemaIndexDescriptor> indexesGetAll()
         {
             return readOperations.indexesGetAll();
         }
 
         @Override
-        public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetState( descriptor );
         }
 
         @Override
-        public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetProviderDescriptor( descriptor );
         }
 
         @Override
-        public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
+        public PopulationProgress indexGetPopulationProgress( SchemaIndexDescriptor descriptor )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexGetPopulationProgress( descriptor );
         }
 
         @Override
-        public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public long indexSize( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexSize( descriptor );
         }
 
         @Override
-        public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public double indexUniqueValuesSelectivity( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUniqueValuesSelectivity( descriptor );
         }
 
         @Override
-        public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetFailure( descriptor );
         }
@@ -906,7 +906,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+        public Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
         {
             return readOperations.indexGetOwningUniquenessConstraintId( index );
         }
@@ -1071,14 +1071,14 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index,
+        public Register.DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index,
                 Register.DoubleLongRegister target ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUpdatesAndSize( index, target );
         }
 
         @Override
-        public Register.DoubleLongRegister indexSample( IndexDescriptor index, Register.DoubleLongRegister target )
+        public Register.DoubleLongRegister indexSample( SchemaIndexDescriptor index, Register.DoubleLongRegister target )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexSample( index, target );

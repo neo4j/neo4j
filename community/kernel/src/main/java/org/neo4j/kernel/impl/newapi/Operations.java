@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.IndexEntityType;
@@ -321,9 +321,9 @@ public class Operations implements Write, ExplicitIndexWrite
     {
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
-            IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
-            assertIndexOnline( indexDescriptor );
-            int labelId = indexDescriptor.schema().getLabelId();
+            SchemaIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+            assertIndexOnline( schemaIndexDescriptor );
+            int labelId = schemaIndexDescriptor.schema().getLabelId();
 
             //Take a big fat lock, and check for existing node in index
             ktx.statementLocks().optimistic().acquireExclusive(
@@ -331,7 +331,7 @@ public class Operations implements Write, ExplicitIndexWrite
                     indexEntryResourceId( labelId, propertyValues )
             );
 
-            allStoreHolder.nodeIndexSeek( allStoreHolder.indexGetCapability( indexDescriptor ), valueCursor,
+            allStoreHolder.nodeIndexSeek( allStoreHolder.indexGetCapability( schemaIndexDescriptor ), valueCursor,
                     IndexOrder.NONE, propertyValues );
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
@@ -345,7 +345,7 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
-    private void assertIndexOnline(  IndexDescriptor descriptor ) throws IndexNotFoundKernelException, IndexBrokenKernelException
+    private void assertIndexOnline(  SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         switch ( allStoreHolder.indexGetState( descriptor ) )
         {

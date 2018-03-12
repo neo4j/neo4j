@@ -31,8 +31,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
  * @param <KEY> type of {@link NativeSchemaKey}
  * @param <VALUE> type of {@link NativeSchemaValue}
  */
-abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends SchemaIndexProvider
+abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -50,8 +50,8 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean readOnly;
 
-    protected NativeSchemaIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
-            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    protected NativeIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
+                                   FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( descriptor, priority, directoryStructureFactory );
         this.pageCache = pageCache;
@@ -62,7 +62,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
@@ -74,23 +74,23 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
         return newIndexPopulator( storeFile, layout, descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, IndexDescriptor descriptor, long indexId,
-            IndexSamplingConfig samplingConfig );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, SchemaIndexDescriptor descriptor, long indexId,
+                                                         IndexSamplingConfig samplingConfig );
 
     @Override
     public IndexAccessor getOnlineAccessor(
-            long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
         Layout<KEY,VALUE> layout = layout( descriptor );
         return newIndexAccessor( storeFile, layout, descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, IndexDescriptor descriptor,
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, SchemaIndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
-    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -108,7 +108,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
         try
         {
@@ -129,7 +129,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private Layout<KEY,VALUE> layout( IndexDescriptor descriptor )
+    private Layout<KEY,VALUE> layout( SchemaIndexDescriptor descriptor )
     {
         switch ( descriptor.type() )
         {

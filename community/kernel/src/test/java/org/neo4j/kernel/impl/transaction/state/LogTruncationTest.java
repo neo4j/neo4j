@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -97,8 +97,8 @@ public class LogTruncationTest
         permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
                 singletonList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
                 singletonList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
-                IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 3, 4 ),
-                        new SchemaIndexProvider.Descriptor( "1", "2" ) ) ) } );
+                IndexRule.indexRule( 1, SchemaIndexDescriptorFactory.forLabel( 3, 4 ),
+                        new IndexProvider.Descriptor( "1", "2" ) ) ) } );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
                         new Command[] { new Command.RelationshipTypeTokenCommand(

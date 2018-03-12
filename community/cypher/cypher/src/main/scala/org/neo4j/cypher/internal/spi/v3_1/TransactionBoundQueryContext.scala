@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -490,7 +490,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    txContext.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
+    txContext.statement.schemaWriteOperations().indexDrop(SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   override def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[UniquenessConstraint] = try {
     IdempotentResult(
