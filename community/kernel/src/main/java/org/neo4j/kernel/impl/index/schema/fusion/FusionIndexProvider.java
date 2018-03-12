@@ -33,6 +33,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.Value;
@@ -42,7 +45,6 @@ import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instancesAs;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.nameOf;
 
 /**
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
@@ -66,10 +68,10 @@ public class FusionIndexProvider extends IndexProvider
 
     public FusionIndexProvider(
             // good to be strict with specific providers here since this is dev facing
-            IndexProvider stringProvider,
-            IndexProvider numberProvider,
-            IndexProvider spatialProvider,
-            IndexProvider temporalProvider,
+            StringIndexProvider stringProvider,
+            NumberIndexProvider numberProvider,
+            SpatialFusionIndexProvider spatialProvider,
+            TemporalIndexProvider temporalProvider,
             IndexProvider luceneProvider,
             Selector selector,
             Descriptor descriptor,
@@ -113,6 +115,15 @@ public class FusionIndexProvider extends IndexProvider
             return failure;
         }
         throw new IllegalStateException( "None of the indexes were in a failed state" );
+    }
+
+    /**
+     * @param subProviderIndex the index into the providers array to get the name of.
+     * @return some name distinguishing the provider of this subProviderIndex from other providers.
+     */
+    private String nameOf( int subProviderIndex )
+    {
+        return providers[subProviderIndex].getClass().getSimpleName();
     }
 
     private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )

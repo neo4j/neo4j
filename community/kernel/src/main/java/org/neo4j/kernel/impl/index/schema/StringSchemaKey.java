@@ -173,7 +173,6 @@ class StringSchemaKey extends NativeSchemaKey
     @Override
     public void writeString( char value )
     {
-        // TODO more efficient impl
         writeString( String.valueOf( value ) );
     }
 }

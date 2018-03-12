@@ -34,7 +34,6 @@ import org.neo4j.function.ThrowingFunction;
 public abstract class FusionIndexBase<T>
 {
     private static final int INSTANCE_COUNT = 5;
-    private static final String[] NAMES = { "string", "number", "spatial", "temporal", "lucene" };
 
     static final int STRING = 0;
     static final int NUMBER = 1;
@@ -65,11 +64,6 @@ public abstract class FusionIndexBase<T>
             result[i] = converter.apply( instances[i] );
         }
         return result;
-    }
-
-    static String nameOf( int slot )
-    {
-        return NAMES[slot];
     }
 
     /**

@@ -36,7 +36,7 @@ import org.neo4j.values.storable.Value;
  * @param <KEY> type of {@link NumberSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public class NativeHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {
@@ -44,7 +44,7 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted;
     private boolean closed;
 
-    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
+    NativeHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted )
     {
         this.seeker = seeker;
@@ -58,9 +58,10 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
         {
             while ( seeker.next() )
             {
-                if ( acceptValue( seeker.get().key().asValue() ) )
+                KEY key = seeker.get().key();
+                if ( acceptValue( key.asValue() ) )
                 {
-                    return next( seeker.get().key().getEntityId() );
+                    return next( key.getEntityId() );
                 }
             }
             return false;

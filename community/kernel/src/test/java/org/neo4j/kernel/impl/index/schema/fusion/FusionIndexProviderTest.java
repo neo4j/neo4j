@@ -28,6 +28,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.RandomRule;
@@ -50,20 +53,20 @@ public class FusionIndexProviderTest
 {
     private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "test-fusion", "1" );
 
-    private IndexProvider stringProvider;
-    private IndexProvider numberProvider;
-    private IndexProvider spatialProvider;
-    private IndexProvider temporalProvider;
+    private StringIndexProvider stringProvider;
+    private NumberIndexProvider numberProvider;
+    private SpatialFusionIndexProvider spatialProvider;
+    private TemporalIndexProvider temporalProvider;
     private IndexProvider luceneProvider;
     private IndexProvider[] providers;
 
     @Before
     public void setup()
     {
-        stringProvider = mock( IndexProvider.class );
-        numberProvider = mock( IndexProvider.class );
-        spatialProvider = mock( IndexProvider.class );
-        temporalProvider = mock( IndexProvider.class );
+        stringProvider = mock( StringIndexProvider.class );
+        numberProvider = mock( NumberIndexProvider.class );
+        spatialProvider = mock( SpatialFusionIndexProvider.class );
+        temporalProvider = mock( TemporalIndexProvider.class );
         luceneProvider = mock( IndexProvider.class );
         when( stringProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "string", "1" ) );
         when( numberProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "number", "1" ) );

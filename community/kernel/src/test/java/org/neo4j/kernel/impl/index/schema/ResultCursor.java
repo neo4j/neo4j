@@ -20,27 +20,47 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Iterator;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.values.storable.Value;
 
-class FilteringNumberHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NumberHitIterator<KEY,VALUE>
+import static org.neo4j.values.storable.Values.stringValue;
+
+class ResultCursor implements RawCursor<Hit<StringSchemaKey,NativeSchemaValue>,IOException>
 {
-    private final IndexQuery[] filters;
+    private final Iterator<String> iterator;
+    private String current;
+    private int pos = -1;
 
-    FilteringNumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted, IndexQuery[] filters )
+    ResultCursor( Iterator<String> keys )
     {
-        super( seeker, toRemoveFromWhenExhausted );
-        this.filters = filters;
+        iterator = keys;
     }
 
     @Override
-    boolean acceptValue( Value value )
+    public boolean next()
     {
-        return filters[0].acceptsValue( value );
+        if ( iterator.hasNext() )
+        {
+            current = iterator.next();
+            pos++;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
+        // do nothing
+    }
+
+    @Override
+    public Hit<StringSchemaKey,NativeSchemaValue> get()
+    {
+        StringSchemaKey key = new StringSchemaKey();
+        key.from( pos, stringValue( current ) );
+        return new SimpleHit<>( key, NativeSchemaValue.INSTANCE );
     }
 }

@@ -123,7 +123,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
             openSeekers.add( seeker );
-            return getNumberHitIterator( seeker, needFilter, predicates );
+            return getHitIterator( seeker, needFilter, predicates );
         }
         catch ( IOException e )
         {
@@ -131,16 +131,10 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         }
     }
 
-    private PrimitiveLongResourceIterator getNumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker, boolean needFilter, IndexQuery[] predicates )
+    private PrimitiveLongResourceIterator getHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker, boolean needFilter, IndexQuery[] predicates )
     {
-        if ( needFilter )
-        {
-            return new FilteringNumberHitIterator<>( seeker, openSeekers, predicates );
-        }
-        else
-        {
-            return new NumberHitIterator<>( seeker, openSeekers );
-        }
+        return needFilter ? new FilteringNativeHitIterator<KEY,VALUE>( seeker, openSeekers, predicates )
+                          : new NativeHitIterator<KEY,VALUE>( seeker, openSeekers );
     }
 
     @Override
@@ -194,14 +188,8 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     private IndexProgressor getIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, IndexProgressor.NodeValueClient client, boolean needFilter,
             IndexQuery[] query )
     {
-        if ( needFilter )
-        {
-            return new FilteringNativeHitIndexProgressor<>( seeker, client, openSeekers, query );
-        }
-        else
-        {
-            return new NativeHitIndexProgressor<>( seeker, client, openSeekers );
-        }
+        return needFilter ? new FilteringNativeHitIndexProgressor<KEY,VALUE>( seeker, client, openSeekers, query )
+                          : new NativeHitIndexProgressor<KEY,VALUE>( seeker, client, openSeekers );
     }
 
     private boolean isBackwardsSeek( KEY treeKeyFrom, KEY treeKeyTo )
