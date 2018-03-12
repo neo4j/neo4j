@@ -50,13 +50,6 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long id, Map<String,Value> values )
-    {
-        DocWithId document = reuseDocument( id );
-        document.setValues( values );
-        return document.document;
-    }
-
     public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );

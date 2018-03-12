@@ -74,12 +74,17 @@ public class FulltextFactory
 
     public LuceneFulltext createFulltextIndex( long indexId, FulltextIndexDescriptor descriptor )
     {
-        PartitionedIndexStorage storage = indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
+        PartitionedIndexStorage storage = getIndexStorage( indexId );
         return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), descriptor.schema().entityType() );
     }
 
     public String getStoredIndexFailure( long indexId )
     {
-        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) ).getStoredIndexFailure();
+        return getIndexStorage( indexId ).getStoredIndexFailure();
+    }
+
+    private PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 }

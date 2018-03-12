@@ -104,7 +104,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
-        return new FulltextIndexPopulator( indexId, descriptor, samplingConfig, fulltextIndex );
+        return new FulltextIndexPopulator( descriptor, fulltextIndex );
     }
 
     @Override
