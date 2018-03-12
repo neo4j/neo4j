@@ -197,7 +197,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldDropCreateUniquePropertyConstraint() throws Exception
+    public void shouldDropUniquePropertyConstraint() throws Exception
     {
         ConstraintDescriptor constraint;
         try ( Transaction transaction = session.beginTransaction() )

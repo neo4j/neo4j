@@ -50,19 +50,19 @@ public interface ConstraintSemantics
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 
     @Deprecated
-    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
-
-    @Deprecated
     void validateNodePropertyExistenceConstraint( Iterator<Cursor<NodeItem>> allNodes, LabelSchemaDescriptor descriptor,
             BiPredicate<NodeItem,Integer> hasProperty ) throws CreateConstraintFailureException;
 
-    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
-            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
-
+    @Deprecated
     void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
             RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException;
+
+    void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
+
+    void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException;
 
     void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )

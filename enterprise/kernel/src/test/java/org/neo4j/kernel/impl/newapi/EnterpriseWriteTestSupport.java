@@ -24,9 +24,6 @@ import java.io.File;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
-/**
- * Created by pontusmelke on 2018-03-10.
- */
 public class EnterpriseWriteTestSupport extends WriteTestSupport
 {
     @Override
