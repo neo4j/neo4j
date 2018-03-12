@@ -63,7 +63,7 @@ public class InstalledProtocolsProcedureIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
-            .withSharedCoreParam( CausalClusteringSettings.compression_versions, "snappy" )
+            .withSharedCoreParam( CausalClusteringSettings.compression_implementations, "snappy" )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
     private Cluster cluster;

@@ -73,7 +73,7 @@ public class SupportedProtocolCreatorTest
     public void shouldFilterUnknownRaftImplementations() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.raft_versions, "1, 2, 3" );
+        Config config = Config.defaults( CausalClusteringSettings.raft_implementations, "1, 2, 3" );
 
         // when
         ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config, log ).createSupportedRaftProtocol();
@@ -87,7 +87,7 @@ public class SupportedProtocolCreatorTest
     public void shouldReturnConfiguredRaftProtocolVersions() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.raft_versions, "1" );
+        Config config = Config.defaults( CausalClusteringSettings.raft_implementations, "1" );
 
         // when
         ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config, log ).createSupportedRaftProtocol();
@@ -100,7 +100,7 @@ public class SupportedProtocolCreatorTest
     public void shouldThrowIfVersionsSpecifiedButAllUnknown() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.raft_versions, String.valueOf( Integer.MAX_VALUE ) );
+        Config config = Config.defaults( CausalClusteringSettings.raft_implementations, String.valueOf( Integer.MAX_VALUE ) );
 
         // when
         ApplicationSupportedProtocols supportedRaftProtocol = new SupportedProtocolCreator( config, log ).createSupportedRaftProtocol();
@@ -126,7 +126,7 @@ public class SupportedProtocolCreatorTest
     public void shouldReturnACompressionModifierIfCompressionVersionsSpecified() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.compression_versions, COMPRESSION_SNAPPY.implementation() );
+        Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation() );
 
         // when
         List<ModifierSupportedProtocols> supportedModifierProtocols =
@@ -141,7 +141,7 @@ public class SupportedProtocolCreatorTest
     public void shouldReturnCompressionWithVersionsSpecified() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.compression_versions, COMPRESSION_SNAPPY.implementation() );
+        Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation() );
 
         // when
         List<ModifierSupportedProtocols> supportedModifierProtocols =
@@ -156,7 +156,7 @@ public class SupportedProtocolCreatorTest
     public void shouldReturnCompressionWithVersionsSpecifiedCaseInsensitive() throws Throwable
     {
         // given
-        Config config = Config.defaults( CausalClusteringSettings.compression_versions, COMPRESSION_SNAPPY.implementation().toLowerCase() );
+        Config config = Config.defaults( CausalClusteringSettings.compression_implementations, COMPRESSION_SNAPPY.implementation().toLowerCase() );
 
         // when
         List<ModifierSupportedProtocols> supportedModifierProtocols =

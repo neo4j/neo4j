@@ -51,7 +51,7 @@ public class SupportedProtocolCreator
 
     public ApplicationSupportedProtocols createSupportedRaftProtocol()
     {
-        List<Integer> configVersions = config.get( CausalClusteringSettings.raft_versions );
+        List<Integer> configVersions = config.get( CausalClusteringSettings.raft_implementations );
         if ( configVersions.isEmpty() )
         {
             return new ApplicationSupportedProtocols( RAFT, Collections.emptyList() );
@@ -82,7 +82,7 @@ public class SupportedProtocolCreator
 
     private ModifierSupportedProtocols compressionProtocolVersions()
     {
-        List<String> implementations = protocolsForConfig( COMPRESSION, config.get( CausalClusteringSettings.compression_versions ),
+        List<String> implementations = protocolsForConfig( COMPRESSION, config.get( CausalClusteringSettings.compression_implementations ),
                 implementation -> Protocol.ModifierProtocols.find( COMPRESSION, implementation ) );
 
         return new ModifierSupportedProtocols( COMPRESSION, implementations );

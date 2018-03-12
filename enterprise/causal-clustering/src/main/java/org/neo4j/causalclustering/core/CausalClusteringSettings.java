@@ -497,13 +497,13 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Raft protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
             " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
-    public static final Setting<List<Integer>> raft_versions =
-            setting( "causal_clustering.protocol_versions.raft", list( ",", INTEGER ), "" );
+    public static final Setting<List<Integer>> raft_implementations =
+            setting( "causal_clustering.protocol_implementations.raft", list( ",", INTEGER ), "" );
 
     @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
             " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
             " Allowable values: [" + GZIP + "," + SNAPPY + "," + SNAPPY_VALIDATING + "," +
             LZ4 + "," + LZ4_HIGH_COMPRESSION + "," + LZ_VALIDATING + "," + LZ4_HIGH_COMPRESSION_VALIDATING + "]" )
-    public static final Setting<List<String>> compression_versions =
-            setting( "causal_clustering.protocol_versions.compression", STRING_LIST, "");
+    public static final Setting<List<String>> compression_implementations =
+            setting( "causal_clustering.protocol_implementations.compression", STRING_LIST, "");
 }
