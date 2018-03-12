@@ -92,7 +92,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
@@ -108,7 +108,7 @@ abstract class NativeSchemaIndexProvider<KEY extends NativeSchemaKey,VALUE exten
                                                        IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {

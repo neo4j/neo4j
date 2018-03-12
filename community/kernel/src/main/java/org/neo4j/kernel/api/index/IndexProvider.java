@@ -154,7 +154,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
             };
 
     // Used by deserialization
-    public abstract DESCRIPTOR indexDescriptorFor( SchemaDescriptor schema, String name, String metadata );
+    public abstract IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata );
 
     public interface Monitor
     {
@@ -225,7 +225,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( long indexId, DESCRIPTOR descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
@@ -240,7 +240,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
      *
      * @param indexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
      */
-    public abstract IndexCapability getCapability( DESCRIPTOR indexDescriptor );
+    public abstract IndexCapability getCapability( IndexDescriptor indexDescriptor );
 
     public abstract boolean compatible( IndexDescriptor indexDescriptor );
 

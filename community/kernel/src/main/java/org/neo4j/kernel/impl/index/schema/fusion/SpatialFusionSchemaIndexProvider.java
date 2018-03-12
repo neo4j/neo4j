@@ -100,7 +100,7 @@ public class SpatialFusionSchemaIndexProvider extends IndexProvider<SchemaIndexD
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
@@ -129,7 +129,7 @@ public class SpatialFusionSchemaIndexProvider extends IndexProvider<SchemaIndexD
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -184,7 +184,7 @@ public class SpatialFusionSchemaIndexProvider extends IndexProvider<SchemaIndexD
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         // Spatial indexes are not ordered, nor do they return complete values
         return IndexCapability.NO_CAPABILITY;

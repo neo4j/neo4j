@@ -61,7 +61,7 @@ public class TemporalSchemaIndexProvider extends IndexProvider<SchemaIndexDescri
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
@@ -87,7 +87,7 @@ public class TemporalSchemaIndexProvider extends IndexProvider<SchemaIndexDescri
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
 
@@ -138,7 +138,7 @@ public class TemporalSchemaIndexProvider extends IndexProvider<SchemaIndexDescri
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }

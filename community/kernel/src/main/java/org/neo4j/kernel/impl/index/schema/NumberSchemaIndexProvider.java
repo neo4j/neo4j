@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
@@ -86,7 +87,7 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         return CAPABILITY;
     }

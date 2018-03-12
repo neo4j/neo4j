@@ -67,7 +67,7 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }
@@ -85,7 +85,7 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
@@ -118,7 +118,7 @@ public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = indexes.get( indexId ).failure;
         if ( failure == null )

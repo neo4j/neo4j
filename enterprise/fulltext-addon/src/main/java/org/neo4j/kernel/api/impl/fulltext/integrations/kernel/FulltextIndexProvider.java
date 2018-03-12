@@ -88,7 +88,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public FulltextIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         try
         {
@@ -120,7 +120,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public String getPopulationFailure( long indexId, FulltextIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = factory.getStoredIndexFailure( indexId );
         if ( failure == null )
@@ -166,7 +166,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public IndexCapability getCapability( FulltextIndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }

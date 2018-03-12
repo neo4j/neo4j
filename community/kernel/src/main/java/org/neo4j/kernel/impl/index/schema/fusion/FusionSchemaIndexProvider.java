@@ -86,7 +86,7 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
@@ -113,7 +113,7 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         writeFailure( "number", builder, numberProvider, indexId, descriptor );
@@ -128,7 +128,7 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, IndexDescriptor descriptor )
     {
         try
         {
@@ -165,7 +165,7 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         IndexCapability numberCapability = numberProvider.getCapability( schemaIndexDescriptor );
         IndexCapability spatialCapability = spatialProvider.getCapability( schemaIndexDescriptor );

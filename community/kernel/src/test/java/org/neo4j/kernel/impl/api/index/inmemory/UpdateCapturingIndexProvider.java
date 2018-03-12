@@ -53,7 +53,7 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return actual.indexDescriptorFor( schema, name, "" );
     }
@@ -73,7 +73,7 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         return actual.getPopulationFailure( indexId, descriptor );
     }
@@ -85,7 +85,7 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         return actual.getCapability( schemaIndexDescriptor );
     }
