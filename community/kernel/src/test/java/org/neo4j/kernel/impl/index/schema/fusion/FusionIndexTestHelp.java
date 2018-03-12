@@ -67,7 +67,7 @@ class FusionIndexTestHelp
     private static final Value[] pointValues = new Value[]
             {
                     Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0, 789.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 123.0, 456.0, 789.0 ),
                     Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
             };
     private static final Value[] temporalValues = new Value[]

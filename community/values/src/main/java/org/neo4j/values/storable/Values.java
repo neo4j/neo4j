@@ -301,6 +301,18 @@ public final class Values
         return new ShortArray( value );
     }
 
+    /**
+     * Unlike pointValue(), this method does not enforce consistency between the CRS and coordinate dimensions.
+     * This can be useful for testing.
+     */
+    public static PointValue unsafePointValue( CoordinateReferenceSystem crs, double... coordinate )
+    {
+        return new PointValue( crs, coordinate );
+    }
+
+    /**
+     * Creates a PointValue, and enforces consistency between the CRS and coordinate dimensions.
+     */
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
     {
         if ( crs.getDimension() != coordinate.length )

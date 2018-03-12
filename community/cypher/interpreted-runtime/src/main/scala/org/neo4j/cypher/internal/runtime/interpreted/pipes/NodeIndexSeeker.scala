@@ -78,6 +78,8 @@ trait NodeIndexSeeker {
             expr(row, state) match {
               case text: TextValue =>
                 Array(Seq(IndexQuery.stringPrefix(propertyIds.head, text.stringValue())))
+              case Values.NO_VALUE =>
+                Nil
               case other =>
                 throw new CypherTypeException("Expected TextValue, got "+other )
             }

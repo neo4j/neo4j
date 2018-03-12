@@ -320,7 +320,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void test3DPointType()
     {
-        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1 );
+        Point point = Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 );
         String key = "location";
         node1.setProperty( key, point );
         newTransaction();
@@ -333,15 +333,15 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     public void test4DPointType()
     {
         thrown.expect(Exception.class);
-        node1.setProperty( "location", Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
+        node1.setProperty( "location", Values.unsafePointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
         newTransaction();
     }
 
     @Test
     public void testPointArray()
     {
-        Point[] array = new Point[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1 ),
-                Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 1, 3 )};
+        Point[] array = new Point[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 1, 1 ),
+                                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 2, 1, 3 )};
         String key = "testpointarray";
         node1.setProperty( key, array );
         newTransaction();

@@ -59,7 +59,9 @@ import static java.time.temporal.ChronoField.YEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -68,7 +70,7 @@ import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.pointValue;
+import static org.neo4j.values.storable.Values.unsafePointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class Neo4jPackV2Test
@@ -76,7 +78,7 @@ public class Neo4jPackV2Test
     private static final String[] TIME_ZONE_NAMES =
             TimeZones.supportedTimeZones().stream()
                     .filter( s -> ZoneId.getAvailableZoneIds().contains( s ) )
-                    .toArray( length -> new String[length] );
+                    .toArray( String[]::new );
 
     private static final int RANDOM_VALUES_TO_TEST = 1_000;
     private static final int RANDOM_LISTS_TO_TEST = 1_000;
@@ -250,7 +252,7 @@ public class Neo4jPackV2Test
     private static <T extends AnyValue> void testPackingAndUnpacking( Function<Integer,T> randomValueGenerator )
     {
         IntStream.range( 0, RANDOM_VALUES_TO_TEST )
-                .mapToObj( index -> randomValueGenerator.apply( index ) )
+                .mapToObj( randomValueGenerator::apply )
                 .forEach( originalValue ->
                 {
                     T unpackedValue = packAndUnpack( originalValue );
@@ -335,8 +337,11 @@ public class Neo4jPackV2Test
 
     private static PointValue randomPoint( int index, int dimension )
     {
-        CoordinateReferenceSystem crs = index % 2 == 0 ? WGS84 : Cartesian;
-        return pointValue( crs, random().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
+        CoordinateReferenceSystem crs =
+                index % 2 == 0 ?
+                    dimension == 2 ? WGS84 : WGS84_3D :
+                    dimension == 2 ? Cartesian : Cartesian_3D;
+        return unsafePointValue( crs, random().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
     }
 
     private DurationValue randomDuration( int index )
