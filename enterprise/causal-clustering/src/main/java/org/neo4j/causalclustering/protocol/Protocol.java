@@ -96,13 +96,13 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
 
     enum ModifierProtocols implements ModifierProtocol
     {
-        COMPRESSION_GZIP( ModifierProtocolCategory.COMPRESSION, "Gzip" ),
-        COMPRESSION_SNAPPY( ModifierProtocolCategory.COMPRESSION, "Snappy" ),
-        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolCategory.COMPRESSION, "Snappy_validating" ),
-        COMPRESSION_LZ4( ModifierProtocolCategory.COMPRESSION, "LZ4" ),
-        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolCategory.COMPRESSION, "LZ4_high_compression" ),
-        COMPRESSION_LZ4_VALIDATING( ModifierProtocolCategory.COMPRESSION, "LZ_validating" ),
-        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolCategory.COMPRESSION, "LZ4_high_compression_validating" );
+        COMPRESSION_GZIP( ModifierProtocolCategory.COMPRESSION, Implementations.GZIP ),
+        COMPRESSION_SNAPPY( ModifierProtocolCategory.COMPRESSION, Implementations.SNAPPY ),
+        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.SNAPPY_VALIDATING ),
+        COMPRESSION_LZ4( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4 ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4_HIGH_COMPRESSION ),
+        COMPRESSION_LZ4_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.LZ_VALIDATING ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4_HIGH_COMPRESSION_VALIDATING );
 
         // Should be human writable into a comma separated list
         private final String friendlyName;
@@ -131,6 +131,17 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
             return Stream.of( ModifierProtocols.values() )
                     .filter( protocol -> Objects.equals( protocol.friendlyName.toLowerCase(), friendlyName.toLowerCase() ) )
                     .findFirst();
+        }
+
+        public static class Implementations
+        {
+            public static final String GZIP = "Gzip";
+            public static final String SNAPPY = "Snappy";
+            public static final String SNAPPY_VALIDATING = "Snappy_validating";
+            public static final String LZ4 = "LZ4";
+            public static final String LZ4_HIGH_COMPRESSION = "LZ4_high_compression";
+            public static final String LZ_VALIDATING = "LZ_validating";
+            public static final String LZ4_HIGH_COMPRESSION_VALIDATING = "LZ4_high_compression_validating";
         }
     }
 }

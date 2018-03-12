@@ -42,6 +42,13 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY_VALIDATING;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -493,9 +500,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<Integer>> raft_versions =
             setting( "causal_clustering.protocol_versions.raft", list( ",", INTEGER ), "" );
 
-    // TODO how to document supported algorithms?
     @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
-            " Listed in descending order of preference for incoming connections. An empty list implies no compression." )
+            " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
+            " Allowable values: [" + GZIP + "," + SNAPPY + "," + SNAPPY_VALIDATING + "," +
+            LZ4 + "," + LZ4_HIGH_COMPRESSION + "," + LZ_VALIDATING + "," + LZ4_HIGH_COMPRESSION_VALIDATING + "]" )
     public static final Setting<List<String>> compression_versions =
             setting( "causal_clustering.protocol_versions.compression", STRING_LIST, "");
 }
