@@ -75,6 +75,14 @@ public class OnlineIndexUpdates implements IndexUpdates
         return updates.iterator();
     }
 
+    public void feed( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexEntryUpdates )
+    {
+        for ( IndexEntryUpdate<LabelSchemaDescriptor> indexEntryUpdate : indexEntryUpdates )
+        {
+            updates.add( indexEntryUpdate );
+        }
+    }
+
     @Override
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
@@ -169,5 +177,10 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
         nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.NORMAL );
         return nodeRecord;
+    }
+
+    public void clear()
+    {
+        updates.clear();
     }
 }

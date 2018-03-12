@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state.machines.token;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -117,7 +118,10 @@ abstract class ReplicatedTokenHolder<TOKEN extends Token> implements TokenHolder
         createToken( txState, tokenName, tokenId );
         try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
         {
-            storageEngine.createCommands( commands, txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
+            // Passing emptyList() as index updates target may seem quite counter-intuitive,
+            // but the fact is that there will be no index updates generated from token transactions
+            // and this immutable list acts as an assertion that it will always be the case.
+            storageEngine.createCommands( commands, Collections.emptyList(), txState, statement, ResourceLocker.NONE, Long.MAX_VALUE );
         }
         catch ( CreateConstraintFailureException | TransactionFailureException | ConstraintValidationException e )
         {

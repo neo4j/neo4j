@@ -378,6 +378,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             return null;
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),
+                any( Collection.class ),
                 any( TransactionState.class ),
                 any( StorageStatement.class ),
                 any( ResourceLocker.class ),

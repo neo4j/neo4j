@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -61,6 +62,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
@@ -96,7 +98,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .indexProvider( new InMemoryIndexProvider() )
                 .build();
         storageEngine.apply( tx( singletonList( createIndexRule(
-                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ) ),
+                InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, 1, descriptor ) ), emptyList() ),
                 TransactionApplicationMode.EXTERNAL );
         Dependencies dependencies = new Dependencies();
         storageEngine.satisfyDependencies( dependencies );
@@ -133,10 +135,11 @@ public class IndexWorkSyncTransactionApplicationStressIT
         return Values.of( id + "_" + progress );
     }
 
-    private static TransactionToApply tx( Collection<StorageCommand> commands )
+    private static TransactionToApply tx( Collection<StorageCommand> commands, Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates )
     {
         TransactionToApply tx = new TransactionToApply( transactionRepresentation( commands ) );
         tx.commitment( NO_COMMITMENT, 0 );
+        tx.indexUpdates( indexUpdates );
         return tx;
     }
 
@@ -202,11 +205,12 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
+            Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates = new ArrayList<>();
             try ( StorageStatement statement = storageEngine.storeReadLayer().newStatement() )
             {
-                storageEngine.createCommands( commands, txState, statement, null, 0 );
+                storageEngine.createCommands( commands, indexUpdates, txState, statement, null, 0 );
             }
-            return tx( commands );
+            return tx( commands, indexUpdates );
         }
 
         private void verifyIndex( TransactionToApply tx ) throws Exception

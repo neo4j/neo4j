@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
 
@@ -62,7 +61,8 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
 
     private List<NodeLabelUpdate> labelUpdates;
-    private IndexUpdates indexUpdates;
+    private OnlineIndexUpdates indexUpdates;
+    private CommandsToApply transaction;
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
@@ -80,6 +80,8 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
+        this.transaction = transaction;
+        transactionApplier.initialize();
         return transactionApplier;
     }
 
@@ -135,22 +137,34 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private final NodeStore nodeStore;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
+        private boolean extract;
 
         SingleTransactionApplier( NodeStore nodeStore )
         {
             this.nodeStore = nodeStore;
         }
 
+        void initialize()
+        {
+            extract = transaction.indexUpdates() == null;
+        }
+
         @Override
         public void close() throws Exception
         {
-            if ( indexUpdatesExtractor.containsAnyNodeOrPropertyUpdate() )
+            if ( extract )
             {
-                // Queue the index updates. When index updates from all transactions in this batch have been accumulated
-                // we'll feed them to the index updates work sync at the end of the batch
-                indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(),
-                        indexUpdatesExtractor.nodeCommandsById() );
-                indexUpdatesExtractor.close();
+                if ( indexUpdatesExtractor.containsAnyNodeOrPropertyUpdate() )
+                {
+                    // Queue the index updates. When index updates from all transactions in this batch have been accumulated
+                    // we'll feed them to the index updates work sync at the end of the batch
+                    indexUpdates().feed( indexUpdatesExtractor.propertyCommandsByNodeIds(), indexUpdatesExtractor.nodeCommandsById() );
+                    indexUpdatesExtractor.close();
+                }
+            }
+            else
+            {
+                indexUpdates().feed( transaction.indexUpdates() );
             }
 
             // Created pending indexes
@@ -161,7 +175,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             }
         }
 
-        private IndexUpdates indexUpdates()
+        private OnlineIndexUpdates indexUpdates()
         {
             if ( indexUpdates == null )
             {
@@ -195,13 +209,21 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             }
 
             // for indexes
-            return indexUpdatesExtractor.visitNodeCommand( command );
+            if ( extract )
+            {
+                indexUpdatesExtractor.visitNodeCommand( command );
+            }
+            return false;
         }
 
         @Override
         public boolean visitPropertyCommand( PropertyCommand command )
         {
-            return indexUpdatesExtractor.visitPropertyCommand( command );
+            if ( extract )
+            {
+                indexUpdatesExtractor.visitPropertyCommand( command );
+            }
+            return false;
         }
 
         @Override

@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,6 +40,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
@@ -55,12 +57,12 @@ import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
@@ -263,7 +265,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext allocateCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize, indexingService );
     }
 
     @Override
@@ -276,6 +278,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void createCommands(
             Collection<StorageCommand> commands,
+            Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates,
             ReadableTransactionState txState,
             StorageStatement storageStatement,
             ResourceLocker locks,
@@ -310,6 +313,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Convert record state into commands
             recordState.extractCommands( commands );
             countsRecordState.extractCommands( commands );
+
+            // Extract index updates
+            creationContext.extractIndexUpdates( commands, indexUpdates );
         }
     }
 
