@@ -112,7 +112,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -143,7 +142,6 @@ import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.test.mockito.answer.AwaitAnswer.afterAwaiting;
 
 public class IndexingServiceTest
 {
@@ -230,8 +228,7 @@ public class IndexingServiceTest
         // given
         when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
 
-        CountDownLatch latch = new CountDownLatch( 1 );
-        doAnswer( afterAwaiting( latch ) ).when( populator ).add( anyList() );
+        CountDownLatch populationLatch = new CountDownLatch( 1 );
 
         Barrier.Control populationStartBarrier = new Barrier.Control();
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
@@ -240,6 +237,20 @@ public class IndexingServiceTest
             public void indexPopulationScanStarting()
             {
                 populationStartBarrier.reached();
+            }
+
+            @Override
+            public void indexPopulationScanComplete()
+            {
+                try
+                {
+                    populationLatch.await();
+                }
+                catch ( InterruptedException e )
+                {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException( "Index population monitor was interrupted", e );
+                }
             }
         };
         IndexingService indexingService =
@@ -261,10 +272,10 @@ public class IndexingServiceTest
             updater.process( value2 );
         }
 
-        latch.countDown();
+        populationLatch.countDown();
 
         waitForIndexesToComeOnline( indexingService, 0 );
-        verify( populator, timeout( 1000 ) ).close( true );
+        verify( populator ).close( true );
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
