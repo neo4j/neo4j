@@ -105,20 +105,7 @@ public class DefaultCapableIndexReference implements CapableIndexReference
 
         DefaultCapableIndexReference that = (DefaultCapableIndexReference) o;
 
-        if ( label != that.label )
-        {
-            return false;
-        }
-        if ( unique != that.unique )
-        {
-            return false;
-        }
-        if ( !Arrays.equals( properties, that.properties ) )
-        {
-            return false;
-        }
-        return providerDescriptor != null ? providerDescriptor.equals( that.providerDescriptor )
-                                          : that.providerDescriptor == null;
+        return label == that.label && unique == that.unique && Arrays.equals( properties, that.properties );
     }
 
     @Override

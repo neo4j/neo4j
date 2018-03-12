@@ -272,7 +272,7 @@ public class ConstraintIndexCreator
             CapableIndexReference index )
     {
         CapableIndexReference existingIndex = schemaRead.index( descriptor.getLabelId(), descriptor.getPropertyIds() );
-        return existingIndex != null && existingIndex.equals( index );
+        return existingIndex != CapableIndexReference.NO_INDEX && existingIndex.equals( index );
     }
 
     private void acquireLabelLock( KernelStatement state, Client locks, int labelId )
