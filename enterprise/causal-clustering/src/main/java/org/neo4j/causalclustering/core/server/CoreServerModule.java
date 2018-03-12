@@ -20,8 +20,6 @@
 package org.neo4j.causalclustering.core.server;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -37,6 +35,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
@@ -59,12 +58,8 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -163,21 +158,12 @@ public class CoreServerModule
         catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                snapshotService, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
                 config.get( CausalClusteringSettings.transaction_listen_address ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
-        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
-        {
-            backupCatchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
-                    platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                    platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                    snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem,
-                    platformModule.pageCache, asCCAddress( config.get( OnlineBackupSettings.online_backup_server ) ), platformModule.storeCopyCheckPointMutex,
-                    serverPipelineWrapper );
-        }
-        else
-        {
-            backupCatchupServer = null;
-        }
+        TransactionBackupServiceProvider
+                transactionBackupServiceProvider = new TransactionBackupServiceProvider( logProvider, userLogProvider, localDatabase::storeId, platformModule,
+                localDatabase::dataSource, localDatabase::isAvailable, snapshotService, fileSystem, serverPipelineWrapper );
+        backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
@@ -189,11 +175,7 @@ public class CoreServerModule
         dependencies.satisfyDependency( catchupServer );
 
         servicesToStopOnStoreCopy.add( catchupServer );
-    }
-
-    public static ListenSocketAddress asCCAddress( HostnamePort hostnamePort )
-    {
-        return new ListenSocketAddress( hostnamePort.getHost(), hostnamePort.getPort() );
+        Optional.ofNullable( backupCatchupServer ).ifPresent( servicesToStopOnStoreCopy::add );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )

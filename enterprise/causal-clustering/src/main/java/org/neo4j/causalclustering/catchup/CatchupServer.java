@@ -115,7 +115,7 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<TransactionIdStore> transactionIdStoreSupplier,
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
-                          CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
+                          CoreSnapshotService snapshotService, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
                           FileSystemAbstraction fs, PageCache pageCache, ListenSocketAddress listenAddress,
                           StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineWrapper pipelineWrapper )
     {
