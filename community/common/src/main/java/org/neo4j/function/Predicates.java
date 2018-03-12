@@ -41,6 +41,8 @@ import static org.neo4j.function.ThrowingSupplier.throwingSupplier;
  */
 public class Predicates
 {
+    public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
+
     private static final int DEFAULT_POLL_INTERVAL = 20;
 
     private Predicates()
@@ -261,8 +263,6 @@ public class Predicates
             return false;
         };
     }
-
-    public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
 
     public static IntPredicate any( int[] values )
     {
