@@ -81,6 +81,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -196,7 +197,8 @@ public class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
-            node.property( "point", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"" );
+            node.property( "pointA", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"" );
+            node.property( "pointB", "\" { x : -8, y : " + i + " } \"" );
             node.property( "date", LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 ) );
             node.property( "time", OffsetTime.of( 1, i % 60, 0, 0, ZoneOffset.ofHours( 9 ) ) );
             node.property( "dateTime",
@@ -263,7 +265,7 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,point:Point{WGS-84},date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
+            println( writer, "id:ID,name,pointA:Point{WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
                              "localDateTime:LocalDateTime,duration:Duration,some-labels:LABEL" );
 
             // Data
@@ -567,8 +569,8 @@ public class CsvInputBatchImportIT
                 propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
             }
 
-            // Special verifier for point property
-            Consumer verifyPoint = actualValue ->
+            // Special verifier for pointA property
+            Consumer verifyPointA = actualValue ->
             {
                 // The y-coordinate should match the node number
                 PointValue v = (PointValue) actualValue;
@@ -576,8 +578,24 @@ public class CsvInputBatchImportIT
                 double expectedY = indexOf( node );
                 String message = actualValue.toString() + " does not have y=" + expectedY;
                 assertEquals( message, expectedY, actualY, 0.1 );
+                message = actualValue.toString() + " does not have crs=wgs-84";
+                assertEquals( message, CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName() );
             };
-            propertyVerifiers.put( "point", verifyPoint );
+            propertyVerifiers.put( "pointA", verifyPointA );
+
+            // Special verifier for pointB property
+            Consumer verifyPointB = actualValue ->
+            {
+                // The y-coordinate should match the node number
+                PointValue v = (PointValue) actualValue;
+                double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
+                double expectedY = indexOf( node );
+                String message = actualValue.toString() + " does not have y=" + expectedY;
+                assertEquals( message, expectedY, actualY, 0.1 );
+                message = actualValue.toString() + " does not have crs=cartesian";
+                assertEquals( message, CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName() );
+            };
+            propertyVerifiers.put( "pointB", verifyPointB );
 
             expectedNodePropertyVerifiers.put( nameOf( node ), propertyVerifiers );
 
