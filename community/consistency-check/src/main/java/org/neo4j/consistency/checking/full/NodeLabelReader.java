@@ -50,10 +50,10 @@ public class NodeLabelReader
     {
     }
 
-    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> Set<Long> getListOfLabels(
+    public static <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> PrimitiveLongSet getListOfLabels(
             NodeRecord nodeRecord, RecordAccess records, CheckerEngine<RECORD, REPORT> engine )
     {
-        final Set<Long> labels = new HashSet<>();
+        final PrimitiveLongSet labels = Primitive.longSet();
 
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField( nodeRecord );
         if ( nodeLabels instanceof DynamicNodeLabels )
@@ -117,15 +117,15 @@ public class NodeLabelReader
         return InlineNodeLabels.get( nodeRecord );
     }
 
-    public static Set<Long> getListOfLabels( long labelField )
+    public static PrimitiveLongSet getListOfLabels( long labelField )
     {
-        final Set<Long> labels = new HashSet<>();
+        final PrimitiveLongSet labels = Primitive.longSet();
         copyToSet( InlineNodeLabels.parseInlined(labelField), labels );
 
         return labels;
     }
 
-    private static void copyToSet( long[] array, Set<Long> set )
+    private static void copyToSet( long[] array, PrimitiveLongSet set )
     {
         for ( long labelId : array )
         {

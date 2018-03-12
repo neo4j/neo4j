@@ -93,6 +93,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     @Override
     public IndexReader newReader()
     {
+        //TODO support consistency check at some point
         return IndexReader.EMPTY;
     }
 
