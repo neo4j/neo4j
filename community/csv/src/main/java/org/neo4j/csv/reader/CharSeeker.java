@@ -78,9 +78,29 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
      * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
      * @param extractor {@link Extractor} capable of extracting the value.
+     * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
+     * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, String) extraction}
+     * returns {@code false}.
+     */
+    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
+
+    /**
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
+     * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
+     * @param extractor {@link Extractor} capable of extracting the value.
      * @param optionalData holds additional information for spatial and temporal values or null
      * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
      * returning {@code false} would be if the data to extract was empty.
      */
     boolean tryExtract( Mark mark, Extractor<?> extractor, String optionalData );
+
+    /**
+     * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
+     * @param mark the {@link Mark} specifying which part of a bigger piece of data contains the found value.
+     * @param extractor {@link Extractor} capable of extracting the value.
+     * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
+     * returning {@code false} would be if the data to extract was empty.
+     */
+    boolean tryExtract( Mark mark, Extractor<?> extractor );
 }

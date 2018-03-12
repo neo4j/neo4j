@@ -146,7 +146,7 @@ public class MultiReadableTest
         for ( String value : line )
         {
             assertTrue( seeker.seek( mark, delimiter ) );
-            assertEquals( value, seeker.extract( mark, extractors.string(), null ).value() );
+            assertEquals( value, seeker.extract( mark, extractors.string() ).value() );
         }
         assertTrue( mark.isEndOfLine() );
     }

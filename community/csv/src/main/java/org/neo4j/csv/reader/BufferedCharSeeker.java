@@ -194,6 +194,12 @@ public class BufferedCharSeeker implements CharSeeker
         return setMark( mark, endOffset, skippedChars, END_OF_LINE_CHARACTER, isQuoted );
     }
 
+    @Override
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    {
+        return extract( mark, extractor, null );
+    }
+
     private boolean setMark( Mark mark, int endOffset, int skippedChars, int ch, boolean isQuoted )
     {
         int pos = (trim ? rtrim( bufferPos ) : bufferPos) - endOffset - skippedChars;
@@ -283,6 +289,12 @@ public class BufferedCharSeeker implements CharSeeker
         int from = mark.startPosition();
         int to = mark.position();
         return extractor.extract( buffer, from, to - from, mark.isQuoted(), optionalData );
+    }
+
+    @Override
+    public boolean tryExtract( Mark mark, Extractor<?> extractor )
+    {
+        return tryExtract( mark, extractor, null );
     }
 
     private int nextChar( int skippedChars ) throws IOException

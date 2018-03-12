@@ -359,6 +359,12 @@ public class Extractors
             return extract0( data, offset, length, optionalData );
         }
 
+        @Override
+        public final boolean extract( char[] data, int offset, int length, boolean hadQuotes )
+        {
+            return extract( data, offset, length, hadQuotes, null );
+        }
+
         protected boolean nullValue( int length, boolean hadQuotes )
         {
             return length == 0;
@@ -767,6 +773,12 @@ public class Extractors
         {
             extract0( data, offset, length, optionalData );
             return true;
+        }
+
+        @Override
+        public boolean extract( char[] data, int offset, int length, boolean hadQuotes )
+        {
+            return extract( data, offset, length, hadQuotes, null );
         }
 
         protected abstract void extract0( char[] data, int offset, int length, String optionalData );

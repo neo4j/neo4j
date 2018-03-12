@@ -191,7 +191,7 @@ public class DataFactories
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )
                 {
-                    String entryString = dataSeeker.tryExtract( mark, extractors.string(), null )
+                    String entryString = dataSeeker.tryExtract( mark, extractors.string() )
                             ? extractors.string().value() : null;
                     HeaderEntrySpec spec = new HeaderEntrySpec( entryString );
 

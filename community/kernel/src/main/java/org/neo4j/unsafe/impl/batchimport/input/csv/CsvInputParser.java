@@ -88,7 +88,7 @@ public class CsvInputParser implements Closeable
                 switch ( entry.type() )
                 {
                 case ID:
-                    if ( seeker.tryExtract( mark, entry.extractor(), null ) )
+                    if ( seeker.tryExtract( mark, entry.extractor() ) )
                     {
                         switch ( idType )
                         {
@@ -109,7 +109,7 @@ public class CsvInputParser implements Closeable
                     }
                     break;
                 case START_ID:
-                    if ( seeker.tryExtract( mark, entry.extractor(), null ) )
+                    if ( seeker.tryExtract( mark, entry.extractor() ) )
                     {
                         switch ( idType )
                         {
@@ -127,7 +127,7 @@ public class CsvInputParser implements Closeable
                     }
                     break;
                 case END_ID:
-                    if ( seeker.tryExtract( mark, entry.extractor(), null ) )
+                    if ( seeker.tryExtract( mark, entry.extractor() ) )
                     {
                         switch ( idType )
                         {
@@ -145,7 +145,7 @@ public class CsvInputParser implements Closeable
                     }
                     break;
                  case TYPE:
-                    if ( seeker.tryExtract( mark, entry.extractor(), null ) )
+                    if ( seeker.tryExtract( mark, entry.extractor() ) )
                     {
                         doContinue = visitor.type( (String) entry.extractor().value() );
                     }
@@ -163,7 +163,7 @@ public class CsvInputParser implements Closeable
                     }
                     break;
                 case LABEL:
-                    if ( seeker.tryExtract( mark, entry.extractor(), null ) )
+                    if ( seeker.tryExtract( mark, entry.extractor() ) )
                     {
                         Object labelsValue = entry.extractor().value();
                         if ( labelsValue.getClass().isArray() )
