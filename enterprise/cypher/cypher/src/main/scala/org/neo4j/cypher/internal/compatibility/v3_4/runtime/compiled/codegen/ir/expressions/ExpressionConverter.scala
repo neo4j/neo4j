@@ -131,8 +131,8 @@ object ExpressionConverter {
         val token = context.semanticTable.id(propKey).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case ast.Property(variable@ast.Variable(name), ast.PropertyKeyName(propKeyName)) =>
-        MapProperty(context.getVariable(name), propKeyName)
+      case ast.Property(mapExpression, ast.PropertyKeyName(propKeyName)) =>
+        MapProperty(callback(mapExpression), propKeyName)
 
       case ast.Parameter(name, cypherType) =>
         expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenType(cypherType))
