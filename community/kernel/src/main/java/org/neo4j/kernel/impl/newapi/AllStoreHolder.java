@@ -434,8 +434,8 @@ public class AllStoreHolder extends Read
 
     SchemaIndexDescriptor indexGetForSchema( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor descriptor )
     {
-        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        SchemaIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
+        Iterator<SchemaIndexDescriptor> rules = iterator( indexDescriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
             rules = filter(

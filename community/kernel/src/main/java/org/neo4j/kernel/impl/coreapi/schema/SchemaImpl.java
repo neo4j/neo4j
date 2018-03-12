@@ -331,7 +331,6 @@ public class SchemaImpl implements Schema
         }
     }
 
-
     private static CapableIndexReference getIndexReference( SchemaRead schemaRead, TokenRead tokenRead,
             IndexDefinition index )
             throws SchemaRuleNotFoundException
@@ -344,7 +343,7 @@ public class SchemaImpl implements Schema
         if ( reference == CapableIndexReference.NO_INDEX )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, new org.neo4j.kernel.api.schema
-                    .LabelSchemaDescriptor( labelId, propertyKeyIds ));
+                    .LabelSchemaDescriptor( labelId, propertyKeyIds ) );
         }
 
         return reference;
