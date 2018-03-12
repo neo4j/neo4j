@@ -115,7 +115,7 @@ public abstract class IndexQuery
     {
         if ( valueGroup == ValueGroup.GEOMETRY )
         {
-            throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without at specified CRS" );
+            throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without a specified CRS" );
         }
         return new RangePredicate<>( propertyKeyId, valueGroup, null, true, null, true );
     }
