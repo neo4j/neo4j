@@ -25,11 +25,6 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
@@ -41,14 +36,12 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 public class SpatialFusionIndexReaderTest
 {
@@ -63,8 +56,9 @@ public class SpatialFusionIndexReaderTest
         readerMap = new HashMap<>();
         readerMap.put( CoordinateReferenceSystem.WGS84, mock( IndexReader.class ) );
         readerMap.put( CoordinateReferenceSystem.Cartesian, mock( IndexReader.class ) );
-        fusionIndexReader = new SpatialFusionIndexReader( readerMap, SchemaIndexDescriptorFactory
-                .forLabel( LABEL_KEY, PROP_KEY ) );
+        readerMap.put( CoordinateReferenceSystem.Cartesian_3D, mock( IndexReader.class ) );
+        fusionIndexReader = new SpatialFusionIndexReader( readerMap,
+                                                          SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     @Test
@@ -78,23 +72,6 @@ public class SpatialFusionIndexReaderTest
         {
             verify( reader, times( 1 ) ).close();
         }
-    }
-
-    @Test
-    public void closeIteratorMustCloseAll() throws Exception
-    {
-        // Given
-        PrimitiveLongResourceIterator wgs84Iter = mock( PrimitiveLongResourceIterator.class );
-        PrimitiveLongResourceIterator cartesianIter = mock( PrimitiveLongResourceIterator.class );
-        when( readerMap.get( CoordinateReferenceSystem.WGS84 ).query( any( IndexQuery.class ) ) ).thenReturn( wgs84Iter );
-        when( readerMap.get( CoordinateReferenceSystem.Cartesian ).query( any( IndexQuery.class ) ) ).thenReturn( cartesianIter );
-
-        // When
-        fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
-
-        // Then
-        verify( wgs84Iter, times( 1 ) ).close();
-        verify( cartesianIter, times( 1 ) ).close();
     }
 
     @Test
@@ -138,25 +115,6 @@ public class SpatialFusionIndexReaderTest
             RangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
 
             verifyQueryWithCorrectReader( readerMap.get( CoordinateReferenceSystem.WGS84 ), geometryRange );
-        }
-    }
-
-    @Test
-    public void mustCombineResultFromExistsPredicate() throws Exception
-    {
-        // given
-        IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
-        when( readerMap.get( CoordinateReferenceSystem.Cartesian ).query( exists ) ).thenReturn(
-                PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 4L, 5L ) );
-        when( readerMap.get( CoordinateReferenceSystem.WGS84 ).query( exists ) ).thenReturn(
-                PrimitiveLongResourceCollections.iterator( null, 2L, 3L, 6L ) );
-
-        PrimitiveLongIterator result = fusionIndexReader.query( exists );
-
-        PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
-        for ( long i = 0L; i < 7L; i++ )
-        {
-            assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
         }
     }
 
