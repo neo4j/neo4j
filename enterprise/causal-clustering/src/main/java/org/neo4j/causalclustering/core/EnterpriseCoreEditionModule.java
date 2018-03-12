@@ -239,7 +239,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
-        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config );
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
         ApplicationSupportedProtocols supportedApplicationProtocol = supportedProtocolCreator.createSupportedRaftProtocol();
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
 

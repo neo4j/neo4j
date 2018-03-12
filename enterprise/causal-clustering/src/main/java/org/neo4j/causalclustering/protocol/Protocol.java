@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.protocol;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public interface Protocol<IMPL extends Comparable<IMPL>>
@@ -28,6 +29,15 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
     String category();
 
     IMPL implementation();
+
+    static <IMPL extends Comparable<IMPL>, T extends Protocol<IMPL>> Optional<T> find(
+            T[] values, Category<T> category, IMPL implementation, Function<IMPL,IMPL> normalise )
+    {
+        return Stream.of( values )
+                .filter( protocol -> Objects.equals( protocol.category(), category.canonicalName() ) )
+                .filter( protocol -> Objects.equals( normalise.apply( protocol.implementation() ), normalise.apply( implementation ) ) )
+                .findFirst();
+    }
 
     interface Category<T extends Protocol>
     {
@@ -74,6 +84,11 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
         public Integer implementation()
         {
             return version;
+        }
+
+        public static Optional<ApplicationProtocol> find( ApplicationProtocolCategory category, Integer version )
+        {
+            return Protocol.find( ApplicationProtocols.values(), category, version, Function.identity() );
         }
     }
 
@@ -126,11 +141,9 @@ public interface Protocol<IMPL extends Comparable<IMPL>>
             return identifier.canonicalName();
         }
 
-        public static Optional<ModifierProtocols> fromFriendlyName( String friendlyName )
+        public static Optional<ModifierProtocol> find( ModifierProtocolCategory category, String friendlyName )
         {
-            return Stream.of( ModifierProtocols.values() )
-                    .filter( protocol -> Objects.equals( protocol.friendlyName.toLowerCase(), friendlyName.toLowerCase() ) )
-                    .findFirst();
+            return Protocol.find( ModifierProtocols.values(), category, friendlyName, String::toLowerCase );
         }
 
         public static class Implementations

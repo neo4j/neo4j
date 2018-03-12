@@ -19,31 +19,56 @@
  */
 package org.neo4j.causalclustering.core;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
-import org.neo4j.graphdb.config.Setting;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.stream.Streams;
+
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
 
 public class SupportedProtocolCreator
 {
     private final Config config;
+    private final Log log;
 
-    public SupportedProtocolCreator( Config config )
+    public SupportedProtocolCreator( Config config, LogProvider logProvider )
     {
         this.config = config;
+        this.log = logProvider.getLog( getClass() );
     }
 
     public ApplicationSupportedProtocols createSupportedRaftProtocol()
     {
-        List<Integer> raftVersions = config.get( CausalClusteringSettings.raft_versions );
-        return new ApplicationSupportedProtocols( Protocol.ApplicationProtocolCategory.RAFT, raftVersions );
+        List<Integer> configVersions = config.get( CausalClusteringSettings.raft_versions );
+        if ( configVersions.isEmpty() )
+        {
+            return new ApplicationSupportedProtocols( RAFT, Collections.emptyList() );
+        }
+        else
+        {
+            List<Integer> knownVersions =
+                    protocolsForConfig( RAFT, configVersions, version -> Protocol.ApplicationProtocols.find( RAFT, version ) );
+            if ( knownVersions.isEmpty() )
+            {
+                throw new IllegalArgumentException( String.format( "None of configured Raft implementations %s are known", configVersions ) );
+            }
+            else
+            {
+                return new ApplicationSupportedProtocols( RAFT, knownVersions );
+            }
+        }
     }
 
     public List<ModifierSupportedProtocols> createSupportedModifierProtocols()
@@ -57,20 +82,30 @@ public class SupportedProtocolCreator
 
     private ModifierSupportedProtocols compressionProtocolVersions()
     {
-        return modifierProtocolVersions( CausalClusteringSettings.compression_versions, Protocol.ModifierProtocolCategory.COMPRESSION );
+        List<String> implementations = protocolsForConfig( COMPRESSION, config.get( CausalClusteringSettings.compression_versions ),
+                implementation -> Protocol.ModifierProtocols.find( COMPRESSION, implementation ) );
+
+        return new ModifierSupportedProtocols( COMPRESSION, implementations );
     }
 
-    private ModifierSupportedProtocols modifierProtocolVersions(
-            Setting<List<String>> compressionVersions, Protocol.ModifierProtocolCategory identifier )
+    private <IMPL extends Comparable<IMPL>, T extends Protocol<IMPL>> List<IMPL> protocolsForConfig( Protocol.Category<T> category, List<IMPL> implementations,
+            Function<IMPL,Optional<T>> finder )
     {
-        List<String> compressionAlgorithms = config.get( compressionVersions );
-        List<String> versions = compressionAlgorithms.stream()
-                .map( Protocol.ModifierProtocols::fromFriendlyName )
+        return implementations.stream()
+                .map( impl -> Pair.of( impl, finder.apply( impl ) ) )
+                .peek( protocolWithImplementation -> logUnknownProtocol( category, protocolWithImplementation ) )
+                .map( Pair::other )
                 .flatMap( Streams::ofOptional )
-                .filter( protocol -> Objects.equals( protocol.category(), identifier.canonicalName() ) )
-                .map( Protocol.ModifierProtocols::implementation )
+                .map( Protocol::implementation )
                 .collect( Collectors.toList() );
+    }
 
-        return new ModifierSupportedProtocols( identifier, versions );
+    private <IMPL extends Comparable<IMPL>, T extends Protocol<IMPL>> void logUnknownProtocol( Protocol.Category<T> category,
+            Pair<IMPL,Optional<T>> protocolWithImplementation )
+    {
+        if ( !protocolWithImplementation.other().isPresent() )
+        {
+            log.warn( "Configured %s protocol implementation %s unknown. Ignoring.", category, protocolWithImplementation.first() );
+        }
     }
 }
