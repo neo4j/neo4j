@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -73,13 +73,13 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     public void testLabelIndex() throws Throwable
     {
         // Given there is label with index and a constraint
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long nodeId = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-        int propertyIdName = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
-        int propertyIdAge = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "age" );
-        statement.dataWriteOperations()
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId = transaction.dataWrite().nodeCreate();
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
+        int propertyIdName = transaction.tokenWrite().propertyKeyGetOrCreateForName( "name" );
+        int propertyIdAge = transaction.tokenWrite().propertyKeyGetOrCreateForName( "age" );
+        transaction.dataWrite()
                 .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
         commit();
 
@@ -113,15 +113,15 @@ public class SchemaProcedureIT extends KernelIntegrationTest
     public void testRelationShip() throws Throwable
     {
         // Given there ar
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long nodeIdPerson = statement.dataWriteOperations().nodeCreate();
-        int labelIdPerson = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-        statement.dataWriteOperations().nodeAddLabel( nodeIdPerson, labelIdPerson );
-        long nodeIdLocation = statement.dataWriteOperations().nodeCreate();
-        int labelIdLocation = statement.tokenWriteOperations().labelGetOrCreateForName( "Location" );
-        statement.dataWriteOperations().nodeAddLabel( nodeIdLocation, labelIdLocation );
-        int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "LIVES_IN" );
-        statement.dataWriteOperations().relationshipCreate( relationshipTypeId, nodeIdPerson, nodeIdLocation );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeIdPerson = transaction.dataWrite().nodeCreate();
+        int labelIdPerson = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        transaction.dataWrite().nodeAddLabel( nodeIdPerson, labelIdPerson );
+        long nodeIdLocation = transaction.dataWrite().nodeCreate();
+        int labelIdLocation = transaction.tokenWrite().labelGetOrCreateForName( "Location" );
+        transaction.dataWrite().nodeAddLabel( nodeIdLocation, labelIdLocation );
+        int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "LIVES_IN" );
+        transaction.dataWrite().relationshipCreate(  nodeIdPerson, relationshipTypeId, nodeIdLocation );
         commit();
 
         // When

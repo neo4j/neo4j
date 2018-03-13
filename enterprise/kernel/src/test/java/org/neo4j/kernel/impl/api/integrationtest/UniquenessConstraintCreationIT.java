@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
@@ -131,21 +130,21 @@ public class UniquenessConstraintCreationIT
     public void shouldAbortConstraintCreationWhenDuplicatesExist() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
         // name is not unique for Foo in the existing data
 
-        int foo = statement.tokenWriteOperations().labelGetOrCreateForName( "Foo" );
-        int name = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "name" );
+        int foo = transaction.tokenWrite().labelGetOrCreateForName( "Foo" );
+        int name = transaction.tokenWrite().propertyKeyGetOrCreateForName( "name" );
 
-        long node1 = statement.dataWriteOperations().nodeCreate();
+        long node1 = transaction.dataWrite().nodeCreate();
 
-        statement.dataWriteOperations().nodeAddLabel( node1, foo );
-        statement.dataWriteOperations().nodeSetProperty( node1, name, Values.of( "foo" ) );
+        transaction.dataWrite().nodeAddLabel( node1, foo );
+        transaction.dataWrite().nodeSetProperty( node1, name, Values.of( "foo" ) );
 
-        long node2 = statement.dataWriteOperations().nodeCreate();
-        statement.dataWriteOperations().nodeAddLabel( node2, foo );
+        long node2 = transaction.dataWrite().nodeCreate();
+        transaction.dataWrite().nodeAddLabel( node2, foo );
 
-        statement.dataWriteOperations().nodeSetProperty( node2, name, Values.of( "foo" ) );
+        transaction.dataWrite().nodeSetProperty( node2, name, Values.of( "foo" ) );
         commit();
 
         // when
@@ -189,15 +188,15 @@ public class UniquenessConstraintCreationIT
     public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );
+        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
 
         // when
         rollback();
 
         // then
-        KernelTransaction transaction = newTransaction();
+        transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
@@ -267,10 +266,10 @@ public class UniquenessConstraintCreationIT
     public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
-        UniquenessConstraintDescriptor constraint =
-                statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );
+        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        ConstraintDescriptor constraint =
+                transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
 
         // when
@@ -279,7 +278,7 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        KernelTransaction transaction = newTransaction();
+        transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }

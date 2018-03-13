@@ -124,7 +124,7 @@ public abstract class KernelIntegrationTest
         return transaction;
     }
 
-    protected KernelTransaction newTransaction(LoginContext loginContext) throws TransactionFailureException
+    protected KernelTransaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
         return transaction;
@@ -227,7 +227,7 @@ public abstract class KernelIntegrationTest
 
     boolean nodeHasLabel( KernelTransaction transaction, long node, int label )
     {
-        try( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
             transaction.dataRead().singleNode( node, cursor );
             return cursor.next() && cursor.labels().contains( label );
@@ -356,5 +356,19 @@ public abstract class KernelIntegrationTest
         default:
             throw new IllegalStateException( direction + " is not a valid direction" );
         }
+    }
+
+    int countNodes( KernelTransaction transaction )
+    {
+        int result = 0;
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+        {
+            transaction.dataRead().allNodesScan( cursor );
+            while ( cursor.next() )
+            {
+                result++;
+            }
+        }
+        return result;
     }
 }

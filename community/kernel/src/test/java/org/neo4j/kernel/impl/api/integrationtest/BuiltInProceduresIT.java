@@ -33,8 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -63,10 +63,10 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long nodeId = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( "MyLabel" );
-        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long nodeId = transaction.dataWrite().nodeCreate();
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
+        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
         commit();
 
         // When
@@ -98,11 +98,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listRelationshipTypes() throws Throwable
     {
         // Given
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "MyRelType" );
-        long startNodeId = statement.dataWriteOperations().nodeCreate();
-        long endNodeId = statement.dataWriteOperations().nodeCreate();
-        statement.dataWriteOperations().relationshipCreate( relType, startNodeId, endNodeId );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
+        long startNodeId = transaction.dataWrite().nodeCreate();
+        long endNodeId = transaction.dataWrite().nodeCreate();
+        transaction.dataWrite().relationshipCreate(  startNodeId, relType, endNodeId );
         commit();
 
         // When
@@ -304,15 +304,15 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllIndexes() throws Throwable
     {
         // Given
-        Statement statement = statementInNewTransaction( AUTH_DISABLED );
-        int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
-        int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "Age" );
-        int propertyKeyId1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );
-        int propertyKeyId2 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "bar" );
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
+        int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
+        int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
+        int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
         //TODO: Add test support for composite indexes
-        statement.schemaWriteOperations().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
-        statement.schemaWriteOperations().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
+        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
+        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
         commit();
 
         //let indexes come online

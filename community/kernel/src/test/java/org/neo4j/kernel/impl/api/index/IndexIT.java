@@ -44,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
@@ -264,11 +263,11 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( AUTH_DISABLED );
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        transaction.schemaWrite().uniquePropertyConstraintCreate(
                 SchemaDescriptorFactory.forLabel(
-                        statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" ),
-                        statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "property1" )
+                        transaction.tokenWrite().labelGetOrCreateForName( "Label1" ),
+                        transaction.tokenWrite().propertyKeyGetOrCreateForName( "property1" )
                 ) );
         commit();
 

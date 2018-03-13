@@ -137,7 +137,6 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // given
         KernelTransaction transaction = newTransaction();
 
-
         // when
         ConstraintDescriptor constraint = createConstraint( transaction.schemaWrite(), descriptor );
 
@@ -183,7 +182,6 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // given
         KernelTransaction transaction = newTransaction();
 
-
         Constraint constraint = createConstraint( transaction.schemaWrite(), descriptor );
 
         // when
@@ -191,7 +189,6 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         assertFalse( "should not have any constraints", transaction.schemaRead().constraintsGetAll().hasNext() );
-
 
         // when
         commit();

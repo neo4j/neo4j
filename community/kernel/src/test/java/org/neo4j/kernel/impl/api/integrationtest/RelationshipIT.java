@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -172,18 +171,18 @@ public class RelationshipIT extends KernelIntegrationTest
         int relTypeTheNodeDoesUse;
         int relTypeTheNodeDoesNotUse;
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
-            relTypeTheNodeDoesUse = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type1" );
-            relTypeTheNodeDoesNotUse = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( "Type2" );
+            relTypeTheNodeDoesUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
+            relTypeTheNodeDoesNotUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
 
-            refNode = statement.dataWriteOperations().nodeCreate();
-            long otherNode = statement.dataWriteOperations().nodeCreate();
+            refNode = transaction.dataWrite().nodeCreate();
+            long otherNode = transaction.dataWrite().nodeCreate();
 
             for ( int i = 0; i < rels.length; i++ )
             {
                 rels[i] =
-                        statement.dataWriteOperations().relationshipCreate( relTypeTheNodeDoesUse, refNode, otherNode );
+                        transaction.dataWrite().relationshipCreate( refNode, relTypeTheNodeDoesUse, otherNode );
             }
             commit();
         }
