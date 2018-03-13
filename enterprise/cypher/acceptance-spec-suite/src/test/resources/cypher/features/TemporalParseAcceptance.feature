@@ -86,6 +86,7 @@ Feature: TemporalParseAcceptance
               time('214032-0100'),
               time('21:40-01:30'),
               time('2140-00:00'),
+              time('2140-02'),
               time('22+18:00')] as d
       RETURN d
       """
@@ -97,6 +98,7 @@ Feature: TemporalParseAcceptance
       | '21:40:32-01:00'     |
       | '21:40-01:30'        |
       | '21:40Z'             |
+      | '21:40-02:00'        |
       | '22:00+18:00'        |
     And no side effects
 
@@ -134,6 +136,7 @@ Feature: TemporalParseAcceptance
               datetime('2015T214032-0100'),
               datetime('20150721T21:40-01:30'),
               datetime('2015-W30T2140-00:00'),
+              datetime('2015-W30T2140-02'),
               datetime('2015202T21+18:00')] as d
       RETURN d
       """
@@ -145,7 +148,27 @@ Feature: TemporalParseAcceptance
       | '2015-01-01T21:40:32-01:00'     |
       | '2015-07-21T21:40-01:30'        |
       | '2015-07-20T21:40Z'             |
+      | '2015-07-20T21:40-02:00'        |
       | '2015-07-21T21:00+18:00'        |
+    And no side effects
+
+  Scenario: Should parse date time with named time zone from string
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [datetime('2015-07-21T21:40:32.142+02:00[Europe/Stockholm]'),
+              datetime('2015-07-21T21:40:32.142+0845[Australia/Eucla]'),
+              datetime('2015-07-21T21:40:32.142-04[America/New_York]'),
+              datetime('2015-07-21T21:40:32.142[Europe/London]')
+             ] as d
+      RETURN d
+      """
+    Then the result should be, in order:
+      | d                                                 |
+      | '2015-07-21T21:40:32.142+02:00[Europe/Stockholm]' |
+      | '2015-07-21T21:40:32.142+08:45[Australia/Eucla]'  |
+      | '2015-07-21T21:40:32.142-04:00[America/New_York]' |
+      | '2015-07-21T21:40:32.142+01:00[Europe/London]'    |
     And no side effects
 
   Scenario: Should parse duration from string
