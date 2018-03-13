@@ -19,9 +19,12 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Set;
+
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -51,6 +54,13 @@ public interface Procedures
      * @throws ProcedureException
      */
     ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException;
+
+    /**
+     * Fetch all procedures
+     * @return all procedures
+     * @throws ProcedureException
+     */
+    Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException;
 
     /**
      * Invoke a read-only procedure by id.

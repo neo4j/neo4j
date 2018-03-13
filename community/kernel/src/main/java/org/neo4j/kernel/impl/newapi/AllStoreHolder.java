@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
@@ -35,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -681,6 +683,13 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         return procedures.procedure( name );
+    }
+
+    @Override
+    public Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException
+    {
+        ktx.assertOpen();
+        return procedures.getAllProcedures();
     }
 
     @Override
