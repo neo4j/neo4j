@@ -68,6 +68,7 @@ import java.util.zip.ZipOutputStream;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FilePermission;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -315,6 +316,18 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         EphemeralFileData file = files.get( canonicalFile( fileName ) );
         return file == null ? 0 : file.size();
+    }
+
+    @Override
+    public void setPermissions( File fileName, FilePermission ... permissions )
+    {
+        throw new UnsupportedOperationException( "This file system does not support file permissions." );
+    }
+
+    @Override
+    public Set<FilePermission> getPermissions( File fileName )
+    {
+        throw new UnsupportedOperationException( "This file system does not support file permissions." );
     }
 
     @Override

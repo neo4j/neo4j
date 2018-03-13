@@ -20,9 +20,14 @@
 package org.neo4j.io.fs;
 
 import org.junit.jupiter.api.Test;
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.UUID;
 
 import static java.lang.String.format;
@@ -30,6 +35,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.fs.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
 
 public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
@@ -39,6 +48,9 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     {
         return new DefaultFileSystemAbstraction();
     }
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Test
     void shouldFailGracefullyWhenPathCannotBeCreated()
@@ -56,5 +68,43 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
         assertFalse( fsa.fileExists( path ) );
         String expectedMessage = format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path );
         assertThat( exception.getMessage(), is( expectedMessage ) );
+    }
+
+    @Test
+    public void shouldAllowSettingFilePermissionsIfRunningOnPOSIX() throws Exception
+    {
+        // Given
+        assumeTrue( SystemUtils.IS_OS_UNIX );
+
+        // Note that we re-use the file intentionally, to test that the method overwrites
+        // any existing permissions
+        File path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) );
+        fsa.mkdirs( testDirectory.directory() );
+        fsa.create( path ).close();
+
+        for ( FilePermission permission : FilePermission.values() )
+        {
+            // When
+            fsa.setPermissions( path, permission );
+
+            // Then
+            assertEquals( fsa.getPermissions( path ), new HashSet<>( Collections.singletonList( permission ) ) );
+        }
+    }
+
+    @Test
+    public void shouldShoutAndScreamIfSettingPermissionsOnSystemWithoutSupportForIt() throws Exception
+    {
+        // Given
+        assumeFalse( SystemUtils.IS_OS_UNIX );
+        File path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) );
+        fsa.mkdirs( testDirectory.directory() );
+        fsa.create( path ).close();
+
+        // Expect
+        exception.expect( IOException.class );
+
+        // When
+        fsa.setPermissions( path, FilePermission.GROUP_EXECUTE );
     }
 }

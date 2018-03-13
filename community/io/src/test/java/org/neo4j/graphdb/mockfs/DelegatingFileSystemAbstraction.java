@@ -28,10 +28,12 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.fs.FilePermission;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -88,6 +90,18 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
             Function<Class<K>,K> creator )
     {
         return delegate.getOrCreateThirdPartyFileSystem( clazz, creator );
+    }
+
+    @Override
+    public void setPermissions( File fileName, FilePermission ... permissions ) throws IOException
+    {
+        delegate.setPermissions( fileName, permissions );
+    }
+
+    @Override
+    public Set<FilePermission> getPermissions( File fileName ) throws IOException
+    {
+        return delegate.getPermissions( fileName );
     }
 
     @Override
