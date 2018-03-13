@@ -80,7 +80,7 @@ public class CoreServerModule
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
     private final CatchupServer catchupServer;
-    private final CatchupServer backupCatchupServer;
+    private final Optional<CatchupServer> backupCatchupServer;
     private final IdentityModule identityModule;
     private final CoreStateMachinesModule coreStateMachinesModule;
     private final ConsensusModule consensusModule;
@@ -175,7 +175,7 @@ public class CoreServerModule
         dependencies.satisfyDependency( catchupServer );
 
         servicesToStopOnStoreCopy.add( catchupServer );
-        Optional.ofNullable( backupCatchupServer ).ifPresent( servicesToStopOnStoreCopy::add );
+        backupCatchupServer.ifPresent( servicesToStopOnStoreCopy::add );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
@@ -215,7 +215,7 @@ public class CoreServerModule
 
     public Optional<CatchupServer> backupCatchupServer()
     {
-        return Optional.ofNullable( backupCatchupServer );
+        return backupCatchupServer;
     }
 
     public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler )

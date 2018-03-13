@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core;
 
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
@@ -68,19 +68,19 @@ public class TransactionBackupServiceProvider
         this.serverPipelineWrapper = serverPipelineWrapper;
     }
 
-    public @Nullable CatchupServer resolveIfBackupEnabled( Config config )
+    public Optional<CatchupServer> resolveIfBackupEnabled( Config config )
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return new CatchupServer( logProvider, userLogProvider, localDatabaseStoreIdSupplier,
+            return Optional.of( new CatchupServer( logProvider, userLogProvider, localDatabaseStoreIdSupplier,
                     platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                     platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabaseDataSourceSupplier, localDatabaseIsAvailable,
                     coreSnapshotService, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                    backupAddressForTxProtocol( config ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
+                    backupAddressForTxProtocol( config ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper ) );
         }
         else
         {
-            return null;
+            return Optional.empty();
         }
     }
 

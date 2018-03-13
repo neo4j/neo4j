@@ -287,7 +287,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         TransactionBackupServiceProvider transactionBackupServiceProvider =
                 new TransactionBackupServiceProvider( logProvider, userLogProvider, localDatabase::storeId, platformModule, localDatabase::dataSource,
                         localDatabase::isAvailable, null, fileSystem, serverPipelineWrapper );
-        Optional<CatchupServer> backupCatchupServer = Optional.ofNullable( transactionBackupServiceProvider.resolveIfBackupEnabled( config ) );
+        Optional<CatchupServer> backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         servicesToStopOnStoreCopy.add( catchupServer );
         backupCatchupServer.ifPresent( servicesToStopOnStoreCopy::add );
@@ -296,7 +296,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
         backupCatchupServer.ifPresent( life::add );
-        Optional.ofNullable( transactionBackupServiceProvider.resolveIfBackupEnabled( config ) ).ifPresent( life::add );
     }
 
     protected void configureDiscoveryService( DiscoveryServiceFactory discoveryServiceFactory, Dependencies dependencies,
