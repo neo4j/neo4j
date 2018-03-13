@@ -30,6 +30,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.zip.ZipOutputStream;
@@ -38,7 +39,6 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 
 public interface FileSystemAbstraction extends Closeable
 {
-
     /**
      * Create file watcher that provides possibilities to monitor directories on underlying file system
      * abstraction
@@ -59,6 +59,18 @@ public interface FileSystemAbstraction extends Closeable
     Writer openAsWriter( File fileName, Charset charset, boolean append ) throws IOException;
 
     StoreChannel create( File fileName ) throws IOException;
+
+    /**
+     * If the filesystem supports it, sets the specified file permissions, otherwise throw.
+     * @throws UnsupportedOperationException if the underlying system does not support POSIX-style permissions
+     */
+    void setPermissions( File fileName, FilePermission ... permissions ) throws IOException;
+
+    /**
+     * If the underlying system supports it, return file permissions
+     * @throws UnsupportedOperationException if the underlying system does not support POSIX-style permissions
+     */
+    Set<FilePermission> getPermissions( File fileName ) throws IOException;
 
     boolean fileExists( File fileName );
 

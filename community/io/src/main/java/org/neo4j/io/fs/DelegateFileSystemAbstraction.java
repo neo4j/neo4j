@@ -40,6 +40,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -113,6 +114,18 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     public StoreChannel create( File fileName ) throws IOException
     {
         return open( fileName, OpenMode.READ_WRITE );
+    }
+
+    @Override
+    public void setPermissions( File fileName, FilePermission... permissions ) throws IOException
+    {
+        throw new UnsupportedOperationException( "This file system does not support file permissions." );
+    }
+
+    @Override
+    public Set<FilePermission> getPermissions( File fileName ) throws IOException
+    {
+        throw new UnsupportedOperationException( "This file system does not support file permissions." );
     }
 
     @Override
