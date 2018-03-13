@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -532,6 +533,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     public ResourceIterator<Node> findNodes( Label label, String key, Object value )
     {
         return database.findNodes( label, key, value );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
+    {
+        return database.findNodes( label, key, template, searchMode );
     }
 
     @Override

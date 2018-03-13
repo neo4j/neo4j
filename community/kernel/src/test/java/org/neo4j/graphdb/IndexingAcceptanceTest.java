@@ -512,23 +512,18 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldSupportIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats", "Carla" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
 
         // WHEN
         PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx();
-              Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations ops = statement.readOperations();
-            SchemaIndexDescriptor descriptor = indexDescriptor( ops, index );
-            int propertyKeyId = descriptor.schema().getPropertyId();
-            found.addAll( ops.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
+            collectNodes( found, db.findNodes( LABEL1, "name", "Karl", StringSearchMode.PREFIX ) );
         }
 
         // THEN
@@ -537,11 +532,10 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias", "Mats" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
         // WHEN
@@ -550,13 +544,8 @@ public class IndexingAcceptanceTest
         {
             expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
             createNode( db, map( "name", "Karla" ), LABEL1 );
-            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
-            {
-                ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
-                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
-            }
+
+            collectNodes( found, db.findNodes( LABEL1, "name", "Carl", StringSearchMode.PREFIX ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -564,11 +553,10 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
         PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
@@ -583,13 +571,8 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).delete();
                 expected.remove( id );
             }
-            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
-            {
-                ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
-                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
-            }
+
+            collectNodes( found, db.findNodes( LABEL1, "name", "Karl", StringSearchMode.PREFIX ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -597,11 +580,10 @@ public class IndexingAcceptanceTest
 
     @Test
     public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
+        Neo4jMatchers.createIndex( db, LABEL1, "name" );
         createNodes( db, LABEL1, "name", "Mattias" );
         PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
         PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL1, "name", "Karlsson" );
@@ -625,13 +607,8 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).setProperty( "name", "X" + id );
                 expected.remove( id );
             }
-            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
-            {
-                ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
-                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
-            }
+
+            collectNodes( found, db.findNodes( LABEL1, "name", prefix, StringSearchMode.PREFIX ) );
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -651,20 +628,12 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private SchemaIndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
-            throws SchemaRuleNotFoundException
+    private void collectNodes( PrimitiveLongSet bucket, ResourceIterator<Node> toCollect )
     {
-        int labelId = readOperations.labelGetForName( index.getLabel().name() );
-        int[] propertyKeyIds = getPropertyIds( readOperations, index.getPropertyKeys() );
-
-        LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        return readOperations.indexGetForSchema( descriptor );
-    }
-
-    private Statement getStatement( GraphDatabaseAPI db )
-    {
-        return db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).get();
+        while ( toCollect.hasNext() )
+        {
+            bucket.add( toCollect.next().getId() );
+        }
     }
 
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
