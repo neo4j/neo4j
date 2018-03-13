@@ -44,30 +44,35 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     @Rule
     public final TestName testName = new TestName();
 
-    final String template;
-    final String[] matching;
-    final String[] nonMatching;
-    final StringSearchMode searchMode;
+    private final String template;
+    private final String[] matching;
+    private final String[] nonMatching;
+    private final StringSearchMode searchMode;
+    private final boolean withIndex;
 
     private Label LABEL;
     private String KEY = "name";
     private GraphDatabaseService db;
 
-    protected IndexingStringQueryAcceptanceTestBase( String template, String[] matching,
-            String[] nonMatching, StringSearchMode searchMode )
+    IndexingStringQueryAcceptanceTestBase( String template, String[] matching,
+            String[] nonMatching, StringSearchMode searchMode, boolean withIndex )
     {
         this.template = template;
         this.matching = matching;
         this.nonMatching = nonMatching;
         this.searchMode = searchMode;
+        this.withIndex = withIndex;
     }
 
     @Before
-    public void setupLabels()
+    public void setup()
     {
         LABEL = Label.label( "LABEL1-" + testName.getMethodName() );
         db = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( db, LABEL, KEY );
+        if ( withIndex )
+        {
+            Neo4jMatchers.createIndex( db, LABEL, KEY );
+        }
     }
 
     @Test
@@ -165,47 +170,111 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         assertThat( found, equalTo( expected ) );
     }
 
-    public static class EXACT extends IndexingStringQueryAcceptanceTestBase
+    public static abstract class EXACT extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Johan", "Johan", "Johan"};
         static String[] nonMatching = {"Johanna", "Olivia", "InteJohan"};
 
-        public EXACT()
+        EXACT( boolean withIndex )
         {
-            super( "Johan", matching, nonMatching, StringSearchMode.EXACT );
+            super( "Johan", matching, nonMatching, StringSearchMode.EXACT, withIndex );
         }
     }
 
-    public static class PREFIX extends IndexingStringQueryAcceptanceTestBase
+    public static class EXACT_WITH_INDEX extends EXACT
+    {
+        public EXACT_WITH_INDEX()
+        {
+            super( true );
+        }
+    }
+
+    public static class EXACT_WITHOUT_INDEX extends EXACT
+    {
+        public EXACT_WITHOUT_INDEX()
+        {
+            super( false );
+        }
+    }
+
+    public static abstract class PREFIX extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Olivia", "Olivia2", "OliviaYtterbrink"};
         static String[] nonMatching = {"Johan", "olivia", "InteOlivia"};
 
-        public PREFIX()
+        PREFIX( boolean withIndex )
         {
-            super( "Olivia", matching, nonMatching, StringSearchMode.PREFIX );
+            super( "Olivia", matching, nonMatching, StringSearchMode.PREFIX, withIndex );
         }
     }
 
-    public static class SUFFIX extends IndexingStringQueryAcceptanceTestBase
+    public static class PREFIX_WITH_INDEX extends PREFIX
+    {
+        public PREFIX_WITH_INDEX()
+        {
+            super( true );
+        }
+    }
+
+    public static class PREFIX_WITHOUT_INDEX extends PREFIX
+    {
+        public PREFIX_WITHOUT_INDEX()
+        {
+            super( false );
+        }
+    }
+
+    public static abstract class SUFFIX extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Jansson", "Hansson", "Svensson"};
         static String[] nonMatching = {"Taverner", "Svensson-Averbuch", "Taylor"};
 
-        public SUFFIX()
+        SUFFIX( boolean withIndex )
         {
-            super( "sson", matching, nonMatching, StringSearchMode.SUFFIX );
+            super( "sson", matching, nonMatching, StringSearchMode.SUFFIX, withIndex );
         }
     }
 
-    public static class CONTAINS extends IndexingStringQueryAcceptanceTestBase
+    public static class SUFFIX_WITH_INDEX extends SUFFIX
+    {
+        public SUFFIX_WITH_INDEX()
+        {
+            super( true );
+        }
+    }
+
+    public static class SUFFIX_WITHOUT_INDEX extends SUFFIX
+    {
+        public SUFFIX_WITHOUT_INDEX()
+        {
+            super( false );
+        }
+    }
+
+    public static abstract class CONTAINS extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"good", "fool", "fooooood"};
         static String[] nonMatching = {"evil", "genius", "hungry"};
 
-        public CONTAINS()
+        public CONTAINS( boolean withIndex )
         {
-            super( "oo", matching, nonMatching, StringSearchMode.CONTAINS );
+            super( "oo", matching, nonMatching, StringSearchMode.CONTAINS, withIndex );
+        }
+    }
+
+    public static class CONTAINS_WITH_INDEX extends CONTAINS
+    {
+        public CONTAINS_WITH_INDEX()
+        {
+            super( true );
+        }
+    }
+
+    public static class CONTAINS_WITHOUT_INDEX extends CONTAINS
+    {
+        public CONTAINS_WITHOUT_INDEX()
+        {
+            super( false );
         }
     }
 
