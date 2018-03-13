@@ -37,6 +37,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -1010,6 +1011,33 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             diffs.addAll( diffSet.getAdded().iterator() );
             diffs.removeAll( diffSet.getRemoved().iterator() );
+        }
+        return diffs;
+    }
+
+    @Override
+    public PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor descriptor, IndexQuery query )
+    {
+        descriptor.schema().getPropertyId(); // assert single property index
+
+        if ( indexUpdates == null )
+        {
+            return PrimitiveLongReadableDiffSets.EMPTY;
+        }
+        Map<ValueTuple, PrimitiveLongDiffSets> updates = indexUpdates.get( descriptor.schema() );
+        if ( updates == null )
+        {
+            return PrimitiveLongReadableDiffSets.EMPTY;
+        }
+        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
+        for ( Map.Entry<ValueTuple,PrimitiveLongDiffSets> entry : updates.entrySet() )
+        {
+            if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
+            {
+                PrimitiveLongDiffSets diffsets = entry.getValue();
+                diffs.addAll( diffsets.getAdded().iterator() );
+                diffs.removeAll( diffsets.getRemoved().iterator() );
+            }
         }
         return diffs;
     }

@@ -75,19 +75,23 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             seekQuery( descriptor, query );
             break;
 
-        case stringSuffix:
-        case stringContains:
         case exists:
             scanQuery( descriptor );
             break;
 
         case range:
             assert query.length == 1;
-            rangeQuery( descriptor, (IndexQuery.RangePredicate) query[0] );
+            rangeQuery( descriptor, (IndexQuery.RangePredicate) firstPredicate );
             break;
 
         case stringPrefix:
-            prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) query[0] );
+            prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) firstPredicate );
+            break;
+
+        case stringSuffix:
+        case stringContains:
+            assert query.length == 1;
+            suffixOrContainsQuery( descriptor, firstPredicate );
             break;
 
         default:
@@ -252,6 +256,18 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
+        }
+    }
+
+    private void suffixOrContainsQuery( SchemaIndexDescriptor descriptor, IndexQuery query )
+    {
+        needsValues = true;
+        if ( read.hasTxStateWithChanges() )
+        {
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForSuffixOrContains( descriptor, query );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }
