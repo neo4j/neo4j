@@ -536,6 +536,25 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        return database.findNodes( label, key1, value1, key2, value2 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3 )
+    {
+        return database.findNodes( label, key1, value1, key2, value2, key3, value3 );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        return database.findNodes( label, propertyValues );
+    }
+
+    @Override
     public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
     {
         return database.findNodes( label, key, template, searchMode );

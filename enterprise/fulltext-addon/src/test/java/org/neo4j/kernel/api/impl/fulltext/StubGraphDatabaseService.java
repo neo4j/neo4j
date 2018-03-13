@@ -91,6 +91,25 @@ public class StubGraphDatabaseService implements GraphDatabaseService
     }
 
     @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        return null;
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3 )
+    {
+        return null;
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        return null;
+    }
+
+    @Override
     public ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
     {
         return null;
