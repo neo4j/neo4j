@@ -170,7 +170,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         assertThat( found, equalTo( expected ) );
     }
 
-    public static abstract class EXACT extends IndexingStringQueryAcceptanceTestBase
+    public abstract static class EXACT extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Johan", "Johan", "Johan"};
         static String[] nonMatching = {"Johanna", "Olivia", "InteJohan"};
@@ -197,7 +197,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    public static abstract class PREFIX extends IndexingStringQueryAcceptanceTestBase
+    public abstract static class PREFIX extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Olivia", "Olivia2", "OliviaYtterbrink"};
         static String[] nonMatching = {"Johan", "olivia", "InteOlivia"};
@@ -224,7 +224,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    public static abstract class SUFFIX extends IndexingStringQueryAcceptanceTestBase
+    public abstract static class SUFFIX extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"Jansson", "Hansson", "Svensson"};
         static String[] nonMatching = {"Taverner", "Svensson-Averbuch", "Taylor"};
@@ -251,7 +251,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    public static abstract class CONTAINS extends IndexingStringQueryAcceptanceTestBase
+    public abstract static class CONTAINS extends IndexingStringQueryAcceptanceTestBase
     {
         static String[] matching = {"good", "fool", "fooooood"};
         static String[] nonMatching = {"evil", "genius", "hungry"};

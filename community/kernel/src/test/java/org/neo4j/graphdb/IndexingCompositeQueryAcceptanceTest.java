@@ -75,7 +75,7 @@ public class IndexingCompositeQueryAcceptanceTest
     @Parameterized.Parameter( 4 )
     public boolean withIndex;
 
-    private static Label LABEL = Label.label( "LABEL1" );;
+    private static Label LABEL = Label.label( "LABEL1" );
     private GraphDatabaseService db;
 
     @Before
@@ -287,7 +287,8 @@ public class IndexingCompositeQueryAcceptanceTest
         }
     }
 
-    public interface IndexSeek {
+    public interface IndexSeek
+    {
         ResourceIterator<Node> findNodes( String[] keys, Object[] values, GraphDatabaseService db );
     }
 
