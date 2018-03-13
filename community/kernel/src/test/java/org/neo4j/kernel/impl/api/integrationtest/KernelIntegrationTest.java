@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -72,11 +72,10 @@ public abstract class KernelIntegrationTest
         return statement;
     }
 
-    protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
+    protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
-        statement = transaction.acquireStatement();
-        return statement.tokenWriteOperations();
+        return transaction.tokenWrite();
     }
 
     protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException

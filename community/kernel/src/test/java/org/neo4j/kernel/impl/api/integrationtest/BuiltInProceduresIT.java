@@ -31,11 +31,11 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.internal.Version;
@@ -81,7 +81,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listPropertyKeys() throws Throwable
     {
         // Given
-        TokenWriteOperations ops = tokenWriteOperationsInNewTransaction();
+        TokenWrite ops = tokenWriteInNewTransaction();
         ops.propertyKeyGetOrCreateForName( "MyProp" );
         commit();
 

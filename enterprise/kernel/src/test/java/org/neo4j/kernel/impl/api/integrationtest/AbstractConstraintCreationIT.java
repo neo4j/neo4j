@@ -38,13 +38,13 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -75,7 +75,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     int propertyKeyId;
     DESCRIPTOR descriptor;
 
-    abstract int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name )
+    abstract int initializeLabelOrRelType( TokenWrite tokenWrite, String name )
             throws KernelException;
 
     abstract Constraint createConstraint( SchemaWriteOperations writeOps, DESCRIPTOR descriptor ) throws Exception;
@@ -95,9 +95,9 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     @Before
     public void createKeys() throws Exception
     {
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        this.typeId = initializeLabelOrRelType( tokenWriteOperations, KEY );
-        this.propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        this.typeId = initializeLabelOrRelType( tokenWrite, KEY );
+        this.propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( PROP );
         this.descriptor = makeDescriptor( typeId, propertyKeyId );
         commit();
     }

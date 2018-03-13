@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -75,7 +75,7 @@ public class IndexIT extends KernelIntegrationTest
     @Before
     public void createLabelAndProperty() throws Exception
     {
-        TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
+        TokenWrite tokenWrites = tokenWriteInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
         int propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
@@ -94,8 +94,8 @@ public class IndexIT extends KernelIntegrationTest
     @Test
     public void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
     {
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
 
         DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
         long nodeId = dataWriteOperations.nodeCreate();
@@ -108,8 +108,8 @@ public class IndexIT extends KernelIntegrationTest
     @Test( timeout = 10_000 )
     public void createIndexesForDifferentLabelsConcurrently() throws Throwable
     {
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
 
         LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptorFactory.forLabel( label2, propertyKeyId );
         schemaWriteOperationsInNewTransaction().indexCreate( anotherLabelDescriptor );

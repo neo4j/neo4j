@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -392,9 +392,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         int labelId;
         int propertyKeyId;
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        labelId = tokenWriteOperations.labelGetOrCreateForName( label );
-        propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( propertyKey );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        labelId = tokenWrite.labelGetOrCreateForName( label );
+        propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( propertyKey );
         commit();
 
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();

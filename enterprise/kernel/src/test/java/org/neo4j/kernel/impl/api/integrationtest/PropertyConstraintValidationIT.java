@@ -33,12 +33,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -55,8 +55,10 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodePropertyExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
+        .NodePropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
+        .RelationshipPropertyExistenceConstraintValidationIT;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -71,9 +73,9 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int label = tokenWriteOperations.labelGetOrCreateForName( key );
-            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int label = tokenWrite.labelGetOrCreateForName( key );
+            int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
@@ -137,9 +139,9 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int label = tokenWriteOperations.labelGetOrCreateForName( key );
-            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int label = tokenWrite.labelGetOrCreateForName( key );
+            int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
@@ -218,9 +220,9 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int relTypeId = tokenWriteOperations.relationshipTypeGetOrCreateForName( key );
-            int propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( key );
+            int propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
             SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();

@@ -24,10 +24,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -35,9 +35,9 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 public class NodeKeyConstraintCreationIT extends AbstractConstraintCreationIT<NodeKeyConstraintDescriptor,LabelSchemaDescriptor>
 {
     @Override
-    int initializeLabelOrRelType( TokenWriteOperations tokenWriteOperations, String name ) throws KernelException
+    int initializeLabelOrRelType( TokenWrite tokenWrite, String name ) throws KernelException
     {
-        return tokenWriteOperations.labelGetOrCreateForName( name );
+        return tokenWrite.labelGetOrCreateForName( name );
     }
 
     @Override

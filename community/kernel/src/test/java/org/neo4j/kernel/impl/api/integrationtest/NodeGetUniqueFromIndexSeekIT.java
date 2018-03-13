@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -52,10 +52,10 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     @Before
     public void createKeys() throws Exception
     {
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        this.labelId = tokenWriteOperations.labelGetOrCreateForName( "Person" );
-        this.propertyId1 = tokenWriteOperations.propertyKeyGetOrCreateForName( "foo" );
-        this.propertyId2 = tokenWriteOperations.propertyKeyGetOrCreateForName( "bar" );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        this.labelId = tokenWrite.labelGetOrCreateForName( "Person" );
+        this.propertyId1 = tokenWrite.propertyKeyGetOrCreateForName( "foo" );
+        this.propertyId2 = tokenWrite.propertyKeyGetOrCreateForName( "bar" );
         commit();
     }
 
