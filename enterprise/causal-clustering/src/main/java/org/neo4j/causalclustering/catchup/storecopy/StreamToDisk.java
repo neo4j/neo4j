@@ -83,7 +83,7 @@ public class StreamToDisk implements StoreFileStreams
         }
         else
         {
-            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
+            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, false ) )
             {
                 outputStream.write( data );
             }

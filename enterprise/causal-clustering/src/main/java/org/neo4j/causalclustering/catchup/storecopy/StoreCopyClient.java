@@ -35,6 +35,8 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
@@ -54,7 +56,7 @@ public class StoreCopyClient
     {
         try
         {
-            PrepareStoreCopyResponse prepareStoreCopyResponse = listFiles( catchupAddressProvider.primary(), expectedStoreId, storeFileStreams );
+            PrepareStoreCopyResponse prepareStoreCopyResponse = prepareStoreCopy( catchupAddressProvider.primary(), expectedStoreId, storeFileStreams );
             copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams, requestWiseTerminationCondition );
             copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams,
                     requestWiseTerminationCondition );
@@ -80,7 +82,7 @@ public class StoreCopyClient
                 try
                 {
                     AdvertisedSocketAddress from = addressProvider.primary();
-                    log.info( String.format( "Downloading file '%s' from '%s'", file, from ) );
+                    log.info( format( "Downloading file '%s' from '%s'", file, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), copyHandler );
                     successful = successfulFileDownload( response );
@@ -116,7 +118,7 @@ public class StoreCopyClient
                 try
                 {
                     AdvertisedSocketAddress from = addressProvider.primary();
-                    log.info( String.format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
+                    log.info( format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ),
                                     copyHandler );
@@ -136,7 +138,7 @@ public class StoreCopyClient
         }
     }
 
-    private PrepareStoreCopyResponse listFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams )
+    private PrepareStoreCopyResponse prepareStoreCopy( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams )
             throws CatchUpClientException, StoreCopyFailedException
     {
         log.info( "Requesting store listing from: " + from );
@@ -173,17 +175,21 @@ public class StoreCopyClient
     {
         StoreCopyFinishedResponse.Status responseStatus = response.status();
         log.debug( "Request for individual file resulted in response type: %s", response.status() );
-        if ( responseStatus == StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND )
-        {
-            return false;
-        }
-        else if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
+        if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
         {
             return true;
         }
+        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND )
+        {
+            return false;
+        }
+        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_UNKNOWN )
+        {
+            return false;
+        }
         else if ( responseStatus == StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH )
         {
-            throw new StoreCopyFailedException( "Store id mismatch" );
+            return false;
         }
         else
         {
