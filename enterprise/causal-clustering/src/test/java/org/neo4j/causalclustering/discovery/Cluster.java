@@ -437,7 +437,6 @@ public class Cluster
                 if ( isTransientFailure( e ) )
                 {
                     // this is not the best, but it helps in debugging
-                    System.err.println( "Transient failure in leader transaction, trying again." );
                     e.printStackTrace();
                     return null;
                 }

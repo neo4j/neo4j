@@ -49,6 +49,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -143,6 +144,47 @@ public class OnlineBackupCommandCcIT
         // then backup is successful
         String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+    }
+
+    @Test
+    public void backupCanBeOptionallySwitchedOnWithTheBackupConfig() throws Exception
+    {
+        // given a cluster with backup switched on
+        int[] backupPorts = new int[]{PortAuthority.allocatePort(), PortAuthority.allocatePort(), PortAuthority.allocatePort()};
+        String value = "localhost:%d";
+        clusterRule = clusterRule.withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, "true" )
+                .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, i -> String.format( value, backupPorts[i] ) );
+        Cluster cluster = startCluster( recordFormat );
+        String customAddress = "localhost:" + backupPorts[0];
+
+        // when a full backup is performed
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
+
+        // and an incremental backup is performed
+        createSomeData( cluster );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+
+        // then the data matches
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
+    }
+
+    @Test
+    public void secondaryTransactionProtocolIsSwitchedOffCorrespondingBackupSetting() throws Exception
+    {
+        // given a cluster with backup switched off
+        int[] backupPorts = new int[]{PortAuthority.allocatePort(), PortAuthority.allocatePort(), PortAuthority.allocatePort()};
+        String value = "localhost:%d";
+        clusterRule = clusterRule.withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, "false" )
+                .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, i -> String.format( value, backupPorts[i] ) );
+        Cluster cluster = startCluster( recordFormat );
+        String customAddress = "localhost:" + backupPorts[0];
+
+        // then a full backup is impossible from the backup port
+        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
                 "--name=defaultport" ) );
     }
 
