@@ -27,22 +27,8 @@ import org.junit.rules.TestName;
 
 import java.util.Map;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -61,8 +47,6 @@ import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
-import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyIds;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -507,132 +491,6 @@ public class IndexingAcceptanceTest
                 assertEquals( 1, Iterators.count( nodes ) );
             }
             tx.success();
-        }
-    }
-
-    @Test
-    public void shouldSupportIndexSeekByPrefix()
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias", "Mats", "Carla" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
-
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            collectNodes( found, db.findNodes( LABEL1, "name", "Karl", StringSearchMode.PREFIX ) );
-        }
-
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix()
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias", "Mats" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
-            createNode( db, map( "name", "Karla" ), LABEL1 );
-
-            collectNodes( found, db.findNodes( LABEL1, "name", "Carl", StringSearchMode.PREFIX ) );
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias" );
-        PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            PrimitiveLongIterator deleting = toDelete.iterator();
-            while ( deleting.hasNext() )
-            {
-                long id = deleting.next();
-                db.getNodeById( id ).delete();
-                expected.remove( id );
-            }
-
-            collectNodes( found, db.findNodes( LABEL1, "name", "Karl", StringSearchMode.PREFIX ) );
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias" );
-        PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
-        PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL1, "name", "Karlsson" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
-        String prefix = "Karl";
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            PrimitiveLongIterator toMatching = toChangeToMatch.iterator();
-            while ( toMatching.hasNext() )
-            {
-                long id = toMatching.next();
-                db.getNodeById( id ).setProperty( "name", prefix + "X" + id );
-                expected.add( id );
-            }
-            PrimitiveLongIterator toNotMatching = toChangeToNotMatch.iterator();
-            while ( toNotMatching.hasNext() )
-            {
-                long id = toNotMatching.next();
-                db.getNodeById( id ).setProperty( "name", "X" + id );
-                expected.remove( id );
-            }
-
-            collectNodes( found, db.findNodes( LABEL1, "name", prefix, StringSearchMode.PREFIX ) );
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    private PrimitiveLongSet createNodes( GraphDatabaseService db, Label label, String propertyKey, String... propertyValues )
-    {
-        PrimitiveLongSet expected = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( String value : propertyValues )
-            {
-                expected.add( createNode( db, map( propertyKey, value ), label ).getId() );
-            }
-            tx.success();
-        }
-        return expected;
-    }
-
-    private void collectNodes( PrimitiveLongSet bucket, ResourceIterator<Node> toCollect )
-    {
-        while ( toCollect.hasNext() )
-        {
-            bucket.add( toCollect.next().getId() );
         }
     }
 

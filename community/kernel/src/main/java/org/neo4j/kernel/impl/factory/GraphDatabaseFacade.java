@@ -596,19 +596,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         IndexQuery query;
         switch ( searchMode )
         {
+        case EXACT:
+            query = IndexQuery.exact( propertyId, Values.stringValue( value ) );
+            break;
         case PREFIX:
             query = IndexQuery.stringPrefix( propertyId, value );
             break;
-// TODO: test the others
-//        case EXACT:
-//            query = IndexQuery.exact( propertyId, Values.stringValue( value ) );
-//            break;
-//        case SUFFIX:
-//            query = IndexQuery.stringPrefix( propertyId, value );
-//            break;
-//        case CONTAINS:
-//            query = IndexQuery.stringPrefix( propertyId, value );
-//            break;
+        case SUFFIX:
+            query = IndexQuery.stringSuffix( propertyId, value );
+            break;
+        case CONTAINS:
+            query = IndexQuery.stringContains( propertyId, value );
+            break;
         default:
             throw new IllegalStateException( "Unknown string search mode: " + searchMode );
         }
