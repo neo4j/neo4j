@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+
+import static java.lang.String.format;
+
 /**
  * Reference to a specific index. This reference is valid until the schema of the database changes (that is a
  * create/drop of an index or constraint occurs).
@@ -30,4 +34,14 @@ public interface IndexReference
     int label();
 
     int[] properties();
+
+    /**
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return a user friendly description of what this index indexes.
+     */
+    default String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        String type = isUnique() ? "UNIQUE" : "GENERAL";
+        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
+    }
 }

@@ -799,62 +799,62 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor] = {
+  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[CapableIndexReference] = {
     val kernelDescriptor = cypherToKernelSchema(descriptor)
     try {
-      IdempotentResult(
-        kernelToCypher(transactionalContext.statement.schemaWriteOperations().indexCreate(kernelDescriptor)))
+      IdempotentResult(transactionalContext.kernelTransaction.schemaWrite().indexCreate(kernelDescriptor))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema(
-          SchemaDescriptorFactory.forLabel(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*))
-        if (transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
-          throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
-       IdempotentResult(kernelToCypher(indexDescriptor), wasCreated = false)
+        val indexReference = transactionalContext.kernelTransaction.schemaRead().index(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*)
+        if (transactionalContext.kernelTransaction.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED)
+          throw new FailedIndexException(indexReference.userDescription(tokenNameLookup))
+       IdempotentResult(indexReference, wasCreated = false)
     }
   }
 
-  override def dropIndexRule(descriptor: IndexDescriptor) =
-    transactionalContext.statement.schemaWriteOperations().indexDrop(cypherToKernel(descriptor))
+  override def dropIndexRule(descriptor: IndexDescriptor): Unit =
+    transactionalContext.kernelTransaction.schemaWrite().indexDrop(
+      transactionalContext.kernelTransaction.schemaRead().index(descriptor.label, descriptor.properties.map(_.id):_*)
+    )
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.statement.schemaWriteOperations().nodeKeyConstraintCreate(cypherToKernelSchema(descriptor))
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(cypherToKernelSchema(descriptor))
     true
   } catch {
-    case existing: AlreadyConstrainedException => false
+    case _: AlreadyConstrainedException => false
   }
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
-    transactionalContext.statement.schemaWriteOperations()
+  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit =
+    transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(cypherToKernelSchema(descriptor)))
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(cypherToKernelSchema(descriptor))
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(cypherToKernelSchema(descriptor))
     true
   } catch {
-    case existing: AlreadyConstrainedException => false
+    case _: AlreadyConstrainedException => false
   }
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
-    transactionalContext.statement.schemaWriteOperations()
+  override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit =
+    transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(cypherToKernelSchema(descriptor)))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {
-      transactionalContext.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
+      transactionalContext.kernelTransaction.schemaWrite().nodePropertyExistenceConstraintCreate(
         SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
       true
     } catch {
       case existing: AlreadyConstrainedException => false
     }
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations()
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
+    transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(ConstraintDescriptorFactory.existsForLabel(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     try {
-      transactionalContext.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
+      transactionalContext.kernelTransaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(
         SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId))
       true
     } catch {
@@ -862,7 +862,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    transactionalContext.statement.schemaWriteOperations()
+    transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyKeyId))
 
   override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
@@ -1133,7 +1133,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   }
 
   override def assertSchemaWritesAllowed(): Unit =
-    transactionalContext.statement.schemaWriteOperations()
+    transactionalContext.kernelTransaction.schemaWrite()
 
   private def allocateAndTraceNodeCursor() = {
     val cursor = transactionalContext.cursors.allocateNodeCursor()
