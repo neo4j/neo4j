@@ -23,6 +23,10 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -86,6 +90,30 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
     }
 
     @Override
+    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        while ( allNodes.next() )
+        {
+            allNodes.node( nodeCursor );
+            while ( nodeCursor.next() )
+            {
+                for ( int propertyKey : descriptor.getPropertyIds() )
+                {
+                    nodeCursor.properties( propertyCursor );
+                    if ( !hasProperty( propertyCursor, propertyKey ) )
+                    {
+                        throw createConstraintFailure(
+                                new NodePropertyExistenceException( descriptor, VERIFICATION,
+                                        nodeCursor.nodeReference() ) );
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void validateNodeKeyConstraint( Iterator<Cursor<NodeItem>> allNodes,
             LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
@@ -93,15 +121,34 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
         validateNodePropertyExistenceConstraint( allNodes, descriptor, hasPropertyCheck );
     }
 
+    @Override
+    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    {
+        validateNodePropertyExistenceConstraint( allNodes, nodeCursor, propertyCursor, descriptor );
+    }
+
     private void validateNodePropertyExistenceConstraint( NodeItem node, int propertyKey,
-        LabelSchemaDescriptor descriptor, BiPredicate<NodeItem, Integer> hasPropertyCheck ) throws
+            LabelSchemaDescriptor descriptor, BiPredicate<NodeItem,Integer> hasPropertyCheck ) throws
             CreateConstraintFailureException
     {
         if ( !hasPropertyCheck.test( node, propertyKey ) )
         {
             throw createConstraintFailure(
-                new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
+                    new NodePropertyExistenceException( descriptor, VERIFICATION, node.id() ) );
         }
+    }
+
+    private boolean hasProperty( PropertyCursor propertyCursor, int property )
+    {
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == property )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -115,10 +162,32 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
             for ( int propertyId : descriptor.getPropertyIds() )
             {
                 if ( relationship.type() == descriptor.getRelTypeId() &&
-                        !hasPropertyCheck.test( relationship, propertyId ) )
+                     !hasPropertyCheck.test( relationship, propertyId ) )
                 {
                     throw createConstraintFailure(
                             new RelationshipPropertyExistenceException( descriptor, VERIFICATION, relationship.id() ) );
+                }
+            }
+        }
+    }
+
+    @Override
+    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )
+            throws CreateConstraintFailureException
+    {
+        while ( relationshipCursor.next() )
+        {
+            relationshipCursor.properties( propertyCursor );
+
+            for ( int propertyKey : descriptor.getPropertyIds() )
+            {
+                if ( relationshipCursor.label() == descriptor.getRelTypeId() &&
+                     !hasProperty( propertyCursor, propertyKey ) )
+                {
+                    throw createConstraintFailure(
+                            new RelationshipPropertyExistenceException( descriptor, VERIFICATION,
+                                    relationshipCursor.relationshipReference() ) );
                 }
             }
         }
