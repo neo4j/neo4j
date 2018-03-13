@@ -284,7 +284,25 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return PointValue.parse( text, null );
     }
 
-    public static PointValue parse( CharSequence text, String crs )
+    public static PointValue parse( CharSequence text, AnyValue[] fieldsFromHeader )
+    {
+        AnyValue[] fieldsFromData = parseIntoArray( text );
+        if ( fieldsFromHeader != null )
+        {
+            //It is given that fieldsFromData.length == fieldsFromHeader.length because parseIntoArray produces fixed length arrays
+            // Merge InputFields: Data fields override header fields
+            for ( int i = 0; i < fieldsFromData.length; i++ )
+            {
+                if ( fieldsFromData[i] == null )
+                {
+                    fieldsFromData[i] = fieldsFromHeader[i];
+                }
+            }
+        }
+        return fromInputFields( fieldsFromData );
+    }
+
+    public static AnyValue[] parseIntoArray(CharSequence text)
     {
         Matcher mapMatcher = mapPattern.matcher( text );
         if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
@@ -351,19 +369,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                         {
                             // Eliminate any quoutes
                             String unquotedValue = quotesPattern.matcher( value ).replaceAll( "" );
-                            if ( crs != null ) // global crs is given
-                            {
-                                if ( !crs.toLowerCase().equals( unquotedValue.toLowerCase() ) )
-                                {
-                                    throw new IllegalArgumentException(
-                                            "Conflicting crs attributes for point found. Header crs states '" + crs + "' while column specifies '" +
-                                                    unquotedValue + "'" );
-                                }
-                            }
-                            else
-                            {
-                                fields[field.ordinal()] = Values.stringValue( unquotedValue );
-                            }
+                            fields[field.ordinal()] = Values.stringValue( unquotedValue );
                             break;
                         }
 
@@ -375,12 +381,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
         } while ( matcher.find() );
 
-        if ( crs != null )
-        {
-            fields[PointValueField.CRS.ordinal()] = Values.stringValue( crs );
-        }
-
-        return fromInputFields( fields );
+        return fields;
     }
 
     /**

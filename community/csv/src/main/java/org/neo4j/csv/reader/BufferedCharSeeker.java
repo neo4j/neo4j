@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.neo4j.csv.reader.Source.Chunk;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
 
@@ -273,7 +274,7 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, String optionalData )
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, AnyValue[] optionalData )
     {
         if ( !tryExtract( mark, extractor, optionalData ) )
         {
@@ -284,7 +285,7 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public boolean tryExtract( Mark mark, Extractor<?> extractor, String optionalData )
+    public boolean tryExtract( Mark mark, Extractor<?> extractor, AnyValue[] optionalData )
     {
         int from = mark.startPosition();
         int to = mark.position();

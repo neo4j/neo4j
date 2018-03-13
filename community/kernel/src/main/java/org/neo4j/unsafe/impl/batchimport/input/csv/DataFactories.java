@@ -45,6 +45,8 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
@@ -295,7 +297,10 @@ public class DataFactories
             String groupName = null;
 
             int typeIndex;
-            if ( rawHeaderField != null && (typeIndex = rawHeaderField.lastIndexOf( ':' )) != -1 )
+
+            String rawHeaderUntilOptions = rawHeaderField.split( "\\{" )[0];
+
+            if ( rawHeaderField != null && (typeIndex = rawHeaderUntilOptions.lastIndexOf( ':' )) != -1 )
             {   // Specific type given
                 name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
                 type = rawHeaderField.substring( typeIndex + 1 );
@@ -334,7 +339,7 @@ public class DataFactories
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type = null;
             Extractor<?> extractor = null;
-            String optionalParameter = null;
+            AnyValue[] optionalParameter = null;
             if ( typeSpec == null )
             {
                 type = Type.PROPERTY;
@@ -344,8 +349,11 @@ public class DataFactories
             {
                 Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
                 typeSpec = split.first();
-                optionalParameter = split.other();
-
+                String optionalParameterString = split.other();
+                if ( optionalParameterString != null )
+                {
+                    optionalParameter = PointValue.parseIntoArray( optionalParameterString );
+                }
                 if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
                 {
                     type = Type.ID;
@@ -384,7 +392,7 @@ public class DataFactories
         {
             Type type = null;
             Extractor<?> extractor = null;
-            String optionalParameter = null;
+            AnyValue[] optionalParameter = null;
             if ( typeSpec == null )
             {   // Property
                 type = Type.PROPERTY;
@@ -392,9 +400,13 @@ public class DataFactories
             }
             else
             {
-                Pair<String, String> split = splitTypeSpecAndOptionalParameter(typeSpec);
+                Pair<String, String> split = splitTypeSpecAndOptionalParameter( typeSpec );
                 typeSpec = split.first();
-                optionalParameter = split.other();
+                String optionalParameterString = split.other();
+                if ( optionalParameterString != null )
+                {
+                    optionalParameter = PointValue.parseIntoArray( optionalParameterString );
+                }
 
                 if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )
                 {
@@ -459,7 +471,7 @@ public class DataFactories
                 String errorMessage = format( "Failed to parse header: '%s'", typeSpec );
                 throw new IllegalArgumentException( errorMessage );
             }
-            optionalParameter = typeSpec.substring( begin + 1, end ).trim();
+            optionalParameter = typeSpec.substring( begin, end +1 );
             newTypeSpec = typeSpec.substring( 0, begin );
         }
         return Pair.of( newTypeSpec, optionalParameter );

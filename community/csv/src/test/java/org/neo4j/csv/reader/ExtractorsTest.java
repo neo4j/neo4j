@@ -145,7 +145,8 @@ public class ExtractorsTest
         // WHEN
         char[] asChars = "Point{latitude: 56.7, longitude: 13.2}".toCharArray();
         Extractors.PointExtractor extractor = extractors.point();
-        extractor.extract( asChars, 0, asChars.length, false, "WGS-84" );
+        String headerInfo = "{crs:WGS-84}";
+        extractor.extract( asChars, 0, asChars.length, false, PointValue.parseIntoArray( headerInfo ) );
 
         // THEN
         assertEquals( value, extractor.value );

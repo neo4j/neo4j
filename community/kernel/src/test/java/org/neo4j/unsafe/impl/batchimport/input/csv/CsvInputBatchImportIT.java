@@ -265,7 +265,7 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,pointA:Point{WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
+            println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
                              "localDateTime:LocalDateTime,duration:Duration,some-labels:LABEL" );
 
             // Data

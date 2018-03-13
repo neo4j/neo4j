@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -112,16 +113,36 @@ public class PointTest
     }
 
     @Test
-    public void shouldNotBeAbleToParsePointWithConflictingCrsInformation()
+    public void shouldBeAbleToParsePointThatOverridesHeaderInformation()
     {
+        String headerInformation = "{crs:wgs-84}";
+        String data = "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
+
+        PointValue expected = PointValue.parse( data );
+        PointValue actual = PointValue.parse( data, PointValue.parseIntoArray( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertEquals( "wgs-84-3d", actual.getCoordinateReferenceSystem().getName().toLowerCase() );
+    }
+
+    @Test
+    public void shouldBeAbleToParseIncompletePointWithHeaderInformation()
+    {
+        String headerInformation = "{latitude: 40.7128}";
+        String data = "{longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
+
         try
         {
-            PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}", "wgs-84" );
+            PointValue.parse( data ); // this shouldn't work
+            fail("Was able to parse point although latitude was missing");
+
+        } catch (IllegalArgumentException e){
+            // this is expected
         }
-        catch ( IllegalArgumentException e )
-        {
-            assertEquals( "Conflicting crs attributes for point found. Header crs states 'wgs-84' while column specifies 'wgs-84-3D'", e.getMessage() );
-        }
+
+        // this should work
+        PointValue.parse( data, PointValue.parseIntoArray( headerInformation ) );
+
     }
 
     @Test

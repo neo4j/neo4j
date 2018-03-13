@@ -26,6 +26,7 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.values.AnyValue;
 
 /**
  * Header of tabular/csv data input, specifying meta data about values in each "column", for example
@@ -104,7 +105,7 @@ public class Header implements Cloneable
         private final Type type;
         private final Group group;
         private final Extractor<?> extractor;
-        private final String optionalParameter;  // This can be used to encapsulate the parameter set in the header for spatial and temporal columns
+        private final AnyValue[] optionalParameter;  // This can be used to encapsulate the parameters set in the header for spatial and temporal columns
 
         public Entry( String name, Type type, Group group, Extractor<?> extractor )
         {
@@ -115,7 +116,7 @@ public class Header implements Cloneable
             this.optionalParameter = null;
         }
 
-        public Entry( String name, Type type, Group group, Extractor<?> extractor, String optionalParameter )
+        public Entry( String name, Type type, Group group, Extractor<?> extractor, AnyValue[] optionalParameter )
         {
             this.name = name;
             this.type = type;
@@ -160,7 +161,7 @@ public class Header implements Cloneable
             return name;
         }
 
-        public String optionalParameter()
+        public AnyValue[] optionalParameter()
         {
             return optionalParameter;
         }

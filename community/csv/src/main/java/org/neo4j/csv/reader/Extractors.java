@@ -349,7 +349,7 @@ public class Extractors
         }
 
         @Override
-        public final boolean extract( char[] data, int offset, int length, boolean hadQuotes, String optionalData )
+        public final boolean extract( char[] data, int offset, int length, boolean hadQuotes, AnyValue[] optionalData )
         {
             if ( nullValue( length, hadQuotes ) )
             {
@@ -372,7 +372,7 @@ public class Extractors
 
         protected abstract void clear();
 
-        protected abstract boolean extract0( char[] data, int offset, int length, String optionalData );
+        protected abstract boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData );
     }
 
     private abstract static class AbstractSingleAnyValueExtractor extends AbstractSingleValueExtractor<AnyValue>
@@ -421,7 +421,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = new String( data, offset, length );
             return true;
@@ -450,7 +450,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = extractLong( data, offset, length );
             return true;
@@ -488,7 +488,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = safeCastLongToInt( extractLong( data, offset, length ) );
             return true;
@@ -526,7 +526,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = safeCastLongToShort( extractLong( data, offset, length ) );
             return true;
@@ -564,7 +564,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = safeCastLongToByte( extractLong( data, offset, length ) );
             return true;
@@ -609,7 +609,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = extractBoolean( data, offset, length );
             return true;
@@ -643,7 +643,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             if ( length > 1 )
             {
@@ -681,7 +681,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             try
             {
@@ -724,7 +724,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             try
             {
@@ -769,7 +769,7 @@ public class Extractors
         }
 
         @Override
-        public boolean extract( char[] data, int offset, int length, boolean hadQuotes, String optionalData )
+        public boolean extract( char[] data, int offset, int length, boolean hadQuotes, AnyValue[] optionalData )
         {
             extract0( data, offset, length, optionalData );
             return true;
@@ -781,7 +781,7 @@ public class Extractors
             return extract( data, offset, length, hadQuotes, null );
         }
 
-        protected abstract void extract0( char[] data, int offset, int length, String optionalData );
+        protected abstract void extract0( char[] data, int offset, int length, AnyValue[] optionalData );
 
         protected int charsToNextDelimiter( char[] data, int offset, int length )
         {
@@ -833,7 +833,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new String[numberOfValues] : EMPTY;
@@ -860,7 +860,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new byte[numberOfValues] : EMPTY;
@@ -883,7 +883,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new short[numberOfValues] : EMPTY;
@@ -906,7 +906,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalDatah )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalDatah )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
@@ -927,7 +927,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new long[numberOfValues] : EMPTY_LONG_ARRAY;
@@ -950,7 +950,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new float[numberOfValues] : EMPTY;
@@ -975,7 +975,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new double[numberOfValues] : EMPTY;
@@ -1000,7 +1000,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, String optionalData )
+        protected void extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new boolean[numberOfValues] : EMPTY;
@@ -1021,7 +1021,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = PointValue.parse( CharBuffer.wrap( data, offset, length ), optionalData );
             return true;
@@ -1042,7 +1042,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             //TODO: Change DateValue parse to use optionalData
             value = DateValue.parse( CharBuffer.wrap( data, offset, length ) );
@@ -1067,7 +1067,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = TimeValue.parse( CharBuffer.wrap( data, offset, length ), defaultTimeZone );
             return true;
@@ -1091,7 +1091,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = DateTimeValue.parse( CharBuffer.wrap( data, offset, length ), defaultTimeZone );
             return true;
@@ -1112,7 +1112,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = LocalTimeValue.parse( CharBuffer.wrap( data, offset, length ) );
             return true;
@@ -1133,7 +1133,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = LocalDateTimeValue.parse( CharBuffer.wrap( data, offset, length ) );
             return true;
@@ -1154,7 +1154,7 @@ public class Extractors
         }
 
         @Override
-        protected boolean extract0( char[] data, int offset, int length, String optionalData )
+        protected boolean extract0( char[] data, int offset, int length, AnyValue[] optionalData )
         {
             value = DurationValue.parse( CharBuffer.wrap( data, offset, length ) );
             return true;
