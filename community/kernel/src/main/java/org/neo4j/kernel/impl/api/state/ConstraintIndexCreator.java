@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -59,34 +58,17 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
 public class ConstraintIndexCreator
 {
-    public interface Monitor
-    {
-        int CREATED_INDEX = 0;
-        int REUSED_INDEX = 1;
-        int RELEASED_LOCK = 3;
-        int RELEASING_LOCK = 6;
-        int AWAITED_POPULATION = 2;
-        int GOT_LOCK = 4;
-        int AWAITING_LOCK = 7;
-        int GOT_LOCK_AGAIN = 5;
-        int AWAITING_LOCK_AGAIN = 8;
-
-        void event( long threadId, int eventId );
-        void log();
-    }
 
     private final IndexingService indexingService;
     private final Supplier<InwardKernel> kernelSupplier;
     private final PropertyAccessor propertyAccessor;
-    private final Monitor monitor;
 
     public ConstraintIndexCreator( Supplier<InwardKernel> kernelSupplier, IndexingService indexingService,
-            PropertyAccessor propertyAccessor, Monitors monitors )
+            PropertyAccessor propertyAccessor )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
         this.propertyAccessor = propertyAccessor;
-        this.monitor = monitors.newMonitor( ConstraintIndexCreator.Monitor.class );
     }
 
     /**
@@ -139,20 +121,15 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            monitor.event( Thread.currentThread().getId(), Monitor.RELEASING_LOCK );
             releaseLabelLock( locks, descriptor.getLabelId() );
-            monitor.event( Thread.currentThread().getId(), Monitor.RELEASED_LOCK );
 
-            monitor.event( Thread.currentThread().getId(), Monitor.AWAITED_POPULATION );
             awaitConstrainIndexPopulation( constraint, proxy );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            monitor.event( Thread.currentThread().getId(), Monitor.AWAITING_LOCK );
             acquireLabelLock( state, locks, descriptor.getLabelId() );
-            monitor.event( Thread.currentThread().getId(), Monitor.GOT_LOCK );
             reacquiredLabelLock = true;
 
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
@@ -161,7 +138,6 @@ public class ConstraintIndexCreator
         }
         catch ( SchemaRuleNotFoundException e )
         {
-            monitor.log();
             throw new IllegalStateException(
                     String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
         }
@@ -183,9 +159,7 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredLabelLock )
                 {
-                    monitor.event( Thread.currentThread().getId(), Monitor.AWAITING_LOCK_AGAIN );
                     acquireLabelLock( state, locks, descriptor.getLabelId() );
-                    monitor.event( Thread.currentThread().getId(), Monitor.GOT_LOCK_AGAIN );
                 }
 
                 if ( indexStillExists( schemaOps, state, descriptor, index ) )
@@ -246,7 +220,7 @@ public class ConstraintIndexCreator
             }
             else
             {
-                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, cause );
+                throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e );
             }
         }
     }
@@ -264,7 +238,6 @@ public class ConstraintIndexCreator
                 // constraint creation, due to crash or similar, hence the missing owner.
                 if ( schemaOps.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
                 {
-                    monitor.event( Thread.currentThread().getId(), Monitor.REUSED_INDEX );
                     return descriptor;
                 }
                 throw new AlreadyConstrainedException(
@@ -287,7 +260,6 @@ public class ConstraintIndexCreator
             SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
             ((KernelStatement) statement).txState().indexRuleDoAdd( index );
             transaction.success();
-            monitor.event( Thread.currentThread().getId(), Monitor.CREATED_INDEX );
             return index;
         }
         catch ( TransactionFailureException e )

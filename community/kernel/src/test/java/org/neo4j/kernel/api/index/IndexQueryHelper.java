@@ -64,7 +64,8 @@ public class IndexQueryHelper
         Value[] values = new Value[objects.length];
         for ( int i = 0; i < objects.length; i++ )
         {
-            values[i] = Values.of( objects[i] );
+            Object object = objects[i];
+            values[i] = object instanceof Value ? (Value)object : Values.of( object );
         }
         return values;
     }

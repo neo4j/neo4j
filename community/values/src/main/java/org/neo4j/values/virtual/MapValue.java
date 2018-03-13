@@ -136,13 +136,13 @@ public final class MapValue extends VirtualValue
         }
         else if ( !(other instanceof MapValue) )
         {
-            return false;
+            return Boolean.FALSE;
         }
         Map<String,AnyValue> otherMap = ((MapValue) other).map;
         int size = map.size();
         if ( size != otherMap.size() )
         {
-            return false;
+            return Boolean.FALSE;
         }
         String[] thisKeys = keySet().toArray( new String[size] );
         Arrays.sort( thisKeys, String::compareTo );
@@ -152,10 +152,10 @@ public final class MapValue extends VirtualValue
         {
             if ( thisKeys[i].compareTo( thatKeys[i] ) != 0 )
             {
-                return false;
+                return Boolean.FALSE;
             }
         }
-        Boolean equalityResult = true;
+        Boolean equalityResult = Boolean.TRUE;
 
         for ( int i = 0; i < size; i++ )
         {
@@ -167,7 +167,7 @@ public final class MapValue extends VirtualValue
             }
             else if ( !s )
             {
-                return false;
+                return Boolean.FALSE;
             }
         }
         return equalityResult;

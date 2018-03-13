@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
@@ -80,19 +81,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             scanQuery( descriptor );
             break;
 
-        case rangeNumeric:
+        case range:
             assert query.length == 1;
-            numericRangeQuery( descriptor, (IndexQuery.NumberRangePredicate) query[0] );
-            break;
-
-        case rangeGeometric:
-            assert query.length == 1;
-            geometricRangeQuery( descriptor, (IndexQuery.GeometryRangePredicate) query[0] );
-        break;
-
-        case rangeString:
-            assert query.length == 1;
-            stringRangeQuery( descriptor, (IndexQuery.StringRangePredicate) query[0] );
+            rangeQuery( descriptor, (IndexQuery.RangePredicate) query[0] );
             break;
 
         case stringPrefix:
@@ -238,42 +229,17 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void stringRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
+    private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate predicate )
     {
-        needsValues = true;
+        ValueGroup valueGroup = predicate.valueGroup();
+        this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByString(
-                    descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
-                    predicate.toInclusive() );
-            added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
-        }
-    }
-
-    private void numericRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
-    {
-        needsValues = true;
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByNumber(
-                    descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
-                    predicate.toInclusive() );
-            added = changes.augment( emptyIterator() );
-            removed = removed( txState, changes );
-        }
-    }
-
-    private void geometricRangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.GeometryRangePredicate predicate )
-    {
-        if ( read.hasTxStateWithChanges() )
-        {
-            TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByGeometry(
-                    descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
-                    predicate.toInclusive() );
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeek(
+                    descriptor, valueGroup,
+                    predicate.fromValue(), predicate.fromInclusive(),
+                    predicate.toValue(), predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }

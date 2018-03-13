@@ -20,58 +20,65 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.test.rule.RandomRule;
 
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static org.neo4j.helpers.ArrayUtil.without;
+import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 
 public class FusionIndexAccessorTest
 {
-    private IndexAccessor nativeAccessor;
+    private IndexAccessor stringAccessor;
+    private IndexAccessor numberAccessor;
     private IndexAccessor spatialAccessor;
     private IndexAccessor temporalAccessor;
     private IndexAccessor luceneAccessor;
     private FusionIndexAccessor fusionIndexAccessor;
     private final long indexId = 10;
     private final DropAction dropAction = mock( DropAction.class );
-    private List<IndexAccessor> allAccessors;
+    private IndexAccessor[] allAccessors;
+
+    @Rule
+    public RandomRule random = new RandomRule();
 
     @Before
-    public void setup()
+    public void mockComponents()
     {
-        nativeAccessor = mock( IndexAccessor.class );
+        stringAccessor = mock( IndexAccessor.class );
+        numberAccessor = mock( IndexAccessor.class );
         spatialAccessor = mock( IndexAccessor.class );
         temporalAccessor = mock( IndexAccessor.class );
         luceneAccessor = mock( IndexAccessor.class );
-        allAccessors = Arrays.asList( nativeAccessor, spatialAccessor, temporalAccessor, luceneAccessor);
-        fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, spatialAccessor, temporalAccessor,
-                luceneAccessor, new FusionSelector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
+        allAccessors = array( stringAccessor, numberAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
+        fusionIndexAccessor = new FusionIndexAccessor( allAccessors, new FusionSelector(), indexId, mock( SchemaIndexDescriptor.class ), dropAction );
     }
 
     /* drop */
@@ -82,6 +89,7 @@ public class FusionIndexAccessorTest
         // when
         // ... all drop successful
         fusionIndexAccessor.drop();
+
         // then
         for ( IndexAccessor accessor : allAccessors )
         {
@@ -91,58 +99,29 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void dropMustThrowIfDropNativeFail() throws Exception
+    public void dropMustThrowIfDropAnyFail() throws Exception
     {
-        // when
-        verifyFailOnSingleDropFailure( nativeAccessor, fusionIndexAccessor );
+        for ( IndexAccessor accessor : allAccessors )
+        {
+            // when
+            verifyFailOnSingleDropFailure( accessor, fusionIndexAccessor );
+        }
     }
 
     @Test
-    public void dropMustThrowIfDropSpatialFail() throws Exception
+    public void fusionIndexIsDirtyWhenAnyIsDirty()
     {
-        // when
-        verifyFailOnSingleDropFailure( spatialAccessor, fusionIndexAccessor );
-    }
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            // when
+            for ( int j = 0; j < allAccessors.length; j++ )
+            {
+                when( allAccessors[j].isDirty() ).thenReturn( j == i );
+            }
 
-    @Test
-    public void dropMustThrowIfDropTemporalFail() throws Exception
-    {
-        // when
-        verifyFailOnSingleDropFailure( temporalAccessor, fusionIndexAccessor );
-    }
-
-    @Test
-    public void dropMustThrowIfDropLuceneFail() throws Exception
-    {
-        // when
-        verifyFailOnSingleDropFailure( luceneAccessor, fusionIndexAccessor );
-    }
-
-    @Test
-    public void fusionIndexIsDirtyWhenNativeIndexIsDirty()
-    {
-        when( nativeAccessor.isDirty() ).thenReturn( true ).thenReturn( false );
-
-        assertTrue( fusionIndexAccessor.isDirty() );
-        assertFalse( fusionIndexAccessor.isDirty() );
-    }
-
-    @Test
-    public void fusionIndexIsDirtyWhenSpatialIndexIsDirty()
-    {
-        when( spatialAccessor.isDirty() ).thenReturn( true ).thenReturn( false );
-
-        assertTrue( fusionIndexAccessor.isDirty() );
-        assertFalse( fusionIndexAccessor.isDirty() );
-    }
-
-    @Test
-    public void fusionIndexIsDirtyWhenTemporalIndexIsDirty()
-    {
-        when( temporalAccessor.isDirty() ).thenReturn( true ).thenReturn( false );
-
-        assertTrue( fusionIndexAccessor.isDirty() );
-        assertFalse( fusionIndexAccessor.isDirty() );
+            // then
+            assertTrue( fusionIndexAccessor.isDirty() );
+        }
     }
 
     private void verifyFailOnSingleDropFailure( IndexAccessor failingAccessor, FusionIndexAccessor fusionIndexAccessor )
@@ -159,20 +138,20 @@ public class FusionIndexAccessorTest
         {
             assertSame( expectedFailure, e );
         }
+        doAnswer( invocation -> null ).when( failingAccessor ).drop();
     }
 
     @Test
     public void dropMustThrowIfAllFail() throws Exception
     {
         // given
-        IOException nativeFailure = new IOException( "native" );
-        IOException spatialFailure = new IOException( "spatial" );
-        IOException temporalFailure = new IOException( "temporal" );
-        IOException luceneFailure = new IOException( "lucene" );
-        doThrow( nativeFailure ).when( nativeAccessor ).drop();
-        doThrow( spatialFailure ).when( spatialAccessor ).drop();
-        doThrow( temporalFailure ).when( temporalAccessor ).drop();
-        doThrow( luceneFailure ).when( luceneAccessor ).drop();
+        List<IOException> exceptions = new ArrayList<>();
+        for ( IndexAccessor indexAccessor : allAccessors )
+        {
+            IOException exception = new IOException( indexAccessor.getClass().getSimpleName() + " fail" );
+            exceptions.add( exception );
+            doThrow( exception ).when( indexAccessor ).drop();
+        }
 
         try
         {
@@ -183,11 +162,7 @@ public class FusionIndexAccessorTest
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf(
-                    sameInstance( nativeFailure ),
-                    sameInstance( spatialFailure ),
-                    sameInstance( temporalFailure ),
-                    sameInstance( luceneFailure ) ) );
+            assertThat( exceptions, hasItem( e ) );
         }
     }
 
@@ -208,57 +183,31 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void closeMustThrowIfLuceneThrow() throws Exception
+    public void closeMustThrowIfOneThrow() throws Exception
     {
-        verifyFusionCloseThrowOnSingleCloseThrow( luceneAccessor, fusionIndexAccessor );
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            verifyFusionCloseThrowOnSingleCloseThrow( allAccessors[i], fusionIndexAccessor );
+            mockComponents();
+        }
     }
 
     @Test
-    public void closeMustThrowIfSpatialThrow() throws Exception
+    public void closeMustCloseOthersIfOneThrow() throws Exception
     {
-        verifyFusionCloseThrowOnSingleCloseThrow( spatialAccessor, fusionIndexAccessor );
-    }
-
-    @Test
-    public void closeMustThrowIfTemporalThrow() throws Exception
-    {
-        verifyFusionCloseThrowOnSingleCloseThrow( temporalAccessor, fusionIndexAccessor );
-    }
-
-    @Test
-    public void closeMustThrowIfNativeThrow() throws Exception
-    {
-        verifyFusionCloseThrowOnSingleCloseThrow( nativeAccessor, fusionIndexAccessor );
-    }
-
-    @Test
-    public void closeMustCloseOthersIfLuceneThrow() throws Exception
-    {
-        verifyOtherIsClosedOnSingleThrow( luceneAccessor, fusionIndexAccessor, nativeAccessor, spatialAccessor, temporalAccessor );
-    }
-
-    @Test
-    public void closeMustCloseOthersIfSpatialThrow() throws Exception
-    {
-        verifyOtherIsClosedOnSingleThrow( spatialAccessor, fusionIndexAccessor, nativeAccessor, temporalAccessor, luceneAccessor );
-    }
-
-    @Test
-    public void closeMustCloseOthersIfTemporalThrow() throws Exception
-    {
-        verifyOtherIsClosedOnSingleThrow( temporalAccessor, fusionIndexAccessor, nativeAccessor, spatialAccessor, luceneAccessor );
-    }
-
-    @Test
-    public void closeMustCloseOthersIfNativeThrow() throws Exception
-    {
-        verifyOtherIsClosedOnSingleThrow( nativeAccessor, fusionIndexAccessor, luceneAccessor, spatialAccessor, temporalAccessor );
+        int count = allAccessors.length;
+        for ( int i = 0; i < count; i++ )
+        {
+            IndexAccessor accessor = allAccessors[i];
+            verifyOtherIsClosedOnSingleThrow( accessor, fusionIndexAccessor, without( allAccessors, accessor ) );
+            mockComponents();
+        }
     }
 
     @Test
     public void closeMustThrowIfAllFail() throws Exception
     {
-        verifyFusionCloseThrowIfAllThrow( fusionIndexAccessor, nativeAccessor, spatialAccessor, temporalAccessor, luceneAccessor );
+        verifyFusionCloseThrowIfAllThrow( fusionIndexAccessor, allAccessors );
     }
 
     // newAllEntriesReader
@@ -267,373 +216,236 @@ public class FusionIndexAccessorTest
     public void allEntriesReaderMustCombineResultFromAll()
     {
         // given
-        long[] nativeEntries = {0, 1, 6, 13, 14};
-        long[] spatialEntries = {2, 5, 9};
-        long[] temporalEntries = {4, 8, 11};
-        long[] luceneEntries = {3, 7, 10, 12};
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
+        List<Long>[] ids = new List[allAccessors.length];
+        long lastId = 0;
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            ids[i] = Arrays.asList( lastId++, lastId++ );
+        }
+        mockAllEntriesReaders( ids );
 
         // when
         Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
 
         // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
+        for ( List<Long> part : ids )
+        {
+            assertResultContainsAll( result, part );
+        }
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllWithEmptyNative()
+    public void allEntriesReaderMustCombineResultFromAllWithOneEmpty()
     {
-        // given
-        long[] nativeEntries = new long[0];
-        long[] spatialEntries = {2, 5, 9};
-        long[] temporalEntries = {4, 8, 11};
-        long[] luceneEntries = {3, 4, 7, 8};
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            // given
+            List<Long>[] ids = new List[allAccessors.length];
+            long lastId = 0;
+            for ( int j = 0; j < ids.length; j++ )
+            {
+                ids[j] = j == i ? Arrays.asList() : Arrays.asList( lastId++, lastId++ );
+            }
+            mockAllEntriesReaders( ids );
 
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
+            // when
+            Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
 
-        // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
-    }
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithEmptySpatial()
-    {
-        // given
-        long[] nativeEntries = {0, 1, 6, 13, 14};
-        long[] spatialEntries = new long[0];
-        long[] temporalEntries = {4, 8, 11};
-        long[] luceneEntries = {3, 7, 10, 12};
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
-
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-        // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
-    }
-
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithEmptyTemporal()
-    {
-        // given
-        long[] nativeEntries = {0, 1, 6, 13, 14};
-        long[] spatialEntries = {2, 5, 9};
-        long[] temporalEntries = new long[0];
-        long[] luceneEntries = {3, 7, 10, 12};
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
-
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-        // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
-    }
-
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithEmptyLucene()
-    {
-        // given
-        long[] nativeEntries = {0, 1, 2, 5, 6};
-        long[] spatialEntries = {2, 5, 9};
-        long[] temporalEntries = {4, 8, 11};
-        long[] luceneEntries = new long[0];
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
-
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-        // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
+            // then
+            for ( List<Long> part : ids )
+            {
+                assertResultContainsAll( result, part );
+            }
+        }
     }
 
     @Test
     public void allEntriesReaderMustCombineResultFromAllEmpty()
     {
         // given
-        long[] nativeEntries = new long[0];
-        long[] spatialEntries = new long[0];
-        long[] temporalEntries = new long[0];
-        long[] luceneEntries = new long[0];
-        mockAllEntriesReaders( nativeEntries, spatialEntries, temporalEntries, luceneEntries );
+        List<Long>[] ids = new List[allAccessors.length];
+        for ( int j = 0; j < ids.length; j++ )
+        {
+            ids[j] = Arrays.asList();
+        }
+        mockAllEntriesReaders( ids );
 
         // when
         Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
 
         // then
-        assertResultContainsAll( result, nativeEntries );
-        assertResultContainsAll( result, spatialEntries );
-        assertResultContainsAll( result, temporalEntries );
-        assertResultContainsAll( result, luceneEntries );
         assertTrue( result.isEmpty() );
+    }
+
+    @Test
+    public void allEntriesReaderMustCombineResultFromAllAccessors()
+    {
+        // given
+        List<Long>[] parts = new List[allAccessors.length];
+        for ( int i = 0; i < parts.length; i++ )
+        {
+            parts[i] = new ArrayList<>();
+        }
+        for ( long i = 0; i < 10; i++ )
+        {
+            random.among( parts ).add( i );
+        }
+        mockAllEntriesReaders( parts );
+
+        // when
+        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
+
+        // then
+        for ( List<Long> part : parts )
+        {
+            assertResultContainsAll( result, part );
+        }
     }
 
     @Test
     public void allEntriesReaderMustCloseAll() throws Exception
     {
         // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
+        BoundedIterable<Long>[] allEntriesReaders = Arrays.stream( allAccessors ).map( accessor -> mockSingleAllEntriesReader( accessor, Arrays.asList() ) )
+                .toArray( BoundedIterable[]::new );
 
         // when
         fusionIndexAccessor.newAllEntriesReader().close();
 
         // then
-        verify( nativeAllEntriesReader, times( 1 ) ).close();
-        verify( spatialAllEntriesReader, times( 1 ) ).close();
-        verify( temporalAllEntriesReader, times( 1 ) ).close();
-        verify( luceneAllEntriesReader, times( 1 ) ).close();
-    }
-
-    @Test
-    public void allEntriesReaderMustCloseNativeIfLuceneThrow() throws Exception
-    {
-        // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( luceneAllEntriesReader, fusionAllEntriesReader, nativeAllEntriesReader, spatialAllEntriesReader,
-                temporalAllEntriesReader );
-    }
-
-    @Test
-    public void allEntriesReaderMustCloseAllIfSpatialThrow() throws Exception
-    {
-        // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( spatialAllEntriesReader, fusionAllEntriesReader, luceneAllEntriesReader, nativeAllEntriesReader,
-                temporalAllEntriesReader );
-    }
-
-    @Test
-    public void allEntriesReaderMustCloseAllIfTemporalThrow() throws Exception
-    {
-        // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( temporalAllEntriesReader, fusionAllEntriesReader, luceneAllEntriesReader, spatialAllEntriesReader,
-                nativeAllEntriesReader );
-    }
-
-    @Test
-    public void allEntriesReaderMustCloseAllIfNativeThrow() throws Exception
-    {
-        // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        verifyOtherIsClosedOnSingleThrow( nativeAllEntriesReader, fusionAllEntriesReader, luceneAllEntriesReader, spatialAllEntriesReader,
-                temporalAllEntriesReader );
-    }
-
-    @Test
-    public void allEntriesReaderMustThrowIfLuceneThrow() throws Exception
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        BoundedIterable<Long> luceneAllEntriesReader = mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( luceneAllEntriesReader, fusionAllEntriesReader );
-    }
-
-    @Test
-    public void allEntriesReaderMustThrowIfNativeThrow() throws Exception
-    {
-        // given
-        BoundedIterable<Long> nativeAllEntriesReader = mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( nativeAllEntriesReader, fusionAllEntriesReader );
-
-    }
-
-    @Test
-    public void allEntriesReaderMustThrowIfSpatialThrow() throws Exception
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        BoundedIterable<Long> spatialAllEntriesReader = mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( spatialAllEntriesReader, fusionAllEntriesReader );
-
-    }
-
-    @Test
-    public void allEntriesReaderMustThrowIfTemporalThrow() throws Exception
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        BoundedIterable<Long> temporalAllEntriesReader = mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( temporalAllEntriesReader, fusionAllEntriesReader );
-
-    }
-
-    @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfNativeReportUnknownMaxCount()
-    {
-        // given
-        mockSingleAllEntriesReaderWithUnknownMaxCount( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
-    }
-
-    @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfSpatialReportUnknownMaxCount() throws Exception
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReaderWithUnknownMaxCount( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
-    }
-
-    @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfTemporalReportUnknownMaxCount() throws Exception
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReaderWithUnknownMaxCount( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReader( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
-    }
-
-    @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfLuceneReportUnknownMaxCount()
-    {
-        // given
-        mockSingleAllEntriesReader( nativeAccessor, new long[0] );
-        mockSingleAllEntriesReader( spatialAccessor, new long[0] );
-        mockSingleAllEntriesReader( temporalAccessor, new long[0] );
-        mockSingleAllEntriesReaderWithUnknownMaxCount( luceneAccessor, new long[0] );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
-    }
-
-    @Test
-    public void allEntriesReaderMustReportFusionMaxCountOfNativeAndLucene()
-    {
-        mockSingleAllEntriesReader( nativeAccessor, new long[]{1, 2} );
-        mockSingleAllEntriesReader( spatialAccessor, new long[]{3, 4} );
-        mockSingleAllEntriesReader( temporalAccessor, new long[]{5, 6} );
-        mockSingleAllEntriesReader( luceneAccessor, new long[]{7, 8} );
-
-        // then
-        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
-        assertThat( fusionAllEntriesReader.maxCount(), is( 8L ) );
-    }
-
-    static void assertResultContainsAll( Set<Long> result, long[] nativeEntries )
-    {
-        for ( long nativeEntry : nativeEntries )
+        for ( BoundedIterable<Long> allEntriesReader : allEntriesReaders )
         {
-            assertTrue( "Expected to contain " + nativeEntry + ", but was " + result, result.contains( nativeEntry ) );
+            verify( allEntriesReader, times( 1 ) ).close();
         }
     }
 
-    private static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
+    @Test
+    public void allEntriesReaderMustCloseOthersIfOneThrow() throws Exception
+    {
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            // given
+            BoundedIterable<Long>[] allEntriesReaders =
+                    Arrays.stream( allAccessors ).map( accessor -> mockSingleAllEntriesReader( accessor, Arrays.asList() ) ).toArray( BoundedIterable[]::new );
+
+            // then
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            verifyOtherIsClosedOnSingleThrow( allEntriesReaders[i], fusionAllEntriesReader, without( allEntriesReaders, allEntriesReaders[i] ) );
+
+            mockComponents();
+        }
+    }
+
+    @Test
+    public void allEntriesReaderMustThrowIfOneThrow() throws Exception
+    {
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            // given
+            BoundedIterable<Long> allEntriesReader = null;
+            for ( int j = 0; j < allAccessors.length; j++ )
+            {
+                BoundedIterable<Long> reader = mockSingleAllEntriesReader( allAccessors[j], Arrays.asList() );
+                if ( j == i )
+                {
+                    allEntriesReader = reader;
+                }
+            }
+
+            // then
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( allEntriesReader, fusionAllEntriesReader );
+        }
+    }
+
+    @Test
+    public void allEntriesReaderMustReportUnknownMaxCountIfAnyReportUnknownMaxCount()
+    {
+        for ( int i = 0; i < allAccessors.length; i++ )
+        {
+            for ( int j = 0; j < allAccessors.length; j++ )
+            {
+                // given
+                if ( j == i )
+                {
+                    mockSingleAllEntriesReaderWithUnknownMaxCount( allAccessors[j], Arrays.asList() );
+                }
+                else
+                {
+                    mockSingleAllEntriesReader( allAccessors[j], Arrays.asList() );
+                }
+            }
+
+            // then
+            BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+            assertThat( fusionAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
+        }
+    }
+
+    @Test
+    public void allEntriesReaderMustReportFusionMaxCountOfAll()
+    {
+        long lastId = 0;
+        for ( IndexAccessor accessor : allAccessors )
+        {
+            mockSingleAllEntriesReader( accessor, Arrays.asList( lastId++, lastId++ ) );
+        }
+
+        // then
+        BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
+        assertThat( fusionAllEntriesReader.maxCount(), is( lastId ) );
+    }
+
+    static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )
+    {
+        for ( long expectedEntry : expectedEntries )
+        {
+            assertTrue( "Expected to contain " + expectedEntry + ", but was " + result, result.contains( expectedEntry ) );
+        }
+    }
+
+    private static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReader( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( List<Long> entries )
     {
         return mockedAllEntriesReader( true, entries );
     }
 
-    private static void mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
+    private static BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
+        return allEntriesReader;
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( List<Long> entries )
     {
         return mockedAllEntriesReader( false, entries );
     }
 
-    static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
+    static BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, List<Long> entries )
     {
         BoundedIterable<Long> mockedAllEntriesReader = mock( BoundedIterable.class );
-        when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.length : BoundedIterable.UNKNOWN_MAX_COUNT );
-        when( mockedAllEntriesReader.iterator() ).thenReturn( Iterators.asIterator(entries ) );
+        when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.size() : BoundedIterable.UNKNOWN_MAX_COUNT );
+        when( mockedAllEntriesReader.iterator() ).thenReturn( entries.iterator() );
         return mockedAllEntriesReader;
     }
 
-    private void mockAllEntriesReaders( long[] numberEntries, long[] spatialEntries, long[] temporalEntries, long[] luceneEntries )
+    private void mockAllEntriesReaders( List<Long>... entries )
     {
-        mockSingleAllEntriesReader( nativeAccessor, numberEntries );
-        mockSingleAllEntriesReader( spatialAccessor, spatialEntries );
-        mockSingleAllEntriesReader( temporalAccessor, temporalEntries );
-        mockSingleAllEntriesReader( luceneAccessor, luceneEntries );
+        for ( int i = 0; i < entries.length; i++ )
+        {
+            mockSingleAllEntriesReader( allAccessors[i], entries[i] );
+        }
+    }
+
+    private List<IndexAccessor> allAccessors()
+    {
+        return Arrays.asList( numberAccessor, stringAccessor, spatialAccessor, luceneAccessor );
     }
 }

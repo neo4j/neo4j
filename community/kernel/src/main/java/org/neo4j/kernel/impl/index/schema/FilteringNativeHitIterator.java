@@ -17,32 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.inmemory;
+package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.cursor.RawCursor;
+import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.values.storable.Value;
 
-public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
+class FilteringNativeHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIterator<KEY,VALUE>
 {
-    @Override
-    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    private final IndexQuery[] filters;
+
+    FilteringNativeHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
+            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted, IndexQuery[] filters )
     {
-        return new InMemoryIndexProvider();
+        super( seeker, toRemoveFromWhenExhausted );
+        this.filters = filters;
     }
 
     @Override
-    public boolean supportsSpatial()
+    boolean acceptValue( Value value )
     {
-        return false;
-    }
-
-    @Override
-    public boolean supportsTemporal()
-    {
-        return false;
+        return filters[0].acceptsValue( value );
     }
 }

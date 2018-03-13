@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.helpers
 import SlottedPipeBuilderUtils._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
 import org.neo4j.cypher.internal.util.v3_4.ParameterWrongTypeException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
@@ -37,6 +38,7 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
     .newLong("r1", false, CTRelationship)
     .newLong("r2", true, CTRelationship)
     .newReference("x", true, CTAny)
+    .newReference("y", false, CTAny)
 
   // GETTING
 
@@ -158,5 +160,113 @@ class SlottedPipeBuilderUtilsTest extends CypherFunSuite {
     setter(context, expectedValue)
     val value = context.getRefAt(slot.offset)
     value should equal(expectedValue)
+  }
+
+  private def assertPrimitiveNodeSetLong(slot: Slot, id: Long): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val primitiveNodeSetter = makeSetPrimitiveNodeInSlotFunctionFor(slot)
+
+    primitiveNodeSetter(context, id)
+    context.getLongAt(slot.offset) should equal(id)
+  }
+
+  private def assertPrimitiveRelationshipSetLong(slot: Slot, id: Long): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val primitiveRelationshipSetter = makeSetPrimitiveRelationshipInSlotFunctionFor(slot)
+
+    primitiveRelationshipSetter(context, id)
+    context.getLongAt(slot.offset) should equal(id)
+  }
+
+  private def assertPrimitiveNodeSetRef(slot: Slot, id: Long, expected: AnyValue): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val primitiveNodeSetter = makeSetPrimitiveNodeInSlotFunctionFor(slot)
+
+    primitiveNodeSetter(context, id)
+    context.getRefAt(slot.offset) should equal(expected)
+  }
+
+  private def assertPrimitiveRelationshipSetRef(slot: Slot, id: Long, expected: AnyValue): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val primitiveRelationshipSetter = makeSetPrimitiveRelationshipInSlotFunctionFor(slot)
+
+    primitiveRelationshipSetter(context, id)
+    context.getRefAt(slot.offset) should equal(expected)
+  }
+
+  private def assertPrimitiveNodeSetFails(slot: Slot, id: Long): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val setter = makeSetPrimitiveNodeInSlotFunctionFor(slot)
+
+    // The setter only throws if assertions are enabled
+    ifAssertionsEnabled {
+      a[ParameterWrongTypeException] should be thrownBy (setter(context, id))
+    }
+  }
+
+  private def assertPrimitiveRelationshipSetFails(slot: Slot, id: Long): Unit = {
+    val context = SlottedExecutionContext(slots)
+    val setter = makeSetPrimitiveRelationshipInSlotFunctionFor(slot)
+
+    // The setter only throws if assertions are enabled
+    ifAssertionsEnabled {
+      a[ParameterWrongTypeException] should be thrownBy (setter(context, id))
+    }
+  }
+
+  test("primitive node setter for non-nullable node slot") {
+    assertPrimitiveNodeSetLong(slots("n1"), 42L)
+  }
+
+  test("primitive node setter for nullable node slots with null") {
+    assertPrimitiveNodeSetLong(slots("n2"), -1L)
+  }
+
+  test("primitive node setter for nullable node slot") {
+    assertPrimitiveNodeSetLong(slots("n2"), 42L)
+  }
+
+  test("primitive relationship setter for non-nullable relationship slot") {
+    assertPrimitiveRelationshipSetLong(slots("r1"), 42L)
+  }
+
+  test("primitive relationship setter for nullable relationship slots with null") {
+    assertPrimitiveRelationshipSetLong(slots("r2"), -1)
+  }
+
+  test("primitive relationship setter for nullable relationship slot") {
+    assertPrimitiveRelationshipSetLong(slots("r2"), 42L)
+  }
+
+  test("primitive node setter for non-nullable node slot should throw") {
+    assertPrimitiveNodeSetFails(slots("n1"), -1L)
+  }
+
+  test("primitive relationship setter for non-nullable relationship slot should throw") {
+    assertPrimitiveRelationshipSetFails(slots("r1"), -1L)
+  }
+
+  test("primitive node setter for ref slot") {
+    assertPrimitiveNodeSetRef(slots("x"), 42L, VirtualValues.node(42L))
+  }
+
+  test("primitive node setter for nullable ref slot with null") {
+    assertPrimitiveNodeSetRef(slots("x"), -1L, Values.NO_VALUE)
+  }
+
+  test("primitive node setter for non-nullable ref slot should throw") {
+    assertPrimitiveNodeSetFails(slots("y"), -1L)
+  }
+
+  test("primitive relationship setter for ref slot") {
+    assertPrimitiveRelationshipSetRef(slots("x"), 42L, VirtualValues.relationship(42L))
+  }
+
+  test("primitive relationship setter for nullable ref slot with null") {
+    assertPrimitiveRelationshipSetRef(slots("x"), -1L, Values.NO_VALUE)
+  }
+
+  test("primitive relationship setter for non-nullable ref slot should throw") {
+    assertPrimitiveRelationshipSetFails(slots("y"), -1L)
   }
 }

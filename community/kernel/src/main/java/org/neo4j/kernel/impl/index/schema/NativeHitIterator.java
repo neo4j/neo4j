@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.values.storable.Value;
 
 /**
  * Wraps number key/value results in a {@link PrimitiveLongIterator}.
@@ -35,7 +36,7 @@ import org.neo4j.index.internal.gbptree.Hit;
  * @param <KEY> type of {@link NumberSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public class NativeHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {
@@ -43,7 +44,7 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted;
     private boolean closed;
 
-    NumberHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
+    NativeHitIterator( RawCursor<Hit<KEY,VALUE>,IOException> seeker,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromWhenExhausted )
     {
         this.seeker = seeker;
@@ -55,9 +56,13 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
     {
         try
         {
-            if ( seeker.next() )
+            while ( seeker.next() )
             {
-                return next( seeker.get().key().getEntityId() );
+                KEY key = seeker.get().key();
+                if ( acceptValue( key.asValue() ) )
+                {
+                    return next( key.getEntityId() );
+                }
             }
             return false;
         }
@@ -65,6 +70,11 @@ public class NumberHitIterator<KEY extends NativeSchemaKey, VALUE extends Native
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    boolean acceptValue( Value value )
+    {
+        return true;
     }
 
     private void ensureCursorClosed() throws IOException

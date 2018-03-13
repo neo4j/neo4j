@@ -281,7 +281,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
         String additionalInstruction = RECORD_STATEMENTS_TRACES ? StringUtils.EMPTY :
                                        format(" To see statement open/close stack traces please pass '%s' to your JVM" +
                                                        " or enable corresponding feature toggle.",
-                                       toggle( KernelStatement.class, "recordStatementsTraces", true ) );
+                                       toggle( KernelStatement.class, "recordStatementsTraces", Boolean.TRUE ) );
         return format( "Statements were not correctly closed. Number of leaked statements: %d.%s", leakedStatements,
                 additionalInstruction );
     }

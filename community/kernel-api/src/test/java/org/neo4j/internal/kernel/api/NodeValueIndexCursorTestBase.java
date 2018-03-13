@@ -195,7 +195,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
             // when
-            IndexValueCapability valueCapability = index.valueCapability( ValueGroup.TEXT );
+            IndexValueCapability valueCapability = index.valueCapability( ValueGroup.TEXT, ValueGroup.TEXT );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Joe" ),
                     IndexQuery.exact( surname, "Dalton" ) );
 

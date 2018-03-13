@@ -110,7 +110,7 @@ public class MembershipWaiter
             }
             else if ( iAmAVotingMember() && caughtUpWithLeader() )
             {
-                catchUpFuture.complete( true );
+                catchUpFuture.complete( Boolean.TRUE );
             }
             else
             {

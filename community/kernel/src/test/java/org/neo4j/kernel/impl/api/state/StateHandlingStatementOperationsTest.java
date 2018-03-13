@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
@@ -59,7 +60,9 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -83,6 +86,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asNodeCursor;
 import static org.neo4j.kernel.impl.api.state.StubCursors.asPropertyCursor;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class StateHandlingStatementOperationsTest
 {
@@ -367,8 +371,8 @@ public class StateHandlingStatementOperationsTest
         // Given
         final int propertyKey = 2;
         final int inRange = 15;
-        int lower = 10;
-        int upper = 20;
+        NumberValue lower = Values.numberValue( 10 );
+        NumberValue upper = Values.numberValue( 20 );
 
         TransactionState txState = mock( TransactionState.class );
         KernelStatement statement = mock( KernelStatement.class );
@@ -376,8 +380,8 @@ public class StateHandlingStatementOperationsTest
         when( statement.txState() ).thenReturn( txState );
         StorageStatement storageStatement = mock( StorageStatement.class );
         when( statement.getStoreStatement() ).thenReturn( storageStatement );
-        when( txState.indexUpdatesForRangeSeekByNumber( index, lower, true, upper, false ) ).thenReturn( createDiffSets()
-        );
+        when( txState.indexUpdatesForRangeSeek( index, ValueGroup.NUMBER, lower, true, upper, false ) )
+                .thenReturn( createDiffSets() );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
@@ -392,8 +396,8 @@ public class StateHandlingStatementOperationsTest
         } );
 
         IndexReader indexReader = addMockedIndexReader( storageStatement );
-        IndexQuery.NumberRangePredicate indexQuery =
-                IndexQuery.range( index.schema().getPropertyId(), lower, true, upper, false );
+        RangePredicate indexQuery =
+                IndexQuery.range( index.schema().getPropertyId(), lower.asObject(), true, upper.asObject(), false );
         when( indexReader.query( indexQuery ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
         );
@@ -423,14 +427,15 @@ public class StateHandlingStatementOperationsTest
         KernelStatement statement = mock( KernelStatement.class );
         when( statement.hasTxStateWithChanges() ).thenReturn( true );
         when( statement.txState() ).thenReturn( txState );
-        when( txState.indexUpdatesForRangeSeekByString( index, "Anne", true, "Bill", false ) ).thenReturn( createDiffSets() );
+        when( txState.indexUpdatesForRangeSeek( index, ValueGroup.TEXT, stringValue( "Anne" ), true, stringValue( "Bill" ), false ) )
+                .thenReturn( createDiffSets() );
         when( txState.addedAndRemovedNodes() ).thenReturn(
                 new DiffSets<>( Collections.singleton( 45L ), Collections.singleton( 46L ) )
         );
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
-        IndexQuery.StringRangePredicate rangePredicate =
+        RangePredicate rangePredicate =
                 IndexQuery.range( index.schema().getPropertyId(), "Anne", true, "Bill", false );
         when( indexReader.query( rangePredicate ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );

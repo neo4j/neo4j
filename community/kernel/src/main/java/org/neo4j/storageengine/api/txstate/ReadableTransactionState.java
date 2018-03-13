@@ -39,7 +39,8 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -144,17 +145,9 @@ public interface ReadableTransactionState
 
     PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
-                                                             Number lower, boolean includeLower,
-                                                             Number upper, boolean includeUpper );
-
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor index,
-                                                             PointValue lower, boolean includeLower,
-                                                             PointValue upper, boolean includeUpper );
-
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
-                                                             String lower, boolean includeLower,
-                                                             String upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( IndexDescriptor index, ValueGroup valueGroup,
+                                                            Value lower, boolean includeLower,
+                                                            Value upper, boolean includeUpper );
 
     PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 

@@ -154,7 +154,7 @@ public class RemoteStore
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
                 logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
-            log.info( "Pulling transactions from: %d", fromTxId );
+            log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
 
             long previousTxId = fromTxId - 1;
 
