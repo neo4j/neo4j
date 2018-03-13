@@ -142,8 +142,6 @@ trait NodeIndexSeeker {
 
   private def computeExactQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery.ExactPredicate]] =
     valueExpr match {
-      case ScanQueryExpression(expr) => throw new IllegalArgumentException("this won't happen!")
-
       // Index exact value seek on single value
       case SingleQueryExpression(expr) =>
         val seekValue = makeValueNeoSafe(expr(row, state))

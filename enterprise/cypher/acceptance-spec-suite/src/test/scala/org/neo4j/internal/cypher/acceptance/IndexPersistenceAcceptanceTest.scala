@@ -30,6 +30,8 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
   private var dbDir = new File("test")
 
+  override val cypherComparisonSupport = false
+
   override protected def initTest() {
     FileUtils.deleteRecursively(dbDir)
     startGraphDatabase(dbDir)

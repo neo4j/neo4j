@@ -19,11 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.ZoneOffset
+import java.time.{ZoneId, ZoneOffset}
 
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
+
+  override val cypherComparisonSupport = true
 
   test("should seek") {
     createIndex()
@@ -42,6 +44,30 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
       DateValue.epochDate(10002),
       DateValue.epochDate(10004),
       DateValue.epochDate(10006))
+
+    assertRangeScan(
+      LocalDateTimeValue.localDateTime(10000, 100000000),
+      LocalDateTimeValue.localDateTime(10002, 100000000),
+      LocalDateTimeValue.localDateTime(10004, 100000000),
+      LocalDateTimeValue.localDateTime(10006, 100000000))
+
+    assertRangeScan(
+      DateTimeValue.datetime(10000, 100000000, ZoneId.of("Europe/Stockholm")),
+      DateTimeValue.datetime(10002, 100000000, ZoneId.of("Europe/Stockholm")),
+      DateTimeValue.datetime(10004, 100000000, ZoneId.of("Europe/Stockholm")),
+      DateTimeValue.datetime(10006, 100000000, ZoneId.of("Europe/Stockholm")))
+
+    assertRangeScan(
+      LocalTimeValue.localTime(10000),
+      LocalTimeValue.localTime(10002),
+      LocalTimeValue.localTime(10004),
+      LocalTimeValue.localTime(10006))
+
+    assertRangeScan(
+      TimeValue.time(10000, ZoneId.of("Europe/Stockholm")),
+      TimeValue.time(10002, ZoneId.of("Europe/Stockholm")),
+      TimeValue.time(10004, ZoneId.of("Europe/Stockholm")),
+      TimeValue.time(10006, ZoneId.of("Europe/Stockholm")))
   }
 
   def assertSeek(value: Value): Unit = {
@@ -56,5 +82,6 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     val n4 = createIndexedNode(v4)
 
     assertRangeScanFor(">", v1, "<", v4, n2, n3)
+    assertRangeScanFor(">=", v1, "<=", v4, n1, n2, n3, n4)
   }
 }

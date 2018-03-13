@@ -239,9 +239,18 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
 
+  val SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
+                                    ValueGroup.TEXT,
+                                    ValueGroup.GEOMETRY,
+                                    ValueGroup.DATE,
+                                    ValueGroup.LOCAL_DATE_TIME,
+                                    ValueGroup.ZONED_DATE_TIME,
+                                    ValueGroup.LOCAL_TIME,
+                                    ValueGroup.ZONED_TIME,
+                                    ValueGroup.DURATION)
+
   override def indexSeek(index: IndexReference, predicates: Seq[IndexQuery]): Iterator[NodeValue] = {
 
-    val SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER, ValueGroup.TEXT, ValueGroup.GEOMETRY, ValueGroup.DATE)
     val impossiblePredicate =
       predicates.exists {
         case p:IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
