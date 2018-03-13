@@ -33,11 +33,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -78,7 +78,7 @@ public class PropertyConstraintValidationIT
             int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.nodeKeyConstraintCreate( forLabel( label, propertyKey ) );
             commit();
         }
@@ -144,7 +144,7 @@ public class PropertyConstraintValidationIT
             int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.nodePropertyExistenceConstraintCreate( forLabel( label, propertyKey ) );
             commit();
         }
@@ -225,7 +225,7 @@ public class PropertyConstraintValidationIT
             int propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.relationshipPropertyExistenceConstraintCreate( forRelType( relTypeId, propertyKeyId ) );
             commit();
         }

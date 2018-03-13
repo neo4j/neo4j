@@ -35,16 +35,20 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -59,6 +63,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -101,7 +106,7 @@ public class IndexIT extends KernelIntegrationTest
         long nodeId = write.nodeCreate();
         write.nodeAddLabel( nodeId, label2 );
 
-        schemaWriteOperationsInNewTransaction().indexCreate( descriptor );
+        schemaWriteInNewTransaction().indexCreate( descriptor );
         commit();
     }
 
@@ -112,7 +117,7 @@ public class IndexIT extends KernelIntegrationTest
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
 
         LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptorFactory.forLabel( label2, propertyKeyId );
-        schemaWriteOperationsInNewTransaction().indexCreate( anotherLabelDescriptor );
+        schemaWriteInNewTransaction().indexCreate( anotherLabelDescriptor );
 
         Future<?> indexFuture = executorService.submit( createIndex( db, Label.label( LABEL ), PROPERTY_KEY ) );
         indexFuture.get();
@@ -123,16 +128,16 @@ public class IndexIT extends KernelIntegrationTest
     public void addIndexRuleInATransaction() throws Exception
     {
         // GIVEN
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
 
         // WHEN
-        SchemaIndexDescriptor expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        CapableIndexReference expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( asSet( expectedRule ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
-        assertEquals( expectedRule, readOperations.indexGetForSchema( descriptor ) );
+        SchemaRead schemaRead = newTransaction().schemaRead();
+        assertEquals( asSet( expectedRule ), asSet( schemaRead.indexesGetForLabel( labelId ) ) );
+        assertEquals( expectedRule, schemaRead.index( descriptor.getLabelId(), descriptor.getPropertyIds() ) );
         commit();
     }
 
@@ -140,15 +145,15 @@ public class IndexIT extends KernelIntegrationTest
     public void committedAndTransactionalIndexRulesShouldBeMerged() throws Exception
     {
         // GIVEN
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        SchemaIndexDescriptor existingRule = schemaWriteOperations.indexCreate( descriptor );
+        SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
+        CapableIndexReference existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
-        Statement statement = statementInNewTransaction( AUTH_DISABLED );
-        SchemaIndexDescriptor addedRule = statement.schemaWriteOperations()
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        CapableIndexReference addedRule = transaction.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
-        Set<SchemaIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        Set<CapableIndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -159,10 +164,10 @@ public class IndexIT extends KernelIntegrationTest
     public void rollBackIndexRuleShouldNotBeCommitted() throws Exception
     {
         // GIVEN
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
 
         // WHEN
-        schemaWriteOperations.indexCreate( descriptor );
+        schemaWrite.indexCreate( descriptor );
         // don't mark as success
         rollback();
 
@@ -186,8 +191,8 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // when
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.indexDrop( constraintIndex );
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        schemaWrite.indexDrop( fromDescriptor( constraintIndex ) );
         commit();
 
         // then
@@ -200,14 +205,14 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        SchemaIndexDescriptor index;
+        CapableIndexReference index;
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             index = statement.indexCreate( descriptor );
             commit();
         }
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
             commit();
         }
@@ -215,7 +220,7 @@ public class IndexIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
             commit();
         }
@@ -233,7 +238,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             statement.uniquePropertyConstraintCreate( descriptor );
             commit();
         }
@@ -241,7 +246,7 @@ public class IndexIT extends KernelIntegrationTest
         // when
         try
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexCreate( descriptor );
             commit();
 
@@ -302,15 +307,15 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListAll() throws Exception
     {
         // given
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        SchemaIndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
-        SchemaIndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
-                                                            .ownedIndexDescriptor();
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        CapableIndexReference index1 = schemaWrite.indexCreate( descriptor );
+        CapableIndexReference index2 = fromDescriptor(
+                ((IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 )).ownedIndexDescriptor()) ;
         commit();
 
         // then/when
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        List<SchemaIndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        SchemaRead schemaRead = newTransaction().schemaRead();
+        List<CapableIndexReference> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }

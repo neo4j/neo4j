@@ -24,15 +24,16 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 
-public class NodeKeyConstraintCreationIT extends AbstractConstraintCreationIT<NodeKeyConstraintDescriptor,LabelSchemaDescriptor>
+public class NodeKeyConstraintCreationIT extends AbstractConstraintCreationIT<ConstraintDescriptor,LabelSchemaDescriptor>
 {
     @Override
     int initializeLabelOrRelType( TokenWrite tokenWrite, String name ) throws KernelException
@@ -41,7 +42,7 @@ public class NodeKeyConstraintCreationIT extends AbstractConstraintCreationIT<No
     }
 
     @Override
-    NodeKeyConstraintDescriptor createConstraint( SchemaWriteOperations writeOps, LabelSchemaDescriptor descriptor )
+    ConstraintDescriptor createConstraint( SchemaWrite writeOps, LabelSchemaDescriptor descriptor )
             throws Exception
     {
         return writeOps.nodeKeyConstraintCreate( descriptor );
@@ -60,7 +61,7 @@ public class NodeKeyConstraintCreationIT extends AbstractConstraintCreationIT<No
     }
 
     @Override
-    void dropConstraint( SchemaWriteOperations writeOps, NodeKeyConstraintDescriptor constraint )
+    void dropConstraint( SchemaWrite writeOps, ConstraintDescriptor constraint )
             throws Exception
     {
         writeOps.constraintDrop( constraint );

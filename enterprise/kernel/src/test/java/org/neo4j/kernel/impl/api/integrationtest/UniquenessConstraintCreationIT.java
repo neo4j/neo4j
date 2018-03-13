@@ -27,6 +27,7 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -36,7 +37,6 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -66,7 +66,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class UniquenessConstraintCreationIT
-        extends AbstractConstraintCreationIT<UniquenessConstraintDescriptor,LabelSchemaDescriptor>
+        extends AbstractConstraintCreationIT<ConstraintDescriptor,LabelSchemaDescriptor>
 {
     private static final String DUPLICATED_VALUE = "apa";
     private SchemaIndexDescriptor uniqueIndex;
@@ -78,7 +78,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Override
-    UniquenessConstraintDescriptor createConstraint( SchemaWriteOperations writeOps, LabelSchemaDescriptor descriptor )
+    ConstraintDescriptor createConstraint( SchemaWrite writeOps, LabelSchemaDescriptor descriptor )
             throws Exception
     {
         return writeOps.uniquePropertyConstraintCreate( descriptor );
@@ -97,7 +97,7 @@ public class UniquenessConstraintCreationIT
     }
 
     @Override
-    void dropConstraint( SchemaWriteOperations writeOps, UniquenessConstraintDescriptor constraint ) throws Exception
+    void dropConstraint( SchemaWrite writeOps, ConstraintDescriptor constraint ) throws Exception
     {
         writeOps.constraintDrop( constraint );
     }
@@ -153,7 +153,7 @@ public class UniquenessConstraintCreationIT
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( foo, name );
         try
         {
-            SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
             schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
 
             fail( "expected exception" );
@@ -176,7 +176,7 @@ public class UniquenessConstraintCreationIT
     public void shouldCreateAnIndexToGoAlongWithAUniquePropertyConstraint() throws Exception
     {
         // when
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
         schemaWriteOperations.uniquePropertyConstraintCreate( descriptor );
         commit();
 
@@ -208,14 +208,14 @@ public class UniquenessConstraintCreationIT
             throws Exception
     {
         // given
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
         schemaWriteOperations.nodePropertyExistenceConstraintCreate( descriptor );
         commit();
 
         // when
         try
         {
-            SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+            SchemaWrite statement = schemaWriteInNewTransaction();
             statement.constraintDrop( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
 
             fail( "expected exception" );
@@ -245,7 +245,7 @@ public class UniquenessConstraintCreationIT
     public void committedConstraintRuleShouldCrossReferenceTheCorrespondingIndexRule() throws Exception
     {
         // when
-        SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
+        SchemaWrite statement = schemaWriteInNewTransaction();
         statement.uniquePropertyConstraintCreate( descriptor );
         commit();
 
@@ -275,7 +275,7 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // when
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
         schemaWriteOperations.constraintDrop( constraint );
         commit();
 

@@ -27,6 +27,7 @@ import org.junit.rules.RuleChain;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -34,7 +35,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -84,11 +84,10 @@ public abstract class KernelIntegrationTest
         return transaction.dataWrite();
     }
 
-    protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
+    protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        statement = transaction.acquireStatement();
-        return statement.schemaWriteOperations();
+        return transaction.schemaWrite();
     }
 
     protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
@@ -106,7 +105,14 @@ public abstract class KernelIntegrationTest
 
     protected KernelTransaction newTransaction() throws TransactionFailureException
     {
-        return kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        return transaction;
+    }
+
+    protected KernelTransaction newTransaction(LoginContext loginContext) throws TransactionFailureException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
+        return transaction;
     }
 
     protected DbmsOperations dbmsOperations()
@@ -134,8 +140,11 @@ public abstract class KernelIntegrationTest
 
     protected void rollback() throws TransactionFailureException
     {
-        statement.close();
-        statement = null;
+        if ( statement != null )
+        {
+            statement.close();
+            statement = null;
+        }
         transaction.failure();
         try
         {

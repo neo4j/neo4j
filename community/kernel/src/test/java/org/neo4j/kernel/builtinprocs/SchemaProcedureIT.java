@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -83,7 +83,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
                 .nodeSetProperty( nodeId, propertyIdName, Values.of( "Emil" ) );
         commit();
 
-        SchemaWriteOperations schemaOps = schemaWriteOperationsInNewTransaction();
+        SchemaWrite schemaOps = schemaWriteInNewTransaction();
         schemaOps.indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdName ) );
         schemaOps.uniquePropertyConstraintCreate( SchemaDescriptorFactory.forLabel( labelId, propertyIdAge ) );
         commit();

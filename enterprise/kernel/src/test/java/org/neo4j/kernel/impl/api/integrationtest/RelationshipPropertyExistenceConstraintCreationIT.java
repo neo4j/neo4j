@@ -23,10 +23,11 @@ import org.neo4j.SchemaHelper;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
@@ -34,7 +35,7 @@ import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipPropertyExistenceConstraintCreationIT
-        extends AbstractConstraintCreationIT<RelExistenceConstraintDescriptor,RelationTypeSchemaDescriptor>
+        extends AbstractConstraintCreationIT<ConstraintDescriptor,RelationTypeSchemaDescriptor>
 {
     @Override
     int initializeLabelOrRelType( TokenWrite tokenWrite, String name ) throws KernelException
@@ -43,7 +44,7 @@ public class RelationshipPropertyExistenceConstraintCreationIT
     }
 
     @Override
-    RelExistenceConstraintDescriptor createConstraint( SchemaWriteOperations writeOps,
+    ConstraintDescriptor createConstraint( SchemaWrite writeOps,
             RelationTypeSchemaDescriptor descriptor ) throws Exception
     {
         return writeOps.relationshipPropertyExistenceConstraintCreate( descriptor );
@@ -62,7 +63,7 @@ public class RelationshipPropertyExistenceConstraintCreationIT
     }
 
     @Override
-    void dropConstraint( SchemaWriteOperations writeOps, RelExistenceConstraintDescriptor constraint )
+    void dropConstraint( SchemaWrite writeOps, ConstraintDescriptor constraint )
             throws Exception
     {
         writeOps.constraintDrop( constraint );
