@@ -54,11 +54,11 @@ import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
-import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -78,6 +78,8 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSubClusterRoutersProcedure;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSuperClusterRoutersProcedure;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -177,6 +179,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     config, logProvider ) );
         }
 
+        procedures.register( new GetSuperClusterRoutersProcedure( topologyService, config ) );
+        procedures.register( new GetSubClusterRoutersProcedure( topologyService, config ) );
         procedures.register( new ClusterOverviewProcedure( topologyService, logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
         procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );

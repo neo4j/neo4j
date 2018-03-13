@@ -40,11 +40,11 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.load_balancing.Endpoint;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
-import org.neo4j.causalclustering.load_balancing.plugins.server_policies.Policies;
-import org.neo4j.causalclustering.load_balancing.procedure.ParameterNames;
-import org.neo4j.causalclustering.load_balancing.procedure.ResultFormatV1;
+import org.neo4j.causalclustering.routing.Endpoint;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingResult;
+import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.Policies;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.ParameterNames;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.ResultFormatV1;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -60,7 +60,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.load_balancing.procedure.ProcedureNames.GET_SERVERS_V2;
+import static org.neo4j.causalclustering.routing.load_balancing.procedure.ProcedureNames.GET_SERVERS_V2;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerPoliciesLoadBalancingIT
