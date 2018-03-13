@@ -40,8 +40,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 public class NeoStoreOpenFailureTest
 {
@@ -71,8 +71,8 @@ public class NeoStoreOpenFailureTest
         neoStores.close();
 
         // Make the schema store inaccessible, to sabotage the next initialisation we'll do.
-        assertTrue( schemaStore.setReadable( false ) );
-        assertTrue( schemaStore.setWritable( false ) );
+        assumeTrue( schemaStore.setReadable( false ) );
+        assumeTrue( schemaStore.setWritable( false ) );
 
         try
         {
