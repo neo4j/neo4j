@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -137,9 +137,9 @@ public class NodePropertyExistenceConstraintCreationIT
 
         // then
         {
-            ReadOperations statement = readOperationsInNewTransaction();
+            KernelTransaction transaction = newTransaction();
 
-            Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
+            Iterator<ConstraintDescriptor> constraints = transaction.schemaRead().constraintsGetForSchema( descriptor );
 
             assertEquals( constraint, single( constraints ) );
             commit();

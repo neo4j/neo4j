@@ -23,8 +23,9 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
@@ -54,12 +55,12 @@ public class LabelIT extends KernelIntegrationTest
         // when
         commit();
 
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        Iterator<Token> labelIdsAfterCommit = readOperations.labelsGetAllTokens();
+        KernelTransaction transaction = newTransaction();
+        Iterator<NamedToken> labelIdsAfterCommit = transaction.tokenRead().labelsGetAllTokens();
 
         // then
         assertThat( asCollection( labelIdsAfterCommit ),
-                hasItems( new Token( "label1", label1Id ), new Token( "label2", label2Id ) ) );
+                hasItems( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) ) );
         commit();
     }
 
@@ -82,7 +83,8 @@ public class LabelIT extends KernelIntegrationTest
         commit();
 
         // And then the node should have the label
-        assertTrue( readOperationsInNewTransaction().nodeHasLabel( node, label ) );
+
+        assertTrue( nodeHasLabel( newTransaction(), node, label ) );
         commit();
     }
 }

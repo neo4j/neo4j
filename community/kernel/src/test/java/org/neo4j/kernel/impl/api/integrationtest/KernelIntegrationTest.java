@@ -24,9 +24,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -45,8 +54,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class KernelIntegrationTest
 {
@@ -208,5 +223,138 @@ public abstract class KernelIntegrationTest
     {
         stopDb();
         startDb();
+    }
+
+    boolean nodeHasLabel( KernelTransaction transaction, long node, int label )
+    {
+        try( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            return cursor.next() && cursor.labels().contains( label );
+        }
+    }
+
+    boolean nodeHasProperty( KernelTransaction transaction, long node, int property )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return false;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+
+    Value nodeGetProperty( KernelTransaction transaction, long node, int property )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return NO_VALUE;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return properties.propertyValue();
+                    }
+                }
+                return NO_VALUE;
+            }
+        }
+    }
+
+    PrimitiveIntIterator nodeGetPropertyKeys( KernelTransaction transaction, long node )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            PrimitiveIntSet props = Primitive.intSet();
+            transaction.dataRead().singleNode( node, cursor );
+            if ( cursor.next() )
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    props.add( properties.propertyKey() );
+                }
+            }
+            return props.iterator();
+        }
+    }
+
+    Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
+    {
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleRelationship( relationship, cursor );
+            if ( !cursor.next() )
+            {
+                return NO_VALUE;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return properties.propertyValue();
+                    }
+                }
+                return NO_VALUE;
+            }
+        }
+    }
+
+    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction )
+    {
+        return nodeGetRelationships( transaction, node, direction, null );
+    }
+
+    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
+    {
+        NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+        transaction.dataRead().singleNode( node, cursor );
+        if ( !cursor.next() )
+        {
+            return emptyIterator();
+        }
+
+        switch ( direction )
+        {
+        case OUTGOING:
+            return outgoingIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        case INCOMING:
+            return incomingIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        case BOTH:
+            return allIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        default:
+            throw new IllegalStateException( direction + " is not a valid direction" );
+        }
     }
 }

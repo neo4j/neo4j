@@ -24,9 +24,10 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
@@ -60,10 +61,10 @@ public class PropertyIT extends KernelIntegrationTest
 
         // WHEN
         commit();
-        ReadOperations readOperations = readOperationsInNewTransaction();
+        KernelTransaction transaction = newTransaction();
 
         // THEN
-        readOperations.nodeGetProperty( nodeId, propertyKeyId );
+        nodeGetProperty( transaction, nodeId, propertyKeyId );
 
         commit();
     }
@@ -73,23 +74,23 @@ public class PropertyIT extends KernelIntegrationTest
     {
         // GIVEN
         Value value = Values.of( "bozo" );
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
-        long nodeId = statement.dataWriteOperations().nodeCreate();
+        long nodeId = transaction.dataWrite().nodeCreate();
 
         // WHEN
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "clown" );
-        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, value );
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
+        transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, value );
 
         // THEN
-        assertEquals( value, statement.readOperations().nodeGetProperty( nodeId, propertyKeyId ) );
+        assertEquals( value, nodeGetProperty( transaction, nodeId, propertyKeyId ) );
 
         // WHEN
         commit();
-        ReadOperations readOperations = readOperationsInNewTransaction();
+        transaction = newTransaction();
 
         // THEN
-        assertEquals( value, readOperations.nodeGetProperty( nodeId, propertyKeyId ) );
+        assertEquals( value, nodeGetProperty( transaction, nodeId, propertyKeyId ) );
         commit();
     }
 
@@ -113,8 +114,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        KernelTransaction transaction = newTransaction();
+        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 
@@ -146,8 +147,8 @@ public class PropertyIT extends KernelIntegrationTest
         }
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        KernelTransaction transaction = newTransaction();
+        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 
@@ -185,9 +186,9 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         {
-            ReadOperations readOperations = readOperationsInNewTransaction();
-            assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue ) );
-            assertThat( toList( readOperations.nodeGetPropertyKeys( nodeId ) ),
+            KernelTransaction transaction = newTransaction();
+            assertThat( nodeGetProperty( transaction,  nodeId, propertyKeyId ), equalTo( newValue ) );
+            assertThat( toList( nodeGetPropertyKeys( transaction,  nodeId ) ),
                     equalTo( Collections.singletonList( propertyKeyId ) ) );
             commit();
         }
@@ -235,11 +236,11 @@ public class PropertyIT extends KernelIntegrationTest
 
         // WHEN
         commit();
-        ReadOperations readOperations = readOperationsInNewTransaction();
+       KernelTransaction transaction = newTransaction();
 
         // THEN
-        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), not( equalTo( Values.NO_VALUE ) ) );
+        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( true ) );
+        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), not( equalTo( Values.NO_VALUE ) ) );
         commit();
     }
 
@@ -260,11 +261,11 @@ public class PropertyIT extends KernelIntegrationTest
         // WHEN
         commit();
 
-        ReadOperations readOperations = readOperationsInNewTransaction();
+        KernelTransaction transaction = newTransaction();
 
         // THEN
-        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
+        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 
@@ -283,9 +284,9 @@ public class PropertyIT extends KernelIntegrationTest
         rollback();
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
-        assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        KernelTransaction transaction = newTransaction();
+        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
+        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 
@@ -305,8 +306,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ).asObject() );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( 42, nodeGetProperty( transaction, nodeId, propertyId ).asObject() );
         commit();
     }
 
@@ -329,12 +330,12 @@ public class PropertyIT extends KernelIntegrationTest
 
         // when
         commit();
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        Iterator<Token> propIdsAfterCommit = readOperations.propertyKeyGetAllTokens();
+        KernelTransaction transaction = newTransaction();
+        Iterator<NamedToken> propIdsAfterCommit = transaction.tokenRead().propertyKeyGetAllTokens();
 
         // then
         assertThat( asCollection( propIdsAfterCommit ),
-                hasItems( new Token( "prop1", prop1 ), new Token( "prop2", prop2 ) ) );
+                hasItems( new NamedToken( "prop1", prop1 ), new NamedToken( "prop2", prop2 ) ) );
         commit();
     }
 
@@ -411,8 +412,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.nodeGetProperty( node, prop ), equalTo( Values.NO_VALUE ) );
+        KernelTransaction transaction = newTransaction();
+        assertThat( nodeGetProperty( transaction, node, prop ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 
@@ -441,8 +442,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertThat( readOperations.relationshipGetProperty( rel, prop ), equalTo( Values.NO_VALUE ) );
+        KernelTransaction transaction = newTransaction();
+        assertThat( relationshipGetProperty(transaction, rel, prop ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 }

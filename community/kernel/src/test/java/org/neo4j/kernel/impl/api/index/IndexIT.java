@@ -44,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -172,8 +171,8 @@ public class IndexIT extends KernelIntegrationTest
         rollback();
 
         // THEN
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetForLabel( labelId ) ) );
         commit();
     }
 
@@ -186,8 +185,8 @@ public class IndexIT extends KernelIntegrationTest
 
         SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.constraintsGetForLabel( labelId ) ) );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );
         commit();
 
         // when
@@ -196,8 +195,8 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // then
-        readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        transaction = newTransaction();
+        assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetForLabel( labelId ) ) );
         commit();
     }
 

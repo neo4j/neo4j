@@ -44,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -122,10 +121,10 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // given
         commit();
-        ReadOperations readOperations = readOperationsInNewTransaction();
+        transaction = newTransaction();
 
         // when
-        Iterator<?> constraints = readOperations.constraintsGetAll();
+        Iterator<?> constraints = transaction.schemaRead().constraintsGetAll();
 
         // then
         assertEquals( constraint, single( constraints ) );
@@ -148,10 +147,10 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // given
         commit();
         restartDb();
-        ReadOperations readOperations = readOperationsInNewTransaction();
+        transaction = newTransaction();
 
         // when
-        Iterator<?> constraints = readOperations.constraintsGetAll();
+        Iterator<?> constraints = transaction.schemaRead().constraintsGetAll();
 
         // then
         assertEquals( constraint, single( constraints ) );
@@ -170,10 +169,10 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // when
         rollback();
 
-        ReadOperations readOperations = readOperationsInNewTransaction();
+       KernelTransaction transaction = newTransaction();
 
         // then
-        Iterator<?> constraints = readOperations.constraintsGetAll();
+        Iterator<?> constraints = transaction.schemaRead().constraintsGetAll();
         assertFalse( "should not have any constraints", constraints.hasNext() );
         commit();
     }
@@ -224,10 +223,10 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         {
-            ReadOperations statement = readOperationsInNewTransaction();
+            KernelTransaction transaction = newTransaction();
 
             // then
-            assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
+            assertFalse( "should not have any constraints", transaction.schemaRead().constraintsGetAll().hasNext() );
             commit();
         }
     }
@@ -284,11 +283,11 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
             commit();
         }
         {
-            ReadOperations statement = readOperationsInNewTransaction();
+           KernelTransaction transaction = newTransaction();
 
             // then
-            assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetAll() ) );
-            schemaState.assertNotCleared( statement );
+            assertEquals( singletonList( constraint ), asCollection( transaction.schemaRead().constraintsGetAll() ) );
+            schemaState.assertNotCleared( transaction );
             commit();
         }
     }
@@ -306,7 +305,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         commit();
 
         // then
-        schemaState.assertCleared( readOperationsInNewTransaction() );
+        schemaState.assertCleared( newTransaction() );
         rollback();
     }
 
@@ -333,7 +332,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         }
 
         // then
-        schemaState.assertCleared( readOperationsInNewTransaction() );
+        schemaState.assertCleared( newTransaction() );
         rollback();
     }
 
@@ -361,8 +360,8 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         {
-            ReadOperations statement = readOperationsInNewTransaction();
-            assertEquals( emptySet(), asSet( statement.indexesGetAll() ) );
+            KernelTransaction transaction = newTransaction();
+            assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetAll() ) );
             commit();
         }
     }
@@ -493,29 +492,29 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         public SchemaStateCheck setUp() throws TransactionFailureException
         {
-            ReadOperations readOperations = readOperationsInNewTransaction();
-            checkState( readOperations );
+            KernelTransaction transaction = newTransaction();
+            checkState( transaction );
             commit();
             return this;
         }
 
-        void assertCleared( ReadOperations readOperations )
+        void assertCleared( KernelTransaction transaction )
         {
             int count = invocationCount;
-            checkState( readOperations );
+            checkState( transaction );
             assertEquals( "schema state should have been cleared.", count + 1, invocationCount );
         }
 
-        void assertNotCleared( ReadOperations readOperations )
+        void assertNotCleared( KernelTransaction transaction )
         {
             int count = invocationCount;
-            checkState( readOperations );
+            checkState( transaction );
             assertEquals( "schema state should not have been cleared.", count, invocationCount );
         }
 
-        private SchemaStateCheck checkState( ReadOperations readOperations )
+        private SchemaStateCheck checkState( KernelTransaction transaction )
         {
-            assertEquals( Integer.valueOf( 7 ), readOperations.schemaStateGetOrCreate( "7", this ) );
+            assertEquals( Integer.valueOf( 7 ), transaction.schemaRead().schemaStateGetOrCreate( "7", this ) );
             return this;
         }
     }

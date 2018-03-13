@@ -27,17 +27,17 @@ import org.junit.runners.Suite.SuiteClasses;
 import java.util.UUID;
 
 import org.neo4j.SchemaHelper;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -207,8 +207,8 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-            ReadOperations readOps = readOperationsInNewTransaction();
-            int result = PrimitiveLongCollections.count( readOps.nodesGetAll() );
+           KernelTransaction transaction = newTransaction();
+            int result = countNodes( transaction );
             rollback();
             return result;
         }
@@ -294,8 +294,8 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-            ReadOperations readOps = readOperationsInNewTransaction();
-            int result = PrimitiveLongCollections.count( readOps.relationshipsGetAll() );
+            KernelTransaction transaction = newTransaction();
+            int result = countNodes( transaction );
             rollback();
             return result;
         }
@@ -424,6 +424,20 @@ public class PropertyConstraintValidationIT
 
             // then
             assertEquals( 5, entityCount() );
+        }
+
+        protected int countNodes( KernelTransaction transaction )
+        {
+            int result = 0;
+            try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+            {
+                transaction.dataRead().allNodesScan( cursor );
+                while ( cursor.next() )
+                {
+                    result++;
+                }
+            }
+            return result;
         }
     }
 }

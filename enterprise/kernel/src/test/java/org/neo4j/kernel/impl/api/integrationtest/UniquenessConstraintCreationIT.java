@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -181,8 +180,8 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( asSet( uniqueIndex ), asSet( readOperations.indexesGetAll() ) );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( asSet( uniqueIndex ), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
 
@@ -198,8 +197,8 @@ public class UniquenessConstraintCreationIT
         rollback();
 
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.indexesGetAll() ) );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
 
@@ -232,9 +231,9 @@ public class UniquenessConstraintCreationIT
 
         // then
         {
-            ReadOperations statement = readOperationsInNewTransaction();
+            KernelTransaction transaction = newTransaction();
 
-            Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
+            Iterator<ConstraintDescriptor> constraints = transaction.schemaRead().constraintsGetForSchema( descriptor );
 
             assertEquals( ConstraintDescriptorFactory.existsForSchema( descriptor ), single( constraints ) );
             commit();
@@ -280,8 +279,8 @@ public class UniquenessConstraintCreationIT
         commit();
 
         // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.indexesGetAll() ) );
+        KernelTransaction transaction = newTransaction();
+        assertEquals( emptySet(), asSet( transaction.schemaRead().indexesGetAll() ) );
         commit();
     }
 
