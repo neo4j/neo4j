@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -74,9 +74,9 @@ public class LabelIT extends KernelIntegrationTest
         commit();
 
         // When I add and remove that label in the same tx
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        dataWriteOperations.nodeRemoveLabel( node, label );
-        dataWriteOperations.nodeAddLabel( node, label );
+        Write write = dataWriteInNewTransaction();
+        write.nodeRemoveLabel( node, label );
+        write.nodeAddLabel( node, label );
 
         // Then commit should not throw exceptions
         commit();

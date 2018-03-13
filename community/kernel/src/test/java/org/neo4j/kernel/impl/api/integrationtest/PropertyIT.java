@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -206,7 +206,7 @@ public class PropertyIT extends KernelIntegrationTest
             commit();
         }
         {
-            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+            Write statement = dataWriteInNewTransaction();
 
             // WHEN
             Value result = statement.nodeRemoveProperty( nodeId, propertyId );
@@ -278,8 +278,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        dataWriteOperations.nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
+        Write write = dataWriteInNewTransaction();
+        write.nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
         rollback();
 
         // THEN
@@ -300,8 +300,8 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        dataWriteOperations.nodeSetProperty( nodeId, propertyId, Values.of( 42 ) );
+        Write write = dataWriteInNewTransaction();
+        write.nodeSetProperty( nodeId, propertyId, Values.of( 42 ) );
         commit();
 
         // THEN
@@ -402,11 +402,11 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // when
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        dataWriteOperations.nodeRemoveProperty( node, prop );
-        dataWriteOperations.nodeSetProperty( node, prop, Values.of( "bar" ) );
-        dataWriteOperations.nodeRemoveProperty( node, prop );
-        dataWriteOperations.nodeRemoveProperty( node, prop );
+        Write write = dataWriteInNewTransaction();
+        write.nodeRemoveProperty( node, prop );
+        write.nodeSetProperty( node, prop, Values.of( "bar" ) );
+        write.nodeRemoveProperty( node, prop );
+        write.nodeRemoveProperty( node, prop );
 
         commit();
 
@@ -432,11 +432,11 @@ public class PropertyIT extends KernelIntegrationTest
         commit();
 
         // when
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        dataWriteOperations.relationshipRemoveProperty( rel, prop );
-        dataWriteOperations.relationshipSetProperty( rel, prop, Values.of( "bar" ) );
-        dataWriteOperations.relationshipRemoveProperty( rel, prop );
-        dataWriteOperations.relationshipRemoveProperty( rel, prop );
+        Write write = dataWriteInNewTransaction();
+        write.relationshipRemoveProperty( rel, prop );
+        write.relationshipSetProperty( rel, prop, Values.of( "bar" ) );
+        write.relationshipRemoveProperty( rel, prop );
+        write.relationshipRemoveProperty( rel, prop );
 
         commit();
 

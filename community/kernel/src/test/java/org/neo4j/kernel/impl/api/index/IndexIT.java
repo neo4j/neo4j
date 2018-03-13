@@ -36,10 +36,10 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -97,9 +97,9 @@ public class IndexIT extends KernelIntegrationTest
         TokenWrite tokenWrite = tokenWriteInNewTransaction();
         int label2 = tokenWrite.labelGetOrCreateForName( "Label2" );
 
-        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
-        long nodeId = dataWriteOperations.nodeCreate();
-        dataWriteOperations.nodeAddLabel( nodeId, label2 );
+        Write write = dataWriteInNewTransaction();
+        long nodeId = write.nodeCreate();
+        write.nodeAddLabel( nodeId, label2 );
 
         schemaWriteOperationsInNewTransaction().indexCreate( descriptor );
         commit();

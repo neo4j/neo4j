@@ -24,10 +24,10 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
@@ -174,12 +174,12 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         final SchemaIndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
         final Value value = Values.of( "value" );
 
-        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
-        long nodeId = dataStatement.nodeCreate();
-        dataStatement.nodeAddLabel( nodeId, labelId );
+        Write write = dataWriteInNewTransaction();
+        long nodeId = write.nodeCreate();
+        write.nodeAddLabel( nodeId, labelId );
 
         // This adds the node to the unique index and should take an index write lock
-        dataStatement.nodeSetProperty( nodeId, propertyId1, value );
+        write.nodeSetProperty( nodeId, propertyId1, value );
 
         Runnable runnableForThread2 = () ->
         {
@@ -227,21 +227,21 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private long createNodeWithValue( Value value ) throws KernelException
     {
-        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
-        long nodeId = dataStatement.nodeCreate();
-        dataStatement.nodeAddLabel( nodeId, labelId );
-        dataStatement.nodeSetProperty( nodeId, propertyId1, value );
+        Write write = dataWriteInNewTransaction();
+        long nodeId = write.nodeCreate();
+        write.nodeAddLabel( nodeId, labelId );
+        write.nodeSetProperty( nodeId, propertyId1, value );
         commit();
         return nodeId;
     }
 
     private long createNodeWithValues( Value value1, Value value2 ) throws KernelException
     {
-        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
-        long nodeId = dataStatement.nodeCreate();
-        dataStatement.nodeAddLabel( nodeId, labelId );
-        dataStatement.nodeSetProperty( nodeId, propertyId1, value1 );
-        dataStatement.nodeSetProperty( nodeId, propertyId2, value2 );
+        Write write = dataWriteInNewTransaction();
+        long nodeId = write.nodeCreate();
+        write.nodeAddLabel( nodeId, labelId );
+        write.nodeSetProperty( nodeId, propertyId1, value1 );
+        write.nodeSetProperty( nodeId, propertyId2, value2 );
         commit();
         return nodeId;
     }
