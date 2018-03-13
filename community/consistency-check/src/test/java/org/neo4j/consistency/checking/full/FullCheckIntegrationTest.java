@@ -454,7 +454,7 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().apply( rule.getProviderDescriptor() )
+            IndexPopulator populator = storeAccess.indexes().get( rule.getProviderDescriptor() )
                 .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
@@ -569,7 +569,7 @@ public class FullCheckIntegrationTest
             IndexRule indexRule = indexRuleIterator.next();
             IndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = storeAccess.indexes().
-                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor( indexRule.getId(), descriptor, samplingConfig );
+                    get( indexRule.getProviderDescriptor() ).getOnlineAccessor( indexRule.getId(), descriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -603,7 +603,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = storeAccess.indexes().apply( indexRule.getProviderDescriptor() )
+            IndexAccessor accessor = storeAccess.indexes().get( indexRule.getProviderDescriptor() )
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );

@@ -145,7 +145,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public void close() throws Exception
         {
-            if ( indexUpdatesExtractor.containsAnyNodeOrPropertyUpdate() )
+            if ( indexUpdatesExtractor.containsAnyEntityOrPropertyUpdate() )
             {
                 // Queue the index updates. When index updates from all transactions in this batch have been accumulated
                 // we'll feed them to the index updates work sync at the end of the batch

@@ -175,6 +175,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -496,7 +497,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             IndexDescriptor index = rule.getIndexDescriptor();
             descriptors[i] = index.schema();
             IndexPopulator populator =
-                    schemaIndexProviders.apply( rule.getProviderDescriptor() ).getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
+                    schemaIndexProviders.get( rule.getProviderDescriptor() ).getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
@@ -564,10 +565,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private int[] entityTokenIds( List<SchemaDescriptor> nodeDescriptors )
     {
-        if ( nodeDescriptors.stream().anyMatch( descriptor -> descriptor.schema().getEntityTokenIds().length == 0 ) )
+        if ( nodeDescriptors.stream().anyMatch( descriptor -> Arrays.equals( descriptor.schema().getEntityTokenIds(), ANY_ENTITY_TOKEN ) ) )
         {
-            //No token is any token
-            return new int[0];
+            return ANY_ENTITY_TOKEN;
         }
         return nodeDescriptors.stream().flatMapToInt( descriptor -> Arrays.stream( descriptor.schema().getEntityTokenIds() ) ).toArray();
     }
@@ -610,7 +610,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            IndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
+            IndexProvider provider = schemaIndexProviders.get( rule.getProviderDescriptor() );
             if ( provider.getInitialState( rule.getId(), rule.getIndexDescriptor() ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );

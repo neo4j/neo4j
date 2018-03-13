@@ -29,6 +29,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -92,7 +93,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             RecordAccess records,
             Collection<PropertyRecord> propertyRecs )
     {
-        Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
+        PrimitiveLongSet labels = NodeLabelReader.getListOfLabels( record, records, engine );
         PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.onlineRules() )
         {

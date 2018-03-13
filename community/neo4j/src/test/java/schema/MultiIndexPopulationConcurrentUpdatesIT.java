@@ -534,9 +534,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator getNodeIdIterator()
+        public PrimitiveLongResourceIterator getEntityIdIterator()
         {
-            PrimitiveLongResourceIterator originalIterator = delegate.getNodeIdIterator();
+            PrimitiveLongResourceIterator originalIterator = delegate.getEntityIdIterator();
             return new DelegatingPrimitiveLongResourceIterator( originalIterator, customAction );
         }
     }

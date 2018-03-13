@@ -44,8 +44,7 @@ public class FulltextFactory
      * Creates a factory for the specified location and analyzer.
      *
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
-     * @param config
-     * @throws IOException
+     * @param config the config is used for checking the {@link GraphDatabaseSettings#archive_failed_index} setting.
      */
 
     public FulltextFactory( IndexStorageFactory indexStorageFactory, String analyzerClassName, Config config )
@@ -74,12 +73,17 @@ public class FulltextFactory
 
     public LuceneFulltext createFulltextIndex( long indexId, FulltextIndexDescriptor descriptor )
     {
-        PartitionedIndexStorage storage = indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
+        PartitionedIndexStorage storage = getIndexStorage( indexId );
         return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), descriptor.schema().entityType() );
     }
 
     public String getStoredIndexFailure( long indexId )
     {
-        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) ).getStoredIndexFailure();
+        return getIndexStorage( indexId ).getStoredIndexFailure();
+    }
+
+    private PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 }

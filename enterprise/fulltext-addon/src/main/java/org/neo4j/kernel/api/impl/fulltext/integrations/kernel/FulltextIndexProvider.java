@@ -61,7 +61,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
+    private final Map<IndexDescriptor,FulltextIndexAccessor> accessors;
     private final Map<String,FulltextIndexAccessor> accessorsByName;
     private final String analyzerClassName;
 
@@ -104,7 +104,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
-        return new FulltextIndexPopulator( indexId, descriptor, samplingConfig, fulltextIndex );
+        return new FulltextIndexPopulator( descriptor, fulltextIndex );
     }
 
     @Override

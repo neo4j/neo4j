@@ -37,13 +37,23 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    int[] ANY_ENTITY_TOKEN = new int[0];
+
     boolean isAffected( long[] entityIds );
 
+    /**
+     * This enum signifies how this schema should behave in regards to updates.
+     * {@link PropertySchemaType#SCHEMA_ALL_TOKENS} signifies that this schema unit only should be affected by updates that match the entire schema,
+     * i.e. when all properties are present. If you are unsure then this is probably what you want.
+     * {@link PropertySchemaType#NON_SCHEMA_ANY_TOKEN} signifies that this schema unit should be affected by any update that is partial match of the schema,
+     *  i.e. at least one of the properties of this schema unit is present.
+     */
     enum PropertySchemaType
     {
         SCHEMA_ALL_TOKENS,
         NON_SCHEMA_ANY_TOKEN
     }
+
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
      *

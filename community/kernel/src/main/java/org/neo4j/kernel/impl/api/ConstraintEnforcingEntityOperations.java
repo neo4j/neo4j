@@ -372,11 +372,10 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             ExactPredicate... predicates )
             throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
     {
-        assertIndexHasOneEntityToken( index.schema() );
+        int labelId = assertIndexHasOneEntityTokenAndFetchIt( index.schema() );
         assertIndexOnline( state, index );
         assertPredicatesMatchSchema( index.schema(), predicates );
         // This is fine because of the assertion above
-        int labelId = index.schema().getEntityTokenIds()[0];
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
@@ -403,12 +402,13 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         return nodeId;
     }
 
-    private void assertIndexHasOneEntityToken( SchemaDescriptor schema ) throws IndexNotApplicableKernelException
+    private int assertIndexHasOneEntityTokenAndFetchIt( SchemaDescriptor schema ) throws IndexNotApplicableKernelException
     {
         if ( schema.getEntityTokenIds().length != 1 )
         {
             throw new IndexNotApplicableKernelException( "The index indexes more than one entity token, and is thus not suitable for direct lookups" );
         }
+        return schema.getEntityTokenIds()[0];
     }
 
     private void assertPredicatesMatchSchema( SchemaDescriptor schema, ExactPredicate[] predicates )

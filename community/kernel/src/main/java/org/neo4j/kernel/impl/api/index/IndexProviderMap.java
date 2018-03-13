@@ -26,12 +26,12 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
-public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
+public interface IndexProviderMap
 {
     IndexProviderMap EMPTY = new IndexProviderMap()
     {
         @Override
-        public IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
+        public IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
         {
             return IndexProvider.NO_INDEX_PROVIDER;
         }
@@ -55,8 +55,7 @@ public interface IndexProviderMap extends Function<IndexProvider.Descriptor,Inde
         }
     };
 
-    @Override
-    IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
+    IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
     IndexProvider<SchemaIndexDescriptor> getDefaultProvider();
 

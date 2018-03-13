@@ -27,7 +27,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
- * Configuration parameters for the bloom fulltext addon.
+ * Configuration parameters for the fulltext index.
  */
 public class FulltextConfig implements LoadableConfig
 {
