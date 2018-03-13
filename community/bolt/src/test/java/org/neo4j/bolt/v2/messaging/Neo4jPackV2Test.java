@@ -337,10 +337,16 @@ public class Neo4jPackV2Test
 
     private static PointValue randomPoint( int index, int dimension )
     {
-        CoordinateReferenceSystem crs =
-                index % 2 == 0 ?
-                    dimension == 2 ? WGS84 : WGS84_3D :
-                    dimension == 2 ? Cartesian : Cartesian_3D;
+        CoordinateReferenceSystem crs;
+        if ( index % 2 == 0 )
+        {
+            crs = dimension == 2 ? WGS84 : WGS84_3D;
+        }
+        else
+        {
+            crs = dimension == 2 ? Cartesian : Cartesian_3D;
+        }
+
         return unsafePointValue( crs, random().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
     }
 

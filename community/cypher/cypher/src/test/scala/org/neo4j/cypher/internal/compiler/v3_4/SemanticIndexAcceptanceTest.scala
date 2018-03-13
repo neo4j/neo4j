@@ -82,7 +82,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   def dateGen: Gen[DateValue] =
     for {
-      epochDays <- arbitrary[Int] //Gen.chooseNum(-MAX_EPOCH_DAYS+1, MAX_EPOCH_DAYS-1)?
+      epochDays <- arbitrary[Int] // we only generate epochDays as an int, to avoid overflowing
+                                  // the limits of the underlying java types
     } yield DateValue.epochDate(epochDays)
 
   /**

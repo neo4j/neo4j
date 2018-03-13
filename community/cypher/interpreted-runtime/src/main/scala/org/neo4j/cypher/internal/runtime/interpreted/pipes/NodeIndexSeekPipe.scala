@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
-import org.neo4j.values.virtual.NodeValue
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
@@ -51,7 +50,7 @@ case class NodeIndexSeekPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes: Iterator[NodeValue] = indexSeek(state, indexReference, baseContext)
+    val resultNodes = indexSeek(state, indexReference, baseContext)
     resultNodes.map(node => executionContextFactory.copyWith(baseContext, ident, node))
   }
 }

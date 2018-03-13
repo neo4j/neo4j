@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
 import org.neo4j.internal.kernel.api.{CapableIndexReference, IndexReference}
-import org.neo4j.values.virtual.NodeValue
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
@@ -58,7 +57,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.createOrGetInitialContext(executionContextFactory)
-    val resultNodes: Iterator[NodeValue] = indexSeek(state, indexReference, baseContext)
+    val resultNodes = indexSeek(state, indexReference, baseContext)
     resultNodes.map { node =>
       val context = SlottedExecutionContext(slots)
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
