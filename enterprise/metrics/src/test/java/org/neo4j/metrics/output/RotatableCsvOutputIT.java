@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.BiPredicate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +51,7 @@ public class RotatableCsvOutputIT
 
     private File outputPath;
     private GraphDatabaseService database;
+    private static final BiPredicate<Long,Long> MONOTONIC = ( newValue, currentValue ) -> newValue >= currentValue;
 
     @Before
     public void setup()
@@ -71,27 +73,32 @@ public class RotatableCsvOutputIT
     @Test
     public void rotateMetricsFile() throws InterruptedException, IOException
     {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            database.createNode();
-            transaction.success();
-        }
-        File metricsFile = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED );
-        long committedTransactions = readLongValueAndAssert( metricsFile,
-                ( newValue, currentValue ) -> newValue >= currentValue );
+        doTransaction();
+
+        // wait for rotation to happen
+        File metricsFile1 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
+        long committedTransactions = readLongValueAndAssert( metricsFile1, MONOTONIC );
         assertEquals( 1, committedTransactions );
 
-        metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
+        doTransaction();
+
+        // Wait for rotation, since we rotated twice, file 3 is actually the original file
+        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 2 );
+        long oldCommittedTransactions = readLongValueAndAssert( metricsFile2, MONOTONIC );
+        assertEquals( 1, oldCommittedTransactions );
+
+        File metricsFile = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED );
+        long lastCommittedTransactions = readLongValueAndAssert( metricsFile, MONOTONIC );
+        assertEquals( 2, lastCommittedTransactions );
+    }
+
+    private void doTransaction()
+    {
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
             transaction.success();
         }
-        // Since we rotated twice, file 3 is actually the original file
-        File metricsFile3 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 2 );
-        long oldCommittedTransactions = readLongValueAndAssert( metricsFile3,
-                ( newValue, currentValue ) -> newValue >= currentValue );
-        assertEquals( 1, oldCommittedTransactions );
     }
 
     private static File metricsCsv( File dbDir, String metric ) throws InterruptedException
