@@ -114,7 +114,7 @@ class SpatialFusionIndexReader implements IndexReader
         }
     }
 
-    private IndexReader selectIf( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    private IndexReader selectIf( IndexQuery... predicates )
     {
         if ( predicates[0] instanceof ExactPredicate )
         {

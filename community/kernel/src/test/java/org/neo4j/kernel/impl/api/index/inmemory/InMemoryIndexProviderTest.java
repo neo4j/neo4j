@@ -37,12 +37,12 @@ public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSui
     @Override
     public boolean supportsSpatial()
     {
-        return true;
+        return false;
     }
 
     @Override
     public boolean supportsTemporal()
     {
-        return true;
+        return false;
     }
 }

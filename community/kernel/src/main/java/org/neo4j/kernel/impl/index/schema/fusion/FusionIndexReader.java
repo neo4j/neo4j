@@ -28,9 +28,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
@@ -40,6 +38,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
@@ -85,33 +84,38 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
 
         if ( predicate instanceof ExactPredicate )
         {
-            ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
+            ExactPredicate exactPredicate = (ExactPredicate) predicate;
             return selector.select( instances, exactPredicate.value() ).query( predicates );
         }
 
-        if ( predicate instanceof NumberRangePredicate )
-        {
-            return instances[NUMBER].query( predicates );
-        }
-
-        if ( predicate instanceof StringRangePredicate ||
-             predicate instanceof StringPrefixPredicate ||
+        if ( predicate instanceof StringPrefixPredicate ||
              predicate instanceof StringSuffixPredicate ||
              predicate instanceof StringContainsPredicate )
         {
             return instances[STRING].query( predicate );
         }
 
-        if ( predicate instanceof GeometryRangePredicate )
+        if ( predicate instanceof RangePredicate )
         {
-            return instances[SPATIAL].query( predicates );
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                return instances[NUMBER].query( predicates );
+            case GEOMETRY:
+                return instances[SPATIAL].query( predicates );
+            case TEXT:
+                return instances[STRING].query( predicates );
+            case DATE:
+            case LOCAL_DATE_TIME:
+            case ZONED_DATE_TIME:
+            case LOCAL_TIME:
+            case ZONED_TIME:
+            case DURATION:
+                return instances[TEMPORAL].query( predicates );
+            default: // fall through
+            }
+            // TODO: support temporal range queries
         }
-
-// TODO: support temporal range queries
-//        if ( predicates[0] instanceof TemporalRangePredicate )
-//        {
-//            return temporalReader.query( predicates[0] );
-//        }
 
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicate instanceof ExistsPredicate )
@@ -136,19 +140,12 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
 
         if ( predicate instanceof ExactPredicate )
         {
-            ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
+            ExactPredicate exactPredicate = (ExactPredicate) predicate;
             selector.select( instances, exactPredicate.value() ).query( cursor, indexOrder, predicate );
             return;
         }
 
-        if ( predicate instanceof NumberRangePredicate )
-        {
-            instances[NUMBER].query( cursor, indexOrder, predicate );
-            return;
-        }
-
-        if ( predicate instanceof StringRangePredicate ||
-             predicate instanceof StringPrefixPredicate ||
+        if ( predicate instanceof StringPrefixPredicate ||
              predicate instanceof StringSuffixPredicate ||
              predicate instanceof StringContainsPredicate )
         {
@@ -156,17 +153,23 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             return;
         }
 
-        if ( predicate instanceof GeometryRangePredicate )
+        if ( predicate instanceof RangePredicate )
         {
-            instances[SPATIAL].query( cursor, indexOrder, predicate );
-            return;
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                instances[NUMBER].query( cursor, indexOrder, predicates );
+                return;
+            case GEOMETRY:
+                instances[SPATIAL].query( cursor, indexOrder, predicates );
+                return;
+            case TEXT:
+                instances[STRING].query( cursor, indexOrder, predicates );
+                return;
+            default: // fall through
+            }
+            // TODO: support temporal range queries
         }
-
-// TODO: support temporal range queries
-//        if ( predicates[0] instanceof TemporalRangePredicate )
-//        {
-//            return temporalReader.query( predicates[0] );
-//        }
 
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicate instanceof ExistsPredicate )
@@ -204,16 +207,13 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             Value value = ((ExactPredicate) predicate).value();
             return selector.select( instances, value ).hasFullValuePrecision( predicates );
         }
-        if ( predicate instanceof NumberRangePredicate )
+
+        if ( predicate instanceof RangePredicate && predicate.valueGroup() == ValueGroup.NUMBER )
         {
             return instances[NUMBER].hasFullValuePrecision( predicates );
         }
+        // TODO: support temporal range queries
 
-// TODO: support temporal range queries
-//        if ( predicate instanceof temporalRangePredicate )
-//        {
-//            return temporalReader.hasFullValuePrecision( predicates );
-//        }
         return false;
     }
 }

@@ -24,11 +24,11 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 
@@ -66,8 +66,8 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             return false;
-        case rangeString:
-            StringRangePredicate rangePredicate = (StringRangePredicate)predicate;
+        case range:
+            RangePredicate rangePredicate = (RangePredicate)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             return false;
@@ -86,10 +86,10 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         }
     }
 
-    private void initFromForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
+    private void initFromForRange( RangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
     {
-        Value fromValue = rangePredicate.fromAsValue();
-        if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value fromValue = rangePredicate.fromValue();
+        if ( fromValue == Values.NO_VALUE )
         {
             treeKeyFrom.initAsLowest();
         }
@@ -100,10 +100,10 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         }
     }
 
-    private void initToForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyTo )
+    private void initToForRange( RangePredicate rangePredicate, StringSchemaKey treeKeyTo )
     {
-        Value toValue = rangePredicate.toAsValue();
-        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
         {
             treeKeyTo.initAsHighest();
         }

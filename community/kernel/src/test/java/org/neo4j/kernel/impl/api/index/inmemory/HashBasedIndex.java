@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
+import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -273,12 +274,21 @@ class HashBasedIndex extends InMemoryIndexImplementation
             return scan();
         case exact:
             return seek( ((IndexQuery.ExactPredicate) predicate).value() );
-        case rangeNumeric:
-            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( np.from(), np.to() );
-        case rangeString:
-            IndexQuery.StringRangePredicate srp = (IndexQuery.StringRangePredicate) predicate;
-            return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+        case range:
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+                return rangeSeekByNumberInclusive( np.from(), np.to() );
+
+            case TEXT:
+                IndexQuery.TextRangePredicate srp = (IndexQuery.TextRangePredicate) predicate;
+                return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+
+            default:
+                throw new UnsupportedOperationException(
+                        format( "Range scan of valueGroup %s is not supported", predicate.valueGroup() ) );
+            }
         case stringPrefix:
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
             return rangeSeekByPrefix( spp.prefix() );
