@@ -103,13 +103,13 @@ class BackupServer extends Server<TheBackupInterface,Object>
     }
 
     @Override
-    protected void responseWritten( RequestType<TheBackupInterface> type, Channel channel,
+    protected void responseWritten( RequestType type, Channel channel,
                                     RequestContext context )
     {
     }
 
     @Override
-    protected RequestType<TheBackupInterface> getRequestContext( byte id )
+    protected RequestType getRequestContext( byte id )
     {
         return contexts[id];
     }

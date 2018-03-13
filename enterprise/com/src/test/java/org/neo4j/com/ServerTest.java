@@ -138,7 +138,7 @@ public class ServerTest
                 mock( ByteCounterMonitor.class ), mock( RequestMonitor.class ) )
         {
             @Override
-            protected RequestType<Object> getRequestContext( byte id )
+            protected RequestType getRequestContext( byte id )
             {
                 return mock( RequestType.class );
             }

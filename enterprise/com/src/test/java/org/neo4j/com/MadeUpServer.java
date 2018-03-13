@@ -76,7 +76,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected void responseWritten( RequestType<MadeUpCommunicationInterface> type, Channel channel,
+    protected void responseWritten( RequestType type, Channel channel,
                                     RequestContext context )
     {
         responseWritten = true;
@@ -96,7 +96,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected RequestType<MadeUpCommunicationInterface> getRequestContext( byte id )
+    protected RequestType getRequestContext( byte id )
     {
         return MadeUpRequestType.values()[id];
     }
@@ -116,7 +116,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         return responseFailureEncountered;
     }
 
-    enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
+    enum MadeUpRequestType implements RequestType
     {
         MULTIPLY( ( master, context, input, target ) ->
         {

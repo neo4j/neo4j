@@ -57,7 +57,7 @@ public class MasterServer extends Server<Master, Void>
     }
 
     @Override
-    protected RequestType<Master> getRequestContext( byte id )
+    protected RequestType getRequestContext( byte id )
     {
         return requestTypes.type( id );
     }

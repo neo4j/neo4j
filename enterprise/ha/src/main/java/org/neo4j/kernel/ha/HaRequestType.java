@@ -22,9 +22,8 @@ package org.neo4j.kernel.ha;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.kernel.ha.com.master.Master;
 
-public class HaRequestType implements RequestType<Master>
+public class HaRequestType implements RequestType
 {
     private final TargetCaller targetCaller;
     private final ObjectSerializer objectSerializer;
