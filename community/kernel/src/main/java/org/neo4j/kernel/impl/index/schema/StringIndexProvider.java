@@ -46,9 +46,9 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     static final IndexCapability CAPABILITY = new StringIndexCapability();
     private static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
-    StringIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-                         IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                         boolean readOnly )
+    public StringIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean readOnly )
     {
         super( STRING_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }

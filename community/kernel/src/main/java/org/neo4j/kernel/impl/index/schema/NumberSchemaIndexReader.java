@@ -49,7 +49,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
     }
 
     @Override
-    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -71,6 +71,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+        return false;
     }
 
     private void initToForRange( NumberRangePredicate rangePredicate, KEY treeKeyTo )

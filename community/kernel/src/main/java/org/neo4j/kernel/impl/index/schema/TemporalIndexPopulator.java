@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>, IOException> implements IndexPopulator
 {

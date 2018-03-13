@@ -30,6 +30,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
+
 class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
     StringSchemaIndexReader( GBPTree<StringSchemaKey,NativeSchemaValue> tree, Layout<StringSchemaKey,NativeSchemaValue> layout,
@@ -50,7 +52,7 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
     }
 
     @Override
-    void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -58,17 +60,27 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            break;
+            return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            break;
+            return false;
         case rangeString:
             StringRangePredicate rangePredicate = (StringRangePredicate)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            break;
+            return false;
+        case stringPrefix:
+            StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
+            treeKeyFrom.initAsPrefixLow( prefixPredicate.prefix() );
+            treeKeyTo.initAsPrefixHigh( prefixPredicate.prefix() );
+            return false;
+        case stringSuffix:
+        case stringContains:
+            treeKeyFrom.initAsLowest();
+            treeKeyTo.initAsHighest();
+            return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }

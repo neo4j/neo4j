@@ -23,34 +23,47 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+
 public class FusionSelector implements FusionIndexProvider.Selector
 {
     @Override
-    public <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values )
+    public int selectSlot( Value... values )
     {
         if ( values.length > 1 )
         {
             // Multiple values must be handled by lucene
-            return luceneInstance;
+            return LUCENE;
         }
 
         Value singleValue = values[0];
+        if ( singleValue.valueGroup() == ValueGroup.TEXT )
+        {
+            // It's a string, the native string index can handle this
+            return STRING;
+        }
+
         if ( singleValue.valueGroup() == ValueGroup.NUMBER )
         {
             // It's a number, the native index can handle this
-            return numberInstance;
+            return NUMBER;
         }
 
         if ( Values.isGeometryValue( singleValue ) )
         {
             // It's a geometry, the spatial index can handle this
-            return spatialInstance;
+            return SPATIAL;
         }
 
         if ( Values.isTemporalValue( singleValue ) )
         {
-            return temporalInstance;
+            return TEMPORAL;
         }
-        return luceneInstance;
+
+        return LUCENE;
     }
 }

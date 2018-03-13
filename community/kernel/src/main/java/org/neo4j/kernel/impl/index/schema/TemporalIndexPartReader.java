@@ -49,7 +49,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
     }
 
     @Override
-    protected void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    protected boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -67,6 +67,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+        return false; // no filtering
     }
 
     @Override
