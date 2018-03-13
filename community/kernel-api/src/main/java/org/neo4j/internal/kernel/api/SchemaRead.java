@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -134,4 +135,28 @@ public interface SchemaRead
      * constraint.
      */
     Long indexGetOwningUniquenessConstraintId( CapableIndexReference index );
+
+    /**
+     * Returns schema state for the given key or create a new state if not there
+     * @param key The key to access
+     * @param creator function creating schema state
+     * @param <K> type of the key
+     * @param <V> type of the schema state value
+     * @return the state associated with the key or a new value if non-existing
+     */
+    <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+
+    /**
+     * Returns the state associated with the key or <tt>null</tt> if nothing assocated with key
+     * @param key The key to access
+     * @param <K> The type of the key
+     * @param <V> The type of the assocated value
+     * @return The value associated with the given key or <tt>null</tt>
+     */
+    <K, V> V schemaStateGet( K key );
+
+    /**
+     * Flush the schema state
+     */
+    void schemaStateFlush();
 }

@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -40,6 +41,12 @@ public interface StorageEngine
      * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage.
      */
     StoreReadLayer storeReadLayer();
+
+    /**
+     * Return access to the schema state
+     * @return an interface for accessing schema state
+     */
+    SchemaState schemaState();
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
