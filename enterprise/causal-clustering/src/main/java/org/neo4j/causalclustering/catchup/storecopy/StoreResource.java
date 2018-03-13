@@ -26,6 +26,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -51,19 +52,19 @@ class StoreResource implements Closeable
 
     ReadableByteChannel open() throws IOException
     {
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
-        if ( existingMapping.isPresent() )
+        boolean isDefaultFileSystem = pageCache.getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
+        if ( !isDefaultFileSystem )
         {
-            try ( PagedFile pagedFile = existingMapping.get() )
+            Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
+            if ( existingMapping.isPresent() )
             {
-                channel = pagedFile.openReadableByteChannel();
+                try ( PagedFile pagedFile = existingMapping.get() )
+                {
+                    return pagedFile.openReadableByteChannel();
+                }
             }
         }
-        else
-        {
-            channel = fs.open( file, "r" );
-        }
-        return channel;
+        return fs.open( file, "r" );
     }
 
     @Override

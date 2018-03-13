@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -63,7 +64,11 @@ class StreamToDisk implements StoreFileStreams
         fs.mkdirs( fileName.getParentFile() );
 
         fileCopyMonitor.copyFile( fileName );
-        if ( StoreType.shouldBeManagedByPageCache( destination ) )
+
+        // Default filesystem supports writing of data through the file system directly
+        boolean isDefaultFileSystem = pageCache.getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
+
+        if ( !isDefaultFileSystem && StoreType.shouldBeManagedByPageCache( destination ) )
         {
             WritableByteChannel channel = channels.get( destination );
             if ( channel == null )

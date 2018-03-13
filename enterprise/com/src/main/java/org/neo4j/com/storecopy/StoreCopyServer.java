@@ -32,6 +32,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -175,28 +176,31 @@ public class StoreCopyServer
                     File file = meta.file();
                     int recordSize = meta.recordSize();
 
-                    // Read from paged file if mapping exists. Otherwise read through file system.
-                    // A file is mapped if it is a store, and we have a running database, which will be the case for
-                    // both online backup, and when we are the master of an HA cluster.
-                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
-                    if ( optionalPagedFile.isPresent() )
+                    boolean isDefaultFileSystem = pageCache.getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
+                    if ( !isDefaultFileSystem )
                     {
-                        try ( PagedFile pagedFile = optionalPagedFile.get() )
+                        // Read from paged file if mapping exists. Otherwise read through file system.
+                        // A file is mapped if it is a store, and we have a running database, which will be the case for
+                        // both online backup, and when we are the master of an HA cluster.
+                        final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
+                        if ( optionalPagedFile.isPresent() )
                         {
-                            long fileSize = pagedFile.fileSize();
-                            try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                            try ( PagedFile pagedFile = optionalPagedFile.get() )
                             {
-                                doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
+                                long fileSize = pagedFile.fileSize();
+                                try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                                {
+                                    doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
+                                }
+                                return anonymous( lastAppliedTransaction );
                             }
                         }
                     }
-                    else
+                    // in the case where isDefaultFileSystem == true we always read the file from disk
+                    try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
                     {
-                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
-                        {
-                            long fileSize = fileSystem.getFileSize( file );
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
-                        }
+                        long fileSize = fileSystem.getFileSize( file );
+                        doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                     }
                 }
             }
