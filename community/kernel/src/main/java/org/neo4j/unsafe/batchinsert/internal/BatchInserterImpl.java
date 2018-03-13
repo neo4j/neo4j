@@ -1016,7 +1016,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 throw new UnderlyingStorageException( "Could not release store lock", e );
             }
 
-            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
+            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
             life.shutdown();
         }
     }

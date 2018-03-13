@@ -207,8 +207,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             @Override
             protected ChannelContext create()
             {
-                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination,
-                        true );
+                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination );
                 // We must specify the origin address in case the server has multiple IPs per interface
                 ChannelFuture channelFuture = bootstrap.connect( destination, origin );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
@@ -225,7 +224,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Throwable cause = channelFuture.getCause();
                 String msg = Client.this.getClass().getSimpleName() + " could not connect from " + origin + " to " +
                         destination;
-                msgLog.debug( msg, true );
+                msgLog.debug( msg );
                 throw traceComException( new ComException( msg, cause ), "Client.start" );
             }
 
@@ -279,7 +278,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
 
         comExceptionHandler = getNoOpComExceptionHandler();
-        msgLog.info( toString() + " shutdown", true );
+        msgLog.info( toString() + " shutdown" );
     }
 
     protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,

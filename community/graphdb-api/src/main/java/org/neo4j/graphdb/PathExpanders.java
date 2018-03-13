@@ -195,7 +195,7 @@ public abstract class PathExpanders
             final PathExpander<STATE> source,
             final Paths.PathDescriptor descriptor )
     {
-        return printingWrapper( source, ( propertyContainers, stateBranchState ) -> true, descriptor );
+        return printingWrapper( source, ( propertyContainers, stateBranchState ) -> Boolean.TRUE, descriptor );
     }
 
     /**

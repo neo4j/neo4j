@@ -31,7 +31,7 @@ public final class InputPosition
     /**
      * The empty position
      */
-    public static InputPosition empty = new InputPosition( -1, -1, -1 );
+    public static final InputPosition empty = new InputPosition( -1, -1, -1 );
 
     /**
      * Creating a position from and offset, line number and a column number.

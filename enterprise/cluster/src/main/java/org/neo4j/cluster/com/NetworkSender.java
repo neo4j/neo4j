@@ -161,7 +161,7 @@ public class NetworkSender
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
                 Executors.newSingleThreadExecutor( daemon( "Cluster client boss", monitor ) ),
                 Executors.newFixedThreadPool( 2, daemon( "Cluster client worker", monitor ) ), 2 ) );
-        clientBootstrap.setOption( "tcpNoDelay", true );
+        clientBootstrap.setOption( "tcpNoDelay", Boolean.TRUE );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         msgLog.debug( "Started NetworkSender for " + toString( config ) );

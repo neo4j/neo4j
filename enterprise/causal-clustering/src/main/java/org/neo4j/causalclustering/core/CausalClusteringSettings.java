@@ -292,7 +292,7 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Maximum transaction batch size for read replicas when applying transactions pulled from core " +
             "servers." )
     @Internal
-    public static Setting<Integer> read_replica_transaction_applier_batch_size =
+    public static final Setting<Integer> read_replica_transaction_applier_batch_size =
             setting( "causal_clustering.read_replica_transaction_applier_batch_size", INTEGER, "64" );
 
     @Description( "Time To Live before read replica is considered unavailable" )

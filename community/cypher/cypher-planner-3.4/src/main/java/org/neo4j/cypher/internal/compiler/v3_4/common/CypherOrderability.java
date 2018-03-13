@@ -198,7 +198,7 @@ public class CypherOrderability
             throw new UnorderableValueException( value.getClass().getSimpleName() );
         }
 
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt( left -> left.typeId );
+        public static final Comparator<SuperType> TYPE_ID_COMPARATOR = Comparator.comparingInt( left -> left.typeId );
     }
 
     // NOTE: nulls are handled at the top of the public compare() method
