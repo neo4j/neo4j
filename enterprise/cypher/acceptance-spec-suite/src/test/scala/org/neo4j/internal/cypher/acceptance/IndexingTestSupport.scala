@@ -63,6 +63,12 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     testIndexedRead(query, Map(), "NodeIndexScan", nodes)
   }
 
+  protected def assertRangeScanFor(op: String, bound: Value, nodes: Node*): Unit = {
+    val predicate = s"n.$PROPERTY $op $$param"
+    val query = s"MATCH (n:$LABEL) WHERE $predicate RETURN n"
+    testIndexedRead(query, Map("param" -> bound.asObject()), "NodeIndexSeekByRange", nodes)
+  }
+
   protected def assertRangeScanFor(op1: String, bound1: Value, op2: String, bound2: Value, nodes: Node*): Unit = {
     val predicate1 = s"n.$PROPERTY $op1 $$param1"
     val predicate2 = s"n.$PROPERTY $op2 $$param2"

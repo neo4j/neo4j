@@ -81,6 +81,11 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     val n3 = createIndexedNode(v3)
     val n4 = createIndexedNode(v4)
 
+    assertRangeScanFor(">", v2, n3, n4)
+    assertRangeScanFor(">=", v2, n2, n3, n4)
+    assertRangeScanFor("<", v3, n1, n2)
+    assertRangeScanFor("<=", v3, n1, n2, n3)
+
     assertRangeScanFor(">", v1, "<", v4, n2, n3)
     assertRangeScanFor(">=", v1, "<=", v4, n1, n2, n3, n4)
   }
