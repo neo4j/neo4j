@@ -44,8 +44,7 @@ public class FulltextFactory
      * Creates a factory for the specified location and analyzer.
      *
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
-     * @param config
-     * @throws IOException
+     * @param config the config is used for checking the {@link GraphDatabaseSettings#archive_failed_index} setting.
      */
 
     public FulltextFactory( IndexStorageFactory indexStorageFactory, String analyzerClassName, Config config )

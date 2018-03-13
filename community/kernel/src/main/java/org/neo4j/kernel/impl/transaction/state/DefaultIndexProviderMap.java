@@ -25,23 +25,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
 public class DefaultIndexProviderMap implements IndexProviderMap
 {
-    private final IndexProvider defaultIndexProvider;
+    private final IndexProvider<SchemaIndexDescriptor> defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
 
-    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
+    public DefaultIndexProviderMap( IndexProvider<SchemaIndexDescriptor> defaultIndexProvider )
     {
         this( defaultIndexProvider, Collections.emptyList() );
     }
 
-    public DefaultIndexProviderMap( IndexProvider defaultIndexProvider, Iterable<IndexProvider<?>> additionalIndexProviders )
+    public DefaultIndexProviderMap( IndexProvider<SchemaIndexDescriptor> defaultIndexProvider, Iterable<IndexProvider<?>> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
@@ -60,7 +60,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider getDefaultSchemaIndexProvider()
+    public IndexProvider<SchemaIndexDescriptor> getDefaultSchemaIndexProvider()
     {
         return defaultIndexProvider;
     }
@@ -83,7 +83,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider apply( IndexProvider.Descriptor descriptor )
+    public IndexProvider get( IndexProvider.Descriptor descriptor )
     {
         IndexProvider provider = indexProviders.get( descriptor );
         if ( provider != null )

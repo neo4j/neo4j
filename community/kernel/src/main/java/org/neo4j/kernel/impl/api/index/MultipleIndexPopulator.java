@@ -56,6 +56,7 @@ import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -104,7 +105,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
-    private EntityType type;
+    private final EntityType type;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
@@ -340,10 +341,9 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] entityTokenIds()
     {
-        if ( populations.stream().anyMatch( indexPopulation -> indexPopulation.schema().getEntityTokenIds().length == 0 ) )
+        if ( populations.stream().anyMatch( indexPopulation -> Arrays.equals( indexPopulation.schema().getEntityTokenIds(), ANY_ENTITY_TOKEN ) ) )
         {
-            //No token is any token
-            return new int[0];
+            return ANY_ENTITY_TOKEN;
         }
         return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }

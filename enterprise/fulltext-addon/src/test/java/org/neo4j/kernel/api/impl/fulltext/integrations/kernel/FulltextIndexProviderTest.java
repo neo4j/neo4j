@@ -56,6 +56,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 
 public class FulltextIndexProviderTest
 {
@@ -96,12 +97,12 @@ public class FulltextIndexProviderTest
         IndexProvider defaultIndexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class, indexProviderSelection );
 
         IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( defaultIndexProvider, indexProviderSelection.lowerPrioritizedCandidates() );
-        IndexProvider provider = indexProviderMap.apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        IndexProvider provider = indexProviderMap.get( FulltextIndexProviderFactory.DESCRIPTOR );
         IndexDescriptor fulltextIndexDescriptor;
         try ( Transaction ignore = db.beginTx() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( new int[0], EntityType.NODE, new int[]{2, 3, 4} ), "fulltext", STANDARD );
+                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext", STANDARD );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
@@ -111,7 +112,7 @@ public class FulltextIndexProviderTest
     public void createFulltextIndex() throws Exception
     {
         IndexDescriptor fulltextIndexDescriptor;
-        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         fulltextIndexDescriptor = createIndex( provider, new int[]{7, 8, 9}, new int[]{2, 3, 4} );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
@@ -125,7 +126,7 @@ public class FulltextIndexProviderTest
     public void createAndRetainFulltextIndex() throws Exception
     {
         IndexDescriptor fulltextIndexDescriptor;
-        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         fulltextIndexDescriptor = createIndex( provider, new int[]{7, 8, 9}, new int[]{2, 3, 4} );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
 
@@ -136,7 +137,7 @@ public class FulltextIndexProviderTest
     public void createAndRetainRelationshipFulltextIndex() throws Exception
     {
         IndexDescriptor fulltextIndexDescriptor;
-        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
@@ -155,14 +156,14 @@ public class FulltextIndexProviderTest
     {
         IndexDescriptor fulltextIndexDescriptor;
         FulltextIndexProvider provider =
-                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         fulltextIndexDescriptor = createIndex( provider, new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
         await( fulltextIndexDescriptor );
         long thirdNodeid;
         thirdNodeid = createTheThirdNode();
         verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeid );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
-        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeid );
     }
 
@@ -171,7 +172,7 @@ public class FulltextIndexProviderTest
     {
         IndexDescriptor fulltextIndexDescriptor;
         FulltextIndexProvider provider =
-                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
@@ -192,7 +193,7 @@ public class FulltextIndexProviderTest
         }
         verifyRelationshipData( fulltextIndexDescriptor, provider, secondRelId );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
-        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         verifyRelationshipData( fulltextIndexDescriptor, provider, secondRelId );
     }
 
@@ -201,14 +202,14 @@ public class FulltextIndexProviderTest
     {
         IndexDescriptor fulltextIndexDescriptor;
         FulltextIndexProvider provider =
-                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
-        fulltextIndexDescriptor = createIndex( provider, new int[0], new int[]{0, 1, 2, 3} );
+                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
+        fulltextIndexDescriptor = createIndex( provider, ANY_ENTITY_TOKEN, new int[]{0, 1, 2, 3} );
         await( fulltextIndexDescriptor );
         long thirdNodeId;
         thirdNodeId = createTheThirdNode();
         verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeId );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
-        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
         verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeId );
     }
 

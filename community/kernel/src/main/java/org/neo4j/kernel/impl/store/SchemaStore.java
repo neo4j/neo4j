@@ -43,7 +43,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static java.util.Collections.singleton;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-public class SchemaStore extends AbstractDynamicStore// implements Iterable<SchemaRule>
+public class SchemaStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";

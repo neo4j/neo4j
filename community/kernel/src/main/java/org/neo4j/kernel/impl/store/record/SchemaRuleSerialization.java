@@ -236,7 +236,7 @@ public class SchemaRuleSerialization
         {
             LabelSchemaDescriptor schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, indexProviderMap.apply( indexProvider ).indexDescriptorFor( schema, name, "" ), indexProvider, name );
+            return IndexRule.indexRule( id, indexProviderMap.get( indexProvider ).indexDescriptorFor( schema, name, "" ), indexProvider, name );
         }
         case UNIQUE_INDEX:
         {
@@ -251,7 +251,7 @@ public class SchemaRuleSerialization
             MultiTokenSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             String metadata = readMetaData( source );
-            IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
+            IndexDescriptor indexDescriptor = indexProviderMap.get( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
             return IndexRule.indexRule( id, indexDescriptor, indexProvider, name );
         }
 

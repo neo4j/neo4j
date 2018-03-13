@@ -42,9 +42,9 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 @Service.Implementation( KernelExtensionFactory.class )
 public class FulltextIndexProviderFactory extends KernelExtensionFactory<FulltextIndexProviderFactory.Dependencies>
 {
-    public static final String KEY = "fulltext";
-    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+    private static final String KEY = "fulltext";
     private static final int PRIORITY = 0;
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
 
     public FulltextIndexProviderFactory()
     {

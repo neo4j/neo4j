@@ -126,7 +126,7 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return false;
     }
 
-    public boolean containsAnyNodeOrPropertyUpdate()
+    public boolean containsAnyEntityOrPropertyUpdate()
     {
         return hasUpdates;
     }

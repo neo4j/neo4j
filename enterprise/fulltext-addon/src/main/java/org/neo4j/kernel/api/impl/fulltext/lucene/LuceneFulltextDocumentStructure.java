@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 
@@ -59,7 +60,10 @@ public class LuceneFulltextDocumentStructure
 
     static Field encodeValueField( String propertyKey, Value value )
     {
-        return LuceneFulltextFieldEncoding.encodeField( propertyKey, value );
+        String stringValue = value.prettyPrint();
+
+        TextField field = new TextField( propertyKey, stringValue, NO );
+        return field;
     }
 
     public static Term newTermForChangeOrRemove( long id )

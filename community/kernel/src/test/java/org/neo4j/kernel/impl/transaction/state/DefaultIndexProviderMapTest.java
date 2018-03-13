@@ -65,7 +65,7 @@ public class DefaultIndexProviderMapTest
         IndexProviderMap map = new DefaultIndexProviderMap( provider );
         try
         {
-            new DefaultIndexProviderMap( provider ).apply( new IndexProvider.Descriptor( "provider2", "1.2" ) );
+            new DefaultIndexProviderMap( provider ).get( new IndexProvider.Descriptor( "provider2", "1.2" ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )

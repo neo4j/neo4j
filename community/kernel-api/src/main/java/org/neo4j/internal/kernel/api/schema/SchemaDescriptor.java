@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    int[] ANY_ENTITY_TOKEN = new int[0];
+
     boolean isAffected( long[] entityIds );
 
     /**

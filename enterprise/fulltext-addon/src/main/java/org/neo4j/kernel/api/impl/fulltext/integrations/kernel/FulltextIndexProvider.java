@@ -61,7 +61,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
+    private final Map<IndexDescriptor,FulltextIndexAccessor> accessors;
     private final Map<String,FulltextIndexAccessor> accessorsByName;
     private final String analyzerClassName;
 

@@ -86,7 +86,7 @@ public class LuceneFulltextTestSupport
 
     private FulltextAccessor getAccessor()
     {
-        return (FulltextAccessor) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        return (FulltextAccessor) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )
