@@ -33,10 +33,6 @@ trait SingleExpression[+T] {
   def expressions = Seq(expression)
 }
 
-case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  def map[R](f: T => R) = ScanQueryExpression(f(expression))
-}
-
 case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
   def map[R](f: T => R) = SingleQueryExpression(f(expression))
 }
