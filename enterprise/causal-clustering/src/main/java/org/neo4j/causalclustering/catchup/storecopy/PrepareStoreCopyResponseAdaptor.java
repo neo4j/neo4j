@@ -20,8 +20,6 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
@@ -33,21 +31,19 @@ import org.neo4j.logging.LogProvider;
  */
 public class PrepareStoreCopyResponseAdaptor extends CatchUpResponseAdaptor<PrepareStoreCopyResponse>
 {
-    private final StoreFileStreams storeFileStreams;
+    private final StoreFileStreamProvider storeFileStreamProvider;
     private final Log log;
-    private String destination;
-    private int requiredAlignment;
+    private StoreFileStream storeFileStream;
 
-    public PrepareStoreCopyResponseAdaptor( StoreFileStreams storeFileStreams, LogProvider logProvider )
+    PrepareStoreCopyResponseAdaptor( StoreFileStreamProvider storeFileStreamProvider, LogProvider logProvider )
     {
-        this.storeFileStreams = storeFileStreams;
+        this.storeFileStreamProvider = storeFileStreamProvider;
         log = logProvider.getLog( PrepareStoreCopyResponseAdaptor.class );
     }
 
     @Override
     public void onStoreListingResponse( CompletableFuture<PrepareStoreCopyResponse> signal, PrepareStoreCopyResponse response )
     {
-        log.debug( "Complete download of file %s", destination );
         signal.complete( response );
     }
 
@@ -55,15 +51,38 @@ public class PrepareStoreCopyResponseAdaptor extends CatchUpResponseAdaptor<Prep
     public void onFileHeader( CompletableFuture<PrepareStoreCopyResponse> requestOutcomeSignal, FileHeader fileHeader )
     {
         log.debug( "Received file header for file %s", fileHeader.fileName() );
-        this.destination = fileHeader.fileName();
-        this.requiredAlignment = fileHeader.requiredAlignment();
+        try
+        {
+            storeFileStream = storeFileStreamProvider.acquire( fileHeader.fileName(), fileHeader.requiredAlignment() );
+            requestOutcomeSignal.whenComplete( ( storeCopyFinishedResponse, throwable ) ->
+            {
+                try
+                {
+                    storeFileStream.close();
+                }
+                catch ( Exception e )
+                {
+                    log.error( "Unable to close store file stream", e );
+                }
+            } );
+        }
+        catch ( IOException e )
+        {
+            requestOutcomeSignal.completeExceptionally( e );
+        }
     }
 
     @Override
-    public boolean onFileContent( CompletableFuture<PrepareStoreCopyResponse> signal, FileChunk fileChunk ) throws IOException
+    public boolean onFileContent( CompletableFuture<PrepareStoreCopyResponse> signal, FileChunk fileChunk )
     {
-        log.debug( "Received %b bytes for file %s", fileChunk.bytes(), destination );
-        storeFileStreams.write( destination, requiredAlignment, fileChunk.bytes() );
+        try
+        {
+            storeFileStream.write( fileChunk.bytes() );
+        }
+        catch ( IOException e )
+        {
+            signal.completeExceptionally( e );
+        }
         return fileChunk.isLast();
     }
 }
