@@ -27,7 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,7 +43,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -58,7 +59,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
@@ -66,9 +66,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
 import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
@@ -746,14 +744,31 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     @Override
     public Iterable<RelationshipType> getRelationshipTypes()
     {
-        try ( Statement statement = spi.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( RelationshipTraversalCursor relationships = transaction.cursors().allocateRelationshipTraversalCursor();
+              Statement ignore = transaction.acquireStatement() )
         {
-            PrimitiveIntIterator relTypes = statement.readOperations().nodeGetRelationshipTypes( nodeId );
-            return asList( map( relTypeId -> convertToRelationshipType( statement, relTypeId ), relTypes ) );
+            NodeCursor nodes = transaction.nodeCursor();
+            TokenRead tokenRead = transaction.tokenRead();
+            singleNode( transaction, nodes );
+            nodes.allRelationships( relationships );
+            PrimitiveIntSet seen = Primitive.intSet();
+            List<RelationshipType> types = new ArrayList<>();
+            while ( relationships.next() )
+            {
+                int type = relationships.type();
+                if ( !seen.contains( type ) )
+                {
+                    types.add( RelationshipType.withName( tokenRead.relationshipTypeName( relationships.type() ) ) );
+                    seen.add( type );
+                }
+            }
+
+            return types;
         }
-        catch ( EntityNotFoundException e )
+        catch ( KernelException e )
         {
-            throw new NotFoundException( "Node not found.", e );
+            throw new NotFoundException( "Relationship name not found.", e );
         }
     }
 
@@ -799,18 +814,6 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             ids = Arrays.copyOf( ids, outIndex );
         }
         return ids;
-    }
-
-    private RelationshipType convertToRelationshipType( final Statement statement, int relTypeId )
-    {
-        try
-        {
-            return RelationshipType.withName( statement.readOperations().relationshipTypeGetName( relTypeId ) );
-        }
-        catch ( RelationshipTypeIdNotFoundKernelException e )
-        {
-            throw new IllegalStateException( "Kernel API returned non-existent relationship type: " + relTypeId );
-        }
     }
 
     private void singleNode( KernelTransaction transaction, NodeCursor nodes )
