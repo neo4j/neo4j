@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.apache.commons.compress.utils.Charsets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,22 +27,20 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
@@ -107,7 +106,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void canPerformCatchup() throws StoreCopyFailedException
+    public void canPerformCatchup() throws StoreCopyFailedException, IOException
     {
         // given remote node has a store
         catchupServerRule.before(); // assume it is running
@@ -128,7 +127,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void failedFileCopyShouldRetry() throws StoreCopyFailedException
+    public void failedFileCopyShouldRetry() throws StoreCopyFailedException, IOException
     {
         // given a file will fail twice before succeeding
         fileB.setRemainingFailed( 2 );
@@ -160,7 +159,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void reconnectingWorks() throws StoreCopyFailedException
+    public void reconnectingWorks() throws StoreCopyFailedException, IOException
     {
         // given a remote catchup will fail midway
         catchupServerRule.before();
@@ -194,59 +193,26 @@ public class StoreCopyClientIT
         return testDirectory.file( filename );
     }
 
-    private String fileContent( File file )
+    private String fileContent( File file ) throws IOException
     {
         return fileContent( file, fileSystemAbstraction );
     }
 
-    private static StringBuilder serverFileContentsStringBuilder( File file, FileSystemAbstraction fileSystemAbstraction )
+    static String fileContent( File file, FileSystemAbstraction fsa ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystemAbstraction.open( file, OpenMode.READ ) )
+        int chunkSize = 128;
+        StringBuilder stringBuilder = new StringBuilder();
+        try ( Reader reader = fsa.openAsReader( file, Charsets.UTF_8 ) )
         {
-            final int MAX_BUFFER_SIZE = 100;
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[MAX_BUFFER_SIZE] );
-            StringBuilder stringBuilder = new StringBuilder();
-            Predicate<Integer> inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
-            Supplier<Integer> readNext = unchecked( () -> storeChannel.read( byteBuffer ) );
-            for ( int readBytes = readNext.get(); inRange.test( readBytes ); readBytes = readNext.get() )
+            CharBuffer charBuffer = CharBuffer.wrap( new char[chunkSize] );
+            while ( reader.read( charBuffer ) != -1 )
             {
-                for ( byte index = 0; index < readBytes; index++ )
-                {
-                    char actual = (char) byteBuffer.get( index );
-                    stringBuilder.append( actual );
-                }
+                charBuffer.flip();
+                stringBuilder.append( charBuffer );
+                charBuffer.clear();
             }
-            return stringBuilder;
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    static String fileContent( File file, FileSystemAbstraction fileSystemAbstraction )
-    {
-        return serverFileContentsStringBuilder( file, fileSystemAbstraction ).toString();
-    }
-
-    private static Supplier<Integer> unchecked( ThrowingSupplier<Integer,?> throwableSupplier )
-    {
-        return () ->
-        {
-            try
-            {
-                return throwableSupplier.get();
-            }
-            catch ( Throwable throwable )
-            {
-                throw new RuntimeException( throwable );
-            }
-        };
-    }
-
-    private static Predicate<Integer> betweenZeroAndRange( int RANGE )
-    {
-        return bytes -> bytes > 0 && bytes <= RANGE;
+        return stringBuilder.toString();
     }
 
     private String clientFileContents( InMemoryFileSystemStream storeFileStreams, String filename )

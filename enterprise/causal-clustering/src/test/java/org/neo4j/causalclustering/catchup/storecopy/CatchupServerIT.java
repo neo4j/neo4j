@@ -258,7 +258,7 @@ public class CatchupServerIT
         return new File( new File( temporaryDirectory, "graph-db" ), relativePathToDatabaseDir );
     }
 
-    private void fileContentEquals( File fileA, File fileB )
+    private void fileContentEquals( File fileA, File fileB ) throws IOException
     {
         assertNotEquals( fileA.getPath(), fileB.getPath() );
         String message = String.format( "Expected file: %s\ndoes not match actual file: %s", fileA, fileB );
