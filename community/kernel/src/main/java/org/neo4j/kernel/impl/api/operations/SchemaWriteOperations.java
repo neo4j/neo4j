@@ -45,7 +45,7 @@ public interface SchemaWriteOperations
     SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
-    /** Drops a {@link SchemaIndexDescriptor} from the database */
+    /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     /**

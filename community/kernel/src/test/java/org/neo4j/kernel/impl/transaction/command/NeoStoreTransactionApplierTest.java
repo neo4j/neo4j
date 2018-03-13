@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
@@ -938,7 +937,7 @@ public class NeoStoreTransactionApplierTest
     }
 
     private static IndexRule constraintIndexRule( long id, int label, int propertyKeyId,
-            IndexProvider.Descriptor providerDescriptor, Long owningConstraint )
+                                                  IndexProvider.Descriptor providerDescriptor, Long owningConstraint )
     {
         //TODO: Consider testing composite indexes
         return IndexRule.constraintIndexRule( id, SchemaIndexDescriptorFactory.uniqueForLabel( label, propertyKeyId ),

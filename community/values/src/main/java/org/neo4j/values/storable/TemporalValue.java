@@ -69,8 +69,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         // (therefore the type itself is public)
     }
 
-    private static final String DEFAULT_WHEN = "statement";
-
     public abstract TemporalValue add( DurationValue duration );
 
     public abstract TemporalValue sub( DurationValue duration );

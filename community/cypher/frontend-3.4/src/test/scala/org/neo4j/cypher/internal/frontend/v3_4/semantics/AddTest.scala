@@ -46,6 +46,17 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testValidTypes(CTFloat, CTString)(CTString)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
+    testValidTypes(CTDuration, CTDuration)(CTDuration)
+    testValidTypes(CTDate, CTDuration)(CTDate)
+    testValidTypes(CTDuration, CTDate)(CTDate)
+    testValidTypes(CTTime, CTDuration)(CTTime)
+    testValidTypes(CTDuration, CTTime)(CTTime)
+    testValidTypes(CTLocalTime, CTDuration)(CTLocalTime)
+    testValidTypes(CTDuration, CTLocalTime)(CTLocalTime)
+    testValidTypes(CTDateTime, CTDuration)(CTDateTime)
+    testValidTypes(CTDuration, CTDateTime)(CTDateTime)
+    testValidTypes(CTLocalDateTime, CTDuration)(CTLocalDateTime)
+    testValidTypes(CTDuration, CTLocalDateTime)(CTLocalDateTime)
 
     testValidTypes(CTList(CTNode), CTList(CTNode))(CTList(CTNode))
     testValidTypes(CTList(CTFloat), CTList(CTFloat))(CTList(CTFloat))
@@ -90,6 +101,9 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
   test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float, Integer, String or List<T> but was Boolean"
+    )
+    testInvalidApplication(CTDuration, CTBoolean)(
+      "Type mismatch: expected Duration, Date, Time, LocalTime, LocalDateTime, DateTime or List<T> but was Boolean"
     )
   }
 

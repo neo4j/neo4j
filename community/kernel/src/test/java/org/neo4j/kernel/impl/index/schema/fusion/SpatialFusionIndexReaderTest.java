@@ -62,7 +62,8 @@ public class SpatialFusionIndexReaderTest
         readerMap = new HashMap<>();
         readerMap.put( CoordinateReferenceSystem.WGS84, mock( IndexReader.class ) );
         readerMap.put( CoordinateReferenceSystem.Cartesian, mock( IndexReader.class ) );
-        fusionIndexReader = new SpatialFusionIndexReader( readerMap, SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+        fusionIndexReader = new SpatialFusionIndexReader( readerMap, SchemaIndexDescriptorFactory
+                .forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     @Test

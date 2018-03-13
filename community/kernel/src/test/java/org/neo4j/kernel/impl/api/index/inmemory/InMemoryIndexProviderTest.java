@@ -23,8 +23,8 @@ import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.api.index.IndexProvider;
 
 public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
 {

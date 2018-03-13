@@ -30,18 +30,26 @@ public class ReadReplicaInfo implements DiscoveryServerInfo
     private final AdvertisedSocketAddress catchupServerAddress;
     private final ClientConnectorAddresses clientConnectorAddresses;
     private final Set<String> groups;
+    private final String dbName;
 
-    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress )
+    public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses, AdvertisedSocketAddress catchupServerAddress, String dbName )
     {
-        this( clientConnectorAddresses, catchupServerAddress, emptySet() );
+        this( clientConnectorAddresses, catchupServerAddress, emptySet(), dbName );
     }
 
     public ReadReplicaInfo( ClientConnectorAddresses clientConnectorAddresses,
-            AdvertisedSocketAddress catchupServerAddress, Set<String> groups )
+            AdvertisedSocketAddress catchupServerAddress, Set<String> groups, String dbName )
     {
         this.clientConnectorAddresses = clientConnectorAddresses;
         this.catchupServerAddress = catchupServerAddress;
         this.groups = groups;
+        this.dbName = dbName;
+    }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return dbName;
     }
 
     @Override

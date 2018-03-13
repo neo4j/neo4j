@@ -63,8 +63,7 @@ public class ClusterIpFamilyIT
 
     public ClusterIpFamilyIT( DiscoveryServiceType discoveryServiceType, IpFamily ipFamily, boolean useWildcard )
     {
-        clusterRule.withDiscoveryServiceFactory( discoveryServiceType.create() );
-
+        clusterRule.withDiscoveryServiceType( discoveryServiceType );
         clusterRule.withIpFamily( ipFamily ).useWildcard( useWildcard );
     }
 

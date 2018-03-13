@@ -123,8 +123,8 @@ public class MultipleIndexPopulatorUpdatesTest
     }
 
     private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
-            long indexId, SchemaIndexDescriptor descriptor, IndexPopulator indexPopulator,
-            FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
+                                                                 long indexId, SchemaIndexDescriptor descriptor, IndexPopulator indexPopulator,
+                                                                 FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
         return multipleIndexPopulator.addPopulator( indexPopulator, indexId,
                 new IndexMeta( indexId, descriptor, mock( IndexProvider.Descriptor.class ), NO_CAPABILITY ),

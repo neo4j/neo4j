@@ -44,7 +44,8 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     @Override
     NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor,
+                schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Test
@@ -60,7 +61,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
         IndexQuery.NumberRangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberSchemaIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {

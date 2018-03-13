@@ -734,8 +734,8 @@ public class StateHandlingStatementOperations implements
     @Override
     public IndexDescriptor indexGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
-        IndexDescriptor schemaIndexDescriptor = storeLayer.indexGetForSchema( descriptor );
-        Iterator<IndexDescriptor> rules = iterator( schemaIndexDescriptor );
+        IndexDescriptor indexDescriptor = storeLayer.indexGetForSchema( descriptor );
+        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
         if ( state.hasTxStateWithChanges() )
         {
             rules = state.txState().indexDiffSetsBySchema( descriptor ).apply( rules );

@@ -50,7 +50,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
 public class SchemaStoreTest
 {
@@ -179,7 +179,7 @@ public class SchemaStoreTest
     }
 
     private IndexRule uniqueIndexRule( long ruleId, long owningConstraint,
-            IndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
+                                       IndexProvider.Descriptor descriptor, int labelId, int... propertyIds )
     {
         return IndexRule.constraintIndexRule( ruleId,
                 SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyIds ), descriptor, owningConstraint );

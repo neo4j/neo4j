@@ -296,7 +296,7 @@ public class CoreReplicationIT
             tx.success();
         } );
 
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
         CoreClusterMember replacement = cluster.addCoreMemberWithId( 0 );
         replacement.start();
 

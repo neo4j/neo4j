@@ -49,8 +49,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     private final SpaceFillingCurveConfiguration configuration;
 
     SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig,
-                              SchemaIndexDescriptor descriptor,
-            SpaceFillingCurveConfiguration configuration )
+                              SchemaIndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
         spatial = (SpatialLayout) layout;

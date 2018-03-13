@@ -3,7 +3,6 @@
 Please note that GitHub issues are only meant for bug reports/feature requests.  If you have questions on how to use Neo4j, please ask on [StackOverflow](http://stackoverflow.com/questions/tagged/neo4j) instead of creating an issue here.
 
 If you want to make a feature request then there is no guideline, so feel free to stop reading and open an issue. If you have a bug report however, please continue reading.
-
 To help us understand your issue, please specify important details, primarily:
 
 - Neo4j version: X.Y.Z

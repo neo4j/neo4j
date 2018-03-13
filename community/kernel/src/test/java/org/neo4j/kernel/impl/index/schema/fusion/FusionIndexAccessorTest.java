@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.sameInstance;

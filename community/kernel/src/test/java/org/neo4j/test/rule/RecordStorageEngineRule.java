@@ -95,9 +95,9 @@ public class RecordStorageEngineRule extends ExternalResource
     }
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-            IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
-            Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
-            Monitors monitors )
+                                     IndexProvider indexProvider, DatabaseHealth databaseHealth, File storeDirectory,
+                                     Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+                                     Monitors monitors )
     {
         if ( !fs.fileExists( storeDirectory ) && !fs.mkdir( storeDirectory ) )
         {
@@ -111,14 +111,16 @@ public class RecordStorageEngineRule extends ExternalResource
         Config config = Config.defaults();
 
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
-        return life.add(
-                new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs, NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ),
-                        mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
-                        scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProvider, IndexingService.NO_MONITOR, databaseHealth,
-                        explicitIndexProviderLookup, indexConfigStore, new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
-                        new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                        RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                        new CommunityIdTypeConfigurationProvider() );
+        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
+                NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
+                mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
+                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
+                indexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
+                new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
+                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
+                RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
     }
 
     @Override

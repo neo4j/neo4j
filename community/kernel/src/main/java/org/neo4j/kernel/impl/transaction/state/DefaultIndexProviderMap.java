@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -60,7 +59,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider getDefaultSchemaIndexProvider()
+    public IndexProvider getDefaultProvider()
     {
         return defaultIndexProvider;
     }

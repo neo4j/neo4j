@@ -56,7 +56,7 @@ public class ReadRecordsStep<RECORD extends AbstractBaseRecord> extends Processo
 
     private static boolean parallelReading( Configuration config, boolean inRecordWritingStage )
     {
-        return (inRecordWritingStage && config.parallelRecordReadsWhenWriting())
+        return (inRecordWritingStage && config.highIO())
                 || (!inRecordWritingStage && config.parallelRecordReads());
     }
 

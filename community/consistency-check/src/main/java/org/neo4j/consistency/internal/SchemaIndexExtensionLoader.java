@@ -49,7 +49,7 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class SchemaIndexExtensionLoader
 {
-    public static IndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
+    public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
     {
         AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider =

@@ -61,7 +61,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     @Override
     public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor,
-            IndexQuery[] query )
+                            IndexQuery[] query )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );

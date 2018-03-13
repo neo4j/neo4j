@@ -26,12 +26,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -75,11 +77,11 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
-        defaultStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
+        defaultStrategy.inject( topologyService, Config.defaults(), NullLogProvider.getInstance(), null );
 
         UpstreamDatabaseStrategySelector selector = new UpstreamDatabaseStrategySelector( defaultStrategy );
 
@@ -96,7 +98,7 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();

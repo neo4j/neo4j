@@ -177,7 +177,8 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
     public static Iterator<IndexDescriptor> sortByType( Iterator<? extends IndexDescriptor> indexes )
     {
         List<? extends IndexDescriptor> materialized = Iterators.asList( indexes );
-        return Iterators.concat( Iterators.filter( GENERAL, materialized.iterator() ), Iterators.filter( UNIQUE, materialized.iterator() ) );
-
+        return Iterators.concat(
+                Iterators.filter( GENERAL, materialized.iterator() ),
+                Iterators.filter( UNIQUE, materialized.iterator() ) );
     }
 }

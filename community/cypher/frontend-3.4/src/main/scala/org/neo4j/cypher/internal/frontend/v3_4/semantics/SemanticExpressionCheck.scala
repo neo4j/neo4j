@@ -189,7 +189,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x:Property =>
         check(ctx, x.map) chain
-          expectType(CTMap.covariant | CTNode.covariant | CTRelationship.covariant | CTPoint.covariant | CTAny.invariant, x.map) chain
+          expectType(CTMap.covariant | CTNode.covariant | CTRelationship.covariant | CTPoint.covariant | CTDate.covariant | CTTime.covariant |
+            CTLocalTime.covariant | CTLocalDateTime.covariant | CTDateTime.covariant | CTDuration.covariant| CTAny.invariant, x.map) chain
           specifyType(CTAny.covariant, x)
 
       // Check the variable is defined and, if not, define it so that later errors are suppressed
@@ -516,9 +517,27 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     // 1.1 + "b" => "1.1b"
     // 1.1 + 1 => 2.1
     // 1.1 + 1.1 => 2.2
+    // Temporals
+    // T + Duration => T
+    // Duration + T => T
+    // Duration + Duration => Duration
     val valueTypes =
       if (lhsTypes containsAny (CTInteger.covariant | CTFloat.covariant | CTString.covariant))
         CTString.covariant | CTInteger.covariant | CTFloat.covariant
+      else
+        TypeSpec.none
+
+    val temporalTypes =
+      if (lhsTypes containsAny (CTDate.covariant | CTTime.covariant | CTLocalTime.covariant |
+        CTDateTime.covariant | CTLocalDateTime.covariant | CTDuration.covariant))
+        CTDuration.covariant
+      else
+        TypeSpec.none
+
+    val durationTypes =
+      if (lhsTypes containsAny (CTDuration.covariant))
+        CTDate.covariant | CTTime.covariant | CTLocalTime.covariant |
+          CTDateTime.covariant | CTLocalDateTime.covariant | CTDuration.covariant
       else
         TypeSpec.none
 
@@ -531,7 +550,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     // a + [b] => [a, b]
     val rhsListTypes = CTList(CTAny).covariant
 
-    valueTypes | lhsListTypes | rhsListTypes
+    valueTypes | lhsListTypes | rhsListTypes | temporalTypes | durationTypes
   }
 
   private def infixAddOutputTypes(lhs: Expression, rhs: Expression): TypeGenerator = s => {
@@ -560,6 +579,19 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     when(CTInteger.covariant, CTInteger.covariant)(CTInteger) |
       when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
+    val temporalTypes: TypeSpec =
+      when(CTDuration.covariant, CTDuration.covariant)(CTDuration) |
+      when(CTDate.covariant, CTDuration.covariant)(CTDate) |
+      when(CTDuration.covariant, CTDate.covariant)(CTDate) |
+      when(CTTime.covariant, CTDuration.covariant)(CTTime) |
+      when(CTDuration.covariant, CTTime.covariant)(CTTime) |
+      when(CTLocalTime.covariant, CTDuration.covariant)(CTLocalTime) |
+      when(CTDuration.covariant, CTLocalTime.covariant)(CTLocalTime) |
+      when(CTLocalDateTime.covariant, CTDuration.covariant)(CTLocalDateTime) |
+      when(CTDuration.covariant, CTLocalDateTime.covariant)(CTLocalDateTime) |
+      when(CTDateTime.covariant, CTDuration.covariant)(CTDateTime) |
+      when(CTDuration.covariant, CTDateTime.covariant)(CTDateTime)
+
     val listTypes = {
       val lhsListTypes = lhsTypes constrain CTList(CTAny)
       val rhsListTypes = rhsTypes constrain CTList(CTAny)
@@ -575,7 +607,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       bothListMergedTypes | lhListMergedTypes | rhListMergedTypes
     }
 
-    stringTypes | numberTypes | listTypes
+    stringTypes | numberTypes | listTypes | temporalTypes
   }
 
   private def checkExtractExpressionDefined(x: ExtractExpression): SemanticCheck =

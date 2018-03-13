@@ -37,7 +37,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
 public class SchemaIndexWaitingAcceptanceTest
 {
@@ -50,7 +50,7 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             List<KernelExtensionFactory<?>> extensions;
-            extensions = Collections.singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
+            extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
             ((TestGraphDatabaseFactory) databaseFactory).setKernelExtensions( extensions );
         }
     };

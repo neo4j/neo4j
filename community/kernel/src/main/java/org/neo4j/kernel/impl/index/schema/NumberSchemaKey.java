@@ -46,28 +46,14 @@ class NumberSchemaKey extends NativeSchemaKey
     long rawValueBits;
 
     @Override
-    void from( Value... values )
+    protected Value assertCorrectType( Value value )
     {
-        extractRawBitsAndType( assertValidValue( values ) );
-    }
-
-    private NumberValue assertValidValue( Value... values )
-    {
-        // TODO: support multiple values, right?
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !Values.isNumberValue( values[0] ) )
+        if ( !Values.isNumberValue( value ) )
         {
             throw new IllegalArgumentException(
-                    "Key layout does only support numbers, tried to create key from " + values[0] );
+                    "Key layout does only support numbers, tried to create key from " + value );
         }
-        return (NumberValue) values[0];
+        return value;
     }
 
     @Override
@@ -98,16 +84,6 @@ class NumberSchemaKey extends NativeSchemaKey
     int compareValueTo( NumberSchemaKey other )
     {
         return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
-    }
-
-    /**
-     * Extracts raw bits and type from a {@link NumberValue} and store as state of this {@link NumberSchemaKey} instance.
-     *
-     * @param value actual {@link NumberValue} value.
-     */
-    private void extractRawBitsAndType( NumberValue value )
-    {
-        value.writeTo( this );
     }
 
     @Override

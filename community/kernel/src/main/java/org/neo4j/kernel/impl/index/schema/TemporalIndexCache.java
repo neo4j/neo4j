@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Objects;
+import java.util.List;
 import java.util.function.Function;
 
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
@@ -41,15 +41,18 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     private final Factory<T, E> factory;
 
     private volatile T date;
-    private volatile T dateTime;
-    private volatile T dateTimeZoned;
-    private volatile T time;
-    private volatile T timeZoned;
+    private volatile T localDateTime;
+    private volatile T zonedDateTime;
+    private volatile T localTime;
+    private volatile T zonedTime;
     private volatile T duration;
+
+    private List<T> parts;
 
     TemporalIndexCache( Factory<T, E> factory )
     {
         this.factory = factory;
+        this.parts = new ArrayList<>();
     }
 
     /**
@@ -87,16 +90,16 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
             return date();
 
         case LOCAL_DATE_TIME:
-            return dateTime();
+            return localDateTime();
 
         case ZONED_DATE_TIME:
-            return dateTimeZoned();
+            return zonedDateTime();
 
         case LOCAL_TIME:
-            return time();
+            return localTime();
 
         case ZONED_TIME:
-            return timeZoned();
+            return zonedTime();
 
         case DURATION:
             return duration();
@@ -124,16 +127,16 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
             return date != null ? function.apply( date ) : orElse;
 
         case LOCAL_DATE_TIME:
-            return dateTime != null ? function.apply( dateTime ) : orElse;
+            return localDateTime != null ? function.apply( localDateTime ) : orElse;
 
         case ZONED_DATE_TIME:
-            return dateTimeZoned != null ? function.apply( dateTimeZoned ) : orElse;
+            return zonedDateTime != null ? function.apply( zonedDateTime ) : orElse;
 
         case LOCAL_TIME:
-            return time != null ? function.apply( time ) : orElse;
+            return localTime != null ? function.apply( localTime ) : orElse;
 
         case ZONED_TIME:
-            return timeZoned != null ? function.apply( timeZoned ) : orElse;
+            return zonedTime != null ? function.apply( zonedTime ) : orElse;
 
         case DURATION:
             return duration != null ? function.apply( duration ) : orElse;
@@ -148,44 +151,49 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( date == null )
         {
             date = factory.newDate();
+            parts.add( date );
         }
         return date;
     }
 
-    T dateTime() throws E
+    T localDateTime() throws E
     {
-        if ( dateTime == null )
+        if ( localDateTime == null )
         {
-            dateTime = factory.newDateTime();
+            localDateTime = factory.newLocalDateTime();
+            parts.add( localDateTime );
         }
-        return dateTime;
+        return localDateTime;
     }
 
-    T dateTimeZoned() throws E
+    T zonedDateTime() throws E
     {
-        if ( dateTimeZoned == null )
+        if ( zonedDateTime == null )
         {
-            dateTimeZoned = factory.newDateTimeZoned();
+            zonedDateTime = factory.newZonedDateTime();
+            parts.add( zonedDateTime );
         }
-        return dateTimeZoned;
+        return zonedDateTime;
     }
 
-    T time() throws E
+    T localTime() throws E
     {
-        if ( time == null )
+        if ( localTime == null )
         {
-            time = factory.newTime();
+            localTime = factory.newLocalTime();
+            parts.add( localTime );
         }
-        return time;
+        return localTime;
     }
 
-    T timeZoned() throws E
+    T zonedTime() throws E
     {
-        if ( timeZoned == null )
+        if ( zonedTime == null )
         {
-            timeZoned = factory.newTimeZoned();
+            zonedTime = factory.newZonedTime();
+            parts.add( zonedTime );
         }
-        return timeZoned;
+        return zonedTime;
     }
 
     T duration() throws E
@@ -193,6 +201,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( duration == null )
         {
             duration = factory.newDuration();
+            parts.add( duration );
         }
         return duration;
     }
@@ -200,8 +209,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return Iterators.filter(
-                Objects::nonNull, Iterators.iterator( date, dateTime, dateTimeZoned, time, timeZoned, duration ) );
+        return parts.iterator();
     }
 
     /**
@@ -213,10 +221,10 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     interface Factory<T, E extends Exception>
     {
         T newDate() throws E;
-        T newDateTime() throws E;
-        T newDateTimeZoned() throws E;
-        T newTime() throws E;
-        T newTimeZoned() throws E;
+        T newLocalDateTime() throws E;
+        T newZonedDateTime() throws E;
+        T newLocalTime() throws E;
+        T newZonedTime() throws E;
         T newDuration() throws E;
     }
 }

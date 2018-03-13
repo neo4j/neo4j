@@ -44,23 +44,23 @@ public class SchemaIndexTestHelper
     {
     }
 
-    public static KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies> singleInstanceSchemaIndexProviderFactory(
+    public static KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies> singleInstanceIndexProviderFactory(
             String key, final IndexProvider provider )
     {
-        return new SingleInstanceSchemaIndexProviderFactory( key, provider );
+        return new SingleInstanceIndexProviderFactory( key, provider );
     }
 
-    public interface SingleInstanceSchemaIndexProviderFactoryDependencies
+    public interface SingleInstanceIndexProviderFactoryDependencies
     {
         Config config();
     }
 
-    private static class SingleInstanceSchemaIndexProviderFactory
-        extends KernelExtensionFactory<SingleInstanceSchemaIndexProviderFactoryDependencies>
+    private static class SingleInstanceIndexProviderFactory
+        extends KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies>
     {
         private final IndexProvider provider;
 
-        private SingleInstanceSchemaIndexProviderFactory( String key, IndexProvider provider )
+        private SingleInstanceIndexProviderFactory( String key, IndexProvider provider )
         {
             super( key );
             this.provider = provider;
@@ -68,7 +68,7 @@ public class SchemaIndexTestHelper
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                SingleInstanceSchemaIndexProviderFactoryDependencies dependencies )
+                SingleInstanceIndexProviderFactoryDependencies dependencies )
         {
             return provider;
         }

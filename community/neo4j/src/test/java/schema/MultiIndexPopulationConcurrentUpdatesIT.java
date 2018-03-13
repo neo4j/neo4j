@@ -54,8 +54,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -119,8 +119,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<IndexProvider.Descriptor> parameters()
     {
-        return asList( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR,
-                NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR,
+        return asList( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR,
+                NativeLuceneFusionIndexProviderFactory.DESCRIPTOR,
                 InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
@@ -315,7 +315,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, neoStores, labelScanStore );
 
-            IndexProviderMap providerMap = getSchemaIndexProvider();
+            IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
@@ -472,7 +472,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    private IndexProviderMap getSchemaIndexProvider()
+    private IndexProviderMap getIndexProviderMap()
     {
         return embeddedDatabase.resolveDependency( IndexProviderMap.class );
     }

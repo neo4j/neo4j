@@ -32,8 +32,7 @@ public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInde
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor,
-                schemaIndexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Override

@@ -36,8 +36,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -171,12 +171,12 @@ public class NonUniqueIndexTest
         IndexProvider indexProvider;
         if ( useFusionIndex )
         {
-            indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+            indexProvider = NativeLuceneFusionIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
         }
         else
         {
-            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
+            indexProvider = LuceneIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
         }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,

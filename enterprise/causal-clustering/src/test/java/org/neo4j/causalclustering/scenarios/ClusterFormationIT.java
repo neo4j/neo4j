@@ -101,7 +101,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
 
         // then
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
@@ -136,7 +136,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
 
         // then
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
@@ -164,7 +164,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
 
         cluster.addCoreMemberWithId( 3 ).start();
         cluster.shutdown();

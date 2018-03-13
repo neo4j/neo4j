@@ -28,12 +28,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Comparator.comparing;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
@@ -60,21 +60,19 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     private static final String[] PROCEDURE_NAMESPACE = {"dbms", "cluster"};
     public static final String PROCEDURE_NAME = "overview";
     private final TopologyService topologyService;
-    private final LeaderLocator leaderLocator;
     private final Log log;
 
-    public ClusterOverviewProcedure( TopologyService topologyService,
-            LeaderLocator leaderLocator, LogProvider logProvider )
+    public ClusterOverviewProcedure( TopologyService topologyService, LogProvider logProvider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString )
                 .out( "addresses", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                 .out( "role", Neo4jTypes.NTString )
                 .out( "groups", Neo4jTypes.NTList( Neo4jTypes.NTString ) )
+                .out( "database", Neo4jTypes.NTString )
                 .description( "Overview of all currently accessible cluster members and their roles." )
                 .build() );
         this.topologyService = topologyService;
-        this.leaderLocator = leaderLocator;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -82,28 +80,22 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply(
             Context ctx, Object[] input, ResourceTracker resourceTracker )
     {
+        Map<MemberId,RoleInfo> roleMap = emptyMap();
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        CoreTopology coreTopology = topologyService.coreServers();
-        Set<MemberId> coreMembers = coreTopology.members().keySet();
-        MemberId leader = null;
+        roleMap = topologyService.allCoreRoles();
 
-        try
-        {
-            leader = leaderLocator.getLeader();
-        }
-        catch ( NoLeaderFoundException e )
-        {
-            log.debug( "No write server found. This can happen during a leader switch." );
-        }
+        CoreTopology coreTopology = topologyService.allCoreServers();
+        Set<MemberId> coreMembers = coreTopology.members().keySet();
 
         for ( MemberId memberId : coreMembers )
         {
             Optional<CoreServerInfo> coreServerInfo = coreTopology.find( memberId );
             if ( coreServerInfo.isPresent() )
             {
-                Role role = memberId.equals( leader ) ? Role.LEADER : Role.FOLLOWER;
-                endpoints.add( new ReadWriteEndPoint( coreServerInfo.get().connectors(), role, memberId.getUuid(),
-                        asList( coreServerInfo.get().groups() ) ) );
+                CoreServerInfo info = coreServerInfo.get();
+                RoleInfo role = roleMap.getOrDefault( memberId, RoleInfo.UNKNOWN );
+                endpoints.add( new ReadWriteEndPoint( info.connectors(), role, memberId.getUuid(),
+                        asList( info.groups() ), info.getDatabaseName() ) );
             }
             else
             {
@@ -111,11 +103,11 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             }
         }
 
-        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().members().entrySet() )
+        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.allReadReplicas().members().entrySet() )
         {
             ReadReplicaInfo readReplicaInfo = readReplica.getValue();
-            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA,
-                    readReplica.getKey().getUuid(), asList( readReplicaInfo.groups() ) ) );
+            endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), RoleInfo.READ_REPLICA,
+                    readReplica.getKey().getUuid(), asList( readReplicaInfo.groups() ), readReplicaInfo.getDatabaseName() ) );
         }
 
         endpoints.sort( comparing( o -> o.addresses().toString() ) );
@@ -125,7 +117,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
                                 endpoint.memberId().toString(),
                                 endpoint.addresses().uriList().stream().map( URI::toString ).collect( Collectors.toList() ),
                                 endpoint.role().name(),
-                                endpoint.groups()
+                                endpoint.groups(),
+                                endpoint.dbName()
                         },
                 asRawIterator( endpoints.iterator() ) );
     }
@@ -133,16 +126,17 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     static class ReadWriteEndPoint
     {
         private final ClientConnectorAddresses clientConnectorAddresses;
-        private final Role role;
+        private final RoleInfo role;
         private final UUID memberId;
         private final List<String> groups;
+        private final String dbName;
 
         public ClientConnectorAddresses addresses()
         {
             return clientConnectorAddresses;
         }
 
-        public Role role()
+        public RoleInfo role()
         {
             return role;
         }
@@ -157,12 +151,18 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             return groups;
         }
 
-        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, Role role, UUID memberId, List<String> groups )
+        String dbName()
+        {
+            return dbName;
+        }
+
+        ReadWriteEndPoint( ClientConnectorAddresses clientConnectorAddresses, RoleInfo role, UUID memberId, List<String> groups, String dbName )
         {
             this.clientConnectorAddresses = clientConnectorAddresses;
             this.role = role;
             this.memberId = memberId;
             this.groups = groups;
+            this.dbName = dbName;
         }
     }
 }

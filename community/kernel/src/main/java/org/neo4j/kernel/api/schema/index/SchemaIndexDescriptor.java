@@ -19,15 +19,8 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import java.util.Iterator;
-import java.util.List;
-
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
-
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)

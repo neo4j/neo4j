@@ -44,7 +44,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 import static org.junit.Assert.assertEquals;

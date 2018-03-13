@@ -75,8 +75,7 @@ public class SpatialFusionIndexAccessorTest
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
         }
 
-        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( SchemaIndexDescriptor.class ),
-                null, indexFactory );
+        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( SchemaIndexDescriptor.class ), null, indexFactory );
     }
 
     @Test

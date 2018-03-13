@@ -100,7 +100,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -219,7 +219,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     }
 
     private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
-            Config config, LogProvider logProvider, Monitors monitors )
+                                            Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         ReadOnlyTokenCreator tokenCreator = new ReadOnlyTokenCreator();
@@ -229,7 +229,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         KernelExtensions extensions = life.add(
                 instantiateKernelExtensions( storeDir, fileSystem, config, logService, pageCache, RecoveryCleanupWorkCollector.IGNORE, DatabaseInfo.COMMUNITY,
                         monitors, propkeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder ) );
-        return loadSchemaIndexProviders( extensions );
+        return loadIndexProviders( extensions );
     }
 
     public File directory()

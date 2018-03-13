@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
-public class FusionSelector implements FusionSchemaIndexProvider.Selector
+public class FusionSelector implements FusionIndexProvider.Selector
 {
     @Override
     public <T> T select( T numberInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values )
@@ -40,14 +41,13 @@ public class FusionSelector implements FusionSchemaIndexProvider.Selector
             return numberInstance;
         }
 
-        if ( singleValue.valueGroup() == ValueGroup.GEOMETRY )
+        if ( Values.isGeometryValue( singleValue ) )
         {
             // It's a geometry, the spatial index can handle this
             return spatialInstance;
         }
 
-        // TODO this needs to check all temporal groups
-        if ( singleValue.valueGroup() == ValueGroup.DATE )
+        if ( Values.isTemporalValue( singleValue ) )
         {
             return temporalInstance;
         }

@@ -80,6 +80,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
 
+    @Description( "The name of the database hosted by this server instance" )
+    public static final Setting<String> database =
+            setting( "causal_clustering.database", STRING, "default" );
+
     @Description( "Enable pre-voting extension to the Raft protocol (this is breaking and must match between the core cluster members)" )
     public static final Setting<Boolean> enable_pre_voting =
             setting( "causal_clustering.enable_pre_voting", BOOLEAN, FALSE );
@@ -110,7 +114,8 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Minimum number of Core machines in the cluster at formation. The expected_core_cluster size setting is used when bootstrapping the " +
             "cluster on first formation. A cluster will not form without the configured amount of cores and this should in general be configured to the" +
-            " full and fixed amount." )
+            " full and fixed amount. When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used " +
+            "to define the minimum size of *each* sub-cluster at formation." )
     public static final Setting<Integer> minimum_core_cluster_size_at_formation =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_formation", INTEGER, expected_core_cluster_size.getDefaultValue() )
                     .constraint( min( 2 ) ).build();

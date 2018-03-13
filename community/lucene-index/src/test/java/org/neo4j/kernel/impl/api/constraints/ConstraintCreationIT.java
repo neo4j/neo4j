@@ -82,7 +82,7 @@ public class ConstraintCreationIT
         }
 
         IndexProvider indexProvider =
-                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultSchemaIndexProvider();
+                db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );

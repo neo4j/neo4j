@@ -51,7 +51,7 @@ class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaV
     protected GBPTree<KEY,VALUE> tree;
 
     NativeSchemaIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
-            IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
+                       IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;

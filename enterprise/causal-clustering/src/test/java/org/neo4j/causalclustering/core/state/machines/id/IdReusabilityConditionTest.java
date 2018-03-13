@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -62,7 +63,7 @@ public class IdReusabilityConditionTest
     {
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
 
-        idReusabilityCondition.receive( someoneElse );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( someoneElse, 1 ));
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }
 
@@ -74,7 +75,7 @@ public class IdReusabilityConditionTest
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
@@ -92,7 +93,7 @@ public class IdReusabilityConditionTest
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
@@ -110,14 +111,14 @@ public class IdReusabilityConditionTest
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertTrue( idReusabilityCondition.getAsBoolean() );
 
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
-        idReusabilityCondition.receive( someoneElse );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( someoneElse, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }

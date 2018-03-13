@@ -480,7 +480,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(SchemaIndexDescriptorFactory.forLabel(labelId, propertyKeyId))
+    tc.statement.schemaWriteOperations().indexDrop(SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
 
   def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
     IdempotentResult(

@@ -149,7 +149,7 @@ public class IndexIT extends KernelIntegrationTest
         // WHEN
         Statement statement = statementInNewTransaction( AUTH_DISABLED );
         SchemaIndexDescriptor addedRule = statement.schemaWriteOperations()
-                                            .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
+                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 

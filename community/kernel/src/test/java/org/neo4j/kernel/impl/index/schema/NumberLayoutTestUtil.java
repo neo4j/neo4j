@@ -56,9 +56,9 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
                     1234567890123456789L
             };
 
-    NumberLayoutTestUtil( SchemaIndexDescriptor indexDescriptor )
+    NumberLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        super( indexDescriptor );
+        super( schemaIndexDescriptor );
     }
 
     @Override

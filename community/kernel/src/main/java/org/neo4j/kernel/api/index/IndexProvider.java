@@ -44,7 +44,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Populating the index</h3>
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
- * your {@link IndexProvider} for a\
+ * your {@link IndexProvider} for a
  * {@link #getPopulator(long, IndexDescriptor, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
@@ -195,7 +195,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
     }
 
     protected IndexProvider( Descriptor descriptor, int priority,
-            IndexDirectoryStructure.Factory directoryStructureFactory )
+                             IndexDirectoryStructure.Factory directoryStructureFactory )
     {
         this.directoryStructureFactory = directoryStructureFactory;
         assert descriptor != null;
@@ -238,7 +238,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
     /**
      * Return {@link IndexCapability} for this index provider for a given {@link SchemaIndexDescriptor}.
      *
-     * @param indexDescriptor {@link SchemaIndexDescriptor} to get IndexCapability for.
+     * @param indexDescriptor {@link IndexDescriptor} to get IndexCapability for.
      */
     public abstract IndexCapability getCapability( IndexDescriptor indexDescriptor );
 

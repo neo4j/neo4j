@@ -61,7 +61,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 
 public class LuceneSchemaIndexPopulatorTest
 {
@@ -71,7 +71,7 @@ public class LuceneSchemaIndexPopulatorTest
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     private IndexStoreView indexStoreView;
-    private LuceneSchemaIndexProvider provider;
+    private LuceneIndexProvider provider;
     private Directory directory;
     private IndexPopulator indexPopulator;
     private IndexReader reader;
@@ -86,7 +86,7 @@ public class LuceneSchemaIndexPopulatorTest
         directory = new RAMDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
+        provider = new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );

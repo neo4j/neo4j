@@ -28,7 +28,7 @@ import java.io.File;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -60,7 +60,7 @@ public class ClusterCommunityToEnterpriseIT
         fsa = fileSystemRule.get();
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), HighLimit.NAME,
+                new SharedDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), HighLimit.NAME,
                 IpFamily.IPV4, false );
     }
 

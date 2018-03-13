@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -165,7 +166,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         idGenerator.freeId( 10 );
         assertEquals( 1, idGenerator.getDefragCount() );
@@ -210,7 +211,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 4L, 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertEquals( 24, idGenerator.nextId() );
         idGenerator.freeId( 11 );
