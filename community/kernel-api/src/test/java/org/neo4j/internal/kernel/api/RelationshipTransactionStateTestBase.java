@@ -80,7 +80,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 tx.dataRead().singleRelationship( r, relationship );
                 assertTrue( "should find relationship", relationship.next() );
 
-                assertEquals( label, relationship.label() );
+                assertEquals( label, relationship.type() );
                 assertEquals( n1, relationship.sourceNodeReference() );
                 assertEquals( n2, relationship.targetNodeReference() );
                 assertEquals( r, relationship.relationshipReference() );
@@ -1285,7 +1285,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         while ( relationship.next() )
         {
             assertEquals( sourceNode, relationship.sourceNodeReference() );
-            assertEquals( type, relationship.label() );
+            assertEquals( type, relationship.type() );
             assertEquals( targetNode, relationship.targetNodeReference() );
             count++;
         }

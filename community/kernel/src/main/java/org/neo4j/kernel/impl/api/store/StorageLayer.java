@@ -31,7 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -247,10 +248,16 @@ public class StorageLayer implements StoreReadLayer
         return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
     }
 
-    @Override
-    public IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor.schema() ).getIndexCapability();
+        boolean unique = descriptor.type() == IndexDescriptor.Type.UNIQUE;
+        SchemaDescriptor schema = descriptor.schema();
+        IndexProxy indexProxy = indexService.getIndexProxy( schema );
+
+        // TODO support multi-token
+        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
+                indexProxy.getProviderDescriptor(), schema.getEntityTokenIds()[0],
+                schema.getPropertyIds() );
     }
 
     @Override

@@ -204,7 +204,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.spi = spi;
         this.config = config;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.schema = new SchemaImpl( txBridge );
+        this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.indexManager = Suppliers.lazySingleton( () ->
         {
@@ -476,7 +476,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                         return newRelationshipProxy(
                                 cursor.relationshipReference(),
                                 cursor.sourceNodeReference(),
-                                cursor.label(),
+                                cursor.type(),
                                 cursor.targetNodeReference() );
                     }
                     else

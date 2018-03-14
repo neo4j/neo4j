@@ -643,6 +643,17 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
+    void acquireSharedOptimisticLabelLock( int... ids )
+    {
+        long[] resourceIds = new long[ids.length];
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            resourceIds[i] = ids[i];
+        }
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, resourceIds );
+        ktx.assertOpen();
+    }
+
     @Override
     public void releaseSharedNodeLock( long... ids )
     {

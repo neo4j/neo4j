@@ -353,7 +353,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     {
         waitOnHazelcastInstanceCreation();
 
-        if ( leaderInfo != null && leaderInfo.memberId().equals( myself ) )
+        if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
         {
             HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
         }

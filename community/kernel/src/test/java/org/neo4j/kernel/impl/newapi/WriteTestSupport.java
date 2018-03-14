@@ -40,7 +40,12 @@ class WriteTestSupport implements KernelAPIWriteTestSupport
     @Override
     public void setup( File storeDir )
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
+        db = newDb( storeDir );
+    }
+
+    protected GraphDatabaseService newDb( File storeDir )
+    {
+        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }
 
     @Override

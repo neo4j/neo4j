@@ -32,16 +32,16 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
 
 public class ConnectionInfoIT
 {
@@ -64,19 +64,18 @@ public class ConnectionInfoIT
     public void catchupServerMessage() throws Throwable
     {
         // given
-        testSocket = bindPort( "localhost", 4242 );
+        testSocket = bindPort( "localhost", PortAuthority.allocatePort() );
 
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider();
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
-        Config config = Config.defaults( transaction_listen_address, ":" + testSocket.getLocalPort() );
+        ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getLocalPort() );
 
         CatchupServer catchupServer =
-                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),
-                        mockSupplier(), mock( BooleanSupplier.class ), snapshotService, config, new Monitors(),
-                        mock( CheckpointerSupplier.class), mock( FileSystemAbstraction.class ), mock( PageCache.class ),
-                        new StoreCopyCheckPointMutex(), null );
+                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(), mockSupplier(), mock( BooleanSupplier.class ),
+                        snapshotService, new Monitors(), mock( CheckpointerSupplier.class ), mock( FileSystemAbstraction.class ),
+                        mock( PageCache.class ), listenSocketAddress, new StoreCopyCheckPointMutex(), null );
 
         //then
         try

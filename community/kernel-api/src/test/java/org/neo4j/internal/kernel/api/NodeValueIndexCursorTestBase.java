@@ -31,7 +31,6 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -107,6 +106,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
+    protected abstract String providerKey();
+    protected abstract String providerVersion();
 
     @Test
     public void shouldPerformExactLookup() throws Exception
@@ -551,6 +552,18 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
         assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
         assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+    }
+
+    @Test
+    public void shouldGetVersionAndKeyFromIndexReference() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+
+        assertEquals( providerKey(), index.providerKey() );
+        assertEquals( providerVersion(), index.providerVersion() );
     }
 
     @Test

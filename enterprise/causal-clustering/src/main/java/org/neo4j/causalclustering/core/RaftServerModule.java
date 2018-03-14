@@ -107,6 +107,7 @@ class RaftServerModule
         platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
         platformModule.life.add( coreServerModule.catchupServer() ); // must start last and stop first, since it handles external requests
+        coreServerModule.backupCatchupServer().ifPresent( platformModule.life::add );
         platformModule.life.add( coreServerModule.downloadService() );
 
         return raftServer;

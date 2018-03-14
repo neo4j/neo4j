@@ -44,7 +44,7 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     @Override
     public int type()
     {
-        return relationshipCursor.label();
+        return relationshipCursor.type();
     }
 
     @Override

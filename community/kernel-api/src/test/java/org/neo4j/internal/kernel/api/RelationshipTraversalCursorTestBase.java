@@ -122,7 +122,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     {
                         assertEquals( "node #" + node.nodeReference() +
                                         " relationship should have same label as group", group.type(),
-                                relationship.label() );
+                                relationship.type() );
                         degree.outgoing++;
                     }
                     group.incoming( relationship );
@@ -130,7 +130,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     {
                         assertEquals( "node #" + node.nodeReference() +
                                         "relationship should have same label as group", group.type(),
-                                relationship.label() );
+                                relationship.type() );
                         degree.incoming++;
                     }
                     group.loops( relationship );
@@ -138,7 +138,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     {
                         assertEquals( "node #" + node.nodeReference() +
                                         "relationship should have same label as group", group.type(),
-                                relationship.label() );
+                                relationship.type() );
                         degree.loop++;
                     }
 
@@ -191,7 +191,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "neighbouring node", end, relationship.neighbourNodeReference() );
 
             assertEquals( "relationship should have same label as group", group.type(),
-                    relationship.label() );
+                    relationship.type() );
 
             assertFalse( "only a single relationship", relationship.next() );
 
@@ -218,7 +218,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             assertEquals( "neighbouring node", start, relationship.neighbourNodeReference() );
 
             assertEquals( "relationship should have same label as group", group.type(),
-                    relationship.label() );
+                    relationship.type() );
 
             assertFalse( "only a single relationship", relationship.next() );
 
