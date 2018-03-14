@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.kernel.impl.api.store.{DefaultCapableIndexReference, RelationshipIterator}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
@@ -814,7 +814,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def dropIndexRule(descriptor: IndexDescriptor): Unit =
     transactionalContext.kernelTransaction.schemaWrite().indexDrop(
-      transactionalContext.kernelTransaction.schemaRead().index(descriptor.label, descriptor.properties.map(_.id):_*)
+      new DefaultCapableIndexReference(false, IndexCapability.NO_CAPABILITY, null, descriptor.label,
+                                       descriptor.properties.map(_.id):_*)
     )
 
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
