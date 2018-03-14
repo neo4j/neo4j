@@ -25,6 +25,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 
@@ -309,6 +310,16 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                                               time( 1001, UTC ),
                                               time( 2000, UTC ),
                                               time( 3000, UTC ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
+        {
+            Assume.assumeTrue( testSuite.supportsTemporal() );
+            testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of("+17:02") ),
+                                              time( 20, 31, 54, 3, ZoneOffset.of("+17:02") ),
+                                              time( 19, 31, 54, 2, UTC ),
+                                              time( 18, 23, 27, 1, ZoneOffset.of("-18:00") ) );
         }
 
         @Test
