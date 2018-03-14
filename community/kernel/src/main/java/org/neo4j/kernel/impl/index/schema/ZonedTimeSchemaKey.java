@@ -33,7 +33,7 @@ import static java.lang.String.format;
  *
  * With these keys the TimeValues are sorted by UTC time of day, and then by time zone.
  */
-class ZonedTimeSchemaKey extends ComparableNativeSchemaKey<ZonedTimeSchemaKey>
+class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES +    /* nanosOfDayUTC */

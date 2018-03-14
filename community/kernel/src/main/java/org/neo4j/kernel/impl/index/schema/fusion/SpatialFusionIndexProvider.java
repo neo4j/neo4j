@@ -127,7 +127,7 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
             // We find the first failed index failure message
             for ( SpatialCRSSchemaIndex index : indexesFor( indexId ).values() )
             {
-                String indexFailure = index.readPopulationFailure( descriptor );
+                String indexFailure = index.readPopulationFailure();
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -155,7 +155,7 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
         {
             try
             {
-                switch ( index.readState( descriptor ) )
+                switch ( index.readState() )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;

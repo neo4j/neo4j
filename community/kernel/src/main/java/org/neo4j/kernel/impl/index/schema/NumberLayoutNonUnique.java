@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.Layout;
-
 class NumberLayoutNonUnique extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "NUNI";
     private static final int MAJOR_VERSION = 0;
     private static final int MINOR_VERSION = 1;
-    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     NumberLayoutNonUnique()
     {
-        super( IDENTIFIER, MAJOR_VERSION, MINOR_VERSION );
+        super( IDENTIFIER_NAME, MAJOR_VERSION, MINOR_VERSION );
     }
 }

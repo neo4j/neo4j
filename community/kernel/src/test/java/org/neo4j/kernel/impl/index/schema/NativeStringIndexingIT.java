@@ -62,7 +62,7 @@ public class NativeStringIndexingIT
         // given
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 2 );
         try ( StringSchemaIndexAccessor accessor = new StringSchemaIndexAccessor( storage.pageCache(), storage.fileSystem(),
-                storage.directory().file( "index" ), new StringLayoutNonUnique(), IGNORE, EMPTY, descriptor, 0,
+                storage.directory().file( "index" ), new StringLayout(), IGNORE, EMPTY, descriptor, 0,
                 new IndexSamplingConfig( Config.defaults() ) ) )
         {
             // when

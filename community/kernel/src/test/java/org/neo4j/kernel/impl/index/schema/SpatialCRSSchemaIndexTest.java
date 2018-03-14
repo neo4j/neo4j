@@ -206,7 +206,7 @@ public class SpatialCRSSchemaIndexTest
     {
         try
         {
-            index.readState( descriptor );
+            index.readState();
             fail( "Should throw if no index file exists." );
         }
         catch ( IOException e )
