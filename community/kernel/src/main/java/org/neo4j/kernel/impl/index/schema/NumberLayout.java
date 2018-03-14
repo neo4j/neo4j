@@ -27,9 +27,9 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 abstract class NumberLayout extends SchemaLayout<NumberSchemaKey>
 {
-    NumberLayout( long identifier, int majorVersion, int minorVersion )
+    NumberLayout( String identifierName, int majorVersion, int minorVersion )
     {
-        super( identifier, majorVersion, minorVersion );
+        super( identifierName, majorVersion, minorVersion );
     }
 
     @Override

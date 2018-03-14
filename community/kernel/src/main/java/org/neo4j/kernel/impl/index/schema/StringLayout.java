@@ -28,11 +28,11 @@ import static org.neo4j.kernel.impl.index.schema.StringSchemaKey.ENTITY_ID_SIZE;
 /**
  * {@link Layout} for strings.
  */
-abstract class StringLayout extends SchemaLayout<StringSchemaKey>
+class StringLayout extends SchemaLayout<StringSchemaKey>
 {
-    StringLayout( long identifier, int majorVersion, int minorVersion )
+    StringLayout()
     {
-        super( identifier, majorVersion, minorVersion );
+        super( "USI", 0, 1 );
     }
 
     @Override

@@ -21,28 +21,18 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 /**
  * {@link Layout} for absolute date times.
  */
-class ZonedDateTimeLayout extends BaseLayout<ZonedDateTimeSchemaKey>
+class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
 {
     private static final int ZONE_ID_FLAG = 0x0100_0000;
     private static final int ZONE_ID_MASK = 0x0000_FFFF;
 
-    public static Layout<ZonedDateTimeSchemaKey,NativeSchemaValue> of( SchemaIndexDescriptor descriptor )
+    ZonedDateTimeLayout()
     {
-        return descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE ? ZonedDateTimeLayout.UNIQUE : ZonedDateTimeLayout.NON_UNIQUE;
-    }
-
-    private static final ZonedDateTimeLayout UNIQUE = new ZonedDateTimeLayout( "UTdt", 0, 1 );
-    private static final ZonedDateTimeLayout NON_UNIQUE = new ZonedDateTimeLayout( "NTdt", 0, 1 );
-
-    private ZonedDateTimeLayout(
-            String layoutName, int majorVersion, int minorVersion )
-    {
-        super( layoutName, majorVersion, minorVersion );
+        super( "Tdt", 0, 1 );
     }
 
     @Override

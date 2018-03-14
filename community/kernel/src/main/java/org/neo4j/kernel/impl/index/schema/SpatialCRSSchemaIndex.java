@@ -122,7 +122,7 @@ public class SpatialCRSSchemaIndex
         }
         state = State.INIT;
 
-        layout = layout( descriptor );
+        layout = new SpatialLayout( crs, curve );
         treeKey = layout.newKey();
         treeValue = layout.newValue();
         schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
@@ -325,14 +325,14 @@ public class SpatialCRSSchemaIndex
         return fs.fileExists( indexFile );
     }
 
-    public String readPopulationFailure( SchemaIndexDescriptor descriptor ) throws IOException
+    public String readPopulationFailure() throws IOException
     {
-        return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile, layout( descriptor ) );
+        return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile, layout );
     }
 
-    public InternalIndexState readState( SchemaIndexDescriptor descriptor ) throws IOException
+    public InternalIndexState readState() throws IOException
     {
-        return NativeSchemaIndexes.readState( pageCache, indexFile, layout( descriptor ) );
+        return NativeSchemaIndexes.readState( pageCache, indexFile, layout );
     }
 
     private synchronized void create() throws IOException
@@ -393,33 +393,6 @@ public class SpatialCRSSchemaIndex
         if ( schemaIndex.tree == null )
         {
             schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IGNORE, NO_HEADER_WRITER );
-        }
-    }
-
-    private SpatialLayout layout( SchemaIndexDescriptor descriptor )
-    {
-        SpatialLayout layout;
-        if ( isUnique( descriptor ) )
-        {
-            layout = new SpatialLayoutUnique( crs, curve );
-        }
-        else
-        {
-            layout = new SpatialLayoutNonUnique( crs, curve );
-        }
-        return layout;
-    }
-
-    private boolean isUnique( SchemaIndexDescriptor descriptor )
-    {
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return false;
-        case UNIQUE:
-            return true;
-        default:
-            throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
         }
     }
 

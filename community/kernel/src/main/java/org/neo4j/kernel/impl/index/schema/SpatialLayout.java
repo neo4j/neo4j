@@ -27,14 +27,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 /**
  * {@link Layout} for PointValues where they don't need to be unique.
  */
-abstract class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
+class SpatialLayout extends SchemaLayout<SpatialSchemaKey>
 {
     private SpaceFillingCurve curve;
     CoordinateReferenceSystem crs;
 
-    SpatialLayout( long identifier, int majorVersion, int minorVersion, CoordinateReferenceSystem crs, SpaceFillingCurve curve )
+    SpatialLayout( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
-        super( identifier, majorVersion, minorVersion );
+        super( "UPI", 0, 1 );
         this.crs = crs;
         this.curve = curve;
     }

@@ -27,7 +27,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link LocalDateTimeValue}.
  */
-class LocalDateTimeSchemaKey extends ComparableNativeSchemaKey<LocalDateTimeSchemaKey>
+class LocalDateTimeSchemaKey extends NativeSchemaKey<LocalDateTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */

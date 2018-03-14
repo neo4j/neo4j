@@ -36,7 +36,7 @@ import static java.lang.String.format;
  * DateTimeValues with zoneOffset come first (sorted by the zoneOffset), followed by DateTimeValues with zoneIds,
  * sorted by zoneNumber.
  */
-class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSchemaKey>
+class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */

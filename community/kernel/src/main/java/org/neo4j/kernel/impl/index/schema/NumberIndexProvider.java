@@ -54,15 +54,18 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    protected NumberLayoutUnique layoutUnique()
+    Layout<NumberSchemaKey,NativeSchemaValue> layout( SchemaIndexDescriptor descriptor )
     {
-        return new NumberLayoutUnique();
-    }
-
-    @Override
-    protected NumberLayoutNonUnique layoutNonUnique()
-    {
-        return new NumberLayoutNonUnique();
+        // split like this due to legacy reasons, there are old stores out there with these different identifiers
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            return new NumberLayoutNonUnique();
+        case UNIQUE:
+            return new NumberLayoutUnique();
+        default:
+            throw new IllegalArgumentException( "Unknown index type " + descriptor.type() );
+        }
     }
 
     @Override

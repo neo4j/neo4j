@@ -28,7 +28,7 @@ import org.neo4j.values.storable.ValueWriter;
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
-abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
+abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter.Adapter<RuntimeException>
 {
     static final boolean DEFAULT_COMPARE_ID = true;
 
@@ -109,4 +109,13 @@ abstract class NativeSchemaKey extends ValueWriter.Adapter<RuntimeException>
     }
 
     abstract void initValueAsHighest();
+
+    /**
+     * Compares the value of this key to that of another key.
+     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
+     *
+     * @param other the key to compare to.
+     * @return comparison against the {@code other} key.
+     */
+    abstract int compareValueTo( SELF other );
 }

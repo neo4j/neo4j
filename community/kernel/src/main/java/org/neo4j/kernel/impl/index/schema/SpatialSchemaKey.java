@@ -34,7 +34,7 @@ import static java.lang.String.format;
  * Includes value and entity id (to be able to handle non-unique values).
  * A value can be any {@link PointValue} and is represented as a {@code long} to store the 1D mapped version
  */
-class SpatialSchemaKey extends NativeSchemaKey
+class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
 {
     static final int SIZE =
             Long.BYTES + /* raw value bits */
