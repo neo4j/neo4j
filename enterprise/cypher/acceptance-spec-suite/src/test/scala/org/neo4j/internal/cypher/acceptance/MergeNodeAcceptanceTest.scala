@@ -64,7 +64,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   // TODO: Change this setting when slotted supports the queries
   private val supportMerge = Configs.CommunityInterpreted - Configs.Cost2_3
   // TODO: Change this setting when the bugfix #10771 merged to earlier 3.x versions is included as a dependency
-  private val doNotYetHaveBugFix = Configs.Cost3_1 + Configs.Cost3_2
+  private val doNotYetHaveBugFix = Configs.Cost3_1
 
   test("Merging with self loop and relationship uniqueness") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
