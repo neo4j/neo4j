@@ -28,17 +28,17 @@ import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public class TransactionBackupServiceProvider
@@ -46,54 +46,59 @@ public class TransactionBackupServiceProvider
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
     private final Supplier<StoreId> localDatabaseStoreIdSupplier;
-    private final PlatformModule platformModule;
+    private final Dependencies dependencies;
+    private final Monitors monitors;
+    private final PageCache pageCache;
+    private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier;
     private final BooleanSupplier localDatabaseIsAvailable;
     private final CoreSnapshotService coreSnapshotService;
     private final FileSystemAbstraction fileSystem;
     private final PipelineWrapper serverPipelineWrapper;
+    private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
 
     public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> localDatabaseStoreIdSupplier,
-            PlatformModule platformModule, Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier, BooleanSupplier localDatabaseIsAvailable,
-            CoreSnapshotService coreSnapshotService, FileSystemAbstraction fileSystem, PipelineWrapper serverPipelineWrapper )
+            Dependencies dependencies, Monitors monitors, PageCache pageCache, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
+            Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier, BooleanSupplier localDatabaseIsAvailable, CoreSnapshotService coreSnapshotService,
+            FileSystemAbstraction fileSystem, PipelineWrapper serverPipelineWrapper )
     {
         this.logProvider = logProvider;
         this.userLogProvider = userLogProvider;
         this.localDatabaseStoreIdSupplier = localDatabaseStoreIdSupplier;
-        this.platformModule = platformModule;
+        this.dependencies = dependencies;
+        this.monitors = monitors;
+        this.pageCache = pageCache;
+        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.localDatabaseDataSourceSupplier = localDatabaseDataSourceSupplier;
         this.localDatabaseIsAvailable = localDatabaseIsAvailable;
         this.coreSnapshotService = coreSnapshotService;
         this.fileSystem = fileSystem;
         this.serverPipelineWrapper = serverPipelineWrapper;
+        this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
+    }
+
+    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> localDatabaseStoreIdSupplier,
+            PlatformModule platformModule, Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier, BooleanSupplier localDatabaseIsAvailable,
+            CoreSnapshotService coreSnapshotService, FileSystemAbstraction fileSystem, PipelineWrapper serverPipelineWrapper )
+    {
+        this( logProvider, userLogProvider, localDatabaseStoreIdSupplier, platformModule.dependencies, platformModule.monitors, platformModule.pageCache,
+                platformModule.storeCopyCheckPointMutex, localDatabaseDataSourceSupplier, localDatabaseIsAvailable, coreSnapshotService, fileSystem,
+                serverPipelineWrapper );
     }
 
     public Optional<CatchupServer> resolveIfBackupEnabled( Config config )
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return Optional.of( new CatchupServer( logProvider, userLogProvider, localDatabaseStoreIdSupplier,
-                    platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                    platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabaseDataSourceSupplier, localDatabaseIsAvailable,
-                    coreSnapshotService, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                    backupAddressForTxProtocol( config ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper ) );
+            return Optional.of(
+                    new CatchupServer( logProvider, userLogProvider, localDatabaseStoreIdSupplier, dependencies.provideDependency( TransactionIdStore.class ),
+                            dependencies.provideDependency( LogicalTransactionStore.class ), localDatabaseDataSourceSupplier, localDatabaseIsAvailable,
+                            coreSnapshotService, monitors, new CheckpointerSupplier( dependencies ), fileSystem, pageCache,
+                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ), storeCopyCheckPointMutex, serverPipelineWrapper ) );
         }
         else
         {
             return Optional.empty();
         }
-    }
-
-    private static ListenSocketAddress backupAddressForTxProtocol( Config config )
-    {
-        // We cannot use the backup address setting directly as IPv6 isn't processed during config read
-        String settingName = OnlineBackupSettings.online_backup_server.name();
-        String literalValue = config.getRaw( settingName ).orElse( OnlineBackupSettings.online_backup_server.getDefaultValue() );
-        HostnamePort resolvedValueFromConfig = config.get( OnlineBackupSettings.online_backup_server );
-        String defaultHostname = resolvedValueFromConfig.getHost();
-        Integer defaultPort = resolvedValueFromConfig.getPort();
-        AdvertisedSocketAddress advertisedSocketAddress =
-                SocketAddressParser.deriveSocketAddress( settingName, literalValue, defaultHostname, defaultPort, AdvertisedSocketAddress::new );
-        return new ListenSocketAddress( advertisedSocketAddress.getHostname(), advertisedSocketAddress.getPort() );
     }
 }
