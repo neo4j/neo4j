@@ -89,8 +89,9 @@ abstract class SchemaLayout<KEY extends NativeSchemaKey> extends Layout.Adapter<
         int valueComparison = compareValue( o1, o2 );
         if ( valueComparison == 0 )
         {
-            // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getCompareId() & o2.getCompareId() )
+            // It's the first key that decides whether or not to compare entityIds, i.e. the level of uniqueness.
+            // The first key is the key that is "the" key that is being worked with and the other key is an existing key being compared with.
+            if ( o1.getCompareId() )
             {
                 return Long.compare( o1.getEntityId(), o2.getEntityId() );
             }
