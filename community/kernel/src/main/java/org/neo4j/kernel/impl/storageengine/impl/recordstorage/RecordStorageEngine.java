@@ -255,12 +255,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public SchemaState schemaState()
-    {
-        return schemaState;
-    }
-
-    @Override
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;

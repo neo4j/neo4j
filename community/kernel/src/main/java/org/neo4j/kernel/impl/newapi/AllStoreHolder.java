@@ -117,7 +117,9 @@ public class AllStoreHolder extends Read
             StorageStatement statement,
             KernelTransactionImplementation ktx,
             DefaultCursors cursors,
-            ExplicitIndexStore explicitIndexStore, Procedures procedures  )
+            ExplicitIndexStore explicitIndexStore,
+            Procedures procedures,
+            SchemaState schemaState)
     {
         super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();
@@ -130,7 +132,7 @@ public class AllStoreHolder extends Read
         this.properties = statement.properties();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
-        this.schemaState = engine.schemaState();
+        this.schemaState = schemaState;
     }
 
     @Override
