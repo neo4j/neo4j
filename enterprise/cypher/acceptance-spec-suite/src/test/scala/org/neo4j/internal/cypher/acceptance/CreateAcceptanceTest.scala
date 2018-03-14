@@ -26,8 +26,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, Te
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
 
-  //Rule planners will start working after next patch relese
-  val conf: TestConfiguration = Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3
+  val conf: TestConfiguration = Configs.Interpreted - Configs.Version2_3
 
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"

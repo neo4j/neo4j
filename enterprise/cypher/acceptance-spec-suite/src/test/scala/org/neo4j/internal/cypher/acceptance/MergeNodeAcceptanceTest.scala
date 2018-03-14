@@ -63,8 +63,6 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   // TODO: Change this setting when slotted supports the queries
   private val supportMerge = Configs.CommunityInterpreted - Configs.Cost2_3
-  // TODO: Change this setting when the bugfix #10771 merged to earlier 3.x versions is included as a dependency
-  private val doNotYetHaveBugFix = Configs.Cost3_1
 
   test("Merging with self loop and relationship uniqueness") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
@@ -74,15 +72,13 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("Merging with self loop and relationship uniqueness - no stats") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge")
     result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
   }
 
   test("Merging with self loop and relationship uniqueness - no stats - reverse direction") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge")
     result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
   }
 
@@ -90,8 +86,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val a = createLabeledNode(Map("name" -> "a"), "A")
     val b = createLabeledNode(Map("name" -> "b"), "B")
     relate(a, b, "X")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name")
     result.toList should equal(List(Map("sameEdge" -> false, "name" -> null)))
   }
 }
