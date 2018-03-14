@@ -123,7 +123,7 @@ public class ReplicatedTokenHolderTest
         doAnswer( invocation ->
         {
             Collection<StorageCommand> target = invocation.getArgument( 0 );
-            ReadableTransactionState txState = invocation.getArgument( 1 );
+            ReadableTransactionState txState = invocation.getArgument( 2 );
             txState.accept( new TxStateVisitor.Adapter()
             {
                 @Override
