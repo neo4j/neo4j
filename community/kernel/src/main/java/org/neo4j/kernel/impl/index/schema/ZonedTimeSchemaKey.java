@@ -87,9 +87,9 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
+    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
     {
-        this.nanosOfDayUTC = nanosOfDayUTC;
+        this.nanosOfDayUTC = nanosOfDayLocal - offsetSeconds * 1_000_000_000;
         this.zoneOffsetSeconds = offsetSeconds;
     }
 

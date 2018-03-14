@@ -429,9 +429,9 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayUTC ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override

@@ -271,18 +271,33 @@ public class ParameterConverterTest
     }
 
     @Test
-    public void shouldHandleTime()
+    public void shouldHandleTimeUTC()
     {
         // Given
-        TimeValue dvalue = TimeValue.time( 1, 2, 3, 4, "+00:00" );
+        TimeValue time = TimeValue.time( 1, 2, 3, 4, "+00:00" );
 
         // When
-        dvalue.writeTo( converter );
+        time.writeTo( converter );
 
         // Then
         Object value = converter.value();
         assertThat( value, instanceOf( OffsetTime.class ) );
-        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+        assertThat( value, equalTo( time.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleTimeWithOffset()
+    {
+        // Given
+        TimeValue time = TimeValue.time( 1, 2, 3, 4, "+01:00" );
+
+        // When
+        time.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( OffsetTime.class ) );
+        assertThat( value, equalTo( time.asObjectCopy() ) );
     }
 
     @Test

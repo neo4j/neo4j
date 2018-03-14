@@ -180,9 +180,9 @@ public final class ArrayEncoder
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
         {
-            builder.append( TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ).prettyPrint() );
+            builder.append( TimeValue.time( nanosOfDayLocal, ZoneOffset.ofTotalSeconds( offsetSeconds ) ).prettyPrint() );
             builder.append( '|' );
         }
 

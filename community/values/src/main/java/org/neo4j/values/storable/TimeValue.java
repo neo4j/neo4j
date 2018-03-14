@@ -72,9 +72,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayLocal, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
+        return new TimeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), offset ) );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
@@ -305,11 +305,10 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        int offset = value.getOffset().getTotalSeconds();
+        int zoneOffsetSeconds = value.getOffset().getTotalSeconds();
         long seconds = value.getLong( ChronoField.SECOND_OF_DAY );
-        seconds = ((-offset % SECONDS_PER_DAY) + seconds + SECONDS_PER_DAY) % SECONDS_PER_DAY;
-        long nano = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
-        writer.writeTime( nano, offset );
+        long nanosOfDayLocal = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
+        writer.writeTime( nanosOfDayLocal, zoneOffsetSeconds );
     }
 
     @Override

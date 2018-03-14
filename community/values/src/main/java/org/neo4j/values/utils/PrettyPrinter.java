@@ -195,10 +195,10 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
     {
-        append( "{time: {nanosOfDay: " );
-        append( Long.toString( nanosOfDayUTC ) );
+        append( "{time: {nanosOfDayLocal: " );
+        append( Long.toString( nanosOfDayLocal ) );
         append( ", offsetSeconds: " );
         append( Long.toString( offsetSeconds ) );
         append( "}}" );

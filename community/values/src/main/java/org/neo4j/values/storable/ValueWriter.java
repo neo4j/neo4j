@@ -89,7 +89,7 @@ public interface ValueWriter<E extends Exception>
 
     void writeLocalTime( long nanoOfDay ) throws E;
 
-    void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E;
+    void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E;
 
     void writeLocalDateTime( long epochSecond, int nano ) throws E;
 
@@ -185,7 +185,7 @@ public interface ValueWriter<E extends Exception>
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
+        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E
         {   // no-op
         }
 
