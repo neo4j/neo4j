@@ -109,7 +109,7 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
     @Override
     public boolean equals( Object obj )
     {
-        return obj != null && obj instanceof AnyValueComparator;
+        return obj instanceof AnyValueComparator;
     }
 
     @Override
