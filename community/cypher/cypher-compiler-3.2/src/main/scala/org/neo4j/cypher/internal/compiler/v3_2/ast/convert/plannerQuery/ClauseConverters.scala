@@ -218,7 +218,7 @@ object ClauseConverters {
             selections = selections,
             patternNodes = patternContent.nodeIds.toSet,
             patternRelationships = patternContent.rels.toSet,
-            hints = clause.hints,
+            hints = clause.hints.toSet,
             shortestPathPatterns = patternContent.shortestPaths.toSet
           ))
         }
@@ -479,6 +479,12 @@ object ClauseConverters {
       case (builder, RemovePropertyItem(Property(variable, propertyKey))) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
           SetPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
+        ))
+
+      // REMOVE CASE WHEN ... THEN a ELSE b END.prop
+      case (builder, RemovePropertyItem(Property(caseExpr: CaseExpression, propertyKey))) =>
+        builder.amendQueryGraph(_.addMutatingPatterns(
+          SetPropertyPattern(caseExpr, propertyKey, Null()(propertyKey.position))
         ))
 
       case (_, other) =>

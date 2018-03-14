@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.InternalException
 import org.neo4j.cypher.internal.frontend.v3_2.ast.{Hint, LabelName, Variable}
 
 import scala.annotation.tailrec
-import scala.collection.GenSeq
+import scala.collection.GenTraversableOnce
 
 sealed trait PlannerQuery {
   val queryGraph: QueryGraph
@@ -47,7 +47,7 @@ sealed trait PlannerQuery {
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withoutHints(hintsToIgnore: GenSeq[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
+  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]) = copy(queryGraph = queryGraph.withoutHints(hintsToIgnore))
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
 
@@ -55,7 +55,7 @@ sealed trait PlannerQuery {
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
-  def allHints: Seq[Hint] = tail match {
+  def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
     case None => queryGraph.allHints
   }
