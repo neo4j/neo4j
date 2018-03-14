@@ -600,7 +600,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             IndexMap indexMap = indexMapRef.indexMapSnapshot();
             for ( Map.Entry<LabelSchemaDescriptor,ValueGroup[]> entry : indexesToCheck.entrySet() )
             {
-                if ( indexMap.getIndexProxy( entry.getKey() ).getIndexCapability().valueCapability( entry.getValue() ) == IndexValueCapability.NO )
+                if ( indexMap.getIndexProxy( entry.getKey() ).getIndexCapability().handleValueCapability( entry.getValue() ) == IndexValueCapability.NO )
                 {
                     throw new TransactionFailureException( Status.Schema.IndexNotApplicable,
                             "Spatial/temporal values not supported in index " + entry.getKey() );

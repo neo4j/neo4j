@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,11 +35,14 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 
 public class InMemoryIndexProvider extends IndexProvider
 {
+    private static final IndexCapability CAPABILITY = new InMemoryIndexCapability();
+
     private final Map<Long, InMemoryIndex> indexes;
 
     public InMemoryIndexProvider()
@@ -66,7 +71,7 @@ public class InMemoryIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        return IndexCapability.NO_CAPABILITY;
+        return CAPABILITY;
     }
 
     @Override
@@ -134,5 +139,26 @@ public class InMemoryIndexProvider extends IndexProvider
             }
         }
         return true;
+    }
+
+    private static class InMemoryIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        {
+            return EMPTY_ORDER;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        {
+            return IndexValueCapability.NO;
+        }
+
+        @Override
+        public IndexValueCapability handleValueCapability( ValueGroup... valueGroups )
+        {
+            return IndexValueCapability.YES;
+        }
     }
 }

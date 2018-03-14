@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -55,10 +56,21 @@ public class UnionIndexCapability implements IndexCapability
     @Override
     public IndexValueCapability valueCapability( ValueGroup... valueGroups )
     {
+        return bestOf( capability -> capability.valueCapability( valueGroups ) );
+    }
+
+    @Override
+    public IndexValueCapability handleValueCapability( ValueGroup... valueGroups )
+    {
+        return bestOf( capability -> capability.handleValueCapability( valueGroups ) );
+    }
+
+    private IndexValueCapability bestOf( Function<IndexCapability,IndexValueCapability> candidate )
+    {
         IndexValueCapability currentBest = IndexValueCapability.NO;
         for ( IndexCapability capability : capabilities )
         {
-            IndexValueCapability next = capability.valueCapability( valueGroups );
+            IndexValueCapability next = candidate.apply( capability );
             if ( next.compare( currentBest ) > 0 )
             {
                 currentBest = next;
