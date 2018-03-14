@@ -119,7 +119,7 @@ public class AllStoreHolder extends Read
             DefaultCursors cursors,
             ExplicitIndexStore explicitIndexStore,
             Procedures procedures,
-            SchemaState schemaState)
+            SchemaState schemaState )
     {
         super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();

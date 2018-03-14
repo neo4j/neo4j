@@ -32,8 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -424,34 +422,6 @@ public class PropertyConstraintValidationIT
 
             // then
             assertEquals( 5, entityCount() );
-        }
-
-        int countNodes( KernelTransaction transaction )
-        {
-            int result = 0;
-            try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
-            {
-                transaction.dataRead().allNodesScan( cursor );
-                while ( cursor.next() )
-                {
-                    result++;
-                }
-            }
-            return result;
-        }
-
-        int countRelationships( KernelTransaction transaction )
-        {
-            int result = 0;
-            try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )
-            {
-                transaction.dataRead().allRelationshipsScan( cursor );
-                while ( cursor.next() )
-                {
-                    result++;
-                }
-            }
-            return result;
         }
     }
 }

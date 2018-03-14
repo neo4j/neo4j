@@ -358,12 +358,26 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    int countNodes( KernelTransaction transaction )
+    protected int countNodes( KernelTransaction transaction )
     {
         int result = 0;
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
             transaction.dataRead().allNodesScan( cursor );
+            while ( cursor.next() )
+            {
+                result++;
+            }
+        }
+        return result;
+    }
+
+    int countRelationships( KernelTransaction transaction )
+    {
+        int result = 0;
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )
+        {
+            transaction.dataRead().allRelationshipsScan( cursor );
             while ( cursor.next() )
             {
                 result++;
