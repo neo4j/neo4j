@@ -75,7 +75,7 @@ public class SlaveClient extends Client<Slave> implements Slave
         return SlaveServer.SLAVE_PROTOCOL_VERSION;
     }
 
-    public enum SlaveRequestType implements RequestType<Slave>
+    public enum SlaveRequestType implements RequestType
     {
         PULL_UPDATES( (TargetCaller<Slave,Void>) ( master, context, input, target ) ->
         {

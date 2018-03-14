@@ -176,30 +176,32 @@ public class StoreCopyServer
                     boolean isLogFile = meta.isLogFile();
                     int recordSize = meta.recordSize();
 
-                    // Read from paged file if mapping exists. Otherwise read through file system.
-                    // A file is mapped if it is a store, and we have a running database, which will be the case for
-                    // both online backup, and when we are the master of an HA cluster.
-                    final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
-                    if ( optionalPagedFile.isPresent() )
+                    if ( !pageCache.fileSystemSupportsFileOperations() )
                     {
-                        try ( PagedFile pagedFile = optionalPagedFile.get() )
+                        // Read from paged file if mapping exists. Otherwise read through file system.
+                        // A file is mapped if it is a store, and we have a running database, which will be the case for
+                        // both online backup, and when we are the master of an HA cluster.
+                        final Optional<PagedFile> optionalPagedFile = pageCache.getExistingMapping( file );
+                        if ( optionalPagedFile.isPresent() )
                         {
-                            long fileSize = pagedFile.fileSize();
-                            try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                            try ( PagedFile pagedFile = optionalPagedFile.get() )
                             {
-                                doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
-                                        storeCopyIdentifier, false );
+                                long fileSize = pagedFile.fileSize();
+                                try ( ReadableByteChannel fileChannel = pagedFile.openReadableByteChannel() )
+                                {
+                                    doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
+                                            storeCopyIdentifier, false );
+                                }
+                                return anonymous( lastAppliedTransaction );
                             }
                         }
                     }
-                    else
+
+                    try ( ReadableByteChannel fileChannel = fileSystem.open( file, OpenMode.READ ) )
                     {
-                        try ( ReadableByteChannel fileChannel = fileSystem.open( file, OpenMode.READ ) )
-                        {
-                            long fileSize = fileSystem.getFileSize( file );
-                            doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
-                                    storeCopyIdentifier, isLogFile );
-                        }
+                        long fileSize = fileSystem.getFileSize( file );
+                        doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
+                                storeCopyIdentifier, isLogFile );
                     }
                 }
             }

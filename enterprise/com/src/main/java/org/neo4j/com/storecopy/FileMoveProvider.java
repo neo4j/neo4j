@@ -35,14 +35,13 @@ import static java.util.stream.Stream.empty;
 
 public class FileMoveProvider
 {
-
     private final FileMoveActionInformer fileMoveActionInformer;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
 
     public FileMoveProvider( PageCache pageCache, FileSystemAbstraction fs )
     {
-        this( pageCache, StoreType::shouldBeManagedByPageCache, fs );
+        this( pageCache, StoreType::canBeManagedByPageCache, fs );
     }
 
     public FileMoveProvider( PageCache pageCache, FileMoveActionInformer fileMoveActionInformer,

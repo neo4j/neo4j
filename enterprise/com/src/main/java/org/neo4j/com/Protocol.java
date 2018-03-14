@@ -175,7 +175,7 @@ public abstract class Protocol
         }
     }
 
-    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType<?> type, RequestContext ctx,
+    public void serializeRequest( Channel channel, ChannelBuffer buffer, RequestType type, RequestContext ctx,
                                   Serializer payload ) throws IOException
     {
         buffer.clear();

@@ -77,25 +77,20 @@ public class BlockLogBuffer implements Closeable
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
-            flush( MAX_SIZE );
+            flush();
         }
         return this;
     }
 
-    private void flush( int howManyBytesToWrite )
+    private void flush()
     {
+        int howManyBytesToWrite = MAX_SIZE;
         target.writeBytes( byteArray, 0, howManyBytesToWrite );
         monitor.bytesWritten( howManyBytesToWrite );
         int pos = byteBuffer.position();
         clearInternalBuffer();
         byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
     }
-
-//    @Override
-//    public void emptyBufferIntoChannelAndClearIt() throws IOException
-//    {
-//        flush( byteBuffer.position() );
-//    }
 
     public BlockLogBuffer put( byte b )
     {
@@ -166,7 +161,7 @@ public class BlockLogBuffer implements Closeable
     public int write( ReadableByteChannel data ) throws IOException
     {
         int result = 0;
-        int bytesRead = 0;
+        int bytesRead;
         while ( (bytesRead = data.read( byteBuffer )) >= 0 )
         {
             checkFlush();

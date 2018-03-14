@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.TargetCaller;
-import org.neo4j.kernel.ha.com.master.Master;
 
 abstract class AbstractHaRequestTypes implements HaRequestTypes
 {
@@ -40,13 +39,13 @@ abstract class AbstractHaRequestTypes implements HaRequestTypes
     }
 
     @Override
-    public RequestType<Master> type( Type type )
+    public RequestType type( Type type )
     {
         return type( (byte) type.ordinal() );
     }
 
     @Override
-    public RequestType<Master> type( byte id )
+    public RequestType type( byte id )
     {
         HaRequestType requestType = types[id];
         if ( requestType == null )
