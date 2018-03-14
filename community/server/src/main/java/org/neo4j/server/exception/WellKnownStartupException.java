@@ -19,14 +19,16 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.logging.Log;
 import org.neo4j.server.ServerStartupException;
 
-public class UpgradeDisallowedStartupException extends ServerStartupException
+/**
+ * Wrapper around well-known startup exceptions that have useful messages
+ * and can be logged without stack traces.
+ */
+public class WellKnownStartupException extends ServerStartupException
 {
-    public UpgradeDisallowedStartupException( UpgradeNotAllowedException cause )
+    public WellKnownStartupException( Throwable cause )
     {
         super( cause.getMessage(), cause );
     }
@@ -34,14 +36,6 @@ public class UpgradeDisallowedStartupException extends ServerStartupException
     @Override
     public void describeTo( Log log )
     {
-        Throwable cause = getCause();
-        if ( cause instanceof UpgradeNotAllowedByConfigurationException )
-        {
-            log.error( cause.getMessage() );
-        }
-        else
-        {
-            super.describeTo( log );
-        }
+        log.error( getCause().getMessage() );
     }
 }

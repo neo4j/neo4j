@@ -29,9 +29,9 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTED;
 import static org.neo4j.kernel.lifecycle.LifecycleStatus.STARTING;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
+import static org.neo4j.server.exception.CommunityStartupErrors.translateCommunityStartupError;
 
-public class ServerStartupErrorsTest
+public class CommunityStartupErrorsTest
 {
     @Test
     public void shouldDescribeUpgradeFailureInAFriendlyWay()
@@ -45,7 +45,7 @@ public class ServerStartupErrorsTest
                                         new UpgradeNotAllowedByConfigurationException() ) ) ) );
 
         // when
-        translateToServerStartupError( error ).describeTo( logging.getLog( "console" ) );
+        translateCommunityStartupError( error ).describeTo( logging.getLog( "console" ) );
 
         // then
         logging.assertExactly( inLog( "console" )
