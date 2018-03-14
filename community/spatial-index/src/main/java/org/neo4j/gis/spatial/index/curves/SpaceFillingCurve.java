@@ -257,11 +257,14 @@ public abstract class SpaceFillingCurve
      */
     List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope )
     {
-        return getTilesIntersectingEnvelope( referenceEnvelope, new StandardConfiguration() );
+        return getTilesIntersectingEnvelope( referenceEnvelope.getMin(), referenceEnvelope.getMax(), new StandardConfiguration() );
     }
 
-    public List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config )
+    public List<LongRange> getTilesIntersectingEnvelope( double[] fromOrNull, double[] toOrNull, SpaceFillingCurveConfiguration config )
     {
+        double[] from = fromOrNull == null ? range.getMin() : fromOrNull;
+        double[] to = toOrNull == null ? range.getMax() : toOrNull;
+        Envelope referenceEnvelope = new Envelope( from, to );
         return getTilesIntersectingEnvelope( referenceEnvelope, config, null );
     }
 

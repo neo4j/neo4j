@@ -140,11 +140,9 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
-            Envelope completeEnvelope = curve.getRange();
-            double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
-            double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
-            Envelope envelope = new Envelope( from, to );
-            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope, configuration );
+            double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
+            double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
+            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
                 KEY treeKeyFrom = layout.newKey();
