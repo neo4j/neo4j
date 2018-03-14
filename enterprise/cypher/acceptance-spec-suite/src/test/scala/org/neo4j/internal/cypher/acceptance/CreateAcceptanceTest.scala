@@ -26,13 +26,10 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, Te
 class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
   with CreateTempFileTestSupport {
 
-  //Rule planners will start working after next patch relese
-  val tmpConf: TestConfiguration = Configs.AllRulePlanners
-
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"
 
-    val result = executeWith(Configs.UpdateConf - tmpConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
@@ -60,7 +57,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("handle null value in property map from parameter") {
     val query = "CREATE (a {props})-[r:REL {props}]->() RETURN a.foo, a.bar, r.foo, r.bar"
 
-    val result = executeWith(Configs.UpdateConf - tmpConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz", "r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
