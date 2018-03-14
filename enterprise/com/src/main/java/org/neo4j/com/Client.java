@@ -282,13 +282,13 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         msgLog.info( toString() + " shutdown", true );
     }
 
-    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
+    protected <R> Response<R> sendRequest( RequestType type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
         return sendRequest( type, context, serializer, deserializer, null, NO_OP_TX_HANDLER );
     }
 
-    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
+    protected <R> Response<R> sendRequest( RequestType type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer,
             StoreId specificStoreId, TxHandler txHandler )
     {
@@ -351,12 +351,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
     }
 
-    protected long getReadTimeout( RequestType<T> type, long readTimeout )
+    protected long getReadTimeout( RequestType type, long readTimeout )
     {
         return readTimeout;
     }
 
-    protected boolean shouldCheckStoreId( RequestType<T> type )
+    protected boolean shouldCheckStoreId( RequestType type )
     {
         return true;
     }
@@ -374,7 +374,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
     }
 
-    private ChannelContext acquireChannelContext( RequestType<T> type )
+    private ChannelContext acquireChannelContext( RequestType type )
     {
         try
         {

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -637,6 +638,13 @@ public class MuninnPageCache implements PageCache
     public FileSystemAbstraction getCachedFileSystem()
     {
         return swapperFactory.getFileSystemAbstraction();
+    }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        // Default filesystem supports direct file access.
+        return getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
     }
 
     int getPageCacheId()

@@ -51,19 +51,19 @@ class StoreResource implements Closeable
 
     ReadableByteChannel open() throws IOException
     {
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
-        if ( existingMapping.isPresent() )
+        if ( !pageCache.fileSystemSupportsFileOperations() )
         {
-            try ( PagedFile pagedFile = existingMapping.get() )
+            Optional<PagedFile> existingMapping = pageCache.getExistingMapping( file );
+            if ( existingMapping.isPresent() )
             {
-                channel = pagedFile.openReadableByteChannel();
+                try ( PagedFile pagedFile = existingMapping.get() )
+                {
+                    return pagedFile.openReadableByteChannel();
+                }
             }
         }
-        else
-        {
-            channel = fs.open( file, "r" );
-        }
-        return channel;
+
+        return fs.open( file, "r" );
     }
 
     @Override

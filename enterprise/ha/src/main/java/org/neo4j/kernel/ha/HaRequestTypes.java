@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha;
 
 import org.neo4j.com.RequestType;
-import org.neo4j.kernel.ha.com.master.Master;
 
 public interface HaRequestTypes
 {
@@ -43,13 +42,13 @@ public interface HaRequestTypes
         CREATE_PROPERTY_KEY,
         CREATE_LABEL;
 
-        public boolean is( RequestType<?> type )
+        public boolean is( RequestType type )
         {
             return type.id() == ordinal();
         }
     }
 
-    RequestType<Master> type( Type type );
+    RequestType type( Type type );
 
-    RequestType<Master> type( byte id );
+    RequestType type( byte id );
 }

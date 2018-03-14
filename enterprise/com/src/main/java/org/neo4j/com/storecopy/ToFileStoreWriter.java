@@ -71,7 +71,7 @@ public class ToFileStoreWriter implements StoreWriter
             {
                 // Note that we don't bother checking if the page cache already has a mapping for the given file.
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( StoreType.shouldBeManagedByPageCache( filename ) )
+                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( filename ) )
                 {
                     int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
