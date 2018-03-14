@@ -42,7 +42,7 @@ public interface SchemaWrite
      *
      * @param index the index to drop
      */
-    void indexDrop( CapableIndexReference index ) throws SchemaKernelException;
+    void indexDrop( IndexReference index ) throws SchemaKernelException;
 
     /**
      * Create unique property constraint

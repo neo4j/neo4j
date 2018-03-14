@@ -794,7 +794,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public void indexDrop( CapableIndexReference index ) throws SchemaKernelException
+    public void indexDrop( IndexReference index ) throws SchemaKernelException
     {
         assertValidIndex( index );
 
@@ -1124,7 +1124,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( CapableIndexReference index ) throws NoSuchIndexException
+    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
     {
         if ( index == CapableIndexReference.NO_INDEX )
         {

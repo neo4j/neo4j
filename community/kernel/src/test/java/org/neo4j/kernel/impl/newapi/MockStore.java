@@ -31,6 +31,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -576,38 +577,38 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetAll()
+    public Iterator<IndexReference> indexesGetAll()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+    public PopulationProgress indexGetPopulationProgress( IndexReference index )
             throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public long indexGetCommittedId( CapableIndexReference index ) throws SchemaKernelException
+    public long indexGetCommittedId( IndexReference index ) throws SchemaKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -643,7 +644,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
+    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
         return null;
     }

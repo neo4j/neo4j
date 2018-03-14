@@ -42,10 +42,13 @@ import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -63,6 +66,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.GroupReferenceEncoding.isRelationship;
 import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
@@ -142,6 +148,43 @@ abstract class Read implements TxStateHolder,
             }
         }
         reader.query( target, indexOrder, query );
+    }
+
+    public final long nodeUniqueIndexSeek(
+            IndexReference index,
+            IndexOrder indexOrder,
+            IndexQuery.ExactPredicate...predicates )
+            throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        assertIndexOnline( index );
+        assertPredicatesMatchSchema( index, predicates );
+        int labelId = index.label();
+
+        Locks.Client locks = ktx.statementLocks().optimistic();
+        LockTracer lockTracer = ktx.lockTracer();
+        long indexEntryId = indexEntryResourceId( labelId, predicates );
+
+        //First try to find node under a shared lock
+        //if not found upgrade to exclusive and try again
+        locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        {
+            nodeIndexSeek( index, cursor, indexOrder, predicates );
+            if ( !cursor.next() )
+            {
+                locks.releaseShared( INDEX_ENTRY, indexEntryId );
+                locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
+                nodeIndexSeek( index, cursor, indexOrder, predicates );
+                if ( cursor.next() ) // we found it under the exclusive lock
+                {
+                    // downgrade to a shared lock
+                    locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+                    locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
+                }
+            }
+
+            return cursor.nodeReference();
+        }
     }
 
     @Override
@@ -694,6 +737,39 @@ abstract class Read implements TxStateHolder,
     private void releaseSharedLock( ResourceTypes types, long... ids )
     {
         ktx.statementLocks().pessimistic().releaseShared( types, ids );
+    }
+
+    private void assertIndexOnline( IndexReference index )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        switch ( indexGetState( index ) )
+        {
+        case ONLINE:
+            return;
+        default:
+            throw new IndexBrokenKernelException( indexGetFailure( index ) );
+        }
+    }
+
+    private void assertPredicatesMatchSchema( IndexReference index, IndexQuery.ExactPredicate[] predicates )
+            throws IndexNotApplicableKernelException
+    {
+        int[] propertyIds = index.properties();
+        if ( propertyIds.length != predicates.length )
+        {
+            throw new IndexNotApplicableKernelException(
+                    format( "The index specifies %d properties, but only %d lookup predicates were given.",
+                            propertyIds.length, predicates.length ) );
+        }
+        for ( int i = 0; i < predicates.length; i++ )
+        {
+            if ( predicates[i].propertyKeyId() != propertyIds[i] )
+            {
+                throw new IndexNotApplicableKernelException(
+                        format( "The index has the property id %d in position %d, but the lookup property id was %d.",
+                                propertyIds[i], i, predicates[i].propertyKeyId() ) );
+            }
+        }
     }
 
 }

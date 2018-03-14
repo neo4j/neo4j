@@ -63,7 +63,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             {
                 schemaWrite.constraintDrop( constraints.next() );
             }
-            Iterator<CapableIndexReference> indexes = schemaRead.indexesGetAll();
+            Iterator<IndexReference> indexes = schemaRead.indexesGetAll();
             while ( indexes.hasNext() )
             {
                 schemaWrite.indexDrop( indexes.next() );

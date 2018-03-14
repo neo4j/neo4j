@@ -40,6 +40,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -72,7 +73,6 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -119,8 +119,8 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<CapableIndexReference> indexes = schemaRead.indexesGetForLabel( labelId );
-            addDefinitions( definitions, tokenRead, CapableIndexReference.sortByType( indexes ) );
+            Iterator<IndexReference> indexes = schemaRead.indexesGetForLabel( labelId );
+            addDefinitions( definitions, tokenRead, IndexReference.sortByType( indexes ) );
             return definitions;
         }
     }
@@ -134,13 +134,13 @@ public class SchemaImpl implements Schema
         {
             List<IndexDefinition> definitions = new ArrayList<>();
 
-            Iterator<CapableIndexReference> indexes = schemaRead.indexesGetAll();
-            addDefinitions( definitions, transaction.tokenRead(), CapableIndexReference.sortByType( indexes ) );
+            Iterator<IndexReference> indexes = schemaRead.indexesGetAll();
+            addDefinitions( definitions, transaction.tokenRead(), IndexReference.sortByType( indexes ) );
             return definitions;
         }
     }
 
-    private IndexDefinition descriptorToDefinition( final TokenRead tokenRead, CapableIndexReference index )
+    private IndexDefinition descriptorToDefinition( final TokenRead tokenRead, IndexReference index )
     {
         try
         {
@@ -156,7 +156,7 @@ public class SchemaImpl implements Schema
     }
 
     private void addDefinitions( List<IndexDefinition> definitions, final TokenRead tokenRead,
-            Iterator<CapableIndexReference> indexes )
+            Iterator<IndexReference> indexes )
     {
         addToCollection(
                 map( index -> descriptorToDefinition( tokenRead, index ), indexes ),

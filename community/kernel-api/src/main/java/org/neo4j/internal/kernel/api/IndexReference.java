@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
@@ -43,5 +47,21 @@ public interface IndexReference
     {
         String type = isUnique() ? "UNIQUE" : "GENERAL";
         return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
+    }
+
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
+     * hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    static Iterator<IndexReference> sortByType( Iterator<IndexReference> indexes )
+    {
+        List<IndexReference> materialized = Iterators.asList( indexes );
+        return Iterators.concat(
+                Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
+                Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
+
     }
 }
