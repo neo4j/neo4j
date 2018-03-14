@@ -21,8 +21,6 @@ package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
@@ -86,16 +84,6 @@ public class Primitive
     {
         return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
                 VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static MutableLongLongMap longLongMap()
-    {
-        return longLongMap( DEFAULT_HEAP_CAPACITY );
-    }
-
-    public static MutableLongLongMap longLongMap( int initialCapacity )
-    {
-        return new LongLongHashMap( initialCapacity );
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()

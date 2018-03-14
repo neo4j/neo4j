@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -27,11 +28,10 @@ import org.junit.runners.model.Statement;
 import org.neo4j.resources.HeapAllocation;
 
 import static java.lang.Thread.currentThread;
-import static org.neo4j.collection.primitive.Primitive.longLongMap;
 
 public class FakeHeapAllocation extends HeapAllocation implements TestRule
 {
-    private final MutableLongLongMap allocation = longLongMap();
+    private final MutableLongLongMap allocation = new LongLongHashMap();
 
     @Override
     public long allocatedBytes( long threadId )
