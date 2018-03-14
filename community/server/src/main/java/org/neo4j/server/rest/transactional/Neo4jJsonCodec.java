@@ -52,7 +52,27 @@ public class Neo4jJsonCodec extends ObjectMapper
 {
     private enum Neo4jJsonMetaType
     {
-        node, relationship, datetime, time, localdatetime, date, localtime, duration, point
+        NODE( "node" ),
+        RELATIONSHIP( "relationship" ),
+        DATE_TIME( "datetime" ),
+        TIME( "time" ),
+        LOCAL_DATE_TIME( "localdatetime" ),
+        DATE( "date" ),
+        LOCAL_TIME( "localtime" ),
+        DURATION( "duration" ),
+        POINT( "point" );
+
+        private final String code;
+
+        Neo4jJsonMetaType( final String code )
+        {
+            this.code = code;
+        }
+
+        String code()
+        {
+            return this.code;
+        }
     }
 
     private TransitionalPeriodTransactionMessContainer container;
@@ -238,7 +258,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             Node node = (Node) value;
             try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( container ) )
             {
-                writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.node, stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
+                writeNodeOrRelationshipMeta( out, node.getId(), Neo4jJsonMetaType.NODE, stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
             }
         }
         else if ( value instanceof Relationship )
@@ -246,7 +266,7 @@ public class Neo4jJsonCodec extends ObjectMapper
             Relationship relationship = (Relationship) value;
             try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( container ) )
             {
-                writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.relationship,
+                writeNodeOrRelationshipMeta( out, relationship.getId(), Neo4jJsonMetaType.RELATIONSHIP,
                         transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
             }
         }
@@ -279,7 +299,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         }
         else if ( value instanceof TemporalAmount )
         {
-            writeObjectMeta( out, Neo4jJsonMetaType.duration );
+            writeObjectMeta( out, Neo4jJsonMetaType.DURATION );
         }
         else
         {
@@ -292,7 +312,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         Neo4jJsonMetaType type = null;
         if ( value instanceof Point )
         {
-            type = Neo4jJsonMetaType.point;
+            type = Neo4jJsonMetaType.POINT;
         }
         if ( type == null )
         {
@@ -307,23 +327,23 @@ public class Neo4jJsonCodec extends ObjectMapper
         Neo4jJsonMetaType type = null;
         if ( value instanceof ZonedDateTime )
         {
-            type = Neo4jJsonMetaType.datetime;
+            type = Neo4jJsonMetaType.DATE_TIME;
         }
         else if ( value instanceof LocalDate )
         {
-            type = Neo4jJsonMetaType.date;
+            type = Neo4jJsonMetaType.DATE;
         }
         else if ( value instanceof OffsetTime )
         {
-            type = Neo4jJsonMetaType.time;
+            type = Neo4jJsonMetaType.TIME;
         }
         else if ( value instanceof LocalDateTime )
         {
-            type = Neo4jJsonMetaType.localdatetime;
+            type = Neo4jJsonMetaType.LOCAL_DATE_TIME;
         }
         else if ( value instanceof LocalTime )
         {
-            type = Neo4jJsonMetaType.localtime;
+            type = Neo4jJsonMetaType.LOCAL_TIME;
         }
         if ( type == null )
         {
@@ -356,7 +376,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         out.writeStartObject();
         try
         {
-            out.writeStringField( "type", type.name() );
+            out.writeStringField( "type", type.code() );
         }
         finally
         {
@@ -372,7 +392,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         try
         {
             out.writeNumberField( "id", id );
-            out.writeStringField( "type", type.name() );
+            out.writeStringField( "type", type.code() );
             out.writeBooleanField( "deleted", isDeleted );
         }
         finally
