@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -88,7 +87,7 @@ public class ClusterBinderTest
             binder.bindToCluster();
             fail( "Should have timed out" );
         }
-        catch ( TimeoutException e )
+        catch ( BootstrapConnectionTimeout e )
         {
             // expected
         }

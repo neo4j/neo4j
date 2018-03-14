@@ -95,7 +95,7 @@ import static org.neo4j.server.configuration.ServerSettings.http_logging_rotatio
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
 import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
 import static org.neo4j.server.database.InjectableProvider.providerFromSupplier;
-import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
+import static org.neo4j.server.exception.CommunityStartupErrors.translateCommunityStartupError;
 
 public abstract class AbstractNeoServer implements NeoServer
 {
@@ -216,8 +216,13 @@ public abstract class AbstractNeoServer implements NeoServer
             // If the database has been started, attempt to cleanly shut it down to avoid unclean shutdowns.
             life.shutdown();
 
-            throw translateToServerStartupError( t );
+            throw translateStartupError( t );
         }
+    }
+
+    protected ServerStartupException translateStartupError( Throwable cause )
+    {
+        return translateCommunityStartupError( cause );
     }
 
     public DependencyResolver getDependencyResolver()

@@ -22,13 +22,13 @@
  */
 package org.neo4j.server.enterprise;
 
+import org.eclipse.jetty.util.thread.ThreadPool;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.eclipse.jetty.util.thread.ThreadPool;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -48,8 +48,10 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.metrics.source.server.ServerThreadView;
 import org.neo4j.metrics.source.server.ServerThreadViewSetter;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.ServerStartupException;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
+import org.neo4j.server.enterprise.exceptions.EnterpriseStartupErrors;
 import org.neo4j.server.enterprise.modules.EnterpriseAuthorizationModule;
 import org.neo4j.server.enterprise.modules.JMXManagementModule;
 import org.neo4j.server.modules.AuthorizationModule;
@@ -207,5 +209,11 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
         }
 
         return uriWhitelist.toArray( new Pattern[uriWhitelist.size()] );
+    }
+
+    @Override
+    protected ServerStartupException translateStartupError( Throwable cause )
+    {
+        return EnterpriseStartupErrors.translateEnterpriseStartupError( cause );
     }
 }
