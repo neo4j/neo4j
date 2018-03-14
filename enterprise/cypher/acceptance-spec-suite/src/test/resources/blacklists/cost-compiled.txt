@@ -223,6 +223,7 @@ Feature "TemporalParseAcceptance": Scenario "Should parse local time from string
 Feature "TemporalParseAcceptance": Scenario "Should parse time from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse local date time from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time from string"
+Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse duration from string"
 Feature "TemporalToStringAcceptance": Scenario "Should serialize date"
 Feature "TemporalToStringAcceptance": Scenario "Should serialize local time"
