@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
@@ -458,23 +460,27 @@ public class DataFactories
         return Iterables.iterable( factories );
     }
 
+    private static Pattern typeSpecAndOptionalParameter = Pattern.compile( "(?<newTypeSpec>.+?)(?<optionalParameter>\\{.*\\})?$" );
+
     public static Pair<String,String> splitTypeSpecAndOptionalParameter( String typeSpec )
     {
         String optionalParameter = null;
         String newTypeSpec = typeSpec;
-        //TODO: This could be done with some clever regex magic
-        int begin = typeSpec.indexOf( '{' );
-        if ( begin != -1 )
+
+        Matcher matcher = typeSpecAndOptionalParameter.matcher( typeSpec );
+
+        if ( matcher.find() )
         {
-            // only extract optional parameter if one is given
-            int end = typeSpec.indexOf( '}' );
-            if ( end == -1 )
+            try
+            {
+                newTypeSpec = matcher.group( "newTypeSpec" );
+                optionalParameter = matcher.group( "optionalParameter" );
+            }
+            catch ( IllegalArgumentException e )
             {
                 String errorMessage = format( "Failed to parse header: '%s'", typeSpec );
-                throw new IllegalArgumentException( errorMessage );
+                throw new IllegalArgumentException( errorMessage, e );
             }
-            optionalParameter = typeSpec.substring( begin, end + 1 );
-            newTypeSpec = typeSpec.substring( 0, begin );
         }
         return Pair.of( newTypeSpec, optionalParameter );
     }

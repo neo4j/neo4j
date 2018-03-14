@@ -284,12 +284,22 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return PointValue.parse( text, null );
     }
 
+    /**
+     * Parses the given text into a PointValue. The information stated in the header is saved into the PointValue
+     * unless it overriden by the information in the text
+     * @param text the input text to be parsed into a PointValue
+     * @param fieldsFromHeader must be a value obtained from {@link #parseIntoArray(CharSequence)} or null
+     * @return a PointValue instance with information from the {@param fieldsFromHeader} and {@param text}
+     */
     public static PointValue parse( CharSequence text, AnyValue[] fieldsFromHeader )
     {
         AnyValue[] fieldsFromData = parseIntoArray( text );
         if ( fieldsFromHeader != null )
         {
-            //It is given that fieldsFromData.length == fieldsFromHeader.length because parseIntoArray produces fixed length arrays
+            // If fieldsFromHeader comes from parseIntoArray it is given that fieldsFromData.length == fieldsFromHeader.length
+            // because parseIntoArray produces fixed length arrays
+            assert fieldsFromData.length == fieldsFromHeader.length;
+
             // Merge InputFields: Data fields override header fields
             for ( int i = 0; i < fieldsFromData.length; i++ )
             {
