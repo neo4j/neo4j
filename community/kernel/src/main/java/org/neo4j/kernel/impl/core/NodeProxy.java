@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -753,7 +754,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
             TokenRead tokenRead = transaction.tokenRead();
             singleNode( transaction, nodes );
             nodes.allRelationships( relationships );
-            PrimitiveIntSet seen = Primitive.intSet();
+            final MutableIntSet seen = new IntHashSet();
             List<RelationshipType> types = new ArrayList<>();
             while ( relationships.next() )
             {

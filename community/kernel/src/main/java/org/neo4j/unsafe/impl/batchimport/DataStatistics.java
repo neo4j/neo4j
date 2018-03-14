@@ -19,13 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterators;
 
 import static java.lang.Integer.max;
@@ -189,9 +191,9 @@ public class DataStatistics implements Iterable<DataStatistics.RelationshipTypeC
         return typeCounts[index];
     }
 
-    public PrimitiveIntSet types( int startingFromType, int upToType )
+    public IntSet types( int startingFromType, int upToType )
     {
-        PrimitiveIntSet set = Primitive.intSet( (upToType - startingFromType) * 2 );
+        final MutableIntSet set = new IntHashSet( (upToType - startingFromType) * 2 );
         for ( int i = startingFromType; i < upToType; i++ )
         {
             set.add( get( i ).getTypeId() );

@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -161,7 +162,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+    public void loadProperties( long nodeId, MutableIntSet propertyIds, PropertyLoadSink sink )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
@@ -178,11 +179,10 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             for ( PropertyBlock block : propertyRecord )
             {
                 int currentPropertyId = block.getKeyIndexId();
-                if ( propertyIds.contains( currentPropertyId ) )
+                if ( propertyIds.remove( currentPropertyId ) )
                 {
                     Value currentValue = block.getType().value( block, propertyStore );
                     sink.onProperty( currentPropertyId, currentValue );
-                    propertyIds.remove( currentPropertyId );
                 }
             }
         }

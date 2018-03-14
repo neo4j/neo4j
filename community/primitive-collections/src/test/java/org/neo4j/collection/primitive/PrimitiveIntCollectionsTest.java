@@ -20,6 +20,9 @@
 package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
@@ -53,8 +56,8 @@ public class PrimitiveIntCollectionsTest
     @Test
     public void convertCollectionToLongArray()
     {
-        PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
-        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
+        IntSet heapSet = new IntHashSet( 1, 2, 3 );
+        MutableIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
         offHeapIntSet.add( 7 );
         offHeapIntSet.add( 8 );
         assertArrayEquals( new long[]{1, 2, 3}, PrimitiveIntCollections.asLongArray( heapSet ) );
@@ -73,19 +76,6 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertItems( iterator, 10, 3, 203, 32, 1, 2, 5 );
-    }
-
-    @Test
-    public void filter()
-    {
-        // GIVEN
-        IntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        IntIterator filtered = PrimitiveIntCollections.filter( items, item -> item != 2 );
-
-        // THEN
-        assertItems( filtered, 1, 3 );
     }
 
     @Test
@@ -138,7 +128,7 @@ public class PrimitiveIntCollectionsTest
         IntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntSet set = PrimitiveIntCollections.asSet( items );
+        IntSet set = PrimitiveIntCollections.asSet( items );
 
         // THEN
         assertTrue( set.contains( 1 ) );

@@ -20,6 +20,8 @@
 package org.neo4j.consistency.checking.full;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +30,7 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
+
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -177,7 +179,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                 engine.report().propertyNotFirstInChain( firstProp );
             }
 
-            PrimitiveIntSet keys = Primitive.intSet();
+            final MutableIntSet keys = new IntHashSet();
             for ( PropertyRecord property : props )
             {
                 if ( !property.inUse() )

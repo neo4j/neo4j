@@ -19,28 +19,22 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
@@ -371,63 +365,6 @@ public class PrimitiveLongSetTest
         verify( visitor ).visited( 2 );
         verify( visitor ).visited( 3 );
         verifyNoMoreInteractions( visitor );
-    }
-
-    @Test
-    public void longVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
-    {
-        // GIVEN
-        PrimitiveIntSet map = Primitive.intSet();
-        map.add( 1 );
-        map.add( 2 );
-        map.add( 3 );
-        map.add( 4 );
-        final AtomicInteger counter = new AtomicInteger();
-
-        // WHEN
-        map.visitKeys( value -> counter.incrementAndGet() > 2 );
-
-        // THEN
-        assertThat( counter.get(), is( 3 ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void intVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
-    {
-        // GIVEN
-        PrimitiveIntSet set = Primitive.intSet();
-        set.add( 1 );
-        set.add( 2 );
-        set.add( 3 );
-        PrimitiveIntVisitor<RuntimeException> visitor = mock( PrimitiveIntVisitor.class );
-
-        // WHEN
-        set.visitKeys( visitor );
-
-        // THEN
-        verify( visitor ).visited( 1 );
-        verify( visitor ).visited( 2 );
-        verify( visitor ).visited( 3 );
-        verifyNoMoreInteractions( visitor );
-    }
-
-    @Test
-    public void intVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
-    {
-        // GIVEN
-        PrimitiveIntSet map = Primitive.intSet();
-        map.add( 1 );
-        map.add( 2 );
-        map.add( 3 );
-        map.add( 4 );
-        final AtomicInteger counter = new AtomicInteger();
-
-        // WHEN
-        map.visitKeys( value -> counter.incrementAndGet() > 2 );
-
-        // THEN
-        assertThat( counter.get(), is( 3 ) );
     }
 
     @Test

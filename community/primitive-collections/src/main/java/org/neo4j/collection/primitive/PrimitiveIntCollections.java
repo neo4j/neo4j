@@ -19,7 +19,11 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,8 +37,6 @@ import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.LongToIntFunction;
-
-import org.neo4j.collection.primitive.base.Empty;
 
 /**
  * Basic and common primitive int collection utils and manipulations.
@@ -176,7 +178,7 @@ public class PrimitiveIntCollections
     {
         return new PrimitiveIntFilteringIterator( source )
         {
-            private final PrimitiveIntSet visited = Primitive.intSet();
+            private final IntHashSet visited = new IntHashSet();
 
             @Override
             public boolean test( int testItem )
@@ -213,9 +215,9 @@ public class PrimitiveIntCollections
         public abstract boolean test( int testItem );
     }
 
-    public static PrimitiveIntSet asSet( IntIterator iterator )
+    public static IntSet asSet( IntIterator iterator )
     {
-        PrimitiveIntSet set = Primitive.intSet();
+        final MutableIntSet set = new IntHashSet();
         while ( iterator.hasNext() )
         {
             int next = iterator.next();
@@ -227,7 +229,7 @@ public class PrimitiveIntCollections
         return set;
     }
 
-    public static long[] asLongArray( PrimitiveIntCollection values )
+    public static long[] asLongArray( IntIterable values )
     {
         long[] array = new long[values.size()];
         final IntIterator iterator = values.intIterator();
@@ -251,11 +253,6 @@ public class PrimitiveIntCollections
     public static IntIterator emptyIterator()
     {
         return EMPTY;
-    }
-
-    public static PrimitiveIntSet emptySet()
-    {
-        return Empty.EMPTY_PRIMITIVE_INT_SET;
     }
 
     public static IntIterator toPrimitiveIterator( final Iterator<Integer> iterator )
@@ -311,19 +308,9 @@ public class PrimitiveIntCollections
         }
     }
 
-    public static PrimitiveIntSet asSet( int[] values )
+    public static MutableIntSet asSet( long[] values, LongToIntFunction converter )
     {
-        PrimitiveIntSet set = Primitive.intSet( values.length );
-        for ( int value : values )
-        {
-            set.add( value );
-        }
-        return set;
-    }
-
-    public static PrimitiveIntSet asSet( long[] values, LongToIntFunction converter )
-    {
-        PrimitiveIntSet set = Primitive.intSet( values.length );
+        MutableIntSet set = new IntHashSet( values.length );
         for ( long value : values )
         {
             set.add( converter.applyAsInt( value ) );

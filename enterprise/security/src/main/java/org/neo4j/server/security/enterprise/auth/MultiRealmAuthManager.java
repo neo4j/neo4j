@@ -37,6 +37,8 @@ import org.apache.shiro.realm.CachingRealm;
 import org.apache.shiro.realm.Realm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.Initializable;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -46,8 +48,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -311,7 +311,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     {
         if ( propertyAuthorization )
         {
-            PrimitiveIntSet blackListed = Primitive.intSet();
+            final MutableIntSet blackListed = new IntHashSet();
             for ( String role : roles )
             {
                 if ( roleToPropertyBlacklist.containsKey( role ) )

@@ -19,11 +19,12 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.checking.full.MandatoryProperties;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
@@ -56,7 +57,8 @@ public class PropertyChain<RECORD extends PrimitiveRecord, REPORT extends Consis
                 engine.report().propertyNotFirstInChain( firstProp );
             }
 
-            try ( PrimitiveIntSet keys = Primitive.intSet();
+            final MutableIntSet keys = new IntHashSet();
+            try (
                   MandatoryProperties.Check<RECORD,REPORT> mandatory = mandatoryProperties.apply( record ) )
             {
                 checkChainItem( firstProp, engine, keys, mandatory );
@@ -71,7 +73,7 @@ public class PropertyChain<RECORD extends PrimitiveRecord, REPORT extends Consis
     }
 
     private void checkChainItem( PropertyRecord property, CheckerEngine<RECORD,REPORT> engine,
-            PrimitiveIntSet keys, MandatoryProperties.Check<RECORD,REPORT> mandatory )
+            MutableIntSet keys, MandatoryProperties.Check<RECORD,REPORT> mandatory )
     {
         if ( !property.inUse() )
         {

@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -58,7 +58,7 @@ public class StorageLayerLabelTest extends StorageLayerTest
 
         // THEN
         disk.newStatement().acquireSingleNodeCursor( nodeId ).forAll(
-                node -> assertEquals( PrimitiveIntCollections.asSet( new int[]{labelId1, labelId2} ), node.labels() ) );
+                node -> assertEquals( IntHashSet.newSetWith( labelId1, labelId2 ), node.labels() ) );
     }
 
     @Test
