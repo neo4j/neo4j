@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
@@ -42,7 +42,7 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
 
     private final Factory<T, E> factory;
 
-    private ConcurrentMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
+    private Map<CoordinateReferenceSystem,T> spatials = new CopyOnWriteHashMap<>();
 
     SpatialIndexCache( Factory<T, E> factory )
     {
