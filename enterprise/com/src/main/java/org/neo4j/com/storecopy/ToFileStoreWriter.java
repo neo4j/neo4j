@@ -26,7 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.List;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
@@ -70,12 +69,9 @@ public class ToFileStoreWriter implements StoreWriter
             monitor.startReceivingStoreFile( file );
             try
             {
-                // Default filesystem supports writing of data through the file system directly
-                boolean isDefaultFileSystem = pageCache.getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
-
                 // Note that we don't bother checking if the page cache already has a mapping for the given file.
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( !isDefaultFileSystem && StoreType.shouldBeManagedByPageCache( filename ) )
+                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.shouldBeManagedByPageCache( filename ) )
                 {
                     int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )

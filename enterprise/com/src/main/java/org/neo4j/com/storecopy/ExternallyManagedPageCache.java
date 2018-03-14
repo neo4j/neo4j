@@ -111,6 +111,12 @@ public class ExternallyManagedPageCache implements PageCache
         return delegate.getCachedFileSystem();
     }
 
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        return delegate.fileSystemSupportsFileOperations();
+    }
+
     /**
      * Create a GraphDatabaseFactory that will build EmbeddedGraphDatabase instances that all use the given page cache.
      */

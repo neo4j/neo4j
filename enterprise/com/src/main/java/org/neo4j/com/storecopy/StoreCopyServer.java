@@ -32,7 +32,6 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -176,8 +175,7 @@ public class StoreCopyServer
                     File file = meta.file();
                     int recordSize = meta.recordSize();
 
-                    boolean isDefaultFileSystem = pageCache.getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
-                    if ( !isDefaultFileSystem )
+                    if ( !pageCache.fileSystemSupportsFileOperations() )
                     {
                         // Read from paged file if mapping exists. Otherwise read through file system.
                         // A file is mapped if it is a store, and we have a running database, which will be the case for
@@ -196,7 +194,7 @@ public class StoreCopyServer
                             }
                         }
                     }
-                    // in the case where isDefaultFileSystem == true we always read the file from disk
+
                     try ( ReadableByteChannel fileChannel = fileSystem.open( file, "r" ) )
                     {
                         long fileSize = fileSystem.getFileSize( file );
