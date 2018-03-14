@@ -134,9 +134,10 @@ public class PointTest
         try
         {
             PointValue.parse( data ); // this shouldn't work
-            fail("Was able to parse point although latitude was missing");
-
-        } catch (IllegalArgumentException e){
+            fail( "Was able to parse point although latitude was missing" );
+        }
+        catch ( IllegalArgumentException e )
+        {
             // this is expected
         }
 

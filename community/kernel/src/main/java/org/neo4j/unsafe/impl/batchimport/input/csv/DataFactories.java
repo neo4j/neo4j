@@ -298,23 +298,25 @@ public class DataFactories
 
             int typeIndex;
 
-            String rawHeaderUntilOptions = rawHeaderField.split( "\\{" )[0];
-
-            if ( rawHeaderField != null && (typeIndex = rawHeaderUntilOptions.lastIndexOf( ':' )) != -1 )
-            {   // Specific type given
-                name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
-                type = rawHeaderField.substring( typeIndex + 1 );
-                int groupNameStartIndex = type.indexOf( '(' );
-                if ( groupNameStartIndex != -1 )
-                {   // Specific group given also
-                    if ( !type.endsWith( ")" ) )
-                    {
-                        throw new IllegalArgumentException( "Group specification in '" + rawHeaderField +
-                                "' is invalid, format expected to be 'name:TYPE(group)' " +
-                                "where TYPE and (group) are optional" );
+            if ( rawHeaderField != null )
+            {
+                String rawHeaderUntilOptions = rawHeaderField.split( "\\{" )[0];
+                if ( (typeIndex = rawHeaderUntilOptions.lastIndexOf( ':' )) != -1 )
+                {   // Specific type given
+                    name = typeIndex > 0 ? rawHeaderField.substring( 0, typeIndex ) : null;
+                    type = rawHeaderField.substring( typeIndex + 1 );
+                    int groupNameStartIndex = type.indexOf( '(' );
+                    if ( groupNameStartIndex != -1 )
+                    {   // Specific group given also
+                        if ( !type.endsWith( ")" ) )
+                        {
+                            throw new IllegalArgumentException(
+                                    "Group specification in '" + rawHeaderField + "' is invalid, format expected to be 'name:TYPE(group)' " +
+                                            "where TYPE and (group) are optional" );
+                        }
+                        groupName = type.substring( groupNameStartIndex + 1, type.length() - 1 );
+                        type = type.substring( 0, groupNameStartIndex );
                     }
-                    groupName = type.substring( groupNameStartIndex + 1, type.length() - 1 );
-                    type = type.substring( 0, groupNameStartIndex );
                 }
             }
 
@@ -471,7 +473,7 @@ public class DataFactories
                 String errorMessage = format( "Failed to parse header: '%s'", typeSpec );
                 throw new IllegalArgumentException( errorMessage );
             }
-            optionalParameter = typeSpec.substring( begin, end +1 );
+            optionalParameter = typeSpec.substring( begin, end + 1 );
             newTypeSpec = typeSpec.substring( 0, begin );
         }
         return Pair.of( newTypeSpec, optionalParameter );

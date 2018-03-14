@@ -493,7 +493,7 @@ public class CsvInputTest
     {
         // GIVEN
         DataFactory data = data(
-                ":ID,name,point:Point{WGS-84-3D}\n" +
+                ":ID,name,point:Point{crs:WGS-84-3D}\n" +
                         "0,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
         Iterable<DataFactory> dataIterable = dataIterable( data );
         Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),

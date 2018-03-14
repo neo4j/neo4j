@@ -302,7 +302,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return fromInputFields( fieldsFromData );
     }
 
-    public static AnyValue[] parseIntoArray(CharSequence text)
+    public static AnyValue[] parseIntoArray( CharSequence text )
     {
         Matcher mapMatcher = mapPattern.matcher( text );
         if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
