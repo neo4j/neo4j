@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +33,6 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -146,7 +146,7 @@ public final class IndexMap implements Cloneable
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
     public Set<SchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
+            long[] changedLabels, long[] unchangedLabels, IntSet properties )
     {
         if ( changedLabels.length == 1 && properties.isEmpty() )
         {
@@ -270,7 +270,7 @@ public final class IndexMap implements Cloneable
      */
     private Set<SchemaDescriptor> getDescriptorsByProperties(
             long[] unchangedLabels,
-            PrimitiveIntSet properties )
+            IntSet properties )
     {
         int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
         int nIndexesForProperties = countIndexesByProperties( properties );
@@ -317,7 +317,7 @@ public final class IndexMap implements Cloneable
         return count;
     }
 
-    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
+    private Set<SchemaDescriptor> extractIndexesByProperties( IntSet properties )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
         for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
@@ -331,9 +331,10 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private int countIndexesByProperties( PrimitiveIntSet properties )
+    private int countIndexesByProperties( IntSet properties )
     {
         int count = 0;
+
         for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
         {
             Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );

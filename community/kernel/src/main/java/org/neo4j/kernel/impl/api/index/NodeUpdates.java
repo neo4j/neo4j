@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +31,6 @@ import java.util.List;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
@@ -139,7 +141,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return PrimitiveArrays.intersect( labelsBefore, labelsAfter );
     }
 
-    PrimitiveIntSet propertiesChanged()
+    IntSet propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
@@ -188,7 +190,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
-        PrimitiveIntSet additionalPropertiesToLoad = Primitive.intSet();
+        final MutableIntSet additionalPropertiesToLoad = new IntHashSet();
 
         for ( INDEX_KEY indexKey : indexKeys )
         {
@@ -254,7 +256,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                 hasPropsAfter( schema.getPropertyIds() );
     }
 
-    private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
+    private void loadProperties( PropertyLoader propertyLoader, MutableIntSet additionalPropertiesToLoad )
     {
         hasLoadedAdditionalProperties = true;
         propertyLoader.loadProperties( nodeId, additionalPropertiesToLoad, this );
@@ -267,7 +269,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         }
     }
 
-    private void gatherPropsToLoad( SchemaDescriptor schema, PrimitiveIntSet target )
+    private void gatherPropsToLoad( SchemaDescriptor schema, MutableIntSet target )
     {
         for ( int propertyId : schema.getPropertyIds() )
         {

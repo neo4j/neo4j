@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -291,14 +291,14 @@ public class NodeUpdatesTest
         }
         return ( nodeId1, propertyIds, sink ) ->
         {
-            final IntIterator iterator = propertyIds.intIterator();
+            final MutableIntIterator iterator = propertyIds.intIterator();
             while ( iterator.hasNext() )
             {
                 int propertyId = iterator.next();
                 if ( propertyMap.containsKey( propertyId ) )
                 {
                     sink.onProperty( propertyId, propertyMap.get( propertyId ) );
-                    propertyIds.remove( propertyId );
+                    iterator.remove();
                 }
             }
         };

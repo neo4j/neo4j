@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,7 +34,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
@@ -690,7 +691,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveIntSet augmentLabels( PrimitiveIntSet labels, NodeState nodeState )
+    public MutableIntSet augmentLabels( MutableIntSet labels, NodeState nodeState )
     {
         ReadableDiffSets<Integer> labelDiffSets = nodeState.labelDiffSets();
         if ( !labelDiffSets.isEmpty() )
@@ -853,7 +854,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
+    public IntSet nodeRelationshipTypes( long nodeId )
     {
         return getNodeState( nodeId ).relationshipTypes();
     }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,9 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -385,9 +385,9 @@ public class RelationshipChangesForNode
         return degree;
     }
 
-    public PrimitiveIntSet relationshipTypes()
+    public MutableIntSet relationshipTypes()
     {
-        PrimitiveIntSet types = Primitive.intSet();
+        final MutableIntSet types = new IntHashSet();
         if ( outgoing != null && !outgoing.isEmpty() )
         {
             outgoing.keySet().forEach( types::add );

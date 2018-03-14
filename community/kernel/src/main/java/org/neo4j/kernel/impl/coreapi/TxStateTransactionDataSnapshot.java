@@ -219,10 +219,16 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             }
                         }
 
-                        node.get().labels().visitKeys( labelId ->
+                        node.get().labels().forEach( labelId ->
                         {
-                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
-                            return false;
+                            try
+                            {
+                                removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                            }
+                            catch ( LabelNotFoundKernelException e )
+                            {
+                                throw new IllegalStateException( "An entity that does not exist was modified; labelId = " + labelId, e );
+                            }
                         } );
                     }
                 }

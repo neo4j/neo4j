@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +33,6 @@ import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -151,7 +153,7 @@ class PropertyExistenceEnforcer
     {
         private final ReadableTransactionState txState;
         private final StoreReadLayer storeLayer;
-        private final PrimitiveIntSet propertyKeyIds = Primitive.intSet();
+        private final MutableIntSet propertyKeyIds = new IntHashSet();
         private StorageStatement storageStatement;
 
         Decorator( TxStateVisitor next, ReadableTransactionState txState, StoreReadLayer storeLayer )
@@ -212,7 +214,7 @@ class PropertyExistenceEnforcer
                 return;
             }
 
-            PrimitiveIntSet labelIds;
+            IntSet labelIds;
             try ( Cursor<NodeItem> node = node( nodeId ) )
             {
                 if ( node.next() )
@@ -317,7 +319,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, PrimitiveIntSet labelIds, PrimitiveIntSet propertyKeyIds )
+    private void validateNodeProperties( long id, IntSet labelIds, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
@@ -345,7 +347,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private void validateNodeProperties( long id, int label, int[] requiredKeys, PrimitiveIntSet propertyKeyIds )
+    private void validateNodeProperties( long id, int label, int[] requiredKeys, IntSet propertyKeyIds )
             throws NodePropertyExistenceException
     {
         for ( int key : requiredKeys )

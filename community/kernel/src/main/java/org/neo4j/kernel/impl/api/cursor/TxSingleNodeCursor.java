@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.cursor;
 
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -29,7 +31,6 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
-import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -116,9 +117,9 @@ public class TxSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     }
 
     @Override
-    public PrimitiveIntSet labels()
+    public MutableIntSet labels()
     {
-        return state.augmentLabels( nodeIsAddedInThisTx ? intSet() : this.cursor.get().labels(), nodeState );
+        return state.augmentLabels( nodeIsAddedInThisTx ? new IntHashSet() : this.cursor.get().labels(), nodeState );
     }
 
     @Override

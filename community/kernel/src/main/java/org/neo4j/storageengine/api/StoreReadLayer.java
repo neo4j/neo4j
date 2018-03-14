@@ -21,12 +21,12 @@ package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
@@ -386,7 +386,7 @@ public interface StoreReadLayer
 
     boolean relationshipExists( long id );
 
-    PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
+    IntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );
 

@@ -21,14 +21,13 @@ package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
-import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
@@ -96,32 +95,10 @@ public class Primitive
         return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
     }
 
-    public static PrimitiveIntSet intSet()
+    public static MutableIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )
     {
-        return intSet( DEFAULT_HEAP_CAPACITY );
-    }
-
-    public static PrimitiveIntSet intSet( int initialCapacity )
-    {
-        return new PrimitiveIntHashSet( new IntKeyTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveIntSet offHeapIntSet()
-    {
-        return offHeapIntSet( GlobalMemoryTracker.INSTANCE );
-    }
-
-    public static PrimitiveIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )
-    {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( DEFAULT_OFFHEAP_CAPACITY, VALUE_MARKER, allocationTracker ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveIntSet offHeapIntSet( int initialCapacity, MemoryAllocationTracker allocationTracker )
-    {
-        return new PrimitiveIntHashSet( new IntKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
-                VALUE_MARKER, NO_MONITOR );
+        // todo ak
+        return new IntHashSet();
     }
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()

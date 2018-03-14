@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
@@ -40,7 +41,6 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptyIterator;
-import static org.neo4j.collection.primitive.Primitive.intSet;
 
 class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
 {
@@ -111,9 +111,9 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public PrimitiveIntSet relationshipTypes()
+        public MutableIntSet relationshipTypes()
         {
-            return intSet();
+            return new IntHashSet();
         }
 
         @Override
@@ -323,13 +323,13 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
-    public PrimitiveIntSet relationshipTypes()
+    public MutableIntSet relationshipTypes()
     {
         if ( hasAddedRelationships() )
         {
             return relationshipsAdded.relationshipTypes();
         }
-        return intSet();
+        return new IntHashSet();
     }
 
     void addIndexDiff( PrimitiveLongDiffSets diff )
