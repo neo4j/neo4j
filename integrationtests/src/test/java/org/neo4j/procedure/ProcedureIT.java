@@ -469,6 +469,22 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldNotAllowNonByteValuesInImplicitByteArrayConversionInProcedures() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 500 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault([1,2,500])" );
+            result.next();
+        }
+    }
+
+    @Test
     public void shouldCallProcedureListWithNull() throws Throwable
     {
         // Given
@@ -1400,6 +1416,54 @@ public class ProcedureIT
             assertFalse( res.hasNext() );
             assertThat( results.get( "bytes" ), equalTo( new byte[]{9, 10, 11} ) );
             assertThat( results.get( "param" ), equalTo( asList( 10L, 11L, 12L ) ) );
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNonByteValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 500 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,500]) AS bytes" );
+            result.next();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNonIntegerValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert 3.4 to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,3.4]) AS bytes" );
+            result.next();
+        }
+    }
+
+    @Test
+    public void shouldNotAllowNonNumberValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
+    {
+        //Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "Cannot convert X to byte for input to procedure" );
+
+        // When
+        try ( Transaction ignore = db.beginTx() )
+        {
+            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,'X']) AS bytes" );
+            result.next();
         }
     }
 
