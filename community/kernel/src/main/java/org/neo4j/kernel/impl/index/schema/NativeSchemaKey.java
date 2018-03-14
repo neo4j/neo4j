@@ -30,7 +30,7 @@ import org.neo4j.values.storable.ValueWriter;
  */
 abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter.Adapter<RuntimeException>
 {
-    static final boolean DEFAULT_COMPARE_ID = true;
+    private static final boolean DEFAULT_COMPARE_ID = true;
 
     private long entityId;
     private boolean compareId = DEFAULT_COMPARE_ID;
@@ -64,10 +64,21 @@ abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter
 
     final void from( long entityId, Value... values )
     {
-        compareId = DEFAULT_COMPARE_ID;
-        this.entityId = entityId;
+        initialize( entityId );
         // copy value state and store in this key instance
         assertValidValue( values ).writeTo( this );
+    }
+
+    /**
+     * Initializes this key with entity id and resets other flags to default values.
+     * Doesn't touch value data.
+     *
+     * @param entityId entity id to set for this key.
+     */
+    void initialize( long entityId )
+    {
+        this.compareId = DEFAULT_COMPARE_ID;
+        this.entityId = entityId;
     }
 
     private Value assertValidValue( Value... values )
@@ -94,8 +105,7 @@ abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter
 
     final void initAsLowest()
     {
-        compareId = DEFAULT_COMPARE_ID;
-        entityId = Long.MIN_VALUE;
+        initialize( Long.MIN_VALUE );
         initValueAsLowest();
     }
 
@@ -103,8 +113,7 @@ abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter
 
     final void initAsHighest()
     {
-        compareId = DEFAULT_COMPARE_ID;
-        entityId = Long.MAX_VALUE;
+        initialize( Long.MAX_VALUE );
         initValueAsHighest();
     }
 
