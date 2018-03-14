@@ -411,8 +411,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val exception = intercept[QueryExecutionException] {
         println(graph.execute(query).next())
       }
-      exception.getMessage should be ("You cannot subtract a temporal instant from another. " +
-        "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
+      exception.getMessage should startWith("Type mismatch: expected Duration but was")
     }
   }
 
@@ -470,6 +469,19 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
         an[UnsupportedTemporalTypeException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  // Invalid signature
+
+  test("should not accept 4 parameters") {
+    for (func <- Seq("time", "localtime", "date", "datetime", "localdatetime", "duration")) {
+      val query = s"RETURN $func('', '', '', '')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
           println(graph.execute(query).next())
         }
       }

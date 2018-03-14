@@ -170,7 +170,7 @@ Feature: TemporalComparisonAcceptance
       | null  | null  | null  | null  | false|
     And no side effects
 
-  Scenario: Should not compare durations
+  Scenario: Should compare durations for equality
     Given an empty graph
     When executing query:
       """
@@ -183,16 +183,16 @@ Feature: TemporalComparisonAcceptance
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 13, seconds: 10}),
               duration({years: 12, months:5, days: 13, hours:40, minutes: 13, seconds: 10})] as d
-      RETURN x>d, x<d, x>=d, x<=d, x=d
+      RETURN x=d
       """
     Then the result should be, in order:
-      | x>d   | x<d   | x>=d  | x<=d  | x=d    |
-      | null  | null  | null  | null  | false  |
-      | null  | null  | null  | null  | false  |
-      | null  | null  | null  | null  | false  |
-      | null  | null  | null  | null  | false  |
-      | null  | null  | null  | null  | false  |
-      | null  | null  | null  | null  | true   |
-      | null  | null  | null  | null  | true   |
-      | null  | null  | null  | null  | false  |
+      | x=d    |
+      | false  |
+      | false  |
+      | false  |
+      | false  |
+      | false  |
+      | true   |
+      | true   |
+      | false  |
     And no side effects
