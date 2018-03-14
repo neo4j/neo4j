@@ -43,8 +43,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -77,15 +75,7 @@ public abstract class KernelIntegrationTest
     protected IndexingService indexingService;
 
     private KernelTransaction transaction;
-    private Statement statement;
     private DbmsOperations dbmsOperations;
-
-    protected Statement statementInNewTransaction( LoginContext loginContext ) throws KernelException
-    {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
-        statement = transaction.acquireStatement();
-        return statement;
-    }
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
@@ -103,13 +93,6 @@ public abstract class KernelIntegrationTest
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
         return transaction.schemaWrite();
-    }
-
-    protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
-    {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-        statement = transaction.acquireStatement();
-        return statement.readOperations();
     }
 
     protected Procedures procs() throws TransactionFailureException
@@ -137,11 +120,6 @@ public abstract class KernelIntegrationTest
 
     protected void commit() throws TransactionFailureException
     {
-        if ( statement != null )
-        {
-            statement.close();
-        }
-        statement = null;
         transaction.success();
         try
         {
@@ -155,11 +133,6 @@ public abstract class KernelIntegrationTest
 
     protected void rollback() throws TransactionFailureException
     {
-        if ( statement != null )
-        {
-            statement.close();
-            statement = null;
-        }
         transaction.failure();
         try
         {
