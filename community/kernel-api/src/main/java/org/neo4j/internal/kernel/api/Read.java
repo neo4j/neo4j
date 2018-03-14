@@ -20,8 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 
 /**
  * Defines the graph read operations of the Kernel.
@@ -41,6 +39,20 @@ public interface Read
     void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, IndexQuery... query )
             throws KernelException;
 
+    /**
+     * Returns node id of node found in unique index or -1 if no node was found.
+     *
+     * Note that this is a very special method and should be use with caution. It has special locking semantics in
+     * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
+     * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
+     *
+     * @param index {@link IndexReference} referencing index to query.
+     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
+     * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
+     */
+    long nodeUniqueIndexSeek( IndexReference index, IndexOrder indexOrder, IndexQuery.ExactPredicate... predicates )
+            throws KernelException;
     /**
      * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
