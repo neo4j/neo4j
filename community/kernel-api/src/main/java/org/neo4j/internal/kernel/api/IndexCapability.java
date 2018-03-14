@@ -30,6 +30,8 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface IndexCapability
 {
+    IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
+
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueGroup}.
      * Ordering of ValueGroup correspond to ordering of related {@link IndexReference#properties()}.

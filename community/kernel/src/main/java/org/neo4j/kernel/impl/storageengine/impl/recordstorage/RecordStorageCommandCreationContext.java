@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -55,7 +55,7 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 public class RecordStorageCommandCreationContext implements CommandCreationContext
 {
     private final NeoStores neoStores;
-    private final IndexingUpdateService indexingUpdateService;
+    private final IndexingService indexingService;
     private final Loaders loaders;
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter relationshipDeleter;
@@ -67,10 +67,10 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
     private final OnlineIndexUpdates indexUpdates;
     private final NodePropertyCommandsExtractor extractor;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize, IndexingUpdateService indexingUpdateService )
+    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize, IndexingService indexingService )
     {
         this.neoStores = neoStores;
-        this.indexingUpdateService = indexingUpdateService;
+        this.indexingService = indexingService;
         this.idBatches = new RenewableBatchIdSequences( neoStores, idBatchSize );
 
         this.loaders = new Loaders( neoStores );
@@ -88,7 +88,7 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
                 idBatches.idGenerator( StoreType.PROPERTY ),
                 propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
         this.physicalToLogicalPropertyChangeConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-        this.indexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), indexingUpdateService, physicalToLogicalPropertyChangeConverter );
+        this.indexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), indexingService, physicalToLogicalPropertyChangeConverter );
         this.extractor = new NodePropertyCommandsExtractor();
     }
 
@@ -131,6 +131,8 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
         }
         indexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
         indexUpdates.forEach( indexUpdatesTarget::add );
+
+        indexingService.validateIndexUpdates( indexUpdatesTarget );
 
         // clear state for the next invocation
         extractor.close();

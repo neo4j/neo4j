@@ -33,6 +33,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -46,6 +48,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
@@ -55,6 +59,7 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
     public static final String KEY = "spatial";
     public static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private static final Pattern CRS_DIR_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
+    private static final IndexCapability CAPABILITY = new SpatialIndexCapability();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -177,7 +182,7 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
         // Spatial indexes are not ordered, nor do they return complete values
-        return IndexCapability.NO_CAPABILITY;
+        return CAPABILITY;
     }
 
     @Override
@@ -226,6 +231,41 @@ public class SpatialFusionIndexProvider extends IndexProvider implements Spatial
                     }
                 }
             }
+        }
+    }
+
+    private static class SpatialIndexCapability implements IndexCapability
+    {
+        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
+
+        @Override
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        {
+            return support( valueGroups ) ? SUPPORTED_ORDER : EMPTY_ORDER;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        {
+            if ( support( valueGroups ) )
+            {
+                return IndexValueCapability.YES;
+            }
+            if ( singleWildcard( valueGroups ) )
+            {
+                return IndexValueCapability.PARTIAL;
+            }
+            return IndexValueCapability.NO;
+        }
+
+        private boolean singleWildcard( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
+        }
+
+        private boolean support( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && Values.isGeometryValue( valueGroups[0] );
         }
     }
 }

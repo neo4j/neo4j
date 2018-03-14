@@ -91,7 +91,7 @@ public final class Values
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
      * to orderability group.
-     *
+     * <p>
      * To get Comparability semantics, use .ternaryCompare
      */
     private static final ValueComparator comp = new ValueComparator( ValueGroup::compareTo );
@@ -123,9 +123,24 @@ public final class Values
         return value instanceof PointValue;
     }
 
+    public static boolean isGeometryValue( ValueGroup group )
+    {
+        return group == ValueGroup.GEOMETRY;
+    }
+
     public static boolean isTemporalValue( Value value )
     {
         return value instanceof TemporalValue || value instanceof DurationValue;
+    }
+
+    public static boolean isTemporalValue( ValueGroup group )
+    {
+        return group == ValueGroup.ZONED_DATE_TIME ||
+                group == ValueGroup.LOCAL_DATE_TIME ||
+                group == ValueGroup.DATE ||
+                group == ValueGroup.ZONED_TIME ||
+                group == ValueGroup.LOCAL_TIME ||
+                group == ValueGroup.DURATION;
     }
 
     public static double coerceToDouble( Value value )
