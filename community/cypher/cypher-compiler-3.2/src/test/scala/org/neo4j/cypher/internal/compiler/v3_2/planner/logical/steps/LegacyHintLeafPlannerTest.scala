@@ -37,7 +37,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     val hint: NodeByIndexQuery = NodeByIndexQuery(variable, null, null)(pos)
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
-      hints = Set(hint)
+      hints = Seq(hint)
     )
 
     val factory = newMockedMetricsFactory
@@ -63,7 +63,7 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     val qg = QueryGraph(
       patternNodes = Set(IdName("n")),
       argumentIds = Set(IdName("n")),
-      hints = Set(NodeByIndexQuery(variable, null, null)(pos))
+      hints = Seq(NodeByIndexQuery(variable, null, null)(pos))
     )
 
     val factory = newMockedMetricsFactory

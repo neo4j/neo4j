@@ -44,9 +44,9 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
           val actualHints = constructed.allHints
-          val missing = expectedHints -- actualHints
+          val missing = expectedHints.diff(actualHints)
 
-          def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
+          def out(h: Seq[Hint]) = h.mkString("`", ", ", "`")
 
           val details = if (missing.isEmpty)
             s"""Expected:
@@ -73,7 +73,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     plan
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]) = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Seq[UsingIndexHint]): Unit = {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
@@ -87,7 +87,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Set[UsingJoinHint]) = {
+  private def processUnfulfilledJoinHints(context: LogicalPlanningContext, hints: Seq[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
@@ -101,7 +101,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelName(label), properties)
@@ -114,7 +114,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Set[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }
