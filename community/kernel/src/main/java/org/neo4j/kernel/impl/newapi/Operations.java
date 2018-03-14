@@ -902,7 +902,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveRelationshipLock( descriptor.getRelTypeId() );
+        exclusiveRelationshipTypeLock( descriptor.getRelTypeId() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1002,6 +1002,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void sharedRelationshipTypeLock( long typeId )
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void exclusiveRelationshipTypeLock( long typeId )
+    {
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )
