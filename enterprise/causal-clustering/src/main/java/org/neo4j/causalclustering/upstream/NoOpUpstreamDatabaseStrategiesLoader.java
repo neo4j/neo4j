@@ -17,20 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.upstream;
 
-import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
-import org.neo4j.causalclustering.identity.MemberId;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-public class CatchupAddressResolutionException extends TopologyLookupException
+import org.neo4j.logging.NullLogProvider;
+
+public class NoOpUpstreamDatabaseStrategiesLoader extends UpstreamDatabaseStrategiesLoader
 {
-    CatchupAddressResolutionException( MemberId memberId )
+    public NoOpUpstreamDatabaseStrategiesLoader()
     {
-        super( memberId );
+        super( null, null, null, NullLogProvider.getInstance() );
     }
 
-    CatchupAddressResolutionException( Exception e )
+    @Override
+    public Iterator<UpstreamDatabaseSelectionStrategy> iterator()
     {
-        super( e );
+        return new Iterator<UpstreamDatabaseSelectionStrategy>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return false;
+            }
+
+            @Override
+            public UpstreamDatabaseSelectionStrategy next()
+            {
+                throw new NoSuchElementException();
+            }
+        };
     }
 }

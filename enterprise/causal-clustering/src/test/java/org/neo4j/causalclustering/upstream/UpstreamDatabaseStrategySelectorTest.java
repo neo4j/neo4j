@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream;
 
 import org.junit.Test;
 
@@ -26,12 +26,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCoreServerStrategy;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
@@ -62,7 +62,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( goodOne.upstreamDatabase() ).thenReturn( Optional.of( theMemberId ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ), null, NullLogProvider.getInstance() );
+                new UpstreamDatabaseStrategySelector( badOne, iterable( goodOne, anotherBadOne ), NullLogProvider.getInstance() );
 
         // when
         MemberId result = selector.bestUpstreamDatabase();
@@ -77,8 +77,8 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
-                mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
+        when( topologyService.localCoreServers() ).thenReturn(
+                new CoreTopology( new ClusterId( UUID.randomUUID() ), false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.inject( topologyService, Config.defaults(), NullLogProvider.getInstance(), null );
@@ -98,8 +98,8 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
-                mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
+        when( topologyService.localCoreServers() ).thenReturn(
+                new CoreTopology( new ClusterId( UUID.randomUUID() ), false, mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();
 
@@ -107,7 +107,7 @@ public class UpstreamDatabaseStrategySelectorTest
         when( mockStrategy.upstreamDatabase() ).thenReturn( Optional.of( new MemberId( UUID.randomUUID() ) ) );
 
         UpstreamDatabaseStrategySelector selector =
-                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ), null, NullLogProvider.getInstance() );
+                new UpstreamDatabaseStrategySelector( shouldNotUse, iterable( mockStrategy ), NullLogProvider.getInstance() );
 
         // when
         selector.bestUpstreamDatabase();

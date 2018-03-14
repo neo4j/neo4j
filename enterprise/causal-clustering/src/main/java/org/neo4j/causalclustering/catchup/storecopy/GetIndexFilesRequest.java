@@ -42,13 +42,13 @@ public class GetIndexFilesRequest implements CatchUpRequest
 {
     private final StoreId expectedStoreId;
     private final long indexId;
-    private final long lastTransactionId;
+    private final long requiredTransactionId;
 
-    public GetIndexFilesRequest( StoreId expectedStoreId, long indexId, long lastTransactionId )
+    public GetIndexFilesRequest( StoreId expectedStoreId, long indexId, long requiredTransactionId )
     {
         this.expectedStoreId = expectedStoreId;
         this.indexId = indexId;
-        this.lastTransactionId = lastTransactionId;
+        this.requiredTransactionId = requiredTransactionId;
     }
 
     public StoreId expectedStoreId()
@@ -56,9 +56,9 @@ public class GetIndexFilesRequest implements CatchUpRequest
         return expectedStoreId;
     }
 
-    public long requiredTransactionId()
+    long requiredTransactionId()
     {
-        return lastTransactionId;
+        return requiredTransactionId;
     }
 
     public long indexId()
@@ -109,5 +109,12 @@ public class GetIndexFilesRequest implements CatchUpRequest
             GetIndexFilesRequest getIndexFilesRequest = new IndexSnapshotRequestMarshall().unmarshal0( new NetworkReadableClosableChannelNetty4( in ) );
             out.add( getIndexFilesRequest );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "GetIndexFilesRequest{" + "expectedStoreId=" + expectedStoreId + ", indexId=" + indexId + ", requiredTransactionId=" + requiredTransactionId +
+                '}';
     }
 }

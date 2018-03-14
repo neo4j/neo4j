@@ -40,6 +40,8 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;

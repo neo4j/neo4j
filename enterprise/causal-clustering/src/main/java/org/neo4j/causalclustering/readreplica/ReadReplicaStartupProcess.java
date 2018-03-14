@@ -33,6 +33,8 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -169,7 +171,9 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), storeId );
+            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider addressProvider =
+                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
+            storeCopyProcess.replaceWithStoreFrom( addressProvider, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

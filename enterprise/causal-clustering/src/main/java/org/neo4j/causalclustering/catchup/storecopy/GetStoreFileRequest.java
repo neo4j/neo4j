@@ -117,4 +117,11 @@ public class GetStoreFileRequest implements CatchUpRequest
             out.add( getStoreFileRequest );
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "GetStoreFileRequest{" + "expectedStoreId=" + expectedStoreId + ", file=" + file.getName() + ", requiredTransactionId=" + requiredTransactionId +
+                '}';
+    }
 }

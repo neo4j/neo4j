@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup;
 
+import java.net.ConnectException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,18 +44,36 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         this.factory = factory;
     }
 
-    CHANNEL acquire( AdvertisedSocketAddress catchUpAddress )
+    CHANNEL acquire( AdvertisedSocketAddress catchUpAddress ) throws Exception
     {
         CHANNEL channel = getIdleChannel( catchUpAddress );
 
         if ( channel == null )
         {
             channel = factory.apply( catchUpAddress );
+            try
+            {
+                channel.connect();
+                assertActive( channel, catchUpAddress );
+            }
+            catch ( Exception e )
+            {
+                channel.close();
+                throw e;
+            }
         }
 
         addActiveChannel( channel );
 
         return channel;
+    }
+
+    private void assertActive( CHANNEL channel, AdvertisedSocketAddress address ) throws ConnectException
+    {
+        if ( !channel.isActive() )
+        {
+            throw new ConnectException( "Unable to connect to " + address );
+        }
     }
 
     private synchronized CHANNEL getIdleChannel( AdvertisedSocketAddress catchUpAddress )
@@ -63,7 +82,13 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         LinkedList<CHANNEL> channels = idleChannels.get( catchUpAddress );
         if ( channels != null )
         {
-            channel = channels.poll();
+            while ( (channel = channels.poll()) != null )
+            {
+                if ( channel.isActive() )
+                {
+                    break;
+                }
+            }
             if ( channels.isEmpty() )
             {
                 idleChannels.remove( catchUpAddress );
@@ -115,6 +140,10 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
     interface Channel
     {
         AdvertisedSocketAddress destination();
+
+        void connect() throws Exception;
+
+        boolean isActive();
 
         void close();
     }

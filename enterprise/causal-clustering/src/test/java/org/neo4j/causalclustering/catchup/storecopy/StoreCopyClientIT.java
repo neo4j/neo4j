@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
@@ -50,6 +51,7 @@ import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.collection.primitive.base.Empty;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
@@ -119,7 +121,10 @@ public class StoreCopyClientIT
 
         CatchUpClient catchUpClient = new CatchupClientBuilder().build();
         catchUpClient.start();
-        subject = new StoreCopyClient( catchUpClient, logProvider );
+
+        ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
+
+        subject = new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy );
     }
 
     @After
@@ -180,8 +185,8 @@ public class StoreCopyClientIT
         // given local client has a store
         InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
 
-                // and file B is broken once (after retry it works)
-                fileB.setRemainingNoResponse( 1 );
+        // and file B is broken once (after retry it works)
+        fileB.setRemainingNoResponse( 1 );
 
         // when catchup is performed for valid transactionId and StoreId
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
@@ -353,8 +358,8 @@ public class StoreCopyClientIT
         return stringBuilder.toString();
     }
 
-    private String clientFileContents( InMemoryStoreStreamProvider storeStreamProvider, String filename )
+    private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
     {
-        return storeStreamProvider.fileStreams().get( filename ).toString();
+        return storeFileStreamsProvider.fileStreams().get( filename ).toString();
     }
 }

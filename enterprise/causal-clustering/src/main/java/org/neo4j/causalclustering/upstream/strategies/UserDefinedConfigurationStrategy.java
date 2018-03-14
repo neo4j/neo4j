@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
 import java.util.Map;
 import java.util.Objects;
@@ -34,12 +34,14 @@ import org.neo4j.causalclustering.routing.load_balancing.filters.Filter;
 import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.FilterConfigParser;
 import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.InvalidFilterSpecification;
 import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.ServerInfo;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
 public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionStrategy
 {
 
+    public static final String IDENTITY = "user-defined";
     // Empty if provided filter config cannot be parsed.
     // Ideally this class would not be created until config has been successfully parsed
     // in which case there would be no need for Optional
@@ -47,11 +49,11 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
 
     public UserDefinedConfigurationStrategy()
     {
-        super( "user-defined" );
+        super( IDENTITY );
     }
 
     @Override
-    void init()
+    public void init()
     {
         String filterConfig = config.get( CausalClusteringSettings.user_defined_upstream_selection_strategy );
         try
@@ -63,8 +65,8 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
         catch ( InvalidFilterSpecification invalidFilterSpecification )
         {
             filters = Optional.empty();
-            log.warn( "Cannot parse configuration '" + filterConfig + "' for upstream selection strategy "
-                    + readableName + ". " + invalidFilterSpecification.getMessage() );
+            log.warn( "Cannot parse configuration '" + filterConfig + "' for upstream selection strategy " + readableName + ". " +
+                    invalidFilterSpecification.getMessage() );
         }
     }
 
@@ -75,27 +77,20 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
         {
             Set<ServerInfo> possibleServers = possibleServers();
 
-            return filters.apply( possibleServers ).stream()
-                    .map( ServerInfo::memberId )
-                    .filter( memberId -> !Objects.equals( myself, memberId ) )
-                    .findFirst();
+            return filters.apply( possibleServers ).stream().map( ServerInfo::memberId ).filter( memberId -> !Objects.equals( myself, memberId ) ).findFirst();
         } );
     }
 
     private Set<ServerInfo> possibleServers()
     {
-        Stream<Map.Entry<MemberId, ? extends DiscoveryServerInfo>> infoMap =
-                Stream.of( topologyService.localReadReplicas(), topologyService.localCoreServers() )
-                        .map( Topology::members )
-                        .map( Map::entrySet )
-                        .flatMap( Set::stream );
+        Stream<Map.Entry<MemberId,? extends DiscoveryServerInfo>> infoMap =
+                Stream.of( topologyService.localReadReplicas(), topologyService.localCoreServers() ).map( Topology::members ).map( Map::entrySet ).flatMap(
+                        Set::stream );
 
-        return infoMap
-                .map( this::toServerInfo )
-                .collect( Collectors.toSet() );
+        return infoMap.map( this::toServerInfo ).collect( Collectors.toSet() );
     }
 
-    private <T extends DiscoveryServerInfo> ServerInfo toServerInfo( Map.Entry<MemberId, T> entry )
+    private <T extends DiscoveryServerInfo> ServerInfo toServerInfo( Map.Entry<MemberId,T> entry )
     {
         T server = entry.getValue();
         MemberId memberId = entry.getKey();

@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
 import java.util.Optional;
 import java.util.Random;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
 public class ConnectToRandomCoreServerStrategy extends UpstreamDatabaseSelectionStrategy
 {
+    public static final String IDENTITY = "connect-to-random-core-server";
     private final Random random = new Random();
 
     public ConnectToRandomCoreServerStrategy()
     {
-        super( "connect-to-random-core-server" );
+        super( IDENTITY );
     }
 
     @Override

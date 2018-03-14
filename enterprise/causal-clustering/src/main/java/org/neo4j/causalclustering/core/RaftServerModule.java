@@ -24,6 +24,7 @@ import io.netty.channel.ChannelInboundHandler;
 import java.util.Collection;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.ContinuousJob;
@@ -34,8 +35,6 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClu
 import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
 import org.neo4j.causalclustering.core.server.CoreServerModule;
 import org.neo4j.causalclustering.core.state.RaftMessageApplier;
-import org.neo4j.causalclustering.discovery.CoreTopologyService;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
@@ -69,12 +68,13 @@ class RaftServerModule
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final TopologyService topologyService;
+    private CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider;
     private final Collection<ModifierSupportedProtocols> supportedModifierProtocols;
 
     private RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
             LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
-            CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
+            CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider catchupAddressProvider,
+            ApplicationSupportedProtocols supportedApplicationProtocol,
             Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
         this.platformModule = platformModule;
@@ -85,7 +85,7 @@ class RaftServerModule
         this.messageLogger = messageLogger;
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineBuilderFactory = pipelineBuilderFactory;
-        this.topologyService = topologyService;
+        this.catchupAddressProvider = catchupAddressProvider;
         this.supportedModifierProtocols = supportedModifierProtocols;
 
         LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
@@ -95,11 +95,12 @@ class RaftServerModule
 
     static void createAndStart( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule,
             CoreServerModule coreServerModule, LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            MessageLogger<MemberId> messageLogger, CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
+            MessageLogger<MemberId> messageLogger, CatchupAddressProvider.PrioritisingUpstreamStrategyBasedAddressProvider addressProvider,
+            ApplicationSupportedProtocols supportedApplicationProtocol,
             Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
         new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, pipelineBuilderFactory, messageLogger,
-                        topologyService, supportedApplicationProtocol, supportedModifierProtocols, installedProtocolsHandler );
+                        addressProvider, supportedApplicationProtocol, supportedModifierProtocols, installedProtocolsHandler );
     }
 
     private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain,
@@ -138,7 +139,7 @@ class RaftServerModule
     {
         RaftMessageApplier messageApplier =
                 new RaftMessageApplier( localDatabase, logProvider, consensusModule.raftMachine(), coreServerModule.downloadService(),
-                        coreServerModule.commandApplicationProcess(), topologyService );
+                        coreServerModule.commandApplicationProcess(), catchupAddressProvider );
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
 

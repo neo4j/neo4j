@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream;
 
 import org.junit.Test;
 
@@ -46,8 +46,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
         Config config = Config.defaults( upstream_selection_strategy, "dummy" );
 
         UpstreamDatabaseStrategiesLoader strategies =
-                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config,
-                        myself, NullLogProvider.getInstance() );
+                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config, myself, NullLogProvider.getInstance() );
 
         // when
         Set<UpstreamDatabaseSelectionStrategy> upstreamDatabaseSelectionStrategies = asSet( strategies.iterator() );
@@ -66,11 +65,9 @@ public class UpstreamDatabaseStrategiesLoaderTest
 
         // when
         UpstreamDatabaseStrategiesLoader strategies =
-                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config,
-                        myself, NullLogProvider.getInstance() );
+                new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config, myself, NullLogProvider.getInstance() );
 
         // then
-        assertEquals( UpstreamDatabaseStrategySelectorTest.YetAnotherDummyUpstreamDatabaseSelectionStrategy.class,
-                strategies.iterator().next().getClass() );
+        assertEquals( UpstreamDatabaseStrategySelectorTest.YetAnotherDummyUpstreamDatabaseSelectionStrategy.class, strategies.iterator().next().getClass() );
     }
 }

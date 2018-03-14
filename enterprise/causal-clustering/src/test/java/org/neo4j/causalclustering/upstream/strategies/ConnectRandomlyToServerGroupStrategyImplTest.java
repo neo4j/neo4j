@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
 import org.junit.Test;
 
@@ -42,9 +42,9 @@ import static co.unruly.matchers.OptionalMatchers.empty;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isIn;
-import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
-import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
-import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
+import static org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
+import static org.neo4j.causalclustering.upstream.strategies.UserDefinedConfigurationStrategyTest.fakeTopologyService;
+import static org.neo4j.causalclustering.upstream.strategies.UserDefinedConfigurationStrategyTest.memberIDs;
 
 public class ConnectRandomlyToServerGroupStrategyImplTest
 {
@@ -57,13 +57,13 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = getTopologyService( myServerGroup, myGroupMemberIds, Collections.singletonList( "your_server_group" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0], "default" );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0] );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
 
         // then
-        assertThat( memberId, contains( isIn( myGroupMemberIds ) ));
+        assertThat( memberId, contains( isIn( myGroupMemberIds ) ) );
     }
 
     @Test
@@ -75,13 +75,13 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = getTopologyService( myServerGroups, myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroups, topologyService, myGroupMemberIds[0], "default" );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroups, topologyService, myGroupMemberIds[0] );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
 
         // then
-        assertThat( memberId, contains( isIn( myGroupMemberIds ) ));
+        assertThat( memberId, contains( isIn( myGroupMemberIds ) ) );
     }
 
     @Test
@@ -91,7 +91,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService =
                 getTopologyService( Collections.singletonList( "my_server_group" ), myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( Collections.emptyList(), topologyService, null, "default" );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( Collections.emptyList(), topologyService, null );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
@@ -109,7 +109,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 1 );
         TopologyService topologyService = getTopologyService( myServerGroup, myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0], "default" );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0] );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();

@@ -27,44 +27,24 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.time.FakeClock;
 
-public class MaximumTotalRetriesTest
+public class MaximumTotalTimeTest
 {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void shouldRetryUntilMaximumRetries() throws Exception
+    public void shouldFailWhenAllowedTimeHasPassed() throws StoreCopyFailedException
     {
-        FakeClock clock = new FakeClock();
-        MaximumTotalRetries maximumTotalRetries = new MaximumTotalRetries( 4, -1, clock );
+        TimeUnit timeUnit = TimeUnit.SECONDS;
+        FakeClock fakeClock = new FakeClock( 0, timeUnit );
 
-        maximumTotalRetries.assertContinue();
-        maximumTotalRetries.assertContinue();
-        maximumTotalRetries.assertContinue();
+        MaximumTotalTime maximumTotalTime = new MaximumTotalTime( 5, timeUnit, fakeClock );
+
+        maximumTotalTime.assertContinue();
+        fakeClock.forward( 5, timeUnit );
+        maximumTotalTime.assertContinue();
         expectedException.expect( StoreCopyFailedException.class );
-        maximumTotalRetries.assertContinue();
-    }
-
-    @Test
-    public void shouldContinueIfAllowedInBetweenTimeIsMet() throws Exception
-    {
-        // given
-        FakeClock clock = new FakeClock();
-        MaximumTotalRetries maximumTotalRetries = new MaximumTotalRetries( 1, 0, clock );
-
-        // when we retry
-        maximumTotalRetries.assertContinue();
-
-        // then we can retry again because in between time == 0
-        maximumTotalRetries.assertContinue();
-
-        //when we increment clock
-        clock.forward( 1, TimeUnit.MILLISECONDS );
-
-        //then we expected exception thrown
-        expectedException.expect( StoreCopyFailedException.class );
-
-        // when we retry
-        maximumTotalRetries.assertContinue();
+        fakeClock.forward( 1, timeUnit );
+        maximumTotalTime.assertContinue();
     }
 }
