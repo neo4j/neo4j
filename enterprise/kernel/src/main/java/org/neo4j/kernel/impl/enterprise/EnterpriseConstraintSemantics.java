@@ -182,7 +182,7 @@ public class EnterpriseConstraintSemantics extends StandardConstraintSemantics
 
             for ( int propertyKey : descriptor.getPropertyIds() )
             {
-                if ( relationshipCursor.label() == descriptor.getRelTypeId() &&
+                if ( relationshipCursor.type() == descriptor.getRelTypeId() &&
                      !hasProperty( propertyCursor, propertyKey ) )
                 {
                     throw createConstraintFailure(
