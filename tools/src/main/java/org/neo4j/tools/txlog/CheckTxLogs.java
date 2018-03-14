@@ -20,6 +20,7 @@
 package org.neo4j.tools.txlog;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -128,7 +128,7 @@ public class CheckTxLogs
         final long lowestLogVersion = logFiles.getLowestLogVersion();
         final long highestLogVersion = logFiles.getHighestLogVersion();
         boolean success = true;
-        final MutableLongLongMap logFileSizes = Primitive.longLongMap();
+        final MutableLongLongMap logFileSizes = new LongLongHashMap();
         for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
         {
             logFileSizes.put( i, fs.getFileSize( logFiles.getLogFileForVersion( i ) ) );

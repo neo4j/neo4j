@@ -20,9 +20,8 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
 import org.junit.Test;
-
-import org.neo4j.collection.primitive.Primitive;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -43,7 +42,7 @@ public class ResourceTypesIT
         int labelIdCount = 50;
         int propertyKeyIdCount = 50;
         int objectCount = 10000;
-        MutableLongLongMap map = Primitive.longLongMap( 50 * 50 * 10000 );
+        MutableLongLongMap map = new LongLongHashMap( 50 * 50 * 10000 );
         String[] values = precomputeValues( objectCount );
 
         for ( int labelId = 0; labelId < labelIdCount; labelId++ )
