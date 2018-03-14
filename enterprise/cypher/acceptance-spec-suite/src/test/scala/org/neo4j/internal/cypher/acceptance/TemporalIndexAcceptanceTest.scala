@@ -64,10 +64,10 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
       LocalTimeValue.localTime(10006))
 
     assertRangeScan(
-      TimeValue.time(10000, ZoneId.of("Europe/Stockholm")),
-      TimeValue.time(10002, ZoneId.of("Europe/Stockholm")),
-      TimeValue.time(10004, ZoneId.of("Europe/Stockholm")),
-      TimeValue.time(10006, ZoneId.of("Europe/Stockholm")))
+      TimeValue.time(10000, ZoneOffset.of("+01:00")),
+      TimeValue.time(10002, ZoneOffset.of("+01:00")),
+      TimeValue.time(10004, ZoneOffset.of("+01:00")),
+      TimeValue.time(10006, ZoneOffset.of("+01:00")))
   }
 
   def assertSeek(value: Value): Unit = {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
+import java.time.ZoneOffset
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
 import org.scalacheck.Gen
@@ -80,11 +82,25 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       crs <- Gen.oneOf(allCRS(dimension))
     } yield Values.pointValue(crs, coordinates:_*)
 
+  def timeGen: Gen[TimeValue] =
+    for {
+      nanosOfDay <- Gen.chooseNum(1000000000, 86399999999999L - 1000000000)
+      timeZone <- zoneOffsetGen
+    } yield TimeValue.time(nanosOfDay, timeZone)
+
+  def localTimeGen: Gen[LocalTimeValue] =
+    for {
+      nanosOfDay <- Gen.chooseNum(1000000000, 86399999999999L - 1000000000)
+    } yield LocalTimeValue.localTime(nanosOfDay)
+
   def dateGen: Gen[DateValue] =
     for {
       epochDays <- arbitrary[Int] // we only generate epochDays as an int, to avoid overflowing
                                   // the limits of the underlying java types
     } yield DateValue.epochDate(epochDays)
+
+  def zoneOffsetGen: Gen[ZoneOffset] =
+    Gen.chooseNum(-18*60, 18*60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
 
   /**
     * Test a single value setup and operator

@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -73,7 +72,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
         return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
     }

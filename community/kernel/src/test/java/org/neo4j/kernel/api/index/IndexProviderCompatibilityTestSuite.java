@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,7 +102,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             LocalTimeValue.localTime( 100000 ),
                             TimeValue.time( 43_200_000_000_000L, ZoneOffset.UTC ), // Noon
                             TimeValue.time( 43_201_000_000_000L, ZoneOffset.UTC ),
-                            TimeValue.time( 43_200_000_000_000L, ZoneId.of( "+01:00" ) ), // Noon in the next time-zone
+                            TimeValue.time( 43_200_000_000_000L, ZoneOffset.of( "+01:00" ) ), // Noon in the next time-zone
                             TimeValue.time( 46_800_000_000_000L, ZoneOffset.UTC ), // Same time UTC as prev time
                             LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "UTC" ),
