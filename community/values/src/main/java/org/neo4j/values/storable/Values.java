@@ -727,6 +727,7 @@ public final class Values
         case NUMBER: return MIN_NUMBER;
         case GEOMETRY: return minPointValue( (PointValue)value );
         case DATE: return DateValue.MIN_VALUE;
+        case ZONED_DATE_TIME: return DateTimeValue.MIN_VALUE;
         default: throw new IllegalStateException(
                 format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
         }
@@ -740,6 +741,7 @@ public final class Values
         case NUMBER: return MAX_NUMBER;
         case GEOMETRY: return maxPointValue( (PointValue)value );
         case DATE: return DateValue.MAX_VALUE;
+        case ZONED_DATE_TIME: return DateTimeValue.MAX_VALUE;
         default: throw new IllegalStateException(
                 format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
         }

@@ -451,18 +451,18 @@ public class DateTimeValueTest
     @Test
     public void shouldEqualItself()
     {
-        assertEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ) );
+        assertEqual( datetime( 10000, 100, UTC ), datetime( 10000, 100, UTC ) );
     }
 
     @Test
-    public void shouldNotEqualSameTimeButDifferentTimezone()
+    public void shouldNotEqualSameInstantButDifferentTimezone()
     {
-        assertNotEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 10, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( datetime( 10000, 100, UTC ), datetime( 10000, 100, ZoneOffset.of( "+01:00" ) ) );
     }
 
     @Test
-    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
-        assertEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 11, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 11, 52, 5, 6, "+01:00" ) );
     }
 }

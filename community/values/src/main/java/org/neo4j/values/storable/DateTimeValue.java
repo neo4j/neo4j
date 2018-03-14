@@ -62,6 +62,9 @@ import static org.neo4j.values.storable.TimeValue.parseOffset;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
+    public static final DateTimeValue MIN_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MIN, UTC ) );
+    public static final DateTimeValue MAX_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MAX, UTC ) );
+
     public static DateTimeValue datetime( DateValue date, LocalTimeValue time, ZoneId zone )
     {
         return new DateTimeValue( ZonedDateTime.of( date.temporal(), time.temporal(), zone ) );
@@ -407,7 +410,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         if ( other instanceof DateTimeValue )
         {
             DateTimeValue that = (DateTimeValue) other;
-            return value.toInstant().equals( that.value.toInstant() );
+            return value.equals( that.value );
         }
         return false;
     }
