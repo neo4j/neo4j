@@ -27,8 +27,9 @@ import org.neo4j.causalclustering.identity.BoundState;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.SafeLifecycle;
 
-public class CoreLife implements Lifecycle
+public class CoreLife extends SafeLifecycle
 {
     private final RaftMachine raftMachine;
     private final LocalDatabase localDatabase;
@@ -57,13 +58,13 @@ public class CoreLife implements Lifecycle
     }
 
     @Override
-    public synchronized void init() throws Throwable
+    public synchronized void init0() throws Throwable
     {
         localDatabase.init();
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start0() throws Throwable
     {
         BoundState boundState = clusterBinder.bindToCluster();
         raftMessageHandler.start( boundState.clusterId() );
@@ -86,7 +87,7 @@ public class CoreLife implements Lifecycle
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop0() throws Throwable
     {
         raftMachine.stopTimers();
         raftMessageHandler.stop();
@@ -95,7 +96,7 @@ public class CoreLife implements Lifecycle
     }
 
     @Override
-    public synchronized void shutdown() throws Throwable
+    public synchronized void shutdown0() throws Throwable
     {
         localDatabase.shutdown();
     }
