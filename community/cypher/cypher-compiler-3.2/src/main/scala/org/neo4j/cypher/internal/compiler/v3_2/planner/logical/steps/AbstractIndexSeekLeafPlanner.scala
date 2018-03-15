@@ -53,7 +53,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     else {
       val arguments: Set[Variable] = qg.argumentIds.map(n => Variable(n.name)(null))
       val plannables: Set[IndexPlannableExpression] = predicates.collect(
-        indexPlannableExpression(qg.argumentIds, arguments, qg.hints))
+        indexPlannableExpression(qg.argumentIds, arguments, qg.hints.toSet))
       val result = plannables.map(_.name).flatMap { name =>
         val idName = IdName(name)
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
@@ -92,7 +92,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def producePlansForSpecificVariable(idName: IdName, nodePlannables: Set[IndexPlannableExpression],
                                               labelPredicates: Set[HasLabels],
-                                              hints: Set[Hint], argumentIds: Set[IdName])
+                                              hints: Seq[Hint], argumentIds: Set[IdName])
                                              (implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
@@ -105,7 +105,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   private def createLogicalPlan(idName: IdName,
-                  hints: Set[Hint],
+                  hints: Seq[Hint],
                   argumentIds: Set[IdName],
                   labelPredicate: HasLabels,
                   labelName: LabelName,

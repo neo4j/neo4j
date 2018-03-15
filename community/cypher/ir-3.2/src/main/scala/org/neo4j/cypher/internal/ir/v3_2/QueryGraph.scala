@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.ir.v3_2
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.ir.v3_2.helpers.ExpressionConverters._
 
-import scala.collection.{GenTraversableOnce, mutable}
+import scala.collection.{GenSeq, GenTraversableOnce, mutable}
 import scala.runtime.ScalaRunTime
 
 case class QueryGraph(// !!! If you change anything here, make sure to update the equals method at the bottom of this class !!!
@@ -31,7 +31,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
-                      hints: Set[Hint] = Set.empty,
+                      hints: Seq[Hint] = Seq.empty,
                       shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
                       mutatingPatterns: Seq[MutatingPattern] = Seq.empty)
   extends UpdateGraph {
@@ -164,7 +164,9 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(hints = hints ++ addedHints)
   }
 
-  def withoutHints(hintsToIgnore: GenTraversableOnce[Hint]): QueryGraph = copy(hints = hints -- hintsToIgnore)
+  def withoutHints(hintsToIgnore: GenSeq[Hint]): QueryGraph = copy(
+    hints = hints.diff(hintsToIgnore),
+    optionalMatches = optionalMatches.map(_.withoutHints(hintsToIgnore)))
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
 
@@ -248,7 +250,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     coveredIds ++ otherSymbols
   }
 
-  val allHints: Set[Hint] =
+  val allHints: Seq[Hint] =
     if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
 
   def ++(other: QueryGraph): QueryGraph =
@@ -324,7 +326,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(patternRelationships = patternRelationships -- patterns)
 
-  def joinHints: Set[UsingJoinHint] =
+  def joinHints: Seq[UsingJoinHint] =
     hints.collect { case hint: UsingJoinHint => hint }
 
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
@@ -404,7 +406,8 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
         argumentIds == other.argumentIds &&
         selections == other.selections &&
         optionals &&
-        hints == other.hints &&
+      // ignore order, but differentiate between different counts of the same element
+        hints.groupBy(identity) == other.hints.groupBy(identity) &&
         shortestPathPatterns == other.shortestPathPatterns &&
         mutatingPatterns == other.mutatingPatterns
 
@@ -420,7 +423,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     else
       optionalMatches
 
-    ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionals, hints, shortestPathPatterns, mutatingPatterns))
+    ScalaRunTime._hashCode((patternRelationships, patternNodes, argumentIds, selections, optionals, hints.groupBy(identity), shortestPathPatterns, mutatingPatterns))
   }
 
   private lazy val containsIndependentOptionalMatches = {

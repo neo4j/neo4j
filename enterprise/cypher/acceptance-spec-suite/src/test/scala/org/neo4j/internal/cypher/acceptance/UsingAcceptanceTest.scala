@@ -740,7 +740,20 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 
+  test("should handle join hint solved multiple times") {
+    val initQuery = "CREATE (a:Node)-[:R]->(b:Node)-[:R]->(c:Node), (d:Node)-[:R]->(b)-[:R]->(e:Node)"
+    graph.execute(initQuery)
 
+    val query =
+      s"""MATCH (a:Node)-->(b:Node),(b)-->(c:Node),(d:Node)-->(b),(b)-->(e:Node)
+         |USING JOIN ON b
+         |RETURN count(*) as c""".stripMargin
+
+    val result = innerExecute(query)
+
+    result.toList should equal (List(Map("c" -> 4)))
+    result should useOperationTimes("NodeHashJoin", 3)
+  }
 
   //---------------------------------------------------------------------------
   // Verification helpers

@@ -42,11 +42,14 @@ class CartesianProductsOrValueJoinsTest
       input = Set(
         PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
-      expectedPlan = CartesianProduct(
-        planA,
-        planB
-      )(solved)
-    )
+      expectedPlans =
+        List(planA, planB).permutations.map { l =>
+          val (a, b) = (l.head, l(1))
+          CartesianProduct(
+            planA,
+            planB
+          )(solved)
+        }.toSeq: _*)
   }
 
   test("should plan cartesian product between 3 pattern nodes") {
@@ -56,13 +59,17 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
-      expectedPlan = CartesianProduct(
-        planC,
-        CartesianProduct(
-          planB,
-          planA
-        )(solved)
-      )(solved))
+      expectedPlans =
+        List(planA, planB, planC).permutations.map { l =>
+          val (a, b, c) = (l.head, l(1), l(2))
+          CartesianProduct(
+            a,
+            CartesianProduct(
+              b,
+              c
+            )(solved)
+          )(solved)
+        }.toSeq : _*)
   }
 
   test("should plan cartesian product between lots of pattern nodes") {
@@ -93,7 +100,7 @@ class CartesianProductsOrValueJoinsTest
       input = Set(
         PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB)),
-      expectedPlan = ValueHashJoin(planA, planB, equality)(solved))
+      expectedPlans = ValueHashJoin(planA, planB, equality)(solved))
   }
 
   test("should plan hash joins between 3 pattern nodes") {
@@ -109,10 +116,13 @@ class CartesianProductsOrValueJoinsTest
         PlannedComponent(QueryGraph(patternNodes = Set("a")), planA),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), planB),
         PlannedComponent(QueryGraph(patternNodes = Set("c")), planC)),
-      expectedPlan =
-        Selection(Seq(eq3),
-          ValueHashJoin(planA,
-            ValueHashJoin(planB, planC, eq2)(solved), eq1.switchSides)(solved))(solved))
+      expectedPlans =
+        List((planA, "a"), (planB, "b"), (planC, "c")).permutations.map { l =>
+          val ((a, aName), (b, bName), (c, cName)) = (l.head, l(1), l(2))
+        Selection(Seq(Equals(prop(aName, "id"), prop(cName, "id"))(pos)),
+          ValueHashJoin(a,
+            ValueHashJoin(b, c, Equals(prop(bName, "id"), prop(cName, "id"))(pos))(solved), Equals(prop(aName, "id"), prop(bName, "id"))(pos))(solved))(solved)
+        }.toSeq : _*)
   }
 
   private def testThis(graph: QueryGraph, input: Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
@@ -139,6 +149,6 @@ class CartesianProductsOrValueJoinsTest
     }
   }
 
-  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlan: LogicalPlan): Unit =
-    testThis(graph, input, (result: LogicalPlan) => result should equal(expectedPlan))
+  private def testThis(graph: QueryGraph, input: Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
+    testThis(graph, input, (result: LogicalPlan) => expectedPlans should contain(result))
 }
