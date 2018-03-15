@@ -33,7 +33,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -44,6 +43,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -89,7 +89,7 @@ class FulltextUpdateApplier extends LifecycleAdapter
                     Predicate<Map.Entry<String,Object>> relevantForIndex =
                             entry -> indexedProperties.contains( entry.getKey() );
                     Map<String,Object> allProperties = entryStream.filter( relevantForIndex )
-                            .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                            .collect( CollectorsUtil.entriesToMap() );
 
                     if ( !allProperties.isEmpty() )
                     {

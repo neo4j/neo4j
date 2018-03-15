@@ -37,7 +37,7 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -200,7 +200,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         // through `toNeo4jValue`
         return attributeValue.entrySet().stream()
                 .map( e -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
-                .collect( Collectors.toMap( Pair::first, Pair::other ) );
+                .collect( CollectorsUtil.pairsToMap() );
     }
 
     private List<Object> toNeo4jValue( Object[] array )

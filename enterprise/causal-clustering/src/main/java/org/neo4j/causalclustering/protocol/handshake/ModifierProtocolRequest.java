@@ -21,9 +21,9 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.Set;
 
-public class ModifierProtocolRequest extends BaseProtocolRequest implements ServerMessage
+public class ModifierProtocolRequest extends BaseProtocolRequest<String>
 {
-    ModifierProtocolRequest( String protocolName, Set<Integer> versions )
+    ModifierProtocolRequest( String protocolName, Set<String> versions )
     {
         super( protocolName, versions );
     }

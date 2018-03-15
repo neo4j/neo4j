@@ -93,8 +93,8 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
                 {
                     orientation,
                     socketAddress.toString(),
-                    protocolStack.applicationProtocol().identifier(),
-                    (long) protocolStack.applicationProtocol().version(),
+                    protocolStack.applicationProtocol().category(),
+                    (long) protocolStack.applicationProtocol().implementation(),
                     modifierString( protocolStack )
                 };
     }
@@ -104,7 +104,7 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
         return protocolStack
                 .modifierProtocols()
                 .stream()
-                .map( Protocol.ModifierProtocol::friendlyName )
+                .map( Protocol.ModifierProtocol::implementation )
                 .collect( Collectors.joining( ",", "[", "]") );
     }
 }

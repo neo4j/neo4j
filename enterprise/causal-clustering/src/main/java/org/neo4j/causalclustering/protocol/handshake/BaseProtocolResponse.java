@@ -21,13 +21,13 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.Objects;
 
-public abstract class BaseProtocolResponse
+public abstract class BaseProtocolResponse<IMPL extends Comparable<IMPL>> implements ClientMessage
 {
     private final StatusCode statusCode;
     private final String protocolName;
-    private final int version;
+    private final IMPL version;
 
-    BaseProtocolResponse( StatusCode statusCode, String protocolName, int version )
+    BaseProtocolResponse( StatusCode statusCode, String protocolName, IMPL version )
     {
         this.statusCode = statusCode;
         this.protocolName = protocolName;
@@ -46,7 +46,7 @@ public abstract class BaseProtocolResponse
             return false;
         }
         BaseProtocolResponse that = (BaseProtocolResponse) o;
-        return version == that.version && Objects.equals( protocolName, that.protocolName );
+        return Objects.equals( version, that.version ) && Objects.equals( protocolName, that.protocolName );
     }
 
     @Override
@@ -65,8 +65,14 @@ public abstract class BaseProtocolResponse
         return protocolName;
     }
 
-    public int version()
+    public IMPL version()
     {
         return version;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "BaseProtocolResponse{" + "statusCode=" + statusCode + ", protocolName='" + protocolName + '\'' + ", version=" + version + '}';
     }
 }

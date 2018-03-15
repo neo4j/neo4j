@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.FAILURE;
 
-public class ApplicationProtocolResponse extends BaseProtocolResponse implements ClientMessage
+public class ApplicationProtocolResponse extends BaseProtocolResponse<Integer>
 {
     public static final ApplicationProtocolResponse NO_PROTOCOL = new ApplicationProtocolResponse( FAILURE, "", 0 );
 

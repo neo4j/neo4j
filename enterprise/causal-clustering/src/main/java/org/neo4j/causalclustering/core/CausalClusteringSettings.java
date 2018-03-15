@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core;
 import java.io.File;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -40,8 +39,16 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.kernel.configuration.Settings;
 
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY_VALIDATING;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -52,6 +59,7 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
@@ -452,13 +460,9 @@ public class CausalClusteringSettings implements LoadableConfig
                     apply( rawConfig::get );
                     // only return if it was present though
 
-                    Map<String, String> validConfig = new HashMap<>();
-
-                    rawConfig.keySet().stream()
-                            .filter( key -> key.startsWith( name() ) )
-                            .forEach( key -> validConfig.put( key, rawConfig.get( key ) ) );
-
-                    return validConfig;
+                    return rawConfig.entrySet().stream()
+                            .filter( entry -> entry.getKey().startsWith( name() ) )
+                            .collect( CollectorsUtil.entriesToMap() );
                 }
                 catch ( RuntimeException e )
                 {
@@ -490,4 +494,16 @@ public class CausalClusteringSettings implements LoadableConfig
                   " If no policy is configured then the communication will not be secured." )
     public static final Setting<String> ssl_policy =
             prefixSetting( "causal_clustering.ssl_policy", STRING, NO_DEFAULT );
+
+    @Description( "Raft protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
+            " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
+    public static final Setting<List<Integer>> raft_implementations =
+            setting( "causal_clustering.protocol_implementations.raft", list( ",", INTEGER ), "" );
+
+    @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
+            " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
+            " Allowable values: [" + GZIP + "," + SNAPPY + "," + SNAPPY_VALIDATING + "," +
+            LZ4 + "," + LZ4_HIGH_COMPRESSION + "," + LZ_VALIDATING + "," + LZ4_HIGH_COMPRESSION_VALIDATING + "]" )
+    public static final Setting<List<String>> compression_implementations =
+            setting( "causal_clustering.protocol_implementations.compression", STRING_LIST, "");
 }

@@ -17,28 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.stream;
+package org.neo4j.helpers.collection;
 
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
-public class Streams
+public class CollectorsUtil
 {
-    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
-    public static <T> Stream<T> ofOptional( Optional<T> opt )
+    public static <K,V> Collector<Map.Entry<K,V>,?,Map<K,V>> entriesToMap()
     {
-        return opt.map( Stream::of ).orElse( Stream.empty() );
+        return Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue );
     }
 
-    public static <T> Stream<T> ofNullable( T obj )
+    public static <K,V> Collector<Pair<K,V>,?,Map<K,V>> pairsToMap()
     {
-        if ( obj == null )
-        {
-            return Stream.empty();
-        }
-        else
-        {
-            return Stream.of( obj );
-        }
+        return Collectors.toMap( Pair::first, Pair::other );
     }
 }

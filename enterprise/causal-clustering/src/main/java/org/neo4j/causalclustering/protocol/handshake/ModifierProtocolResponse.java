@@ -19,16 +19,16 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-public class ModifierProtocolResponse extends BaseProtocolResponse implements ClientMessage
+public class ModifierProtocolResponse extends BaseProtocolResponse<String>
 {
-    ModifierProtocolResponse( StatusCode statusCode, String protocolName, int version )
+    ModifierProtocolResponse( StatusCode statusCode, String protocolName, String implementation )
     {
-        super( statusCode, protocolName, version );
+        super( statusCode, protocolName, implementation );
     }
 
     static ModifierProtocolResponse failure( String protocolName )
     {
-        return new ModifierProtocolResponse( StatusCode.FAILURE, protocolName, 0 );
+        return new ModifierProtocolResponse( StatusCode.FAILURE, protocolName, "" );
     }
 
     @Override

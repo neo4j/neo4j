@@ -24,7 +24,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +33,6 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.messaging.ReconnectingChannel;
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.kernel.configuration.Config;
@@ -45,28 +43,24 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel>
 {
-    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
-    private final Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier;
-    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
-    private final Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers;
+    private final ApplicationProtocolRepository applicationProtocolRepository;
+    private final ModifierProtocolRepository modifierProtocolRepository;
     private final Duration timeout;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
     private final TimeoutStrategy timeoutStrategy;
     private final Log log;
 
-    public HandshakeClientInitializer( ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
-            Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier,
-            ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository,
-            Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers,
-            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            Config config, LogProvider logProvider )
+    public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository,
+            ModifierProtocolRepository modifierProtocolRepository,
+            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository,
+            NettyPipelineBuilderFactory pipelineBuilderFactory,
+            Config config,
+            LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
         this.applicationProtocolRepository = applicationProtocolRepository;
-        this.applicationProtocolIdentifier = applicationProtocolIdentifier;
         this.modifierProtocolRepository = modifierProtocolRepository;
-        this.modifierProtocolIdentifiers = modifierProtocolIdentifiers;
         this.timeout = config.get( CausalClusteringSettings.handshake_timeout );
         this.protocolInstaller = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
@@ -130,8 +124,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
         SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
-        CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, applicationProtocolIdentifier,
-                modifierProtocolRepository, modifierProtocolIdentifiers );
+        CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, modifierProtocolRepository );
 
         handshake.whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
     }

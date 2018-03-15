@@ -19,16 +19,16 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.messaging.Channel;
-import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
+import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.stream.Streams;
 
@@ -37,38 +37,49 @@ import static org.neo4j.causalclustering.protocol.handshake.StatusCode.SUCCESS;
 public class HandshakeClient implements ClientMessageHandler
 {
     private Channel channel;
-    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
-    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
-    private ProtocolSelection<Protocol.ApplicationProtocol> knownApplicationProtocolVersions;
-    private List<ProtocolSelection<Protocol.ModifierProtocol>> knownModifierProtocolVersions;
-    private Protocol.ApplicationProtocol applicationProtocol;
-    private Map<String,Optional<Protocol.ModifierProtocol>> negotiatedModifierProtocols = new HashMap<>();
+    private ApplicationProtocolRepository applicationProtocolRepository;
+    private ApplicationSupportedProtocols supportedApplicationProtocol;
+    private ModifierProtocolRepository modifierProtocolRepository;
+    private Collection<ModifierSupportedProtocols> supportedModifierProtocols;
+    private ApplicationProtocol applicationProtocol;
+    private List<Pair<String,Optional<ModifierProtocol>>> negotiatedModifierProtocols;
     private ProtocolStack protocolStack;
     private CompletableFuture<ProtocolStack> future = new CompletableFuture<>();
     private boolean magicReceived;
 
-    public CompletableFuture<ProtocolStack> initiate( Channel channel, ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
-            Protocol.ApplicationProtocolIdentifier applicationProtocolIdentifier, ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository,
-            Set<Protocol.ModifierProtocolIdentifier> modifierProtocolIdentifiers )
+    public CompletableFuture<ProtocolStack> initiate( Channel channel, ApplicationProtocolRepository applicationProtocolRepository,
+            ModifierProtocolRepository modifierProtocolRepository )
     {
         this.channel = channel;
+
         this.applicationProtocolRepository = applicationProtocolRepository;
-        this.knownApplicationProtocolVersions = applicationProtocolRepository.getAll( applicationProtocolIdentifier );
+        this.supportedApplicationProtocol = applicationProtocolRepository.supportedProtocol();
 
         this.modifierProtocolRepository = modifierProtocolRepository;
-        this.knownModifierProtocolVersions = modifierProtocolIdentifiers
-                .stream()
-                .map( modifierProtocolRepository::getAll )
-                .collect( Collectors.toList() );
+        this.supportedModifierProtocols = modifierProtocolRepository.supportedProtocols();
+
+        negotiatedModifierProtocols = new ArrayList<>( supportedModifierProtocols.size() );
 
         channel.write( InitialMagicMessage.instance() );
 
-        knownModifierProtocolVersions.forEach( modifierProtocolSelection ->
-                channel.write( new ModifierProtocolRequest( modifierProtocolSelection.identifier(), modifierProtocolSelection .versions() ) ) );
-
-        channel.writeAndFlush( new ApplicationProtocolRequest( knownApplicationProtocolVersions.identifier(), knownApplicationProtocolVersions.versions() ) );
+        sendProtocolRequests( channel, supportedApplicationProtocol, supportedModifierProtocols );
 
         return future;
+    }
+
+    private void sendProtocolRequests( Channel channel, ApplicationSupportedProtocols applicationProtocols,
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols )
+    {
+        supportedModifierProtocols.forEach( modifierProtocol ->
+                {
+                    ProtocolSelection<String,ModifierProtocol> protocolSelection =
+                            modifierProtocolRepository.getAll( modifierProtocol.identifier(), modifierProtocol.versions() );
+                    channel.write( new ModifierProtocolRequest( protocolSelection.identifier(), protocolSelection.versions() ) );
+                } );
+
+        ProtocolSelection<Integer,ApplicationProtocol> applicationProtocolSelection =
+                applicationProtocolRepository.getAll( applicationProtocols.identifier(), applicationProtocols.versions() );
+        channel.writeAndFlush( new ApplicationProtocolRequest( applicationProtocolSelection.identifier(), applicationProtocolSelection.versions() ) );
     }
 
     private void ensureMagic()
@@ -102,11 +113,13 @@ public class HandshakeClient implements ClientMessageHandler
             return;
         }
 
-        Optional<Protocol.ApplicationProtocol> protocol =
+        Optional<ApplicationProtocol> protocol =
                 applicationProtocolRepository.select( applicationProtocolResponse.protocolName(), applicationProtocolResponse.version() );
 
         if ( !protocol.isPresent() )
         {
+            ProtocolSelection<Integer,ApplicationProtocol> knownApplicationProtocolVersions =
+                    applicationProtocolRepository.getAll( supportedApplicationProtocol.identifier(), supportedApplicationProtocol.versions() );
             decline( String.format(
                     "Mismatch of application protocols between client and server: Server protocol %s version %d: Client protocol %s versions %s",
                     applicationProtocolResponse.protocolName(), applicationProtocolResponse.version(),
@@ -126,13 +139,13 @@ public class HandshakeClient implements ClientMessageHandler
         ensureMagic();
         if ( modifierProtocolResponse.statusCode() == StatusCode.SUCCESS )
         {
-            Optional<Protocol.ModifierProtocol> selectedModifierProtocol =
+            Optional<ModifierProtocol> selectedModifierProtocol =
                     modifierProtocolRepository.select( modifierProtocolResponse.protocolName(), modifierProtocolResponse.version() );
-            negotiatedModifierProtocols.put( modifierProtocolResponse.protocolName(), selectedModifierProtocol );
+            negotiatedModifierProtocols.add( Pair.of( modifierProtocolResponse.protocolName(), selectedModifierProtocol ) );
         }
         else
         {
-            negotiatedModifierProtocols.put( modifierProtocolResponse.protocolName(), Optional.empty() );
+            negotiatedModifierProtocols.add( Pair.of( modifierProtocolResponse.protocolName(), Optional.empty() ) );
         }
 
         sendSwitchOverRequestIfReady();
@@ -140,22 +153,22 @@ public class HandshakeClient implements ClientMessageHandler
 
     private void sendSwitchOverRequestIfReady()
     {
-        if ( applicationProtocol != null && negotiatedModifierProtocols.size() == knownModifierProtocolVersions.size() )
+        if ( applicationProtocol != null && negotiatedModifierProtocols.size() == supportedModifierProtocols.size() )
         {
-            List<Protocol.ModifierProtocol> agreedModifierProtocols = negotiatedModifierProtocols
-                    .values()
+            List<ModifierProtocol> agreedModifierProtocols = negotiatedModifierProtocols
                     .stream()
+                    .map( Pair::other )
                     .flatMap( Streams::ofOptional )
                     .collect( Collectors.toList() );
 
             protocolStack = new ProtocolStack( applicationProtocol, agreedModifierProtocols );
-            List<Pair<String,Integer>> switchOverModifierProtocols =
+            List<Pair<String,String>> switchOverModifierProtocols =
                     agreedModifierProtocols
                             .stream()
-                            .map( protocol -> Pair.of( protocol.identifier(), protocol.version() ) )
+                            .map( protocol -> Pair.of( protocol.category(), protocol.implementation() ) )
                             .collect( Collectors.toList() );
 
-            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.identifier(), applicationProtocol.version(), switchOverModifierProtocols ) );
+            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.category(), applicationProtocol.implementation(), switchOverModifierProtocols ) );
         }
     }
 
