@@ -167,17 +167,17 @@ public abstract class FusionIndexBase<T>
         }
     }
 
-    static void validateSelectorInstances( Object[] instances, int... notNullIndex )
+    static void validateSelectorInstances( Object[] instances, int... aliveIndex )
     {
         for ( int i = 0; i < instances.length; i++ )
         {
-            boolean expected = PrimitiveIntCollections.contains( notNullIndex, i );
+            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
             boolean actual = instances[i] != IndexProvider.EMPTY;
             if ( expected != actual )
             {
                 throw new IllegalArgumentException(
                         String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
-                                Arrays.toString( notNullIndex ), Arrays.toString( instances ) ) );
+                                Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
             }
         }
     }
