@@ -169,7 +169,7 @@ public class NonUniqueIndexTest
         }
         else
         {
-            indexProvider = LuceneIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
+            indexProvider = LuceneIndexProviderFactory.createLuceneProvider( fs, storeDir, monitor, config, operationalMode );
         }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,

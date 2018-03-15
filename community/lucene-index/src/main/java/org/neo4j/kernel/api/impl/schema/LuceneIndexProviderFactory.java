@@ -25,19 +25,23 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector00;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneIndexProviderFactory extends
@@ -65,7 +69,7 @@ public class LuceneIndexProviderFactory extends
     }
 
     @Override
-    public LuceneIndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    public IndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         File storeDir = context.storeDir();
@@ -75,22 +79,31 @@ public class LuceneIndexProviderFactory extends
         monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
         IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
-        return create( fileSystemAbstraction, storeDir, monitor, config, operationalMode );
+
+        LuceneIndexProvider luceneProvider = createLuceneProvider( fileSystemAbstraction, storeDir, monitor, config, operationalMode );
+
+        return new FusionIndexProvider( EMPTY, EMPTY, EMPTY, EMPTY, luceneProvider, new FusionSelector00(),
+                PROVIDER_DESCRIPTOR, LuceneIndexProvider.PRIORITY, directoriesByProvider( storeDir ), fileSystemAbstraction );
     }
 
-    public static LuceneIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
+    public static LuceneIndexProvider createLuceneProvider( FileSystemAbstraction fileSystemAbstraction, File storeDir,
                                               IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
     {
-        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode );
+        return createLuceneProvider( fileSystemAbstraction, directoryStructureForLuceneProvider( storeDir ), monitor, config, operationalMode );
     }
 
-    public static LuceneIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
-                                              IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
-                                              OperationalMode operationalMode )
+    static LuceneIndexProvider createLuceneProvider( FileSystemAbstraction fileSystemAbstraction,
+            IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
+            OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
         return new LuceneIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config,
                 operationalMode );
+    }
+
+    private static IndexDirectoryStructure.Factory directoryStructureForLuceneProvider( File storeDir )
+    {
+        return directoriesByProviderKey( storeDir );
     }
 }

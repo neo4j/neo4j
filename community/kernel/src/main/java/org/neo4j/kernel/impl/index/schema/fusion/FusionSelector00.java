@@ -28,7 +28,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 /**
  * Selector for index provider "lucene-1.x".
  * The version name "00" comes from lucene-1.x originally not being a fusion index.
- * todo If spatial and temporal will live together with lucene-1.x, update this selector. Otherwise, remove it.
  */
 public class FusionSelector00 implements FusionIndexProvider.Selector
 {

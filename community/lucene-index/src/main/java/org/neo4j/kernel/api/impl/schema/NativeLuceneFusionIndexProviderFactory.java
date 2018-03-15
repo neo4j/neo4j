@@ -90,8 +90,7 @@ public class NativeLuceneFusionIndexProviderFactory
         // This is the v1.0 of the lucene+native fusion setup where there's only number+lucene indexes
         NumberIndexProvider numberProvider =
                 new NumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-
-        LuceneIndexProvider luceneProvider = LuceneIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config, operationalMode );
+        LuceneIndexProvider luceneProvider = LuceneIndexProviderFactory.createLuceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
@@ -109,4 +108,5 @@ public class NativeLuceneFusionIndexProviderFactory
     {
         return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
     }
+
 }
