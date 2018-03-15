@@ -80,15 +80,15 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     if (cypherComparisonSupport) {
       val result =
         executeWith(
-          TestConfiguration(
-            Versions(Versions.V3_4, Versions.V3_3, Versions.Default),
-            Planners(Planners.Cost, Planners.Default),
-            Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default)
-          ),
+          Configs.Interpreted - Configs.OldAndRule,
+//          TestConfiguration(
+//            Versions(Versions.V3_4, Versions.V3_3, Versions.Default),
+//            Planners(Planners.Cost, Planners.Default),
+//            Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default)
+//          ),
           query,
           params = params,
-          planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators(wantedOperator),
-                                                             expectPlansToFail = Configs.AllRulePlanners)
+          planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators(wantedOperator))
         )
       val nodes = result.columnAs("n").toSet
       expected.foreach(p => assert(nodes.contains(p)))
