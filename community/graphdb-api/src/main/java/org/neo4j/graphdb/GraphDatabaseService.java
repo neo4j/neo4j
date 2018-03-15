@@ -160,7 +160,10 @@ public interface GraphDatabaseService
      * @param value2 required property value of key2
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 );
+    default ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+    }
 
     /**
      * Returns all nodes having the label, and the wanted property values.
@@ -190,10 +193,13 @@ public interface GraphDatabaseService
      * @param value3 required property value of key3
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label,
+    default ResourceIterator<Node> findNodes( Label label,
                                       String key1, Object value1,
                                       String key2, Object value2,
-                                      String key3, Object value3 );
+                                      String key3, Object value3 )
+    {
+        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+    }
 
     /**
      * Returns all nodes having the label, and the wanted property values.
@@ -218,7 +224,10 @@ public interface GraphDatabaseService
      * @param propertyValues required property key-value combinations
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, Map<String, Object> propertyValues );
+    default ResourceIterator<Node> findNodes( Label label, Map<String, Object> propertyValues )
+    {
+        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+    }
 
     /**
      * Returns all nodes having a given label, and a property value of type String or Character matching the
@@ -247,7 +256,10 @@ public interface GraphDatabaseService
      * @param searchMode required property value template
      * @return an iterator containing all matching nodes. See {@link ResourceIterator} for responsibilities.
      */
-    ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode );
+    default ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
+    {
+        throw new UnsupportedOperationException( "Specialized string queries are not supported by this GraphDatabaseService" );
+    }
 
     /**
      * Equivalent to {@link #findNodes(Label, String, Object)}, however it must find no more than one
