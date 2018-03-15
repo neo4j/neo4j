@@ -54,6 +54,9 @@ import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
+    public static final TimeValue MIN_VALUE = new TimeValue( OffsetTime.MIN );
+    public static final TimeValue MAX_VALUE = new TimeValue( OffsetTime.MAX );
+
     public static TimeValue time( OffsetTime time )
     {
         return new TimeValue( requireNonNull( time, "OffsetTime" ) );
@@ -297,9 +300,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public boolean equals( Value other )
     {
-        // TODO: do we want equality to be this permissive?
-        // This means that time("14:30+0100") = time("15:30+0200")
-        return other instanceof TimeValue && value.isEqual( ((TimeValue) other).value );
+        return other instanceof TimeValue && value.equals( ((TimeValue) other).value );
     }
 
     @Override
