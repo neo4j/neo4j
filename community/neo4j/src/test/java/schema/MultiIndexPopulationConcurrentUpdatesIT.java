@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -625,7 +626,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     for ( NodeUpdates update : updates )
                     {
-                        Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> entryUpdates =
+                        Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
                                 indexService.convertToIndexUpdates( update );
                         DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
                         indexService.apply( directIndexUpdates );

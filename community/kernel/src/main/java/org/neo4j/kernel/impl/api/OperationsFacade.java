@@ -554,7 +554,7 @@ public class OperationsFacade
 
     // <SchemaRead>
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException
     {
         statement.assertOpen();
@@ -940,7 +940,7 @@ public class OperationsFacade
 
     // <SchemaWrite>
     @Override
-    public SchemaIndexDescriptor indexCreate( LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( SchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         statement.assertOpen();

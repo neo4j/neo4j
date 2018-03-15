@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
@@ -86,6 +87,7 @@ import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getOrCreatePropertyKeyIds;
 
 public class SchemaImpl implements Schema
@@ -342,8 +344,7 @@ public class SchemaImpl implements Schema
         CapableIndexReference reference = schemaRead.index( labelId, propertyKeyIds );
         if ( reference == CapableIndexReference.NO_INDEX )
         {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, new org.neo4j.kernel.api.schema
-                    .LabelSchemaDescriptor( labelId, propertyKeyIds ) );
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, forLabel( labelId, propertyKeyIds ) );
         }
 
         return reference;
@@ -398,8 +399,8 @@ public class SchemaImpl implements Schema
              constraint instanceof NodeKeyConstraintDescriptor ||
              constraint instanceof UniquenessConstraintDescriptor )
         {
-            LabelSchemaDescriptor schemaDescriptor = (LabelSchemaDescriptor) constraint.schema();
-            Label label = Label.label( lookup.labelGetName( schemaDescriptor.getLabelId() ) );
+            SchemaDescriptor schemaDescriptor = constraint.schema();
+            Label label = Label.label( lookup.labelGetName( schemaDescriptor.keyId() ) );
             String[] propertyKeys = Arrays.stream( schemaDescriptor.getPropertyIds() )
                     .mapToObj( lookup::propertyKeyGetName ).toArray( String[]::new );
             if ( constraint instanceof NodeExistenceConstraintDescriptor )
@@ -460,7 +461,7 @@ public class SchemaImpl implements Schema
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
-                    LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+                    LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyIds );
                     transaction.schemaWrite().indexCreate( descriptor );
                     return indexDefinition;
                 }
@@ -516,7 +517,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     transaction.schemaWrite().uniquePropertyConstraintCreate(
-                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                            forLabel( labelId, propertyKeyIds ) );
                     return new UniquenessConstraintDefinition( this, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
@@ -552,7 +553,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     transaction.schemaWrite().nodeKeyConstraintCreate(
-                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                            forLabel( labelId, propertyKeyIds ) );
                     return new NodeKeyConstraintDefinition( this, indexDefinition );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException | AlreadyIndexedException |
@@ -588,7 +589,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     transaction.schemaWrite().nodePropertyExistenceConstraintCreate(
-                            SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
+                            forLabel( labelId, propertyKeyIds ) );
                     return new NodePropertyExistenceConstraintDefinition( this, label, propertyKeys );
                 }
                 catch ( AlreadyConstrainedException | CreateConstraintFailureException |

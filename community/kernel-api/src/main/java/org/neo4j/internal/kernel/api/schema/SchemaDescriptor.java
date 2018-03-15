@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  * how this is done in eg. LabelSchemaDescriptor, and the SchemaProcessor and SchemaComputer interfaces need to be
  * extended with methods taking the new concrete type as argument.
  */
-public interface SchemaDescriptor
+public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
@@ -63,6 +63,13 @@ public interface SchemaDescriptor
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
+     * Translate the schema key to a key name using the given {@link TokenNameLookup}.
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return The string name of the key token.
+     */
+    String keyName( TokenNameLookup tokenNameLookup );
+
+    /**
      * This method return the property ids that are relevant to this Schema Descriptor.
      *
      * Putting this method here is a convenience that will break if/when we introduce more complicated schema
@@ -71,6 +78,23 @@ public interface SchemaDescriptor
      * @return the property ids
      */
     int[] getPropertyIds();
+
+    /**
+     * Assume that this schema descriptor describes a schema that includes a single property id, and return that id.
+     *
+     * @return The presumed single property id of this schema.
+     * @throws IllegalStateException if this schema does not have exactly one property.
+     */
+    default int getPropertyId()
+    {
+        int[] propertyIds = getPropertyIds();
+        if ( propertyIds.length != 1 )
+        {
+            throw new IllegalStateException(
+                    "Single property schema requires one property but had " + propertyIds.length );
+        }
+        return propertyIds[0];
+    }
 
     /**
      * Id of underlying schema descriptor key.
@@ -92,7 +116,7 @@ public interface SchemaDescriptor
      * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
      * same schema descriptor as the given schema descriptor.
      */
-    static <T extends SchemaDescriptor.Supplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
+    static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
     {
         return supplier -> descriptor.equals( supplier.schema() );
     }

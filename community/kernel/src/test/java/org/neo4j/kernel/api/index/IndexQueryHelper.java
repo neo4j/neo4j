@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -35,26 +35,26 @@ public class IndexQueryHelper
         return IndexQuery.exact( propertyKeyId, Values.of( value ) );
     }
 
-    public static IndexEntryUpdate<LabelSchemaDescriptor> add(
-            long nodeId, LabelSchemaDescriptor schema, Object... objects )
+    public static IndexEntryUpdate<SchemaDescriptor> add(
+            long nodeId, SchemaDescriptor schema, Object... objects )
     {
         return IndexEntryUpdate.add( nodeId, schema, toValues( objects ) );
     }
 
-    public static IndexEntryUpdate<LabelSchemaDescriptor> remove(
-            long nodeId, LabelSchemaDescriptor schema, Object... objects )
+    public static IndexEntryUpdate<SchemaDescriptor> remove(
+            long nodeId, SchemaDescriptor schema, Object... objects )
     {
         return IndexEntryUpdate.remove( nodeId, schema, toValues( objects ) );
     }
 
-    public static IndexEntryUpdate<LabelSchemaDescriptor> change(
-            long nodeId, LabelSchemaDescriptor schema, Object o1, Object o2 )
+    public static IndexEntryUpdate<SchemaDescriptor> change(
+            long nodeId, SchemaDescriptor schema, Object o1, Object o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, Values.of( o1 ), Values.of( o2 ) );
     }
 
-    public static IndexEntryUpdate<LabelSchemaDescriptor> change(
-            long nodeId, LabelSchemaDescriptor schema, Object[] o1, Object[] o2 )
+    public static IndexEntryUpdate<SchemaDescriptor> change(
+            long nodeId, SchemaDescriptor schema, Object[] o1, Object[] o2 )
     {
         return IndexEntryUpdate.change( nodeId, schema, toValues( o1 ), toValues( o2 ) );
     }

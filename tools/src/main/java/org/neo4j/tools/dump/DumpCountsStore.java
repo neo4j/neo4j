@@ -167,7 +167,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     {
         SchemaIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexStatistics[(%s {%s})]:\tupdates=%d, size=%d%n",
-                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), updates, size );
     }
 
     @Override
@@ -175,7 +175,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
     {
         SchemaIndexDescriptor index = indexes.get( indexId );
         out.printf( "\tIndexSample[(%s {%s})]:\tunique=%d, size=%d%n",
-                label( index.schema().getLabelId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
+                label( index.schema().keyId() ), propertyKeys( index.schema().getPropertyIds() ), unique, size );
     }
 
     @Override

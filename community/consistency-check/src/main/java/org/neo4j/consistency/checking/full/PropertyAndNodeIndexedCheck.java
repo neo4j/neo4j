@@ -36,7 +36,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.LookupFilter;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -95,7 +95,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.onlineRules() )
         {
-            long labelId = indexRule.schema().getLabelId();
+            long labelId = indexRule.schema().keyId();
             if ( labels.contains( labelId ) )
             {
                 if ( nodePropertyMap == null )
@@ -219,13 +219,14 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return propertyIds;
     }
 
-    private IndexQuery[] seek( LabelSchemaDescriptor schema, Value[] propertyValues )
+    private IndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
-        assert schema.getPropertyIds().length == propertyValues.length;
+        int[] propertyIds = schema.getPropertyIds();
+        assert propertyIds.length == propertyValues.length;
         IndexQuery[] query = new IndexQuery[propertyValues.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], propertyValues[i] );
+            query[i] = IndexQuery.exact( propertyIds[i], propertyValues[i] );
         }
         return query;
     }

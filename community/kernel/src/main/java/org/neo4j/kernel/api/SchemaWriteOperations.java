@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -41,7 +42,7 @@ public interface SchemaWriteOperations
      * {@code labelId}.
      * @param schemaDescriptor
      */
-    SchemaIndexDescriptor indexCreate( LabelSchemaDescriptor schemaDescriptor )
+    SchemaIndexDescriptor indexCreate( SchemaDescriptor schemaDescriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
     /** Drops a {@link SchemaIndexDescriptor} from the database */

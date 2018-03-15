@@ -29,7 +29,7 @@ trait SchemaDescriptorTranslation {
 
   implicit def kernelToCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor =
     if (index.schema().getPropertyIds.length == 1)
-      SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId)
+      SchemaTypes.IndexDescriptor(index.schema().keyId, index.schema().getPropertyId)
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite indexes")
 

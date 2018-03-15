@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.operations;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.Statement;
@@ -38,7 +37,7 @@ public interface SchemaReadOperations
     /**
      * Returns the descriptor for the given labelId and propertyKey.
      */
-    SchemaIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor );
+    SchemaIndexDescriptor indexGetForSchema( KernelStatement state, SchemaDescriptor descriptor );
 
     /**
      * Get all indexes for a label.

@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -58,9 +57,7 @@ public class AlreadyConstrainedException extends SchemaKernelException
         switch ( context )
         {
             case INDEX_CREATION:
-                // is is safe to cast here because we only support indexes on nodes atm
-                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT,
-                        (LabelSchemaDescriptor) constraint.schema() );
+                return messageWithLabelAndPropertyName( tokenNameLookup, INDEX_CONTEXT_FORMAT, constraint.schema() );
 
             case CONSTRAINT_CREATION:
                 return ALREADY_CONSTRAINED_MESSAGE_PREFIX + constraint.prettyPrint( tokenNameLookup );

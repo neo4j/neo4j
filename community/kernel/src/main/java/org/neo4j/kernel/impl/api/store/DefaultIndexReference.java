@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 public class DefaultIndexReference implements IndexReference
@@ -69,8 +69,8 @@ public class DefaultIndexReference implements IndexReference
     public static IndexReference fromDescriptor( SchemaIndexDescriptor descriptor )
     {
         boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
-        LabelSchemaDescriptor schema = descriptor.schema();
-        return new DefaultIndexReference( unique, schema.getLabelId(), schema.getPropertyIds() );
+        SchemaDescriptor schema = descriptor.schema();
+        return new DefaultIndexReference( unique, schema.keyId(), schema.getPropertyIds() );
     }
 
     @Override

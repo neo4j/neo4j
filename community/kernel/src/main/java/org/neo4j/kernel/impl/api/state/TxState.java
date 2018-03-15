@@ -38,7 +38,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -121,7 +120,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
     private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
 
-    private Map<LabelSchemaDescriptor,Map<ValueTuple,PrimitiveLongDiffSets>> indexUpdates;
+    private Map<SchemaDescriptor,Map<ValueTuple,PrimitiveLongDiffSets>> indexUpdates;
 
     private InstanceCache<TxSingleNodeCursor> singleNodeCursor;
     private InstanceCache<TxIteratorRelationshipCursor> iteratorRelationshipCursor;
@@ -1109,7 +1108,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     // Ensure sorted index updates for a given index. This is needed for range query support and
     // may involve converting the existing hash map first
     //
-    private TreeMap<ValueTuple, PrimitiveLongDiffSets> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
+    private TreeMap<ValueTuple, PrimitiveLongDiffSets> getSortedIndexUpdates( SchemaDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
@@ -1135,7 +1134,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId,
+    public void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId,
             ValueTuple propertiesBefore, ValueTuple propertiesAfter )
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
@@ -1171,7 +1170,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     private PrimitiveLongDiffSets getIndexUpdatesForSeek(
-            LabelSchemaDescriptor schema, ValueTuple values, boolean create )
+            SchemaDescriptor schema, ValueTuple values, boolean create )
     {
         Map<ValueTuple,PrimitiveLongDiffSets> updates = getIndexUpdatesByDescriptor( schema, create );
         if ( updates != null )
@@ -1187,7 +1186,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return create ? updates.computeIfAbsent( values, value -> new PrimitiveLongDiffSets() ) : updates.get( values );
     }
 
-    private Map<ValueTuple,PrimitiveLongDiffSets> getIndexUpdatesByDescriptor( LabelSchemaDescriptor schema,
+    private Map<ValueTuple,PrimitiveLongDiffSets> getIndexUpdatesByDescriptor( SchemaDescriptor schema,
             boolean create )
     {
         if ( indexUpdates == null )

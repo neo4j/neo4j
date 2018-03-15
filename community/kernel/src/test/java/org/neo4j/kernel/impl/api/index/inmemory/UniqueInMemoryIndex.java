@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -37,7 +37,7 @@ import org.neo4j.values.storable.ValueTuple;
 
 class UniqueInMemoryIndex extends InMemoryIndex
 {
-    private final LabelSchemaDescriptor schema;
+    private final SchemaDescriptor schema;
 
     UniqueInMemoryIndex( SchemaIndexDescriptor descriptor )
     {

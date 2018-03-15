@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -91,6 +91,6 @@ public interface TransactionState extends ReadableTransactionState
 
     boolean constraintDoUnRemove( ConstraintDescriptor constraint );
 
-    void indexDoUpdateEntry( LabelSchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
+    void indexDoUpdateEntry( SchemaDescriptor descriptor, long nodeId, ValueTuple before, ValueTuple after );
 
 }

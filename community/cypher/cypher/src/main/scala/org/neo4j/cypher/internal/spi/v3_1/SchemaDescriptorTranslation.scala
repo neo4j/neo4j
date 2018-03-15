@@ -30,7 +30,7 @@ trait SchemaDescriptorTranslation {
 
   implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.schema())
-    SchemaTypes.IndexDescriptor(index.schema().getLabelId, index.schema().getPropertyId())
+    SchemaTypes.IndexDescriptor(index.schema().keyId, index.schema().getPropertyId())
   }
 
   implicit def toKernel(constraint: SchemaTypes.UniquenessConstraint): KernelUniquenessConstraint =

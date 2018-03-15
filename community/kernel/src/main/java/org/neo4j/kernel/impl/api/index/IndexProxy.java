@@ -25,8 +25,8 @@ import java.io.IOException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -60,7 +60,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
  *
  * @see ContractCheckingIndexProxy
  */
-public interface IndexProxy extends LabelSchemaSupplier
+public interface IndexProxy extends SchemaDescriptorSupplier
 {
     void start() throws IOException;
 
@@ -80,7 +80,7 @@ public interface IndexProxy extends LabelSchemaSupplier
     SchemaIndexDescriptor getDescriptor();
 
     @Override
-    LabelSchemaDescriptor schema();
+    SchemaDescriptor schema();
 
     IndexProvider.Descriptor getProviderDescriptor();
 

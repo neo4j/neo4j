@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -220,7 +220,7 @@ public class IndexTxStateUpdaterTest
     }
 
     private void verifyIndexUpdate(
-            LabelSchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
+            SchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId), eq( before ), eq( after ) );
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
-public interface LabelSchemaSupplier extends SchemaDescriptorSupplier
+public interface SchemaDescriptorSupplier
 {
-    @Override
-    LabelSchemaDescriptor schema();
+    SchemaDescriptor schema();
 }

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.schema.index;
 
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.GENERAL;
@@ -42,12 +42,12 @@ public class SchemaIndexDescriptorFactory
         return uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static SchemaIndexDescriptor forSchema( LabelSchemaDescriptor schema )
+    public static SchemaIndexDescriptor forSchema( SchemaDescriptor schema )
     {
         return new SchemaIndexDescriptor( schema, GENERAL );
     }
 
-    public static SchemaIndexDescriptor uniqueForSchema( LabelSchemaDescriptor schema )
+    public static SchemaIndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
         return new SchemaIndexDescriptor( schema, UNIQUE );
     }

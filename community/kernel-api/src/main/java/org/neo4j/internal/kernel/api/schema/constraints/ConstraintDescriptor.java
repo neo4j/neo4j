@@ -21,8 +21,9 @@ package org.neo4j.internal.kernel.api.schema.constraints;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
-public interface ConstraintDescriptor extends SchemaDescriptor.Supplier
+public interface ConstraintDescriptor extends SchemaDescriptorSupplier
 {
     enum Type
     {

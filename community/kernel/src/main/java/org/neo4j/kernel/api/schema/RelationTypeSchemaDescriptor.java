@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -59,6 +60,12 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        return tokenNameLookup.relationshipTypeGetName( relTypeId );
+    }
+
+    @Override
     public int getRelTypeId()
     {
         return relTypeId;
@@ -83,17 +90,6 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
-    public int getPropertyId()
-    {
-        if ( propertyIds.length != 1 )
-        {
-            throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
-        }
-        return propertyIds[0];
-    }
-
-    @Override
     public boolean equals( Object o )
     {
         if ( o instanceof RelationTypeSchemaDescriptor )
@@ -108,5 +104,11 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     public int hashCode()
     {
         return Arrays.hashCode( propertyIds ) + 31 * relTypeId;
+    }
+
+    @Override
+    public SchemaDescriptor schema()
+    {
+        return this;
     }
 }

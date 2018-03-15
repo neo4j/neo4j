@@ -135,7 +135,7 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String label = tokens.labelGetName( index.schema().getLabelId() );
+                    String label = index.schema().keyName( tokens );
                     List<String> propertyNames = propertyNames( tokens, index );
                     result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), label,
                             propertyNames,

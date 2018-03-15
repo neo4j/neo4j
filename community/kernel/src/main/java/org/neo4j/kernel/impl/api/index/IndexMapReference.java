@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
@@ -61,7 +61,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -71,7 +71,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return proxy;
     }
 
-    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = indexMap.getIndexProxy( descriptor );
         if ( proxy == null )
@@ -81,7 +81,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getIndexId( descriptor );
     }
 
-    public long getOnlineIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getOnlineIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         IndexProxy proxy = getIndexProxy( descriptor );
         switch ( proxy.getState() )
@@ -99,7 +99,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Iterable<LabelSchemaDescriptor> getRelatedIndexes(
+    public Iterable<SchemaDescriptor> getRelatedIndexes(
             long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
     {
         return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );

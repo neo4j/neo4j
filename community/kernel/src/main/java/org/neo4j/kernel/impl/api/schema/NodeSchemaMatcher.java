@@ -24,8 +24,8 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
@@ -50,7 +50,7 @@ public class NodeSchemaMatcher
      * To avoid unnecessary store lookups, this implementation only gets propertyKeyIds for the node if some
      * descriptor has a valid label.
      *
-     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
+     * @param <SUPPLIER> the type to match. Must implement SchemaDescriptorSupplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param state The current statement
      * @param schemaSuppliers The suppliers to match
@@ -60,7 +60,7 @@ public class NodeSchemaMatcher
      * @param callback The action to take on match
      * @throws EXCEPTION This exception is propagated from the action
      */
-    public <SUPPLIER extends LabelSchemaSupplier,EXCEPTION extends Exception> void onMatchingSchema(
+    public <SUPPLIER extends SchemaDescriptorSupplier,EXCEPTION extends Exception> void onMatchingSchema(
             KernelStatement state,
             Iterator<SUPPLIER> schemaSuppliers,
             NodeItem node,
@@ -72,8 +72,8 @@ public class NodeSchemaMatcher
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
-            LabelSchemaDescriptor schema = schemaSupplier.schema();
-            if ( node.labels().contains( schema.getLabelId() ) )
+            SchemaDescriptor schema = schemaSupplier.schema();
+            if ( node.labels().contains( schema.keyId() ) )
             {
                 if ( nodePropertyIds == null )
                 {

@@ -52,6 +52,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -606,7 +607,7 @@ public class IndexingServiceTest
         }
     }
 
-    private IndexUpdates updates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates )
+    private IndexUpdates updates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
     {
         return new DirectIndexUpdates( updates );
     }
@@ -716,9 +717,9 @@ public class IndexingServiceTest
         return new IndexUpdates()
         {
             @Override
-            public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
+            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
             {
-                List<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
+                List<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
                 for ( long nodeId : nodeIds )
                 {
                     updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
@@ -1183,12 +1184,12 @@ public class IndexingServiceTest
                 .added( index.schema().getPropertyId(), Values.of( propertyValue ) ).build();
     }
 
-    private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue )
+    private IndexEntryUpdate<SchemaDescriptor> add( long nodeId, Object propertyValue )
     {
         return IndexEntryUpdate.add( nodeId, index.schema(), Values.of( propertyValue ) );
     }
 
-    private IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, Object propertyValue, int labelId )
+    private IndexEntryUpdate<SchemaDescriptor> add( long nodeId, Object propertyValue, int labelId )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, index.schema().getPropertyId() );
         return IndexEntryUpdate.add( nodeId, schema, Values.of( propertyValue ) );

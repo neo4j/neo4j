@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
@@ -185,7 +184,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
@@ -246,36 +245,36 @@ public class StorageLayer implements StoreReadLayer
     public CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
-        LabelSchemaDescriptor schema = descriptor.schema();
+        SchemaDescriptor schema = descriptor.schema();
         IndexProxy indexProxy = indexService.getIndexProxy( schema );
 
         return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
-                indexProxy.getProviderDescriptor(), schema.getLabelId(),
+                indexProxy.getProviderDescriptor(), schema.keyId(),
                 schema.getPropertyIds() );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override
-    public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
         return result.readSecond();
     }
 
     @Override
-    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
-    public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
     }
@@ -527,20 +526,20 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
-    private long tryGetIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    private long tryGetIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexId( descriptor );
     }

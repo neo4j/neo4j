@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -33,15 +33,15 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
  */
 public class DirectIndexUpdates implements IndexUpdates
 {
-    private final Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates;
+    private final Iterable<IndexEntryUpdate<SchemaDescriptor>> updates;
 
-    public DirectIndexUpdates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates )
+    public DirectIndexUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
     {
         this.updates = updates;
     }
 
     @Override
-    public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
+    public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
     {
         return updates.iterator();
     }
