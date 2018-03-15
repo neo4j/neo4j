@@ -475,6 +475,19 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  // Comparison of durations
+
+  test("should not allow comparing durations") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = s"RETURN duration('P1Y1M') $op duration('P1Y30D')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
   // Invalid signature
 
   test("should not accept 4 parameters") {
