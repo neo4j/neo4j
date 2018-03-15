@@ -502,6 +502,8 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
             " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
+            " For outgoing connections this merely specifies the allowed set of algorithms and the preference of the " +
+            " remote peer will be used for making the decision." +
             " Allowable values: [" + GZIP + "," + SNAPPY + "," + SNAPPY_VALIDATING + "," +
             LZ4 + "," + LZ4_HIGH_COMPRESSION + "," + LZ_VALIDATING + "," + LZ4_HIGH_COMPRESSION_VALIDATING + "]" )
     public static final Setting<List<String>> compression_implementations =
