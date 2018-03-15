@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.ssl.ClientAuth;
 
 import static java.lang.String.join;
+import static java.util.Arrays.asList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
@@ -40,13 +41,11 @@ import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.configuration.ssl.SslSystemSettings.getTlsDefault;
 
 @Group( "dbms.ssl.policy" )
 public class SslPolicyConfig
 {
-    public static final List<String> TLS_VERSION_DEFAULTS = getTlsDefault();
-
+    public static final List<String> TLS_VERSION_DEFAULTS = asList( "TLSv1.2" );
     public static final List<String> CIPHER_SUITES_DEFAULTS = null;
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
