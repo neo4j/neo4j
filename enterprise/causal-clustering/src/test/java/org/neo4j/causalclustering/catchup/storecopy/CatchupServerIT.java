@@ -45,6 +45,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -86,10 +87,11 @@ public class CatchupServerIT
     private PageCache pageCache;
 
     @Rule
-    public DefaultFileSystemRule fsa = new DefaultFileSystemRule();
+    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fsa );
+    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     private CatchUpClient catchUpClient;
+    private DefaultFileSystemAbstraction fsa = fileSystemRule.get();
 
     @Before
     public void startDb()
@@ -258,7 +260,7 @@ public class CatchupServerIT
         return new File( new File( temporaryDirectory, "graph-db" ), relativePathToDatabaseDir );
     }
 
-    private void fileContentEquals( File fileA, File fileB )
+    private void fileContentEquals( File fileA, File fileB ) throws IOException
     {
         assertNotEquals( fileA.getPath(), fileB.getPath() );
         String message = String.format( "Expected file: %s\ndoes not match actual file: %s", fileA, fileB );
