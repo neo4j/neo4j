@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory;
+import org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomQueryHelper;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.DatabaseRule;
@@ -123,7 +124,7 @@ public class LuceneFulltextTestSupport
     protected void assertExactQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
+        String queryString = BloomQueryHelper.createQuery( query, false, matchAll );
         ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
@@ -131,7 +132,7 @@ public class LuceneFulltextTestSupport
     protected void assertExactQueryFindsIdsInOrder( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
+        String queryString = BloomQueryHelper.createQuery( query, false, matchAll );
         ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
@@ -149,7 +150,7 @@ public class LuceneFulltextTestSupport
     protected void assertFuzzyQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery( query, true, matchAll );
+        String queryString = BloomQueryHelper.createQuery( query, true, matchAll );
         ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
@@ -157,7 +158,7 @@ public class LuceneFulltextTestSupport
     protected void assertFuzzyQueryFindsIdsInOrder( String indexName, String query, boolean matchAll, long... ids )
             throws IOException, IndexNotFoundKernelException
     {
-        String queryString = FulltextQueryHelper.createQuery( Arrays.asList( query ), true, matchAll );
+        String queryString = BloomQueryHelper.createQuery( Arrays.asList( query ), true, matchAll );
         ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }

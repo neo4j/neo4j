@@ -20,41 +20,29 @@
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
-import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.storageengine.api.EntityType;
 
-import static java.util.Collections.singletonMap;
-
-public class LuceneFulltext extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
+public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
     private final Analyzer analyzer;
     private final String identifier;
     private final EntityType type;
     private Collection<String> properties;
 
-    public LuceneFulltext( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer,
-            FulltextIndexDescriptor descriptor )
+    LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer, FulltextIndexDescriptor descriptor )
     {
         super( storage, partitionFactory, descriptor );
         this.analyzer = analyzer;
@@ -75,7 +63,7 @@ public class LuceneFulltext extends AbstractLuceneIndex<FulltextIndexReader> imp
             return false;
         }
 
-        LuceneFulltext that = (LuceneFulltext) o;
+        LuceneFulltextIndex that = (LuceneFulltextIndex) o;
 
         if ( !identifier.equals( that.identifier ) )
         {
@@ -91,17 +79,17 @@ public class LuceneFulltext extends AbstractLuceneIndex<FulltextIndexReader> imp
     }
 
     @Override
-    protected SimpleFulltextReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+    protected FulltextIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleFulltextReader( partitionSearcher, properties.toArray( new String[0] ), analyzer );
+        return new SimpleFulltextIndexReader( partitionSearcher, properties.toArray( new String[0] ), analyzer );
     }
 
     @Override
-    protected PartitionedFulltextReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
+    protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
+        return new PartitionedFulltextIndexReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 }

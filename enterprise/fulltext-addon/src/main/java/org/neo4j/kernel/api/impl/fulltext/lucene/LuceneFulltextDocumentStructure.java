@@ -58,7 +58,7 @@ public class LuceneFulltextDocumentStructure
         return document.document;
     }
 
-    static Field encodeValueField( String propertyKey, Value value )
+    private static Field encodeValueField( String propertyKey, Value value )
     {
         String stringValue = value.prettyPrint();
 

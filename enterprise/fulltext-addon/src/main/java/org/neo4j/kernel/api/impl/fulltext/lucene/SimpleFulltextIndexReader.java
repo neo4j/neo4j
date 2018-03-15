@@ -37,15 +37,15 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAda
 /**
  * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
- * @see PartitionedFulltextReader
+ * @see PartitionedFulltextIndexReader
  */
-class SimpleFulltextReader extends FulltextIndexReader
+class SimpleFulltextIndexReader extends FulltextIndexReader
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;
     private final String[] properties;
 
-    SimpleFulltextReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
+    SimpleFulltextIndexReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;

@@ -17,25 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.util.Collection;
 
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
-import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
-import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<DatabaseIndex>

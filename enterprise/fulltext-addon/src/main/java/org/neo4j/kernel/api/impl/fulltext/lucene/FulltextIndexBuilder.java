@@ -78,13 +78,13 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
         if ( isReadOnly() )
         {
 
-            return new ReadOnlyFulltext( storageBuilder.build(), new ReadOnlyIndexPartitionFactory(), analyzer, descriptor );
+            return new ReadOnlyFulltextIndex( storageBuilder.build(), new ReadOnlyIndexPartitionFactory(), analyzer, descriptor );
         }
         else
         {
             Boolean archiveFailed = getConfig( GraphDatabaseSettings.archive_failed_index );
             PartitionedIndexStorage storage = storageBuilder.archivingFailed( archiveFailed ).build();
-            return new WritableFulltext( storage, new WritableIndexPartitionFactory( writerConfigFactory ), analyzer, descriptor );
+            return new WritableFulltextIndex( storage, new WritableIndexPartitionFactory( writerConfigFactory ), analyzer, descriptor );
         }
     }
 }

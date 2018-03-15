@@ -21,27 +21,16 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
-public class ReadOnlyFulltext extends ReadOnlyAbstractDatabaseIndex<LuceneFulltext,FulltextIndexReader> implements FulltextIndex
+class ReadOnlyFulltextIndex extends ReadOnlyAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements FulltextIndex
 {
-
-    public ReadOnlyFulltext( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer, FulltextIndexDescriptor descriptor )
+    ReadOnlyFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer, FulltextIndexDescriptor descriptor )
     {
-        super( new LuceneFulltext( storage, partitionFactory, analyzer, descriptor ) );
+        super( new LuceneFulltextIndex( storage, partitionFactory, analyzer, descriptor ) );
     }
-//
-//    @Override
-//    public ScoreEntityIterator query( String query ) throws IOException
-//    {
-//        try ( FulltextIndexReader indexReader = getIndexReader() )
-//        {
-//            return indexReader.query( query );
-//        }
-//    }
+
 }

@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter;
-import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator.ScoreEntry;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -250,7 +249,7 @@ public class BloomProcedures
             throws IOException, IndexNotFoundKernelException
     {
         terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
-        String query = FulltextQueryHelper.createQuery( terms, fuzzy, matchAll );
+        String query = BloomQueryHelper.createQuery( terms, fuzzy, matchAll );
         ScoreEntityIterator resultIterator = accessor.query( indexName, query );
         return resultIterator.stream().map( QUERY_RESULT_MAPPER );
     }

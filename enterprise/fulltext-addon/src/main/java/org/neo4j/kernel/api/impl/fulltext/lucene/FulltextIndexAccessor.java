@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
+package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.document.Document;
 
@@ -28,11 +28,7 @@ import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndex;
-import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndexReader;
-import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -40,7 +36,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
@@ -50,7 +45,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     private FulltextIndex luceneFulltext;
     private FulltextIndexDescriptor descriptor;
 
-    FulltextIndexAccessor( FulltextIndex luceneFulltext, FulltextIndexDescriptor descriptor )
+    public FulltextIndexAccessor( FulltextIndex luceneFulltext, FulltextIndexDescriptor descriptor )
     {
         this.luceneFulltext = luceneFulltext;
         this.descriptor = descriptor;

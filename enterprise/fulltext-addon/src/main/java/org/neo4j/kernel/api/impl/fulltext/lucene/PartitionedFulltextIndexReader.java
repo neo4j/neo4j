@@ -32,22 +32,22 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
- * Internally uses multiple {@link SimpleFulltextReader}s for individual partitions.
+ * Internally uses multiple {@link SimpleFulltextIndexReader}s for individual partitions.
  *
- * @see SimpleFulltextReader
+ * @see SimpleFulltextIndexReader
  */
-class PartitionedFulltextReader extends FulltextIndexReader
+class PartitionedFulltextIndexReader extends FulltextIndexReader
 {
 
     private final List<FulltextIndexReader> indexReaders;
 
-    PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
+    PartitionedFulltextIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) ).collect(
+        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextIndexReader( partitionSearcher, properties, analyzer ) ).collect(
                 Collectors.toList() ) );
     }
 
-    private PartitionedFulltextReader( List<FulltextIndexReader> readers )
+    private PartitionedFulltextIndexReader( List<FulltextIndexReader> readers )
     {
         this.indexReaders = readers;
     }
@@ -55,13 +55,7 @@ class PartitionedFulltextReader extends FulltextIndexReader
     @Override
     public ScoreEntityIterator query( String query )
     {
-        return partitionedOperation( reader -> innerQuery( reader, query ) );
-    }
-
-    private ScoreEntityIterator innerQuery( FulltextIndexReader reader, String query )
-    {
-
-        return reader.query( query );
+        return partitionedOperation( reader -> reader.query( query ) );
     }
 
     @Override
