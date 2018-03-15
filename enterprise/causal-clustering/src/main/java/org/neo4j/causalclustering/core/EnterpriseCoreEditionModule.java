@@ -240,11 +240,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
         SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
-        ApplicationSupportedProtocols supportedApplicationProtocol = supportedProtocolCreator.createSupportedRaftProtocol();
+        ApplicationSupportedProtocols supportedRaftProtocols = supportedProtocolCreator.createSupportedRaftProtocol();
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
 
         ApplicationProtocolRepository applicationProtocolRepository =
-                new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedApplicationProtocol );
+                new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedRaftProtocols );
         ModifierProtocolRepository modifierProtocolRepository =
                 new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
 
@@ -292,10 +292,11 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
-                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), serverPipelineWrapper, clientPipelineWrapper );
+                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineWrapper,
+                serverPipelineBuilderFactory );
 
         RaftServerModule raftServerModule = RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase,
-                serverPipelineBuilderFactory, messageLogger, topologyService, supportedApplicationProtocol, supportedModifierProtocols );
+                serverPipelineBuilderFactory, messageLogger, topologyService, supportedRaftProtocols, supportedModifierProtocols );
         serverInstalledProtocols = raftServerModule.raftServer()::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );

@@ -19,82 +19,37 @@
  */
 package org.neo4j.causalclustering.core;
 
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
-import org.neo4j.causalclustering.core.state.CoreSnapshotService;
-import org.neo4j.causalclustering.handlers.PipelineWrapper;
-import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
 public class TransactionBackupServiceProvider
 {
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
-    private final Supplier<StoreId> localDatabaseStoreIdSupplier;
-    private final Dependencies dependencies;
-    private final Monitors monitors;
-    private final PageCache pageCache;
-    private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
-    private final Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier;
-    private final BooleanSupplier localDatabaseIsAvailable;
-    private final CoreSnapshotService coreSnapshotService;
-    private final FileSystemAbstraction fileSystem;
-    private final PipelineWrapper serverPipelineWrapper;
     private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
+    private ChannelInitializer<SocketChannel> channelInitializer;
 
-    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> localDatabaseStoreIdSupplier,
-            Dependencies dependencies, Monitors monitors, PageCache pageCache, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-            Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier, BooleanSupplier localDatabaseIsAvailable, CoreSnapshotService coreSnapshotService,
-            FileSystemAbstraction fileSystem, PipelineWrapper serverPipelineWrapper )
+    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChannelInitializer<SocketChannel> channelInitializer )
     {
         this.logProvider = logProvider;
         this.userLogProvider = userLogProvider;
-        this.localDatabaseStoreIdSupplier = localDatabaseStoreIdSupplier;
-        this.dependencies = dependencies;
-        this.monitors = monitors;
-        this.pageCache = pageCache;
-        this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
-        this.localDatabaseDataSourceSupplier = localDatabaseDataSourceSupplier;
-        this.localDatabaseIsAvailable = localDatabaseIsAvailable;
-        this.coreSnapshotService = coreSnapshotService;
-        this.fileSystem = fileSystem;
-        this.serverPipelineWrapper = serverPipelineWrapper;
+        this.channelInitializer = channelInitializer;
         this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
-    }
-
-    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> localDatabaseStoreIdSupplier,
-            PlatformModule platformModule, Supplier<NeoStoreDataSource> localDatabaseDataSourceSupplier, BooleanSupplier localDatabaseIsAvailable,
-            CoreSnapshotService coreSnapshotService, FileSystemAbstraction fileSystem, PipelineWrapper serverPipelineWrapper )
-    {
-        this( logProvider, userLogProvider, localDatabaseStoreIdSupplier, platformModule.dependencies, platformModule.monitors, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, localDatabaseDataSourceSupplier, localDatabaseIsAvailable, coreSnapshotService, fileSystem,
-                serverPipelineWrapper );
     }
 
     public Optional<CatchupServer> resolveIfBackupEnabled( Config config )
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return Optional.of(
-                    new CatchupServer( logProvider, userLogProvider, localDatabaseStoreIdSupplier, dependencies.provideDependency( TransactionIdStore.class ),
-                            dependencies.provideDependency( LogicalTransactionStore.class ), localDatabaseDataSourceSupplier, localDatabaseIsAvailable,
-                            coreSnapshotService, monitors, new CheckpointerSupplier( dependencies ), fileSystem, pageCache,
-                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ), storeCopyCheckPointMutex, serverPipelineWrapper ) );
+            return Optional.of( new CatchupServer( channelInitializer, logProvider, userLogProvider,
+                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ) ) );
         }
         else
         {

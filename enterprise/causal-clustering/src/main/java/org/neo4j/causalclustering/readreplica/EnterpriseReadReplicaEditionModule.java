@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +35,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -99,7 +101,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -278,15 +279,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector, retryStrategy, logProvider,
                 platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
-        CatchupServer catchupServer =
-                new CatchupServer( platformModule.logging.getInternalLogProvider(), platformModule.logging.getUserLogProvider(), localDatabase::storeId,
-                        platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                        platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                        null, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        config.get( CausalClusteringSettings.transaction_listen_address ), platformModule.storeCopyCheckPointMutex, serverPipelineWrapper );
-        TransactionBackupServiceProvider transactionBackupServiceProvider =
-                new TransactionBackupServiceProvider( logProvider, userLogProvider, localDatabase::storeId, platformModule, localDatabase::dataSource,
-                        localDatabase::isAvailable, null, fileSystem, serverPipelineWrapper );
+        ChannelInitializer<SocketChannel> channelInitializer = null;
+        CatchupServer catchupServer = new CatchupServer( channelInitializer, platformModule.logging.getInternalLogProvider(),
+                platformModule.logging.getUserLogProvider(), config.get( CausalClusteringSettings.transaction_listen_address ) );
+        TransactionBackupServiceProvider transactionBackupServiceProvider = new TransactionBackupServiceProvider( logProvider, userLogProvider,
+                channelInitializer );
         Optional<CatchupServer> backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         servicesToStopOnStoreCopy.add( catchupServer );

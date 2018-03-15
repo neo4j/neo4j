@@ -500,6 +500,11 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<Integer>> raft_implementations =
             setting( "causal_clustering.protocol_implementations.raft", list( ",", INTEGER ), "" );
 
+    @Description( "Catchup protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
+            " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
+    public static final Setting<List<Integer>> catchup_implementations =
+            setting( "causal_clustering.protocol_implementations.catchup", list( ",", INTEGER ), "" );
+
     @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
             " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
             " For outgoing connections this merely specifies the allowed set of algorithms and the preference of the " +

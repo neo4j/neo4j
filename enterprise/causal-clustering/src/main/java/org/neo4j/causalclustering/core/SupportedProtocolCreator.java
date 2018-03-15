@@ -35,6 +35,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.stream.Streams;
 
+import static java.lang.String.format;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.CATCHUP;
 import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
 
@@ -49,24 +51,32 @@ public class SupportedProtocolCreator
         this.log = logProvider.getLog( getClass() );
     }
 
+    public ApplicationSupportedProtocols createSupportedCatchupProtocol()
+    {
+        return getApplicationSupportedProtocols( config.get( CausalClusteringSettings.catchup_implementations ), CATCHUP );
+    }
+
     public ApplicationSupportedProtocols createSupportedRaftProtocol()
     {
-        List<Integer> configVersions = config.get( CausalClusteringSettings.raft_implementations );
+        return getApplicationSupportedProtocols( config.get( CausalClusteringSettings.raft_implementations ), RAFT );
+    }
+
+    private ApplicationSupportedProtocols getApplicationSupportedProtocols( List<Integer> configVersions, Protocol.ApplicationProtocolCategory category )
+    {
         if ( configVersions.isEmpty() )
         {
-            return new ApplicationSupportedProtocols( RAFT, Collections.emptyList() );
+            return new ApplicationSupportedProtocols( category, Collections.emptyList() );
         }
         else
         {
-            List<Integer> knownVersions =
-                    protocolsForConfig( RAFT, configVersions, version -> Protocol.ApplicationProtocols.find( RAFT, version ) );
+            List<Integer> knownVersions = protocolsForConfig( category, configVersions, version -> Protocol.ApplicationProtocols.find( category, version ) );
             if ( knownVersions.isEmpty() )
             {
-                throw new IllegalArgumentException( String.format( "None of configured Raft implementations %s are known", configVersions ) );
+                throw new IllegalArgumentException( format( "None of configured %s implementations %s are known", category.canonicalName(), configVersions ) );
             }
             else
             {
-                return new ApplicationSupportedProtocols( RAFT, knownVersions );
+                return new ApplicationSupportedProtocols( category, knownVersions );
             }
         }
     }
