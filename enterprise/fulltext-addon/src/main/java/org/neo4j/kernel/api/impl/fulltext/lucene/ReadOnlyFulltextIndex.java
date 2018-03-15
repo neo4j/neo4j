@@ -32,5 +32,4 @@ class ReadOnlyFulltextIndex extends ReadOnlyAbstractDatabaseIndex<LuceneFulltext
     {
         super( new LuceneFulltextIndex( storage, partitionFactory, analyzer, descriptor ) );
     }
-
 }

@@ -22,14 +22,15 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
-import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexAccessor;
+import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader, FulltextIndex,FulltextIndexDescriptor>
+import static org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure.documentRepresentingProperties;
+import static org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
+
+public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,FulltextIndex,FulltextIndexDescriptor>
 {
     public FulltextIndexAccessor( FulltextIndex luceneIndex, FulltextIndexDescriptor descriptor )
     {
@@ -58,25 +59,22 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
 
         protected void addIdempotent( long nodeId, Value[] values ) throws IOException
         {
-            writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
+            writer.updateDocument( newTermForChangeOrRemove( nodeId ), documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
         protected void add( long nodeId, Value[] values ) throws IOException
         {
-            writer.addDocument(
-                    LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
+            writer.addDocument( documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
         protected void change( long nodeId, Value[] values ) throws IOException
         {
-            writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
-                    LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
+            writer.updateDocument( newTermForChangeOrRemove( nodeId ), documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
         protected void remove( long nodeId ) throws IOException
         {
-            writer.deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+            writer.deleteDocuments( newTermForChangeOrRemove( nodeId ) );
         }
     }
 }

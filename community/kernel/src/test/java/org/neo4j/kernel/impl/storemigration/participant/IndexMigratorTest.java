@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SchemaIndexMigratorTest
+public class IndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
@@ -43,7 +43,7 @@ public class SchemaIndexMigratorTest
     private final File storeDir = new File( "store" );
     private final File migrationDir = new File( "migrationDir" );
 
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider );
+    private final IndexMigrator migrator = new IndexMigrator( fs, indexProvider );
 
     @Test
     public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException

@@ -35,14 +35,14 @@ import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
  * <p>
  * Since index format can be completely incompatible between version should be executed before {@link StoreMigrator}
  */
-public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
+public class IndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes;
     private File schemaIndexDirectory;
     private final IndexProvider indexProvider;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, IndexProvider indexProvider )
+    public IndexMigrator( FileSystemAbstraction fileSystem, IndexProvider indexProvider )
     {
         super( "Indexes" );
         this.fileSystem = fileSystem;

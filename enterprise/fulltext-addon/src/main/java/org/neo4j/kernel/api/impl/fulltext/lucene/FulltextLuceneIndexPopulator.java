@@ -25,12 +25,10 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
-import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<FulltextIndex>
@@ -60,7 +58,6 @@ public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<FulltextI
     {
         return new PopulatingFulltextIndexUpdater();
     }
-
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )

@@ -102,7 +102,8 @@ public class FulltextIndexProviderTest
         try ( Transaction ignore = db.beginTx() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext", STANDARD );
+                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+                            STANDARD );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
