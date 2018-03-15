@@ -474,7 +474,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not compute the duration in day units between two time values") {
     val args = Seq("time()", "localtime()")
-    for (func <- Seq("years", "quarters", "months", "weeks", "days"); arg1 <- args; arg2 <- args) {
+    for (func <- Seq("inMonths", "inDays"); arg1 <- args; arg2 <- args) {
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
         an[UnsupportedTemporalTypeException] shouldBe thrownBy {

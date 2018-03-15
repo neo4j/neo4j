@@ -58,14 +58,9 @@ class DurationFunction implements CallableUserFunction
     {
         procedures.register( new DurationFunction() );
         procedures.register( new Between( "between" ) );
-        procedures.register( new Between( "years" ) );
-        procedures.register( new Between( "quarters" ) );
-        procedures.register( new Between( "months" ) );
-        procedures.register( new Between( "weeks" ) );
-        procedures.register( new Between( "days" ) );
-        procedures.register( new Between( "hours" ) );
-        procedures.register( new Between( "minutes" ) );
-        procedures.register( new Between( "seconds" ) );
+        procedures.register( new Between( "inMonths" ) );
+        procedures.register( new Between( "inDays" ) );
+        procedures.register( new Between( "inSeconds" ) );
     }
 
     @Override
@@ -114,28 +109,13 @@ class DurationFunction implements CallableUserFunction
             case "between":
                 this.unit = null;
                 break;
-            case "years":
-                this.unit = ChronoUnit.YEARS;
-                break;
-            case "quarters":
-                this.unit = IsoFields.QUARTER_YEARS;
-                break;
-            case "months":
+            case "inMonths":
                 this.unit = ChronoUnit.MONTHS;
                 break;
-            case "weeks":
-                this.unit = ChronoUnit.WEEKS;
-                break;
-            case "days":
+            case "inDays":
                 this.unit = ChronoUnit.DAYS;
                 break;
-            case "hours":
-                this.unit = ChronoUnit.HOURS;
-                break;
-            case "minutes":
-                this.unit = ChronoUnit.MINUTES;
-                break;
-            case "seconds":
+            case "inSeconds":
                 this.unit = ChronoUnit.SECONDS;
                 break;
             default:
