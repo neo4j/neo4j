@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -97,14 +98,14 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
+        if ( o == null || !(o instanceof IndexReference) )
         {
             return false;
         }
 
-        DefaultCapableIndexReference that = (DefaultCapableIndexReference) o;
+        IndexReference that = (IndexReference) o;
 
-        return label == that.label && unique == that.unique && Arrays.equals( properties, that.properties );
+        return label == that.label() && unique == that.isUnique() && Arrays.equals( properties, that.properties() );
     }
 
     @Override

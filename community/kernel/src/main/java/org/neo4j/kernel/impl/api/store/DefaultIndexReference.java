@@ -80,13 +80,13 @@ public class DefaultIndexReference implements IndexReference
         {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
+        if ( o == null || !( o instanceof IndexReference ) )
         {
             return false;
         }
 
-        DefaultIndexReference that = (DefaultIndexReference) o;
-        return unique == that.unique && label == that.label && Arrays.equals( properties, that.properties );
+        IndexReference that = (IndexReference) o;
+        return unique == that.isUnique() && label == that.label() && Arrays.equals( properties, that.properties() );
     }
 
     @Override
@@ -97,4 +97,11 @@ public class DefaultIndexReference implements IndexReference
         result = 31 * result + Arrays.hashCode( properties );
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "Index(%d:%s)", label, Arrays.toString( properties ) );
+    }
+
 }

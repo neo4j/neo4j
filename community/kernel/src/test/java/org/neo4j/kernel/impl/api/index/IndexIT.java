@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -130,7 +129,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
 
         // WHEN
-        CapableIndexReference expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexReference expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -145,7 +144,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
-        CapableIndexReference existingRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexReference existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
@@ -204,7 +203,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        CapableIndexReference index;
+        IndexReference index;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -307,7 +306,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        CapableIndexReference index1 = schemaWrite.indexCreate( descriptor );
+        IndexReference index1 = schemaWrite.indexCreate( descriptor );
         IndexReference index2 = fromDescriptor(
                 ((IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 )).ownedIndexDescriptor()) ;
         commit();

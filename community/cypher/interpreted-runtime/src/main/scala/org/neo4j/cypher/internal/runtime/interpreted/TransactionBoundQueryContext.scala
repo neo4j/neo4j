@@ -798,7 +798,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[CapableIndexReference] = {
+  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
     val kernelDescriptor = cypherToKernelSchema(descriptor)
     try {
       IdempotentResult(transactionalContext.kernelTransaction.schemaWrite().indexCreate(kernelDescriptor))

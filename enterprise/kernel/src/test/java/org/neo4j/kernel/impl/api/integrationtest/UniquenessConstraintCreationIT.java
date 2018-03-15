@@ -62,7 +62,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
+import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 
 public class UniquenessConstraintCreationIT
         extends AbstractConstraintCreationIT<ConstraintDescriptor,LabelSchemaDescriptor>
