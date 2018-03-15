@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.ZoneOffset;
 
-import org.neo4j.kernel.impl.store.TimeZones;
+import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 

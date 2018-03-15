@@ -267,11 +267,5 @@ the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-      <version>1.16.1</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 </project>

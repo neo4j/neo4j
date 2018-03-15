@@ -407,7 +407,15 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public boolean equals( Value other )
     {
-        return other instanceof DateTimeValue && value.equals( ((DateTimeValue) other).value );
+        if ( other instanceof DateTimeValue )
+        {
+            ZonedDateTime that = ((DateTimeValue) other).value;
+            return value.toLocalDateTime().equals( that.toLocalDateTime() ) &&
+                   value.getOffset().equals( that.getOffset() ) &&
+                   !areDifferentZones( value.getZone(), that.getZone() );
+
+        }
+        return false;
     }
 
     @Override
@@ -427,10 +435,39 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    int unsafeCompareTo( Value other )
     {
-        DateTimeValue other = (DateTimeValue) otherValue;
-        return value.compareTo( other.value );
+        ZonedDateTime that = ((DateTimeValue) other).value;
+        int cmp = Long.compare( value.toEpochSecond(), that.toEpochSecond() );
+        if ( cmp == 0 )
+        {
+            cmp = value.toLocalTime().getNano() - that.toLocalTime().getNano();
+            if ( cmp == 0 )
+            {
+                cmp = value.toLocalDateTime().compareTo( that.toLocalDateTime() );
+                if ( cmp == 0 )
+                {
+                    ZoneId thisZone = value.getZone();
+                    ZoneId thatZone = that.getZone();
+                    if ( areDifferentZones( thisZone, thatZone ) )
+                    {
+                        cmp = thisZone.getId().compareTo( thatZone.getId() );
+                    }
+                    if ( cmp == 0 )
+                    {
+                        cmp = value.getChronology().compareTo( that.getChronology() );
+                    }
+                }
+            }
+        }
+        return cmp;
+    }
+
+    private boolean areDifferentZones( ZoneId thisZone, ZoneId thatZone )
+    {
+        return !(thisZone instanceof ZoneOffset) &&
+               !(thatZone instanceof ZoneOffset) &&
+                TimeZones.map( thisZone.getId() ) != TimeZones.map( thatZone.getId() );
     }
 
     @Override

@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.kernel.impl.store.TimeZones;
+import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;

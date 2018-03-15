@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -103,6 +105,8 @@ public class ValueComparisonTest
             datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),
             datetime(2018, 2, 2, 1, 30, 0, 0, "+01:00"),
             datetime(2018, 2, 2, 1, 0, 0, 0, "+00:00"),
+            datetime(2018, 3, 2, 1, 0, 0, 0, "Europe/Berlin"),
+            datetime(2018, 3, 2, 1, 0, 0, 0, "Europe/Stockholm"), // same offset as Europe/Berlin, so compared by zone name
             localDateTime(2018, 2, 2, 0, 0, 0, 0),
             localDateTime(2018, 2, 2, 0, 0, 0, 1),
             localDateTime(2018, 2, 2, 0, 0, 1, 0),
@@ -257,6 +261,14 @@ public class ValueComparisonTest
                 }
             }
         }
+    }
+
+    @Test
+    public void shouldCompareRenamedTimeZonesByZoneNumber()
+    {
+        int cmp = Values.COMPARATOR.compare( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
+                                             datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
+        assertEquals( "East-Saskatchewan and Saskatchewan are the same place", 0, cmp );
     }
 
     private <T> int compare( Comparator<T> comparator, T left, T right )

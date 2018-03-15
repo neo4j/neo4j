@@ -455,6 +455,13 @@ public class DateTimeValueTest
     }
 
     @Test
+    public void shouldEqualRenamedTimeZone()
+    {
+        assertEqual( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
+                     datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
+    }
+
+    @Test
     public void shouldNotEqualSameInstantButDifferentTimezone()
     {
         assertNotEqual( datetime( 10000, 100, UTC ), datetime( 10000, 100, ZoneOffset.of( "+01:00" ) ) );
