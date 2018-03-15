@@ -104,47 +104,51 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         else if ( arg instanceof SchemaIndexDescriptor )
         {
             SchemaIndexDescriptor descriptor = (SchemaIndexDescriptor) arg;
+            String className = SchemaIndexDescriptorFactory.class.getSimpleName();
             int labelId = descriptor.schema().getLabelId();
             String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
-            builder.append( format( "SchemaIndexDescriptorFactory.%s( %d, %s )", methodName,
-                    labelId, asString( descriptor.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.%s( %d, %s )",
+                    className, methodName, labelId, asString( descriptor.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof LabelSchemaDescriptor )
         {
             LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) arg;
+            String className = SchemaDescriptorFactory.class.getSimpleName();
             int labelId = descriptor.getLabelId();
-            builder.append( format( "SchemaDescriptorFactory.forLabel( %d, %s )", labelId,
-                    asString( descriptor.getPropertyIds() ) ) );
+            builder.append( format( "%s.forLabel( %d, %s )",
+                    className, labelId, asString( descriptor.getPropertyIds() ) ) );
         }
         else if ( arg instanceof UniquenessConstraintDescriptor )
         {
             UniquenessConstraintDescriptor constraint = (UniquenessConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.uniqueForLabel( %d, %s )",
-                    labelId,
-                    asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.uniqueForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodeExistenceConstraintDescriptor )
         {
             NodeExistenceConstraintDescriptor constraint = (NodeExistenceConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.existsForLabel( %d, %s )",
-                    labelId, asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.existsForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else if ( arg instanceof RelExistenceConstraintDescriptor )
         {
             RelationTypeSchemaDescriptor descriptor = ((RelExistenceConstraintDescriptor) arg).schema();
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int relTypeId = descriptor.getRelTypeId();
-            builder.append( format( "ConstraintDescriptorFactory.existsForReltype( %d, %s )", relTypeId,
-                    asString( descriptor.getPropertyIds() ) ) );
+            builder.append( format( "%s.existsForReltype( %d, %s )",
+                    className, relTypeId, asString( descriptor.getPropertyIds() ) ) );
         }
         else if ( arg instanceof NodeKeyConstraintDescriptor )
         {
             NodeKeyConstraintDescriptor constraint = (NodeKeyConstraintDescriptor) arg;
+            String className = ConstraintDescriptorFactory.class.getSimpleName();
             int labelId = constraint.schema().getLabelId();
-            builder.append( format( "ConstraintDescriptorFactory.nodeKeyForLabel( %d, %s )",
-                    labelId,
-                    asString( constraint.schema().getPropertyIds() ) ) );
+            builder.append( format( "%s.nodeKeyForLabel( %d, %s )",
+                    className, labelId, asString( constraint.schema().getPropertyIds() ) ) );
         }
         else
         {

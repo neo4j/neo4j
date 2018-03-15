@@ -126,7 +126,7 @@ public class IndexProcedures implements AutoCloseable
     }
 
     private void waitUntilOnline( IndexDescriptor index, IndexSpecifier indexDescription,
-            long timeout, TimeUnit timeoutUnits )
+                                  long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
         try

@@ -50,7 +50,6 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -149,7 +148,7 @@ public class IndexIT extends KernelIntegrationTest
         // WHEN
         Statement statement = statementInNewTransaction( AUTH_DISABLED );
         SchemaIndexDescriptor addedRule = statement.schemaWriteOperations()
-                                            .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
+                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
@@ -179,7 +178,7 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, new Monitors() );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
         SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
         // then

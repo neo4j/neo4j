@@ -72,7 +72,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
@@ -251,7 +251,7 @@ public class ConsistencyCheckService
             life.start();
             propkeyTokenHolder.setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-            IndexProviderMap indexes = loadSchemaIndexProviders( extensions );
+            IndexProviderMap indexes = loadIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,

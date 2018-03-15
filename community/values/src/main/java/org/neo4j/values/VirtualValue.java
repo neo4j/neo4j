@@ -63,7 +63,7 @@ public abstract class VirtualValue extends AnyValue
         {
             return equals( (VirtualValue) other );
         }
-        return false;
+        return Boolean.FALSE;
     }
 
     public abstract VirtualValueGroup valueGroup();

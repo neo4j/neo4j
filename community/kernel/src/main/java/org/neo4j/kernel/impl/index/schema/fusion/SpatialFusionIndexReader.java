@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -39,14 +39,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialFusionIndexReader implements IndexReader
 {
     private final Map<CoordinateReferenceSystem,IndexReader> readerMap;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
-    SpatialFusionIndexReader( Map<CoordinateReferenceSystem,IndexReader> readerMap, IndexDescriptor descriptor )
+    SpatialFusionIndexReader( Map<CoordinateReferenceSystem,IndexReader> readerMap, SchemaIndexDescriptor descriptor )
     {
         this.readerMap = readerMap;
         this.descriptor = descriptor;
@@ -114,7 +114,7 @@ class SpatialFusionIndexReader implements IndexReader
         }
     }
 
-    private IndexReader selectIf( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    private IndexReader selectIf( IndexQuery... predicates )
     {
         if ( predicates[0] instanceof ExactPredicate )
         {

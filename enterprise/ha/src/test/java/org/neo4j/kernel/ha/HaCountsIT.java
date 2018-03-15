@@ -184,7 +184,7 @@ public class HaCountsIT
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
             SchemaIndexDescriptor index = statement.schemaWriteOperations()
-                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
             return index;
         }

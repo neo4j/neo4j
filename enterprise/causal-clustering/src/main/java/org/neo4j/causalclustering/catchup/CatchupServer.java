@@ -115,13 +115,13 @@ public class CatchupServer extends LifecycleAdapter
                           Supplier<TransactionIdStore> transactionIdStoreSupplier,
                           Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
                           Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
-                          CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
-                          FileSystemAbstraction fs, PageCache pageCache,
+                          CoreSnapshotService snapshotService, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
+                          FileSystemAbstraction fs, PageCache pageCache, ListenSocketAddress listenAddress,
                           StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineWrapper pipelineWrapper )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
-        this.listenAddress = config.get( CausalClusteringSettings.transaction_listen_address );
+        this.listenAddress = listenAddress;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
         this.storeIdSupplier = storeIdSupplier;
         this.dataSourceAvailabilitySupplier = dataSourceAvailabilitySupplier;
@@ -149,7 +149,7 @@ public class CatchupServer extends LifecycleAdapter
 
         ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup )
                 .channel( NioServerSocketChannel.class )
-                .option( ChannelOption.SO_REUSEADDR, true )
+                .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
                 .childHandler( new ChannelInitializer<SocketChannel>()
                 {

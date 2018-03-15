@@ -180,7 +180,7 @@ public class Trav extends TransactionProvidingApp
                                 caseInsensitiveFilters ), value.toString(),
                                 caseInsensitiveFilters, looseFilters ) )
                             {
-                                matchPerFilterKey.put( filterKey, true );
+                                matchPerFilterKey.put( filterKey, Boolean.TRUE );
                             }
                         }
                     }

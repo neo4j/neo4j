@@ -60,7 +60,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider<SchemaIndexDescriptor> getDefaultSchemaIndexProvider()
+    public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
     {
         return defaultIndexProvider;
     }

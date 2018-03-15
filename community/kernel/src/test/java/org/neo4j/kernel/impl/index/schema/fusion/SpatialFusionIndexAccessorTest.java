@@ -21,12 +21,16 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.hamcrest.Matcher;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +40,7 @@ import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.SpatialCRSSchemaIndex;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.util.Arrays.asList;
@@ -44,6 +49,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,6 +71,9 @@ public class SpatialFusionIndexAccessorTest
     private SpatialFusionIndexAccessor fusionIndexAccessor;
     private Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex> indexMap = new HashMap<>();
 
+    @Rule
+    public RandomRule random = new RandomRule();
+
     @Before
     public void setup() throws Exception
     {
@@ -75,8 +84,7 @@ public class SpatialFusionIndexAccessorTest
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
         }
 
-        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( SchemaIndexDescriptor.class ),
-                null, indexFactory );
+        fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( SchemaIndexDescriptor.class ), null, indexFactory );
     }
 
     @Test
@@ -217,44 +225,10 @@ public class SpatialFusionIndexAccessorTest
     public void allEntriesReaderMustCombineResultFromAll()
     {
         // given
-        long[] wgsEntries = {0, 1, 2, 5, 6};
-        long[] cartesianEntries = {3, 4, 7, 8};
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), wgsEntries );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), cartesianEntries );
-
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-        // then
-        assertResultContainsAll( result, wgsEntries );
-        assertResultContainsAll( result, cartesianEntries );
-    }
-
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithWGSEmpty()
-    {
-        // given
-        long[] wgsEntries = new long[0];
-        long[] cartesianEntries = {3, 4, 7, 8};
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), wgsEntries );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), cartesianEntries );
-
-        // when
-        Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
-
-        // then
-        assertResultContainsAll( result, wgsEntries );
-        assertResultContainsAll( result, cartesianEntries );
-    }
-
-    @Test
-    public void allEntriesReaderMustCombineResultFromAllWithCartesianEmpty()
-    {
-        // given
-        long[] wgsEntries = {0, 1, 2, 5, 6};
-        long[] cartesianEntries = new long[0];
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), wgsEntries );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), cartesianEntries );
+        List<Long> allIds = new ArrayList<>();
+        List<Long> wgsEntries = new ArrayList<>();
+        List<Long> cartesianEntries = new ArrayList<>();
+        divideEntriesAmongReaders( allIds, wgsEntries, cartesianEntries, 4 );
 
         // when
         Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
@@ -267,41 +241,44 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void allEntriesReaderMustCombineResultFromAllWithAllEmpty()
     {
-        // given
-        long[] wgsEntries = new long[0];
-        long[] cartesianEntries = new long[0];
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), wgsEntries );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), cartesianEntries );
+        List<Long> allIds = new ArrayList<>();
+        List<Long> wgsEntries = new ArrayList<>();
+        List<Long> cartesianEntries = new ArrayList<>();
+        divideEntriesAmongReaders( allIds, wgsEntries, cartesianEntries, 0 );
 
         // when
         Set<Long> result = Iterables.asSet( fusionIndexAccessor.newAllEntriesReader() );
 
         // then
-        assertResultContainsAll( result, wgsEntries );
-        assertResultContainsAll( result, cartesianEntries );
+        assertTrue( "Expected no ids to be returned", result.size() == 0 );
     }
 
     @Test
     public void allEntriesReaderMustCloseAll() throws Exception
     {
         // given
-        BoundedIterable<Long> wgsAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[0] );
-        BoundedIterable<Long> cartesianAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[0] );
+        List<BoundedIterable> allEntriesReaders = new ArrayList<>();
+        for ( SpatialCRSSchemaIndex spatialKnownIndex : allAccessors() )
+        {
+            allEntriesReaders.add( mockSingleAllEntriesReader( spatialKnownIndex, Collections.emptyList() ) );
+        }
 
         // when
         fusionIndexAccessor.newAllEntriesReader().close();
 
         // then
-        verify( wgsAllEntriesReader, VerificationModeFactory.times( 1 ) ).close();
-        verify( cartesianAllEntriesReader, VerificationModeFactory.times( 1 ) ).close();
+        for ( BoundedIterable allEntriesReader : allEntriesReaders )
+        {
+            verify( allEntriesReader, VerificationModeFactory.times( 1 ) ).close();
+        }
     }
 
     @Test
     public void allEntriesReaderMustCloseOtherIfOneThrow() throws Exception
     {
         // given
-        BoundedIterable<Long> wgsAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[0] );
-        BoundedIterable<Long> cartesianAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[0] );
+        BoundedIterable<Long> wgsAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( WGS84 ), Collections.emptyList() );
+        BoundedIterable<Long> cartesianAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( Cartesian ), Collections.emptyList() );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
@@ -314,8 +291,8 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void allEntriesReaderMustThrowIfOneThrow() throws Exception
     {
-        BoundedIterable<Long> wgsAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[0] );
-        BoundedIterable<Long> cartesianAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[0] );
+        BoundedIterable<Long> wgsAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( WGS84 ), Collections.emptyList() );
+        BoundedIterable<Long> cartesianAllEntriesReader = mockSingleAllEntriesReader( indexMap.get( Cartesian ), Collections.emptyList() );
 
         // then
         verifyFusionCloseThrowOnSingleCloseThrow( wgsAllEntriesReader, fusionIndexAccessor.newAllEntriesReader() );
@@ -326,8 +303,8 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void allEntriesReaderMustReportFusionUnknownMaxCountIfWGSReportUnknownMaxCount()
     {
-        mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( WGS84 ), new long[0] );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[0] );
+        mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( WGS84 ), Collections.emptyList() );
+        mockSingleAllEntriesReader( indexMap.get( Cartesian ), Collections.emptyList() );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
@@ -337,8 +314,8 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void allEntriesReaderMustReportFusionUnknownMaxCountIfCartesianReportUnknownMaxCount()
     {
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[0] );
-        mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( Cartesian ), new long[0] );
+        mockSingleAllEntriesReader( indexMap.get( WGS84 ), Collections.emptyList() );
+        mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( Cartesian ), Collections.emptyList() );
 
         // then
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
@@ -348,11 +325,31 @@ public class SpatialFusionIndexAccessorTest
     @Test
     public void allEntriesReaderMustReportFusionMacCountOfAll()
     {
-        mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[]{0, 1, 2, 5, 6} );
-        mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[]{3, 4, 7, 8} );
+        mockSingleAllEntriesReader( indexMap.get( WGS84 ), Arrays.asList( 0L, 1L, 2L, 5L, 6L ) );
+        mockSingleAllEntriesReader( indexMap.get( Cartesian ), Arrays.asList( 3L, 4L, 7L, 8L ) );
 
         BoundedIterable<Long> fusionAllEntriesReader = fusionIndexAccessor.newAllEntriesReader();
         assertThat( fusionAllEntriesReader.maxCount(), is( 9L ) );
+    }
+
+    private void divideEntriesAmongReaders( List<Long> allIds, List<Long> wgsEntries, List<Long> cartesianEntries, int numberOfEntries )
+    {
+        for ( long i = 0; i < numberOfEntries; i++ )
+        {
+            allIds.add( i );
+            switch ( random.nextInt( 0, 2 ) )
+            {
+            case 0:
+                wgsEntries.add( i );
+                break;
+            default: // case 1
+                cartesianEntries.add( i );
+                break;
+
+            }
+        }
+        mockSingleAllEntriesReader( indexMap.get( WGS84 ), wgsEntries );
+        mockSingleAllEntriesReader( indexMap.get( Cartesian ), cartesianEntries );
     }
 
     private void verifyFailOnSingleDropFailure( SpatialCRSSchemaIndex spatialKnownIndex ) throws IOException
@@ -370,16 +367,21 @@ public class SpatialFusionIndexAccessorTest
         }
     }
 
-    private BoundedIterable<Long> mockSingleAllEntriesReader( SpatialCRSSchemaIndex spatialKnownIndex, long[] entries )
+    private BoundedIterable<Long> mockSingleAllEntriesReader( SpatialCRSSchemaIndex spatialKnownIndex, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
         when( spatialKnownIndex.newAllEntriesReader() ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
-    private void mockSingleAllEntriesReaderWithUnknownMaxCount( SpatialCRSSchemaIndex spatialKnownIndex, long[] entries )
+    private void mockSingleAllEntriesReaderWithUnknownMaxCount( SpatialCRSSchemaIndex spatialKnownIndex, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
         when( spatialKnownIndex.newAllEntriesReader() ).thenReturn( allEntriesReader );
+    }
+
+    private Collection<SpatialCRSSchemaIndex> allAccessors()
+    {
+        return indexMap.values();
     }
 }

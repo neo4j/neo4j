@@ -59,7 +59,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class SchemaTransactionStateTest
 {
     private static SchemaIndexDescriptor indexCreate( StateHandlingStatementOperations txContext, KernelStatement state,
-            int labelId, int propertyKey )
+                                                      int labelId, int propertyKey )
     {
         return txContext.indexCreate( state, SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }

@@ -28,9 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
@@ -40,7 +38,7 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,IOException> implements IndexReader
 {
@@ -90,7 +88,12 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
     @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
-        if ( predicates[0] instanceof ExistsPredicate )
+        if ( predicates.length != 1 )
+        {
+            throw new IllegalArgumentException( "Only single property temporal indexes are supported." );
+        }
+        IndexQuery predicate = predicates[0];
+        if ( predicate instanceof ExistsPredicate )
         {
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
@@ -101,13 +104,21 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         }
         else
         {
-            if ( validPredicates( predicates ) )
+            if ( validPredicate( predicate ) )
             {
-                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicates[0].valueGroup() );
+                NativeSchemaIndexReader<?,NativeSchemaValue> part = uncheckedSelect( predicate.valueGroup() );
                 if ( part != null )
                 {
                     part.query( cursor, indexOrder, predicates );
                 }
+                else
+                {
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
+                }
+            }
+            else
+            {
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
             }
         }
     }
@@ -118,9 +129,9 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         return true;
     }
 
-    private boolean validPredicates( IndexQuery[] predicates )
+    private boolean validPredicate( IndexQuery predicate )
     {
-        return predicates[0] instanceof ExactPredicate || predicates[0] instanceof GeometryRangePredicate;
+        return predicate instanceof IndexQuery.ExactPredicate || predicate instanceof IndexQuery.RangePredicate;
     }
 
     /**
@@ -137,39 +148,39 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDate() throws IOException
+        public TemporalIndexPartReader<?> newDate()
         {
             return accessor.selectOrElse( ValueGroup.DATE, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDateTime()
+        public TemporalIndexPartReader<?> newLocalDateTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.LOCAL_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newDateTimeZoned()
+        public TemporalIndexPartReader<?> newZonedDateTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.ZONED_DATE_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newTime()
+        public TemporalIndexPartReader<?> newLocalTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.LOCAL_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
-        public TemporalIndexPartReader<?> newTimeZoned()
+        public TemporalIndexPartReader<?> newZonedTime()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.ZONED_TIME, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
 
         @Override
         public TemporalIndexPartReader<?> newDuration()
         {
-            throw new UnsupportedOperationException( "Illiterate" );
+            return accessor.selectOrElse( ValueGroup.DURATION, TemporalIndexAccessor.PartAccessor::newReader, null );
         }
     }
 }

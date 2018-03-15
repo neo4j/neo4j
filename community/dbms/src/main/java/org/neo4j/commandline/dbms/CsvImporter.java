@@ -70,6 +70,7 @@ class CsvImporter implements Importer
     private final boolean ignoreBadRelationships;
     private final boolean ignoreDuplicateNodes;
     private final boolean ignoreExtraColumns;
+    private final Boolean highIO;
 
     CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld ) throws IncorrectUsage
     {
@@ -94,6 +95,7 @@ class CsvImporter implements Importer
         idType = args.interpretOption( "id-type", withDefault( IdType.STRING ),
                 from -> IdType.valueOf( from.toUpperCase() ) );
         inputEncoding = Charset.forName( args.get( "input-encoding", defaultCharset().name() ) );
+        highIO = args.getBoolean( "high-io", null, true ); // intentionally left as null if not specified
         this.databaseConfig = databaseConfig;
     }
 
@@ -110,7 +112,7 @@ class CsvImporter implements Importer
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
 
         Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration(
-                null, false, databaseConfig, storeDir ) );
+                null, false, databaseConfig, storeDir, highIO ) );
 
         // Extract the default time zone from the database configuration
         LogTimeZone dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_timezone );
@@ -124,7 +126,7 @@ class CsvImporter implements Importer
                 badCollector );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), storeDir, logsDir,
-                reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration );
+                reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration, false );
     }
 
     private boolean isIgnoringSomething()

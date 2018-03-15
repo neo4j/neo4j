@@ -79,14 +79,14 @@ public class LuceneSchemaIndexProviderFactory extends
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
+                                              IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
     {
         return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode );
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
-            IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode )
+                                              IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
+                                              OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );

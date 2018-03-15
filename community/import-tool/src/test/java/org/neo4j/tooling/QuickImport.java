@@ -126,7 +126,7 @@ public class QuickImport
             }
 
             @Override
-            public boolean parallelRecordReadsWhenWriting()
+            public boolean highIO()
             {
                 return highIo;
             }

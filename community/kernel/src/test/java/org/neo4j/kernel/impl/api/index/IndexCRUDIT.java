@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -65,7 +64,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.createIndex;
 
 public class IndexCRUDIT
@@ -144,7 +144,7 @@ public class IndexCRUDIT
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final IndexProvider mockedIndexProvider = spy( new InMemoryIndexProvider() );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
+            singleInstanceIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxSupplier;
     private final Label myLabel = Label.label( "MYLABEL" );
 

@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -70,6 +71,7 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
@@ -504,26 +506,14 @@ public class ImportLogic implements Closeable
     }
 
     @Override
-    public void close()
+    public void close() throws IOException
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
-
-        if ( nodeRelationshipCache != null )
-        {
-            nodeRelationshipCache.close();
-        }
-        if ( nodeLabelsCache != null )
-        {
-            nodeLabelsCache.close();
-        }
-        if ( idMapper != null )
-        {
-            idMapper.close();
-        }
-        inputCache.close();
+        String additionalInformation = getState( DataStatistics.class ).toString();
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper, inputCache );
     }
 
     private void updatePeakMemoryUsage()

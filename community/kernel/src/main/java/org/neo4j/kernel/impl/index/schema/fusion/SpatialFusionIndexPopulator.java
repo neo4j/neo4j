@@ -42,7 +42,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialFusionIndexPopulator implements IndexPopulator
 {

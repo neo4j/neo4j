@@ -45,8 +45,7 @@ public interface SchemaWriteOperations
     SchemaIndexDescriptor indexCreate( LabelSchemaDescriptor schemaDescriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
-    /** Drops a {@link SchemaIndexDescriptor} from the database
-     * @param descriptor*/
+    /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )

@@ -24,4 +24,6 @@ object AssertionUtils {
       override def apply() = f
     })
   }
+
+  def assertionsEnabled = AssertionRunner.isAssertionsEnabled
 }

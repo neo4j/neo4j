@@ -34,10 +34,14 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -338,6 +342,28 @@ public class NodeProxyTest extends PropertyContainerProxyTest
         try ( Transaction ignore = db.beginTx() )
         {
             assertThat( node.getProperty( "prop" ), instanceOf( Double.class ) );
+        }
+    }
+
+    @Test
+    public void shouldOnlyReturnTypeOnce()
+    {
+        // Given
+        Node node;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node = db.createNode();
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            node.createRelationshipTo( db.createNode(), RelationshipType.withName( "R" ) );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( Iterables.asList( node.getRelationshipTypes() ),
+                    equalTo( singletonList( RelationshipType.withName( "R" ) ) ) );
         }
     }
 

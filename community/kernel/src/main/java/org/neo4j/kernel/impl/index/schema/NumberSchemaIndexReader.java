@@ -24,11 +24,11 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
@@ -45,11 +45,11 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( NumberSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( NumberIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
-    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -63,20 +63,21 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
-        case rangeNumeric:
-            NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
+        case range:
+            RangePredicate rangePredicate = (RangePredicate) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+        return false;
     }
 
-    private void initToForRange( NumberRangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( RangePredicate rangePredicate, KEY treeKeyTo )
     {
-        Value toValue = rangePredicate.toAsValue();
-        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
         {
             treeKeyTo.initAsHighest();
         }
@@ -87,10 +88,10 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         }
     }
 
-    private void initFromForRange( NumberRangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( RangePredicate rangePredicate, KEY treeKeyFrom )
     {
-        Value fromValue = rangePredicate.fromAsValue();
-        if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value fromValue = rangePredicate.fromValue();
+        if ( fromValue == Values.NO_VALUE )
         {
             treeKeyFrom.initAsLowest();
         }

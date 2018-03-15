@@ -44,7 +44,7 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     @Override
     public int type()
     {
-        return cursor.label();
+        return cursor.type();
     }
 
     @Override

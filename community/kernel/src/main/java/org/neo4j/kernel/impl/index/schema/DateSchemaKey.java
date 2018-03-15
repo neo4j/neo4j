@@ -19,47 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
 /**
- * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
- * or rather any string that {@link GBPTree} can handle.
+ * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
  */
-class DateSchemaKey extends NativeSchemaKey
+class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
 {
     static final int SIZE =
-            Long.BYTES + /* raw value bits */
+            Long.BYTES + /* epochDay */
             Long.BYTES;  /* entityId */
 
     long epochDay;
-
-    @Override
-    void from( Value... values )
-    {
-        assertValidValue( values ).writeTo( this );
-    }
-
-    private DateValue assertValidValue( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
-        }
-        if ( values.length < 1 )
-        {
-            throw new IllegalArgumentException( "Tried to create key without value" );
-        }
-        if ( !(values[0] instanceof DateValue) )
-        {
-            throw new IllegalArgumentException(
-                    "Key layout does only support DateValue, tried to create key from " + values[0] );
-        }
-        return (DateValue) values[0];
-    }
 
     @Override
     public Value asValue()
@@ -79,14 +53,8 @@ class DateSchemaKey extends NativeSchemaKey
         epochDay = Long.MAX_VALUE;
     }
 
-    /**
-     * Compares the value of this key to that of another key.
-     * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
-     *
-     * @param other the {@link DateSchemaKey} to compare to.
-     * @return comparison against the {@code other} {@link DateSchemaKey}.
-     */
-    int compareValueTo( DateSchemaKey other )
+    @Override
+    public int compareValueTo( DateSchemaKey other )
     {
         return Long.compare( epochDay, other.epochDay );
     }
@@ -94,12 +62,23 @@ class DateSchemaKey extends NativeSchemaKey
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochDay=%s", asValue(), getEntityId(), epochDay );
+        return format( "value=%s,entityId=%d,epochDay=%d", asValue(), getEntityId(), epochDay );
     }
 
     @Override
     public void writeDate( long epochDay )
     {
         this.epochDay = epochDay;
+    }
+
+    @Override
+    protected Value assertCorrectType( Value value )
+    {
+        if ( !(value instanceof DateValue) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support DateValue, tried to create key from " + value );
+        }
+        return value;
     }
 }

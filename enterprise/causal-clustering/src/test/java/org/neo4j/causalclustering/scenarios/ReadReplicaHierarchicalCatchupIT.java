@@ -63,7 +63,7 @@ public class ReadReplicaHierarchicalCatchupIT
                     .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" )
                     .withSharedReadReplicaParam( CausalClusteringSettings.multi_dc_license, "true" )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+                    .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST );
 
     @Test
     public void shouldCatchupThroughHierarchy() throws Throwable

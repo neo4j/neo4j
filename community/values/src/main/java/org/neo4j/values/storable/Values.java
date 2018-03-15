@@ -123,6 +123,11 @@ public final class Values
         return value instanceof PointValue;
     }
 
+    public static boolean isTemporalValue( Value value )
+    {
+        return value instanceof TemporalValue || value instanceof DurationValue;
+    }
+
     public static double coerceToDouble( Value value )
     {
         if ( value instanceof IntegralValue )
@@ -181,7 +186,7 @@ public final class Values
         }
     }
 
-    public static Value numberValue( Number number )
+    public static NumberValue numberValue( Number number )
     {
         if ( number instanceof Long )
         {
@@ -206,10 +211,6 @@ public final class Values
         if ( number instanceof Short )
         {
             return shortValue( number.shortValue() );
-        }
-        if ( number == null )
-        {
-            return NO_VALUE;
         }
 
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
@@ -698,5 +699,29 @@ public final class Values
             Array.set( target, i, value[i] );
         }
         return target;
+    }
+
+    public static Value minValue( ValueGroup valueGroup, Value value )
+    {
+        switch ( valueGroup )
+        {
+        case TEXT: return MIN_STRING;
+        case NUMBER: return MIN_NUMBER;
+        case GEOMETRY: return minPointValue( (PointValue)value );
+        default: throw new IllegalStateException(
+                format( "The minValue for valueGroup %s is not defined yet", valueGroup ) );
+        }
+    }
+
+    public static Value maxValue( ValueGroup valueGroup, Value value )
+    {
+        switch ( valueGroup )
+        {
+        case TEXT: return MAX_STRING;
+        case NUMBER: return MAX_NUMBER;
+        case GEOMETRY: return maxPointValue( (PointValue)value );
+        default: throw new IllegalStateException(
+                format( "The maxValue for valueGroup %s is not defined yet", valueGroup ) );
+        }
     }
 }

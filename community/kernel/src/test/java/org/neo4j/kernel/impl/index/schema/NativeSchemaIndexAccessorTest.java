@@ -184,7 +184,8 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         {
             // when
             IndexEntryUpdate<SchemaIndexDescriptor> update = updates[i];
-            IndexEntryUpdate<SchemaIndexDescriptor> remove = remove( update.getEntityId(), schemaIndexDescriptor, update.values() );
+            IndexEntryUpdate<SchemaIndexDescriptor> remove = remove( update.getEntityId(),
+                    schemaIndexDescriptor, update.values() );
             processAll( remove );
             forceAndCloseAccessor();
 

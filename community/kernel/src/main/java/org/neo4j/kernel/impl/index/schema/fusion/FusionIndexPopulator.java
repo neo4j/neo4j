@@ -28,31 +28,20 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
-class FusionIndexPopulator implements IndexPopulator
+class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
-    private final IndexPopulator numberPopulator;
-    private final IndexPopulator spatialPopulator;
-    private final IndexPopulator temporalPopulator;
-    private final IndexPopulator lucenePopulator;
-    private final Selector selector;
     private final long indexId;
     private final DropAction dropAction;
 
-    FusionIndexPopulator( IndexPopulator numberPopulator, IndexPopulator spatialPopulator, IndexPopulator temporalPopulator,
-            IndexPopulator lucenePopulator, Selector selector, long indexId, DropAction dropAction )
+    FusionIndexPopulator( IndexPopulator[] populators, Selector selector, long indexId, DropAction dropAction )
     {
-        this.numberPopulator = numberPopulator;
-        this.spatialPopulator = spatialPopulator;
-        this.temporalPopulator = temporalPopulator;
-        this.lucenePopulator = lucenePopulator;
-        this.selector = selector;
+        super( populators, selector );
         this.indexId = indexId;
         this.dropAction = dropAction;
     }
@@ -60,81 +49,78 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void create() throws IOException
     {
-        numberPopulator.create();
-        spatialPopulator.create();
-        temporalPopulator.create();
-        lucenePopulator.create();
+        forAll( IndexPopulator::create, instances );
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexPopulator::drop, numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( IndexPopulator::drop, instances );
         dropAction.drop( indexId );
     }
 
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<?>> luceneBatch = new ArrayList<>();
-        Collection<IndexEntryUpdate<?>> spatialBatch = new ArrayList<>();
-        Collection<IndexEntryUpdate<?>> temporalBatch = new ArrayList<>();
-        Collection<IndexEntryUpdate<?>> numberBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<?>>[] batches = new Collection[instances.length];
         for ( IndexEntryUpdate<?> update : updates )
         {
-            selector.select( numberBatch, spatialBatch, temporalBatch, luceneBatch, update.values() ).add( update );
+            int slot = selector.selectSlot( update.values() );
+            Collection<IndexEntryUpdate<?>> batch = batches[slot];
+            if ( batch == null )
+            {
+                batch = new ArrayList<>();
+                batches[slot] = batch;
+            }
+            batch.add( update );
         }
-        lucenePopulator.add( luceneBatch );
-        spatialPopulator.add( spatialBatch );
-        temporalPopulator.add( temporalBatch );
-        numberPopulator.add( numberBatch );
+
+        for ( int i = 0; i < instances.length; i++ )
+        {
+            if ( batches[i] != null )
+            {
+                instances[i].add( batches[i] );
+            }
+        }
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        numberPopulator.verifyDeferredConstraints( propertyAccessor );
-        spatialPopulator.verifyDeferredConstraints( propertyAccessor );
-        temporalPopulator.verifyDeferredConstraints( propertyAccessor );
-        lucenePopulator.verifyDeferredConstraints( propertyAccessor );
+        for ( IndexPopulator populator : instances )
+        {
+            populator.verifyDeferredConstraints( propertyAccessor );
+        }
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return new FusionIndexUpdater(
-                numberPopulator.newPopulatingUpdater( accessor ),
-                spatialPopulator.newPopulatingUpdater( accessor ),
-                temporalPopulator.newPopulatingUpdater( accessor ),
-                lucenePopulator.newPopulatingUpdater( accessor ), selector );
+        return new FusionIndexUpdater( instancesAs( IndexUpdater.class, populator -> populator.newPopulatingUpdater( accessor ) ), selector );
     }
 
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( populator -> populator.close( populationCompletedSuccessfully ), numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( populator -> populator.close( populationCompletedSuccessfully ), instances );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( populator -> populator.markAsFailed( failure ), numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator );
+        forAll( populator -> populator.markAsFailed( failure ), instances );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        selector.select( numberPopulator, spatialPopulator, temporalPopulator, lucenePopulator, update.values() ).includeSample( update );
+        selector.select( instances, update.values() ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples(
-                numberPopulator.sampleResult(),
-                spatialPopulator.sampleResult(),
-                temporalPopulator.sampleResult(),
-                lucenePopulator.sampleResult() );
+        return combineSamples( instancesAs( IndexSample.class, IndexPopulator::sampleResult ) );
     }
 }

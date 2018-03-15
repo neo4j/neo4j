@@ -735,7 +735,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       val cursor = relationshipScanCursor
       reads().singleRelationship(id, cursor)
       if (cursor.next())
-        Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, cursor.sourceNodeReference(), cursor.label(),
+        Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, cursor.sourceNodeReference(), cursor.`type`(),
                                                                        cursor.targetNodeReference())))
       else
         None
@@ -748,7 +748,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         override protected def fetchNext(): RelationshipValue = {
           if (relCursor.next())
             fromRelationshipProxy(entityAccessor.newRelationshipProxy(relCursor.relationshipReference(),
-                                                                      relCursor.sourceNodeReference(), relCursor.label(),
+                                                                      relCursor.sourceNodeReference(), relCursor.`type`(),
                                                                       relCursor.targetNodeReference()))
           else null
         }

@@ -66,7 +66,7 @@ class StubRelationshipCursor implements RelationshipTraversalCursor
     }
 
     @Override
-    public int label()
+    public int type()
     {
         return store.get( chainId ).get( offset ).type;
     }

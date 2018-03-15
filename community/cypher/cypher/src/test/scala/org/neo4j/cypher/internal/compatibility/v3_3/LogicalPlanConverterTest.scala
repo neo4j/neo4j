@@ -310,7 +310,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val n3_3 = plansV3_3.NodeIndexSeek("a",
       astV3_3.LabelToken("b", frontendV3_3.LabelId(2)),
       Seq(astV3_3.PropertyKeyToken("c", frontendV3_3.PropertyKeyId(3))),
-      plansV3_3.ScanQueryExpression(var3_3), Set.empty)(solved3_3)
+      plansV3_3.SingleQueryExpression(var3_3), Set.empty)(solved3_3)
     n3_3.assignIds()
 
     val var3_4 = expressionsV3_4.Variable("n")(pos3_4)
@@ -318,7 +318,7 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
     val n3_4 = plansV3_4.NodeIndexSeek("a",
       expressionsV3_4.LabelToken("b", utilV3_4.LabelId(2)),
       Seq(expressionsV3_4.PropertyKeyToken("c", utilV3_4.PropertyKeyId(3))),
-      plansV3_4.ScanQueryExpression(var3_4), Set.empty)
+      plansV3_4.SingleQueryExpression(var3_4), Set.empty)
 
     convert[ErrorPlan](n3_3) should be(n3_4)
   }
@@ -383,7 +383,8 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
 
   test("should convert all logical plans") {
     val subTypes = reflectLogicalPlans.getSubTypesOf(classOf[plansV3_3.LogicalPlan]).asScala
-    subTypes.filter { c => !Modifier.isAbstract(c.getModifiers) }
+    subTypes.filter(c => !Modifier.isAbstract(c.getModifiers))
+      .filter(c => c.getSimpleName == "ScanQueryExpression")  // removed in later versions of 3.3.x, but not earlier versions - delete this filter
       .toList.sortBy(_.getName)
       .foreach { subType =>
         val constructor = subType.getConstructors.head

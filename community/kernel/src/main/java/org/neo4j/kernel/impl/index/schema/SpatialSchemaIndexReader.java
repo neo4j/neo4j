@@ -49,8 +49,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     private final SpaceFillingCurveConfiguration configuration;
 
     SpatialSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig,
-                              SchemaIndexDescriptor descriptor,
-            SpaceFillingCurveConfiguration configuration )
+                              SchemaIndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
         spatial = (SpatialLayout) layout;
@@ -74,7 +73,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     }
 
     @Override
-    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
     }
@@ -92,7 +91,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
         case exact:
             startSeekForExact( cursor, ((ExactPredicate) predicate).value(), predicate );
             break;
-        case rangeGeometric:
+        case range:
             GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
             if ( !rangePredicate.crs().equals( spatial.crs ) )
             {
@@ -112,7 +111,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
         KEY treeKeyTo = layout.newKey();
         treeKeyFrom.initAsLowest();
         treeKeyTo.initAsHighest();
-        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 
     private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
@@ -121,7 +120,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
         KEY treeKeyTo = layout.newKey();
         treeKeyFrom.from( Long.MIN_VALUE, value );
         treeKeyTo.from( Long.MAX_VALUE, value );
-        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates );
+        startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
     }
 
     private void startSeekForRange( IndexProgressor.NodeValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
@@ -159,7 +158,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {

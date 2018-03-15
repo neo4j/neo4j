@@ -69,6 +69,8 @@ import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
+import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
@@ -111,9 +113,9 @@ abstract class Read implements TxStateHolder,
             {
                 switch ( q.type() )
                 {
-                case rangeGeometric:
-                case rangeNumeric:
-                    if ( !reader.hasFullValuePrecision( q ) )
+                case range:
+                    ValueGroup valueGroup = q.valueGroup();
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY ) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
@@ -638,6 +640,17 @@ abstract class Read implements TxStateHolder,
     public void acquireSharedLabelLock( long... ids )
     {
         acquireSharedLock( ResourceTypes.LABEL, ids );
+        ktx.assertOpen();
+    }
+
+    void acquireSharedOptimisticLabelLock( int... ids )
+    {
+        long[] resourceIds = new long[ids.length];
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            resourceIds[i] = ids[i];
+        }
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, resourceIds );
         ktx.assertOpen();
     }
 

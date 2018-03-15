@@ -323,6 +323,11 @@
                   <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
                   <justification>Class is never used</justification>
                 </item>
+                <item>
+                  <code>java.field.nowFinal</code>
+                  <old>field org.neo4j.graphdb.InputPosition.empty</old>
+                  <justification>Changes to this field should not be allowed</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
@@ -978,7 +983,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.4.3</version>
+        <version>1.5.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>

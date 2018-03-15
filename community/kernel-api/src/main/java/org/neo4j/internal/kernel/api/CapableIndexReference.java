@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Iterator;
+import java.util.List;
+
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
@@ -27,6 +31,10 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface CapableIndexReference extends IndexReference, IndexCapability
 {
+    String providerKey();
+
+    String providerVersion();
+
     CapableIndexReference NO_INDEX = new CapableIndexReference()
     {
         @Override
@@ -58,5 +66,33 @@ public interface CapableIndexReference extends IndexReference, IndexCapability
         {
             return new int[0];
         }
+
+        @Override
+        public String providerKey()
+        {
+            return null;
+        }
+
+        @Override
+        public String providerVersion()
+        {
+            return null;
+        }
     };
+
+    /**
+     * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
+     * hot path.
+     *
+     * @param indexes Indexes to sort
+     * @return sorted indexes
+     */
+    static Iterator<CapableIndexReference> sortByType( Iterator<CapableIndexReference> indexes )
+    {
+        List<CapableIndexReference> materialized = Iterators.asList( indexes );
+        return Iterators.concat(
+                Iterators.filter( i -> !i.isUnique(), materialized.iterator() ),
+                Iterators.filter( IndexReference::isUnique, materialized.iterator() ) );
+
+    }
 }

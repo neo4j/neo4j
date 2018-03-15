@@ -95,73 +95,73 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
         @Override
         public Boolean handle( RaftMessages.Vote.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Vote.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PreVote.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PreVote.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.AppendEntries.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Timeout.Election election )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.NewEntry.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PruneRequest pruneRequest )
         {
-            return false;
+            return Boolean.FALSE;
         }
     }
 }

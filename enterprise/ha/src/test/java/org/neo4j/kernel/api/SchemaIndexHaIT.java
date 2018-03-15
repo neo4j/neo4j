@@ -53,7 +53,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -70,7 +70,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -585,18 +585,18 @@ public class SchemaIndexHaIT
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
-            FusionSchemaIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+            FusionIndexProvider fusionIndexProvider = NativeLuceneFusionIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {
-                ControlledIndexProvider provider = new ControlledIndexProvider( fusionSchemaIndexProvider );
+                ControlledIndexProvider provider = new ControlledIndexProvider( fusionIndexProvider );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
-                return fusionSchemaIndexProvider;
+                return fusionIndexProvider;
             }
         }
     }

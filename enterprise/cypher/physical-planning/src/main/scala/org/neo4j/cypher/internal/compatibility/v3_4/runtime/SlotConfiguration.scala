@@ -160,6 +160,8 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   private val getters: mutable.Map[String, ExecutionContext => AnyValue] = new mutable.HashMap[String, ExecutionContext => AnyValue]()
   private val setters: mutable.Map[String, (ExecutionContext, AnyValue) => Unit] = new mutable.HashMap[String, (ExecutionContext, AnyValue) => Unit]()
+  private val primitiveNodeSetters: mutable.Map[String, (ExecutionContext, Long) => Unit] = new mutable.HashMap[String, (ExecutionContext, Long) => Unit]()
+  private val primitiveRelationshipSetters: mutable.Map[String, (ExecutionContext, Long) => Unit] = new mutable.HashMap[String, (ExecutionContext, Long) => Unit]()
 
   def size() = SlotConfiguration.Size(numberOfLongs, numberOfReferences)
 
@@ -272,9 +274,13 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
     case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
-  def updateAccessorFunctions(key: String, getter: ExecutionContext => AnyValue, setter: (ExecutionContext, AnyValue) => Unit) = {
+  def updateAccessorFunctions(key: String, getter: ExecutionContext => AnyValue, setter: (ExecutionContext, AnyValue) => Unit,
+                              primitiveNodeSetter: Option[(ExecutionContext, Long) => Unit],
+                              primitiveRelationshipSetter: Option[(ExecutionContext, Long) => Unit]) = {
     getters += key -> getter
     setters += key -> setter
+    primitiveNodeSetter.map(primitiveNodeSetters += key -> _)
+    primitiveRelationshipSetter.map(primitiveRelationshipSetters += key -> _)
   }
 
   def getter(key: String): ExecutionContext => AnyValue = {
@@ -291,6 +297,14 @@ class SlotConfiguration(private val slots: mutable.Map[String, Slot],
 
   def maybeSetter(key: String): Option[(ExecutionContext, AnyValue) => Unit] = {
     setters.get(key)
+  }
+
+  def maybePrimitiveNodeSetter(key: String): Option[(ExecutionContext, Long) => Unit] = {
+    primitiveNodeSetters.get(key)
+  }
+
+  def maybePrimitiveRelationshipSetter(key: String): Option[(ExecutionContext, Long) => Unit] = {
+    primitiveRelationshipSetters.get(key)
   }
 
   // NOTE: This will give duplicate slots when we have aliases

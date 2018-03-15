@@ -145,8 +145,8 @@ public class StoreMigration
                     indexProviderSelection.lowerPrioritizedCandidates() );
 
             long startTime = System.currentTimeMillis();
-            DatabaseMigrator migrator =
-                    new DatabaseMigrator( progressMonitor, fs, config, logService, indexProviderMap, explicitIndexProvider.getIndexProviders(),
+            DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
+                    indexProviderMap, explicitIndexProvider.getIndexProviders(),
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
             migrator.migrate( storeDirectory );
 

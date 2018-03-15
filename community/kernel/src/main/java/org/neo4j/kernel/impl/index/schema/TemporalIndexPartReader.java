@@ -26,6 +26,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
 {
@@ -49,7 +51,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
     }
 
     @Override
-    protected void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    protected boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -58,14 +60,50 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
             break;
+
         case exact:
             IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
-        // will add range for temporal
+
+        case range:
+            IndexQuery.RangePredicate rangePredicate = (IndexQuery.RangePredicate) predicate;
+            initFromForRange( rangePredicate, treeKeyFrom );
+            initToForRange( rangePredicate, treeKeyTo );
+            break;
+
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+        }
+        return false; // no filtering
+    }
+
+    private void initFromForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyFrom )
+    {
+        Value fromValue = rangePredicate.fromValue();
+        if ( fromValue == Values.NO_VALUE )
+        {
+            treeKeyFrom.initAsLowest();
+        }
+        else
+        {
+            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
+            treeKeyFrom.setCompareId( true );
+        }
+    }
+
+    private void initToForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyTo )
+    {
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
+        {
+            treeKeyTo.initAsHighest();
+        }
+        else
+        {
+            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.setCompareId( true );
         }
     }
 

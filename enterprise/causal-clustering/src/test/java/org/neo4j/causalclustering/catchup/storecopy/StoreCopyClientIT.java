@@ -49,7 +49,9 @@ import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class StoreCopyClientIT
 {
@@ -178,11 +180,8 @@ public class StoreCopyClientIT
         assertEquals( fileContent( relative( fileA.getFilename() ) ), clientFileContents( storeFileStream, fileA.getFilename() ) );
         assertEquals( fileContent( relative( fileB.getFilename() ) ), clientFileContents( storeFileStream, fileB.getFilename() ) );
 
-        // and verify server had exactly 2 calls for failing file
-        assertEquals( 2, catchupServerRule.getRequestCount( fileB.getFilename() ) );
-
-        // and verify server had exactly 1 call for all other files
-        assertEquals( 1, catchupServerRule.getRequestCount( fileA.getFilename() ) );
+        // and verify file was requested more than once
+        assertThat( catchupServerRule.getRequestCount( fileB.getFilename() ), greaterThan( 1 ) );
     }
 
     private static AdvertisedSocketAddress from( int port )

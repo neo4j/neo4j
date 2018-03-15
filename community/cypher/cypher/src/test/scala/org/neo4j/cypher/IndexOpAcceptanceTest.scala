@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory
+import org.neo4j.kernel.api.impl.schema.{LuceneSchemaIndexProviderFactory, NativeLuceneFusionIndexProviderFactory}
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -113,7 +112,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       tx.close()
     }
 
-    val indexDirectory = NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure( storeDir )
+    val indexDirectory = NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir )
         .forProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ).directoryForIndex( 1 )
     graph.shutdown()
 

@@ -96,33 +96,33 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         }
 
         @Override
-        public IndexUpdater newDateTime() throws IOException
+        public IndexUpdater newLocalDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.localDateTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
-        public IndexUpdater newDateTimeZoned() throws IOException
+        public IndexUpdater newZonedDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.zonedDateTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
-        public IndexUpdater newTime() throws IOException
+        public IndexUpdater newLocalTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.localTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
-        public IndexUpdater newTimeZoned() throws IOException
+        public IndexUpdater newZonedTime() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.zonedTime().newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "too tired to write" );
+            return populator.duration().newPopulatingUpdater( propertyAccessor );
         }
     }
 }

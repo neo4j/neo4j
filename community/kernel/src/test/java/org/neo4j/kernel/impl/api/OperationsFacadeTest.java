@@ -101,7 +101,8 @@ public class OperationsFacadeTest
             db.schema().indexFor( LABEL1 ).on( PROP1 ).create();
             ReadOperations readOperations = statement.readOperations();
             SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( labelId, propertyId );
-            IndexProvider.Descriptor providerDescriptor = readOperations.indexGetProviderDescriptor( schemaIndexDescriptor );
+            IndexProvider.Descriptor providerDescriptor = readOperations.indexGetProviderDescriptor(
+                    schemaIndexDescriptor );
             assertThat( providerDescriptor, is( IndexProvider.UNDECIDED ) );
             tx.success();
         }

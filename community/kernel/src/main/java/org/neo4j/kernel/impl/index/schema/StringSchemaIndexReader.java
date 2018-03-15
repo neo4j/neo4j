@@ -24,11 +24,13 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
+
+import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 
 class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
@@ -46,11 +48,11 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( StringSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( StringIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
-    void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -58,26 +60,36 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         case exists:
             treeKeyFrom.initAsLowest();
             treeKeyTo.initAsHighest();
-            break;
+            return false;
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
-            break;
-        case rangeString:
-            StringRangePredicate rangePredicate = (StringRangePredicate)predicate;
+            return false;
+        case range:
+            RangePredicate rangePredicate = (RangePredicate)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
-            break;
+            return false;
+        case stringPrefix:
+            StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
+            treeKeyFrom.initAsPrefixLow( prefixPredicate.prefix() );
+            treeKeyTo.initAsPrefixHigh( prefixPredicate.prefix() );
+            return false;
+        case stringSuffix:
+        case stringContains:
+            treeKeyFrom.initAsLowest();
+            treeKeyTo.initAsHighest();
+            return true;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
     }
 
-    private void initFromForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
+    private void initFromForRange( RangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
     {
-        Value fromValue = rangePredicate.fromAsValue();
-        if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value fromValue = rangePredicate.fromValue();
+        if ( fromValue == Values.NO_VALUE )
         {
             treeKeyFrom.initAsLowest();
         }
@@ -88,10 +100,10 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         }
     }
 
-    private void initToForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyTo )
+    private void initToForRange( RangePredicate rangePredicate, StringSchemaKey treeKeyTo )
     {
-        Value toValue = rangePredicate.toAsValue();
-        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        Value toValue = rangePredicate.toValue();
+        if ( toValue == Values.NO_VALUE )
         {
             treeKeyTo.initAsHighest();
         }

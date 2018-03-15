@@ -37,7 +37,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -171,7 +171,7 @@ public class NonUniqueIndexTest
         IndexProvider indexProvider;
         if ( useFusionIndex )
         {
-            indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+            indexProvider = NativeLuceneFusionIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
         }
         else

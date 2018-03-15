@@ -42,7 +42,13 @@ object TypeSpec {
     CTPoint,
     CTGeometry,
     CTString,
-    CTGraphRef
+    CTGraphRef,
+    CTDuration,
+    CTDate,
+    CTTime,
+    CTLocalTime,
+    CTLocalDateTime,
+    CTDateTime
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))

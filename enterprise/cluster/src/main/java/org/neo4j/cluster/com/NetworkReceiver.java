@@ -137,7 +137,7 @@ public class NetworkReceiver
                 Executors.newCachedThreadPool( daemon( "Cluster boss", monitor ) ),
                 Executors.newFixedThreadPool( 2, daemon( "Cluster worker", monitor ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption( "child.tcpNoDelay", true );
+        serverBootstrap.setOption( "child.tcpNoDelay", Boolean.TRUE );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();

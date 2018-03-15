@@ -85,9 +85,7 @@ public class ReplicationModule
                 leaderRetryStrategy,
                 platformModule.availabilityGuard,
                 logProvider,
-                replicationLimit,
-                platformModule.clock
-        ) );
+                replicationLimit ) );
     }
 
     public RaftReplicator getReplicator()

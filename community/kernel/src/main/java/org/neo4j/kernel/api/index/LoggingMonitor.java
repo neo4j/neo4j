@@ -46,7 +46,8 @@ public class LoggingMonitor implements IndexProvider.Monitor
     {
         StringBuilder builder =
                 new StringBuilder(
-                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor.toString() );
+                        "Schema index recovery completed: indexId: " + indexId + " descriptor: " + indexDescriptor
+                                .toString() );
         data.forEach( ( key, value ) -> builder.append( format( " %s: %s", key, value ) ) );
         log.info( builder.toString() );
     }

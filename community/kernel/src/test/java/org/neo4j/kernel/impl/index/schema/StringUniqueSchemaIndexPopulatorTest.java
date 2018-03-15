@@ -32,8 +32,7 @@ public class StringUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInde
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<StringSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new StringSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor,
-                schemaIndexDescriptor, indexId, samplingConfig );
+        return new StringSchemaIndexPopulator( pageCache, fs, indexFile, layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Override

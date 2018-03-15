@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -190,58 +189,5 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
     void assertFileNotPresent()
     {
         assertFalse( fs.fileExists( indexFile ) );
-    }
-
-    private class SimpleHit implements Hit<KEY,VALUE>
-    {
-        private final KEY key;
-        private final VALUE value;
-
-        SimpleHit( KEY key, VALUE value )
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public KEY key()
-        {
-            return key;
-        }
-
-        @Override
-        public VALUE value()
-        {
-            return value;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            @SuppressWarnings( "unchecked" )
-            Hit<KEY,VALUE> simpleHit = (Hit<KEY,VALUE>) o;
-            return Objects.equals( key(), simpleHit.key() ) &&
-                    Objects.equals( value, simpleHit.value() );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( key, value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "[" + key + "," + value + "]";
-        }
     }
 }

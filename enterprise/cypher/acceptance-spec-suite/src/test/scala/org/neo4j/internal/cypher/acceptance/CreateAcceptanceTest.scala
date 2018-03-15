@@ -113,7 +113,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should allow create, delete and return in one go (relationship)") {
     val typ = "ThisIsTheRelationshipType"
     val query = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
-    val result = executeWith(Configs.UpdateConf - Configs.SlottedInterpreted, query)
+    val result = executeWith(Configs.UpdateConf, query)
     result.toList should equal(List(Map("type(r)" -> typ)))
   }
 

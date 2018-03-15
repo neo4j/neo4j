@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -57,6 +57,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 
 public class FulltextIndexProviderTest
 {
@@ -101,8 +102,8 @@ public class FulltextIndexProviderTest
         IndexDescriptor fulltextIndexDescriptor;
         try ( Transaction ignore = db.beginTx() )
         {
-            fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+            MultiTokenSchemaDescriptor schema = multiToken( ANY_ENTITY_TOKEN, EntityType.NODE, new int[]{2, 3, 4} );
+            fulltextIndexDescriptor = provider.indexDescriptorFor( schema, "fulltext",
                             STANDARD );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
@@ -142,7 +143,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
+                    provider.indexDescriptorFor( multiToken( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
                             STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
@@ -177,7 +178,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ),
+                    provider.indexDescriptorFor( multiToken( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ),
                             "fulltext", STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
@@ -221,7 +222,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( SchemaDescriptorFactory.multiToken( entityTokens, EntityType.NODE, propertyIds ), "fulltext",
+                    provider.indexDescriptorFor( multiToken( entityTokens, EntityType.NODE, propertyIds ), "fulltext",
                             STANDARD );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();

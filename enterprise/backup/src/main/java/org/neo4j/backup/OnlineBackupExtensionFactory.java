@@ -26,8 +26,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 
 @Service.Implementation( KernelExtensionFactory.class )
@@ -85,15 +87,19 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
-        return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
-                dependencies.logService().getInternalLogProvider(), dependencies.monitors(),
-                dependencies.neoStoreDataSource(),
-                dependencies.checkPointer(),
-                dependencies.transactionIdStoreSupplier(),
-                dependencies.logicalTransactionStoreSupplier(),
-                dependencies.logFileInformationSupplier(),
-                dependencies.fileSystemAbstraction(),
-                dependencies.pageCache(),
-                dependencies.storeCopyCheckPointMutex() );
+        if ( !isCausalClusterInstance( context ) )
+        {
+            return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
+                    dependencies.logService().getInternalLogProvider(), dependencies.monitors(), dependencies.neoStoreDataSource(), dependencies.checkPointer(),
+                    dependencies.transactionIdStoreSupplier(), dependencies.logicalTransactionStoreSupplier(), dependencies.logFileInformationSupplier(),
+                    dependencies.fileSystemAbstraction(), dependencies.pageCache(), dependencies.storeCopyCheckPointMutex() );
+        }
+        return new LifecycleAdapter();
+    }
+
+    private static boolean isCausalClusterInstance( KernelContext kernelContext )
+    {
+        OperationalMode thisMode = kernelContext.databaseInfo().operationalMode;
+        return OperationalMode.core.equals( thisMode ) || OperationalMode.read_replica.equals( thisMode );
     }
 }

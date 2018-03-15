@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
+import org.neo4j.management.CausalClustering;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -72,6 +73,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
     private final Monitors monitors = new Monitors();
+    private final String dbName;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -140,6 +142,8 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         raftLogDir = new File( clusterStateDir, RAFT_LOG_DIRECTORY_NAME );
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
         memberConfig = Config.defaults( config );
+
+        this.dbName = memberConfig.get( CausalClusteringSettings.database );
 
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
@@ -237,6 +241,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public int serverId()
     {
         return serverId;
+    }
+
+    public String dbName()
+    {
+        return dbName;
     }
 
     @Override

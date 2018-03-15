@@ -144,7 +144,7 @@ public interface StorageStatement extends AutoCloseable
      * Reader returned from this method should not be closed. All such readers will be closed during {@link #close()}
      * of the current statement.
      *
-     * @param index {@link SchemaIndexDescriptor} to get reader for.
+     * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
@@ -158,7 +158,7 @@ public interface StorageStatement extends AutoCloseable
      * <b>NOTE:</b>
      * It is caller's responsibility to close the returned reader.
      *
-     * @param index {@link SchemaIndexDescriptor} to get reader for.
+     * @param index {@link IndexDescriptor} to get reader for.
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */

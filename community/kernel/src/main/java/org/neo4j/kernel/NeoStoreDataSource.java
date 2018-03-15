@@ -65,8 +65,8 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -127,7 +127,6 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileIndexListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -562,7 +561,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 progressMonitor,
                 fs,
                 config,
-                logService, indexProviderMap,
+                logService,
+                indexProviderMap,
                 indexProviders,
                 pageCache,
                 format, tailScanner ).migrate( storeDir );
@@ -673,7 +673,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
-                propertyAccessor, monitors );
+                propertyAccessor );
 
         ExplicitIndexStore explicitIndexStore = new ExplicitIndexStore( config,
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );
@@ -690,7 +690,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
-                explicitIndexStore, versionContextSupplier, collectionsFactorySupplier ) );
+                explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 

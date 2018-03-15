@@ -23,8 +23,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -38,6 +40,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -47,6 +50,7 @@ import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManage
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
@@ -81,6 +85,7 @@ public class Cluster
     protected final DiscoveryServiceFactory discoveryServiceFactory;
     protected final String listenAddress;
     protected final String advertisedAddress;
+    private final Set<String> dbNames;
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
@@ -90,6 +95,17 @@ public class Cluster
             Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
             Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
             String recordFormat, IpFamily ipFamily, boolean useWildcard )
+    {
+        this( parentDir, noOfCoreMembers, noOfReadReplicas, discoveryServiceFactory, coreParams,
+                instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily,
+                useWildcard, Collections.singleton( CausalClusteringSettings.database.getDefaultValue() ) );
+    }
+
+    public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
+            DiscoveryServiceFactory discoveryServiceFactory,
+            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
+            Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
+            String recordFormat, IpFamily ipFamily, boolean useWildcard, Set<String> dbNames )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -103,6 +119,7 @@ public class Cluster
         List<AdvertisedSocketAddress> initialHosts = initialHosts( noOfCoreMembers );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createReadReplicas( noOfReadReplicas, initialHosts, readReplicaParams, instanceReadReplicaParams, recordFormat );
+        this.dbNames = dbNames;
     }
 
     private List<AdvertisedSocketAddress> initialHosts( int noOfCoreMembers )
@@ -122,8 +139,7 @@ public class Cluster
     public Set<CoreClusterMember> healthyCoreMembers()
     {
         return coreMembers.values().stream()
-                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class )
-                        .isHealthy() )
+                .filter( db -> db.database().getDependencyResolver().resolveDependency( DatabaseHealth.class ).isHealthy() )
                 .collect( Collectors.toSet() );
     }
 
@@ -247,9 +263,9 @@ public class Cluster
         return list;
     }
 
-    public void removeCoreMemberWithMemberId( int memberId )
+    public void removeCoreMemberWithServerId( int serverId )
     {
-        CoreClusterMember memberToRemove = getCoreMemberById( memberId );
+        CoreClusterMember memberToRemove = getCoreMemberById( serverId );
 
         if ( memberToRemove != null )
         {
@@ -258,7 +274,7 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core member with id " + memberId );
+            throw new RuntimeException( "Could not remove core member with id " + serverId );
         }
     }
 
@@ -303,27 +319,54 @@ public class Cluster
         return firstOrNull( readReplicas.values() );
     }
 
+    private void ensureDBName( String dbName ) throws IllegalArgumentException
+    {
+        if ( !dbNames.contains( dbName ) )
+        {
+            throw new IllegalArgumentException( "Database name " + dbName + " does not exist in this cluster." );
+        }
+    }
+
     public CoreClusterMember getDbWithRole( Role role )
     {
         return getDbWithAnyRole( role );
     }
 
+    public CoreClusterMember getDbWithRole( String dbName, Role role )
+    {
+        return getDbWithAnyRole( dbName, role );
+    }
+
     public CoreClusterMember getDbWithAnyRole( Role... roles )
     {
+        String dbName = CausalClusteringSettings.database.getDefaultValue();
+        return getDbWithAnyRole( dbName, roles );
+    }
+
+    public CoreClusterMember getDbWithAnyRole( String dbName, Role... roles )
+    {
+        ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
-        for ( CoreClusterMember coreClusterMember : coreMembers.values() )
-        {
-            if ( coreClusterMember.database() != null && roleSet.contains( coreClusterMember.database().getRole() ) )
-            {
-                return coreClusterMember;
-            }
-        }
-        return null;
+
+        Optional<CoreClusterMember> firstAppropriate = coreMembers.values().stream().filter( m ->
+            m.database() != null && m.dbName().equals( dbName ) &&  roleSet.contains( m.database().getRole() ) ).findFirst();
+
+        return firstAppropriate.orElse( null );
     }
 
     public CoreClusterMember awaitLeader() throws TimeoutException
     {
         return awaitCoreMemberWithRole( Role.LEADER, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+    }
+
+    public CoreClusterMember awaitLeader( String dbName ) throws TimeoutException
+    {
+        return awaitCoreMemberWithRole( dbName, Role.LEADER, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+    }
+
+    public CoreClusterMember awaitLeader( String dbName, long timeout, TimeUnit timeUnit ) throws TimeoutException
+    {
+        return awaitCoreMemberWithRole( dbName, Role.LEADER, timeout, timeUnit );
     }
 
     public CoreClusterMember awaitLeader( long timeout, TimeUnit timeUnit ) throws TimeoutException
@@ -336,13 +379,19 @@ public class Cluster
         return await( () -> getDbWithRole( role ), notNull(), timeout, timeUnit );
     }
 
+    public CoreClusterMember awaitCoreMemberWithRole( String dbName, Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
+    {
+        return await( () -> getDbWithRole( dbName, role ), notNull(), timeout, timeUnit );
+    }
+
     public int numberOfCoreMembersReportedByTopology()
     {
+
         CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
                 .filter( member -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
-        return coreTopologyService.coreServers().members().size();
+        return coreTopologyService.localCoreServers().members().size();
     }
 
     /**
@@ -350,19 +399,28 @@ public class Cluster
      */
     public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws Exception
     {
-        // this currently wraps the leader-only strategy, since it is the recommended and only approach
-        return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+        String dbName = CausalClusteringSettings.database.getDefaultValue();
+        return coreTx( dbName, op );
+    }
+
+    /**
+     * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
+     */
+    public CoreClusterMember coreTx( String dbName, BiConsumer<CoreGraphDatabase,Transaction> op ) throws Exception
+    {
+        ensureDBName( dbName );
+        return leaderTx( dbName, op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
     /**
      * Perform a transaction against the leader of the core cluster, retrying as necessary.
      */
-    private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
+    private CoreClusterMember leaderTx( String dbName, BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
             throws Exception
     {
         ThrowingSupplier<CoreClusterMember,Exception> supplier = () ->
         {
-            CoreClusterMember member = awaitLeader( timeout, timeUnit );
+            CoreClusterMember member = awaitLeader( dbName, timeout, timeUnit );
             CoreGraphDatabase db = member.database();
             if ( db == null )
             {
@@ -379,7 +437,6 @@ public class Cluster
                 if ( isTransientFailure( e ) )
                 {
                     // this is not the best, but it helps in debugging
-                    System.err.println( "Transient failure in leader transaction, trying again." );
                     e.printStackTrace();
                     return null;
                 }

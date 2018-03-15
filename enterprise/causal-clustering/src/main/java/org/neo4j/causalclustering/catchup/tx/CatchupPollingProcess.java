@@ -289,7 +289,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             return true;
         case SUCCESS_END_OF_STREAM:
             log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId );
-            upToDateFuture.complete( true );
+            upToDateFuture.complete( Boolean.TRUE );
             return false;
         case E_TRANSACTION_PRUNED:
             log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.", lastQueuedTxId );

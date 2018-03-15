@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase;
 
 public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUpdater<?, NativeSchemaValue>,IOException> implements IndexUpdater
 {
@@ -65,9 +65,9 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException
     {
-        FusionIndexUtils.forAll( NativeSchemaIndexUpdater::close, this );
+        FusionIndexBase.forAll( NativeSchemaIndexUpdater::close, this );
     }
 
     static class PartFactory implements TemporalIndexCache.Factory<NativeSchemaIndexUpdater<?, NativeSchemaValue>,IOException>
@@ -89,33 +89,33 @@ public class TemporalIndexUpdater extends TemporalIndexCache<NativeSchemaIndexUp
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDateTime() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.localDateTime().newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDateTimeZoned() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedDateTime() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.zonedDateTime().newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newTime() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newLocalTime() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.localTime().newUpdater( mode );
         }
 
         @Override
-        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newTimeZoned() throws IOException
+        public NativeSchemaIndexUpdater<?, NativeSchemaValue> newZonedTime() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.zonedTime().newUpdater( mode );
         }
 
         @Override
         public NativeSchemaIndexUpdater<?, NativeSchemaValue> newDuration() throws IOException
         {
-            throw new UnsupportedOperationException( "ma-a-da dayo" );
+            return accessor.duration().newUpdater( mode );
         }
     }
 }

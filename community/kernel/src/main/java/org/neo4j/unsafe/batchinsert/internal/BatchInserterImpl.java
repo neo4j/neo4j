@@ -474,7 +474,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexRule schemaRule = IndexRule.indexRule(
                 schemaStore.nextId(),
                 SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ),
-                schemaIndexProviders.getDefaultSchemaIndexProvider().getProviderDescriptor() );
+                schemaIndexProviders.getDefaultProvider().getProviderDescriptor() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -635,8 +635,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         IndexRule indexRule =
                 IndexRule.constraintIndexRule(
-                        indexRuleId, schemaIndexDescriptor,
-                        this.schemaIndexProviders.getDefaultSchemaIndexProvider().getProviderDescriptor(),
+                        indexRuleId,
+                        schemaIndexDescriptor,
+                        this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                         constraintRuleId
                 );
         ConstraintRule constraintRule =
@@ -1038,7 +1039,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 throw new UnderlyingStorageException( "Could not release store lock", e );
             }
 
-            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")", true );
+            msgLog.info( Thread.currentThread() + " Clean shutdown on BatchInserter(" + this + ")" );
             life.shutdown();
         }
     }

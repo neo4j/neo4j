@@ -164,7 +164,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners), params = Map("apa" -> 43))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
     result.executionPlanDescription().toString should include("prop STARTS WITH \"www\"")
   }
 
@@ -190,7 +190,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should plan a UniqueIndexSeek when constraint exists") {
@@ -216,7 +216,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(UniqueIndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should be able to plan index seek for numerical less than") {

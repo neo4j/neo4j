@@ -28,7 +28,6 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -80,6 +81,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
@@ -88,6 +90,11 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.filter;
+import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.helpers.collection.Iterators.singleOrNull;
+import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -184,7 +191,7 @@ public class AllStoreHolder extends Read
             {
                 TransactionState txState = ktx.txState();
                 txState.accept( new TransactionCountingStateVisitor( EMPTY, storeReadLayer,
-                       statement, txState, counts ) );
+                        statement, txState, counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
@@ -262,13 +269,41 @@ public class AllStoreHolder extends Read
     public CapableIndexReference index( int label, int... properties )
     {
         ktx.assertOpen();
-        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( SchemaDescriptorFactory.forLabel( label, properties ) );
-        if ( indexDescriptor == null )
+
+        IndexDescriptor indexDescriptor =
+                storeReadLayer.indexGetForSchema( SchemaDescriptorFactory.forLabel( label, properties ) );
+        if ( ktx.hasTxStateWithChanges() )
         {
-            return CapableIndexReference.NO_INDEX;
+            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, properties );
+            ReadableDiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
+            if ( indexDescriptor != null )
+            {
+                if ( diffSets.isRemoved( indexDescriptor ) )
+                {
+                    return CapableIndexReference.NO_INDEX;
+                }
+                else
+                {
+                    return indexGetCapability( indexDescriptor );
+                }
+            }
+            else
+            {
+                Iterator<IndexDescriptor> fromTxState = filter(
+                        SchemaDescriptor.equalTo( descriptor ),
+                        diffSets.apply( emptyResourceIterator() ) );
+                if ( fromTxState.hasNext() )
+                {
+                    return fromDescriptor( fromTxState.next() );
+                }
+                else
+                {
+                    return CapableIndexReference.NO_INDEX;
+                }
+            }
         }
 
-        return indexGetCapability( indexDescriptor );
+        return indexDescriptor != null ? indexGetCapability( indexDescriptor ) : CapableIndexReference.NO_INDEX;
     }
 
     @Override
@@ -282,18 +317,95 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return Iterators.map( this::indexGetCapability, iterator );
+        return Iterators.map( DefaultCapableIndexReference::fromDescriptor, iterator );
+    }
+
+    @Override
+    public Iterator<CapableIndexReference> indexesGetAll()
+    {
+        ktx.assertOpen();
+
+        Iterator<IndexDescriptor> iterator = storeReadLayer.indexesGetAll();
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            iterator = ktx.txState().indexChanges().apply( storeReadLayer.indexesGetAll() );
+        }
+
+        return Iterators.map( indexDescriptor ->
+        {
+            acquireSharedOptimisticLabelLock( indexDescriptor.schema().getEntityTokenIds() );
+            return fromDescriptor( indexDescriptor );
+        }, iterator );
+    }
+
+    @Override
+    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        ktx.assertOpen();
+        return indexGetState( indexDescriptor( index ) );
+    }
+
+    @Override
+    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+            throws IndexNotFoundKernelException
+    {
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        ktx.assertOpen();
+        SchemaIndexDescriptor descriptor = indexDescriptor( index );
+
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor,
+                    ktx.txState().indexDiffSetsByLabel( index.label() ) ) )
+            {
+                return PopulationProgress.NONE;
+            }
+        }
+
+        return storeReadLayer.indexGetPopulationProgress( descriptor.schema() );
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
+    {
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        ktx.assertOpen();
+        return indexGetOwningUniquenessConstraintId( indexDescriptor( index ) );
+    }
+
+    @Override
+    public long indexGetCommittedId( CapableIndexReference index ) throws SchemaRuleNotFoundException
+    {
+        sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
+        ktx.assertOpen();
+        return storeReadLayer.indexGetCommittedId( indexDescriptor( index ) );
+    }
+
+    SchemaIndexDescriptor indexDescriptor( IndexReference index )
+    {
+        if ( index.isUnique() )
+        {
+            return SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
+        }
+        else
+        {
+            return SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
+        }
+    }
+
+    @Override
+    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        return storeReadLayer.indexGetFailure( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
     }
 
     CapableIndexReference indexGetCapability( IndexDescriptor indexDescriptor )
     {
-        boolean unique = indexDescriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         try
         {
-            IndexCapability indexCapability = storeReadLayer.indexGetCapability( indexDescriptor );
-            //TODO newapi support for multitoken schema. zero index as workaround for now.
-            return new DefaultCapableIndexReference( unique, indexCapability, indexDescriptor.schema().getEntityTokenIds()[0],
-                    indexDescriptor.schema().getPropertyIds() );
+            return storeReadLayer.indexReference( indexDescriptor );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -314,6 +426,24 @@ public class AllStoreHolder extends Read
         }
 
         return storeReadLayer.indexGetState( descriptor );
+    }
+
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+    {
+        return storeReadLayer.indexGetOwningUniquenessConstraintId( index );
+    }
+
+    IndexDescriptor indexGetForSchema( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor descriptor )
+    {
+        IndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
+        Iterator<IndexDescriptor> rules = iterator( indexDescriptor );
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            rules = filter(
+                    SchemaDescriptor.equalTo( descriptor ),
+                    ktx.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ) );
+        }
+        return singleOrNull( rules );
     }
 
     private boolean checkIndexState( IndexDescriptor index, ReadableDiffSets<IndexDescriptor> diffSet )
@@ -589,14 +719,16 @@ public class AllStoreHolder extends Read
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
                     ktx.securityContext().description() ) );
         }
-        return callProcedure( id, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+        return callProcedure( id, arguments,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
             throws ProcedureException
     {
-        return callProcedure( id, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+        return callProcedure( id, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
 
     }
 
@@ -654,14 +786,16 @@ public class AllStoreHolder extends Read
             throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
                     ktx.securityContext().description() ) );
         }
-        return callProcedure( name, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+        return callProcedure( name, arguments,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
             throws ProcedureException
     {
-        return callProcedure( name, arguments, new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
+        return callProcedure( name, arguments,
+                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
 
     }
 
@@ -680,7 +814,8 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name,
+            Object[] arguments )
             throws ProcedureException
     {
         return callProcedure( name, arguments,
@@ -733,7 +868,8 @@ public class AllStoreHolder extends Read
             throw ktx.securityContext().mode().onViolation(
                     format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
         }
-        return aggregationFunction( id, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+        return aggregationFunction( id,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -744,7 +880,8 @@ public class AllStoreHolder extends Read
             throw ktx.securityContext().mode().onViolation(
                     format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
         }
-        return aggregationFunction( name, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+        return aggregationFunction( name,
+                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
     @Override
@@ -762,7 +899,7 @@ public class AllStoreHolder extends Read
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
-            int id, Object[] input, final AccessMode override  )
+            int id, Object[] input, final AccessMode override )
             throws ProcedureException
     {
         ktx.assertOpen();
@@ -772,13 +909,14 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
-            procedureCall = procedures.callProcedure( populateProcedureContext( procedureSecurityContext ), id, input, statement );
+            procedureCall = procedures
+                    .callProcedure( populateProcedureContext( procedureSecurityContext ), id, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, final AccessMode override  )
+            QualifiedName name, Object[] input, final AccessMode override )
             throws ProcedureException
     {
         ktx.assertOpen();
@@ -788,7 +926,8 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
-            procedureCall = procedures.callProcedure( populateProcedureContext( procedureSecurityContext ), name, input, statement );
+            procedureCall = procedures
+                    .callProcedure( populateProcedureContext( procedureSecurityContext ), name, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
@@ -828,7 +967,8 @@ public class AllStoreHolder extends Read
         }
     }
 
-    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode ) throws ProcedureException
+    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode )
+            throws ProcedureException
     {
         ktx.assertOpen();
 
@@ -887,5 +1027,13 @@ public class AllStoreHolder extends Read
         ctx.put( Context.THREAD, Thread.currentThread() );
         ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
         return ctx;
+    }
+
+    private void assertValidIndex( CapableIndexReference index ) throws IndexNotFoundKernelException
+    {
+        if ( index == CapableIndexReference.NO_INDEX )
+        {
+            throw new IndexNotFoundKernelException( "No index was found" );
+        }
     }
 }

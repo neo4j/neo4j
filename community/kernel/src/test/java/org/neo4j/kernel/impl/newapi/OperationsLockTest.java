@@ -44,7 +44,9 @@ import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -118,7 +120,8 @@ public class OperationsLockTest
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing );
+                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+                mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ) );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );
@@ -431,6 +434,6 @@ public class OperationsLockTest
         when( relationshipCursor.relationshipReference() ).thenReturn( relationshipId );
         when( relationshipCursor.sourceNodeReference() ).thenReturn( sourceNode );
         when( relationshipCursor.targetNodeReference() ).thenReturn( targetNode );
-        when( relationshipCursor.label() ).thenReturn( relationshipLabel );
+        when( relationshipCursor.type() ).thenReturn( relationshipLabel );
     }
 }

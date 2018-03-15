@@ -56,7 +56,7 @@ public class SchemaRuleUtil
     }
 
     public static IndexRule constraintIndexRule( long ruleId, int labelId, int propertyId,
-            IndexProvider.Descriptor descriptor, long constraintId )
+                                                 IndexProvider.Descriptor descriptor, long constraintId )
     {
         return IndexRule.constraintIndexRule( ruleId, SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyId ),
                 descriptor, constraintId );

@@ -45,7 +45,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -80,7 +79,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
@@ -245,7 +244,7 @@ public class IndexRecoveryIT
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
+            singleInstanceIndexProviderFactory( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
                     mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
@@ -254,7 +253,7 @@ public class IndexRecoveryIT
     public void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() )
-                .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+                .thenReturn( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compatible( any( IndexDescriptor.class ) ) ).thenReturn( true );
         when( mockedIndexProvider.indexDescriptorFor( any( SchemaDescriptor.class ), any( String.class ), any( String.class ) ) ).then(
                 new Answer<IndexDescriptor>()

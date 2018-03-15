@@ -21,16 +21,21 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import java.time.ZoneOffset;
+
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
@@ -92,7 +97,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_FalseForIrrelevant()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, true, 13, true );
+        RangePredicate p = IndexQuery.range( propId, 11, true, 13, true );
 
         assertFalseForOtherThings( p );
     }
@@ -100,7 +105,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_InclusiveLowerInclusiveUpper()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, true, 13, true );
+        RangePredicate p = IndexQuery.range( propId, 11, true, 13, true );
 
         assertFalse( test( p, 10 ) );
         assertTrue( test( p, 11 ) );
@@ -112,7 +117,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_ExclusiveLowerExclusiveLower()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, false, 13, false );
+        RangePredicate p = IndexQuery.range( propId, 11, false, 13, false );
 
         assertFalse( test( p, 11 ) );
         assertTrue( test( p, 12 ) );
@@ -122,7 +127,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_InclusiveLowerExclusiveUpper()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, true, 13, false );
+        RangePredicate p = IndexQuery.range( propId, 11, true, 13, false );
 
         assertFalse( test( p, 10 ) );
         assertTrue( test( p, 11 ) );
@@ -133,7 +138,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_ExclusiveLowerInclusiveUpper()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, false, 13, true );
+        RangePredicate p = IndexQuery.range( propId, 11, false, 13, true );
 
         assertFalse( test( p, 11 ) );
         assertTrue( test( p, 12 ) );
@@ -144,7 +149,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_LowerNullValue()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, null, true, 13, true );
+        RangePredicate p = IndexQuery.range( propId, null, true, 13, true );
 
         assertTrue( test( p, 10 ) );
         assertTrue( test( p, 11 ) );
@@ -156,7 +161,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_UpperNullValue()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 11, true, null, true );
+        RangePredicate p = IndexQuery.range( propId, 11, true, null, true );
 
         assertFalse( test( p, 10 ) );
         assertTrue( test( p, 11 ) );
@@ -168,7 +173,7 @@ public class IndexQueryTest
     @Test
     public void testNumRange_ComparingBigDoublesAndLongs()
     {
-        NumberRangePredicate p = IndexQuery.range( propId, 9007199254740993L, true, null, true );
+        RangePredicate p = IndexQuery.range( propId, 9007199254740993L, true, null, true );
 
         assertFalse( test( p, 9007199254740992D ) );
     }
@@ -178,7 +183,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_FalseForIrrelevant()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
+        RangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
 
         assertFalseForOtherThings( p );
     }
@@ -186,7 +191,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_InclusiveLowerInclusiveUpper()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
+        RangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", true );
 
         assertFalse( test( p, "bba" ) );
         assertTrue( test( p, "bbb" ) );
@@ -198,7 +203,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_ExclusiveLowerInclusiveUpper()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", true );
+        RangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", true );
 
         assertFalse( test( p, "bbb" ) );
         assertTrue( test( p, "bbba" ) );
@@ -209,7 +214,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_InclusiveLowerExclusiveUpper()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", false );
+        RangePredicate p = IndexQuery.range( propId, "bbb", true, "bee", false );
 
         assertFalse( test( p, "bba" ) );
         assertTrue( test( p, "bbb" ) );
@@ -220,7 +225,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_ExclusiveLowerExclusiveUpper()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", false );
+        RangePredicate p = IndexQuery.range( propId, "bbb", false, "bee", false );
 
         assertFalse( test( p, "bbb" ) );
         assertTrue( test( p, "bbba" ) );
@@ -231,7 +236,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_UpperUnbounded()
     {
-        StringRangePredicate p = IndexQuery.range( propId, "bbb", false, null, false );
+        RangePredicate p = IndexQuery.range( propId, "bbb", false, null, false );
 
         assertFalse( test( p, "bbb" ) );
         assertTrue( test( p, "bbba" ) );
@@ -241,7 +246,7 @@ public class IndexQueryTest
     @Test
     public void testStringRange_LowerUnbounded()
     {
-        StringRangePredicate p = IndexQuery.range( propId, null, false, "bee", false );
+        RangePredicate p = IndexQuery.range( propId, null, false, "bee", false );
 
         assertTrue( test( p, "" ) );
         assertTrue( test( p, "bed" ) );
@@ -269,7 +274,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_FalseForIrrelevant()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, true, gps5, true );
+        RangePredicate p = IndexQuery.range( propId, gps2, true, gps5, true );
 
         assertFalseForOtherThings( p );
     }
@@ -277,7 +282,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_InclusiveLowerInclusiveUpper()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, true, gps5, true );
+        RangePredicate p = IndexQuery.range( propId, gps2, true, gps5, true );
 
         assertFalse( test( p, gps1 ) );
         assertTrue( test( p, gps2 ) );
@@ -293,7 +298,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_ExclusiveLowerInclusiveUpper()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, false, gps5, true );
+        RangePredicate p = IndexQuery.range( propId, gps2, false, gps5, true );
 
         assertFalse( test( p, gps2 ) );
         assertTrue( test( p, gps3 ) );
@@ -308,7 +313,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_InclusiveLowerExclusiveUpper()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, true, gps5, false );
+        RangePredicate p = IndexQuery.range( propId, gps2, true, gps5, false );
 
         assertFalse( test( p, gps1 ) );
         assertTrue( test( p, gps2 ) );
@@ -323,7 +328,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_ExclusiveLowerExclusiveUpper()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, false, gps5, false );
+        RangePredicate p = IndexQuery.range( propId, gps2, false, gps5, false );
 
         assertFalse( test( p, gps2 ) );
         assertTrue( test( p, gps3 ) );
@@ -338,7 +343,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_UpperUnbounded()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps2, false, null, false );
+        RangePredicate p = IndexQuery.range( propId, gps2, false, null, false );
 
         assertFalse( test( p, gps2 ) );
         assertTrue( test( p, gps3 ) );
@@ -352,7 +357,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_LowerUnbounded()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, null, false, gps5, false );
+        RangePredicate p = IndexQuery.range( propId, null, false, gps5, false );
 
         assertTrue( test( p, gps1 ) );
         assertTrue( test( p, gps3 ) );
@@ -366,7 +371,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_Cartesian()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, car1, false, car2, true );
+        RangePredicate p = IndexQuery.range( propId, car1, false, car2, true );
 
         assertFalse( test( p, gps1 ) );
         assertFalse( test( p, gps3 ) );
@@ -382,7 +387,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_Cartesian3D()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, car3, true, car4, true );
+        RangePredicate p = IndexQuery.range( propId, car3, true, car4, true );
 
         assertFalse( test( p, gps1 ) );
         assertFalse( test( p, gps3 ) );
@@ -398,7 +403,7 @@ public class IndexQueryTest
     @Test
     public void testGeometryRange_WGS84_3D()
     {
-        GeometryRangePredicate p = IndexQuery.range( propId, gps1_3d, true, gps2_3d, true );
+        RangePredicate p = IndexQuery.range( propId, gps1_3d, true, gps2_3d, true );
 
         assertFalse( test( p, gps1 ) );
         assertFalse( test( p, gps3 ) );
@@ -409,6 +414,45 @@ public class IndexQueryTest
         assertFalse( test( p, car4 ) );
         assertTrue( test( p, gps1_3d ) );
         assertTrue( test( p, gps2_3d ) );
+    }
+
+    @Test
+    public void testDateRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, DateValue.date( 2014, 7, 7 ), true, DateValue.date( 2017,3, 7 ), false );
+
+        assertFalse( test( p, DateValue.date( 2014, 6, 8 ) ) );
+        assertTrue( test( p, DateValue.date( 2014, 7, 7 ) ) );
+        assertTrue( test( p, DateValue.date( 2016, 6, 8 ) ) );
+        assertFalse( test( p, DateValue.date( 2017, 3, 7 ) ) );
+        assertFalse( test( p, DateValue.date( 2017, 3, 8 ) ) );
+        assertFalse( test( p, LocalDateTimeValue.localDateTime( 2016, 3, 8, 0, 0, 0, 0 ) ) );
+    }
+
+    // VALUE GROUP SCAN
+    @Test
+    public void testValueGroupRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, ValueGroup.DATE );
+
+        assertTrue( test( p, DateValue.date( -4000, 1, 31 ) ) );
+        assertTrue( test( p, DateValue.date( 2018, 3, 7 ) ) );
+        assertFalse( test( p, DateTimeValue.datetime( 2018, 3, 7, 0, 0, 0, 0, ZoneOffset.UTC ) ) );
+        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, gps2_3d ) );
+    }
+
+    @Test
+    public void testCRSRange()
+    {
+        RangePredicate p = IndexQuery.range( propId, CoordinateReferenceSystem.WGS84 );
+
+        assertTrue( test( p, gps2 ) );
+        assertFalse( test( p, DateValue.date( -4000, 1, 31 ) ) );
+        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, car1 ) );
+        assertFalse( test( p, car4 ) );
+        assertFalse( test( p, gps1_3d ) );
     }
 
     // STRING PREFIX
@@ -494,6 +538,6 @@ public class IndexQueryTest
 
     private boolean test( IndexQuery p, Object x )
     {
-        return p.acceptsValue( Values.of( x ) );
+        return p.acceptsValue( x instanceof Value ? (Value)x : Values.of( x ) );
     }
 }

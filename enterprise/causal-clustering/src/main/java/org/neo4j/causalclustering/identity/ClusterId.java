@@ -72,7 +72,7 @@ public class ClusterId
 
     public static class Marshal extends SafeChannelMarshal<ClusterId>
     {
-        public static Marshal INSTANCE = new Marshal();
+        public static final Marshal INSTANCE = new Marshal();
 
         @Override
         public void marshal( ClusterId clusterId, WritableChannel channel ) throws IOException

@@ -190,7 +190,7 @@ public final class Nodes
                 nodeCursor.allRelationships( traversal );
                 while ( traversal.next() )
                 {
-                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() && traversal.label() == type )
+                    if ( traversal.sourceNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
                     {
                         count++;
                     }
@@ -236,7 +236,7 @@ public final class Nodes
                 nodeCursor.allRelationships( traversal );
                 while ( traversal.next() )
                 {
-                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() && traversal.label() == type )
+                    if ( traversal.targetNodeReference() == nodeCursor.nodeReference() && traversal.type() == type )
                     {
                         count++;
                     }
@@ -280,7 +280,7 @@ public final class Nodes
                 nodeCursor.allRelationships( traversal );
                 while ( traversal.next() )
                 {
-                    if ( traversal.label() == type )
+                    if ( traversal.type() == type )
                     {
                         count++;
                     }

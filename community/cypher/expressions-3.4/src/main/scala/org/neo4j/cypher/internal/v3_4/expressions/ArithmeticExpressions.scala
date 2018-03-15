@@ -42,7 +42,13 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTDuration, CTDuration), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTLocalTime, CTDuration), outputType = CTLocalTime),
+    TypeSignature(argumentTypes = Vector(CTTime, CTDuration), outputType = CTTime),
+    TypeSignature(argumentTypes = Vector(CTDate, CTDuration), outputType = CTDate),
+    TypeSignature(argumentTypes = Vector(CTLocalDateTime, CTDuration), outputType = CTLocalDateTime),
+    TypeSignature(argumentTypes = Vector(CTDateTime, CTDuration), outputType = CTDateTime)
   )
 
   override def canonicalOperatorSymbol = "-"
@@ -69,7 +75,11 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTDuration, CTFloat), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTDuration, CTInteger), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTDuration), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTDuration), outputType = CTDuration)
   )
 
   override def canonicalOperatorSymbol = "*"
@@ -85,7 +95,9 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTDuration, CTFloat), outputType = CTDuration),
+    TypeSignature(argumentTypes = Vector(CTDuration, CTInteger), outputType = CTDuration)
   )
 
   override def canonicalOperatorSymbol = "/"

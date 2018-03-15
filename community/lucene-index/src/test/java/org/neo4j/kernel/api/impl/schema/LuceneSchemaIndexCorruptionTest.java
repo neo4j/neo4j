@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -74,7 +73,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         CorruptIndexException error = new CorruptIndexException( "It's broken.", "" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
@@ -92,7 +91,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         FileNotFoundException error = new FileNotFoundException( "/some/path/somewhere" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
@@ -110,7 +109,7 @@ public class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         EOFException error = new EOFException( "/some/path/somewhere" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneSchemaIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
@@ -121,7 +120,7 @@ public class LuceneSchemaIndexCorruptionTest
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
-    private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
+    private LuceneSchemaIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.graphDbDir();

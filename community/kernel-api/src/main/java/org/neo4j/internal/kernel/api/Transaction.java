@@ -86,7 +86,7 @@ public interface Transaction extends AutoCloseable
     /**
      * @return The explicit index write operations of the graph.
      */
-    ExplicitIndexWrite indexWrite();
+    ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException;
 
     /**
      * @return Token read operations
@@ -111,7 +111,7 @@ public interface Transaction extends AutoCloseable
     /**
      * @return The schema index write operations of the graph, used for creating and dropping indexes and constraints.
      */
-    SchemaWrite schemaWrite();
+    SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException;
 
     /**
      * @return The lock operations of the graph.

@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -72,7 +73,9 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
+import org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor;
 
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
@@ -260,7 +263,8 @@ public class ImportTool
                 "over the heap memory" ),
         HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
                 "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
-                "support parallel IO with high throughput." );
+                "support parallel IO with high throughput." ),
+        DETAILED_PROGRESS( "detailed-progress", false, "true/false", "Use the old detailed 'spectrum' progress printing" );
 
         private final String key;
         private final Object defaultValue;
@@ -424,7 +428,7 @@ public class ImportTool
             args = useArgumentsFromFileArgumentIfPresent( args );
 
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
-                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
             Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
@@ -474,9 +478,10 @@ public class ImportTool
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
+            boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
             doImport( out, err, in, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
-                    enableStacktrace, input, dbConfig, badOutput, configuration );
+                    enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;
         }
@@ -548,7 +553,7 @@ public class ImportTool
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, OutputStream badOutput,
-                                 org.neo4j.unsafe.impl.batchimport.Configuration configuration ) throws IOException
+                                 org.neo4j.unsafe.impl.batchimport.Configuration configuration, boolean detailedProgress ) throws IOException
     {
         boolean success;
         LifeSupport life = new LifeSupport();
@@ -559,12 +564,14 @@ public class ImportTool
         final Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
 
         life.start();
+        ExecutionMonitor executionMonitor = detailedProgress
+                        ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, out, SpectrumExecutionMonitor.DEFAULT_WIDTH )
+                        : ExecutionMonitors.defaultVisible( in, jobScheduler );
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
                 fs,
                 null, // no external page cache
                 configuration,
-                logService,
-                ExecutionMonitors.defaultVisible( in, jobScheduler ),
+                logService, executionMonitor,
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
@@ -668,6 +675,7 @@ public class ImportTool
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
         printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
+        printIndented( "High-IO: " + configuration.highIO(), out );
         out.println();
     }
 
@@ -716,11 +724,11 @@ public class ImportTool
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir, Boolean defaultHighIO )
     {
         return importConfiguration(
                 processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
-                DEFAULT.allowCacheAllocationOnHeap(), (Boolean)Options.HIGH_IO.defaultValue() );
+                DEFAULT.allowCacheAllocationOnHeap(), defaultHighIO );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
@@ -754,7 +762,7 @@ public class ImportTool
             }
 
             @Override
-            public boolean parallelRecordReadsWhenWriting()
+            public boolean highIO()
             {
                 return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
             }

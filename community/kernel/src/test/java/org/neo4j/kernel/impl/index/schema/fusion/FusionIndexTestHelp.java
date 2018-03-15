@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.hamcrest.Matcher;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -49,6 +49,12 @@ class FusionIndexTestHelp
     private static LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
     private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
 
+    private static final Value[] stringValues = new Value[]
+            {
+                    Values.stringValue( "abc" ),
+                    Values.stringValue( "abcdefghijklmnopqrstuvwxyzåäö" ),
+                    Values.charValue( 'S' ),
+            };
     private static final Value[] numberValues = new Value[]
             {
                     Values.byteValue( (byte) 1 ),
@@ -72,8 +78,6 @@ class FusionIndexTestHelp
     private static final Value[] otherValues = new Value[]
             {
                     Values.booleanValue( true ),
-                    Values.charValue( 'a' ),
-                    Values.stringValue( "bcd" ),
                     Values.booleanArray( new boolean[2] ),
                     Values.byteArray( new byte[]{1, 2} ),
                     Values.shortArray( new short[]{3, 4} ),
@@ -87,7 +91,12 @@ class FusionIndexTestHelp
                     Values.NO_VALUE
             };
 
-    static Value[] valuesSupportedByNative()
+    static Value[] valuesSupportedByString()
+    {
+        return stringValues;
+    }
+
+    static Value[] valuesSupportedByNumber()
     {
         return numberValues;
     }
@@ -102,19 +111,31 @@ class FusionIndexTestHelp
         return temporalValues;
     }
 
-    private static Value[] valuesNotSupportedByNative()
-    {
-        return ArrayUtils.addAll( temporalValues, ArrayUtils.addAll( pointValues, otherValues ) );
-    }
-
-    static Value[] valuesNotSupportedByNativeOrSpatial()
+    static Value[] valuesNotSupportedBySpecificIndex()
     {
         return otherValues;
     }
 
     static Value[] allValues()
     {
-        return ArrayUtils.addAll( valuesSupportedByNative(), valuesNotSupportedByNative() );
+        List<Value> values = new ArrayList<>();
+        for ( Value[] group : valuesByGroup() )
+        {
+            values.addAll( Arrays.asList( group ) );
+        }
+        return values.toArray( new Value[values.size()] );
+    }
+
+    static Value[][] valuesByGroup()
+    {
+        return new Value[][]
+                {
+                        FusionIndexTestHelp.valuesSupportedByString(),
+                        FusionIndexTestHelp.valuesSupportedByNumber(),
+                        FusionIndexTestHelp.valuesSupportedBySpatial(),
+                        FusionIndexTestHelp.valuesSupportedByTemporal(),
+                        FusionIndexTestHelp.valuesNotSupportedBySpecificIndex()
+                };
     }
 
     static void verifyCallFail( Exception expectedFailure, Callable failingCall )

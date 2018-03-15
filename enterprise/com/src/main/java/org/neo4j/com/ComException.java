@@ -51,7 +51,7 @@ public class ComException extends RuntimeException
         {
             String msg = String.format( "ComException@%x trace from %s: %s",
                     System.identityHashCode( this ), tracePoint, getMessage() );
-            log.debug( msg, this, true );
+            log.debug( msg, this );
         }
         return this;
     }

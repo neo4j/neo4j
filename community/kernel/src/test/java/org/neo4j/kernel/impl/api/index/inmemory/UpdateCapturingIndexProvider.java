@@ -85,9 +85,9 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
-        return actual.getCapability( schemaIndexDescriptor );
+        return actual.getCapability( indexDescriptor );
     }
 
     @Override

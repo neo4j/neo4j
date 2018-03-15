@@ -20,13 +20,12 @@
 package org.neo4j.causalclustering.core.consensus;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.impl.util.Listener;
 
 public interface LeaderLocator
 {
     MemberId getLeader() throws NoLeaderFoundException;
 
-    void registerListener( Listener<MemberId> listener );
+    void registerListener( LeaderListener listener );
 
-    void unregisterListener( Listener<MemberId> listener );
+    void unregisterListener( LeaderListener listener );
 }

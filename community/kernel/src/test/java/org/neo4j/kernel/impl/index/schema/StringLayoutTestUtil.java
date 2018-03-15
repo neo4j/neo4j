@@ -38,9 +38,9 @@ import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompar
 
 abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,NativeSchemaValue>
 {
-    StringLayoutTestUtil( SchemaIndexDescriptor indexDescriptor )
+    StringLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        super( indexDescriptor );
+        super( schemaIndexDescriptor );
     }
 
     @Override

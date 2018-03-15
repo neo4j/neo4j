@@ -64,7 +64,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         }
         R current = factory.relationship( next,
                                           relationshipCursor.sourceNodeReference(),
-                                          relationshipCursor.label(),
+                                          relationshipCursor.type(),
                                           relationshipCursor.targetNodeReference() );
 
         if ( !fetchNext() )

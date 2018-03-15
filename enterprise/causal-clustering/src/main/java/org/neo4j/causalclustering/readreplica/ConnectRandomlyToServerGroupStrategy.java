@@ -43,7 +43,7 @@ public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelect
     {
         List<String> groups = config.get( CausalClusteringSettings.connect_randomly_to_server_group_strategy );
         strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService,
-                myself );
+                myself, dbName );
 
         if ( groups.isEmpty() )
         {

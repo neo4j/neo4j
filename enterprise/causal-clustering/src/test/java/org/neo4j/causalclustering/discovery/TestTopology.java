@@ -49,7 +49,7 @@ public class TestTopology
         AdvertisedSocketAddress catchupServerAddress = new AdvertisedSocketAddress( "localhost", 4000 + id );
         AdvertisedSocketAddress boltServerAddress = new AdvertisedSocketAddress( "localhost", 5000 + id );
         return new CoreServerInfo( raftServerAddress, catchupServerAddress, wrapAsClientConnectorAddresses( boltServerAddress ),
-                asSet( "core", "core" + id ) );
+                asSet( "core", "core" + id ), "default" );
     }
 
     public static ReadReplicaInfo addressesForReadReplica( int id )
@@ -59,7 +59,7 @@ public class TestTopology
                 singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) );
 
         return new ReadReplicaInfo( clientConnectorAddresses, advertisedSocketAddress,
-                asSet( "replica", "replica" + id ) );
+                asSet( "replica", "replica" + id ), "default" );
     }
 
     public static Map<MemberId,ReadReplicaInfo> readReplicaInfoMap( int... ids )
@@ -74,6 +74,6 @@ public class TestTopology
         return new ReadReplicaInfo(
                 new ClientConnectorAddresses( singletonList( new ClientConnectorAddresses.ConnectorUri( bolt, advertisedSocketAddress ) ) ),
                 new AdvertisedSocketAddress( "localhost", 4000 + id ),
-                asSet( "replica", "replica" + id ) );
+                asSet( "replica", "replica" + id ), "default" );
     }
 }

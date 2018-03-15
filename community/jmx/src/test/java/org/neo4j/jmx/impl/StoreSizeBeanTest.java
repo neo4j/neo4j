@@ -82,8 +82,8 @@ public class StoreSizeBeanTest
     private final File storeDir = new File( "" );
     private final LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build();
     private final ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
-    private final IndexProvider indexProvider = mockedSchemaIndexProvider( "providah1" );
-    private final IndexProvider indexProvider2 = mockedSchemaIndexProvider( "providah" );
+    private final IndexProvider indexProvider = mockedIndexProvider( "providah1" );
+    private final IndexProvider indexProvider2 = mockedIndexProvider( "providah" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
@@ -122,7 +122,7 @@ public class StoreSizeBeanTest
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
     }
 
-    private IndexProvider mockedSchemaIndexProvider( String name )
+    private IndexProvider mockedIndexProvider( String name )
     {
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( name, "1" ) );

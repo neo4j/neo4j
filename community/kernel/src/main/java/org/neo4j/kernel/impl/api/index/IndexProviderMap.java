@@ -37,7 +37,7 @@ public interface IndexProviderMap
         }
 
         @Override
-        public IndexProvider<SchemaIndexDescriptor> getDefaultSchemaIndexProvider()
+        public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
         {
             return IndexProvider.NO_INDEX_PROVIDER;
         }
@@ -57,7 +57,7 @@ public interface IndexProviderMap
 
     IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
-    IndexProvider<SchemaIndexDescriptor> getDefaultSchemaIndexProvider();
+    IndexProvider<SchemaIndexDescriptor> getDefaultProvider();
 
     IndexProvider getProviderFor( IndexDescriptor descriptor );
 

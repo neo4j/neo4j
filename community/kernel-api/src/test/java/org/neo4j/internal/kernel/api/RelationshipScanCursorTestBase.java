@@ -150,7 +150,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
             read.allRelationshipsScan( relationships );
             while ( relationships.next() )
             {
-                counts.compute( relationships.label(), ( k, v ) -> v == null ? 1 : v + 1 );
+                counts.compute( relationships.type(), ( k, v ) -> v == null ? 1 : v + 1 );
             }
         }
 

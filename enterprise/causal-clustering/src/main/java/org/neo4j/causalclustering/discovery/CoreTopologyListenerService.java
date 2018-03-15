@@ -21,21 +21,35 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 class CoreTopologyListenerService
 {
-    private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
+    private final Set<CoreTopologyService.Listener> listeners;
+
+    CoreTopologyListenerService()
+    {
+        this.listeners = ConcurrentHashMap.newKeySet();
+    }
 
     void addCoreTopologyListener( CoreTopologyService.Listener listener )
     {
         listeners.add( listener );
     }
 
+    void removeCoreTopologyListener( CoreTopologyService.Listener listener )
+    {
+        listeners.remove( listener );
+    }
+
     void notifyListeners( CoreTopology coreTopology )
     {
         for ( CoreTopologyService.Listener listener : listeners )
         {
-            listener.onCoreTopologyChange( coreTopology );
+            String dbName = listener.dbName();
+
+            listener.onCoreTopologyChange( coreTopology.filterTopologyByDb( dbName ) );
         }
     }
 }
