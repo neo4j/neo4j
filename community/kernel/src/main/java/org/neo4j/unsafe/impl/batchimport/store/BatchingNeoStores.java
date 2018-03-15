@@ -73,6 +73,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore.getLabelScanStoreFile;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
@@ -133,7 +134,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.externalPageCache = externalPageCache;
     }
 
-    private boolean databaseExistsAndContainsData( PageCache pageCache, File storeDir )
+    private boolean databaseExistsAndContainsData()
     {
         File metaDataFile = new File( storeDir, StoreType.META_DATA.getStoreFile().fileName( StoreFileType.STORE ) );
         try ( PagedFile pagedFile = pageCache.map( metaDataFile, pageCache.pageSize(), StandardOpenOption.READ ) )
@@ -161,16 +162,26 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      */
     public void createNew() throws IOException
     {
-        if ( databaseExistsAndContainsData( pageCache, storeDir ) )
-        {
-            throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
-        }
+        assertDatabaseIsEmptyOrNonExistent();
+
+        // There may have been a previous import which was killed before it even started, where the label scan store could
+        // be in a semi-initialized state. Better to be on the safe side and deleted it. We get her after determining that
+        // the db is either completely empty or non-existent anyway, so deleting this file is OK.
+        fileSystem.deleteFile( getLabelScanStoreFile( storeDir ) );
 
         instantiateStores();
         neoStores.getMetaDataStore().setLastCommittedAndClosedTransactionId(
                 initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                 BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
                 initialIds.lastCommittedTransactionLogVersion() );
+    }
+
+    public void assertDatabaseIsEmptyOrNonExistent()
+    {
+        if ( databaseExistsAndContainsData() )
+        {
+            throw new IllegalStateException( storeDir + " already contains data, cannot do import here" );
+        }
     }
 
     /**
@@ -186,8 +197,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         deleteStoreFiles( TEMP_NEOSTORE_NAME, tempStoresToKeep );
         deleteStoreFiles( DEFAULT_NAME, mainStoresToKeep );
         instantiateStores();
-        neoStores.makeStoreOk();
-        temporaryNeoStores.makeStoreOk();
     }
 
     private void deleteStoreFiles( String storeName, Predicate<StoreType> storesToKeep )
@@ -227,6 +236,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 neoStores.getRelationshipTypeTokenStore() );
         temporaryNeoStores = instantiateTempStores();
         instantiateKernelExtensions();
+
+        neoStores.makeStoreOk();
+        temporaryNeoStores.makeStoreOk();
     }
 
     private NeoStores instantiateTempStores()
