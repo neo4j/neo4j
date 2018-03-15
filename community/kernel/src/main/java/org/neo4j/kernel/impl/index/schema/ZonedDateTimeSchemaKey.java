@@ -44,17 +44,17 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
             Integer.BYTES + /* timeZone */
             Long.BYTES;     /* entityId */
 
-    int nanoOfSecond;
     long epochSecondUTC;
+    int nanoOfSecond;
     short zoneId;
-    int zoneOffsetSeconds;
+    int zoneOffsetMinutes;
 
     @Override
     public Value asValue()
     {
         return TimeZones.validZoneId( zoneId ) ?
             DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZones.map( zoneId ) ) ) :
-            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
+            DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetMinutes * 60 ) );
     }
 
     @Override
@@ -63,7 +63,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         epochSecondUTC = Long.MIN_VALUE;
         nanoOfSecond = Integer.MIN_VALUE;
         zoneId = Short.MIN_VALUE;
-        zoneOffsetSeconds = Integer.MIN_VALUE;
+        zoneOffsetMinutes = Integer.MIN_VALUE;
     }
 
     @Override
@@ -72,7 +72,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         epochSecondUTC = Long.MAX_VALUE;
         nanoOfSecond = Integer.MAX_VALUE;
         zoneId = Short.MAX_VALUE;
-        zoneOffsetSeconds = Integer.MAX_VALUE;
+        zoneOffsetMinutes = Integer.MAX_VALUE;
     }
 
     @Override
@@ -96,7 +96,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     public String toString()
     {
         return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d,zoneId=%d,zoneOffset=%d",
-                asValue(), getEntityId(), epochSecondUTC, nanoOfSecond, zoneId, zoneOffsetSeconds );
+                asValue(), getEntityId(), epochSecondUTC, nanoOfSecond, zoneId, zoneOffsetMinutes * 60 );
     }
 
     @Override
@@ -104,7 +104,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     {
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
-        this.zoneOffsetSeconds = offsetSeconds;
+        this.zoneOffsetMinutes = offsetSeconds / 60;
         this.zoneId = -1;
     }
 
@@ -114,7 +114,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         this.epochSecondUTC = epochSecondUTC;
         this.nanoOfSecond = nano;
         this.zoneId = TimeZones.map( zoneId );
-        this.zoneOffsetSeconds = 0;
+        this.zoneOffsetMinutes = 0;
     }
 
     @Override
@@ -131,8 +131,8 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
     private boolean differentValidZoneOffset( ZonedDateTimeSchemaKey other )
     {
-        return zoneOffsetSeconds != other.zoneOffsetSeconds &&
-                TimeZones.validZoneOffset( zoneOffsetSeconds ) && TimeZones.validZoneOffset( other.zoneOffsetSeconds );
+        return zoneOffsetMinutes != other.zoneOffsetMinutes &&
+                TimeZones.validZoneOffset( zoneOffsetMinutes * 60 ) && TimeZones.validZoneOffset( other.zoneOffsetMinutes * 60 );
     }
 
     // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
