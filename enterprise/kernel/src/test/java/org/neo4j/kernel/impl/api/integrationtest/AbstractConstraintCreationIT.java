@@ -62,6 +62,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public abstract class AbstractConstraintCreationIT<Constraint extends ConstraintDescriptor, DESCRIPTOR extends SchemaDescriptor>
         extends KernelIntegrationTest
@@ -111,7 +112,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldBeAbleToStoreAndRetrieveConstraint() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
 
         // when
         ConstraintDescriptor constraint = createConstraint( transaction.schemaWrite(), descriptor );
@@ -135,7 +136,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
 
         // when
         ConstraintDescriptor constraint = createConstraint( transaction.schemaWrite(), descriptor );
@@ -180,7 +181,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     public void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction();
+        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
 
         Constraint constraint = createConstraint( transaction.schemaWrite(), descriptor );
 

@@ -212,7 +212,7 @@ public abstract class KernelIntegrationTest
 
     private void stopDb() throws TransactionFailureException
     {
-        if ( transaction != null )
+        if ( transaction != null  && transaction.isOpen())
         {
             transaction.close();
         }
