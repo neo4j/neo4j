@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util
+import java.util.Comparator
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
@@ -42,8 +43,9 @@ import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, Kernel
 import org.neo4j.kernel.api.SilentTokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
+import org.neo4j.values.{AnyValue, AnyValues}
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
 /**
   * Contains common code generation constructs.
@@ -65,6 +67,10 @@ object Templates {
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
+
+  def asAnyValueList(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[VirtualValues], typeRef[ListValue], "list", typeRef[Array[AnyValue]]),
+    Expression.newArray(typeRef[AnyValue], values: _*))
 
   def asPrimitiveNodeStream(values: Seq[Expression]): Expression = Expression.invoke(
     methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Array[Long]]),
@@ -180,6 +186,8 @@ object Templates {
   val newRelationshipDataExtractor = Expression
     .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
+  val valueComparator = Expression.getStatic(staticField[Values, Comparator[Value]]("COMPARATOR"))
+  val anyValueComparator = Expression.getStatic(staticField[AnyValues, Comparator[AnyValue]]("COMPARATOR"))
 
   def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
     param[QueryContext]("queryContext"),

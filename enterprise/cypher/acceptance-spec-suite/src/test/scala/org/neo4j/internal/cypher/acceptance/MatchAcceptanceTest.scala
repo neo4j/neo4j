@@ -30,6 +30,14 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  test("APA") {
+//    val query = "RETURN 42"
+    val query = "RETURN [42, 'hej']"
+    val result = innerExecuteDeprecated(s"CYPHER runtime=compiled debug=generate_java_source $query")
+    println(result.dumpToString())
+    println(result.executionPlanDescription())
+  }
+
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")
@@ -415,7 +423,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.All,
       "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions

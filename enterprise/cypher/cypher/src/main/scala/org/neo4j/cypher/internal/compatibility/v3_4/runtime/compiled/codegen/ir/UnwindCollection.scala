@@ -23,21 +23,22 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, Variable}
 
-case class UnwindCollection(opName: String, collection: CodeGenExpression) extends LoopDataGenerator {
+case class UnwindCollection(opName: String, collection: CodeGenExpression, elementCodeGenType: CodeGenType) extends LoopDataGenerator {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =
     collection.init(generator)
 
   override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])
                                  (implicit context: CodeGenContext): Unit = {
-    generator.declareIterator(iterVar)
+    generator.declareIterator(iterVar, elementCodeGenType)
     val iterator = generator.iteratorFrom(collection.generateExpression(generator))
-    generator.assign(iterVar, CodeGenType.Any, iterator)
+    generator.assign(iterVar, elementCodeGenType, iterator)
   }
 
   override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
                          (implicit context: CodeGenContext): Unit = {
+    assert(elementCodeGenType == nextVar.codeGenType)
     val next = generator.iteratorNext(generator.loadVariable(iterVar))
-    generator.assign(nextVar.name, CodeGenType.Any, next)
+    generator.assign(nextVar, next)
   }
 
   override def checkNext[E](generator: MethodStructure[E], iterVar: String): E =

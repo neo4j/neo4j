@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 object Methods {
 
@@ -51,7 +52,8 @@ object Methods {
   val compositeKey: MethodReference = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
   val hasNextLong: MethodReference = method[PrimitiveLongIterator, Boolean]("hasNext")
   val hasMoreRelationship: MethodReference = method[RelationshipIterator, Boolean]("hasNext")
-  val createMap: MethodReference = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
+  val createMap: MethodReference = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]]) // Unused
+  val createAnyValueMap: MethodReference = method[MapUtil, util.Map[String, AnyValue]]("genericMap", typeRef[Array[Object]])
   val format: MethodReference = method[String, String]("format", typeRef[String], typeRef[Array[Object]])
   val relationshipVisit: MethodReference = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
   val getRelationship: MethodReference = method[RelationshipDataExtractor, Long]("relationship")
@@ -88,7 +90,7 @@ object Methods {
   val labelGetForName: MethodReference = method[TokenRead, Int]("nodeLabel", typeRef[String])
   val propertyKeyGetForName: MethodReference = method[TokenRead, Int]("propertyKey", typeRef[String])
   val coerceToPredicate: MethodReference = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])
-  val toCollection: MethodReference = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
+  //val toCollection: MethodReference = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
   val ternaryEquals: MethodReference = method[CompiledConversionUtils, java.lang.Boolean]("equals", typeRef[Object], typeRef[Object])
   val equals: MethodReference = method[Object, Boolean]("equals", typeRef[Object])
   val or: MethodReference = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
@@ -103,7 +105,10 @@ object Methods {
   val fetchNextRelationship: MethodReference = method[RelationshipIterator, Long]("next")
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
   val newRelationshipProxyById: MethodReference = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
-  val materializeAnyResult: MethodReference = method[CompiledConversionUtils, Object]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeAnyResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeNodeValue: MethodReference = method[CompiledConversionUtils, NodeValue]("materializeNodeValue", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeRelationshipValue: MethodReference =
+    method[CompiledConversionUtils, RelationshipValue]("materializeRelationshipValue", typeRef[EmbeddedProxySPI], typeRef[Object])
   val nodeId: MethodReference = method[NodeIdWrapper, Long]("id")
   val relId: MethodReference = method[RelationshipIdWrapper, Long]("id")
   val set: MethodReference = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])

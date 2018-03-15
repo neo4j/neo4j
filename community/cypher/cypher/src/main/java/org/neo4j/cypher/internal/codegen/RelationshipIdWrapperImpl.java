@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
+import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
+public final class RelationshipIdWrapperImpl extends VirtualRelationshipValue implements RelationshipIdWrapper
 {
     private final long id;
 
@@ -36,27 +38,38 @@ public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
         return id;
     }
 
+//    @Override
+//    public boolean equals( Object o )
+//    {
+//        if ( this == o )
+//        {
+//            return true;
+//        }
+//        if ( o == null || getClass() != o.getClass() )
+//        {
+//            return false;
+//        }
+//
+//        RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
+//
+//        return id == that.id;
+//
+//    }
+
+//    @Override
+//    public int hashCode()
+//    {
+//        return (int) (id ^ (id >>> 32));
+//    }
+
     @Override
-    public boolean equals( Object o )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
-
-        return id == that.id;
-
+        writer.writeRelationshipReference( id );
     }
 
-    @Override
-    public int hashCode()
+    public String toString()
     {
-        return (int) (id ^ (id >>> 32));
+        return String.format( "Relationship[%d]", id );
     }
 }

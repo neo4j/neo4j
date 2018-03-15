@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.sp
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.values.AnyValue
 
 /**
   * Describes the SPI for generating a method.
@@ -41,7 +42,7 @@ trait MethodStructure[E] {
 
 
   // misc
-  def localVariable(variable: String, e: E): Unit
+  def localVariable(variable: String, e: E, codeGenType: CodeGenType): Unit
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
@@ -66,9 +67,11 @@ trait MethodStructure[E] {
   def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor): E
   def noValue(): E
   def constantExpression(value: AnyRef): E
+  def constantValueExpression(value: AnyRef, codeGenType: CodeGenType): E
   def constantPrimitiveExpression(value: AnyVal): E = constantExpression(value.asInstanceOf[AnyRef])
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+  def asAnyValueList(values: Seq[E]): E
   def asPrimitiveStream(values: E, codeGenType: CodeGenType): E
   def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
@@ -78,6 +81,7 @@ trait MethodStructure[E] {
   def primitiveIteratorHasNext(iterator: E, iterableCodeGenType: CodeGenType): E
 
   def declareIterator(name: String): Unit
+  def declareIterator(name: String, codeGenType: CodeGenType): Unit
   def iteratorFrom(iterable: E): E
   def iteratorNext(iterator: E): E
   def iteratorHasNext(iterator: E): E
@@ -101,7 +105,7 @@ trait MethodStructure[E] {
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
 
-  def castToCollection(value: E): E
+  //def castToCollection(value: E): E
 
   def loadVariable(varName: String): E
 
@@ -192,7 +196,7 @@ trait MethodStructure[E] {
   def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
-  def ifNonNullStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ifNonNullStatement(test: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test: E, onTrue: E, onFalse: E): E
   def returnSuccessfully(): Unit
 
@@ -206,6 +210,7 @@ trait MethodStructure[E] {
   def visitorAccept(): Unit
   def setInRow(column: Int, value: E): Unit
   def toAnyValue(e: E, t: CodeGenType): E
+  def toMaterializedAnyValue(e: E, t: CodeGenType): E // Like toAnyValue, but will materialize nodes and relationships into proxies
 }
 
 sealed trait Comparator

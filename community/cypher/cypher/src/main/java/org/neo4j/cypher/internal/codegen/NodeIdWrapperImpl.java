@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
+import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.virtual.VirtualNodeValue;
 
-public final class NodeIdWrapperImpl implements NodeIdWrapper
+public final class NodeIdWrapperImpl extends VirtualNodeValue implements NodeIdWrapper
 {
     private final long id;
 
@@ -36,29 +38,35 @@ public final class NodeIdWrapperImpl implements NodeIdWrapper
         return id;
     }
 
+//    @Override
+//    public boolean equals( Object o )
+//    {
+//        if ( this == o )
+//        {
+//            return true;
+//        }
+//        if ( o == null || getClass() != o.getClass() )
+//        {
+//            return false;
+//        }
+//
+//        NodeIdWrapper that = (NodeIdWrapper) o;
+//
+//        return id == that.id();
+//
+//    }
+
     @Override
-    public boolean equals( Object o )
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-
-        NodeIdWrapper that = (NodeIdWrapper) o;
-
-        return id == that.id();
-
+        writer.writeNodeReference( id );
     }
 
-    @Override
-    public int hashCode()
-    {
-        return (int) (id ^ (id >>> 32));
-    }
+//    @Override
+//    public int hashCode()
+//    {
+//        return (int) (id ^ (id >>> 32));
+//    }
 
     @Override
     public String toString()

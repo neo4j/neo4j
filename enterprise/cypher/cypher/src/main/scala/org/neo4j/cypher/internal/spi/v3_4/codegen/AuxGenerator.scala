@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
+import java.util
+
 import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_4.common.CypherOrderability
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.mutable
 
@@ -223,9 +227,21 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 // Invoke compare with the parameter order of the fields based on the sort order
                 val (lhs, rhs) = rearrangeInSortOrder(thisField, otherField, sortOrder)
 
-                l2.assign(compareResult,
-                  Expression.invoke(method[CypherOrderability, Int]("compare", typeRef[Object], typeRef[Object]),
-                    lhs, rhs))
+                val compareExpression = codeGenType.repr match {
+                  case ValueType =>
+                    val comparator = Templates.valueComparator
+                    Expression.invoke(comparator, method[util.Comparator[Value], Int]("compare", typeRef[Object], typeRef[Object]),
+                      Expression.cast(typeRef[Value], lhs), Expression.cast(typeRef[Value], rhs))
+
+                  case _: AnyValueType =>
+                    val comparator = Templates.anyValueComparator
+                    Expression.invoke(comparator, method[util.Comparator[AnyValue], Int]("compare", typeRef[Object], typeRef[Object]), lhs, rhs)
+
+                  case _ =>
+                    Expression.invoke(method[CypherOrderability, Int]("compare", typeRef[Object], typeRef[Object]), lhs, rhs)
+                }
+
+                l2.assign(compareResult, compareExpression)
                 using(l2.ifStatement(Expression.notEqual(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)
                 }

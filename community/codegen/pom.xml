@@ -85,6 +85,11 @@ the relevant Commercial Agreement.
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
     </dependency>
+      <dependency>
+          <groupId>org.neo4j</groupId>
+          <artifactId>neo4j-values</artifactId>
+          <version>3.4.0-alpha01</version>
+      </dependency>
   </dependencies>
 
   <build>

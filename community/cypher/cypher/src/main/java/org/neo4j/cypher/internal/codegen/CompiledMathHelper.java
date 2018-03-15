@@ -25,6 +25,14 @@ import java.util.List;
 
 import org.neo4j.cypher.internal.util.v3_4.ArithmeticException;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations
@@ -52,7 +60,42 @@ public final class CompiledMathHelper
         }
 
         //List addition
-        if ( lhs instanceof List<?> && rhs instanceof List<?> )
+        boolean lhsIsListValue = lhs instanceof ListValue;
+        if ( lhsIsListValue && rhs instanceof ListValue )
+        {
+            return VirtualValues.concat( (ListValue) lhs, (ListValue) rhs );
+        }
+        else if ( lhsIsListValue )
+        {
+            if ( rhs instanceof List<?> )
+            {
+                return VirtualValues.concat( (ListValue) lhs, ValueUtils.asListValue( (List<?>) rhs ) );
+            }
+            else if ( rhs instanceof AnyValue )
+            {
+                return VirtualValues.appendToList( (ListValue) lhs, (AnyValue) rhs );
+            }
+            else
+            {
+                return VirtualValues.appendToList( (ListValue) lhs, ValueUtils.of( rhs ) );
+            }
+        }
+        else if ( rhs instanceof ListValue )
+        {
+            if ( lhs instanceof List<?> )
+            {
+                return VirtualValues.concat( ValueUtils.asListValue( (List<?>) lhs ), (ListValue) rhs );
+            }
+            else if ( lhs instanceof AnyValue )
+            {
+                return VirtualValues.prependToList( (ListValue) rhs, (AnyValue) lhs );
+            }
+            else
+            {
+                return VirtualValues.prependToList( (ListValue) rhs, ValueUtils.of( lhs ) );
+            }
+        }
+        else if ( lhs instanceof List<?> && rhs instanceof List<?> )
         {
             List<?> lhsList = (List<?>) lhs;
             List<?> rhsList = (List<?>) rhs;
@@ -78,12 +121,43 @@ public final class CompiledMathHelper
             return result;
         }
 
-        if ( lhs instanceof String || rhs instanceof String )
+        // String addition
+        if ( lhs instanceof TextValue )
         {
-            return String.valueOf( lhs ) + String.valueOf( rhs );
+            lhs = ((TextValue) lhs).stringValue();
+        }
+        if ( rhs instanceof TextValue )
+        {
+            rhs = ((TextValue) rhs).stringValue();
+        }
+        if ( lhs instanceof String )
+        {
+            if ( rhs instanceof String )
+            {
+                return String.valueOf( lhs ) + String.valueOf( rhs );
+            }
+            else if ( rhs instanceof NumberValue )
+            {
+                return String.valueOf( lhs ) + ((NumberValue) rhs).prettyPrint();
+            }
+            else if ( rhs instanceof Number )
+            {
+                return String.valueOf( lhs ) + rhs.toString();
+            }
         }
 
         // array addition
+
+        // Extract arrays from ArrayValues
+        if ( lhs instanceof ArrayValue )
+        {
+            lhs = ((ArrayValue) lhs).asObject();
+        }
+        if ( rhs instanceof ArrayValue )
+        {
+            rhs = ((ArrayValue) rhs).asObject();
+        }
+
         Class<?> lhsClass = lhs.getClass();
         Class<?> rhsClass = rhs.getClass();
         if ( lhsClass.isArray() && rhsClass.isArray() )
@@ -97,6 +171,30 @@ public final class CompiledMathHelper
         else if ( rhsClass.isArray() )
         {
             return addObjectWithArray( lhs, rhs );
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            try
+            {
+                return ((NumberValue) lhs).plus( (NumberValue) rhs);
+            }
+            catch ( java.lang.ArithmeticException e )
+            {
+                // Assume the ArithmeticException is about long overflow
+                throw new ArithmeticException(
+                        String.format( "result of %d + %d cannot be represented as an integer",
+                                ((NumberValue) lhs).longValue(), ((NumberValue) rhs).longValue() ), e );
+            }
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
         }
 
         if ( lhs instanceof Number && rhs instanceof Number )
@@ -136,6 +234,20 @@ public final class CompiledMathHelper
             return null;
         }
 
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).minus( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
+        }
+
         if ( lhs instanceof Number && rhs instanceof Number )
         {
             if ( lhs instanceof Double || rhs instanceof Double ||
@@ -171,6 +283,20 @@ public final class CompiledMathHelper
         if ( lhs == null || rhs == null )
         {
             return null;
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).times( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
         }
 
         if ( lhs instanceof Number && rhs instanceof Number )
@@ -210,6 +336,20 @@ public final class CompiledMathHelper
             return null;
         }
 
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).divideBy( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
+        }
+
         if ( lhs instanceof Number && rhs instanceof Number )
         {
             if ( lhs instanceof Double || rhs instanceof Double ||
@@ -243,38 +383,53 @@ public final class CompiledMathHelper
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
-    public static Object modulo( Object lhs, Object rhs )
-    {
-        if ( lhs == null || rhs == null )
-        {
-            return null;
-        }
-
-        if ( lhs instanceof Number && rhs instanceof Number )
-        {
-            if ( lhs instanceof Double || rhs instanceof Double )
-            {
-                return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
-            }
-            else if ( lhs instanceof Float || rhs instanceof Float )
-            {
-                return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
-            }
-            else
-            {
-                return ((Number) lhs).longValue() % ((Number) rhs).longValue();
-            }
-        }
-
-        throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
-                                       " and " + rhs.getClass().getSimpleName(), null );
-    }
+    // Modulo is unused
+//    public static Object modulo( Object lhs, Object rhs )
+//    {
+//        if ( lhs == null || rhs == null )
+//        {
+//            return null;
+//        }
+//
+//        // Handle NumberValues
+//        if ( lhs instanceof NumberValue )
+//        {
+//            lhs = ((NumberValue) lhs).asObject();
+//        }
+//        if ( rhs instanceof NumberValue )
+//        {
+//            rhs = ((NumberValue) rhs).asObject();
+//        }
+//
+//        if ( lhs instanceof Number && rhs instanceof Number )
+//        {
+//            if ( lhs instanceof Double || rhs instanceof Double )
+//            {
+//                return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+//            }
+//            else if ( lhs instanceof Float || rhs instanceof Float )
+//            {
+//                return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
+//            }
+//            else
+//            {
+//                return ((Number) lhs).longValue() % ((Number) rhs).longValue();
+//            }
+//        }
+//
+//        throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
+//                                       " and " + rhs.getClass().getSimpleName(), null );
+//    }
 
     public static int transformToInt( Object value )
     {
         if ( value == null )
         {
             throw new CypherTypeException( "Expected a numeric value but got null", null );
+        }
+        if ( value instanceof NumberValue )
+        {
+            value = ((NumberValue) value).asObject();
         }
         if ( value instanceof Number )
         {
@@ -294,11 +449,17 @@ public final class CompiledMathHelper
         {
             throw new CypherTypeException( "Expected a numeric value but got null", null );
         }
+        if ( value instanceof NumberValue )
+        {
+            NumberValue number = (NumberValue) value;
+            return number.longValue();
+        }
         if ( value instanceof Number )
         {
             Number number = (Number) value;
             return number.longValue();
         }
+
         throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
     }
 

@@ -37,6 +37,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -45,6 +46,8 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.values.virtual.VirtualValues.map;
@@ -133,6 +136,10 @@ public final class ValueUtils
             else if ( object instanceof Geometry )
             {
                 return asGeometryValue( (Geometry) object );
+            }
+            else if ( object instanceof VirtualNodeValue || object instanceof VirtualRelationshipValue )
+            {
+                return (AnyValue) object;
             }
             else
             {
@@ -265,5 +272,20 @@ public final class ValueUtils
             return (Value) value;
         }
         return Values.of( value );
+    }
+
+    /**
+     * Creates an {@link AnyValue} from the given object, or if it is already an AnyValue it is returned as it is.
+     * <p>
+     * This is different from {@link ValueUtils#of} which often explicitly fails or creates a new copy
+     * if given an AnyValue.
+     */
+    public static AnyValue asAnyValue( Object value )
+    {
+        if ( value instanceof AnyValue )
+        {
+            return (AnyValue) value;
+        }
+        return of( value );
     }
 }

@@ -135,7 +135,8 @@ object ExpressionConverter {
         MapProperty(callback(mapExpression), propKeyName)
 
       case ast.Parameter(name, cypherType) =>
-        expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenType(cypherType))
+//        expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenType(cypherType))
+        expressions.Parameter(name, context.namer.newVarName(), CypherCodeGenType(cypherType, AnyValueType))
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 

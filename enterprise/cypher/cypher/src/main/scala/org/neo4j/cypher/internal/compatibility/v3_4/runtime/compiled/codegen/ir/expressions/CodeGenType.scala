@@ -24,6 +24,10 @@ import org.neo4j.cypher.internal.util.v3_4.symbols._
 trait CodeGenType {
   def isPrimitive: Boolean
 
+  def isValue: Boolean
+
+  def isAnyValue: Boolean
+
   def canBeNullable: Boolean
 
   def repr: RepresentationType
@@ -31,6 +35,8 @@ trait CodeGenType {
 
 object CodeGenType {
   val Any = CypherCodeGenType(CTAny, ReferenceType)
+  val AnyValue = CypherCodeGenType(CTAny, AnyValueType)
+  val Value = CypherCodeGenType(CTAny, ValueType)
   val primitiveNode = CypherCodeGenType(CTNode, LongType)
   val primitiveRel = CypherCodeGenType(CTRelationship, LongType)
   val primitiveInt = CypherCodeGenType(CTInteger, LongType)
@@ -43,11 +49,19 @@ object CodeGenType {
 case class JavaCodeGenType(repr: RepresentationType) extends CodeGenType {
   override def isPrimitive = RepresentationType.isPrimitive(repr)
 
+  def isValue = RepresentationType.isValue(repr)
+
+  def isAnyValue = RepresentationType.isAnyValue(repr)
+
   override def canBeNullable: Boolean = false
 }
 
 case class CypherCodeGenType(ct: CypherType, repr: RepresentationType) extends CodeGenType {
   def isPrimitive = RepresentationType.isPrimitive(repr)
+
+  def isValue = RepresentationType.isValue(repr)
+
+  def isAnyValue = RepresentationType.isAnyValue(repr)
 
   def canBeNullable = !isPrimitive || (ct == CTNode) || (ct == CTRelationship)
 }

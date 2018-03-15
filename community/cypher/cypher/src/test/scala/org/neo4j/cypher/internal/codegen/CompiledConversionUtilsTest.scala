@@ -54,28 +54,28 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     intercept[CypherTypeException](CompiledConversionUtils.coerceToPredicate(12))
   }
 
-  test("should convert List") {
-    val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
-
-    col shouldBe a[java.util.Collection[_]]
-    col.asScala.toSeq should equal(Seq("a", "b", "c"))
-  }
-
-  test("should throw if converting from non-collection") {
-    intercept[CypherTypeException](CompiledConversionUtils.toCollection("this is not a collection"))
-  }
-
-  test("should handle null") {
-    CompiledConversionUtils.toCollection(null) shouldBe empty
-  }
-
-  test("should be able to turn an array into a collection") {
-    CompiledConversionUtils.toCollection(Array("a", 42L)).asScala.toList should equal(List("a", 42))
-  }
-
-  test("should be able to turn a primitive array into a collection") {
-    CompiledConversionUtils.toCollection(Array(1337L, 42L)).asScala.toList should equal(List(1337L, 42))
-  }
+//  test("should convert List") {
+//    val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
+//
+//    col shouldBe a[java.util.Collection[_]]
+//    col.asScala.toSeq should equal(Seq("a", "b", "c"))
+//  }
+//
+//  test("should throw if converting from non-collection") {
+//    intercept[CypherTypeException](CompiledConversionUtils.toCollection("this is not a collection"))
+//  }
+//
+//  test("should handle null") {
+//    CompiledConversionUtils.toCollection(null) shouldBe empty
+//  }
+//
+//  test("should be able to turn an array into a collection") {
+//    CompiledConversionUtils.toCollection(Array("a", 42L)).asScala.toList should equal(List("a", 42))
+//  }
+//
+//  test("should be able to turn a primitive array into a collection") {
+//    CompiledConversionUtils.toCollection(Array(1337L, 42L)).asScala.toList should equal(List(1337L, 42))
+//  }
 
   test("should be able to use a composite key in a hash map") {
     //given

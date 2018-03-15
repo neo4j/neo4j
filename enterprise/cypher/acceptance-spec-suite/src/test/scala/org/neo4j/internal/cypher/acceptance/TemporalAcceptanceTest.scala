@@ -140,15 +140,45 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
         |RETURN o.timeSpan as timeSpan""".stripMargin)
 
     // When
-    val localConfig = Configs.Interpreted - Configs.OldAndRule
-    val result = executeWith(localConfig,
-      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-        plan should useOperatorWithText("Projection", "timeSpan")
-        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = Map("param" ->
-        Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+    val localConfig = Configs.All - Configs.OldAndRule
+//    val result = executeWith(localConfig,
+//      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+//      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+//        plan should useOperatorWithText("Projection", "timeSpan")
+//        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+//      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+//      params = Map("param" ->
+//        Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+    val result = innerExecuteDeprecated(
+      "CYPHER runtime=compiled MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+        params = Map("param" ->
+          Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+
+    // Then
+    val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(List(
+      LocalDate.of(2018, 4, 1),
+      LocalDate.of(2018, 4, 2))
+    )
+  }
+
+  test("should handle temporal values in literal lists") {
+    // Given
+    graph.createIndex("Occasion", "timeSpan")
+    createLabeledNode("Occasion")
+
+    graph.execute(
+      """MATCH (o:Occasion) SET o.timeSpan = [date("2018-04-01"), date("2018-04-02")]
+        |RETURN o.timeSpan as timeSpan""".stripMargin)
+
+    val dateValue1 = DateValue.date(2018, 4, 1).asObject()
+    val dateValue2 = DateValue.date(2018, 4, 2).asObject()
+    createLabeledNode(Map("date1" -> dateValue1, "date2" -> dateValue2), "Date")
+
+    // When
+    val config = Configs.All - Configs.OldAndRule + Configs.Cost2_3
+    val query = "MATCH (n:Date) WITH [n.date1, n.date2] as dateList MATCH (m:Occasion) WHERE m.timeSpan = dateList RETURN m.timeSpan as timeSpan"
+    val result = executeWith(config, query)
 
     // Then
     val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList

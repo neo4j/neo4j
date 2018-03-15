@@ -325,7 +325,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
 
     private void equal( Expression lhs, Expression rhs, boolean equal )
     {
-        assertSameType( lhs, rhs, "compare" );
+//        assertSameType( lhs, rhs, "compare" ); // TODO: Is this assert unnecessary / too strong?
         if ( lhs.type().isPrimitive() )
         {
             switch ( lhs.type().name() )

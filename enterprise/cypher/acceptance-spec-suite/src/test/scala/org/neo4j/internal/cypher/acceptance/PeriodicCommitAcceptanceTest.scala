@@ -79,12 +79,14 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
     val txIdStore = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
     val beforeTxId = txIdStore.getLastClosedTransactionId
-    val result = execute(s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
-    val arguments = result.executionPlanDescription().arguments
-    arguments should contain(PlannerImpl("IDP"))
-    arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
-    arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
-    result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
+//    val result = execute(s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
+    val result = execute(s"CYPHER runtime=slotted USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN count(*) as count")
+//    val arguments = result.executionPlanDescription().arguments
+//    arguments should contain(PlannerImpl("IDP"))
+//    arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
+//    arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
+    //result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
+    result.columnAs[Long]("count").toList should equal(List(5))
     val afterTxId = txIdStore.getLastClosedTransactionId
     result.close()
 
