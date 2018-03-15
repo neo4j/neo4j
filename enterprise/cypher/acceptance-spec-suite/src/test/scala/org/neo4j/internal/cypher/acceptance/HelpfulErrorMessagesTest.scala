@@ -25,8 +25,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should provide sensible error message when omitting colon before relationship type on create") {
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners -
-      Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.Version2_3,
       "CREATE (a)-[ASSOCIATED_WITH]->(b)",
       Seq("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?"))
   }
@@ -39,8 +38,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
   }
 
   test("should provide sensible error message when omitting colon before relationship type on merge") {
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners -
-      Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.AbsolutelyAll - Configs.Version2_3,
       "MERGE (a)-[ASSOCIATED_WITH]->(b)",
       Seq("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?"))
   }

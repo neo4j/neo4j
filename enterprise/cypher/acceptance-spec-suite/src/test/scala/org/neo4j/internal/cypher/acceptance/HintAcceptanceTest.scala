@@ -46,11 +46,10 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    // Fixed in 3.2.10
-    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Cost3_1 - Configs.Cost3_2, query,
+    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should useOperators("NodeOuterHashJoin")
         p should not(useOperators("NodeHashJoin"))
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
 }

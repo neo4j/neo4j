@@ -62,8 +62,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
         |M.a as B
       """.stripMargin
 
-    val expectedToWorkIn = Configs.CommunityInterpreted -
-      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.Cost, Runtimes.Default)
+    val expectedToWorkIn = Configs.CommunityInterpreted - Configs.Cost2_3
     val result = executeWith(expectedToWorkIn, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 
