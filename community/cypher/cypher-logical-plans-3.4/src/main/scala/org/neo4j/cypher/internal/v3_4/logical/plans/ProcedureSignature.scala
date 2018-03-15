@@ -59,11 +59,6 @@ object QualifiedName {
 
   def apply(unresolved: FunctionInvocation): QualifiedName =
     QualifiedName(unresolved.namespace.parts, unresolved.functionName.name)
-
-  def apply(namespacedName: String): QualifiedName = {
-    val split = namespacedName.split("\\.")
-    QualifiedName(split.init, split.last)
-  }
 }
 
 case class QualifiedName(namespace: Seq[String], name: String) {
