@@ -35,14 +35,14 @@ public interface SchemaWrite
      * @param descriptor description of the index
      * @return the newly created index
      */
-    CapableIndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
      * Drop the given index
      *
      * @param index the index to drop
      */
-    void indexDrop( CapableIndexReference index ) throws SchemaKernelException;
+    void indexDrop( IndexReference index ) throws SchemaKernelException;
 
     /**
      * Create unique property constraint

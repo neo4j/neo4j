@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -96,7 +97,7 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
+import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -301,7 +302,7 @@ public class AllStoreHolder extends Read
                         diffSets.apply( emptyResourceIterator() ) );
                 if ( fromTxState.hasNext() )
                 {
-                    return fromDescriptor( fromTxState.next() );
+                    return DefaultCapableIndexReference.fromDescriptor( fromTxState.next() );
                 }
                 else
                 {
@@ -314,7 +315,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         sharedOptimisticLock( ResourceTypes.LABEL, labelId );
         ktx.assertOpen();
@@ -324,11 +325,11 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        return Iterators.map( DefaultCapableIndexReference::fromDescriptor, iterator );
+        return Iterators.map( DefaultIndexReference::fromDescriptor, iterator );
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetAll()
+    public Iterator<IndexReference> indexesGetAll()
     {
         ktx.assertOpen();
 
@@ -346,7 +347,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
@@ -355,7 +356,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+    public PopulationProgress indexGetPopulationProgress( IndexReference index )
             throws IndexNotFoundKernelException
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
@@ -375,7 +376,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
+    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
@@ -383,7 +384,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public long indexGetCommittedId( CapableIndexReference index ) throws SchemaRuleNotFoundException
+    public long indexGetCommittedId( IndexReference index ) throws SchemaRuleNotFoundException
     {
         sharedOptimisticLock( ResourceTypes.LABEL, index.label() );
         ktx.assertOpen();
@@ -403,7 +404,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
         return storeReadLayer.indexGetFailure( new LabelSchemaDescriptor( index.label(), index.properties() ) );
     }
@@ -1061,7 +1062,7 @@ public class AllStoreHolder extends Read
         return ctx;
     }
 
-    private void assertValidIndex( CapableIndexReference index ) throws IndexNotFoundKernelException
+    private void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException
     {
         if ( index == CapableIndexReference.NO_INDEX )
         {

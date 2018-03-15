@@ -80,6 +80,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -97,7 +98,6 @@ import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.ha
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
@@ -781,7 +781,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public CapableIndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
     {
         acquireExclusiveLabelLock( descriptor.getLabelId() );
         ktx.assertOpen();
@@ -790,11 +790,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
         ktx.txState().indexRuleDoAdd( indexDescriptor );
-        return fromDescriptor( indexDescriptor );
+        return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
 
     @Override
-    public void indexDrop( CapableIndexReference index ) throws SchemaKernelException
+    public void indexDrop( IndexReference index ) throws SchemaKernelException
     {
         assertValidIndex( index );
 
@@ -1124,7 +1124,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( CapableIndexReference index ) throws NoSuchIndexException
+    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
     {
         if ( index == CapableIndexReference.NO_INDEX )
         {

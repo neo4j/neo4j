@@ -24,11 +24,11 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.values.storable.ValueGroup;
 
 public class DefaultCapableIndexReference implements CapableIndexReference
@@ -98,14 +98,14 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() )
+        if ( o == null || !(o instanceof IndexReference) )
         {
             return false;
         }
 
-        DefaultCapableIndexReference that = (DefaultCapableIndexReference) o;
+        IndexReference that = (IndexReference) o;
 
-        return label == that.label && unique == that.unique && Arrays.equals( properties, that.properties );
+        return label == that.label() && unique == that.isUnique() && Arrays.equals( properties, that.properties() );
     }
 
     @Override
@@ -130,17 +130,5 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         final LabelSchemaDescriptor schema = descriptor.schema();
         return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, null,
                 schema.getLabelId(), schema.getPropertyIds() );
-    }
-
-    public static SchemaIndexDescriptor fromReference( CapableIndexReference index )
-    {
-        if ( index.isUnique() )
-        {
-            return SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() );
-        }
-        else
-        {
-            return SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
-        }
     }
 }

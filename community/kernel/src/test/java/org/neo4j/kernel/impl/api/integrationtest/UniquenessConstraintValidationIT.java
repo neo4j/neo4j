@@ -21,17 +21,16 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
@@ -301,18 +300,18 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         }
 
         KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            ReadOperations readOps = statement.readOperations();
-            int person = readOps.labelGetForName( "Person" );
-            int propId = readOps.propertyKeyGetForName( "id" );
-            SchemaIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+            TokenRead tokenRead = transaction.tokenRead();
+            int person = tokenRead.nodeLabel( "Person" );
+            int propId = tokenRead.propertyKey( "id" );
+            CapableIndexReference idx = transaction.schemaRead().index(  person, propId );
 
             // when
             createLabeledNode( transaction, "Item", "id", 2 );
 
             // then I should find the original node
-            assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                     equalTo( ourNode ) );
         }
         commit();
@@ -332,18 +331,18 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         }
 
         KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            ReadOperations readOps = statement.readOperations();
-            int person = readOps.labelGetForName( "Person" );
-            int propId = readOps.propertyKeyGetForName( "id" );
-            SchemaIndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+            TokenRead tokenRead = transaction.tokenRead();
+            int person = tokenRead.nodeLabel( "Person" );
+            int propId = tokenRead.propertyKey( "id" );
+            CapableIndexReference idx = transaction.schemaRead().index( person, propId  );
 
             // when
             createLabeledNode( transaction, "Person", "id", 2 );
 
             // then I should find the original node
-            assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                     equalTo( ourNode ) );
         }
         commit();

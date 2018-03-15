@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -61,7 +61,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
+import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -129,7 +129,7 @@ public class IndexIT extends KernelIntegrationTest
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
 
         // WHEN
-        CapableIndexReference expectedRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexReference expectedRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // THEN
@@ -144,14 +144,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // GIVEN
         SchemaWrite schemaWriteOperations = schemaWriteInNewTransaction();
-        CapableIndexReference existingRule = schemaWriteOperations.indexCreate( descriptor );
+        IndexReference existingRule = schemaWriteOperations.indexCreate( descriptor );
         commit();
 
         // WHEN
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
-        CapableIndexReference addedRule = transaction.schemaWrite()
+        IndexReference addedRule = transaction.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
-        Set<CapableIndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
+        Set<IndexReference> indexRulesInTx = asSet( transaction.schemaRead().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -203,7 +203,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
-        CapableIndexReference index;
+        IndexReference index;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             index = statement.indexCreate( descriptor );
@@ -306,14 +306,14 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-        CapableIndexReference index1 = schemaWrite.indexCreate( descriptor );
-        CapableIndexReference index2 = fromDescriptor(
+        IndexReference index1 = schemaWrite.indexCreate( descriptor );
+        IndexReference index2 = fromDescriptor(
                 ((IndexBackedConstraintDescriptor) schemaWrite.uniquePropertyConstraintCreate( descriptor2 )).ownedIndexDescriptor()) ;
         commit();
 
         // then/when
         SchemaRead schemaRead = newTransaction().schemaRead();
-        List<CapableIndexReference> indexes = Iterators.asList( schemaRead.indexesGetAll() );
+        List<IndexReference> indexes = Iterators.asList( schemaRead.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }

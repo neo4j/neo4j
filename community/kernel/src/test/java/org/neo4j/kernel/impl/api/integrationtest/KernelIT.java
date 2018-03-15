@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
@@ -519,7 +518,7 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        CapableIndexReference idx = createIndex( newTransaction( AUTH_DISABLED ) );
+        IndexReference idx = createIndex( newTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -638,7 +637,7 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private CapableIndexReference createIndex( KernelTransaction transaction )
+    private IndexReference createIndex( KernelTransaction transaction )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();

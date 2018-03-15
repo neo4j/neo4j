@@ -38,7 +38,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -84,11 +84,11 @@ public class SchemaProcedure
                         int labelId = tokenRead.nodeLabel( label.name() );
                         Map<String,Object> properties = new HashMap<>();
 
-                        Iterator<CapableIndexReference> indexReferences = schemaRead.indexesGetForLabel( labelId );
+                        Iterator<IndexReference> indexReferences = schemaRead.indexesGetForLabel( labelId );
                         ArrayList<String> indexes = new ArrayList<>();
                         while ( indexReferences.hasNext() )
                         {
-                            CapableIndexReference index = indexReferences.next();
+                            IndexReference index = indexReferences.next();
                             if ( !index.isUnique() )
                             {
                                 String[] propertyNames = PropertyNameUtils.getPropertyKeys(
