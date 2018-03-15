@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -853,8 +854,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         //Check data integrity
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION );
-        ConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
+        NodeKeyConstraintDescriptor constraint = ConstraintDescriptorFactory.nodeKeyForSchema( descriptor );
         assertConstraintDoesNotExist( constraint );
+        // It is not allowed to create node key constraints on indexed label/property pairs
+        assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         //enforce constraints
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
@@ -864,9 +867,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        ktx.txState().constraintDoAdd( constraint );
+        indexBackedConstraintCreate( constraint );
         return constraint;
-
     }
 
     @Override
@@ -900,7 +902,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveRelationshipLock( descriptor.getRelTypeId() );
+        exclusiveRelationshipTypeLock( descriptor.getRelTypeId() );
         ktx.assertOpen();
 
         //verify data integrity
@@ -1000,6 +1002,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void sharedRelationshipTypeLock( long typeId )
     {
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
+    }
+
+    private void exclusiveRelationshipTypeLock( long typeId )
+    {
+        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, typeId );
     }
 
     private void lockRelationshipNodes( long startNodeId, long endNodeId )

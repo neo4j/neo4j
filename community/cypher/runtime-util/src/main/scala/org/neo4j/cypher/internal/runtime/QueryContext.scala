@@ -95,7 +95,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor]
+  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[CapableIndexReference]
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
