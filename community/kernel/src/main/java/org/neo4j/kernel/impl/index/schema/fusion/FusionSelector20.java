@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL
 
 /**
  * Selector for "lucene+native-2.x".
- * Separates strings, numbers, temoporal and spatial into native index.
+ * Separates strings, numbers, temporal and spatial into native index.
  */
 public class FusionSelector20 implements FusionIndexProvider.Selector
 {
