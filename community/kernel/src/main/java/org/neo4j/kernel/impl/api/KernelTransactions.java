@@ -179,11 +179,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.schemaState = schemaState;
     }
 
-    public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
-    {
-        return explicitIndexTxStateSupplier;
-    }
-
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
@@ -239,8 +234,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public void disposeAll()
     {
         terminateTransactions();
-        localTxPool.disposeAll();
-        globalTxPool.disposeAll();
+        localTxPool.close();
+        globalTxPool.close();
     }
 
     public void terminateTransactions()

@@ -37,7 +37,7 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
     private IdSequence currentBatch;
     private boolean closed;
 
-    public RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
+    RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
     {
         this.source = source;
         this.batchSize = batchSize;

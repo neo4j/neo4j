@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.pool;
 
-public interface Pool<T>
+public interface Pool<T> extends AutoCloseable
 {
     T acquire();
 
