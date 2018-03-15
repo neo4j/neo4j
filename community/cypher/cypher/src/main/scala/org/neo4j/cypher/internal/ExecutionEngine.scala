@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTr
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
@@ -170,7 +170,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
         val ((plan: ExecutionPlan, extractedParameters, queryParamNames), touched) = try {
           // fetch plan cache
-          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any], Seq[String])] = getOrCreateFromSchemaState(tc.readOperations, {
+          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any], Seq[String])] = getOrCreateFromSchemaState(tc.schemaRead, {
             cacheMonitor.cacheFlushDetected(tc.statement)
             val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)
@@ -266,10 +266,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private def schemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
     (ExecutionPlan, Map[String, Any], Seq[String])], LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])]] = {
-    tc.readOperations.schemaStateGet(this)
+    tc.schemaRead.schemaStateGet(this)
   }
 
-  private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
+  private def getOrCreateFromSchemaState[V](operations: SchemaRead, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }

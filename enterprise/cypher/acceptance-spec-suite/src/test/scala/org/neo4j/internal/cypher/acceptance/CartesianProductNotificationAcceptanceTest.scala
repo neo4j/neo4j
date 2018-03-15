@@ -146,7 +146,6 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
   private def planContext(transaction: KernelTransaction, statement: Statement): PlanContext = {
     val tc = mock[TransactionalContextWrapper]
     when(tc.statement).thenReturn(statement)
-    when(tc.readOperations).thenReturn(statement.readOperations())
     when(tc.dataRead).thenReturn(transaction.dataRead())
     when(tc.graph).thenReturn(graph)
     TransactionBoundPlanContext(tc, devNullLogger)

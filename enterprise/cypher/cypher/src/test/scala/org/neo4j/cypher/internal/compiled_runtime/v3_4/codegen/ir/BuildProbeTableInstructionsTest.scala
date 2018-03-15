@@ -75,7 +75,6 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   when(cursors.allocateNodeCursor()).thenAnswer(new Answer[NodeCursor] {
     override def answer(invocation: InvocationOnMock): NodeCursor = nodeCursor
   })
-  when(transactionalContext.readOperations).thenReturn(readOps)
   when(transactionalContext.dataRead).thenReturn(dataRead)
   when(transactionalContext.cursors).thenReturn(cursors)
   when(queryContext.entityAccessor).thenReturn(entityAccessor)
