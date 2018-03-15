@@ -24,6 +24,7 @@ import java.time.temporal.UnsupportedTemporalTypeException
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.values.storable.DurationValue
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
@@ -419,8 +420,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val exception = intercept[QueryExecutionException] {
         println(graph.execute(query).next())
       }
-      exception.getMessage should be ("You cannot subtract a temporal instant from another. " +
-        "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
+      exception.getMessage should startWith("Type mismatch: expected Duration but was")
     }
   }
 
@@ -478,6 +478,42 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
         an[UnsupportedTemporalTypeException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  // Comparison of durations
+
+  test("should not allow comparing durations") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = s"RETURN duration('P1Y1M') $op duration('P1Y30D')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  test("should return null when comparing durations and not able to fail at compile time") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = "RETURN $d1 " + op + " $d2 as x"
+      withClue(s"Executing $query") {
+        val res = innerExecuteDeprecated(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
+        res should be(List(Map("x" -> null)))
+      }
+    }
+  }
+
+  // Invalid signature
+
+  test("should not accept 4 parameters") {
+    for (func <- Seq("time", "localtime", "date", "datetime", "localdatetime", "duration")) {
+      val query = s"RETURN $func('', '', '', '')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
           println(graph.execute(query).next())
         }
       }
