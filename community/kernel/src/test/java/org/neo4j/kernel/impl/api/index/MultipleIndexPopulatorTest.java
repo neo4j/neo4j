@@ -36,9 +36,9 @@ import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -79,14 +79,42 @@ public class MultipleIndexPopulatorTest
     private MultipleIndexPopulator multipleIndexPopulator;
 
     @Test
-    public void indexPopulationCompletionOnlyOnce()
+    public void canceledPopulationNotAbleToCreateNewIndex() throws IOException
     {
-        IndexPopulator indexPopulator1 = createIndexPopulator();
-        IndexPopulation indexPopulation = addPopulator( indexPopulator1, 1 );
-        assertTrue( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.cancel();
+
+        multipleIndexPopulator.create();
+
+        verify( populator, never() ).create();
+    }
+
+    @Test
+    public void canceledPopulationNotAbleToFlip() throws IOException, FlipFailedKernelException
+    {
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.cancel();
+
+        indexPopulation.flip();
+
+        verify( indexPopulation.flipper, never() ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
+    }
+
+    @Test
+    public void flippedPopulationAreNotCanceable() throws IOException, FlipFailedKernelException
+    {
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.flip();
+
+        indexPopulation.cancel();
+
+        verify( indexPopulation.populator, never() ).close( false );
     }
 
     @Test
@@ -150,7 +178,6 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.indexAllNodes();
 
-        assertFalse( populationToCancel.markCompleted() );
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
         multipleIndexPopulator.flipAfterPopulation();
@@ -173,7 +200,6 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.indexAllNodes();
 
-        assertFalse( populationToCancel.markCompleted() );
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
         multipleIndexPopulator.flipAfterPopulation();
