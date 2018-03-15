@@ -33,8 +33,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 
-import static org.neo4j.kernel.impl.util.DebugUtil.trackTest;
-
 public class CentralJobScheduler extends LifecycleAdapter implements JobScheduler
 {
     private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger();
@@ -57,7 +55,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     public CentralJobScheduler()
     {
         workStealingExecutors = new ConcurrentHashMap<>( 1 );
-        topLevelGroup = new ThreadGroup( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() + trackTest() );
+        topLevelGroup = new ThreadGroup( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() );
         pools = new ThreadPoolManager( topLevelGroup );
         ThreadFactory threadFactory = new GroupedDaemonThreadFactory( SCHEDULER_GROUP, topLevelGroup );
         scheduler = new TimeBasedTaskScheduler( Clocks.nanoClock(), pools );
