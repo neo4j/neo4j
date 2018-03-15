@@ -20,9 +20,12 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.kernel.api.index.IndexProvider;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -33,7 +36,7 @@ import org.neo4j.function.ThrowingFunction;
  */
 public abstract class FusionIndexBase<T>
 {
-    private static final int INSTANCE_COUNT = 5;
+    static final int INSTANCE_COUNT = 5;
 
     static final int STRING = 0;
     static final int NUMBER = 1;
@@ -161,6 +164,21 @@ public abstract class FusionIndexBase<T>
         if ( exception != null )
         {
             throw exception;
+        }
+    }
+
+    static void validateSelectorInstances( Object[] instances, int... notNullIndex )
+    {
+        for ( int i = 0; i < instances.length; i++ )
+        {
+            boolean expected = PrimitiveIntCollections.contains( notNullIndex, i );
+            boolean actual = instances[i] != IndexProvider.EMPTY;
+            if ( expected != actual )
+            {
+                throw new IllegalArgumentException(
+                        String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
+                                Arrays.toString( notNullIndex ), Arrays.toString( instances ) ) );
+            }
         }
     }
 }

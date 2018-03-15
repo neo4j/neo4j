@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,17 +34,21 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
-import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
-import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instancesAs;
 
 /**
@@ -54,24 +59,28 @@ public class FusionIndexProvider extends IndexProvider
 {
     interface Selector
     {
+        void validateSatisfied( Object[] instances );
+
         int selectSlot( Value... values );
 
         default <T> T select( T[] instances, Value... values )
         {
             return instances[selectSlot( values )];
         }
+
+        IndexReader select( IndexReader[] instances, IndexQuery... predicates );
     }
 
-    private final IndexProvider[] providers;
+    private final IndexProvider[] providers = new IndexProvider[INSTANCE_COUNT];
     private final Selector selector;
     private final DropAction dropAction;
 
     public FusionIndexProvider(
             // good to be strict with specific providers here since this is dev facing
-            StringIndexProvider stringProvider,
-            NumberIndexProvider numberProvider,
-            SpatialFusionIndexProvider spatialProvider,
-            TemporalIndexProvider temporalProvider,
+            IndexProvider stringProvider,
+            IndexProvider numberProvider,
+            IndexProvider spatialProvider,
+            IndexProvider temporalProvider,
             IndexProvider luceneProvider,
             Selector selector,
             Descriptor descriptor,
@@ -80,9 +89,20 @@ public class FusionIndexProvider extends IndexProvider
             FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
-        this.providers = array( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        fillProvidersArray( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        selector.validateSatisfied( providers );
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
+    }
+
+    private void fillProvidersArray( IndexProvider stringProvider, IndexProvider numberProvider, IndexProvider spatialProvider, IndexProvider temporalProvider,
+            IndexProvider luceneProvider )
+    {
+        providers[STRING] = stringProvider;
+        providers[NUMBER] = numberProvider;
+        providers[SPATIAL] = spatialProvider;
+        providers[TEMPORAL] = temporalProvider;
+        providers[LUCENE] = luceneProvider;
     }
 
     @Override
@@ -105,25 +125,13 @@ public class FusionIndexProvider extends IndexProvider
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
-        for ( int i = 0; i < providers.length; i++ )
-        {
-            writeFailure( nameOf( i ), builder, providers[i], indexId, descriptor );
-        }
+        forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ), providers );
         String failure = builder.toString();
         if ( !failure.isEmpty() )
         {
             return failure;
         }
         throw new IllegalStateException( "None of the indexes were in a failed state" );
-    }
-
-    /**
-     * @param subProviderIndex the index into the providers array to get the name of.
-     * @return some name distinguishing the provider of this subProviderIndex from other providers.
-     */
-    private String nameOf( int subProviderIndex )
-    {
-        return providers[subProviderIndex].getClass().getSimpleName();
     }
 
     private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
@@ -144,8 +152,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        InternalIndexState[] states =
-                Arrays.stream( providers ).map( provider -> provider.getInitialState( indexId, descriptor ) ).toArray( InternalIndexState[]::new );
+        InternalIndexState[] states = FusionIndexBase.instancesAs( providers, InternalIndexState.class, p -> p.getInitialState( indexId, descriptor ) );
         if ( Arrays.stream( states ).anyMatch( state -> state == FAILED ) )
         {
             // One of the state is FAILED, the whole state must be considered FAILED

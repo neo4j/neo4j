@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -29,8 +31,18 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 
-public class FusionSelector implements FusionIndexProvider.Selector
+/**
+ * Selector for "lucene+native-2.x".
+ * Separates strings, numbers, temoporal and spatial into native index.
+ */
+public class FusionSelector20 implements FusionIndexProvider.Selector
 {
+    @Override
+    public void validateSatisfied( Object[] instances )
+    {
+        FusionIndexBase.validateSelectorInstances( instances, STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE );
+    }
+
     @Override
     public int selectSlot( Value... values )
     {
@@ -43,19 +55,16 @@ public class FusionSelector implements FusionIndexProvider.Selector
         Value singleValue = values[0];
         if ( singleValue.valueGroup() == ValueGroup.TEXT )
         {
-            // It's a string, the native string index can handle this
             return STRING;
         }
 
         if ( singleValue.valueGroup() == ValueGroup.NUMBER )
         {
-            // It's a number, the native index can handle this
             return NUMBER;
         }
 
         if ( Values.isGeometryValue( singleValue ) )
         {
-            // It's a geometry, the spatial index can handle this
             return SPATIAL;
         }
 
@@ -65,5 +74,52 @@ public class FusionSelector implements FusionIndexProvider.Selector
         }
 
         return LUCENE;
+    }
+
+    @Override
+    public IndexReader select( IndexReader[] instances, IndexQuery... predicates )
+    {
+        if ( predicates.length > 1 )
+        {
+            return instances[LUCENE];
+        }
+        IndexQuery predicate = predicates[0];
+
+        if ( predicate instanceof IndexQuery.ExactPredicate )
+        {
+            IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
+            return select( instances, exactPredicate.value() );
+        }
+
+        if ( predicate instanceof IndexQuery.StringPredicate )
+        {
+            return instances[STRING];
+        }
+
+        if ( predicate instanceof IndexQuery.RangePredicate )
+        {
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                return instances[NUMBER];
+            case GEOMETRY:
+                return instances[SPATIAL];
+            case TEXT:
+                return instances[STRING];
+            case DATE:
+            case LOCAL_DATE_TIME:
+            case ZONED_DATE_TIME:
+            case LOCAL_TIME:
+            case ZONED_TIME:
+            case DURATION:
+                return instances[TEMPORAL];
+            default: // fall through
+            }
+        }
+        if ( predicate instanceof IndexQuery.ExistsPredicate )
+        {
+            return null;
+        }
+        throw new UnsupportedOperationException( "This selector does not have support for predicate " + predicate );
     }
 }

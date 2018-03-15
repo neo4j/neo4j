@@ -140,7 +140,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private File storeDirectory = new File( "/graph.db" );
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
-        private IndexProvider indexProvider = IndexProvider.NO_INDEX_PROVIDER;
+        private IndexProvider indexProvider = IndexProvider.EMPTY;
         private Monitors monitors = new Monitors();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache )
