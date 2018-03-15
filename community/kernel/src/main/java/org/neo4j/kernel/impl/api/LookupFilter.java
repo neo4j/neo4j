@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -155,7 +156,8 @@ public class LookupFilter
                 return true;
             }
         }
-        else if ( predicate.type() == IndexQuery.IndexQueryType.rangeNumeric || predicate.type() == IndexQuery.IndexQueryType.rangeGeometric )
+        else if ( predicate.type() == IndexQuery.IndexQueryType.range &&
+                  ( predicate.valueGroup() == ValueGroup.NUMBER || predicate.valueGroup() == ValueGroup.GEOMETRY ) )
         {
             return true;
         }

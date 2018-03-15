@@ -135,7 +135,15 @@ public class MetricsTestHelper
 
             T currentValue = startValue;
             String line;
-            while ( (line = reader.readLine()) != null )
+
+            // Always read at least one line of data
+            do
+            {
+                line = reader.readLine();
+            }
+            while ( line == null );
+
+            do
             {
                 String[] fields = line.split( "," );
                 T newValue = parser.apply( fields[metricsValue.ordinal()] );
@@ -143,6 +151,7 @@ public class MetricsTestHelper
                         assumption.test( newValue, currentValue ) );
                 currentValue = newValue;
             }
+            while ( (line = reader.readLine()) != null );
             return currentValue;
         }
     }

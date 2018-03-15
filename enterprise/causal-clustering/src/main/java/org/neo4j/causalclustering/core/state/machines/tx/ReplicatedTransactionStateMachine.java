@@ -112,7 +112,8 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
                 {
                     if ( tx.getLatestCommittedTxWhenStarted() >= txId )
                     {
-                        throw new IllegalStateException( "Out of order transaction" );
+                        throw new IllegalStateException(
+                                format( "Out of order transaction. Expected that %d < %d", tx.getLatestCommittedTxWhenStarted(), txId ) );
                     }
 
                     callback.accept( Result.of( txId ) );

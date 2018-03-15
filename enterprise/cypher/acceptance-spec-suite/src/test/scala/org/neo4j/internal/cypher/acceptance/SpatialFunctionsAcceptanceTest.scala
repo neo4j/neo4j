@@ -56,6 +56,15 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.3, 4.5, 6.7))))
   }
 
+  test("point function should work with literal map and srid") {
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
+  }
+
   test("point function should work with literal map and geographic coordinates") {
     val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
@@ -72,12 +81,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
       "'cartesian-3D' is not a supported coordinate reference system for points",
-      "Cannot create 3D point with 2 coordinates"))
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
     failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point", List(
-      "Cannot create 2D point with 3 coordinates"))
+      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
@@ -88,12 +97,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
       "'WGS-84-3D' is not a supported coordinate reference system for points",
-      "Cannot create 3D point with 2 coordinates"))
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
     failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
-      "Cannot create 2D point with 3 coordinates"))
+      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should work with integer arguments") {
@@ -533,23 +542,23 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("accessors on 2D cartesian points") {
-    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs")
-    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian")))
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs, p.srid")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))
 
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
   }
 
   test("accessors on 3D cartesian points") {
-    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.x, p.y, p.z, p.crs")
-    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3D")))
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3D", "p.srid" -> 9157)))
 
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
   }
 
   test("accessors on 2D geographic points") {
-    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y")
-    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "WGS-84", "p.x" -> 1.0, "p.y" -> 2.0)))
+    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "WGS-84", "p.x" -> 1.0, "p.y" -> 2.0, "p.srid" -> 4326)))
 
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.height", Seq("Field: height is not available"))
     failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
@@ -557,8 +566,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
   test("accessors on 3D geographic points") {
     val result = executeWith(latestPointConfig,
-      "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z")
-    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "WGS-84-3D",
+      "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z, p.srid")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "WGS-84-3D", "p.srid" -> 4979,
                                      "p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0)))
   }
 

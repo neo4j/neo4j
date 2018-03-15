@@ -27,7 +27,7 @@ import static java.lang.String.format;
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateValue}.
  */
-class DateSchemaKey extends ComparableNativeSchemaKey<DateSchemaKey>
+class DateSchemaKey extends NativeSchemaKey<DateSchemaKey>
 {
     static final int SIZE =
             Long.BYTES + /* epochDay */

@@ -23,6 +23,10 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -52,9 +56,30 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     }
 
     @Override
+    public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    {
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public void validateNodePropertyExistenceConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
+            PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
+    {
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
     public void validateRelationshipPropertyExistenceConstraint( Cursor<RelationshipItem> allRelationships,
             RelationTypeSchemaDescriptor descriptor, BiPredicate<RelationshipItem,Integer> hasPropertyCheck )
             throws CreateConstraintFailureException
+    {
+        throw propertyExistenceConstraintsNotAllowed( descriptor );
+    }
+
+    @Override
+    public void validateRelationshipPropertyExistenceConstraint( RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor, RelationTypeSchemaDescriptor descriptor )  throws CreateConstraintFailureException
     {
         throw propertyExistenceConstraintsNotAllowed( descriptor );
     }

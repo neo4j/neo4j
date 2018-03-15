@@ -155,11 +155,11 @@ public class HostnamePort
 
         if ( getPort() != 0 )
         {
-            builder.append( ":" );
+            builder.append( ':' );
             builder.append( getPort() );
             if ( isRange() )
             {
-                builder.append( "-" ).append( getPorts()[1] );
+                builder.append( '-' ).append( getPorts()[1] );
             }
         }
 

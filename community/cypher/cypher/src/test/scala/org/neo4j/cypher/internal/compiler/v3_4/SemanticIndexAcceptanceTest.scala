@@ -33,12 +33,12 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     for(_ <- 1 to 1000) createLabeledNode("Label")
   }
 
-  def changeLastChar(f: Char => Char)(in: String) =
+  private def changeLastChar(f: Char => Char)(in: String) =
     if (in.isEmpty) ""
     else
       in.substring(0, in.length - 1) + (in.last - 1).toChar
 
-  def testOperator(operator: String) = {
+  private def testOperator(operator: String): Unit = {
 
     val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
     val queryUsingIndex = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
@@ -49,7 +49,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
     }
 
-    def tester[T](propertyValue: T, prev: T => T, next: T => T) = {
+    def tester[T](propertyValue: T, prev: T => T, next: T => T): Unit = {
       graph.inTx {
         createLabeledNode(Map("nonIndexed" -> propertyValue, "indexed" -> propertyValue), "Label")
 

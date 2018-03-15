@@ -27,7 +27,7 @@ public interface RelationshipDataAccessor
     long relationshipReference(); // not sure relationships will have independent references,
     // so exposing this might be leakage.
 
-    int label();
+    int type();
 
     boolean hasProperties();
 

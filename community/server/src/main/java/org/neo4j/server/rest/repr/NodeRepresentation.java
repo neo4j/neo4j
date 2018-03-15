@@ -151,7 +151,7 @@ public final class NodeRepresentation extends ObjectRepresentation implements Ex
     {
         if ( isDeleted() )
         {
-            return new MapRepresentation( map( "id", node.getId(), "deleted", true ) );
+            return new MapRepresentation( map( "id", node.getId(), "deleted", Boolean.TRUE ) );
         }
         else
         {

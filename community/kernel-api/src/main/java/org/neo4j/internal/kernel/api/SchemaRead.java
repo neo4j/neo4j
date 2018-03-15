@@ -21,8 +21,11 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
@@ -40,13 +43,56 @@ public interface SchemaRead
 
     /**
      * Returns all indexes associated with the given label
+     *
      * @param labelId The id of the label which associated indexes you are looking for
-     * @return The index associated with the given label
+     * @return The indexes associated with the given label
      */
     Iterator<CapableIndexReference> indexesGetForLabel( int labelId );
 
     /**
+     * Returns all indexes used in the database
+     *
+     * @return all indexes used in the database
+     */
+    Iterator<CapableIndexReference> indexesGetAll();
+
+    /**
+     * Retrieves the state of an index
+     *
+     * @param index the index which state to retrieve
+     * @return The state of the provided index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Retrives the population progress of the index
+     *
+     * @param index The index whose progress to retrieve
+     * @return The population progress of the given index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    PopulationProgress indexGetPopulationProgress( CapableIndexReference index ) throws
+            IndexNotFoundKernelException;
+
+    /**
+     * Get the index id (the id or the schema rule record) for a committed index
+     * - throws exception for indexes that aren't committed.
+     */
+    long indexGetCommittedId( CapableIndexReference index ) throws SchemaKernelException;
+
+    /**
+     * Returns the failure description of a failed index.
+     *
+     * @param index the failed index
+     * @return The failure message from the index
+     * @throws IndexNotFoundKernelException if the index was not found in the database
+     */
+    String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
      * Finds all constraints for the given schema
+     *
      * @param descriptor The descriptor of the schema
      * @return All constraints for the given schema
      */
@@ -54,6 +100,7 @@ public interface SchemaRead
 
     /**
      * Checks if a constraint exists
+     *
      * @param descriptor The descriptor of the constraint to check.
      * @return {@code true} if the constraint exists, otherwise {@code false}
      */
@@ -61,6 +108,7 @@ public interface SchemaRead
 
     /**
      * Finds all constraints for the given label
+     *
      * @param labelId The id of the label
      * @return All constraints for the given label
      */
@@ -68,14 +116,22 @@ public interface SchemaRead
 
     /**
      * Find all constraints in the database
+     *
      * @return An iterator of all the constraints in the database.
      */
-    Iterator<ConstraintDescriptor> constraintsGetAll( );
+    Iterator<ConstraintDescriptor> constraintsGetAll();
 
     /**
      * Get all constraints applicable to relationship type.
+     *
      * @param typeId the id of the relationship type
      * @return An iterator of constraints associated with the given type.
      */
     Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId );
+
+    /**
+     * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning
+     * constraint.
+     */
+    Long indexGetOwningUniquenessConstraintId( CapableIndexReference index );
 }

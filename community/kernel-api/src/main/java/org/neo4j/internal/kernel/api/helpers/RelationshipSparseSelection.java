@@ -147,7 +147,7 @@ abstract class RelationshipSparseSelection
 
     private boolean correctType()
     {
-        return types == null || ArrayUtils.contains( types, cursor.label() );
+        return types == null || ArrayUtils.contains( types, cursor.type() );
     }
 
     public void close()

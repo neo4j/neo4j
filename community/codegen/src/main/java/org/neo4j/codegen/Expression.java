@@ -273,7 +273,7 @@ public abstract class Expression extends ExpressionTemplate
         {
             if ( rhs == NULL )
             {
-                return constant( true );
+                return constant( Boolean.TRUE );
             }
             else
             {

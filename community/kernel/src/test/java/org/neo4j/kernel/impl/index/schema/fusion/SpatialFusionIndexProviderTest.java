@@ -100,7 +100,7 @@ public class SpatialFusionIndexProviderTest
         // ... no failure
         for ( SpatialCRSSchemaIndex index : indexMap.values() )
         {
-            when( index.readPopulationFailure( descriptor ) ).thenReturn( null );
+            when( index.readPopulationFailure() ).thenReturn( null );
         }
         // then
         try
@@ -130,6 +130,6 @@ public class SpatialFusionIndexProviderTest
     private void setInitialState( SpatialCRSSchemaIndex mockedIndex, InternalIndexState state ) throws IOException
     {
         when( mockedIndex.indexExists() ).thenReturn( true );
-        when( mockedIndex.readState( descriptor ) ).thenReturn( state );
+        when( mockedIndex.readState() ).thenReturn( state );
     }
 }

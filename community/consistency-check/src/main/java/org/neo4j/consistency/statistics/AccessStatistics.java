@@ -34,16 +34,7 @@ import static java.lang.String.format;
  */
 public class AccessStatistics
 {
-    public static int LOCALITY = 500;
-
     private final Map<RecordStore<? extends AbstractBaseRecord>,AccessStats> stats = new HashMap<>();
-    private int proximity;
-
-    @SuppressWarnings( "unchecked" )
-    public AccessStats getAccessStats( RecordStore<? extends AbstractBaseRecord> store )
-    {
-        return stats.get( store );
-    }
 
     public void register( RecordStore<? extends AbstractBaseRecord> store, AccessStats accessStats )
     {

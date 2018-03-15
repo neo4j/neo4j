@@ -31,4 +31,16 @@ public class NodeValueIndexCursorNativeTest extends AbstractNodeValueIndexCursor
         readTestSupport.addSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
         return readTestSupport;
     }
+
+    @Override
+    protected String providerKey()
+    {
+        return "lucene+native";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "1.0";
+    }
 }

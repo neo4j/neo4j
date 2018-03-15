@@ -25,6 +25,7 @@ import java.time.temporal.UnsupportedTemporalTypeException
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.values.storable.DurationValue
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -118,6 +119,13 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       "{datetime: datetime(), time: time()}", "{datetime: datetime(), epoch: timestamp()}", "{date: date(), epoch: timestamp()}",
       "{time: time(), epoch: timestamp()}")
     shouldNotConstructWithArg("datetime", queries)
+  }
+
+  test("should not create date time with conflicting time zones")
+  {
+    val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
+    val errorMsg = "Timezone and offset do not match"
+    failWithError(Configs.Interpreted - Configs.Version2_3, query, Seq(errorMsg))
   }
 
   // Failing when selecting a wrong group

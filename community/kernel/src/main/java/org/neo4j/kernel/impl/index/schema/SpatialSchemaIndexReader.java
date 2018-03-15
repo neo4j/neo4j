@@ -91,7 +91,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
         case exact:
             startSeekForExact( cursor, ((ExactPredicate) predicate).value(), predicate );
             break;
-        case rangeGeometric:
+        case range:
             GeometryRangePredicate rangePredicate = (GeometryRangePredicate) predicate;
             if ( !rangePredicate.crs().equals( spatial.crs ) )
             {

@@ -74,14 +74,15 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * This class contains transaction-local changes to the graph. These changes can then be used to augment reads from the
@@ -547,7 +548,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void relationshipDoReplaceProperty( long relationshipId, int propertyKeyId, Value replacedValue,
             Value newValue )
     {
-        if ( replacedValue != Values.NO_VALUE )
+        if ( replacedValue != NO_VALUE )
         {
             getOrCreateRelationshipState( relationshipId ).changeProperty( propertyKeyId, newValue );
         }
@@ -561,7 +562,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void graphDoReplaceProperty( int propertyKeyId, Value replacedValue, Value newValue )
     {
-        if ( replacedValue != Values.NO_VALUE )
+        if ( replacedValue != NO_VALUE )
         {
             getOrCreateGraphState().changeProperty( propertyKeyId, newValue );
         }
@@ -1021,10 +1022,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( SchemaIndexDescriptor descriptor,
-                                                                    Number lower, boolean includeLower,
-                                                                    Number upper, boolean includeUpper )
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, ValueGroup valueGroup,
+                                                                   Value lower, boolean includeLower,
+                                                                   Value upper, boolean includeUpper )
     {
+        assert lower != null && upper != null : "Use Values.NO_VALUE to encode the lack of a bound";
+
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )
         {
@@ -1037,56 +1040,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         ValueTuple selectedUpper;
         boolean selectedIncludeUpper;
 
-        if ( lower == null )
+        if ( lower == NO_VALUE )
         {
-            selectedLower = ValueTuple.of( Values.MIN_NUMBER );
-            selectedIncludeLower = true;
-        }
-        else
-        {
-            selectedLower = ValueTuple.of( Values.numberValue( lower ) );
-            selectedIncludeLower = includeLower;
-        }
-
-        if ( upper == null )
-        {
-            selectedUpper = ValueTuple.of( Values.MAX_NUMBER );
-            selectedIncludeUpper = true;
-        }
-        else
-        {
-            selectedUpper = ValueTuple.of( Values.numberValue( upper ) );
-            selectedIncludeUpper = includeUpper;
-        }
-
-        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( SchemaIndexDescriptor descriptor,
-                                                                PointValue lower, boolean includeLower,
-                                                                PointValue upper, boolean includeUpper )
-    {
-        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
-        if ( sortedUpdates == null )
-        {
-            return PrimitiveLongReadableDiffSets.EMPTY;
-        }
-
-        if ( lower == null && upper == null )
-        {
-            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
-        }
-
-        ValueTuple selectedLower;
-        boolean selectedIncludeLower;
-
-        ValueTuple selectedUpper;
-        boolean selectedIncludeUpper;
-
-        if ( lower == null )
-        {
-            selectedLower = ValueTuple.of( Values.minPointValue( upper ) );
+            selectedLower = ValueTuple.of( Values.minValue( valueGroup, upper ) );
             selectedIncludeLower = true;
         }
         else
@@ -1095,56 +1051,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeLower = includeLower;
         }
 
-        if ( upper == null )
+        if ( upper == NO_VALUE )
         {
-            selectedUpper = ValueTuple.of( Values.maxPointValue( lower ) );
-            selectedIncludeUpper = true;
-        }
-        else
-        {
-            selectedUpper = ValueTuple.of( upper );
-            selectedIncludeUpper = includeUpper;
-        }
-
-        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
-    }
-
-    @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor descriptor,
-                                                                    String lower, boolean includeLower,
-                                                                    String upper, boolean includeUpper )
-    {
-        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
-        if ( sortedUpdates == null )
-        {
-            return PrimitiveLongReadableDiffSets.EMPTY;
-        }
-
-        ValueTuple selectedLower;
-        boolean selectedIncludeLower;
-
-        ValueTuple selectedUpper;
-        boolean selectedIncludeUpper;
-
-        if ( lower == null )
-        {
-            selectedLower = ValueTuple.of( Values.MIN_STRING );
-            selectedIncludeLower = true;
-        }
-        else
-        {
-            selectedLower = ValueTuple.of( Values.stringValue( lower ) );
-            selectedIncludeLower = includeLower;
-        }
-
-        if ( upper == null )
-        {
-            selectedUpper = ValueTuple.of( Values.MAX_STRING );
+            selectedUpper = ValueTuple.of( Values.maxValue( valueGroup, lower ) );
             selectedIncludeUpper = false;
         }
         else
         {
-            selectedUpper = ValueTuple.of( Values.stringValue( upper ) );
+            selectedUpper = ValueTuple.of( upper );
             selectedIncludeUpper = includeUpper;
         }
 

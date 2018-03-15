@@ -151,7 +151,7 @@ public class CsvInputParser implements Closeable
                     }
                     break;
                 case PROPERTY:
-                    if ( seeker.tryExtract( mark, entry.extractor() ) )
+                    if ( seeker.tryExtract( mark, entry.extractor(), entry.optionalParameter() ) )
                     {
                         // TODO since PropertyStore#encodeValue takes Object there's no point splitting up
                         // into different primitive types
@@ -194,7 +194,7 @@ public class CsvInputParser implements Closeable
                 seeker.seek( mark, delimiter );
                 if ( doContinue )
                 {
-                    seeker.tryExtract( mark, stringExtractor );
+                    seeker.tryExtract( mark, stringExtractor, entry.optionalParameter() );
                     badCollector.collectExtraColumns(
                             seeker.sourceDescription(), lineNumber, stringExtractor.value() );
                 }
@@ -208,7 +208,7 @@ public class CsvInputParser implements Closeable
             try
             {
                 Extractors extractors = new Extractors( '?' );
-                if ( seeker.tryExtract( mark, extractors.string() ) )
+                if ( seeker.tryExtract( mark, extractors.string(), entry.optionalParameter() ) )
                 {
                     stringValue = extractors.string().value();
                 }

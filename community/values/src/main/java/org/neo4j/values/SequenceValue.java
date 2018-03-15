@@ -89,11 +89,11 @@ public interface SequenceValue extends Iterable<AnyValue>
     {
         if ( a.length() != b.length() )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         int i = 0;
-        Boolean equivalenceResult = true;
+        Boolean equivalenceResult = Boolean.TRUE;
 
         while ( i < a.length() )
         {
@@ -104,7 +104,7 @@ public interface SequenceValue extends Iterable<AnyValue>
             }
             else if ( !areEqual )
             {
-                return false;
+                return Boolean.FALSE;
             }
             i++;
         }
@@ -128,7 +128,7 @@ public interface SequenceValue extends Iterable<AnyValue>
 
     static Boolean ternaryEqualsUsingIterators( SequenceValue a, SequenceValue b )
     {
-        Boolean equivalenceResult = true;
+        Boolean equivalenceResult = Boolean.TRUE;
         Iterator<AnyValue> aIterator = a.iterator();
         Iterator<AnyValue> bIterator = b.iterator();
 
@@ -141,7 +141,7 @@ public interface SequenceValue extends Iterable<AnyValue>
             }
             else if ( !areEqual )
             {
-                return false;
+                return Boolean.FALSE;
             }
         }
 

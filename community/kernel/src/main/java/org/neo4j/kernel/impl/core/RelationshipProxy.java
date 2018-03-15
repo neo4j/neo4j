@@ -89,13 +89,16 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         // it enough to check only start node, since it's absence will indicate that data was not yet loaded
         if ( startNode == AbstractBaseRecord.NO_ID )
         {
-            try ( Statement statement = actions.statement() )
+            KernelTransaction transaction = safeAcquireTransaction();
+            try ( Statement ignore = transaction.acquireStatement() )
             {
-                statement.readOperations().relationshipVisit( getId(), this );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new NotFoundException( e );
+                RelationshipScanCursor relationships = transaction.relationshipCursor();
+                transaction.dataRead().singleRelationship( id, relationships );
+                //at this point we don't care if it is there or not just load what we got
+                relationships.next();
+                this.type = relationships.type();
+                this.startNode = relationships.sourceNodeReference();
+                this.endNode = relationships.targetNodeReference();
             }
         }
     }

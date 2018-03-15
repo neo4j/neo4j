@@ -260,7 +260,7 @@ public enum StoreType
      * @param storeFileName file name of the store file to check.
      * @return Returns whether or not store file by given file name should be managed by the page cache.
      */
-    public static boolean shouldBeManagedByPageCache( String storeFileName )
+    public static boolean canBeManagedByPageCache( String storeFileName )
     {
         boolean isLabelScanStore = NativeLabelScanStore.FILE_NAME.equals( storeFileName );
         return isLabelScanStore || StoreType.typeOf( storeFileName ).map( StoreType::isRecordStore ).orElse( Boolean.FALSE );

@@ -26,7 +26,7 @@ import org.neo4j.com.RequestType;
 
 public interface RequestMonitor
 {
-    void beginRequest( SocketAddress remoteAddress, RequestType<?> requestType, RequestContext requestContext );
+    void beginRequest( SocketAddress remoteAddress, RequestType requestType, RequestContext requestContext );
 
     void endRequest( Throwable t );
 }

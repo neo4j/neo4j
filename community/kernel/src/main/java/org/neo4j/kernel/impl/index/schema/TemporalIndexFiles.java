@@ -43,12 +43,12 @@ class TemporalIndexFiles
     {
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( indexId );
-        this.date = new FileLayout<>( new File( indexDirectory, "date" ), DateLayout.of( descriptor ), ValueGroup.DATE );
-        this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), LocalTimeLayout.of( descriptor ), ValueGroup.LOCAL_TIME );
-        this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), ZonedTimeLayout.of( descriptor ), ValueGroup.ZONED_TIME );
-        this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), LocalDateTimeLayout.of( descriptor ), ValueGroup.LOCAL_DATE_TIME );
-        this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), ZonedDateTimeLayout.of( descriptor ), ValueGroup.ZONED_DATE_TIME );
-        this.duration = new FileLayout<>( new File( indexDirectory, "duration" ), DurationLayout.of( descriptor ), ValueGroup.DURATION );
+        this.date = new FileLayout<>( new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
+        this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
+        this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
+        this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), new LocalDateTimeLayout(), ValueGroup.LOCAL_DATE_TIME );
+        this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), new ZonedDateTimeLayout(), ValueGroup.ZONED_DATE_TIME );
+        this.duration = new FileLayout<>( new File( indexDirectory, "duration" ), new DurationLayout(), ValueGroup.DURATION );
     }
 
     Iterable<FileLayout> existing()

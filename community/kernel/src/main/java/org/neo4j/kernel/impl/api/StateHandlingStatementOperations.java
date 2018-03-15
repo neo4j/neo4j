@@ -98,8 +98,8 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
@@ -866,27 +866,14 @@ public class StateHandlingStatementOperations implements
         case exists:
             return filterIndexStateChangesForScan( state, exactMatches, index );
 
-        case rangeNumeric:
+        case range:
             assertSinglePredicate( predicates );
-            IndexQuery.NumberRangePredicate numPred = (IndexQuery.NumberRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByNumber( state, index, numPred.from(),
-                    numPred.fromInclusive(), numPred.to(), numPred.toInclusive(), exactMatches );
+            IndexQuery.RangePredicate rangePred = (IndexQuery.RangePredicate) firstPredicate;
+            return filterIndexStateChangesForRangeSeek( state, index, rangePred.valueGroup(),
+                                                        rangePred.fromValue(), rangePred.fromInclusive(),
+                                                        rangePred.toValue(), rangePred.toInclusive(),
+                                                        exactMatches );
 
-        case rangeGeometric:
-            assertSinglePredicate( predicates );
-            IndexQuery.GeometryRangePredicate geomPred = (IndexQuery.GeometryRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByGeometry(
-                    state, index, geomPred.from(), geomPred.fromInclusive(), geomPred.to(),
-                    geomPred.toInclusive(), exactMatches );
-
-        case rangeString:
-        {
-            assertSinglePredicate( predicates );
-            IndexQuery.StringRangePredicate strPred = (IndexQuery.StringRangePredicate) firstPredicate;
-            return filterIndexStateChangesForRangeSeekByString(
-                    state, index, strPred.from(), strPred.fromInclusive(), strPred.to(),
-                    strPred.toInclusive(), committed );
-        }
         case stringPrefix:
         {
             assertSinglePredicate( predicates );
@@ -972,55 +959,17 @@ public class StateHandlingStatementOperations implements
         return nodeIds;
     }
 
-    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByNumber( KernelStatement state,
-            SchemaIndexDescriptor index,
-            Number lower, boolean includeLower,
-            Number upper, boolean includeUpper,
+    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeek( KernelStatement state,
+            SchemaIndexDescriptor index, ValueGroup valueGroup,
+            Value lower, boolean includeLower,
+            Value upper, boolean includeUpper,
             PrimitiveLongResourceIterator nodeIds )
     {
         if ( state.hasTxStateWithChanges() )
         {
             TransactionState txState = state.txState();
-            PrimitiveLongReadableDiffSets labelPropertyChangesForNumber =
-                    txState.indexUpdatesForRangeSeekByNumber( index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
-
-            // Apply to actual index lookup
-            return nodes.augmentWithRemovals( labelPropertyChangesForNumber.augment( nodeIds ) );
-        }
-        return nodeIds;
-    }
-
-    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByGeometry( KernelStatement state,
-            SchemaIndexDescriptor index,
-            PointValue lower, boolean includeLower,
-            PointValue upper, boolean includeUpper,
-            PrimitiveLongResourceIterator nodeIds )
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            TransactionState txState = state.txState();
-            PrimitiveLongReadableDiffSets labelPropertyChangesForGeometry =
-                    txState.indexUpdatesForRangeSeekByGeometry( index, lower, includeLower, upper, includeUpper );
-            ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
-
-            // Apply to actual index lookup
-            return nodes.augmentWithRemovals( labelPropertyChangesForGeometry.augment( nodeIds ) );
-        }
-        return nodeIds;
-    }
-
-    private PrimitiveLongResourceIterator filterIndexStateChangesForRangeSeekByString( KernelStatement state,
-            SchemaIndexDescriptor index,
-            String lower, boolean includeLower,
-            String upper, boolean includeUpper,
-            PrimitiveLongResourceIterator nodeIds )
-    {
-        if ( state.hasTxStateWithChanges() )
-        {
-            TransactionState txState = state.txState();
-            PrimitiveLongReadableDiffSets labelPropertyChangesForString = txState.indexUpdatesForRangeSeekByString(
-                            index, lower, includeLower, upper, includeUpper );
+            PrimitiveLongReadableDiffSets labelPropertyChangesForString = txState.indexUpdatesForRangeSeek(
+                    index, valueGroup, lower, includeLower, upper, includeUpper );
             ReadableDiffSets<Long> nodes = txState.addedAndRemovedNodes();
 
             // Apply to actual index lookup

@@ -48,7 +48,7 @@ public class SlaveServer extends Server<Slave, Void>
     }
 
     @Override
-    protected RequestType<Slave> getRequestContext( byte id )
+    protected RequestType getRequestContext( byte id )
     {
         return SlaveRequestType.values()[id];
     }

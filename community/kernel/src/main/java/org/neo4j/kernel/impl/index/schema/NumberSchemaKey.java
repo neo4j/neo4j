@@ -33,7 +33,7 @@ import static java.lang.String.format;
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class NumberSchemaKey extends NativeSchemaKey
+class NumberSchemaKey extends NativeSchemaKey<NumberSchemaKey>
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */

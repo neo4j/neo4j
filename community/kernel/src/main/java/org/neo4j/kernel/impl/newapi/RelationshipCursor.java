@@ -49,7 +49,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     }
 
     @Override
-    public int label()
+    public int type()
     {
         return getType();
     }

@@ -1225,7 +1225,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public ExplicitIndexWrite indexWrite()
+        public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
         {
             return internal.indexWrite();
         }
@@ -1255,7 +1255,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public SchemaWrite schemaWrite()
+        public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
         {
             return internal.schemaWrite();
         }

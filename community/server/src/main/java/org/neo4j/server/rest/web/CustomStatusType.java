@@ -25,8 +25,7 @@ import static javax.ws.rs.core.Response.Status.Family;
 
 public class CustomStatusType implements Response.StatusType
 {
-    public static Response.StatusType UNPROCESSABLE = new CustomStatusType( 422, "Unprocessable Entity" );
-    public static Response.StatusType TOO_MANY = new CustomStatusType( 429, "Too Many Requests" );
+    public static final Response.StatusType UNPROCESSABLE = new CustomStatusType( 422, "Unprocessable Entity" );
 
     private final int code;
     private final String reason;

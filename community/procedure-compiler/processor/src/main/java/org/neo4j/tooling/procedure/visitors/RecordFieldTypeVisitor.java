@@ -43,7 +43,7 @@ class RecordFieldTypeVisitor extends SimpleTypeVisitor8<Boolean,Void>
     public Boolean visitDeclared( DeclaredType declaredType, Void ignored )
     {
         return allowedTypesValidator.test( declaredType ) &&
-                declaredType.getTypeArguments().stream().map( this::visit ).reduce( ( a, b ) -> a && b ).orElse( true );
+                declaredType.getTypeArguments().stream().map( this::visit ).reduce( ( a, b ) -> a && b ).orElse( Boolean.TRUE );
     }
 
     @Override

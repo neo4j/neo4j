@@ -24,23 +24,15 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Race;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -58,16 +50,7 @@ public class ConcurrentCreateDropIndexIT
     private static final String KEY = "key";
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected GraphDatabaseFactory newFactory()
-        {
-            Monitors monitors = new Monitors();
-            monitors.addMonitorListener( new LoggingConstraintIndexCreatorMonitor() );
-            return new TestGraphDatabaseFactory().setMonitors( monitors );
-        }
-    };
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     private final int threads = Runtime.getRuntime().availableProcessors();
 
@@ -282,45 +265,5 @@ public class ConcurrentCreateDropIndexIT
     private static Label label( int i )
     {
         return Label.label( "L" + i );
-    }
-
-    private class LoggingConstraintIndexCreatorMonitor implements ConstraintIndexCreator.Monitor
-    {
-        private final ConcurrentLinkedQueue<Pair<Long, Integer>> queue;
-        private final Map<Integer,String> messages;
-
-        LoggingConstraintIndexCreatorMonitor()
-        {
-            this.queue = new ConcurrentLinkedQueue<>();
-            messages = new HashMap<>();
-            messages.put( ConstraintIndexCreator.Monitor.CREATED_INDEX, "Created Index" );
-            messages.put( ConstraintIndexCreator.Monitor.REUSED_INDEX, "Reused Index" );
-            messages.put( ConstraintIndexCreator.Monitor.AWAITED_POPULATION, "Awaited Population" );
-            messages.put( ConstraintIndexCreator.Monitor.RELEASING_LOCK, "Releasing lock" );
-            messages.put( ConstraintIndexCreator.Monitor.RELEASED_LOCK, "Released lock" );
-            messages.put( ConstraintIndexCreator.Monitor.GOT_LOCK, "Got lock" );
-            messages.put( ConstraintIndexCreator.Monitor.GOT_LOCK_AGAIN, "Got lock again" );
-            messages.put( ConstraintIndexCreator.Monitor.AWAITING_LOCK, "Awaiting lock" );
-            messages.put( ConstraintIndexCreator.Monitor.AWAITING_LOCK_AGAIN, "Awaiting lock again" );
-        }
-
-        @Override
-        public void log()
-        {
-            StringBuilder sb = new StringBuilder();
-            while ( !queue.isEmpty() )
-            {
-                Pair<Long,Integer> entry = queue.poll();
-                sb.append( String.format( "Thread %d reports %s.", entry.first(), messages.get( entry.other() ) ) );
-                sb.append( '\n' );
-            }
-            System.out.println( sb );
-        }
-
-        @Override
-        public void event( long threadId, int eventId )
-        {
-            queue.add( Pair.of( threadId, eventId ) );
-        }
     }
 }

@@ -65,7 +65,7 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
         }
         R current = factory.relationship( next,
                                           cursor.sourceNodeReference(),
-                                          cursor.label(),
+                                          cursor.type(),
                                           cursor.targetNodeReference() );
 
         if ( !fetchNext() )

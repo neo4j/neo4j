@@ -33,7 +33,7 @@ import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompar
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
  * or rather any string that {@link GBPTree} can handle.
  */
-class StringSchemaKey extends NativeSchemaKey
+class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
 {
     static final int ENTITY_ID_SIZE = Long.BYTES;
 
@@ -104,6 +104,7 @@ class StringSchemaKey extends NativeSchemaKey
      * @param other the {@link StringSchemaKey} to compare to.
      * @return comparison against the {@code other} {@link StringSchemaKey}.
      */
+    @Override
     int compareValueTo( StringSchemaKey other )
     {
         // TODO cover all cases of bytes == null and special tie breaker and document

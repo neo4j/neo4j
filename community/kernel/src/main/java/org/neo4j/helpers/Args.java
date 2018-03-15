@@ -242,7 +242,7 @@ public class Args
     public Number getNumber( String key, Number defaultValue )
     {
         String value = getSingleOptionOrNull( key );
-        return value != null ? Double.parseDouble( value ) : defaultValue;
+        return value != null ? Double.valueOf( value ) : defaultValue;
     }
 
     public long getDuration( String key, long defaultValueInMillis )
@@ -303,7 +303,7 @@ public class Args
         String value = getSingleOptionOrNull( key );
         if ( value != null )
         {
-            return Boolean.parseBoolean( value );
+            return Boolean.valueOf( value );
         }
         return this.map.containsKey( key ) ? defaultValueIfSpecifiedButNoValue : defaultValueIfNotSpecified;
     }
@@ -346,12 +346,12 @@ public class Args
      */
     public String[] orphansAsArray()
     {
-        return orphans.toArray( new String[orphans.size()] );
+        return orphans.toArray( new String[0] );
     }
 
     public String[] asArgs()
     {
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<>( orphans.size() );
         for ( String orphan : orphans )
         {
             String quote = orphan.contains( " " ) ? " " : "";
@@ -369,7 +369,7 @@ public class Args
                 list.add( quote + (key.length() > 1 ? "--" : "-") + key + (value != null ? "=" + value + quote : "") );
             }
         }
-        return list.toArray( new String[list.size()] );
+        return list.toArray( new String[0] );
     }
 
     @Override
@@ -395,7 +395,7 @@ public class Args
 
     private static boolean isBoolean( String value )
     {
-        return (value != null) && ("true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value ));
+        return "true".equalsIgnoreCase( value ) || "false".equalsIgnoreCase( value );
     }
 
     private static String stripOption( String arg )
@@ -519,7 +519,7 @@ public class Args
                 description = description.substring( position );
             }
         }
-        return lines.toArray( new String[lines.size()] );
+        return lines.toArray( new String[0] );
     }
 
     private static int findSpaceBefore( String description, int position )

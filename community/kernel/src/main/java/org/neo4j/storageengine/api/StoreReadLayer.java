@@ -28,7 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -166,13 +166,13 @@ public interface StoreReadLayer
     IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Return capability of stored index.
+     * Return index reference of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get capability for.
-     * @return {@link IndexCapability} for index.
+     * @param descriptor {@link LabelSchemaDescriptor} to get provider reference for.
+     * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    IndexCapability indexGetCapability( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.

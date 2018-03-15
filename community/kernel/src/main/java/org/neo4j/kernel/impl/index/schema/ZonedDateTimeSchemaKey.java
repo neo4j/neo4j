@@ -36,7 +36,7 @@ import static java.lang.String.format;
  * DateTimeValues with zoneOffset come first (sorted by the zoneOffset), followed by DateTimeValues with zoneIds,
  * sorted by zoneNumber.
  */
-class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSchemaKey>
+class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
 {
     static final int SIZE =
             Long.BYTES +    /* epochSecond */
@@ -52,7 +52,7 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     @Override
     public Value asValue()
     {
-        return zoneId >= 0 ?
+        return TimeZones.validZoneId( zoneId ) ?
             DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneId.of( TimeZones.map( zoneId ) ) ) :
             DateTimeValue.datetime( epochSecondUTC, nanoOfSecond, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
     }
@@ -95,7 +95,8 @@ class ZonedDateTimeSchemaKey extends ComparableNativeSchemaKey<ZonedDateTimeSche
     @Override
     public String toString()
     {
-        return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d", asValue(), getEntityId(), epochSecondUTC, nanoOfSecond );
+        return format( "value=%s,entityId=%d,epochSecond=%d,nanoOfSecond=%d,zoneId=%d,zoneOffset=%d",
+                asValue(), getEntityId(), epochSecondUTC, nanoOfSecond, zoneId, zoneOffsetSeconds );
     }
 
     @Override

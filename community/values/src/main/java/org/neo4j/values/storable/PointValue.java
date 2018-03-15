@@ -281,8 +281,41 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public static PointValue parse( CharSequence text )
     {
+        return PointValue.parse( text, null );
+    }
+
+    /**
+     * Parses the given text into a PointValue. The information stated in the header is saved into the PointValue
+     * unless it overriden by the information in the text
+     * @param text the input text to be parsed into a PointValue
+     * @param fieldsFromHeader must be a value obtained from {@link #parseIntoArray(CharSequence)} or null
+     * @return a PointValue instance with information from the {@param fieldsFromHeader} and {@param text}
+     */
+    public static PointValue parse( CharSequence text, AnyValue[] fieldsFromHeader )
+    {
+        AnyValue[] fieldsFromData = parseIntoArray( text );
+        if ( fieldsFromHeader != null )
+        {
+            // If fieldsFromHeader comes from parseIntoArray it is given that fieldsFromData.length == fieldsFromHeader.length
+            // because parseIntoArray produces fixed length arrays
+            assert fieldsFromData.length == fieldsFromHeader.length;
+
+            // Merge InputFields: Data fields override header fields
+            for ( int i = 0; i < fieldsFromData.length; i++ )
+            {
+                if ( fieldsFromData[i] == null )
+                {
+                    fieldsFromData[i] = fieldsFromHeader[i];
+                }
+            }
+        }
+        return fromInputFields( fieldsFromData );
+    }
+
+    public static AnyValue[] parseIntoArray( CharSequence text )
+    {
         Matcher mapMatcher = mapPattern.matcher( text );
-        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1  ) )
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
             String errorMessage = format( "Failed to parse point value: '%s'", text );
             throw new IllegalArgumentException( errorMessage );
@@ -358,7 +391,31 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
         } while ( matcher.find() );
 
-        return fromInputFields( fields );
+        return fields;
+    }
+
+    private static CoordinateReferenceSystem findSpecifiedCRS( AnyValue[] fields )
+    {
+        AnyValue crsValue = fields[PointValueField.CRS.ordinal()];
+        AnyValue sridValue = fields[PointValueField.SRID.ordinal()];
+        if ( crsValue != null && sridValue != null )
+        {
+            throw new IllegalArgumentException( "Cannot specify both CRS and SRID" );
+        }
+        else if ( crsValue != null )
+        {
+            TextValue crsName = (TextValue) crsValue;
+            return CoordinateReferenceSystem.byName( crsName.stringValue() );
+        }
+        else if ( sridValue != null )
+        {
+            NumberValue srid = (NumberValue) sridValue;
+            return CoordinateReferenceSystem.get( (int) srid.longValue() );
+        }
+        else
+        {
+            return null;
+        }
     }
 
     /**
@@ -366,23 +423,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     private static PointValue fromInputFields( AnyValue[] fields )
     {
-        CoordinateReferenceSystem crs;
+        CoordinateReferenceSystem crs = findSpecifiedCRS( fields );
         double[] coordinates;
-
-        AnyValue crsValue = fields[PointValueField.CRS.ordinal()];
-        if ( crsValue != null )
-        {
-            TextValue crsName = (TextValue) crsValue;
-            crs = CoordinateReferenceSystem.byName( crsName.stringValue() );
-            if ( crs == null )
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
-            }
-        }
-        else
-        {
-            crs = null;
-        }
 
         AnyValue xValue = fields[PointValueField.X.ordinal()];
         AnyValue yValue = fields[PointValueField.Y.ordinal()];
@@ -425,7 +467,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             if ( !crs.isGeographic() )
             {
-                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
+                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs +
+                        ". This is set either in the csv header or the actual data column" );
             }
         }
         else
@@ -452,7 +495,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
         if ( crs.getDimension() != coordinates.length )
         {
-            throw new IllegalArgumentException( "Cannot create " + crs.getDimension() + "D point with " + coordinates.length + " coordinates" );
+            throw new IllegalArgumentException( "Cannot create point with " + crs.getDimension() + "D coordinate reference system and " + coordinates.length
+                    + " coordinates. Please consider using equivalent " + coordinates.length + "D coordinate reference system" );
         }
         return Values.pointValue( crs, coordinates );
     }
@@ -465,7 +509,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         LATITUDE( NUMBER ),
         LONGITUDE( NUMBER ),
         HEIGHT( NUMBER ),
-        CRS( TEXT );
+        CRS( TEXT ),
+        SRID( NUMBER );
 
         PointValueField( ValueGroup valueType )
         {
@@ -501,6 +546,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             return getNthCoordinate( 2, fieldName, true );
         case "crs":
             return Values.stringValue( crs.toString() );
+        case "srid":
+            return Values.intValue( crs.getCode() );
         default:
             throw new IllegalArgumentException( "No such field: " + fieldName );
         }

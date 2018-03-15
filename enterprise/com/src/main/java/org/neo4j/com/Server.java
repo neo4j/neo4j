@@ -409,7 +409,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             if ( partialRequest == null )
             {
                 // This is the first chunk in a multi-chunk request
-                RequestType<T> type = getRequestContext( buffer.readByte() );
+                RequestType type = getRequestContext( buffer.readByte() );
                 RequestContext context = readContext( buffer );
                 ChannelBuffer targetBuffer = mapSlave( channel, context );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
@@ -420,7 +420,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         else
         {
             PartialRequest partialRequest = partialRequests.remove( channel );
-            RequestType<T> type;
+            RequestType type;
             RequestContext context;
             ChannelBuffer targetBuffer;
             ChannelBuffer bufferToReadFrom;
@@ -486,7 +486,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
     }
 
-    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
+    protected void responseWritten( RequestType type, Channel channel, RequestContext context )
     {
     }
 
@@ -509,7 +509,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return readRequestContext;
     }
 
-    protected abstract RequestType<T> getRequestContext( byte id );
+    protected abstract RequestType getRequestContext( byte id );
 
     protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
@@ -549,13 +549,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private class TargetCaller implements Response.Handler, Runnable
     {
-        private final RequestType<T> type;
+        private final RequestType type;
         private final Channel channel;
         private final RequestContext context;
         private final ChunkingChannelBuffer targetBuffer;
         private final ChannelBuffer bufferToReadFrom;
 
-        TargetCaller( RequestType<T> type, Channel channel, RequestContext context,
+        TargetCaller( RequestType type, Channel channel, RequestContext context,
                       ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
         {
             this.type = type;
@@ -619,9 +619,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
         final RequestContext context;
         final ChannelBuffer buffer;
-        final RequestType<T> type;
+        final RequestType type;
 
-        PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        PartialRequest( RequestType type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;
