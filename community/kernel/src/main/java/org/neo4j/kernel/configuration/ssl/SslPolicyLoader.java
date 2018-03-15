@@ -130,7 +130,7 @@ public class SslPolicyLoader
         return sslPolicy;
     }
 
-    private SslPolicy getOrCreateLegacyPolicy()
+    private synchronized SslPolicy getOrCreateLegacyPolicy()
     {
         if ( legacyPolicy != null )
         {
