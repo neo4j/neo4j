@@ -965,7 +965,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def detachDeleteNode(node: Long): Int = {
     try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
+      transactionalContext.dataWrite.nodeDetachDelete(node)
     } catch {
       case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
