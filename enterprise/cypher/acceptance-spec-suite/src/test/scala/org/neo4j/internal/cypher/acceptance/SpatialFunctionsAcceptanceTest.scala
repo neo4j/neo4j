@@ -72,12 +72,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
       "'cartesian-3D' is not a supported coordinate reference system for points",
-      "Cannot create 3D point with 2 coordinates"))
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
     failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point", List(
-      "Cannot create 2D point with 3 coordinates"))
+      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
@@ -88,12 +88,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
       "'WGS-84-3D' is not a supported coordinate reference system for points",
-      "Cannot create 3D point with 2 coordinates"))
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
     failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
-      "Cannot create 2D point with 3 coordinates"))
+      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should work with integer arguments") {

@@ -452,7 +452,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
         if ( crs.getDimension() != coordinates.length )
         {
-            throw new IllegalArgumentException( "Cannot create " + crs.getDimension() + "D point with " + coordinates.length + " coordinates" );
+            throw new IllegalArgumentException( "Cannot create point with " + crs.getDimension() + "D coordinate reference system and " + coordinates.length
+                    + " coordinates. Please consider using equivalent " + coordinates.length + "D coordinate reference system" );
         }
         return Values.pointValue( crs, coordinates );
     }
