@@ -53,15 +53,15 @@ public class GetSubClusterRoutersProcedure implements CallableProcedure
     private final ProcedureSignature procedureSignature =
             procedureSignature( GET_SUB_CLUSTER_ROUTERS.fullyQualifiedProcedureName() )
                     .in( DATABASE.parameterName(), Neo4jTypes.NTString )
-                    .out( ROUTERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTString ) )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
+                    .out( ROUTERS.parameterName(), Neo4jTypes.NTMap )
                     .description( DESCRIPTION )
                     .build();
 
     private final TopologyService topologyService;
     private final Config config;
 
-    public GetSubClusterRoutersProcedure(TopologyService topologyService, Config config )
+    public GetSubClusterRoutersProcedure( TopologyService topologyService, Config config )
     {
         this.topologyService = topologyService;
         this.config = config;

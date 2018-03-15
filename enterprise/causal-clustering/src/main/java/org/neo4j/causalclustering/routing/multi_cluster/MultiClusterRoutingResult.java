@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.causalclustering.routing.*;
+import org.neo4j.causalclustering.routing.RoutingResult;
+import org.neo4j.causalclustering.routing.Endpoint;
 
 /**
  * Simple struct containing the the result of Get*ClusterRouting procedure execution.
@@ -33,7 +34,7 @@ public class MultiClusterRoutingResult implements RoutingResult
     private final Map<String,List<Endpoint>> routers;
     private final long ttl;
 
-    public MultiClusterRoutingResult( Map<String,List<Endpoint>> routers, long ttl)
+    public MultiClusterRoutingResult( Map<String,List<Endpoint>> routers, long ttl )
     {
         this.routers = routers;
         this.ttl = ttl;
