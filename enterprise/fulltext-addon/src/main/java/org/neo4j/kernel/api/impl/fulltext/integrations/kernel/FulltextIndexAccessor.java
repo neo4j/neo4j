@@ -28,11 +28,12 @@ import java.util.Iterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndex;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndexReader;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
-import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
+import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -46,10 +47,10 @@ import static java.util.Collections.emptyIterator;
 
 public class FulltextIndexAccessor implements IndexAccessor
 {
-    private WritableFulltext luceneFulltext;
+    private FulltextIndex luceneFulltext;
     private FulltextIndexDescriptor descriptor;
 
-    FulltextIndexAccessor( WritableFulltext luceneFulltext, FulltextIndexDescriptor descriptor )
+    FulltextIndexAccessor( FulltextIndex luceneFulltext, FulltextIndexDescriptor descriptor )
     {
         this.luceneFulltext = luceneFulltext;
         this.descriptor = descriptor;
@@ -91,10 +92,16 @@ public class FulltextIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public IndexReader newReader()
+    public FulltextIndexReader newReader()
     {
-        //TODO support consistency check at some point
-        return IndexReader.EMPTY;
+        try
+        {
+            return luceneFulltext.getIndexReader();
+        }
+        catch ( IOException e )
+        {
+            throw new LuceneIndexReaderAcquisitionException( "Can't acquire index reader", e );
+        }
     }
 
     @Override
@@ -141,14 +148,6 @@ public class FulltextIndexAccessor implements IndexAccessor
         return !luceneFulltext.isValid();
     }
 
-    public ScoreEntityIterator query( String query ) throws IOException
-    {
-        try ( ReadOnlyFulltext indexReader = luceneFulltext.getIndexReader() )
-        {
-            return indexReader.query( query );
-        }
-    }
-
     private class FulltextIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;
@@ -165,7 +164,6 @@ public class FulltextIndexAccessor implements IndexAccessor
         @Override
         public void process( IndexEntryUpdate<?> update ) throws IOException
         {
-            // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );
 
             switch ( update.updateMode() )

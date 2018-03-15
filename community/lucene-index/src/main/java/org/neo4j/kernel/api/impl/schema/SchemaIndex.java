@@ -36,11 +36,6 @@ import org.neo4j.values.storable.Value;
  */
 public interface SchemaIndex extends DatabaseIndex
 {
-    LuceneIndexWriter getIndexWriter();
-
-    IndexReader getIndexReader() throws IOException;
-
-    IndexDescriptor getDescriptor();
 
     /**
      * Verifies uniqueness of property values present in this index.
@@ -66,27 +61,4 @@ public interface SchemaIndex extends DatabaseIndex
      */
     void verifyUniqueness( PropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
                     throws IOException, IndexEntryConflictException;
-
-    /**
-     * Check if this index is marked as online.
-     *
-     * @return <code>true</code> if index is online, <code>false</code> otherwise
-     * @throws IOException
-     */
-    boolean isOnline() throws IOException;
-
-    /**
-     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
-     *
-     * @throws IOException
-     */
-    void markAsOnline() throws IOException;
-
-    /**
-     * Writes the given failure message to the failure storage.
-     *
-     * @param failure the failure message.
-     * @throws IOException
-     */
-    void markAsFailed( String failure ) throws IOException;
 }

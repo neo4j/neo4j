@@ -109,5 +109,4 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
                     new WritableIndexPartitionFactory( writerConfigFactory ) );
         }
     }
-
 }

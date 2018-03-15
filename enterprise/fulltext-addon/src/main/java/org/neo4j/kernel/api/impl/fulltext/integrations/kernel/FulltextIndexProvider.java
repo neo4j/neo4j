@@ -19,24 +19,30 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
-import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndex;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndexBuilder;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextIndexReader;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
-import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -49,42 +55,43 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.EntityType;
 
-class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAccessor
+class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAdapter
 {
-    private final FulltextFactory factory;
-    private final IndexStorageFactory indexStorageFactory;
 
+    private final FileSystemAbstraction fileSystem;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
-    private final Map<IndexDescriptor,FulltextIndexAccessor> accessors;
     private final Map<String,FulltextIndexAccessor> accessorsByName;
+    private final Config config;
+    private final IndexStorageFactory indexStorageFactory;
+    private final OperationalMode operationalMode;
+    private final Analyzer analyzer;
     private final String analyzerClassName;
 
     FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, FileSystemAbstraction fileSystem,
             Config config, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory )
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory, OperationalMode operationalMode )
     {
         super( descriptor, priority, directoryStructureFactory );
+        this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
+        this.fileSystem = fileSystem;
+        this.config = config;
+        this.operationalMode = operationalMode;
+
 
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
 
         analyzerClassName = config.get( FulltextConfig.fulltext_default_analyzer );
-        factory = new FulltextFactory( indexStorageFactory, analyzerClassName, config );
-        accessors = new HashMap<>();
+        this.analyzer = getAnalyzer( analyzerClassName );
         accessorsByName = new HashMap<>();
-    }
-
-    public ScoreEntityIterator query( IndexDescriptor descriptor, String query ) throws IOException
-    {
-        return accessors.get( descriptor ).query( query );
     }
 
     @Override
@@ -96,6 +103,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         }
         catch ( TokenNotFoundException e )
         {
+            //TODO maybe MalformedSchemaRuleException?
             throw new RuntimeException( e );
         }
     }
@@ -103,18 +111,31 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
-        return new FulltextIndexPopulator( descriptor, fulltextIndex );
+        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( descriptor, config, analyzer )
+                .withFileSystem( fileSystem )
+                .withOperationalMode( operationalMode )
+                .withIndexStorage( getIndexStorage( indexId ) )
+                .withWriterConfig( () -> IndexWriterConfigs.population( analyzer ) )
+                .build();
+        if ( fulltextIndex.isReadOnly() )
+        {
+            throw new UnsupportedOperationException( "Can't create populator for read only index" );
+        }
+        return new FulltextLuceneIndexPopulator( descriptor, fulltextIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        WritableFulltext fulltextIndex = new WritableFulltext( factory.createFulltextIndex( indexId, descriptor ) );
+        FulltextIndex fulltextIndex = FulltextIndexBuilder.create( descriptor, config, analyzer )
+                .withFileSystem( fileSystem )
+                .withOperationalMode( operationalMode )
+                .withIndexStorage( getIndexStorage( indexId ) )
+                .withWriterConfig( () -> IndexWriterConfigs.standard( analyzer ) )
+                .build();
         fulltextIndex.open();
 
         FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
-        accessors.put( descriptor, fulltextIndexAccessor );
         accessorsByName.put( descriptor.identifier(), fulltextIndexAccessor );
         return fulltextIndexAccessor;
     }
@@ -122,7 +143,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
-        String failure = factory.getStoredIndexFailure( indexId );
+        String failure = getIndexStorage( indexId ).getStoredIndexFailure();
         if ( failure == null )
         {
             throw new IllegalStateException( "Index " + indexId + " isn't failed" );
@@ -133,7 +154,8 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
     {
-        String failure = factory.getStoredIndexFailure( indexId );
+        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
             return InternalIndexState.FAILED;
@@ -144,7 +166,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         }
         try
         {
-            return indexIsOnline( indexId, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+            return indexIsOnline( indexStorage, descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
         }
         catch ( IOException e )
         {
@@ -152,9 +174,9 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         }
     }
 
-    private boolean indexIsOnline( long indexId, FulltextIndexDescriptor descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, FulltextIndexDescriptor descriptor ) throws IOException
     {
-        try ( LuceneFulltext index = factory.createFulltextIndex( indexId, descriptor ) )
+        try ( DatabaseIndex index = FulltextIndexBuilder.create( descriptor, config, analyzer ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {
@@ -192,9 +214,9 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties )
     {
-        if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextAccessor.FIELD_ENTITY_ID ) ) )
+        if ( Arrays.stream( properties ).anyMatch( prop -> prop.equals( FulltextAdapter.FIELD_ENTITY_ID ) ) )
         {
-            throw new BadSchemaException( "Unable to index the property " + FulltextAccessor.FIELD_ENTITY_ID );
+            throw new BadSchemaException( "Unable to index the property " + FulltextAdapter.FIELD_ENTITY_ID );
         }
         int[] entityTokenIds;
         if ( type == EntityType.NODE )
@@ -217,7 +239,15 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         {
             throw new IndexNotFoundKernelException( "The requested fulltext index could not be accessed. Perhaps population has not completed yet?" );
         }
-        return fulltextIndexAccessor.query( queryString );
+        try ( FulltextIndexReader fulltextIndexReader = fulltextIndexAccessor.newReader() )
+        {
+            return fulltextIndexReader.query( queryString );
+        }
+    }
+
+    private PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
     }
 
     private class BadSchemaException extends IllegalArgumentException
@@ -226,5 +256,20 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
         {
             super( message );
         }
+    }
+
+    private Analyzer getAnalyzer( String analyzerClassName )
+    {
+        Analyzer analyzer;
+        try
+        {
+            Class configuredAnalyzer = Class.forName( analyzerClassName );
+            analyzer = (Analyzer) configuredAnalyzer.newInstance();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create the configured analyzer", e );
+        }
+        return analyzer;
     }
 }

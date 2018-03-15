@@ -36,7 +36,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -66,7 +66,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithNumber() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -94,7 +94,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithBoolean() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -122,7 +122,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldFindNodeWithArrays() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -153,7 +153,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -194,7 +194,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -233,7 +233,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -285,7 +285,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -316,7 +316,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop", "prop2" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -349,7 +349,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -387,8 +387,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        IndexDescriptor nodes = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAccessor.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
+        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
@@ -427,7 +427,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void fuzzyQueryShouldBeFuzzy() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -462,7 +462,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -493,8 +493,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        IndexDescriptor nodes = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAccessor.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
+        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
@@ -545,8 +545,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             tx.success();
         }
 
-        IndexDescriptor nodes = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
-        IndexDescriptor rels = fulltextAccessor.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
+        IndexDescriptor nodes = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor rels = fulltextAdapter.indexDescriptorFor( "rels", RELATIONSHIP, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( nodes );
@@ -572,7 +572,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldReturnMatchesThatContainLuceneSyntaxCharacters() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -603,7 +603,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void exactMatchAllShouldOnlyReturnStuffThatMatchesAll() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -646,7 +646,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void fuzzyMatchAllShouldOnlyReturnStuffThatKindaMatchesAll() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "first", "last" );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -689,7 +689,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToUpdateAndQueryAfterIndexChange() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -720,7 +720,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().indexDrop( descriptor );
-            descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], "prop2" );
+            descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], "prop2" );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
             transaction.success();
         }
@@ -744,7 +744,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToDropAndReaddIndex() throws Exception
     {
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );

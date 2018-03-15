@@ -41,7 +41,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
 
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -73,7 +73,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
@@ -107,7 +107,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         long firstID;
         long secondID;
         applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
-        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        IndexDescriptor descriptor = fulltextAdapter.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );

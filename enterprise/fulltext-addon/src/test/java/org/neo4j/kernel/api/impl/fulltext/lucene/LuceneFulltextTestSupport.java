@@ -39,7 +39,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -64,7 +64,7 @@ public class LuceneFulltextTestSupport
     @Rule
     public RuleChain rules = RuleChain.outerRule( repeatRule ).around( db );
 
-    protected FulltextAccessor fulltextAccessor;
+    protected FulltextAdapter fulltextAdapter;
 
     protected RepeatRule createRepeatRule()
     {
@@ -74,19 +74,19 @@ public class LuceneFulltextTestSupport
     @Before
     public void setUp()
     {
-        fulltextAccessor = getAccessor();
+        fulltextAdapter = getAccessor();
     }
 
     public void applySetting( Setting<String> setting, String value ) throws IOException
     {
         db.restartDatabase( setting.name(), value );
         db.ensureStarted();
-        fulltextAccessor = getAccessor();
+        fulltextAdapter = getAccessor();
     }
 
-    private FulltextAccessor getAccessor()
+    private FulltextAdapter getAccessor()
     {
-        return (FulltextAccessor) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
+        return (FulltextAdapter) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )
@@ -124,7 +124,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
-        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
@@ -132,7 +132,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, false, matchAll );
-        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
@@ -150,7 +150,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( query, true, matchAll );
-        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
@@ -158,7 +158,7 @@ public class LuceneFulltextTestSupport
             throws IOException, IndexNotFoundKernelException
     {
         String queryString = FulltextQueryHelper.createQuery( Arrays.asList( query ), true, matchAll );
-        ScoreEntityIterator result = fulltextAccessor.query( indexName, queryString );
+        ScoreEntityIterator result = fulltextAdapter.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 

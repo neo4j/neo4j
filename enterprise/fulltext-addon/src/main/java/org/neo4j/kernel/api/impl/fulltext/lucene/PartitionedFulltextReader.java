@@ -36,10 +36,10 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
  *
  * @see SimpleFulltextReader
  */
-class PartitionedFulltextReader implements ReadOnlyFulltext
+class PartitionedFulltextReader extends FulltextIndexReader
 {
 
-    private final List<ReadOnlyFulltext> indexReaders;
+    private final List<FulltextIndexReader> indexReaders;
 
     PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
@@ -47,7 +47,7 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
                 Collectors.toList() ) );
     }
 
-    private PartitionedFulltextReader( List<ReadOnlyFulltext> readers )
+    private PartitionedFulltextReader( List<FulltextIndexReader> readers )
     {
         this.indexReaders = readers;
     }
@@ -58,7 +58,7 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         return partitionedOperation( reader -> innerQuery( reader, query ) );
     }
 
-    private ScoreEntityIterator innerQuery( ReadOnlyFulltext reader, String query )
+    private ScoreEntityIterator innerQuery( FulltextIndexReader reader, String query )
     {
 
         return reader.query( query );
@@ -77,7 +77,7 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         }
     }
 
-    private ScoreEntityIterator partitionedOperation( Function<ReadOnlyFulltext,ScoreEntityIterator> readerFunction )
+    private ScoreEntityIterator partitionedOperation( Function<FulltextIndexReader,ScoreEntityIterator> readerFunction )
     {
         return ScoreEntityIterator.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
     }

@@ -63,12 +63,12 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
 
     private IndexDescriptor getNewDescriptor( String[] entityTokens )
     {
-        return fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, "otherProp" );
+        return fulltextAdapter.indexDescriptorFor( "nodes", NODE, entityTokens, "otherProp" );
     }
 
     private IndexDescriptor getExistingDescriptor( String[] entityTokens )
     {
-        return fulltextAccessor.indexDescriptorFor( "nodes", NODE, entityTokens, PROP );
+        return fulltextAdapter.indexDescriptorFor( "nodes", NODE, entityTokens, PROP );
     }
 
     private void createInitialIndex( IndexDescriptor descriptor )
@@ -93,9 +93,9 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         await( newDescriptor );
         try ( Transaction ignore = db.beginTx() )
         {
-            ScoreEntityIterator bob = fulltextAccessor.query( "nodes", "bob" );
+            ScoreEntityIterator bob = fulltextAdapter.query( "nodes", "bob" );
             assertEquals( bobThreads * nodesCreatedPerThread, bob.stream().count() );
-            ScoreEntityIterator alice = fulltextAccessor.query( "nodes", "alice" );
+            ScoreEntityIterator alice = fulltextAdapter.query( "nodes", "alice" );
             assertEquals( 0, alice.stream().count() );
         }
     }

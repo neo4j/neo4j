@@ -34,34 +34,33 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.storageengine.api.EntityType;
 
 import static java.util.Collections.singletonMap;
 
-public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
+public class LuceneFulltext extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
     private final Analyzer analyzer;
     private final String identifier;
     private final EntityType type;
-    private Set<String> properties;
-    private static final String KEY_STATUS = "status";
-    private static final String ONLINE = "online";
-    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
+    private Collection<String> properties;
 
-    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, Collection<String> properties, Analyzer analyzer,
-            String identifier, EntityType type )
+    public LuceneFulltext( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer,
+            FulltextIndexDescriptor descriptor )
     {
-        super( indexStorage, partitionFactory );
-        this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );
+        super( storage, partitionFactory, descriptor );
         this.analyzer = analyzer;
-        this.identifier = identifier;
-        this.type = type;
+        this.identifier = descriptor.identifier();
+        this.type = descriptor.schema().entityType();
+        this.properties = descriptor.propertyNames();
     }
 
     @Override
@@ -91,72 +90,18 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
         return Objects.hash( identifier, type );
     }
 
-    PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex )
-    {
-        ensureOpen();
-        return new PartitionedIndexWriter( writableIndex );
-    }
-
-    public ReadOnlyFulltext getIndexReader() throws IOException
-    {
-        ensureOpen();
-        List<AbstractIndexPartition> partitions = getPartitions();
-        return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
-    }
-
-    private SimpleFulltextReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+    @Override
+    protected SimpleFulltextReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
         return new SimpleFulltextReader( partitionSearcher, properties.toArray( new String[0] ), analyzer );
     }
 
-    private PartitionedFulltextReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
+    @Override
+    protected PartitionedFulltextReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
-    }
-
-    /**
-     * Check if this index is marked as online.
-     *
-     * @return <code>true</code> if index is online, <code>false</code> otherwise
-     * @throws IOException
-     */
-    public boolean isOnline() throws IOException
-    {
-        ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
-        Directory directory = partition.getDirectory();
-        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
-        {
-            Map<String,String> userData = reader.getIndexCommit().getUserData();
-            return ONLINE.equals( userData.get( KEY_STATUS ) );
-        }
-    }
-
-    /**
-     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
-     *
-     * @throws IOException
-     */
-    public void markAsOnline() throws IOException
-    {
-        ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
-        IndexWriter indexWriter = partition.getIndexWriter();
-        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
-        flush( false );
-    }
-
-    /**
-     * Writes the given failure message to the failure storage.
-     *
-     * @param failure the failure message.
-     * @throws IOException
-     */
-    public void markAsFailed( String failure ) throws IOException
-    {
-        indexStorage.storeIndexFailure( failure );
     }
 }

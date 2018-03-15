@@ -26,8 +26,11 @@ import java.util.Collection;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -35,69 +38,34 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-public class FulltextIndexPopulator implements IndexPopulator
+public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<DatabaseIndex>
 {
     private final FulltextIndexDescriptor descriptor;
-    private final WritableFulltext index;
 
-    FulltextIndexPopulator( FulltextIndexDescriptor descriptor, WritableFulltext index )
+    public FulltextLuceneIndexPopulator( FulltextIndexDescriptor descriptor, DatabaseIndex luceneFulltext )
     {
+        super( luceneFulltext );
         this.descriptor = descriptor;
-        this.index = index;
     }
 
     @Override
-    public void create() throws IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
     {
-        index.create();
-        index.open();
+        luceneIndex.getIndexWriter().addDocuments( updates.size(), () -> updates.stream().map( this::updateAsDocument ).iterator() );
     }
 
     @Override
-    public void drop() throws IOException
-    {
-        index.drop();
-    }
-
-    @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
-    {
-        index.getIndexWriter().addDocuments( updates.size(), () -> updates.stream().map( this::updateAsDocument ).iterator() );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
     {
         //Sure whatever
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
         return new PopulatingFulltextIndexUpdater();
     }
 
-    @Override
-    public void close( boolean populationCompletedSuccessfully ) throws IOException
-    {
-        try
-        {
-            if ( populationCompletedSuccessfully )
-            {
-                index.markAsOnline();
-            }
-        }
-        finally
-        {
-            IOUtils.closeAllSilently( index );
-        }
-    }
-
-    @Override
-    public void markAsFailed( String failure ) throws IOException
-    {
-        index.markAsFailed( failure );
-    }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
@@ -127,16 +95,16 @@ public class FulltextIndexPopulator implements IndexPopulator
             {
             case ADDED:
                 long nodeId = update.getEntityId();
-                index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
                         LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), update.values() ) );
 
             case CHANGED:
                 long nodeId1 = update.getEntityId();
-                index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId1 ),
+                luceneIndex.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId1 ),
                         LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId1, descriptor.propertyNames(), update.values() ) );
                 break;
             case REMOVED:
-                index.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );
+                luceneIndex.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );
                 break;
             default:
                 throw new UnsupportedOperationException();

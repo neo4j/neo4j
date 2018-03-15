@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 
-public interface FulltextAccessor
+public interface FulltextAdapter
 {
     String FIELD_ENTITY_ID = "__lucene__fulltext__addon__internal__id__";
 

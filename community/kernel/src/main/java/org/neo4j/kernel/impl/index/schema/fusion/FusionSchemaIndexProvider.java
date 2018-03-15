@@ -58,18 +58,18 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
         <T> T select( T nativeInstance, T spatialInstance, T temporalInstance, T luceneInstance, Value... values );
     }
 
-    private final IndexProvider numberProvider;
-    private final IndexProvider spatialProvider;
-    private final IndexProvider temporalProvider;
-    private final IndexProvider luceneProvider;
+    private final IndexProvider<SchemaIndexDescriptor> numberProvider;
+    private final IndexProvider<SchemaIndexDescriptor> spatialProvider;
+    private final IndexProvider<SchemaIndexDescriptor> temporalProvider;
+    private final IndexProvider<SchemaIndexDescriptor> luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
     public FusionSchemaIndexProvider(
-            IndexProvider numberProvider,
-            IndexProvider spatialProvider,
-            IndexProvider temporalProvider,
-            IndexProvider luceneProvider,
+            IndexProvider<SchemaIndexDescriptor> numberProvider,
+            IndexProvider<SchemaIndexDescriptor> spatialProvider,
+            IndexProvider<SchemaIndexDescriptor> temporalProvider,
+            IndexProvider<SchemaIndexDescriptor> luceneProvider,
             Selector selector,
             Descriptor descriptor,
             int priority,

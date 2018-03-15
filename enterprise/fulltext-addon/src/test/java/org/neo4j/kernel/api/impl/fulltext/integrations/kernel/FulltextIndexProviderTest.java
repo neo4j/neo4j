@@ -161,10 +161,10 @@ public class FulltextIndexProviderTest
         await( fulltextIndexDescriptor );
         long thirdNodeid;
         thirdNodeid = createTheThirdNode();
-        verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeid );
+        verifyNodeData( provider, thirdNodeid );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
-        verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeid );
+        verifyNodeData( provider, thirdNodeid );
     }
 
     @Test
@@ -191,10 +191,10 @@ public class FulltextIndexProviderTest
             ho.setProperty( "ho", "value3" );
             transaction.success();
         }
-        verifyRelationshipData( fulltextIndexDescriptor, provider, secondRelId );
+        verifyRelationshipData( provider, secondRelId );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
-        verifyRelationshipData( fulltextIndexDescriptor, provider, secondRelId );
+        verifyRelationshipData( provider, secondRelId );
     }
 
     @Test
@@ -207,10 +207,10 @@ public class FulltextIndexProviderTest
         await( fulltextIndexDescriptor );
         long thirdNodeId;
         thirdNodeId = createTheThirdNode();
-        verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeId );
+        verifyNodeData( provider, thirdNodeId );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).get( FulltextIndexProviderFactory.DESCRIPTOR );
-        verifyNodeData( fulltextIndexDescriptor, provider, thirdNodeId );
+        verifyNodeData( provider, thirdNodeId );
     }
 
     private IndexDescriptor createIndex( IndexProvider provider, int[] entityTokens, int[] propertyIds )
@@ -255,21 +255,21 @@ public class FulltextIndexProviderTest
         return secondNodeId;
     }
 
-    private void verifyNodeData( IndexDescriptor fulltextIndexDescriptor, FulltextIndexProvider provider, long thircNodeid ) throws IOException
+    private void verifyNodeData( FulltextIndexProvider provider, long thircNodeid ) throws IOException, IndexNotFoundKernelException
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "value" );
+            ScoreEntityIterator result = provider.query( "fulltext", "value" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
-            result = provider.query( fulltextIndexDescriptor, "villa" );
+            result = provider.query( "fulltext", "villa" );
             assertTrue( result.hasNext() );
             assertEquals( thircNodeid, result.next().entityId() );
             assertFalse( result.hasNext() );
 
-            result = provider.query( fulltextIndexDescriptor, "value3" );
+            result = provider.query( "fulltext", "value3" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
             assertTrue( result.hasNext() );
@@ -279,21 +279,21 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private void verifyRelationshipData( IndexDescriptor fulltextIndexDescriptor, FulltextIndexProvider provider, long secondRelId ) throws IOException
+    private void verifyRelationshipData( FulltextIndexProvider provider, long secondRelId ) throws IOException, IndexNotFoundKernelException
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            ScoreEntityIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
+            ScoreEntityIterator result = provider.query( "fulltext", "valuuu" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
             assertFalse( result.hasNext() );
 
-            result = provider.query( fulltextIndexDescriptor, "villa" );
+            result = provider.query( "fulltext", "villa" );
             assertTrue( result.hasNext() );
             assertEquals( secondRelId, result.next().entityId() );
             assertFalse( result.hasNext() );
 
-            result = provider.query( fulltextIndexDescriptor, "value3" );
+            result = provider.query( "fulltext", "value3" );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next().entityId() );
             assertTrue( result.hasNext() );

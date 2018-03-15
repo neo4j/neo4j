@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes.
  * Performs sampling using {@link DefaultNonUniqueIndexSampler}.
  */
-public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
+public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIndex>
 {
     private final IndexSamplingConfig samplingConfig;
     private NonUniqueIndexSampler sampler;

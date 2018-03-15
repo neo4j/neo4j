@@ -19,58 +19,28 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.IOException;
 
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
-public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
+public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext, FulltextIndexReader> implements FulltextIndex
 {
-    private PartitionedIndexWriter indexWriter;
-
-    public WritableFulltext( LuceneFulltext luceneFulltext )
+    public WritableFulltext( PartitionedIndexStorage storage, WritableIndexPartitionFactory partitionFactory, Analyzer analyzer, FulltextIndexDescriptor descriptor )
     {
-        super( luceneFulltext );
+        super( new LuceneFulltext( storage, partitionFactory, analyzer, descriptor ) );
     }
 
-    @Override
-    public void open() throws IOException
-    {
-        super.open();
-        indexWriter = luceneIndex.getIndexWriter( this );
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        super.close();
-        indexWriter = null;
-    }
-
-    @Override
-    public void drop() throws IOException
-    {
-        super.drop();
-        indexWriter = null;
-    }
-
-    public void markAsOnline() throws IOException
-    {
-        luceneIndex.markAsOnline();
-    }
-
-    public PartitionedIndexWriter getIndexWriter()
-    {
-        return indexWriter;
-    }
-
-    public void markAsFailed( String failure ) throws IOException
-    {
-        luceneIndex.markAsFailed( failure );
-    }
-
-    public ReadOnlyFulltext getIndexReader() throws IOException
-    {
-        return luceneIndex.getIndexReader();
-    }
+//    @Override
+//    public ScoreEntityIterator query( String query ) throws IOException
+//    {
+//        try ( FulltextIndexReader indexReader = getIndexReader() )
+//        {
+//            return indexReader.query( query );
+//        }
+//    }
 }

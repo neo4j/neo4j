@@ -32,14 +32,14 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
-import static org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor.FIELD_ENTITY_ID;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter.FIELD_ENTITY_ID;
 
 /**
  * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
  * @see PartitionedFulltextReader
  */
-class SimpleFulltextReader implements ReadOnlyFulltext
+class SimpleFulltextReader extends FulltextIndexReader
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;

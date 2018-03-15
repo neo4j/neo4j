@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextQueryHelper;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ScoreEntityIterator.ScoreEntry;
@@ -60,7 +60,7 @@ public class BloomProcedures
     public KernelTransaction tx;
 
     @Context
-    public FulltextAccessor accessor;
+    public FulltextAdapter accessor;
 
     private static final Function<ScoreEntry,EntityOutput> QUERY_RESULT_MAPPER = result -> new EntityOutput( result.entityId(), result.score() );
 

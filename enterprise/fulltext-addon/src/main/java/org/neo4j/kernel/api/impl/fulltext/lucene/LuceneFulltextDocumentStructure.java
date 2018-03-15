@@ -31,7 +31,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAdapter;
 import org.neo4j.values.storable.Value;
 
 import static org.apache.lucene.document.Field.Store.NO;
@@ -68,7 +68,7 @@ public class LuceneFulltextDocumentStructure
 
     public static Term newTermForChangeOrRemove( long id )
     {
-        return new Term( FulltextAccessor.FIELD_ENTITY_ID, "" + id );
+        return new Term( FulltextAdapter.FIELD_ENTITY_ID, "" + id );
     }
 
     private static class DocWithId
@@ -80,8 +80,8 @@ public class LuceneFulltextDocumentStructure
 
         private DocWithId()
         {
-            idField = new StringField( FulltextAccessor.FIELD_ENTITY_ID, "", NO );
-            idValueField = new NumericDocValuesField( FulltextAccessor.FIELD_ENTITY_ID, 0L );
+            idField = new StringField( FulltextAdapter.FIELD_ENTITY_ID, "", NO );
+            idValueField = new NumericDocValuesField( FulltextAdapter.FIELD_ENTITY_ID, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -124,7 +124,7 @@ public class LuceneFulltextDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( FulltextAccessor.FIELD_ENTITY_ID ) )
+                if ( !fieldName.equals( FulltextAdapter.FIELD_ENTITY_ID ) )
                 {
                     it.remove();
                 }

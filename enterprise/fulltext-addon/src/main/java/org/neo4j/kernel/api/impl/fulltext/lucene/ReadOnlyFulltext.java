@@ -19,15 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-public interface ReadOnlyFulltext extends AutoCloseable
-{
-    /**
-     * Queires the fulltext index with the given lucene-syntax query
-     * @param query the lucene query
-     * @return A {@link ScoreEntityIterator} over the results
-     */
-    ScoreEntityIterator query( String query );
+import org.apache.lucene.analysis.Analyzer;
 
-    @Override
-    void close();
+import java.io.IOException;
+
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
+import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
+import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+
+public class ReadOnlyFulltext extends ReadOnlyAbstractDatabaseIndex<LuceneFulltext,FulltextIndexReader> implements FulltextIndex
+{
+
+    public ReadOnlyFulltext( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, Analyzer analyzer, FulltextIndexDescriptor descriptor )
+    {
+        super( new LuceneFulltext( storage, partitionFactory, analyzer, descriptor ) );
+    }
+//
+//    @Override
+//    public ScoreEntityIterator query( String query ) throws IOException
+//    {
+//        try ( FulltextIndexReader indexReader = getIndexReader() )
+//        {
+//            return indexReader.query( query );
+//        }
+//    }
 }

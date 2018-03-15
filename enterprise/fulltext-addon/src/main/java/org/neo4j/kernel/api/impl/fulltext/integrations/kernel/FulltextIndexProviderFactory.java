@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 
@@ -64,11 +65,13 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
+        OperationalMode operationalMode = context.databaseInfo().operationalMode;
 
         FulltextIndexProvider provider =
                 new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), fileSystemAbstraction, config,
-                        dependencies.propertyKeyTokenHolder(), dependencies.labelTokenHolder(), dependencies.relationshipTypeTokenHolder(), directoryFactory );
-        dependencies.procedures().registerComponent( FulltextAccessor.class, procContext -> provider, true );
+                        dependencies.propertyKeyTokenHolder(), dependencies.labelTokenHolder(), dependencies.relationshipTypeTokenHolder(), directoryFactory,
+                        operationalMode );
+        dependencies.procedures().registerComponent( FulltextAdapter.class, procContext -> provider, true );
 
         return provider;
     }
