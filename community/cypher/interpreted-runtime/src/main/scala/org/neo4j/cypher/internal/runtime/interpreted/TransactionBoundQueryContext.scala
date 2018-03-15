@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 import org.neo4j.kernel.impl.api.store.{DefaultIndexReference, RelationshipIterator}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
@@ -136,12 +135,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createNodeId(): Long = writes().nodeCreate()
 
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
-    val relId = transactionalContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
+    val relId = transactionalContext.kernelTransaction.dataWrite().relationshipCreate(start, relType, end)
     fromRelationshipProxy(entityAccessor.newRelationshipProxy(relId, start, relType, end))
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
-    transactionalContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
+    transactionalContext.kernelTransaction.tokenWrite().relationshipTypeGetOrCreateForName(relTypeName)
 
   override def getLabelsForNode(node: Long): ListValue = {
     val cursor = nodeCursor
@@ -172,7 +171,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getOrCreateLabelId(labelName: String): Int = {
     val id = tokenRead.nodeLabel(labelName)
-    if (id != KeyReadOperations.NO_SUCH_LABEL) id
+    if (id != TokenRead.NO_TOKEN) id
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
@@ -310,7 +309,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) =>
-      if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
+      if (transactionalContext.kernelTransaction.dataWrite().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = {

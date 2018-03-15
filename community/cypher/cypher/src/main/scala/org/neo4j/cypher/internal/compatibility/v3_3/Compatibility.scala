@@ -130,7 +130,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
             notificationLoggerV3_3, graphStatisticsV3_3))
 
         val graphStatisticsV3_4 = InstrumentedGraphStatisticsV3_4(
-          TransactionBoundGraphStatistics(transactionalContext.dataRead, transactionalContext.tc.readOperations()),
+          TransactionBoundGraphStatistics(transactionalContext.dataRead, transactionalContext.schemaRead),
           graphStatisticsSnapshotV3_4)
         val planContextV3_4 = new ExceptionTranslatingPlanContextV3_4(
           new TransactionBoundPlanContext(tcV3_4, notificationLoggerV3_4, graphStatisticsV3_4))
