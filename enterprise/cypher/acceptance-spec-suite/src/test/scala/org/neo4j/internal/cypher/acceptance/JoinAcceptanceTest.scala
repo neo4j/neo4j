@@ -147,18 +147,6 @@ test("larger optional match join should not crash") {
     graph.execute(query) // should not crash
   }
 
-  test("unfulfillable join hint should not crash") {
-    // can use join on (b,c) only
-    val query =
-      """
-        |MATCH (b:B)
-        |MATCH (c:C)
-        |OPTIONAL MATCH (c)-->(a:A)<--(b)
-        |USING JOIN ON c
-        |RETURN a,b,c""".stripMargin
-    graph.execute(query) // should not crash
-  }
-
   test("order in which join hints are solved should not matter") {
     val query =
       """MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
