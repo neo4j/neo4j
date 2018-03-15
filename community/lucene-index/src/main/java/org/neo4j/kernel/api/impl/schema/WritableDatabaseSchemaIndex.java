@@ -38,7 +38,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Writable schema index
  */
-public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex,AbstractIndexReader> implements SchemaIndex
+public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<LuceneSchemaIndex,IndexReader> implements SchemaIndex
 {
 
     public WritableDatabaseSchemaIndex( PartitionedIndexStorage storage, IndexDescriptor descriptor,

@@ -35,7 +35,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
  * Lucene index that may consist of one or multiple separate lucene indexes that are represented as independent
  * {@link AbstractIndexPartition partitions}.
  */
-public interface DatabaseIndex extends Closeable
+public interface DatabaseIndex<READER extends IndexReader> extends Closeable
 {
     /**
      * Creates new index.
@@ -129,7 +129,7 @@ public interface DatabaseIndex extends Closeable
 
     LuceneIndexWriter getIndexWriter();
 
-    IndexReader getIndexReader() throws IOException;
+    READER getIndexReader() throws IOException;
 
     IndexDescriptor getDescriptor();
 

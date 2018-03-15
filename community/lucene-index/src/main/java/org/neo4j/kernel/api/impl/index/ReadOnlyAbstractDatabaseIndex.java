@@ -34,7 +34,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
  * allow read only operations only on top of it.
  * @param <INDEX> - particular index implementation
  */
-public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex
+public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
 {
     protected INDEX luceneIndex;
 

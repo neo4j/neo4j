@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAdapter
 {
@@ -178,7 +179,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, FulltextIndexDescriptor descriptor ) throws IOException
     {
-        try ( DatabaseIndex index = FulltextIndexBuilder.create( descriptor, config, analyzer ).withIndexStorage( indexStorage ).build() )
+        try ( FulltextIndex index = FulltextIndexBuilder.create( descriptor, config, analyzer ).withIndexStorage( indexStorage ).build() )
         {
             if ( index.exists() )
             {

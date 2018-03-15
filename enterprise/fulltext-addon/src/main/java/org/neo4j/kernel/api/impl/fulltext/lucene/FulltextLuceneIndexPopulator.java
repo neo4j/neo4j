@@ -30,13 +30,14 @@ import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<DatabaseIndex>
+public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<FulltextIndex>
 {
     private final FulltextIndexDescriptor descriptor;
 
-    public FulltextLuceneIndexPopulator( FulltextIndexDescriptor descriptor, DatabaseIndex luceneFulltext )
+    public FulltextLuceneIndexPopulator( FulltextIndexDescriptor descriptor, FulltextIndex luceneFulltext )
     {
         super( luceneFulltext );
         this.descriptor = descriptor;
@@ -51,7 +52,7 @@ public class FulltextLuceneIndexPopulator extends LuceneIndexPopulator<DatabaseI
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
     {
-        //Sure whatever
+        //Fulltext index does not care about constraints.
     }
 
     @Override

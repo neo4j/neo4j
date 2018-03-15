@@ -19,116 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
-import org.apache.lucene.document.Document;
-
-import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexReaderAcquisitionException;
-import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
-import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
+import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
-import static java.util.Collections.emptyIterator;
-
-public class FulltextIndexAccessor implements IndexAccessor
+public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader, FulltextIndex,FulltextIndexDescriptor>
 {
-    private FulltextIndex luceneFulltext;
-    private FulltextIndexDescriptor descriptor;
-
-    public FulltextIndexAccessor( FulltextIndex luceneFulltext, FulltextIndexDescriptor descriptor )
+    public FulltextIndexAccessor( FulltextIndex luceneIndex, FulltextIndexDescriptor descriptor )
     {
-        this.luceneFulltext = luceneFulltext;
-        this.descriptor = descriptor;
+        super( luceneIndex, descriptor );
     }
 
     @Override
-    public void drop() throws IOException
+    public FulltextIndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
-        luceneFulltext.drop();
-    }
-
-    @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
-    {
-        if ( luceneFulltext.isReadOnly() )
-        {
-            throw new UnsupportedOperationException( "Can't create updater for read only index." );
-        }
         return new FulltextIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
-    }
-
-    @Override
-    public void force( IOLimiter ioLimiter ) throws IOException
-    {
-        luceneFulltext.markAsOnline();
-        luceneFulltext.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void refresh() throws IOException
-    {
-        luceneFulltext.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        luceneFulltext.close();
-    }
-
-    @Override
-    public FulltextIndexReader newReader()
-    {
-        try
-        {
-            return luceneFulltext.getIndexReader();
-        }
-        catch ( IOException e )
-        {
-            throw new LuceneIndexReaderAcquisitionException( "Can't acquire index reader", e );
-        }
-    }
-
-    @Override
-    public BoundedIterable<Long> newAllEntriesReader()
-    {
-        //TODO support consistency check at some point
-        BoundedIterable<Document> empty = new BoundedIterable<Document>()
-        {
-            @Override
-            public long maxCount()
-            {
-                return 0;
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-            }
-
-            @Override
-            public Iterator<Document> iterator()
-            {
-                return emptyIterator();
-            }
-        };
-        return new LuceneAllEntriesIndexAccessorReader( empty );
-    }
-
-    @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
-    {
-        return luceneFulltext.snapshot();
     }
 
     @Override
@@ -137,84 +48,35 @@ public class FulltextIndexAccessor implements IndexAccessor
         //The fulltext index does not care about constraints.
     }
 
-    @Override
-    public boolean isDirty()
+    private class FulltextIndexUpdater extends AbstractLuceneIndexUpdater
     {
-        return !luceneFulltext.isValid();
-    }
-
-    private class FulltextIndexUpdater implements IndexUpdater
-    {
-        private final boolean idempotent;
-        private final boolean refresh;
-
-        private boolean hasChanges;
 
         private FulltextIndexUpdater( boolean idempotent, boolean refresh )
         {
-            this.idempotent = idempotent;
-            this.refresh = refresh;
+            super( idempotent, refresh );
         }
 
-        @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException
+        protected void addIdempotent( long nodeId, Value[] values ) throws IOException
         {
-            assert update.indexKey().schema().equals( descriptor.schema() );
-
-            switch ( update.updateMode() )
-            {
-            case ADDED:
-                if ( idempotent )
-                {
-                    addIdempotent( update.getEntityId(), update.values() );
-                }
-                else
-                {
-                    add( update.getEntityId(), update.values() );
-                }
-                break;
-            case CHANGED:
-                change( update.getEntityId(), update.values() );
-                break;
-            case REMOVED:
-                remove( update.getEntityId() );
-                break;
-            default:
-                throw new UnsupportedOperationException();
-            }
-            hasChanges = true;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            if ( hasChanges && refresh )
-            {
-                luceneFulltext.maybeRefreshBlocking();
-            }
-        }
-
-        private void addIdempotent( long nodeId, Value[] values ) throws IOException
-        {
-            luceneFulltext.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
+            writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
-        private void add( long nodeId, Value[] values ) throws IOException
+        protected void add( long nodeId, Value[] values ) throws IOException
         {
-            luceneFulltext.getIndexWriter().addDocument(
+            writer.addDocument(
                     LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
-        private void change( long nodeId, Value[] values ) throws IOException
+        protected void change( long nodeId, Value[] values ) throws IOException
         {
-            luceneFulltext.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
+            writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), values ) );
         }
 
-        void remove( long nodeId ) throws IOException
+        protected void remove( long nodeId ) throws IOException
         {
-            luceneFulltext.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ) );
+            writer.deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ) );
         }
     }
 }
