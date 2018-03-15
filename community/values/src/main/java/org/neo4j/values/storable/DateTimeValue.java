@@ -449,7 +449,10 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 {
                     ZoneId thisZone = value.getZone();
                     ZoneId thatZone = that.getZone();
-                    if ( areDifferentZones( thisZone, thatZone ) )
+                    boolean thisIsOffset = thisZone instanceof ZoneOffset;
+                    boolean thatIsOffset = thatZone instanceof ZoneOffset;
+                    cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
+                    if ( cmp == 0 && areDifferentZones( thisZone, thatZone ) )
                     {
                         cmp = thisZone.getId().compareTo( thatZone.getId() );
                     }

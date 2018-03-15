@@ -82,7 +82,7 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-            if ( compare == 0 && ( differentValidZoneId( other ) || differentValidZoneOffset( other ) ) )
+            if ( compare == 0 && hasValidTimeZone() && other.hasValidTimeZone() )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
@@ -129,15 +129,8 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
     }
 
     // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-    private boolean differentValidZoneOffset( ZonedDateTimeSchemaKey other )
+    private boolean hasValidTimeZone()
     {
-        return zoneOffsetMinutes != other.zoneOffsetMinutes &&
-                TimeZones.validZoneOffset( zoneOffsetMinutes * 60 ) && TimeZones.validZoneOffset( other.zoneOffsetMinutes * 60 );
-    }
-
-    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-    private boolean differentValidZoneId( ZonedDateTimeSchemaKey other )
-    {
-        return zoneId != other.zoneId && TimeZones.validZoneId( zoneId ) && TimeZones.validZoneId( other.zoneId );
+        return TimeZones.validZoneId( zoneId ) || TimeZones.validZoneOffset( zoneOffsetMinutes * 60 );
     }
 }
