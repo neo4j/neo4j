@@ -394,28 +394,37 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return fields;
     }
 
+    private static CoordinateReferenceSystem findSpecifiedCRS( AnyValue[] fields )
+    {
+        AnyValue crsValue = fields[PointValueField.CRS.ordinal()];
+        AnyValue sridValue = fields[PointValueField.SRID.ordinal()];
+        if ( crsValue != null && sridValue != null )
+        {
+            throw new IllegalArgumentException( "Cannot specify both CRS and SRID" );
+        }
+        else if ( crsValue != null )
+        {
+            TextValue crsName = (TextValue) crsValue;
+            return CoordinateReferenceSystem.byName( crsName.stringValue() );
+        }
+        else if ( sridValue != null )
+        {
+            NumberValue srid = (NumberValue) sridValue;
+            return CoordinateReferenceSystem.get( (int) srid.longValue() );
+        }
+        else
+        {
+            return null;
+        }
+    }
+
     /**
      * This contains the logic to decide the default coordinate reference system based on the input fields
      */
     private static PointValue fromInputFields( AnyValue[] fields )
     {
-        CoordinateReferenceSystem crs;
+        CoordinateReferenceSystem crs = findSpecifiedCRS( fields );
         double[] coordinates;
-
-        AnyValue crsValue = fields[PointValueField.CRS.ordinal()];
-        if ( crsValue != null )
-        {
-            TextValue crsName = (TextValue) crsValue;
-            crs = CoordinateReferenceSystem.byName( crsName.stringValue() );
-            if ( crs == null )
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
-            }
-        }
-        else
-        {
-            crs = null;
-        }
 
         AnyValue xValue = fields[PointValueField.X.ordinal()];
         AnyValue yValue = fields[PointValueField.Y.ordinal()];
@@ -500,7 +509,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         LATITUDE( NUMBER ),
         LONGITUDE( NUMBER ),
         HEIGHT( NUMBER ),
-        CRS( TEXT );
+        CRS( TEXT ),
+        SRID( NUMBER );
 
         PointValueField( ValueGroup valueType )
         {
@@ -536,6 +546,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             return getNthCoordinate( 2, fieldName, true );
         case "crs":
             return Values.stringValue( crs.toString() );
+        case "srid":
+            return Values.intValue( crs.getCode() );
         default:
             throw new IllegalArgumentException( "No such field: " + fieldName );
         }
