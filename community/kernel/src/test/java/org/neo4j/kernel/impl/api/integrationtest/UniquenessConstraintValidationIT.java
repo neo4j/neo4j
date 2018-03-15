@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -312,7 +311,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             createLabeledNode( transaction, "Item", "id", 2 );
 
             // then I should find the original node
-            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, IndexOrder.NONE, exact( propId, Values.of( 1 ) ) ),
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                     equalTo( ourNode ) );
         }
         commit();
@@ -343,7 +342,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
             createLabeledNode( transaction, "Person", "id", 2 );
 
             // then I should find the original node
-            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, IndexOrder.NONE, exact( propId, Values.of( 1 ) ) ),
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                     equalTo( ourNode ) );
         }
         commit();

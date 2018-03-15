@@ -45,13 +45,11 @@ public interface Read
      * Note that this is a very special method and should be use with caution. It has special locking semantics in
      * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
      * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
-     *
-     * @param index {@link IndexReference} referencing index to query.
-     * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
+     *  @param index {@link IndexReference} referencing index to query.
      * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    long nodeUniqueIndexSeek( IndexReference index, IndexOrder indexOrder, IndexQuery.ExactPredicate... predicates )
+    long nodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
             throws KernelException;
     /**
      * @param index {@link IndexReference} referencing index to query.

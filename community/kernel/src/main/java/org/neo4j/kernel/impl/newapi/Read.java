@@ -152,8 +152,7 @@ abstract class Read implements TxStateHolder,
 
     public final long nodeUniqueIndexSeek(
             IndexReference index,
-            IndexOrder indexOrder,
-            IndexQuery.ExactPredicate...predicates )
+            IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( index );
@@ -169,12 +168,12 @@ abstract class Read implements TxStateHolder,
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
-            nodeIndexSeek( index, cursor, indexOrder, predicates );
+            nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
             if ( !cursor.next() )
             {
                 locks.releaseShared( INDEX_ENTRY, indexEntryId );
                 locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                nodeIndexSeek( index, cursor, indexOrder, predicates );
+                nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
                 if ( cursor.next() ) // we found it under the exclusive lock
                 {
                     // downgrade to a shared lock

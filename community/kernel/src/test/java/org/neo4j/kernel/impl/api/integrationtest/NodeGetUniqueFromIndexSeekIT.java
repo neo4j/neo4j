@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
@@ -85,7 +84,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         Read read = newTransaction().dataRead();
         int propertyId = index.properties()[0];
-        long foundId = read.nodeUniqueIndexSeek( index, IndexOrder.NONE, exact( propertyId, value ) );
+        long foundId = read.nodeUniqueIndexSeek( index, exact( propertyId, value ) );
         commit();
 
         // then
@@ -102,7 +101,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         KernelTransaction transaction = newTransaction();
-        long foundId = transaction.dataRead().nodeUniqueIndexSeek( index, IndexOrder.NONE, exact( propertyId1, value ) );
+        long foundId = transaction.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
         commit();
 
         // then
@@ -121,8 +120,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         KernelTransaction transaction = newTransaction();
         long foundId = transaction.dataRead().nodeUniqueIndexSeek( index,
-                                                                IndexOrder.NONE,
-                                                                exact( propertyId1, value1 ),
+                exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
         commit();
 
@@ -142,8 +140,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         KernelTransaction transaction = newTransaction();
         long foundId =  transaction.dataRead().nodeUniqueIndexSeek( index,
-                                                                IndexOrder.NONE,
-                                                                exact( propertyId1, value1 ),
+                exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
         commit();
 
@@ -188,7 +185,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
                   KernelTransaction transaction = statementContextSupplier
                           .getKernelTransactionBoundToThisThread( true ) )
             {
-                transaction.dataRead().nodeUniqueIndexSeek( index, IndexOrder.NONE, exact( propertyId1, value ) );
+                transaction.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
                 tx.success();
             }
             catch ( KernelException e )
