@@ -56,7 +56,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val pattern = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint1 = UsingIndexHint(varFor("a"), lblName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val hint2 = UsingIndexHint(varFor("b"), lblName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint1, hint2))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Seq(hint1, hint2))
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val bPlan = newMockedLogicalPlan(solveds, cardinalities, "b")
@@ -82,7 +82,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bNode = "b"
     val pattern = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Seq(hint))
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val bPlan = newMockedLogicalPlan(solveds, cardinalities, "b")
@@ -112,7 +112,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bNode = "b"
     val pattern = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("b")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Seq(hint))
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val aPlan = newMockedLogicalPlan(solveds, cardinalities, "a")
     val bPlan = newMockedLogicalPlan(solveds, cardinalities, "b")

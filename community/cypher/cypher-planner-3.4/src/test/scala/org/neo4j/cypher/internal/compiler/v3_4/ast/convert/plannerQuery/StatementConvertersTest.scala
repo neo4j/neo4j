@@ -728,7 +728,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
     val query = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
-    query.queryGraph.hints should equal(Set[Hint](UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_))
+    query.queryGraph.hints should equal(Seq[Hint](UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_))
   }
 
   test("MATCH shortestPath((a)-[r]->(b)) RETURN r") {
