@@ -32,4 +32,37 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTes
     graph.execute(query) // should not crash
   }
 
+  test("larger optional match join should not crash") {
+    val query =
+      """MATCH (b:B)-->(c:C)
+        |OPTIONAL MATCH (c)<--(d:D)
+        |USING JOIN ON c
+        |OPTIONAL MATCH (g:G)<--(c)
+        |USING JOIN ON c
+        |RETURN b,c,d,g""".stripMargin
+    graph.execute(query) // should not crash
+  }
+
+  test("unfulfillable join hint should not crash") {
+    // can use join on (b,c) only
+    val query =
+      """
+        |MATCH (b:B)
+        |MATCH (c:C)
+        |OPTIONAL MATCH (c)-->(a:A)<--(b)
+        |USING JOIN ON c
+        |RETURN a,b,c""".stripMargin
+    graph.execute(query) // should not crash
+  }
+
+  test("order in which join hints are solved should not matter") {
+    val query =
+      """MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
+        |USING JOIN ON b
+        |USING JOIN ON c
+        |USING JOIN ON d
+        |WHERE a.prop = e.prop
+        |RETURN b, d""".stripMargin
+    graph.execute(query) // should not crash
+  }
 }

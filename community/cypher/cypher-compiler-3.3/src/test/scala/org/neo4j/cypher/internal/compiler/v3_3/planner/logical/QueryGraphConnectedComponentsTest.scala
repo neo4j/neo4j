@@ -164,10 +164,10 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern relationships with hints on one side") {
-    val graph = QueryGraph(patternNodes = Set(A, B), hints = Set(UsingScanHint(identA, labelA)(pos)))
+    val graph = QueryGraph(patternNodes = Set(A, B), hints = Seq(UsingScanHint(identA, labelA)(pos)))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A), hints = Set(UsingScanHint(identA, labelA)(pos))),
+      QueryGraph(patternNodes = Set(A), hints = Seq(UsingScanHint(identA, labelA)(pos))),
       QueryGraph(patternNodes = Set(B))
     ))
   }

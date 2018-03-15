@@ -74,15 +74,19 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val allNodeScanB = AllNodesScan("b", Set.empty)(solved)
       val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
       val plan = queryGraphSolver.plan(cfg.qg)
-      plan should equal(
+
+      val possiblePlans = List(allNodeScanA, allNodeScanB, allNodeScanC).permutations.map { l =>
+        val (a, b, c) = (l.head, l(1), l(2))
         CartesianProduct(
-          allNodeScanB,
+          a,
           CartesianProduct(
-            allNodeScanA,
-            allNodeScanC
+            b,
+            c
           )(solved)
         )(solved)
-      )
+      }.toList
+
+      possiblePlans should contain(plan)
 
       val qgs = cfg.qg.connectedComponents.toArray
       val plans = Array(allNodeScanA, allNodeScanB, allNodeScanC)

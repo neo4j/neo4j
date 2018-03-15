@@ -248,7 +248,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds)(solved)
   }
 
-  def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
+  def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint])
                       (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val plannerQuery = left.solved ++ right.solved
@@ -305,7 +305,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     Optional(inputPlan, ids)(solved)
   }
 
-  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint])
+  def planOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint])
                       (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.amendQueryGraph(_.withAddedOptionalMatch(right.solved.queryGraph.addHints(hints)))
     OuterHashJoin(nodes, left, right)(solved)
