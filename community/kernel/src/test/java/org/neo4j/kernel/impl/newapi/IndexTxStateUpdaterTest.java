@@ -160,7 +160,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyChange( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test

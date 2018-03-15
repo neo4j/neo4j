@@ -85,7 +85,7 @@ public class ThresholdBasedPruneStrategyTest
 
         // Then
         verify( threshold, times( 1 ) ).init();
-        verify( fileSystem, times( 0 ) ).deleteFile( any() );
+        verify( fileSystem, never() ).deleteFile( any() );
     }
 
     @Test

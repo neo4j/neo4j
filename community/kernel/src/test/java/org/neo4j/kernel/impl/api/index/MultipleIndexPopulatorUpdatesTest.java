@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -56,7 +56,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
@@ -98,7 +98,7 @@ public class MultipleIndexPopulatorUpdatesTest
         StoreScan<IndexPopulationFailedKernelException> storeScan = indexPopulator.indexAllNodes();
         storeScan.run();
 
-        Mockito.verify( indexUpdater, times( 0 ) ).process( any(IndexEntryUpdate.class) );
+        Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
     }
 
     private NodeRecord getNodeRecord()

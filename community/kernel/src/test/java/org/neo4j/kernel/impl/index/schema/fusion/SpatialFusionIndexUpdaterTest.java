@@ -40,6 +40,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -211,7 +212,7 @@ public class SpatialFusionIndexUpdaterTest
         {
             if ( populator != indexUpdater )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }
@@ -226,7 +227,7 @@ public class SpatialFusionIndexUpdaterTest
         {
             if ( populator != indexUpdater )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }
@@ -241,7 +242,7 @@ public class SpatialFusionIndexUpdaterTest
         {
             if ( populator != indexUpdater )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }

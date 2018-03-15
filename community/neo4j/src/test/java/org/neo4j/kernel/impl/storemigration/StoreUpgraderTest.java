@@ -238,7 +238,7 @@ public class StoreUpgraderTest
             upgrader.migrateIfNeeded( dbDirectory );
 
             // THEN
-            verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ),
+            verify( observingParticipant, Mockito.never() ).migrate( any( File.class ), any( File.class ),
                     any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant, Mockito.times( 1 ) ).
                     moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ),

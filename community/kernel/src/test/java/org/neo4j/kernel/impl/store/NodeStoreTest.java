@@ -68,8 +68,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
@@ -342,7 +342,7 @@ public class NodeStoreTest
 
         // THEN
         IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
-        verify( idGenerator, times( 0 ) ).freeId( 5L );
+        verify( idGenerator, never() ).freeId( 5L );
         verify( idGenerator ).freeId( 10L );
     }
 
