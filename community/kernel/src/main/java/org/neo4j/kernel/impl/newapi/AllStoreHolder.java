@@ -418,6 +418,23 @@ public class AllStoreHolder extends Read
         return storeReadLayer.indexGetFailure( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
     }
 
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        acquireSharedLabelLock( index.label() );
+        ktx.assertOpen();
+        return storeReadLayer.indexUniqueValuesPercentage( new LabelSchemaDescriptor(index.label(), index.properties() ) );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        acquireSharedLabelLock( index.label() );
+        ktx.assertOpen();
+        return storeReadLayer.indexSize( new LabelSchemaDescriptor(index.label(), index.properties() ) );
+
+    }
+
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
         try
