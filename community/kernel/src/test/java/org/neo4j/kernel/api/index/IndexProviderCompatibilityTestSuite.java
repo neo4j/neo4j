@@ -116,6 +116,8 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" ),
+                            DateTimeValue.datetime( 10000, 100, ZoneOffset.ofTotalSeconds( 3 ) ),
+                            DateTimeValue.datetime( 10000, 101, ZoneOffset.ofTotalSeconds( -3 ) ),
                             DurationValue.duration( 10, 20, 30, 40 ),
                             DurationValue.duration( 11, 20, 30, 40 ),
                             DurationValue.duration( 10, 21, 30, 40 ),
@@ -141,7 +143,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
 
-        protected void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
+        void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
         {
             try
             {

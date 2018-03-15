@@ -170,15 +170,15 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldNotEqualSameTimeButDifferentTimezone()
+    public void shouldNotEqualSameInstantButDifferentTimezone()
     {
-        assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( time( 10000, UTC ), time( 10000, ZoneOffset.of( "+01:00" ) ) );
     }
 
     @Test
-    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
-        assertEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )
