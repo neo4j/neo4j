@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -175,7 +176,7 @@ public class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    public void mustNotStartRecurringTasksWherePriorExecutionHasNotYetFinished() throws Exception
+    public void mustNotStartRecurringTasksWherePriorExecutionHasNotYetFinished()
     {
         Runnable runnable = () ->
         {
@@ -211,7 +212,7 @@ public class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    public void delayedTasksMustNotRunIfCancelledFirst()
+    public void delayedTasksMustNotRunIfCancelledFirst() throws Exception
     {
         List<Boolean> cancelListener = new ArrayList<>();
         JobHandle handle = scheduler.submit( group, counter::incrementAndGet, 100, 0 );
@@ -224,6 +225,15 @@ public class TimeBasedTaskSchedulerTest
         pools.getThreadPool( group ).shutDown();
         assertThat( counter.get(), is( 0 ) );
         assertThat( cancelListener, contains( Boolean.FALSE ) );
+        try
+        {
+            handle.waitTermination();
+            fail( "waitTermination should have thrown a CancellationException." );
+        }
+        catch ( CancellationException ignore )
+        {
+            // Good stuff.
+        }
     }
 
     @Test
@@ -254,7 +264,7 @@ public class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    public void overdueRecurringTasksMustStartAsSoonAsPossible() throws Exception
+    public void overdueRecurringTasksMustStartAsSoonAsPossible()
     {
         Runnable recurring = () ->
         {

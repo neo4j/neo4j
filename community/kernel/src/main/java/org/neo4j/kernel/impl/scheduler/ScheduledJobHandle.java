@@ -47,31 +47,33 @@ import org.neo4j.scheduler.JobScheduler.JobHandle;
  * <li>Failed handles will not be scheduled again.</li>
  * </ul>
  */
-final class ScheduledJobHandle implements JobHandle
+final class ScheduledJobHandle extends AtomicInteger implements JobHandle
 {
-    static final int STATE_RUNNABLE = 0;
-    static final int STATE_SUBMITTED = 1;
-    static final int STATE_FAILED = 2;
+    // We extend AtomicInteger to inline our state field.
+    // These are the possible state values:
+    private static final int RUNNABLE = 0;
+    private static final int SUBMITTED = 1;
+    private static final int FAILED = 2;
 
-    // Accessed and modified by the TimeBasedTaskScheduler:
-    volatile ScheduledJobHandle next;
+    // Access is synchronised via the PriorityBlockingQueue in TimeBasedTaskScheduler:
+    // - Write to this field happens before the handle is added to the queue.
+    // - Reads of this field happens after the handle has been read from the queue.
+    // - Reads of this field for the purpose of ordering the queue are either thread local,
+    //   or happens after the relevant handles have been added to the queue.
     long nextDeadlineNanos;
 
     private final JobScheduler.Group group;
-    private final long reschedulingDelayNanos;
-    private final AtomicInteger state;
     private final CopyOnWriteArrayList<CancelListener> cancelListeners;
     private final BinaryLatch handleRelease;
     private final Runnable task;
     private volatile JobHandle latestHandle;
     private volatile Throwable lastException;
 
-    ScheduledJobHandle( JobScheduler.Group group, Runnable task, long nextDeadlineNanos, long reschedulingDelayNanos )
+    ScheduledJobHandle( TimeBasedTaskScheduler scheduler, JobScheduler.Group group, Runnable task,
+                        long nextDeadlineNanos, long reschedulingDelayNanos )
     {
         this.group = group;
         this.nextDeadlineNanos = nextDeadlineNanos;
-        this.reschedulingDelayNanos = reschedulingDelayNanos;
-        state = new AtomicInteger();
         handleRelease = new BinaryLatch();
         cancelListeners = new CopyOnWriteArrayList<>();
         this.task = () ->
@@ -80,41 +82,36 @@ final class ScheduledJobHandle implements JobHandle
             {
                 task.run();
                 // Use compareAndSet to avoid overriding any cancellation state.
-                compareAndSetState( STATE_SUBMITTED, STATE_RUNNABLE );
+                if ( compareAndSet( SUBMITTED, RUNNABLE ) && reschedulingDelayNanos > 0 )
+                {
+                    // We only reschedule if the rescheduling delay is greater than zero.
+                    // A rescheduling delay of zero means this is a delayed task.
+                    // If the rescheduling delay is greater than zero, then this is a recurring task.
+                    this.nextDeadlineNanos += reschedulingDelayNanos;
+                    scheduler.enqueueTask( this );
+                }
             }
             catch ( Throwable e )
             {
                 lastException = e;
-                state.set( STATE_FAILED );
+                set( FAILED );
             }
         };
     }
 
-    boolean compareAndSetState( int expect, int update )
+    void submitIfRunnable( ThreadPoolManager pools )
     {
-        return state.compareAndSet( expect, update );
-    }
-
-    int getState()
-    {
-        return state.get();
-    }
-
-    long getReschedulingDelayNanos()
-    {
-        return reschedulingDelayNanos;
-    }
-
-    void submitTo( ThreadPoolManager pools )
-    {
-        latestHandle = pools.submit( group, task );
-        handleRelease.release();
+        if ( compareAndSet( RUNNABLE, SUBMITTED ) )
+        {
+            latestHandle = pools.submit( group, task );
+            handleRelease.release();
+        }
     }
 
     @Override
     public void cancel( boolean mayInterruptIfRunning )
     {
-        state.set( STATE_FAILED );
+        set( FAILED );
         JobHandle handle = latestHandle;
         if ( handle != null )
         {
@@ -124,14 +121,20 @@ final class ScheduledJobHandle implements JobHandle
         {
             cancelListener.cancelled( mayInterruptIfRunning );
         }
+        // Release the handle to allow waitTermination() to observe the cancellation.
+        handleRelease.release();
     }
 
     @Override
     public void waitTermination() throws ExecutionException, InterruptedException
     {
         handleRelease.await();
-        latestHandle.waitTermination();
-        if ( state.get() == STATE_FAILED )
+        JobHandle handleDelegate = this.latestHandle;
+        if ( handleDelegate != null )
+        {
+            handleDelegate.waitTermination();
+        }
+        if ( get() == FAILED )
         {
             Throwable exception = this.lastException;
             if ( exception != null )
