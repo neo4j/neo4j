@@ -22,45 +22,106 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.ArrayUtil.without;
-import static org.neo4j.helpers.collection.Iterators.array;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 
+@RunWith( Parameterized.class )
 public class FusionIndexUpdaterTest
 {
-    private IndexUpdater luceneUpdater;
-    private IndexUpdater[] allUpdaters;
+    private IndexUpdater[] aliveUpdaters;
+    private IndexUpdater[] updaters;
     private FusionIndexUpdater fusionIndexUpdater;
 
     @Rule
     public RandomRule random = new RandomRule();
+    @Parameterized.Parameters( name = "{0}" )
+    public static FusionVersion[] versions()
+    {
+        return new FusionVersion[]
+                {
+                        v00, v10, v20
+                };
+    }
+
+    @Parameterized.Parameter
+    public static FusionVersion fusionVersion;
 
     @Before
-    public void mockComponents()
+    public void setup()
     {
-        IndexUpdater stringUpdater = mock( IndexUpdater.class );
-        IndexUpdater numberUpdater = mock( IndexUpdater.class );
-        IndexUpdater spatialUpdater = mock( IndexUpdater.class );
-        IndexUpdater temporalUpdater = mock( IndexUpdater.class );
-        luceneUpdater = mock( IndexUpdater.class );
-        allUpdaters = array( stringUpdater, numberUpdater, spatialUpdater, temporalUpdater, luceneUpdater );
-        fusionIndexUpdater = new FusionIndexUpdater( allUpdaters, new FusionSelector() );
+        initiateMocks();
+    }
+
+    private void initiateMocks()
+    {
+        int[] activeSlots = fusionVersion.aliveSlots();
+        updaters = new IndexUpdater[INSTANCE_COUNT];
+        Arrays.fill( updaters, SwallowingIndexUpdater.INSTANCE );
+        aliveUpdaters = new IndexUpdater[activeSlots.length];
+        for ( int i = 0; i < activeSlots.length; i++ )
+        {
+            IndexUpdater mock = mock( IndexUpdater.class );
+            aliveUpdaters[i] = mock;
+            switch ( activeSlots[i] )
+            {
+            case STRING:
+                updaters[STRING] = mock;
+                break;
+            case NUMBER:
+                updaters[NUMBER] = mock;
+                break;
+            case SPATIAL:
+                updaters[SPATIAL] = mock;
+                break;
+            case TEMPORAL:
+                updaters[TEMPORAL] = mock;
+                break;
+            case LUCENE:
+                updaters[LUCENE] = mock;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexUpdater = new FusionIndexUpdater( updaters, fusionVersion.selector() );
+    }
+
+    private void resetMocks()
+    {
+        for ( IndexUpdater updater : aliveUpdaters )
+        {
+            reset( updater );
+        }
     }
 
     /* process */
@@ -72,12 +133,12 @@ public class FusionIndexUpdaterTest
         Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        for ( int i = 0; i < allUpdaters.length; i++ )
+        for ( int i = 0; i < updaters.length; i++ )
         {
             for ( Value value : values[i] )
             {
                 // then
-                verifyAddWithCorrectUpdater( allUpdaters[i], value );
+                verifyAddWithCorrectUpdater( orLucene( updaters[i] ), value );
             }
         }
 
@@ -86,7 +147,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectUpdater( luceneUpdater, firstValue, secondValue );
+                verifyAddWithCorrectUpdater( updaters[LUCENE], firstValue, secondValue );
             }
         }
     }
@@ -98,12 +159,12 @@ public class FusionIndexUpdaterTest
         Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        for ( int i = 0; i < allUpdaters.length; i++ )
+        for ( int i = 0; i < updaters.length; i++ )
         {
             for ( Value value : values[i] )
             {
                 // then
-                verifyRemoveWithCorrectUpdater( allUpdaters[i], value );
+                verifyRemoveWithCorrectUpdater( orLucene( updaters[i] ), value );
             }
         }
 
@@ -112,7 +173,7 @@ public class FusionIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyRemoveWithCorrectUpdater( luceneUpdater, firstValue, secondValue );
+                verifyRemoveWithCorrectUpdater( updaters[LUCENE], firstValue, secondValue );
             }
         }
     }
@@ -124,13 +185,13 @@ public class FusionIndexUpdaterTest
         Value[][] values = FusionIndexTestHelp.valuesByGroup();
 
         // when
-        for ( int i = 0; i < allUpdaters.length; i++ )
+        for ( int i = 0; i < updaters.length; i++ )
         {
             for ( Value before : values[i] )
             {
                 for ( Value after : values[i] )
                 {
-                    verifyChangeWithCorrectUpdaterNotMixed( allUpdaters[i], before, after );
+                    verifyChangeWithCorrectUpdaterNotMixed( orLucene( updaters[i] ), before, after );
                 }
             }
         }
@@ -148,15 +209,20 @@ public class FusionIndexUpdaterTest
                 if ( f != t )
                 {
                     // when
-                    verifyChangeWithCorrectUpdaterMixed( allUpdaters[f], allUpdaters[t], values[f], values[t] );
+                    verifyChangeWithCorrectUpdaterMixed( orLucene( updaters[f] ), orLucene( updaters[t] ), values[f], values[t] );
                 }
                 else
                 {
-                    verifyChangeWithCorrectUpdaterNotMixed( allUpdaters[f], values[f] );
+                    verifyChangeWithCorrectUpdaterNotMixed( orLucene( updaters[f] ), values[f] );
                 }
-                mockComponents();
+                resetMocks();
             }
         }
+    }
+
+    private IndexUpdater orLucene( IndexUpdater updater )
+    {
+        return updater != SwallowingIndexUpdater.INSTANCE ? updater : updaters[LUCENE];
     }
 
     private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, Value... numberValues )
@@ -165,7 +231,7 @@ public class FusionIndexUpdaterTest
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        for ( IndexUpdater populator : allUpdaters )
+        for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
             {
@@ -180,7 +246,7 @@ public class FusionIndexUpdaterTest
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        for ( IndexUpdater populator : allUpdaters )
+        for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
             {
@@ -195,7 +261,7 @@ public class FusionIndexUpdaterTest
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
-        for ( IndexUpdater populator : allUpdaters )
+        for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
             {
@@ -228,8 +294,15 @@ public class FusionIndexUpdaterTest
                 IndexEntryUpdate<LabelSchemaDescriptor> change = change( before, after );
                 fusionIndexUpdater.process( change );
 
-                verify( expectRemoveFrom, times( afterIndex + 1 ) ).process( remove( before ) );
-                verify( expectAddTo, times( beforeIndex + 1 ) ).process( add( after ) );
+                if ( expectRemoveFrom != expectAddTo )
+                {
+                    verify( expectRemoveFrom, times( afterIndex + 1 ) ).process( remove( before ) );
+                    verify( expectAddTo, times( beforeIndex + 1 ) ).process( add( after ) );
+                }
+                else
+                {
+                    verify( expectRemoveFrom, times( 1 ) ).process( change( before, after ) );
+                }
             }
         }
     }
@@ -243,7 +316,7 @@ public class FusionIndexUpdaterTest
         fusionIndexUpdater.close();
 
         // then
-        for ( IndexUpdater updater : allUpdaters )
+        for ( IndexUpdater updater : aliveUpdaters )
         {
             verify( updater, times( 1 ) ).close();
         }
@@ -252,28 +325,26 @@ public class FusionIndexUpdaterTest
     @Test
     public void closeMustThrowIfAnyThrow() throws Exception
     {
-        for ( int i = 0; i < allUpdaters.length; i++ )
+        for ( IndexUpdater updater : aliveUpdaters )
         {
-            IndexUpdater updater = allUpdaters[i];
             FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updater, fusionIndexUpdater );
-            mockComponents();
+            resetMocks();
         }
     }
 
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( int i = 0; i < allUpdaters.length; i++ )
+        for ( IndexUpdater updater : aliveUpdaters )
         {
-            IndexUpdater updater = allUpdaters[i];
-            FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updater, fusionIndexUpdater, without( allUpdaters, updater ) );
-            mockComponents();
+            FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updater, fusionIndexUpdater, without( aliveUpdaters, updater ) );
+            resetMocks();
         }
     }
 
     @Test
     public void closeMustThrowIfAllThrow() throws Exception
     {
-        FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, allUpdaters );
+        FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, aliveUpdaters );
     }
 }

@@ -118,6 +118,8 @@ public interface IndexAccessor extends Closeable
      */
     boolean isDirty();
 
+    IndexAccessor EMPTY = new Adapter();
+
     class Adapter implements IndexAccessor
     {
         @Override

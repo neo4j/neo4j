@@ -114,11 +114,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
         void recoveryCompleted( long indexId, SchemaIndexDescriptor schemaIndexDescriptor, Map<String,Object> data );
     }
 
-    public static final IndexProvider NO_INDEX_PROVIDER =
+    public static final IndexProvider EMPTY =
             new IndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
-                private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
-                private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
+                private final IndexAccessor singleWriter = IndexAccessor.EMPTY;
+                private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
                 public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
@@ -137,7 +137,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
                 @Override
                 public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
                 {
-                    return InternalIndexState.POPULATING;
+                    return InternalIndexState.ONLINE;
                 }
 
                 @Override

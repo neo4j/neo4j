@@ -142,6 +142,8 @@ public interface IndexPopulator
      */
     IndexSample sampleResult();
 
+    IndexPopulator EMPTY = new Adapter();
+
     class Adapter implements IndexPopulator
     {
         @Override
