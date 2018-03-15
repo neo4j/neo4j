@@ -281,8 +281,41 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public static PointValue parse( CharSequence text )
     {
+        return PointValue.parse( text, null );
+    }
+
+    /**
+     * Parses the given text into a PointValue. The information stated in the header is saved into the PointValue
+     * unless it overriden by the information in the text
+     * @param text the input text to be parsed into a PointValue
+     * @param fieldsFromHeader must be a value obtained from {@link #parseIntoArray(CharSequence)} or null
+     * @return a PointValue instance with information from the {@param fieldsFromHeader} and {@param text}
+     */
+    public static PointValue parse( CharSequence text, AnyValue[] fieldsFromHeader )
+    {
+        AnyValue[] fieldsFromData = parseIntoArray( text );
+        if ( fieldsFromHeader != null )
+        {
+            // If fieldsFromHeader comes from parseIntoArray it is given that fieldsFromData.length == fieldsFromHeader.length
+            // because parseIntoArray produces fixed length arrays
+            assert fieldsFromData.length == fieldsFromHeader.length;
+
+            // Merge InputFields: Data fields override header fields
+            for ( int i = 0; i < fieldsFromData.length; i++ )
+            {
+                if ( fieldsFromData[i] == null )
+                {
+                    fieldsFromData[i] = fieldsFromHeader[i];
+                }
+            }
+        }
+        return fromInputFields( fieldsFromData );
+    }
+
+    public static AnyValue[] parseIntoArray( CharSequence text )
+    {
         Matcher mapMatcher = mapPattern.matcher( text );
-        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1  ) )
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
             String errorMessage = format( "Failed to parse point value: '%s'", text );
             throw new IllegalArgumentException( errorMessage );
@@ -358,7 +391,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
         } while ( matcher.find() );
 
-        return fromInputFields( fields );
+        return fields;
     }
 
     /**
@@ -425,7 +458,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             if ( !crs.isGeographic() )
             {
-                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs );
+                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs +
+                        ". This is set either in the csv header or the actual data column" );
             }
         }
         else
