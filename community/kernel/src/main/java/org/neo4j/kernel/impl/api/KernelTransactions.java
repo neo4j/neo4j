@@ -101,6 +101,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
+    private final SchemaState schemaState;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -145,7 +146,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             ExplicitIndexStore explicitIndexStore,
             VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier,
-            ConstraintSemantics constraintSemantics )
+            ConstraintSemantics constraintSemantics,
+            SchemaState schemaState )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -174,6 +176,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.cursorsSupplier = cursorsSupplier;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
+        this.schemaState = schemaState;
     }
 
     public Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier()
@@ -371,7 +374,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             cursorsSupplier.get(), autoIndexing,
-                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics );
+                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
+                            schemaState );
             this.transactions.add( tx );
             return tx;
         }

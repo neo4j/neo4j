@@ -369,7 +369,7 @@ public class ConstraintIndexCreator
             TokenRead tokenRead, LabelSchemaDescriptor schema )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
-        CapableIndexReference descriptor = schemaRead.index( schema.getLabelId(), schema.getPropertyId() );
+        CapableIndexReference descriptor = schemaRead.index( schema.getLabelId(), schema.getPropertyIds() );
         if ( descriptor != CapableIndexReference.NO_INDEX )
         {
             if ( descriptor.isUnique() )

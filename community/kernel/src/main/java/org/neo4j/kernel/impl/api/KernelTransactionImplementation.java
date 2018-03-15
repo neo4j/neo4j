@@ -190,7 +190,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics )
+            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
+            SchemaState schemaState )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -215,7 +216,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore, procedures );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore,
+                        procedures, schemaState );
         this.operations =
                 new Operations(
                         allStoreHolder,

@@ -95,7 +95,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         List<ProcedureSignature> signatures =
-                Iterables.asList( readOperationsInNewTransaction().proceduresGetAll() );
+                Iterables.asList( newTransaction().procedures().proceduresGetAll() );
 
         // Then
         assertThat( signatures, hasItems(

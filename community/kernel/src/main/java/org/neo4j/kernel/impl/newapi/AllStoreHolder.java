@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.newapi;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.Suppliers;
@@ -34,6 +36,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -60,6 +63,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
@@ -107,12 +111,15 @@ public class AllStoreHolder extends Read
     private final ExplicitIndexStore explicitIndexStore;
     private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
     private final Procedures procedures;
+    private final SchemaState schemaState;
 
     public AllStoreHolder( StorageEngine engine,
             StorageStatement statement,
             KernelTransactionImplementation ktx,
             DefaultCursors cursors,
-            ExplicitIndexStore explicitIndexStore, Procedures procedures )
+            ExplicitIndexStore explicitIndexStore,
+            Procedures procedures,
+            SchemaState schemaState )
     {
         super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();
@@ -125,6 +132,7 @@ public class AllStoreHolder extends Read
         this.properties = statement.properties();
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
+        this.schemaState = schemaState;
     }
 
     @Override
@@ -680,6 +688,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException
+    {
+        ktx.assertOpen();
+        return procedures.getAllProcedures();
+    }
+
+    @Override
     public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
     {
         ktx.assertOpen();
@@ -895,6 +910,24 @@ public class AllStoreHolder extends Read
     {
         return aggregationFunction( name,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
+    {
+        return schemaState.getOrCreate( key, creator );
+    }
+
+    @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        return schemaState.get( key );
+    }
+
+    @Override
+    public void schemaStateFlush()
+    {
+        schemaState.clear();
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(

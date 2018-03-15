@@ -349,7 +349,7 @@ public class KernelTransactionTerminationTest
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
-                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics() );
+                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class) );
 
             this.monitor = monitor;
         }

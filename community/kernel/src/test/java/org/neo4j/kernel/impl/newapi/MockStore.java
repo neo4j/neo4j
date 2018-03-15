@@ -24,6 +24,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
@@ -33,6 +35,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -252,6 +255,13 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
+    public Set<ProcedureSignature> proceduresGetAll(  ) throws ProcedureException
     {
         throw new UnsupportedOperationException( "not implemented" );
 
@@ -636,5 +646,23 @@ public class MockStore extends Read implements TestRule
     public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
     {
         return null;
+    }
+
+    @Override
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void schemaStateFlush()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }
