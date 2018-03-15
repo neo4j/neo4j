@@ -24,6 +24,7 @@ import java.time.temporal.UnsupportedTemporalTypeException
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.values.storable.DurationValue
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -484,6 +485,16 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
         an[QueryExecutionException] shouldBe thrownBy {
           println(graph.execute(query).next())
         }
+      }
+    }
+  }
+
+  test("should return null when comparing durations and not able to fail at compile time") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = "RETURN $d1 " + op + " $d2 as x"
+      withClue(s"Executing $query") {
+        val res = innerExecuteDeprecated(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
+        res should be(List(Map("x" -> null)))
       }
     }
   }
