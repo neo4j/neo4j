@@ -54,12 +54,12 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
   }
 
   protected def assertSeekMatchFor(value: Value, nodes: Node*): Unit = {
-    val query = "MATCH (n:%s) WHERE n.%s = $%s RETURN n".format(LABEL, PROPERTY, PROPERTY)
-    testIndexedRead(query, Map(PROPERTY -> value.asObject()), "NodeIndexSeek", nodes)
+    val query = s"MATCH (n:$LABEL) WHERE n.$PROPERTY = $$param RETURN n"
+    testIndexedRead(query, Map("param" -> value.asObject()), "NodeIndexSeek", nodes)
   }
 
   protected def assertScanMatch(nodes: Node*): Unit = {
-    val query = "MATCH (n:%s) WHERE EXISTS(n.%s) RETURN n".format(LABEL, PROPERTY)
+    val query = s"MATCH (n:$LABEL) WHERE EXISTS(n.$PROPERTY) RETURN n"
     testIndexedRead(query, Map(), "NodeIndexScan", nodes)
   }
 

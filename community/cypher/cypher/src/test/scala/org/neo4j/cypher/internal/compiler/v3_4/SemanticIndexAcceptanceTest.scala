@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
-import java.time.ZoneOffset
+import java.time.{ZoneId, ZoneOffset}
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
@@ -34,21 +34,26 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
   private val allCRSDimensions = allCRS.keys.toArray
   private val oneDay = DurationValue.duration(0, 1, 0, 0)
-  private val MAX_EPOCH_DAYS = 999999999 * 365
+  private val oneSecond = DurationValue.duration(0, 0, 1, 0)
+  private val timeZones:Seq[ZoneId] = ZoneId.getAvailableZoneIds.toSeq.map(ZoneId.of)
 
   // ----------------
   // the actual test
   // ----------------
 
   for {
-    bound <- List("<", "<=", "=", ">", ">=")
     valueGen <- List(
       ValueSetup[LongValue]("longs", longGen, x => x.minus(1L), x => x.plus(1L)),
       ValueSetup[DoubleValue]("doubles", doubleGen, x => x.minus(0.1), x => x.plus(0.1)),
       ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar)),
 //      ValueSetup[PointValue]("points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)), // TODO: here is a bug
-      ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay))
+      ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[DateTimeValue]("dateTimes", dateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[LocalDateTimeValue]("localDateTimes", localDateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[TimeValue]("times", timeGen, x => x.sub(oneSecond), x => x.add(oneSecond)),
+      ValueSetup[LocalTimeValue]("localTimes", localTimeGen, x => x.sub(oneSecond), x => x.add(oneSecond))
     )
+    bound <- List("<", "<=", "=", ">", ">=")
   } {
     testOperator(bound, valueGen)
   }
@@ -99,6 +104,21 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
                                   // the limits of the underlying java types
     } yield DateValue.epochDate(epochDays)
 
+  def dateTimeGen: Gen[DateTimeValue] =
+    for {
+      epochSecondsUTC <- arbitrary[Int]
+      nanosOfSecond <- Gen.chooseNum(0, 999999999)
+      timeZone <- Gen.oneOf(zoneIdGen, zoneOffsetGen)
+    } yield DateTimeValue.datetime(epochSecondsUTC, nanosOfSecond, timeZone)
+
+  def localDateTimeGen: Gen[LocalDateTimeValue] =
+    for {
+      epochSeconds <- arbitrary[Int]
+      nanosOfSecond <- Gen.chooseNum(0, 999999999)
+    } yield LocalDateTimeValue.localDateTime(epochSeconds, nanosOfSecond)
+
+  def zoneIdGen: Gen[ZoneId] = Gen.oneOf(timeZones)
+
   def zoneOffsetGen: Gen[ZoneOffset] =
     Gen.chooseNum(-18*60, 18*60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
 
@@ -107,8 +127,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     */
   private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
 
-    val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
-    val queryUsingIndex = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
+    val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator {prop} RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
+    val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator {prop} RETURN n, n.indexed AS prop ORDER BY id(n)"
 
     def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Value): Unit = {
       val valueObject = value.asObject()
@@ -117,7 +137,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
     }
 
-    test(s"testing ${setup.name} with $operator") {
+    test(s"testing ${setup.name} with n.prop $operator $$argument") {
       graph.createIndex("Label", "indexed")
       forAll(setup.generator) { propertyValue: T =>
         graph.inTx {
