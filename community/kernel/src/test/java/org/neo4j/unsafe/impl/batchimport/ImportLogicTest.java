@@ -74,7 +74,7 @@ public class ImportLogicTest
             }
         }
 
-        verify( monitor ).done( anyLong(), contains( "Data diagnostics is not available." ) );
+        verify( monitor ).done( anyLong(), contains( "Data statistics is not available." ) );
     }
 
     @Test

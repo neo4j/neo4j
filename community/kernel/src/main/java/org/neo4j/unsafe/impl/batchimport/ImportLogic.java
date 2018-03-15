@@ -511,7 +511,7 @@ public class ImportLogic implements Closeable
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
         DataStatistics state = getState( DataStatistics.class );
-        String additionalInformation = Objects.toString( state, "Data diagnostics is not available." );
+        String additionalInformation = Objects.toString( state, "Data statistics is not available." );
         executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
         log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
         closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper, inputCache );
