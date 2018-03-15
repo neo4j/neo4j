@@ -399,10 +399,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @throws IOException on page cache error
+     * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException, MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -436,7 +437,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // Create or load state
             if ( created )
             {
-                initializeAfterCreation( layout, headerWriter );
+                initializeAfterCreation( headerWriter );
             }
             else
             {
@@ -467,7 +468,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private void initializeAfterCreation( Layout<KEY,VALUE> layout, Consumer<PageCursor> headerWriter ) throws IOException
+    private void initializeAfterCreation( Consumer<PageCursor> headerWriter ) throws IOException
     {
         // Initialize state
         try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
@@ -494,7 +495,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
-            int pageSizeForCreation ) throws IOException
+            int pageSizeForCreation ) throws IOException, MetadataMismatchException
     {
         try
         {
@@ -506,7 +507,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile ) throws IOException
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile ) throws IOException, MetadataMismatchException
     {
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
         // This index already exists, verify meta data aligns with expectations
@@ -522,7 +523,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         catch ( IllegalStateException e )
         {
-            throw new IOException( "Index is not fully initialized since it's missing the meta page", e );
+            throw new MetadataMismatchException( "Index is not fully initialized since it's missing the meta page", e );
         }
         finally
         {
@@ -583,8 +584,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
      * @throws IOException On page cache error
+     * @throws MetadataMismatchException if metadata does match given parameters
      */
-    public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader ) throws IOException
+    public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader )
+            throws IOException, MetadataMismatchException
     {
         try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile ) )
         {
@@ -975,8 +978,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
      * with generation in this gap are considered to be 'crashed' and will be cleaned up by {@link CleanupJob}
      * created in {@link #createCleanupJob(boolean)}.
-     *
-     * @throws IOException on {@link PageCache} error.
      */
     private void bumpUnstableGeneration()
     {
@@ -998,8 +999,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     /**
      * Called on start if tree was not clean.
-     *
-     * @throws IOException on {@link PageCache} error.
      */
     private CleanupJob createCleanupJob( boolean needsCleaning )
     {
@@ -1023,6 +1022,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
+    @SuppressWarnings( "unused" )
     void printTree() throws IOException
     {
         printTree( false, false, false, false );
@@ -1035,9 +1035,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param printValues whether or not to print values in the leaf nodes.
      * @param printPosition whether or not to print position for each key.
      * @param printState whether or not to print the tree state.
-     * @param printHeader
+     * @param printHeader whether or not to print header of each tree node
      * @throws IOException on I/O error.
      */
+    @SuppressWarnings( "SameParameterValue" )
     void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )

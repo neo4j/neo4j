@@ -300,7 +300,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
     /**
      * @return store files, namely the single "neostore.labelscanstore.db" store file.
-     * @throws IOException on file access exceptions.
      */
     @Override
     public ResourceIterator<File> snapshotStoreFiles()
