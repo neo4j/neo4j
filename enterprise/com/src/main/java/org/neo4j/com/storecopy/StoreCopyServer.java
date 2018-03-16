@@ -192,7 +192,7 @@ public class StoreCopyServer
                                     doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize,
                                             storeCopyIdentifier, false );
                                 }
-                                return anonymous( lastAppliedTransaction );
+                                continue;
                             }
                         }
                     }
