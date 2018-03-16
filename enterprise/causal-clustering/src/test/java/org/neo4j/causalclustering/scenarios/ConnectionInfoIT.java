@@ -53,7 +53,7 @@ public class ConnectionInfoIT
     }
 
     @Test
-    public void catchupServerMessage() throws Throwable
+    public void testAddressAlreadyBoundMessage() throws Throwable
     {
         // given
         testSocket = bindPort( "localhost", PortAuthority.allocatePort() );
@@ -63,7 +63,7 @@ public class ConnectionInfoIT
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getLocalPort() );
 
-        Server catchupServer = new Server( mockInitializer(), null, logProvider, userLogProvider, listenSocketAddress, "catchup-server" );
+        Server catchupServer = new Server( mockInitializer(), null, logProvider, userLogProvider, listenSocketAddress, "server-name" );
 
         //then
         try
@@ -74,8 +74,8 @@ public class ConnectionInfoIT
         {
             //expected.
         }
-        logProvider.assertContainsMessageContaining( "Address is already bound for setting" );
-        userLogProvider.assertContainsMessageContaining( "Address is already bound for setting" );
+        logProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
+        userLogProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
     }
 
     private ChannelInitializer<SocketChannel> mockInitializer()
