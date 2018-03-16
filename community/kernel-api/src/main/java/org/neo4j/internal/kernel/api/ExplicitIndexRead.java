@@ -47,4 +47,8 @@ public interface ExplicitIndexRead
     void relationshipExplicitIndexQuery(
             RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
             throws KernelException;
+
+    String[] nodeExplicitIndexesGetAll();
+
+    String[] relationshipExplicitIndexesGetAll();
 }

@@ -274,6 +274,19 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        ktx.assertOpen();
+        return explicitIndexStore.getAllNodeIndexNames();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
+    {
+        return explicitIndexStore.getAllRelationshipIndexNames();
+    }
+
+    @Override
     public CapableIndexReference index( int label, int... properties )
     {
         ktx.assertOpen();
