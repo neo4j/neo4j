@@ -1007,7 +1007,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
   }
 
-  test("should refuse to execute index seeks using inequalities over different types") {
+  // TODO: re-enable linting for these queries where some predicates can be statically determined to always be false.
+  ignore("should refuse to execute index seeks using inequalities over different types") {
     // Given
     createLabeledNode(Map("prop" -> 15), "Label")
     createLabeledNode(Map("prop" -> "1"), "Label")
@@ -1038,7 +1039,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     }
   }
 
-  test("should refuse to execute index seeks using inequalities over incomparable types (detected at runtime)") {
+  test("should yield empty results for index seeks using inequalities over incomparable types detected at runtime") {
     // Given
     (1 to 405).foreach { _ =>
       createLabeledNode("Label")
@@ -1047,16 +1048,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWith(Configs.Interpreted, s"EXPLAIN $query",
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)
-      }, Configs.AllRulePlanners), params = Map("param" -> Array[Int](1, 2, 3)))
+      }), params = Map("param" -> Array[Int](1, 2, 3)))
     result.toList should be(empty)
-
-    an[IllegalArgumentException] should be thrownBy {
-      executeWith(Configs.Empty, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
-    }
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {

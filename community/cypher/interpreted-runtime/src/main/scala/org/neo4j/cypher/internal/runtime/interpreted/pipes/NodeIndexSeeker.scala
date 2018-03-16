@@ -85,7 +85,7 @@ trait NodeIndexSeeker {
             val valueRange: InequalitySeekRange[Value] = innerRange.mapBounds(expr => makeValueNeoSafe(expr(row, state)))
             val groupedRanges = valueRange.groupBy(bound => bound.endPoint.valueGroup())
             if (groupedRanges.size > 1) {
-              throw new IncorrectIndexError()
+              Nil // predicates of more than one value group mean that no node can ever match
             } else {
               val (valueGroup, range) = groupedRanges.head
               range match {
@@ -163,7 +163,7 @@ trait NodeIndexSeeker {
       // Index exact value seek on multiple values, making use of a composite index over all values
       //    eg:   x in [1] AND y in ["a", "b"] AND z in [3.0]
       case CompositeQueryExpression(exprs) =>
-        assert(exprs.size == propertyIds.size)
+        assert(exprs.lengthCompare(propertyIds.length) == 0)
 
         // seekValues = [[1], ["a", "b"], [3.0]]
         val seekValues = exprs.map(expressionValues(row, state))

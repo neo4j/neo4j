@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IncorrectIndexError
 import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
@@ -239,7 +238,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
 
-  val SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
+  val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
                                     ValueGroup.TEXT,
                                     ValueGroup.GEOMETRY,
                                     ValueGroup.DATE,
@@ -255,10 +254,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       predicates.exists {
         case p:IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
         case p:IndexQuery =>
-          if (p.valueGroup() == ValueGroup.NO_VALUE) true
-          else if (!SEEKABLE_VALUE_GROUPS.contains(p.valueGroup()))
-            throw new IncorrectIndexError()
-          else false
+          !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
       }
 
     if (impossiblePredicate) Iterator.empty
