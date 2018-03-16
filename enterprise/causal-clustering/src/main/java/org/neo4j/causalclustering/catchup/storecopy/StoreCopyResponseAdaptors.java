@@ -19,38 +19,36 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
-/**
- * Used client side for event handling of a store listing request
- */
-public class PrepareStoreCopyResponseAdaptor extends CatchUpResponseAdaptor<PrepareStoreCopyResponse>
+public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdaptor<T>
 {
+    static StoreCopyResponseAdaptors<StoreCopyFinishedResponse> filesCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider, Log log )
+    {
+        return new StoreFilesCopyResponseAdaptors( storeFileStreamProvider, log );
+    }
+
+    static StoreCopyResponseAdaptors<PrepareStoreCopyResponse> prepareStoreCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider, Log log )
+    {
+        return new PrepareStoreCopyResponseAdaptors( storeFileStreamProvider, log );
+    }
+
     private final StoreFileStreamProvider storeFileStreamProvider;
     private final Log log;
     private StoreFileStream storeFileStream;
 
-    PrepareStoreCopyResponseAdaptor( StoreFileStreamProvider storeFileStreamProvider, LogProvider logProvider )
+    private StoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
     {
         this.storeFileStreamProvider = storeFileStreamProvider;
-        log = logProvider.getLog( PrepareStoreCopyResponseAdaptor.class );
+        this.log = log;
     }
 
     @Override
-    public void onStoreListingResponse( CompletableFuture<PrepareStoreCopyResponse> signal, PrepareStoreCopyResponse response )
+    public void onFileHeader( CompletableFuture<T> requestOutcomeSignal, FileHeader fileHeader )
     {
-        signal.complete( response );
-    }
-
-    @Override
-    public void onFileHeader( CompletableFuture<PrepareStoreCopyResponse> requestOutcomeSignal, FileHeader fileHeader )
-    {
-        log.debug( "Received file header for file %s", fileHeader.fileName() );
         try
         {
             storeFileStream = storeFileStreamProvider.acquire( fileHeader.fileName(), fileHeader.requiredAlignment() );
@@ -66,23 +64,51 @@ public class PrepareStoreCopyResponseAdaptor extends CatchUpResponseAdaptor<Prep
                 }
             } );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             requestOutcomeSignal.completeExceptionally( e );
         }
     }
 
     @Override
-    public boolean onFileContent( CompletableFuture<PrepareStoreCopyResponse> signal, FileChunk fileChunk )
+    public boolean onFileContent( CompletableFuture<T> signal, FileChunk fileChunk )
     {
         try
         {
             storeFileStream.write( fileChunk.bytes() );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             signal.completeExceptionally( e );
         }
         return fileChunk.isLast();
+    }
+
+    private static class PrepareStoreCopyResponseAdaptors extends StoreCopyResponseAdaptors<PrepareStoreCopyResponse>
+    {
+        PrepareStoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
+        {
+            super( storeFileStreamProvider, log );
+        }
+
+        @Override
+        public void onStoreListingResponse( CompletableFuture<PrepareStoreCopyResponse> signal, PrepareStoreCopyResponse response )
+        {
+            signal.complete( response );
+        }
+    }
+
+    private static class StoreFilesCopyResponseAdaptors extends StoreCopyResponseAdaptors<StoreCopyFinishedResponse>
+    {
+        StoreFilesCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
+        {
+            super( storeFileStreamProvider, log );
+        }
+
+        @Override
+        public void onFileStreamingComplete( CompletableFuture<StoreCopyFinishedResponse> signal, StoreCopyFinishedResponse response )
+        {
+            signal.complete( response );
+        }
     }
 }

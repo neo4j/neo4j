@@ -78,7 +78,7 @@ class SimpleCatchupClient implements AutoCloseable
     PrepareStoreCopyResponse requestListOfFilesFromServer( StoreId expectedStoreId ) throws CatchUpClientException
     {
         return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
-                new PrepareStoreCopyResponseAdaptor( streamToDiskProvider, logProvider ) );
+                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, logProvider.getLog( SimpleCatchupClient.class ) ) );
     }
 
     StoreCopyFinishedResponse requestIndividualFile( File file ) throws CatchUpClientException
@@ -90,7 +90,7 @@ class SimpleCatchupClient implements AutoCloseable
     {
         long lastTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId );
-        return catchUpClient.makeBlockingRequest( from, storeFileRequest, new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDiskProvider, log ) );
+        return catchUpClient.makeBlockingRequest( from, storeFileRequest, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
     }
 
     private StoreId getStoreIdFromKernelStoreId( GraphDatabaseAPI graphDb )
@@ -109,7 +109,7 @@ class SimpleCatchupClient implements AutoCloseable
         long lastCheckPointedTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         StoreId storeId = getStoreIdFromKernelStoreId( graphDb );
         GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId );
-        return catchUpClient.makeBlockingRequest( from, request, new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDiskProvider, log ) );
+        return catchUpClient.makeBlockingRequest( from, request, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
     }
 
     @Override
