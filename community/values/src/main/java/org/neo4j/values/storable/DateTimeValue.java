@@ -220,7 +220,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 boolean selectingDate = fields.containsKey( Field.date );
                 boolean selectingTime = fields.containsKey( Field.time );
                 boolean selectingDateTime = fields.containsKey( Field.datetime );
-                boolean selectingEpoch = fields.containsKey( Field.epoch );
+                boolean selectingEpoch = fields.containsKey( Field.epochSeconds ) || fields.containsKey( Field.epochMillis );
                 boolean selectingTimeZone;
                 ZonedDateTime result;
                 if ( selectingDateTime )
@@ -238,13 +238,26 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 }
                 else if ( selectingEpoch )
                 {
-                    AnyValue epochField = fields.get( Field.epoch );
-                    if ( !(epochField instanceof IntegralValue) )
+                    if( fields.containsKey( Field.epochSeconds ) )
                     {
-                        throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", epochField ) );
+                        AnyValue epochField = fields.get( Field.epochSeconds );
+                        if ( !(epochField instanceof IntegralValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", epochField ) );
+                        }
+                        IntegralValue epochSeconds = (IntegralValue) epochField;
+                        result = ZonedDateTime.ofInstant( Instant.ofEpochMilli( epochSeconds.longValue() * 1000 ), timezone() );
                     }
-                    IntegralValue epoch = (IntegralValue) epochField;
-                    result = ZonedDateTime.ofInstant( Instant.ofEpochMilli( epoch.longValue() ), timezone() );
+                    else
+                    {
+                        AnyValue epochField = fields.get( Field.epochMillis );
+                        if ( !(epochField instanceof IntegralValue) )
+                        {
+                            throw new IllegalArgumentException( String.format( "Cannot construct date time from: %s", epochField ) );
+                        }
+                        IntegralValue epochMillis = (IntegralValue) epochField;
+                        result = ZonedDateTime.ofInstant( Instant.ofEpochMilli( epochMillis.longValue() ), timezone() );
+                    }
                     selectingTimeZone = false;
                 }
                 else if ( selectingTime || selectingDate )

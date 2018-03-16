@@ -270,13 +270,20 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     public final AnyValue get( String fieldName )
     {
         Field field = Field.fields.get( fieldName.toLowerCase() );
-        if ( field == Field.epoch )
+        if ( field == Field.epochSeconds || field == Field.epochMillis )
         {
             T temp = temporal();
             if ( temp instanceof ChronoZonedDateTime )
             {
                 ChronoZonedDateTime zdt = (ChronoZonedDateTime) temp;
-                return Values.longValue( zdt.toInstant().toEpochMilli() );
+                if ( field == Field.epochSeconds )
+                {
+                    return Values.longValue( zdt.toInstant().toEpochMilli() / 1000 );
+                }
+                else
+                {
+                    return Values.longValue( zdt.toInstant().toEpochMilli() );
+                }
             }
             else
             {
@@ -290,6 +297,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         if ( field == Field.offset )
         {
             return Values.stringValue( getZoneOffset().toString() );
+        }
+        if ( field == Field.offsetMinutes )
+        {
+            return Values.intValue( getZoneOffset().getTotalSeconds() / 60 );
         }
         if ( field == null || field.field == null )
         {
@@ -564,6 +575,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 throw new IllegalArgumentException( "Not supported: " + name() );
             }
         },
+        offsetMinutes//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new IllegalArgumentException( "Not supported: " + name() );
+            }
+        },
         // time zone
         timezone//<pre>
         { //</pre>
@@ -652,7 +672,30 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 return true;
             }
         },
-        epoch//<pre>
+        epochSeconds//<pre>
+        { //<pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                if ( !builder.supportsEpoch() )
+                {
+                    throw new IllegalArgumentException( "Not supported: " + name() );
+                }
+                if ( builder.state == null )
+                {
+                    builder.state = new DateTimeBuilder( );
+                }
+                builder.state = builder.state.assign( this, value );
+            }
+
+            @Override
+            boolean isGroupSelector()
+            {
+                return true;
+            }
+        },
+        epochMillis//<pre>
         { //<pre>
 
             @Override
@@ -763,7 +806,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( field == Field.datetime || field == Field.epoch )
+            if ( field == Field.datetime || field == Field.epochSeconds || field == Field.epochMillis )
             {
                 return new SelectDateTimeDTBuilder( date, time ).assign( field, value );
             }
@@ -806,7 +849,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     private static class SelectDateTimeDTBuilder extends DateTimeBuilder
     {
         private AnyValue datetime;
-        private AnyValue epoch;
+        private AnyValue epochSeconds;
+        private AnyValue epochMillis;
 
         SelectDateTimeDTBuilder( DateBuilder date, ConstructTime time )
         {
@@ -824,23 +868,43 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( field == Field.date || field == Field.time )
             {
-                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime or epoch." );
+                throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime or epochSeconds or epochMillis." );
             }
             else if ( field == Field.datetime )
             {
-                if ( epoch != null )
+                if ( epochSeconds != null )
                 {
-                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epoch." );
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochSeconds." );
+                }
+                else if ( epochMillis != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochMillis." );
                 }
                 datetime = assignment( Field.datetime, datetime, value );
             }
-            else if ( field == Field.epoch )
+            else if ( field == Field.epochSeconds )
             {
-                if ( datetime != null )
+                if ( epochMillis != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochMillis." );
+                }
+                else if ( datetime != null )
                 {
                     throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
                 }
-                epoch = assignment( Field.epoch, epoch, value );
+                epochSeconds = assignment( Field.epochSeconds, epochSeconds, value );
+            }
+            else if ( field == Field.epochMillis )
+            {
+                if ( epochSeconds != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with epochSeconds." );
+                }
+                else if ( datetime != null )
+                {
+                    throw new IllegalArgumentException( field.name() + " cannot be selected together with datetime." );
+                }
+                epochMillis = assignment( Field.epochMillis, epochMillis, value );
             }
             else
             {
@@ -860,7 +924,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         @Override
         DateTimeBuilder assign( Field field, AnyValue value )
         {
-            if ( field == Field.datetime || field == Field.epoch )
+            if ( field == Field.datetime || field == Field.epochSeconds || field == Field.epochMillis )
             {
                 throw new IllegalArgumentException( field.name() + " cannot be selected together with date or time." );
             }
