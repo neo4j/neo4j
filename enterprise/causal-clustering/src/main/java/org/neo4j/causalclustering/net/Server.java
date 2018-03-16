@@ -21,12 +21,10 @@ package org.neo4j.causalclustering.net;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.net.BindException;
@@ -37,31 +35,43 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 public class Server extends LifecycleAdapter
 {
-    private final Log dbgLog;
+    private final Log debugLog;
     private final Log userLog;
     private final String serverName;
 
     private final NamedThreadFactory threadFactory;
-    private final ChannelInitializer<SocketChannel> childHandler;
-    private final ChannelHandler serverHandler;
+    private final ChildInitializer childInitializer;
+    private final ChannelInboundHandler parentHandler;
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
     private Channel channel;
 
-    public Server( ChannelInitializer<SocketChannel> childHandler, ChannelHandler serverHandler, LogProvider dbgLogProvider, LogProvider userLogProvider,
+    public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
+            String serverName )
+    {
+        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName );
+    }
+
+    public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
             ListenSocketAddress listenAddress, String serverName )
     {
-        this.childHandler = childHandler;
-        this.serverHandler = serverHandler;
+        this.childInitializer = childInitializer;
+        this.parentHandler = parentHandler;
         this.listenAddress = listenAddress;
-        this.dbgLog = dbgLogProvider.getLog( getClass() );
+        this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.serverName = serverName;
         this.threadFactory = new NamedThreadFactory( serverName );
+    }
+
+    public Server( ChildInitializer childInitializer, ListenSocketAddress listenAddress, String serverName )
+    {
+        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName );
     }
 
     @Override
@@ -79,11 +89,11 @@ public class Server extends LifecycleAdapter
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
-                .childHandler( childHandler );
+                .childHandler( childInitializer.asChannelInitializer() );
 
-        if ( serverHandler != null )
+        if ( parentHandler != null )
         {
-            bootstrap.handler( serverHandler );
+            bootstrap.handler( parentHandler );
         }
 
         try
@@ -97,7 +107,7 @@ public class Server extends LifecycleAdapter
             {
                 String message = serverName + ": address is already bound: " + listenAddress;
                 userLog.error( message );
-                dbgLog.error( message, e );
+                debugLog.error( message, e );
                 throw e;
             }
         }
@@ -111,7 +121,7 @@ public class Server extends LifecycleAdapter
             return;
         }
 
-        dbgLog.info( serverName + ": stopping and unbinding from: " + listenAddress );
+        debugLog.info( serverName + ": stopping and unbinding from: " + listenAddress );
         try
         {
             channel.close().sync();
@@ -120,14 +130,18 @@ public class Server extends LifecycleAdapter
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            dbgLog.warn( "Interrupted while closing channel." );
+            debugLog.warn( "Interrupted while closing channel." );
         }
 
-        if ( workerGroup != null &&
-                workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        if ( workerGroup != null && workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
         {
-            dbgLog.warn( "Worker group not shutdown within 10 seconds." );
+            debugLog.warn( "Worker group not shutdown within 10 seconds." );
         }
         workerGroup = null;
+    }
+
+    public ListenSocketAddress address()
+    {
+        return listenAddress;
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +61,7 @@ public class ConnectionInfoIT
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getLocalPort() );
 
-        Server catchupServer = new Server( mockInitializer(), null, logProvider, userLogProvider, listenSocketAddress, "server-name" );
+        Server catchupServer = new Server( channel -> { }, logProvider, userLogProvider, listenSocketAddress, "server-name" );
 
         //then
         try
@@ -76,18 +74,6 @@ public class ConnectionInfoIT
         }
         logProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
         userLogProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
-    }
-
-    private ChannelInitializer<SocketChannel> mockInitializer()
-    {
-        return new ChannelInitializer<SocketChannel>()
-        {
-            @Override
-            protected void initChannel( SocketChannel ch )
-            {
-
-            }
-        };
     }
 
     @SuppressWarnings( "SameParameterValue" )

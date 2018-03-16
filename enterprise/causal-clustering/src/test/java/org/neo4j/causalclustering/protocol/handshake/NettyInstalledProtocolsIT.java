@@ -40,6 +40,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -215,7 +216,7 @@ public class NettyInstalledProtocolsIT
                     .option( ChannelOption.SO_REUSEADDR, true )
                     .localAddress( 0 )
                     .childHandler( new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                            protocolInstallerRepository, pipelineBuilderFactory, log ) );
+                            protocolInstallerRepository, pipelineBuilderFactory, log ).asChannelInitializer() );
 
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }
@@ -253,8 +254,9 @@ public class NettyInstalledProtocolsIT
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
                     new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allClientInstallers );
             eventLoopGroup = new NioEventLoopGroup();
+            Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             handshakeClientInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                    protocolInstallerRepository, pipelineBuilderFactory, config, logProvider );
+                    protocolInstallerRepository, pipelineBuilderFactory, handshakeTimeout, logProvider );
             bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( handshakeClientInitializer );
         }
 

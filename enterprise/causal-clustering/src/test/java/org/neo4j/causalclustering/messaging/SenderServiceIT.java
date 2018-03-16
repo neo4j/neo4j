@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
@@ -52,7 +53,6 @@ import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -154,7 +154,7 @@ public class SenderServiceIT
                 modifierProtocolRepository,
                 protocolInstaller,
                 pipelineFactory,
-                Config.defaults(),
+                Duration.ofSeconds(5),
                 logProvider );
 
         return new SenderService( channelInitializer, logProvider );

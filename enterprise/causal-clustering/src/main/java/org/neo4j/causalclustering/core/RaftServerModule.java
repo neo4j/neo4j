@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelInboundHandler;
 
 import java.util.Collection;
 import java.util.function.Function;
@@ -75,7 +75,7 @@ class RaftServerModule
     private RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
             LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger,
             CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
-            Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelHandler installedProtocolsHandler )
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
         this.platformModule = platformModule;
         this.consensusModule = consensusModule;
@@ -96,14 +96,14 @@ class RaftServerModule
     static void createAndStart( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule,
             CoreServerModule coreServerModule, LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory,
             MessageLogger<MemberId> messageLogger, CoreTopologyService topologyService, ApplicationSupportedProtocols supportedApplicationProtocol,
-            Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelHandler installedProtocolsHandler )
+            Collection<ModifierSupportedProtocols> supportedModifierProtocols, ChannelInboundHandler installedProtocolsHandler )
     {
         new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, pipelineBuilderFactory, messageLogger,
                         topologyService, supportedApplicationProtocol, supportedModifierProtocols, installedProtocolsHandler );
     }
 
     private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain,
-            ChannelHandler installedProtocolsHandler )
+            ChannelInboundHandler installedProtocolsHandler )
     {
         ApplicationProtocolRepository applicationProtocolRepository =
                 new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedApplicationProtocol );

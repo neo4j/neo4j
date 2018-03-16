@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -255,8 +256,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
                         singletonList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ) ),
                         ModifierProtocolInstaller.allClientInstallers );
 
+        Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                protocolInstallerRepository, clientPipelineBuilderFactory, config, logProvider );
+                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;

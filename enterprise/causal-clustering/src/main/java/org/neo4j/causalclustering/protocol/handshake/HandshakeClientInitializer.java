@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.messaging.ReconnectingChannel;
@@ -35,7 +34,6 @@ import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -53,12 +51,12 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory,
-            Config config, LogProvider logProvider )
+            Duration handshakeTimeout, LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
         this.applicationProtocolRepository = applicationProtocolRepository;
         this.modifierProtocolRepository = modifierProtocolRepository;
-        this.timeout = config.get( CausalClusteringSettings.handshake_timeout );
+        this.timeout = handshakeTimeout;
         this.protocolInstaller = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
         this.timeoutStrategy = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );

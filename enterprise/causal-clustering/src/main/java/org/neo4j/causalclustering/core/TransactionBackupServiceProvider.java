@@ -19,12 +19,11 @@
  */
 package org.neo4j.causalclustering.core;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.ChannelInboundHandler;
 
 import java.util.Optional;
 
+import org.neo4j.causalclustering.net.ChildInitializer;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -35,16 +34,16 @@ public class TransactionBackupServiceProvider
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
     private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
-    private final ChannelInitializer<SocketChannel> channelInitializer;
-    private final ChannelHandler serverHandler;
+    private final ChildInitializer childInitializer;
+    private final ChannelInboundHandler parentHandler;
 
-    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChannelInitializer<SocketChannel> channelInitializer,
-            ChannelHandler serverHandler )
+    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChildInitializer childInitializer,
+            ChannelInboundHandler parentHandler )
     {
         this.logProvider = logProvider;
         this.userLogProvider = userLogProvider;
-        this.channelInitializer = channelInitializer;
-        this.serverHandler = serverHandler;
+        this.childInitializer = childInitializer;
+        this.parentHandler = parentHandler;
         this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
     }
 
@@ -52,7 +51,7 @@ public class TransactionBackupServiceProvider
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return Optional.of( new Server( channelInitializer, serverHandler, logProvider, userLogProvider,
+            return Optional.of( new Server( childInitializer, parentHandler, logProvider, userLogProvider,
                             transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ), "backup-server" ) );
         }
         else

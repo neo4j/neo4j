@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
@@ -102,7 +103,7 @@ public class CatchupProtocolServerInstaller implements ProtocolInstaller<Orienta
                 .add( "enc_snapshot", new CoreSnapshotEncoder() )
                 .add( "enc_file_chunk", new FileChunkEncoder() )
                 .add( "enc_file_header", new FileHeaderEncoder() )
-                .add( "in_req_type", handler.serverMessageHandler() )
+                .add( "in_req_type", serverMessageHandler( state ) )
                 .add( "dec_req_dispatch", requestDecoders( state ) )
                 .add( "out_chunked_write", new ChunkedWriteHandler() )
                 .add( "hnd_req_tx", handler.txPullRequestHandler() )
@@ -112,6 +113,11 @@ public class CatchupProtocolServerInstaller implements ProtocolInstaller<Orienta
                 .add( "hnd_req_index_snapshot", handler.getIndexSnapshotRequestHandler() )
                 .add( "hnd_req_snapshot", handler.snapshotHandler().map( Collections::singletonList ).orElse( emptyList() ) )
                 .install();
+    }
+
+    private ChannelHandler serverMessageHandler( CatchupServerProtocol state )
+    {
+        return new ServerMessageTypeHandler( state, logProvider );
     }
 
     private ChannelInboundHandler requestDecoders( CatchupServerProtocol protocol )

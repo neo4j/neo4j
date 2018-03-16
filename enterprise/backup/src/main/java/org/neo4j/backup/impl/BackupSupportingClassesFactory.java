@@ -24,6 +24,7 @@ import io.netty.channel.socket.SocketChannel;
 
 import java.io.OutputStream;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -35,6 +36,7 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
@@ -141,8 +143,9 @@ public class BackupSupportingClassesFactory
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
                     singletonList( new CatchupProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider, handler ) ),
                     ModifierProtocolInstaller.allClientInstallers );
+            Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
-                    clientPipelineBuilderFactory, config, logProvider );
+                    clientPipelineBuilderFactory, handshakeTimeout , logProvider );
         };
     }
 

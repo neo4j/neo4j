@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,16 +26,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.neo4j.causalclustering.StrippedCatchupServer;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
+import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -50,6 +46,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -65,8 +62,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.causalclustering.catchup.storecopy.RealStrippedCatchupServer.getCheckPointer;
-import static org.neo4j.causalclustering.catchup.storecopy.RealStrippedCatchupServer.getNeoStoreDataSource;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
@@ -81,7 +76,7 @@ public class CatchupServerIT
     public static final Label LABEL = label( "MyLabel" );
     private static final String INDEX = "index";
     private GraphDatabaseAPI graphDb;
-    private StrippedCatchupServer catchupServer;
+    private TestCatchupServer catchupServer;
     private File temporaryDirectory;
 
     private PageCache pageCache;
@@ -90,7 +85,7 @@ public class CatchupServerIT
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
-    private CatchUpClient catchUpClient;
+    private CatchUpClient catchupClient;
     private DefaultFileSystemAbstraction fsa = fileSystemRule.get();
 
     @Before
@@ -101,11 +96,11 @@ public class CatchupServerIT
         createLegacyIndex();
         createPropertyIndex();
         addData( graphDb );
-        catchupServer = new RealStrippedCatchupServer( fsa, graphDb );
-        catchupServer.before();
+
+        catchupServer = new TestCatchupServer( fsa, graphDb );
         catchupServer.start();
-        catchUpClient = new CatchUpClient( LOG_PROVIDER, Clock.systemUTC(), 10000, handler -> emptyInitializer() );
-        catchUpClient.start();
+        catchupClient = new CatchupClientBuilder().build();
+        catchupClient.start();
         pageCache = graphDb.getDependencyResolver().resolveDependency( PageCache.class );
     }
 
@@ -117,8 +112,14 @@ public class CatchupServerIT
         {
             graphDb.shutdown();
         }
-        Optional.ofNullable( catchupServer ).ifPresent( StrippedCatchupServer::stop );
-        Optional.ofNullable( catchUpClient ).ifPresent( CatchUpClient::stop );
+        if ( catchupClient != null )
+        {
+            catchupClient.stop();
+        }
+        if ( catchupServer != null )
+        {
+            catchupServer.stop();
+        }
     }
 
     @Test
@@ -126,7 +127,7 @@ public class CatchupServerIT
     {
         // given (setup) required runtime subject dependencies
         NeoStoreDataSource neoStoreDataSource = getNeoStoreDataSource( graphDb );
-        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
+        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // when
         PrepareStoreCopyResponse prepareStoreCopyResponse = simpleCatchupClient.requestListOfFilesFromServer();
@@ -137,9 +138,9 @@ public class CatchupServerIT
 
         // and downloaded files are identical to source
         List<File> expectedCountStoreFiles = listServerExpectedNonReplayableFiles( neoStoreDataSource );
-        for ( File snapshotedStorefile : expectedCountStoreFiles )
+        for ( File storeFileSnapshot : expectedCountStoreFiles )
         {
-            fileContentEquals( databaseFileToClientFile( snapshotedStorefile ), snapshotedStorefile );
+            fileContentEquals( databaseFileToClientFile( storeFileSnapshot ), storeFileSnapshot );
         }
 
         // and
@@ -154,7 +155,7 @@ public class CatchupServerIT
     {
         // given (setup) required runtime subject dependencies
         addData( graphDb );
-        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
+        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // when the list of files are requested from the server with the wrong storeId
         PrepareStoreCopyResponse prepareStoreCopyResponse = simpleCatchupClient.requestListOfFilesFromServer( WRONG_STORE_ID );
@@ -176,7 +177,7 @@ public class CatchupServerIT
         File existingFile = new File( temporaryDirectory, EXISTING_FILE_NAME );
 
         // and
-        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
+        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // when we copy that file
         pageCache.flushAndForce();
@@ -198,7 +199,7 @@ public class CatchupServerIT
         NeoStoreDataSource neoStoreDataSource = getNeoStoreDataSource( graphDb );
         List<File> expectingFiles = neoStoreDataSource.getNeoStoreFileListing().builder().excludeAll().includeSchemaIndexStoreFiles().build().stream().map(
                 StoreFileMetadata::file ).collect( toList() );
-        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
+        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // and
         PrimitiveLongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).iterator();
@@ -224,7 +225,7 @@ public class CatchupServerIT
         File expectedExistingFile = new File( graphDb.getStoreDir(), EXISTING_FILE_NAME );
 
         // and
-        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchUpClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
+        SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // when we copy that file using a different storeId
         StoreCopyFinishedResponse storeCopyFinishedResponse = simpleCatchupClient.requestIndividualFile( expectedExistingFile, WRONG_STORE_ID );
@@ -343,15 +344,13 @@ public class CatchupServerIT
         }
     }
 
-    private ChannelInitializer<SocketChannel> emptyInitializer()
+    private static CheckPointer getCheckPointer( GraphDatabaseAPI graphDb )
     {
-        return new ChannelInitializer<SocketChannel>()
-        {
-            @Override
-            protected void initChannel( SocketChannel ch )
-            {
+        return graphDb.getDependencyResolver().resolveDependency( CheckPointer.class );
+    }
 
-            }
-        };
+    private static NeoStoreDataSource getNeoStoreDataSource( GraphDatabaseAPI graphDb )
+    {
+        return graphDb.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
     }
 }

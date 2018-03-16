@@ -17,23 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.net;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 
-import java.util.Optional;
-
-public interface CatchupServerHandler
+public interface ChildInitializer
 {
-    ChannelHandler txPullRequestHandler();
+    void initChannel( SocketChannel channel ) throws Exception;
 
-    ChannelHandler getStoreIdRequestHandler();
-
-    ChannelHandler storeListingRequestHandler();
-
-    ChannelHandler getStoreFileRequestHandler();
-
-    ChannelHandler getIndexSnapshotRequestHandler();
-
-    Optional<ChannelHandler> snapshotHandler();
+    default ChannelInitializer<SocketChannel> asChannelInitializer()
+    {
+        return new ChannelInitializer<SocketChannel>()
+        {
+            @Override
+            protected void initChannel( SocketChannel channel ) throws Exception
+            {
+                ChildInitializer.this.initChannel( channel );
+            }
+        };
+    }
 }

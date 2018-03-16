@@ -24,6 +24,7 @@ import io.netty.channel.socket.SocketChannel;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
+import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -243,8 +245,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
                     singletonList( new CatchupProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider, handler ) ),
                     ModifierProtocolInstaller.allClientInstallers );
+            Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
-                    clientPipelineBuilderFactory, config, logProvider );
+                    clientPipelineBuilderFactory, handshakeTimeout, logProvider );
         };
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
@@ -320,8 +323,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
 
-        Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory = state -> new CatchupServerHandler( state, platformModule.monitors, logProvider,
-                localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+        Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory = state -> new RegularCatchupServerHandler( state, platformModule.monitors,
+                logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, null, new CheckpointerSupplier( platformModule.dependencies ) );
 
