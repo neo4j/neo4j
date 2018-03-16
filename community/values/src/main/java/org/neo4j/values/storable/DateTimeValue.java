@@ -62,6 +62,9 @@ import static org.neo4j.values.storable.TimeValue.parseOffset;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
+    public static final DateTimeValue MIN_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MIN, ZoneOffset.MIN ) );
+    public static final DateTimeValue MAX_VALUE = new DateTimeValue( ZonedDateTime.of( LocalDateTime.MAX, ZoneOffset.MAX ) );
+
     public static DateTimeValue datetime( DateValue date, LocalTimeValue time, ZoneId zone )
     {
         return new DateTimeValue( ZonedDateTime.of( date.temporal(), time.temporal(), zone ) );
@@ -406,8 +409,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     {
         if ( other instanceof DateTimeValue )
         {
-            DateTimeValue that = (DateTimeValue) other;
-            return value.toInstant().equals( that.value.toInstant() );
+            ZonedDateTime that = ((DateTimeValue) other).value;
+            return value.toLocalDateTime().equals( that.toLocalDateTime() ) &&
+                   value.getOffset().equals( that.getOffset() ) &&
+                   !areDifferentZones( value.getZone(), that.getZone() );
+
         }
         return false;
     }
@@ -429,10 +435,42 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    int unsafeCompareTo( Value other )
     {
-        DateTimeValue other = (DateTimeValue) otherValue;
-        return value.compareTo( other.value );
+        ZonedDateTime that = ((DateTimeValue) other).value;
+        int cmp = Long.compare( value.toEpochSecond(), that.toEpochSecond() );
+        if ( cmp == 0 )
+        {
+            cmp = value.toLocalTime().getNano() - that.toLocalTime().getNano();
+            if ( cmp == 0 )
+            {
+                cmp = value.toLocalDateTime().compareTo( that.toLocalDateTime() );
+                if ( cmp == 0 )
+                {
+                    ZoneId thisZone = value.getZone();
+                    ZoneId thatZone = that.getZone();
+                    boolean thisIsOffset = thisZone instanceof ZoneOffset;
+                    boolean thatIsOffset = thatZone instanceof ZoneOffset;
+                    cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
+                    if ( cmp == 0 && areDifferentZones( thisZone, thatZone ) )
+                    {
+                        cmp = thisZone.getId().compareTo( thatZone.getId() );
+                    }
+                    if ( cmp == 0 )
+                    {
+                        cmp = value.getChronology().compareTo( that.getChronology() );
+                    }
+                }
+            }
+        }
+        return cmp;
+    }
+
+    private boolean areDifferentZones( ZoneId thisZone, ZoneId thatZone )
+    {
+        return !(thisZone instanceof ZoneOffset) &&
+               !(thatZone instanceof ZoneOffset) &&
+                TimeZones.map( thisZone.getId() ) != TimeZones.map( thatZone.getId() );
     }
 
     @Override

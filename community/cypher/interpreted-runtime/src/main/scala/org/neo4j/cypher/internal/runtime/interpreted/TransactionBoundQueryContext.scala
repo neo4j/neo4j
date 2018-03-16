@@ -24,15 +24,13 @@ import java.util.function.Predicate
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.{PrimitiveLongIterator, PrimitiveLongResourceIterator}
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_POINT, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
-import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException, NonEmptyList}
+import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -61,7 +59,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
-import org.neo4j.values.storable.{PointValue, TextValue, Value, Values, _}
+import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
 
@@ -240,107 +238,32 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
   }
 
-  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] = {
-    indexSearchMonitor.indexSeek(index, values)
-    val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    seek(index, predicates:_*)
+  val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
+                                    ValueGroup.TEXT,
+                                    ValueGroup.GEOMETRY,
+                                    ValueGroup.DATE,
+                                    ValueGroup.LOCAL_DATE_TIME,
+                                    ValueGroup.ZONED_DATE_TIME,
+                                    ValueGroup.LOCAL_TIME,
+                                    ValueGroup.ZONED_TIME,
+                                    ValueGroup.DURATION)
+
+  override def indexSeek(index: IndexReference, predicates: Seq[IndexQuery]): Iterator[NodeValue] = {
+
+    val impossiblePredicate =
+      predicates.exists {
+        case p:IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
+        case p:IndexQuery =>
+          !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
+      }
+
+    if (impossiblePredicate) Iterator.empty
+    else seek(index, predicates:_*)
   }
 
   override def indexReference(label: Int,
                               properties: Int*): IndexReference =
     transactionalContext.kernelTransaction.schemaRead().index(label, properties:_*)
-
-  override def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue] = value match {
-
-    case PrefixRange(null) => Iterator.empty
-    case PrefixRange(prefix: String) =>
-      indexSeekByPrefixRange(index, prefix)
-    case range: InequalitySeekRange[Any] =>
-      indexSeekByPrefixRange(index, range)
-    case range: PointDistanceRange[_] =>
-      val distance = range.distance match {
-        case n:NumberValue => n.doubleValue()
-        case n:Number => n.doubleValue()
-        case _ =>
-          // We can't compare against something that is not a number, so no rows will match
-          return Iterator.empty
-      }
-
-      val bbox = range.point match {
-        case p: PointValue => p.getCoordinateReferenceSystem.getCalculator.boundingBox(p, distance)
-        case _ =>
-          // when it tries to evaluate the distance on something that is not a point
-          return Iterator.empty
-      }
-      val (from, to) = (bbox.first(), bbox.other())
-
-      val (fromBounds, toBounds) =
-        if (range.inclusive)
-          (NonEmptyList(InclusiveBound(from)), NonEmptyList(InclusiveBound(to)))
-        else
-          (NonEmptyList(ExclusiveBound(from)), NonEmptyList(ExclusiveBound(to)))
-
-      indexSeekByGeometryRange(index, RangeBetween(RangeGreaterThan(fromBounds), RangeLessThan(toBounds)))
-    case range =>
-      throw new InternalException(s"Unsupported index seek by range: $range")
-  }
-
-  private def indexSeekByPrefixRange(index: IndexReference, range: InequalitySeekRange[Any]): scala.Iterator[NodeValue] = {
-    val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
-      bound.endPoint match {
-        case n: Number => classOf[Number]
-        case s: String => classOf[String]
-        case c: Character => classOf[String]
-        case p: PointValue => classOf[PointValue]
-        case _ => classOf[Any]
-      }
-    }
-
-    val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
-    val optGeometricRange = groupedRanges.get(classOf[PointValue]).map(_.asInstanceOf[InequalitySeekRange[PointValue]])
-    val anyRange = groupedRanges.get(classOf[Any])
-
-    if (anyRange.nonEmpty) {
-      // If we get back an exclusion test, the range could return values otherwise it is empty
-      anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
-        throw new IllegalArgumentException(
-          "Cannot compare a property against values that are neither strings nor numbers.")
-      }.getOrElse(Iterator.empty)
-    } else {
-      (optNumericRange, optStringRange, optGeometricRange) match {
-        case (Some(numericRange), None, None) => indexSeekByNumericalRange(index, numericRange)
-        case (None, Some(stringRange), None) => indexSeekByStringRange(index, stringRange)
-        case (None, None, Some(geometricRange)) => indexSeekByGeometryRange(index, geometricRange)
-        case (None, None, None) =>
-          // If we get here, the non-empty list of range bounds was partitioned into two empty ones
-          throw new IllegalStateException("Failed to partition range bounds")
-
-        case (_, _, _) =>
-          // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
-          // The order of predicate evaluation is unspecified, i.e.
-          // LabelScan fby Filter(n.prop < 1) fby Filter(n.prop > "London") is a valid plan
-          // If the first filter returns no results, the plan returns no results.
-          // If the first filter returns any result, the following filter will fail since
-          // comparing string against numbers throws an exception. Same for the reverse case.
-          //
-          // Below we simulate this behaviour:
-          //
-          if (optNumericRange.exists(indexSeekByNumericalRange(index, _).isEmpty)
-            || optStringRange.exists(indexSeekByStringRange(index, _).isEmpty)
-            || optGeometricRange.exists(indexSeekByGeometryRange(index, _).isEmpty)) {
-            Iterator.empty
-          } else {
-            throw new IllegalArgumentException(
-              s"Cannot compare a property against combinations of numbers, strings and geometries. They are incomparable.")
-          }
-
-      }
-    }
-  }
-
-  private def indexSeekByPrefixRange(index: IndexReference, prefix: String): scala.Iterator[NodeValue] =
-    seek(index, IndexQuery.stringPrefix(index.properties()(0), prefix))
 
   private def seek(index: IndexReference, query: IndexQuery*) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
@@ -366,88 +289,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  private def indexSeekByNumericalRange(index: IndexReference,
-                                        range: InequalitySeekRange[Number]): scala.Iterator[NodeValue] = (range match {
-
-    case rangeLessThan: RangeLessThan[Number] =>
-      rangeLessThan.limit(BY_NUMBER).map { limit =>
-        val rangePredicate = IndexQuery.range(index.properties()(0), null, false, limit.endPoint, limit.isInclusive)
-        seek(index, rangePredicate)
-      }
-
-    case rangeGreaterThan: RangeGreaterThan[Number] =>
-      rangeGreaterThan.limit(BY_NUMBER).map { limit =>
-        val rangePredicate = IndexQuery.range(index.properties()(0), limit.endPoint, limit.isInclusive, null, false)
-        seek(index, rangePredicate)
-      }
-
-    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-      rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
-        rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-          val rangePredicate = IndexQuery
-            .range(index.properties()(0), greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
-                   lessThanLimit.endPoint,
-                   lessThanLimit.isInclusive)
-          seek(index, rangePredicate)
-        }
-      }
-  }).getOrElse(Iterator.empty)
-
-  private def indexSeekByGeometryRange(index: IndexReference,
-                                        range: InequalitySeekRange[PointValue]): scala.Iterator[NodeValue] = (range match {
-
-    case rangeLessThan: RangeLessThan[PointValue] =>
-      rangeLessThan.limit(BY_POINT).map { limit =>
-        val rangePredicate = IndexQuery.range(index.properties()(0), null, false, limit.endPoint, limit.isInclusive)
-        seek(index, rangePredicate)
-      }
-
-    case rangeGreaterThan: RangeGreaterThan[PointValue] =>
-      rangeGreaterThan.limit(BY_POINT).map { limit =>
-        val rangePredicate = IndexQuery.range(index.properties()(0), limit.endPoint, limit.isInclusive, null, false)
-        seek(index, rangePredicate)
-      }
-
-    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-      rangeGreaterThan.limit(BY_POINT).flatMap { greaterThanLimit =>
-        rangeLessThan.limit(BY_POINT).map { lessThanLimit =>
-          val rangePredicate = IndexQuery
-            .range(index.properties()(0), greaterThanLimit.endPoint, greaterThanLimit.isInclusive,
-              lessThanLimit.endPoint,
-              lessThanLimit.isInclusive)
-          seek(index, rangePredicate)
-        }
-      }
-  }).getOrElse(Iterator.empty)
-
-  private def indexSeekByStringRange(index: IndexReference,
-                                     range: InequalitySeekRange[String]): scala.Iterator[NodeValue] = range match {
-
-    case rangeLessThan: RangeLessThan[String] =>
-      rangeLessThan.limit(BY_STRING).map { limit =>
-        val rangePredicate = IndexQuery
-          .range(index.properties()(0), null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive)
-        seek(index, rangePredicate)
-      }.getOrElse(Iterator.empty)
-
-    case rangeGreaterThan: RangeGreaterThan[String] =>
-      rangeGreaterThan.limit(BY_STRING).map { limit =>
-        val rangePredicate = IndexQuery
-          .range(index.properties()(0), limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false)
-        seek(index, rangePredicate)
-      }.getOrElse(Iterator.empty)
-
-    case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-      rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
-        rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-          val rangePredicate = IndexQuery
-            .range(index.properties()(0), greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive,
-                   lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive)
-          seek(index, rangePredicate)
-        }
-      }.getOrElse(Iterator.empty)
-  }
-
   override def indexScan(index: IndexReference): Iterator[NodeValue] =
     JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getByIdIfExists)
 
@@ -459,10 +300,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def indexScanByEndsWith(index: IndexReference, value: String): Iterator[NodeValue] =
     seek(index, IndexQuery.stringSuffix(index.properties()(0), value))
 
-  override def lockingUniqueIndexSeek(indexReference: IndexReference, values: Seq[Any]): Option[NodeValue] = {
-    indexSearchMonitor.lockingUniqueIndexSeek(indexReference, values)
+  override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
+    indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
-    val predicates = indexReference.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
+    val predicates = indexReference.properties.zip(queries).map(p => IndexQuery.exact(p._1, p._2.value()))
     val nodeId = transactionalContext.kernelTransaction.dataRead().nodeUniqueIndexSeek(index, predicates:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }

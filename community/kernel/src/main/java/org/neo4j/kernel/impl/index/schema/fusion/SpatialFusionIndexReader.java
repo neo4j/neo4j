@@ -96,22 +96,9 @@ class SpatialFusionIndexReader implements IndexReader
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        if ( predicates[0] instanceof ExistsPredicate )
-        {
-            PrimitiveLongResourceIterator[] iterators = new PrimitiveLongResourceIterator[readerMap.size()];
-            int i = 0;
-            for ( IndexReader reader : readerMap.values() )
-            {
-                iterators[i++] = reader.query( predicates[0] );
-            }
-            return PrimitiveLongResourceCollections.concat( iterators );
-        }
-        else
-        {
-            NodeValueIterator nodeValueIterator = new NodeValueIterator();
-            query( nodeValueIterator, IndexOrder.NONE, predicates );
-            return nodeValueIterator;
-        }
+        NodeValueIterator nodeValueIterator = new NodeValueIterator();
+        query( nodeValueIterator, IndexOrder.NONE, predicates );
+        return nodeValueIterator;
     }
 
     private IndexReader selectIf( IndexQuery... predicates )

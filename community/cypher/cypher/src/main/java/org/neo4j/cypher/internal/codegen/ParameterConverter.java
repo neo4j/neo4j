@@ -376,9 +376,9 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
+    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayUTC ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override

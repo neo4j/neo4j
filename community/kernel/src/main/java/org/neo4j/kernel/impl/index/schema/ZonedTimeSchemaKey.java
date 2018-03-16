@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.ZoneOffset;
 
-import org.neo4j.kernel.impl.store.TimeZones;
+import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link TimeValue}.
@@ -40,13 +40,21 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
             Integer.BYTES + /* zoneOffsetSeconds */
             Long.BYTES;     /* entityId */
 
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+
     long nanosOfDayUTC;
     int zoneOffsetSeconds;
 
     @Override
     public Value asValue()
     {
-        return TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
+        // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+        if ( TimeZones.validZoneOffset( zoneOffsetSeconds ) )
+        {
+            return TimeValue.time( nanosOfDayUTC + zoneOffsetSeconds * NANOS_PER_SECOND,
+                                   ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
+        }
+        return NO_VALUE;
     }
 
     @Override
@@ -67,9 +75,9 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
     public int compareValueTo( ZonedTimeSchemaKey other )
     {
         int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
-        if ( compare == 0 && differentValidZoneOffset( other ) )
+        if ( compare == 0 )
         {
-            compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
+            compare = Integer.compare( zoneOffsetSeconds, other.zoneOffsetSeconds );
         }
         return compare;
     }
@@ -82,9 +90,9 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
+    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
     {
-        this.nanosOfDayUTC = nanosOfDayUTC;
+        this.nanosOfDayUTC = nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
         this.zoneOffsetSeconds = offsetSeconds;
     }
 
@@ -97,12 +105,5 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
                     "Key layout does only support TimeValue, tried to create key from " + value );
         }
         return value;
-    }
-
-    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-    private boolean differentValidZoneOffset( ZonedTimeSchemaKey other )
-    {
-        return zoneOffsetSeconds != other.zoneOffsetSeconds &&
-                TimeZones.validZoneOffset( zoneOffsetSeconds ) && TimeZones.validZoneOffset( other.zoneOffsetSeconds );
     }
 }

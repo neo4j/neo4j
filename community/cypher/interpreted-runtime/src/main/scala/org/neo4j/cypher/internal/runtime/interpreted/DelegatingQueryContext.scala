@@ -114,11 +114,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
 
-  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] =
+  override def indexSeek(index: IndexReference, values: Seq[IndexQuery]): Iterator[NodeValue] =
     manyDbHits(inner.indexSeek(index, values))
-
-  override def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue] =
-    manyDbHits(inner.indexSeekByRange(index, value))
 
   override def indexScan(index: IndexReference): Iterator[NodeValue] = manyDbHits(inner.indexScan(index))
 
@@ -163,7 +160,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue] =
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] =
     singleDbHit(inner.lockingUniqueIndexSeek(index, values))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))

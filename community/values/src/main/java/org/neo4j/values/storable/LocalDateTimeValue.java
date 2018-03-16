@@ -58,6 +58,9 @@ import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
 public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalDateTimeValue>
 {
+    public static final LocalDateTimeValue MIN_VALUE = new LocalDateTimeValue( LocalDateTime.MIN );
+    public static final LocalDateTimeValue MAX_VALUE = new LocalDateTimeValue( LocalDateTime.MAX );
+
     public static LocalDateTimeValue localDateTime( DateValue date, LocalTimeValue time )
     {
         return new LocalDateTimeValue( LocalDateTime.of( date.temporal(), time.temporal() ) );

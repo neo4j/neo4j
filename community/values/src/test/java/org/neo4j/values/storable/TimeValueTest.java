@@ -113,10 +113,10 @@ public class TimeValueTest
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+                public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
                 {
-                    values.add( time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-                    locals.add( localTime( nanosOfDayUTC ) );
+                    values.add( time( nanosOfDayLocal, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+                    locals.add( localTime( nanosOfDayLocal ) );
                 }
             };
 
@@ -125,7 +125,7 @@ public class TimeValueTest
 
             // then
             assertEquals( singletonList( time ), values );
-            assertEquals( singletonList( inUTC( time ) ), locals );
+            assertEquals( singletonList( localTime( time.getLocalTimePart() ) ), locals );
         }
     }
 
@@ -170,15 +170,15 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldNotEqualSameTimeButDifferentTimezone()
+    public void shouldNotEqualSameInstantButDifferentTimezone()
     {
-        assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( time( 10000, UTC ), time( 10000, ZoneOffset.of( "+01:00" ) ) );
     }
 
     @Test
-    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
-        assertEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
+        assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

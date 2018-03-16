@@ -27,7 +27,7 @@ import org.scalacheck.Gen._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
-trait PatternGen extends  PropertyChecks {
+trait PatternGen extends PropertyChecks {
   protected def minPatternLength = 2
   protected def maxPatternLength = 8
   protected def numberOfTestRuns = 100

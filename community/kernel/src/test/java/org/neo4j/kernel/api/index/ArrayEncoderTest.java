@@ -108,10 +108,10 @@ public class ArrayEncoderTest
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
         assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
         assertEncoding( "", new String[]{} );
-        assertEncoding( "P1:4326:1.234;2.567|1:4326:2.345;5.678|2:7203:3.0;4.0;5.0|",
+        assertEncoding( "P1:4326:1.234;2.567|1:4326:2.345;5.678|2:9157:3.0;4.0;5.0|",
                 new Point[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 2.567 ),
                         Values.pointValue( CoordinateReferenceSystem.WGS84, 2.345, 5.678 ),
-                        Values.pointValue( CoordinateReferenceSystem.Cartesian, 3, 4, 5 )} );
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 3, 4, 5 )} );
         assertEncoding( "T1991-03-05|1992-04-06|", new LocalDate[]{DateValue.date( 1991, 3, 5 ).asObjectCopy(), DateValue.date( 1992, 4, 6 ).asObjectCopy()} );
         assertEncoding( "T12:45:13.000008676|05:04:50.000000076|",
                 new LocalTime[]{LocalTimeValue.localTime( 12, 45, 13, 8676 ).asObjectCopy(), LocalTimeValue.localTime( 5, 4, 50, 76 ).asObjectCopy()} );

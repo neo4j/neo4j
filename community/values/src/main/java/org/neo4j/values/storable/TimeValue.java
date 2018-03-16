@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -54,6 +53,9 @@ import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
+    public static final TimeValue MIN_VALUE = new TimeValue( OffsetTime.MIN );
+    public static final TimeValue MAX_VALUE = new TimeValue( OffsetTime.MAX );
+
     public static TimeValue time( OffsetTime time )
     {
         return new TimeValue( requireNonNull( time, "OffsetTime" ) );
@@ -70,9 +72,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
+    public static TimeValue time( long nanosOfDayLocal, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
+        return new TimeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), offset ) );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
@@ -297,19 +299,16 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public boolean equals( Value other )
     {
-        // TODO: do we want equality to be this permissive?
-        // This means that time("14:30+0100") = time("15:30+0200")
-        return other instanceof TimeValue && value.isEqual( ((TimeValue) other).value );
+        return other instanceof TimeValue && value.equals( ((TimeValue) other).value );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        int offset = value.getOffset().getTotalSeconds();
+        int zoneOffsetSeconds = value.getOffset().getTotalSeconds();
         long seconds = value.getLong( ChronoField.SECOND_OF_DAY );
-        seconds = ((-offset % SECONDS_PER_DAY) + seconds + SECONDS_PER_DAY) % SECONDS_PER_DAY;
-        long nano = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
-        writer.writeTime( nano, offset );
+        long nanosOfDayLocal = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
+        writer.writeTime( nanosOfDayLocal, zoneOffsetSeconds );
     }
 
     @Override

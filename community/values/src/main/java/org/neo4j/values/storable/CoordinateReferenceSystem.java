@@ -20,20 +20,13 @@
 package org.neo4j.values.storable;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-
-import static java.lang.Math.asin;
-import static java.lang.Math.atan2;
-import static java.lang.Math.cos;
-import static java.lang.Math.pow;
-import static java.lang.Math.sin;
-import static java.lang.Math.sqrt;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.toRadians;
 
 public class CoordinateReferenceSystem implements CRS
 {
@@ -53,6 +46,11 @@ public class CoordinateReferenceSystem implements CRS
             all_by_name.put( crs.name.toLowerCase(), crs );
             all_by_href.put( crs.href.toLowerCase(), crs );
         }
+    }
+
+    public static Iterator<CoordinateReferenceSystem> all()
+    {
+        return Iterators.iterator( TYPES );
     }
 
     public static CoordinateReferenceSystem get( int tableId, int code )

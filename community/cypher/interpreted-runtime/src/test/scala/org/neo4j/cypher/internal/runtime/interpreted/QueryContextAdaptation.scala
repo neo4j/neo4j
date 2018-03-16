@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -91,7 +91,7 @@ trait QueryContextAdaptation {
 
   override def indexReference(label: Int, properties: Int*): IndexReference = ???
 
-  override def indexSeek(index: IndexReference, value: Seq[Any]): scala.Iterator[NodeValue] = ???
+  override def indexSeek(index: IndexReference, value: Seq[IndexQuery]): scala.Iterator[NodeValue] = ???
 
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
@@ -130,8 +130,6 @@ trait QueryContextAdaptation {
 
   override def nodeIsDense(node: Long): Boolean = ???
 
-  override def indexSeekByRange(index: IndexReference, value: Any): scala.Iterator[NodeValue] = ???
-
   override def setLabelsOnNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = ???
@@ -146,7 +144,7 @@ trait QueryContextAdaptation {
 
   override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = ???
 
-  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue] = ???
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = ???
 
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 

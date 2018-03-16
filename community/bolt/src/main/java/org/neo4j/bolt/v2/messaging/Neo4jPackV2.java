@@ -136,10 +136,10 @@ public class Neo4jPackV2 extends Neo4jPackV1
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws IOException
         {
             packStructHeader( 2, TIME );
-            pack( nanosOfDayUTC );
+            pack( nanosOfDayLocal );
             pack( offsetSeconds );
         }
 

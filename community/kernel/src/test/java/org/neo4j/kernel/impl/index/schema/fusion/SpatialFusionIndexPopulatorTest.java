@@ -64,7 +64,9 @@ public class SpatialFusionIndexPopulatorTest
         SpatialCRSSchemaIndex.Supplier indexSupplier = mock( SpatialCRSSchemaIndex.Supplier.class );
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 42, 1337 );
 
-        for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
+        for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84,
+                                                      CoordinateReferenceSystem.Cartesian,
+                                                      CoordinateReferenceSystem.Cartesian_3D ) )
         {
             indexMap.put( crs, mock( SpatialCRSSchemaIndex.class ) );
 
