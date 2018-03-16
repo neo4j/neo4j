@@ -33,10 +33,10 @@ import java.util.concurrent.Semaphore;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
-import org.neo4j.causalclustering.core.consensus.RaftServer;
 import org.neo4j.causalclustering.core.consensus.membership.MemberIdSet;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -51,7 +51,7 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -61,7 +61,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_listen_address;
 import static org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory.VOID_WRAPPER;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -102,7 +101,7 @@ public class SenderServiceIT
                 messageReceived.release();
             }
         };
-        RaftServer raftServer = raftServer( nettyHandler, port );
+        Server raftServer = raftServer( nettyHandler, port );
         raftServer.start();
 
         // given: raft messaging service
@@ -127,7 +126,7 @@ public class SenderServiceIT
         raftServer.stop();
     }
 
-    private RaftServer raftServer( ChannelInboundHandler nettyHandler, int port )
+    private Server raftServer( ChannelInboundHandler nettyHandler, int port )
     {
         NettyPipelineBuilderFactory pipelineFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
 
@@ -138,8 +137,8 @@ public class SenderServiceIT
         HandshakeServerInitializer channelInitializer = new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
                 installer, pipelineFactory, logProvider );
 
-        Config config = Config.defaults( raft_listen_address, new HostnamePort( "localhost", port ).toString() );
-        return new RaftServer( channelInitializer, config, logProvider, logProvider );
+        ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", port );
+        return new Server( channelInitializer, null, logProvider, logProvider, listenAddress, "raft-server" );
     }
 
     private SenderService raftSender()

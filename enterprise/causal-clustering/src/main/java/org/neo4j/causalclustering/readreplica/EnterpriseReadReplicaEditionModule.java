@@ -39,7 +39,6 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
 import org.neo4j.causalclustering.catchup.CatchupProtocolClientInstaller;
 import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
-import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -66,6 +65,8 @@ import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -326,14 +327,15 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> serverProtocolInstallerRepository = new ProtocolInstallerRepository<>(
                 singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
 
+        InstalledProtocolHandler installedProtocolHandler = new InstalledProtocolHandler(); // TODO: hook into a procedure
         HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( catchupProtocolRepository, modifierProtocolRepository,
                 serverProtocolInstallerRepository, serverPipelineBuilderFactory, logProvider );
 
-        CatchupServer catchupServer = new CatchupServer( handshakeServerInitializer, platformModule.logging.getInternalLogProvider(),
-                platformModule.logging.getUserLogProvider(), config.get( CausalClusteringSettings.transaction_listen_address ) );
+        Server catchupServer = new Server( handshakeServerInitializer, installedProtocolHandler, platformModule.logging.getInternalLogProvider(),
+                platformModule.logging.getUserLogProvider(), config.get( CausalClusteringSettings.transaction_listen_address ), "catchup-server" );
         TransactionBackupServiceProvider transactionBackupServiceProvider = new TransactionBackupServiceProvider( logProvider, userLogProvider,
-                handshakeServerInitializer );
-        Optional<CatchupServer> backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
+                handshakeServerInitializer, installedProtocolHandler );
+        Optional<Server> backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         servicesToStopOnStoreCopy.add( catchupServer );
         backupCatchupServer.ifPresent( servicesToStopOnStoreCopy::add );

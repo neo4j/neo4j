@@ -19,12 +19,13 @@
  */
 package org.neo4j.causalclustering.core;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.util.Optional;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.logging.LogProvider;
@@ -34,22 +35,25 @@ public class TransactionBackupServiceProvider
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
     private final TransactionBackupServiceAddressResolver transactionBackupServiceAddressResolver;
-    private ChannelInitializer<SocketChannel> channelInitializer;
+    private final ChannelInitializer<SocketChannel> channelInitializer;
+    private final ChannelHandler serverHandler;
 
-    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChannelInitializer<SocketChannel> channelInitializer )
+    public TransactionBackupServiceProvider( LogProvider logProvider, LogProvider userLogProvider, ChannelInitializer<SocketChannel> channelInitializer,
+            ChannelHandler serverHandler )
     {
         this.logProvider = logProvider;
         this.userLogProvider = userLogProvider;
         this.channelInitializer = channelInitializer;
+        this.serverHandler = serverHandler;
         this.transactionBackupServiceAddressResolver = new TransactionBackupServiceAddressResolver();
     }
 
-    public Optional<CatchupServer> resolveIfBackupEnabled( Config config )
+    public Optional<Server> resolveIfBackupEnabled( Config config )
     {
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
-            return Optional.of( new CatchupServer( channelInitializer, logProvider, userLogProvider,
-                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ) ) );
+            return Optional.of( new Server( channelInitializer, serverHandler, logProvider, userLogProvider,
+                            transactionBackupServiceAddressResolver.backupAddressForTxProtocol( config ), "backup-server" ) );
         }
         else
         {

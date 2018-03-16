@@ -33,7 +33,6 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
 import org.neo4j.causalclustering.catchup.CatchupProtocolClientInstaller;
 import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
-import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -66,6 +65,8 @@ import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -102,8 +103,9 @@ public class CoreServerModule
     public static final String LAST_FLUSHED_NAME = "last-flushed";
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
-    private final CatchupServer catchupServer;
-    private final Optional<CatchupServer> backupCatchupServer;
+    private final Server catchupServer;
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
+    private final Optional<Server> backupServer;
     private final IdentityModule identityModule;
     private final CoreStateMachinesModule coreStateMachinesModule;
     private final ConsensusModule consensusModule;
@@ -121,7 +123,8 @@ public class CoreServerModule
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
             CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
             LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier, File clusterStateDirectory,
-            NettyPipelineBuilderFactory clientPipelineBuilderFactory, NettyPipelineBuilderFactory serverPipelineBuilderFactory )
+            NettyPipelineBuilderFactory clientPipelineBuilderFactory, NettyPipelineBuilderFactory serverPipelineBuilderFactory,
+            InstalledProtocolHandler installedProtocolsHandler )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
@@ -196,10 +199,11 @@ public class CoreServerModule
         HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( catchupProtocolRepository, modifierProtocolRepository,
                 protocolInstallerRepository, serverPipelineBuilderFactory, logProvider );
 
-        catchupServer = new CatchupServer( handshakeServerInitializer, logProvider, userLogProvider, config.get( transaction_listen_address ) );
+        catchupServer = new Server( handshakeServerInitializer, installedProtocolsHandler, logProvider, userLogProvider,
+                config.get( transaction_listen_address ), "catchup-server" );
         TransactionBackupServiceProvider transactionBackupServiceProvider = new TransactionBackupServiceProvider( logProvider, userLogProvider,
-                handshakeServerInitializer );
-        backupCatchupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
+                handshakeServerInitializer, installedProtocolsHandler );
+        backupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
@@ -211,7 +215,7 @@ public class CoreServerModule
         dependencies.satisfyDependency( catchupServer );
 
         servicesToStopOnStoreCopy.add( catchupServer );
-        backupCatchupServer.ifPresent( servicesToStopOnStoreCopy::add );
+        backupServer.ifPresent( servicesToStopOnStoreCopy::add );
     }
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy, NettyPipelineBuilderFactory clientPipelineBuilderFactory )
@@ -260,14 +264,14 @@ public class CoreServerModule
         return new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
     }
 
-    public CatchupServer catchupServer()
+    public Server catchupServer()
     {
         return catchupServer;
     }
 
-    public Optional<CatchupServer> backupCatchupServer()
+    public Optional<Server> backupServer()
     {
-        return backupCatchupServer;
+        return backupServer;
     }
 
     public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler )

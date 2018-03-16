@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.net;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -37,27 +38,30 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
-
-public class CatchupServer extends LifecycleAdapter
+public class Server extends LifecycleAdapter
 {
-    private final Log log;
+    private final Log dbgLog;
     private final Log userLog;
+    private final String serverName;
 
-    private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
-    private final ChannelInitializer<SocketChannel> channelInitializer;
+    private final NamedThreadFactory threadFactory;
+    private final ChannelInitializer<SocketChannel> childHandler;
+    private final ChannelHandler serverHandler;
     private final ListenSocketAddress listenAddress;
 
     private EventLoopGroup workerGroup;
     private Channel channel;
 
-    public CatchupServer( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, LogProvider userLogProvider,
-            ListenSocketAddress listenAddress )
+    public Server( ChannelInitializer<SocketChannel> childHandler, ChannelHandler serverHandler, LogProvider dbgLogProvider, LogProvider userLogProvider,
+            ListenSocketAddress listenAddress, String serverName )
     {
-        this.channelInitializer = channelInitializer;
+        this.childHandler = childHandler;
+        this.serverHandler = serverHandler;
         this.listenAddress = listenAddress;
-        this.log = logProvider.getLog( getClass() );
+        this.dbgLog = dbgLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.serverName = serverName;
+        this.threadFactory = new NamedThreadFactory( serverName );
     }
 
     @Override
@@ -75,7 +79,12 @@ public class CatchupServer extends LifecycleAdapter
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
-                .childHandler( channelInitializer );
+                .childHandler( childHandler );
+
+        if ( serverHandler != null )
+        {
+            bootstrap.handler( serverHandler );
+        }
 
         try
         {
@@ -83,14 +92,12 @@ public class CatchupServer extends LifecycleAdapter
         }
         catch ( Exception e )
         {
-            // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
-            // checked exception but it still throws them with some black magic at runtime.
-            //noinspection ConstantConditions
+            //noinspection ConstantConditions netty sneaky throw
             if ( e instanceof BindException )
             {
-                String message = String.format( "Address is already bound for setting: %s with value: %s", transaction_listen_address, listenAddress );
+                String message = serverName + ": address is already bound: " + listenAddress;
                 userLog.error( message );
-                log.error( message, e );
+                dbgLog.error( message, e );
                 throw e;
             }
         }
@@ -104,7 +111,7 @@ public class CatchupServer extends LifecycleAdapter
             return;
         }
 
-        log.info( "CatchupServer stopping and unbinding from " + listenAddress );
+        dbgLog.info( serverName + ": stopping and unbinding from: " + listenAddress );
         try
         {
             channel.close().sync();
@@ -113,13 +120,13 @@ public class CatchupServer extends LifecycleAdapter
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            log.warn( "Interrupted while closing channel." );
+            dbgLog.warn( "Interrupted while closing channel." );
         }
 
         if ( workerGroup != null &&
                 workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
         {
-            log.warn( "Worker group not shutdown within 10 seconds." );
+            dbgLog.warn( "Worker group not shutdown within 10 seconds." );
         }
         workerGroup = null;
     }

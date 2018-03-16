@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -63,7 +63,7 @@ public class ConnectionInfoIT
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getLocalPort() );
 
-        CatchupServer catchupServer = new CatchupServer( mockInitializer(), logProvider, userLogProvider, listenSocketAddress );
+        Server catchupServer = new Server( mockInitializer(), null, logProvider, userLogProvider, listenSocketAddress, "catchup-server" );
 
         //then
         try

@@ -65,6 +65,7 @@ import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -291,13 +292,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
+        InstalledProtocolHandler serverInstalledProtocolHandler = new InstalledProtocolHandler();
+
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
-                serverPipelineBuilderFactory );
+                serverPipelineBuilderFactory, serverInstalledProtocolHandler );
 
-        RaftServerModule raftServerModule = RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase,
-                serverPipelineBuilderFactory, messageLogger, topologyService, supportedRaftProtocols, supportedModifierProtocols );
-        serverInstalledProtocols = raftServerModule.raftServer()::installedProtocols;
+        RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory,
+                messageLogger, topologyService, supportedRaftProtocols, supportedModifierProtocols, serverInstalledProtocolHandler );
+        this.serverInstalledProtocols = serverInstalledProtocolHandler::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
