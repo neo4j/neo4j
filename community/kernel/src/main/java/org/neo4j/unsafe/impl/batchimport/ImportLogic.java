@@ -24,12 +24,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -510,7 +510,8 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        String additionalInformation = getState( DataStatistics.class ).toString();
+        DataStatistics state = getState( DataStatistics.class );
+        String additionalInformation = Objects.toString( state, "Data statistics is not available." );
         executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
         log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
         closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper, inputCache );

@@ -60,6 +60,24 @@ public class ImportLogicTest
     public final RandomRule random = new RandomRule();
 
     @Test
+    public void closeImporterWithoutDiagnosticState() throws IOException
+    {
+        ExecutionMonitor monitor = mock( ExecutionMonitor.class );
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( storage.fileSystem(), storage.pageCache(), NULL,
+                storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
+        {
+            //noinspection EmptyTryBlock
+            try ( ImportLogic ignored = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+                    defaultFormat(), NO_MONITOR ) )
+            {
+                // nothing to run in this import
+            }
+        }
+
+        verify( monitor ).done( anyLong(), contains( "Data statistics is not available." ) );
+    }
+
+    @Test
     public void shouldSplitUpRelationshipTypesInBatches()
     {
         // GIVEN
