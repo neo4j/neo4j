@@ -69,7 +69,7 @@ import scala.collection.mutable.ArrayBuffer
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
                                           val resources: ResourceManager = new ResourceManager)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with
+  extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext with
     IndexDescriptorCompatibility {
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
@@ -302,8 +302,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
-    val predicates = indexReference.properties.zip(queries).map(p => IndexQuery.exact(p._1, p._2.value()))
-    val nodeId = transactionalContext.kernelTransaction.dataRead().nodeUniqueIndexSeek(index, predicates:_*)
+    val predicates = indexReference.properties.zip(queries).map(p => IndexQuery.exact(p._1, p._2))
+    val nodeId = reads().nodeUniqueIndexSeek(index, predicates:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -635,7 +635,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val javaCreator = new java.util.function.Function[K, V]() {
       override def apply(key: K) = creator
     }
-    transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    transactionalContext.schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
@@ -798,9 +798,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallReadOverride(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
       else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallRead(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _)
 
     callProcedure(args, call)
   }

@@ -43,7 +43,7 @@ object TransactionBoundGraphStatistics {
         Selectivity.of(indexSelectivity)
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
