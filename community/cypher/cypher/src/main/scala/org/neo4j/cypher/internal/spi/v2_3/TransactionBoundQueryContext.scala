@@ -207,7 +207,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     seek(DefaultIndexReference.general(index.labelId, index.propertyId),
-         IndexQuery.exact(index.labelId, index.propertyId))
+         IndexQuery.exact(index.propertyId, value))
 
   def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 

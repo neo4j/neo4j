@@ -207,7 +207,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   override def indexSeek(index: IndexDescriptor, value: Any) =
     seek(DefaultIndexReference.general(index.labelId, index.propertyId),
-         IndexQuery.exact(index.labelId, index.propertyId))
+         IndexQuery.exact(index.propertyId, value))
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
