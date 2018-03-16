@@ -73,7 +73,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     tc.schemaRead.indexesGetForLabel(labelId).asScala
-      .filterNot(_.isUnique)
+      .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 

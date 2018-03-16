@@ -67,7 +67,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     txSupplier().schemaRead.indexesGetForLabel(labelId).asScala
-      .filterNot(_.isUnique)
+      .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
