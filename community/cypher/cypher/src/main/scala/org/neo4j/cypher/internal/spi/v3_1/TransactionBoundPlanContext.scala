@@ -25,7 +25,6 @@ import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
-import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.cypher.internal.frontend.v3_1.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherExecutionException, symbols}
@@ -34,7 +33,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
 import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
@@ -46,47 +45,48 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with SchemaDescriptorTranslation {
 
   @Deprecated
-  def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
+  def getIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(tc.kernelTransaction.schemaRead.index(labelId, propertyKeyId))
   }
+
 
   def hasIndexRule(labelName: String): Boolean = {
     val labelId = getLabelId(labelName)
 
-    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = tc.kernelTransaction.schemaRead().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
-  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
+  def getUniqueIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
+    val ref = tc.kernelTransaction.schemaRead.index(labelId, propertyKeyId)
 
-    val schema = tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
-
-    if (schema.`type`() == KernelIndexDescriptor.Type.UNIQUE) getOnlineIndex(schema)
+    if (ref.isUnique) getOnlineIndex(ref)
     else None
   }
+
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: KernelException => None }
 
-  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
-    tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(descriptor)
+  private def getOnlineIndex(descriptor: IndexReference): Option[SchemaTypes.IndexDescriptor] =
+    tc.kernelTransaction.schemaRead.indexGetState(descriptor) match {
+      case InternalIndexState.ONLINE => Some(SchemaTypes.IndexDescriptor(descriptor.label(), descriptor.properties()(0)))
       case _                         => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = evalOrNone {
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[SchemaTypes.UniquenessConstraint] = evalOrNone {
     val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForSchema(
+    tc.kernelTransaction.schemaRead.constraintsGetForSchema(
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
     ).asScala.collectFirst {
       case constraint: ConstraintDescriptor if constraint.enforcesUniqueness() =>
@@ -98,20 +98,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val labelId = getLabelId(labelName)
       val propId = getPropertyKeyId(propertyKey)
-      tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propId)).hasNext
+      tc.kernelTransaction.schemaRead().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propId)).hasNext
     } catch {
       case _: KernelException => false
     }
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
+    if (!tc.kernelTransaction.indexRead().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
+    if (!tc.kernelTransaction.indexRead().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
@@ -120,7 +120,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     val javaCreator = new java.util.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
-    tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    tc.kernelTransaction.schemaRead().schemaStateGetOrCreate(key, javaCreator)
   }
 
 
@@ -140,30 +140,41 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def procedureSignature(name: QualifiedName) = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val ks = tc.statement.readOperations().procedureGet(kn).signature()
-    val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
-    val output = if (ks.isVoid) None else Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
-    val deprecationInfo = asOption(ks.deprecated())
-    val mode = asCypherProcMode(ks.mode(), ks.allowed())
-    val description = asOption(ks.description())
+    val procedures = tc.tc.kernelTransaction().procedures()
+    val handle = procedures.procedureGet(kn)
+    val signature = handle.signature()
+    val input = signature.inputSignature().asScala
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+      .toIndexedSeq
+    val output = if (signature.isVoid) None else Some(
+      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
+    val deprecationInfo = asOption(signature.deprecated())
+    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val description = asOption(signature.description())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val maybeFunction = tc.statement.readOperations().functionGet(kn)
-    if (maybeFunction != null) {
-      val ks = maybeFunction.signature()
-      val input = ks.inputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue))).toIndexedSeq
-      val output = asCypherType(ks.outputType())
-      val deprecationInfo = asOption(ks.deprecated())
-      val description = asOption(ks.description())
+  val procedures = tc.tc.kernelTransaction().procedures()
+  val func = procedures.functionGet(kn)
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed(), description))
-    }
-    else None
+  val (fcn, aggregation) = if (func != null) (func, false)
+  else (procedures.aggregationFunctionGet(kn), true)
+  if (fcn == null) None
+  else {
+    val signature = fcn.signature()
+    val input = signature.inputSignature().asScala
+      .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+      .toIndexedSeq
+    val output = asCypherType(signature.outputType())
+    val deprecationInfo = asOption(signature.deprecated())
+    val description = asOption(signature.description())
+    Some(UserFunctionSignature(name, input, output, deprecationInfo,
+                               signature.allowed(), description))
   }
+}
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 

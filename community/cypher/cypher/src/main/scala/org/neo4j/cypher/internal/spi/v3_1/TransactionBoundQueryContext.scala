@@ -969,13 +969,13 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     txContext.kernelTransaction.schemaWrite()
 
   override def transactionalContext: QueryTransactionalContext = new QueryTransactionalContext {
-    override type ReadOps = ReadOperations
+    override type ReadOps = Nothing
 
     override type DbmsOps = DbmsOperations
 
     override def commitAndRestartTx(): Unit = txContext.commitAndRestartTx()
 
-    override def readOperations: ReadOps = txContext.tc.readOperations()
+    override def readOperations: Nothing = ???
 
     override def isTopLevelTx: Boolean = txContext.isTopLevelTx
 
