@@ -89,6 +89,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -950,6 +951,12 @@ public class AllStoreHolder extends Read
     {
         return aggregationFunction( name,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        return procedures.valueMapper();
     }
 
     @Override

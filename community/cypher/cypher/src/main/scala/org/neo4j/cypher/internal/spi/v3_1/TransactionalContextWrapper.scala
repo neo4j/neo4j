@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
-  override type ReadOps = ReadOperations
+  override type ReadOps = Nothing
 
   override type DbmsOps = DbmsOperations
 
@@ -46,7 +46,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def stateView: TxStateHolder = tc.stateView()
 
-  override def readOperations: ReadOperations = tc.readOperations()
+  override def readOperations: ReadOperations = ???
 
   override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
 

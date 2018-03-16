@@ -90,7 +90,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       val context = tc.getOrBeginNewIfClosed()
       var success = false
       try {
-        val result = work(new TransactionBoundQueryContext(context))
+        val result = work(new TransactionBoundQueryContext(context, resources))
         success = true
         result
       } finally {
@@ -205,10 +205,9 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     }
   }
 
-  def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) = {
+  def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     seek(DefaultIndexReference.general(index.labelId, index.propertyId),
          IndexQuery.exact(index.labelId, index.propertyId))
-  }
 
   def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
@@ -245,7 +244,6 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       override protected def close(): Unit = nodeCursor.close()
     }
   }
-
 
   private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
@@ -295,9 +293,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     }
   }
 
-  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] =
     seek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, prefix))
-  }
 
   private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = (range match {
     case rangeLessThan: RangeLessThan[Number] =>
@@ -487,18 +484,18 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     }
 
     override def getById(id: Long): Node =
-      if (tc.dataRead.nodeExists(id))
+      if (reads().nodeExists(id))
         proxySpi.newNodeProxy(id)
       else
         throw new EntityNotFoundException(s"Node with id $id")
 
     def getByIdIfExists(id: Long): Option[Node] =
-      if (tc.dataRead.nodeExists(id))
+      if (reads().nodeExists(id))
         Some(proxySpi.newNodeProxy(id))
       else
         None
 
-    def all: Iterator[Node] ={
+    def all: Iterator[Node] = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       new CursorIterator[Node] {
@@ -595,6 +592,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
         false
       }
     }
+
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
       writes().relationshipRemoveProperty(id, propertyKeyId)
     } catch {
@@ -607,8 +605,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       case _: api.exceptions.EntityNotFoundException => //ignore
     }
 
-    override def getById(id: Long): Relationship =
-      try {
+    override def getById(id: Long): Relationship = try {
         proxySpi.newRelationshipProxy(id)
       } catch {
         case e: api.exceptions.EntityNotFoundException =>
@@ -634,14 +631,15 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
         override protected def fetchNext(): Relationship = {
           if (relCursor.next())
             proxySpi.newRelationshipProxy(relCursor.relationshipReference(),
-                                                                      relCursor.sourceNodeReference(), relCursor.`type`(),
-                                                                      relCursor.targetNodeReference())
+                                          relCursor.sourceNodeReference(), relCursor.`type`(),
+                                          relCursor.targetNodeReference())
           else null
         }
 
         override protected def close(): Unit = relCursor.close()
       }
     }
+
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] = {
       val cursor = allocateAndTraceRelationshipExplicitIndexCursor()
       tc.kernelTransaction.indexRead().relationshipExplicitIndexGet(cursor, name, key, Values.of(value), -1, -1)
