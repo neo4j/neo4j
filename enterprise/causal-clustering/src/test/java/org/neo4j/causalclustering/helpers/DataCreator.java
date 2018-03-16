@@ -38,7 +38,7 @@ public class DataCreator
     }
 
     public static CoreClusterMember createLabelledNodesWithProperty( Cluster cluster, int numberOfNodes,
-            Label label, Supplier<Pair<String,Object>> supplier ) throws Exception
+            Label label, Supplier<Pair<String,Object>> propertyPair ) throws Exception
     {
         CoreClusterMember last = null;
         for ( int i = 0; i < numberOfNodes; i++ )
@@ -46,7 +46,7 @@ public class DataCreator
             last = cluster.coreTx( ( db, tx ) ->
             {
                 Node node = db.createNode( label );
-                node.setProperty( supplier.get().first(), supplier.get().other() );
+                node.setProperty( propertyPair.get().first(), propertyPair.get().other() );
                 tx.success();
             } );
         }

@@ -26,15 +26,23 @@ import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
+/**
+ * Keeps track of protocols which are supported by this instance. This is later used when
+ * matching for mutually supported versions during a protocol negotiation.
+ *
+ * @param <U> Comparable version type.
+ * @param <T> Protocol type.
+ */
 public abstract class SupportedProtocols<U extends Comparable<U>,T extends Protocol<U>>
 {
     private final Protocol.Category<T> category;
     private final List<U> versions;
 
     /**
-     * @param versions Empty means support everything
+     * @param category The protocol category.
+     * @param versions List of supported versions. An empty list means that every version is supported.
      */
-    public SupportedProtocols( Protocol.Category<T> category, List<U> versions )
+    SupportedProtocols( Protocol.Category<T> category, List<U> versions )
     {
         this.category = category;
         this.versions = Collections.unmodifiableList( versions );
