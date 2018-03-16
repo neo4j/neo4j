@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
@@ -59,15 +59,16 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.success();
         }
 
-        try ( Transaction tx = session.beginTransaction() )
+    try ( Transaction tx = session.beginTransaction() )
         {
-            Read read = tx.dataRead();
+        Read read = tx.dataRead( );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
-                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
-            {
-                // WHEN
-                read.nodeLabelScan( labelOne, cursor );
+        try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor())
+              {
+            MutableLongSet uniqueIds = new LongHashSet() ;
+
+            // WHEN
+            read.nodeLabelScan( labelOne, cursor );
 
                 // THEN
                 assertNodeCount( cursor, 1, uniqueIds );
@@ -109,20 +110,21 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
             tx.success();
         }
 
-        try ( Transaction tx = session.beginTransaction() )
+    try ( Transaction tx = session.beginTransaction() )
         {
             tx.dataWrite().nodeDelete( deletedInTx );
-            createdInTx = createNode( tx.dataWrite(), labelOne );
+    createdInTx = createNode( tx.dataWrite(), labelOne);
 
-            createNode( tx.dataWrite(), labelTwo );
+        createNode( tx.dataWrite(), labelTwo );
 
-            Read read = tx.dataRead();
+        Read read = tx.dataRead( );
 
-            try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor();
-                  PrimitiveLongSet uniqueIds = Primitive.longSet() )
-            {
-                // when
-                read.nodeLabelScan( labelOne, cursor );
+        try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor())
+              {
+            MutableLongSet uniqueIds = new LongHashSet() ;
+
+            // when
+            read.nodeLabelScan( labelOne, cursor );
 
                 // then
                 assertNodes( cursor, uniqueIds, inStore, createdInTx );

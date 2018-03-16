@@ -21,13 +21,15 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
@@ -36,10 +38,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 
 public class DiffApplyingPrimitiveLongIteratorTest
@@ -48,8 +48,8 @@ public class DiffApplyingPrimitiveLongIteratorTest
     public void iterateOnlyOverAddedElementsWhenSourceIsEmpty()
     {
         LongIterator emptySource = emptyIterator();
-        PrimitiveLongSet added = setOf( 1L, 2L );
-        PrimitiveLongSet removed = setOf( 3L );
+        LongSet added = LongHashSet.newSetWith( 1L, 2L );
+        LongSet removed = LongHashSet.newSetWith( 3L );
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( emptySource, added, removed );
         Set<Long> resultSet = toSet( iterator );
@@ -60,8 +60,8 @@ public class DiffApplyingPrimitiveLongIteratorTest
     public void appendSourceElementsDuringIteration()
     {
         LongIterator source = iterator( 4L, 5L );
-        PrimitiveLongSet added = setOf( 1L, 2L );
-        PrimitiveLongSet removed = setOf( 3L );
+        LongSet added = LongHashSet.newSetWith( 1L, 2L );
+        LongSet removed = LongHashSet.newSetWith( 3L );
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
@@ -72,8 +72,8 @@ public class DiffApplyingPrimitiveLongIteratorTest
     public void doNotIterateTwiceOverSameElementsWhenItsPartOfSourceAndAdded()
     {
         LongIterator source = iterator( 4L, 5L );
-        PrimitiveLongSet added = setOf( 1L, 4L );
-        PrimitiveLongSet removed = setOf( 3L );
+        LongSet added = LongHashSet.newSetWith( 1L, 4L );
+        LongSet removed = LongHashSet.newSetWith( 3L );
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Long[] values = ArrayUtils.toObject( asArray( iterator ) );
@@ -85,8 +85,8 @@ public class DiffApplyingPrimitiveLongIteratorTest
     public void doNotIterateOverDeletedElement()
     {
         LongIterator source = iterator( 3L, 5L );
-        PrimitiveLongSet added = setOf( 1L );
-        PrimitiveLongSet removed = setOf( 3L );
+        LongSet added = LongHashSet.newSetWith( 1L );
+        LongSet removed = LongHashSet.newSetWith( 3L );
 
         LongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
@@ -99,7 +99,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
         Resource resource = Mockito.mock( Resource.class );
         PrimitiveLongResourceIterator source = resourceIterator( emptyIterator(), resource );
 
-        PrimitiveLongResourceIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, emptySet(), emptySet() );
+        PrimitiveLongResourceIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, LongSets.immutable.empty(), LongSets.immutable.empty() );
 
         iterator.close();
 

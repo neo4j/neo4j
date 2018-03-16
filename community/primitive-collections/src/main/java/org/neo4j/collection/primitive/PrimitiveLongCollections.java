@@ -20,6 +20,9 @@
 package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,12 +31,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.LongFunction;
 import java.util.function.LongPredicate;
 
-import org.neo4j.collection.primitive.base.Empty;
 import org.neo4j.graphdb.Resource;
 
 import static java.util.Arrays.copyOf;
@@ -163,9 +164,9 @@ public class PrimitiveLongCollections
         return -1;
     }
 
-    public static PrimitiveLongSet asSet( Collection<Long> collection )
+    public static MutableLongSet asSet( Collection<Long> collection )
     {
-        PrimitiveLongSet set = Primitive.longSet( collection.size() );
+        final MutableLongSet set = new LongHashSet( collection.size() );
         for ( Long next : collection )
         {
             set.add( next );
@@ -173,35 +174,14 @@ public class PrimitiveLongCollections
         return set;
     }
 
-    public static PrimitiveLongSet asSet( LongIterator iterator )
+    public static MutableLongSet asSet( LongIterator iterator )
     {
-        PrimitiveLongSet set = Primitive.longSet();
+        MutableLongSet set = new LongHashSet();
         while ( iterator.hasNext() )
         {
             set.add( iterator.next() );
         }
         return set;
-    }
-
-    public static PrimitiveLongSet asSet( PrimitiveLongSet set )
-    {
-        PrimitiveLongSet result = Primitive.longSet( set.size() );
-        LongIterator iterator = set.longIterator();
-        while ( iterator.hasNext() )
-        {
-            result.add( iterator.next() );
-        }
-        return result;
-    }
-
-    public static PrimitiveLongSet asSet( long...values )
-    {
-        PrimitiveLongSet result = Primitive.longSet( values.length );
-        for ( long value : values )
-        {
-            result.add( value );
-        }
-        return result;
     }
 
     public static <T> PrimitiveLongObjectMap<T> copy( PrimitiveLongObjectMap<T> original )
@@ -288,22 +268,6 @@ public class PrimitiveLongCollections
                 return false;
             }
         };
-    }
-
-    public static PrimitiveLongSet emptySet()
-    {
-        return Empty.EMPTY_PRIMITIVE_LONG_SET;
-    }
-
-    public static PrimitiveLongSet setOf( long... values )
-    {
-        Objects.requireNonNull( values, "Values array is null" );
-        PrimitiveLongSet set = Primitive.longSet( values.length );
-        for ( long value : values )
-        {
-            set.add( value );
-        }
-        return set;
     }
 
     public static <T> Iterator<T> map( final LongFunction<T> mapFunction, final LongIterator source )
@@ -409,10 +373,10 @@ public class PrimitiveLongCollections
     /**
      * Convert primitive set into a plain old java {@link Set}, boxing each long.
      *
-     * @param set {@link PrimitiveLongSet} set of primitive values.
+     * @param set {@link LongSet} set of primitive values.
      * @return a {@link Set} containing all items.
      */
-    public static Set<Long> toSet( PrimitiveLongSet set )
+    public static Set<Long> toSet( LongSet set )
     {
         return toSet( set.longIterator() );
     }

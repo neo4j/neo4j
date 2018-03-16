@@ -19,14 +19,16 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Path;
 
 class LevelUnique extends AbstractUniquenessFilter
 {
-    private final PrimitiveIntObjectMap<PrimitiveLongSet> idsPerLevel = Primitive.intObjectMap();
+    private final PrimitiveIntObjectMap<MutableLongSet> idsPerLevel = Primitive.intObjectMap();
 
     LevelUnique( PrimitiveTypeFetcher type )
     {
@@ -37,10 +39,10 @@ class LevelUnique extends AbstractUniquenessFilter
     public boolean check( TraversalBranch branch )
     {
         int level = branch.length();
-        PrimitiveLongSet levelIds = idsPerLevel.get( level );
+        MutableLongSet levelIds = idsPerLevel.get( level );
         if ( levelIds == null )
         {
-            levelIds = Primitive.longSet();
+            levelIds = new LongHashSet();
             idsPerLevel.put( level, levelIds );
         }
         return levelIds.add( type.getId( branch ) );

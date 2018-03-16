@@ -20,6 +20,9 @@
 package org.neo4j.graphdb;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -29,8 +32,6 @@ import org.junit.rules.TestName;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -90,10 +91,10 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching );
-        PrimitiveLongSet expected = createNodes( db, LABEL, matching );
+        LongSet expected = createNodes( db, LABEL, matching );
 
         // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
+        MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             collectNodes( found, db.findNodes( LABEL, KEY, template, searchMode ) );
@@ -108,9 +109,9 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0], nonMatching[1] );
-        PrimitiveLongSet expected = createNodes( db, LABEL, matching[0], matching[1] );
+        MutableLongSet expected = createNodes( db, LABEL, matching[0], matching[1] );
         // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
+        MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             expected.add( createNode( db, map( KEY, matching[2] ), LABEL ).getId() );
@@ -127,10 +128,10 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0] );
-        PrimitiveLongSet toDelete = createNodes( db, LABEL, matching[0], nonMatching[1], matching[1], nonMatching[2] );
-        PrimitiveLongSet expected = createNodes( db, LABEL, matching[2] );
+        LongSet toDelete = createNodes( db, LABEL, matching[0], nonMatching[1], matching[1], nonMatching[2] );
+        MutableLongSet expected = createNodes( db, LABEL, matching[2] );
         // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
+        MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             LongIterator deleting = toDelete.longIterator();
@@ -152,11 +153,11 @@ public abstract class IndexingStringQueryAcceptanceTestBase
     {
         // GIVEN
         createNodes( db, LABEL, nonMatching[0] );
-        PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL, nonMatching[1] );
-        PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL, matching[0] );
-        PrimitiveLongSet expected = createNodes( db, LABEL, matching[1] );
+        LongSet toChangeToMatch = createNodes( db, LABEL, nonMatching[1] );
+        MutableLongSet toChangeToNotMatch = createNodes( db, LABEL, matching[0] );
+        MutableLongSet expected = createNodes( db, LABEL, matching[1] );
         // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
+        MutableLongSet found = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             LongIterator toMatching = toChangeToMatch.longIterator();
@@ -288,9 +289,9 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         }
     }
 
-    private PrimitiveLongSet createNodes( GraphDatabaseService db, Label label, String... propertyValues )
+    private MutableLongSet createNodes( GraphDatabaseService db, Label label, String... propertyValues )
     {
-        PrimitiveLongSet expected = Primitive.longSet();
+        MutableLongSet expected = new LongHashSet();
         try ( Transaction tx = db.beginTx() )
         {
             for ( String value : propertyValues )
@@ -302,7 +303,7 @@ public abstract class IndexingStringQueryAcceptanceTestBase
         return expected;
     }
 
-    private void collectNodes( PrimitiveLongSet bucket, ResourceIterator<Node> toCollect )
+    private void collectNodes( MutableLongSet bucket, ResourceIterator<Node> toCollect )
     {
         while ( toCollect.hasNext() )
         {

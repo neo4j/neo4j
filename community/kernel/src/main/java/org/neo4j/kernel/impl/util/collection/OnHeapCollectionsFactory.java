@@ -20,14 +20,14 @@
 
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 public class OnHeapCollectionsFactory implements CollectionsFactory
 {
@@ -39,9 +39,9 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     }
 
     @Override
-    public PrimitiveLongSet newLongSet()
+    public MutableLongSet newLongSet()
     {
-        return Primitive.longSet();
+        return new LongHashSet();
     }
 
     @Override
@@ -59,7 +59,7 @@ public class OnHeapCollectionsFactory implements CollectionsFactory
     @Override
     public PrimitiveLongDiffSets newLongDiffSets()
     {
-        return new PrimitiveLongDiffSets( emptySet(), emptySet(), this );
+        return new PrimitiveLongDiffSets( this );
     }
 
     @Override

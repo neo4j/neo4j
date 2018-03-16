@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +37,6 @@ import java.util.function.BiConsumer;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
@@ -624,10 +626,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         } );
     }
 
-    public PrimitiveLongSet getIndexIds()
+    public LongSet getIndexIds()
     {
         Iterable<IndexProxy> indexProxies = indexMapRef.getAllIndexProxies();
-        PrimitiveLongSet indexIds = Primitive.longSet();
+        MutableLongSet indexIds = new LongHashSet();
         for ( IndexProxy indexProxy : indexProxies )
         {
             indexIds.add( indexProxy.getIndexId() );

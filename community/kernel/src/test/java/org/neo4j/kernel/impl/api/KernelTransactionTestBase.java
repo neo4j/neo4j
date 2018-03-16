@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.mockito.Mockito;
 
@@ -29,7 +30,6 @@ import java.util.function.Supplier;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -192,7 +192,7 @@ public class KernelTransactionTestBase
     {
 
         @Override
-        public PrimitiveLongSet newLongSet()
+        public MutableLongSet newLongSet()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongSet();
         }

@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -41,7 +43,6 @@ import org.neo4j.values.storable.ValueGroup;
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -52,8 +53,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private long node;
     private IndexQuery[] query;
     private Value[] values;
-    private LongIterator added = emptyIterator();
-    private PrimitiveLongSet removed = emptySet();
+    private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
+    private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private final DefaultCursors pool;
 
@@ -197,7 +198,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.values = null;
             this.read = null;
             this.added = emptyIterator();
-            this.removed = PrimitiveLongCollections.emptySet();
+            this.removed = LongSets.immutable.empty();
 
             try
             {
@@ -304,10 +305,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private PrimitiveLongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
+    private LongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
     {
-        PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
-        longSet.addAll( changes.getRemoved().longIterator() );
+        final MutableLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
+        longSet.addAll( changes.getRemoved() );
         return longSet;
     }
 

@@ -20,7 +20,9 @@
 package org.neo4j.collection.primitive.hopscotch;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -35,9 +37,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.Factory;
-import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -82,31 +82,6 @@ public class PrimitiveCollectionEqualityTest
     }
 
     // ==== Test Value Producers ====
-
-    @DataPoint
-    public static ValueProducer<PrimitiveLongSet> longV =
-            new ValueProducer<PrimitiveLongSet>( PrimitiveLongSet.class )
-    {
-        @Override
-        public Value<PrimitiveLongSet> randomValue()
-        {
-            final long x = randomLong();
-            return new Value<PrimitiveLongSet>()
-            {
-                @Override
-                public void add( PrimitiveLongSet coll )
-                {
-                    coll.add( x );
-                }
-
-                @Override
-                public boolean remove( PrimitiveLongSet coll )
-                {
-                    return coll.remove( x );
-                }
-            };
-        }
-    };
 
     @DataPoint
     public static ValueProducer<PrimitiveIntObjectMap> intObjV =
@@ -163,20 +138,6 @@ public class PrimitiveCollectionEqualityTest
     // ==== Primitive Collection Implementations ====
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> longSet = Primitive::longSet;
-
-    @DataPoint
-    public static Factory<PrimitiveLongSet> longSetWithCapacity = () -> Primitive.longSet( randomCapacity() );
-
-    @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSet =
-            () -> Primitive.offHeapLongSet( GlobalMemoryTracker.INSTANCE );
-
-    @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity =
-            () -> Primitive.offHeapLongSet( randomCapacity(), GlobalMemoryTracker.INSTANCE );
-
-    @DataPoint
     public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;
 
     @DataPoint
@@ -190,8 +151,8 @@ public class PrimitiveCollectionEqualityTest
     public static Factory<PrimitiveLongObjectMap> longObjectMapWithCapacity =
             () -> Primitive.longObjectMap( randomCapacity() );
 
-    private static final MutableIntSet observedRandomInts = new IntHashSet( 0 );
-    private static final PrimitiveLongSet observedRandomLongs = Primitive.longSet();
+    private static final MutableIntSet observedRandomInts = new IntHashSet();
+    private static final MutableLongSet observedRandomLongs = new LongHashSet();
 
     /**
      * Produce a random int that hasn't been seen before by any test.

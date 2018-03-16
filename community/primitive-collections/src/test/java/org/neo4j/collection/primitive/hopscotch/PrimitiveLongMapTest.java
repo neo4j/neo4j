@@ -37,7 +37,6 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -766,45 +765,6 @@ public class PrimitiveLongMapTest
 
         // WHEN
         map.visitEntries( ( key, value ) -> counter.incrementAndGet() > 2 );
-
-        // THEN
-        assertThat( counter.get(), is( 3 ) );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void longObjectKeyVisitorShouldSeeAllEntriesIfItDoesNotBreakOut()
-    {
-        // GIVEN
-        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
-        PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-
-        // WHEN
-        map.visitKeys( visitor );
-
-        // THEN
-        verify( visitor ).visited( 1 );
-        verify( visitor ).visited( 2 );
-        verify( visitor ).visited( 3 );
-        verifyNoMoreInteractions( visitor );
-    }
-
-    @Test
-    public void longObjectKeyVisitorShouldNotSeeEntriesAfterRequestingBreakOut()
-    {
-        // GIVEN
-        PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
-        map.put( 1, 100 );
-        map.put( 2, 200 );
-        map.put( 3, 300 );
-        map.put( 4, 400 );
-        final AtomicInteger counter = new AtomicInteger();
-
-        // WHEN
-        map.visitKeys( value -> counter.incrementAndGet() > 2 );
 
         // THEN
         assertThat( counter.get(), is( 3 ) );

@@ -25,6 +25,7 @@ import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMa
 import org.eclipse.collections.api.iterator.LongIterator
 import org.eclipse.collections.api.set.primitive.LongSet
 import org.eclipse.collections.impl.map.mutable.primitive.{LongIntHashMap, LongLongHashMap}
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
@@ -796,12 +797,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType]) = {
     if (codeGenTypes.size == 1 && codeGenTypes.head.repr == LongType) {
-      generator.assign(generator.declare(typeRef[PrimitiveLongSet], name),
-                       invoke(method[Primitive, PrimitiveLongSet]("longSet")))
-      _finalizers.append((_: Boolean) => (block) =>
-                           block.expression(
-                             invoke(block.load(name), method[PrimitiveLongSet, Unit]("close"))))
-
+      generator.assign(generator.declare(typeRef[LongHashSet], name), createNewInstance(typeRef[LongHashSet]))
     } else {
       generator.assign(generator.declare(typeRef[JHashSet[Object]], name),
                        createNewInstance(typeRef[JHashSet[Object]]))
@@ -812,9 +808,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                        (block: MethodStructure[Expression] => Unit) = {
     if (structure.size == 1 && structure.head._2._1.repr == LongType) {
       val (_, (_, value)) = structure.head
+      // todo ak
       using(generator.ifStatement(not(invoke(generator.load(name),
-                                             method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]), value)))) { body =>
-        body.expression(pop(invoke(generator.load(name), method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
+        method[LongHashSet, Boolean]("contains", typeRef[Long]), value)))) { body =>
+        body.expression(pop(invoke(generator.load(name), method[LongHashSet, Boolean]("add", typeRef[Long]), value)))
         block(copy(generator = body))
       }
     } else {
@@ -834,7 +831,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val localName = context.namer.newVarName()
       val variable = generator.declare(typeRef[LongIterator], localName)
       generator.assign(variable, invoke(generator.load(name),
-        method[PrimitiveLongSet, LongIterator]("longIterator")))
+        method[LongHashSet, LongIterator]("longIterator")))
       using(generator.whileLoop(
         invoke(generator.load(localName), method[LongIterator, Boolean]("hasNext")))) { body =>
 
@@ -909,12 +906,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType) = {
-
-    val setType = if (elementType.repr == LongType) typeRef[PrimitiveLongSet] else typeRef[JHashSet[Object]]
+  // todo ak
+  val setType = if (elementType.repr == LongType) typeRef[LongHashSet] else typeRef[JHashSet[Object]]
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
       val typ =  TypeReference.parameterizedType(typeRef[PrimitiveLongObjectMap[_]], setType)
       generator.assign(generator.declare(typ, name),
-                       invoke(method[Primitive, PrimitiveLongObjectMap[PrimitiveLongSet]]("longObjectMap")))
+        invoke(method[Primitive, PrimitiveLongObjectMap[LongHashSet]]("longObjectMap")))
 
     } else {
       val typ =  TypeReference.parameterizedType(typeRef[JHashMap[_,_]], typeRef[Object], setType)
@@ -995,28 +992,29 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val tmp = context.namer.newVarName()
 
       if (valueType.repr == LongType) {
-        val localVariable = generator.declare(typeRef[PrimitiveLongSet], tmp)
+        // todo ak
+        val localVariable = generator.declare(typeRef[LongHashSet], tmp)
         generator.assign(localVariable,
-                         cast(typeRef[PrimitiveLongSet],
+          cast(typeRef[LongHashSet],
                               invoke(generator.load(name),
                                      method[PrimitiveLongObjectMap[Object], Object]("get", typeRef[Long]),
                                      keyExpression)))
 
 
         using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
-          inner.assign(localVariable, invoke(method[Primitive, PrimitiveLongSet]("longSet")))
+          inner.assign(localVariable, createNewInstance(typeRef[LongHashSet]))
           inner.expression(pop(invoke(generator.load(name),
                                       method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
                                                                                      typeRef[Object]),
                                       keyExpression, inner.load(tmp))))
         }
         using(generator.ifStatement(not(invoke(generator.load(tmp),
-                                               method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
+          method[LongHashSet, Boolean]("contains", typeRef[Long]),
                                                value)))) { inner =>
           block(copy(generator = inner))
         }
         generator.expression(pop(invoke(generator.load(tmp),
-                                        method[PrimitiveLongSet, Boolean]("add", typeRef[Long]), value)))
+          method[LongHashSet, Boolean]("add", typeRef[Long]), value)))
       } else {
         val localVariable = generator.declare(typeRef[JHashSet[Object]], tmp)
         generator.assign(localVariable,
@@ -1042,29 +1040,29 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     } else {
       val setVar = context.namer.newVarName()
       if (valueType.repr == LongType) {
-        val localVariable = generator.declare(typeRef[PrimitiveLongSet], setVar)
+        val localVariable = generator.declare(typeRef[LongHashSet], setVar)
         if (!locals.contains(keyVar)) newUniqueAggregationKey(keyVar, key)
 
         generator.assign(localVariable,
-                         cast(typeRef[PrimitiveLongSet],
+          cast(typeRef[LongHashSet],
                               invoke(generator.load(name),
-                                     method[JHashMap[Object, PrimitiveLongSet], Object]("get", typeRef[Object]),
+                                method[JHashMap[Object, LongHashSet], Object]("get", typeRef[Object]),
                                      generator.load(keyVar))))
         using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
-          inner.assign(localVariable, invoke(method[Primitive, PrimitiveLongSet]("longSet")))
+          inner.assign(localVariable, invoke(method[Primitive, LongHashSet]("LongHashSet")))
           inner.expression(pop(invoke(generator.load(name),
-                                      method[JHashMap[Object, PrimitiveLongSet], Object]("put", typeRef[Object],
+            method[JHashMap[Object, LongHashSet], Object]("put", typeRef[Object],
                                                                                              typeRef[Object]),
                                       generator.load(keyVar), inner.load(setVar))))
         }
 
         using(generator.ifStatement(not(invoke(generator.load(setVar),
-                                               method[PrimitiveLongSet, Boolean]("contains", typeRef[Long]),
+          method[LongHashSet, Boolean]("contains", typeRef[Long]),
                                                value)))) { inner =>
           block(copy(generator = inner))
           inner.expression(pop(invoke(generator.load(setVar),
-                                      method[PrimitiveLongSet, Boolean]("add", typeRef[Long]),
+            method[LongHashSet, Boolean]("add", typeRef[Long]),
                                       value)))
         }
       } else {

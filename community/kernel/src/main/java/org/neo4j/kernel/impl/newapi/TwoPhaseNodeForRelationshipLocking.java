@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.Arrays;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveArrays;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -89,7 +87,7 @@ class TwoPhaseNodeForRelationshipLocking
 
     private void collectAndSortNodeIds( long nodeId, Transaction transaction, NodeCursor nodes )
     {
-        PrimitiveLongSet nodeIdSet = Primitive.longSet();
+        final MutableLongSet nodeIdSet = new LongHashSet();
         nodeIdSet.add( nodeId );
 
         org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
@@ -112,9 +110,7 @@ class TwoPhaseNodeForRelationshipLocking
             nodeIdSet.add( rels.targetNodeReference() );
         }
 
-        long[] nodeIds = PrimitiveArrays.of( nodeIdSet );
-        Arrays.sort( nodeIds );
-        this.sortedNodeIds = nodeIds;
+        this.sortedNodeIds = nodeIdSet.toSortedArray();
     }
 
     private void lockAllNodes( long[] nodeIds )
