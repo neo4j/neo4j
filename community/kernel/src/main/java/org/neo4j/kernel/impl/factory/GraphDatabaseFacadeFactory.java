@@ -165,6 +165,7 @@ public class GraphDatabaseFacadeFactory
 
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, msgLog, coreAPIAvailabilityGuard );
         graphDatabaseFacade.init(
+                edition,
                 spi,
                 dataSource.guard,
                 dataSource.threadToTransactionBridge,

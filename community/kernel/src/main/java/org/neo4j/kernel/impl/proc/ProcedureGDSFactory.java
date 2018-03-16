@@ -32,22 +32,25 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDatabaseService,ProcedureException>
 {
     private final PlatformModule platform;
+    private final EditionModule editionModule;
     private final DataSourceModule dataSource;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
-    public ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, DependencyResolver resolver,
+    public ProcedureGDSFactory( PlatformModule platform, EditionModule editionModule, DataSourceModule dataSource, DependencyResolver resolver,
             CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         this.platform = platform;
+        this.editionModule = editionModule;
         this.dataSource = dataSource;
         this.resolver = resolver;
         this.availability = coreAPIAvailabilityGuard;
@@ -70,6 +73,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         facade.init(
+            editionModule,
             new ProcedureGDBFacadeSPI(
                 platform,
                 dataSource,

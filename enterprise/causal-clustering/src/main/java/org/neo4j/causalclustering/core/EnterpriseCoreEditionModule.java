@@ -140,7 +140,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     protected final Config config;
     private final Supplier<Stream<Pair<AdvertisedSocketAddress,ProtocolStack>>> clientInstalledProtocols;
     private final Supplier<Stream<Pair<SocketAddress,ProtocolStack>>> serverInstalledProtocols;
-    private CoreStateMachinesModule coreStateMachinesModule;
+    private final CoreServerModule coreServerModule;
+    private final CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -294,7 +295,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         InstalledProtocolHandler serverInstalledProtocolHandler = new InstalledProtocolHandler();
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+        this.coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
                 serverPipelineBuilderFactory, serverInstalledProtocolHandler );
 
@@ -458,5 +459,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    public void stopCatchupServer()
+    {
+        coreServerModule.catchupServer().stop();
     }
 }

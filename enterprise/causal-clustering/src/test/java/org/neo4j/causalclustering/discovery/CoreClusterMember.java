@@ -287,7 +287,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
     public void stopCatchupServer()
     {
-        throw new UnsupportedOperationException( "Not implemented" ); // TODO
+        database.stopCatchupServer();
     }
 
     int discoveryPort()
