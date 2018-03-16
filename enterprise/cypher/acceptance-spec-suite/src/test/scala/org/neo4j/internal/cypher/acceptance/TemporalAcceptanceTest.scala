@@ -231,6 +231,16 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
   }
 
+  test("should not truncate to weekYear with wrong receiver") {
+    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "weekYear",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+  }
+
+  test("should not truncate to weekYear with wrong argument") {
+    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "weekYear",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+  }
+
   test("should not truncate to quarter with wrong receiver") {
     shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "quarter",
       Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))

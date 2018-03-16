@@ -169,6 +169,43 @@ Feature: TemporalTruncateAcceptance
       | '1984-01-01T00:00+01:00[Europe/Stockholm]' |
     And no side effects
 
+  Scenario: Should truncate to weekYear
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
+              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123}),
+              date({year:1984, month:2, day:1})] as d
+      RETURN datetime.truncate('weekYear', d) as d1,
+             datetime.truncate('weekYear', d, {day:5}) as d2,
+             localdatetime.truncate('weekYear', d) as d3,
+             localdatetime.truncate('weekYear', d, {day:5}) as d4,
+             date.truncate('weekYear', d) as d5,
+             date.truncate('weekYear', d, {day:5}) as d6
+      """
+    Then the result should be, in order:
+      | d1                       | d2                       | d3                 | d4                 | d5          | d6           |
+      | '1983-01-03T00:00+01:00' | '1983-01-05T00:00+01:00' | '1983-01-03T00:00' | '1983-01-05T00:00' |'1983-01-03' | '1983-01-05' |
+      | '1983-01-03T00:00Z'      | '1983-01-05T00:00Z'      | '1983-01-03T00:00' | '1983-01-05T00:00' |'1983-01-03' | '1983-01-05' |
+      | '1984-01-02T00:00Z'      | '1984-01-05T00:00Z'      | '1984-01-02T00:00' | '1984-01-05T00:00' |'1984-01-02' | '1984-01-05' |
+    And no side effects
+
+  Scenario: Should truncate to weekYear with time zone
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
+              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123}),
+              date({year:1984, month:2, day:1})] as d
+      RETURN datetime.truncate('weekYear', d, {timezone:'Europe/Stockholm'}) as d1
+      """
+    Then the result should be, in order:
+      | d1                                         |
+      | '1983-01-03T00:00+01:00[Europe/Stockholm]' |
+      | '1983-01-03T00:00+01:00[Europe/Stockholm]' |
+      | '1984-01-02T00:00+01:00[Europe/Stockholm]' |
+    And no side effects
+
   Scenario: Should truncate to quarter
     Given an empty graph
     When executing query:
