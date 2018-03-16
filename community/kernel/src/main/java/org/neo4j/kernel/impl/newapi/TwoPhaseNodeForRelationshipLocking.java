@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 
@@ -68,6 +69,10 @@ class TwoPhaseNodeForRelationshipLocking
             NodeCursor nodes = transaction.nodeCursor();
             org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
             read.singleNode( nodeId, nodes );
+            if ( !nodes.next() )
+            {
+                throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            }
             RelationshipSelectionCursor rels =
                     RelationshipSelections.allCursor( transaction.cursors(), nodes, null );
             boolean first = true;
@@ -88,6 +93,10 @@ class TwoPhaseNodeForRelationshipLocking
         NodeCursor nodes = transaction.nodeCursor();
         org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
         read.singleNode( nodeId, nodes );
+        if ( !nodes.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+        }
         RelationshipSelectionCursor rels =
                 RelationshipSelections.allCursor( transaction.cursors(), nodes, null );
         while ( rels.next() )
