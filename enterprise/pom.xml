@@ -40,7 +40,8 @@
     <module>deferred-locks</module>
     <module>ha</module>
     <module>procedure-compiler-enterprise-tests</module>
-    <module>fulltext-addon</module>
+    <module>fulltext-index</module>
+    <module>bloom-addon</module>
   </modules>
 
   <profiles>
