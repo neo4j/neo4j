@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -138,9 +138,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "zero" ) );
 
@@ -247,13 +248,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int firstName = token.propertyKey( "firstname" );
         int surname = token.propertyKey( "surname" );
         CapableIndexReference index = schemaRead.index( label, firstName, surname );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             IndexValueCapability valueCapability = index.valueCapability( ValueCategory.TEXT, ValueCategory.TEXT );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( firstName, "Joe" ),
-                    IndexQuery.exact( surname, "Dalton" ) );
+                IndexQuery.exact( surname, "Dalton" ) );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 2 ) );
@@ -269,9 +271,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability stringCapability = index.valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringPrefix( prop, "t" ) );
 
@@ -290,9 +293,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability stringCapability = index.valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringSuffix( prop, "e" ) );
 
@@ -310,9 +314,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability stringCapability = index.valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.stringContains( prop, "o" ) );
 
@@ -330,9 +335,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability stringCapability = index.valueCapability( ValueCategory.TEXT );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, "one", true, "three", true ) );
 
@@ -375,9 +381,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability numberCapability = index.valueCapability( ValueCategory.NUMBER );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, 5, true, 12, true ) );
 
@@ -412,9 +419,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability temporalCapability = index.valueCapability( ValueCategory.TEMPORAL );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE,
                     IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
@@ -455,9 +463,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability spatialCapability = index.valueCapability( ValueCategory.GEOMETRY );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, Cartesian ) );
 
@@ -492,9 +501,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability wildcardCapability = index.valueCapability( ValueCategory.UNKNOWN );
-        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             read.nodeIndexScan( index, node, IndexOrder.NONE );
 
@@ -642,7 +652,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    private void assertFoundNodesAndValue( NodeValueIndexCursor node, int nodes, PrimitiveLongSet uniqueIds,
+    private void assertFoundNodesAndValue( NodeValueIndexCursor node, int nodes, MutableLongSet uniqueIds,
             IndexValueCapability expectValue )
     {
         uniqueIds.clear();
@@ -669,7 +679,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertFalse( "no more than " + nodes + " nodes", node.next() );
     }
 
-    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
+    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, int nodes, MutableLongSet uniqueIds )
     {
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
@@ -684,7 +694,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertFalse( "no more than " + nodes + " nodes", node.next() );
     }
 
-    private void assertFoundNodesAndValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
+    private void assertFoundNodesAndValue( NodeValueIndexCursor node, MutableLongSet uniqueIds,
             IndexValueCapability expectValue,
             long... expected )
     {
@@ -696,7 +706,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
-    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
+    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, MutableLongSet uniqueIds,
             long... expected )
     {
         assertFoundNodesAndNoValue( node, expected.length, uniqueIds );
@@ -767,9 +777,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         CapableIndexReference index = schemaRead.index( label, prop );
         IndexValueCapability wildcardCapability = index.valueCapability( ValueCategory.UNKNOWN );
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
-              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+              NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            MutableLongSet uniqueIds = new LongHashSet();
+
             // when
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
             assertThat( node.numberOfProperties(), equalTo( 1 ) );

@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 
 import javax.annotation.Nullable;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 
 /**
@@ -67,13 +67,14 @@ class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implem
 
     private final LongIterator source;
     private final LongIterator addedElementsIterator;
-    private final PrimitiveLongSet addedElements;
-    private final PrimitiveLongSet removedElements;
+    private final LongSet addedElements;
+    private final LongSet removedElements;
     @Nullable
     private final Resource resource;
     private Phase phase;
 
-    private DiffApplyingPrimitiveLongIterator( LongIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements,
+    private DiffApplyingPrimitiveLongIterator( LongIterator source, LongSet addedElements,
+            LongSet removedElements,
             @Nullable Resource resource )
     {
         this.source = source;
@@ -84,12 +85,12 @@ class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator implem
         this.phase = Phase.FILTERED_SOURCE;
     }
 
-    static LongIterator augment( LongIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
+    static LongIterator augment( LongIterator source, LongSet addedElements, LongSet removedElements )
     {
         return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements, null );
     }
 
-    static PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source, PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
+    static PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source, LongSet addedElements, LongSet removedElements )
     {
         return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements, source );
     }

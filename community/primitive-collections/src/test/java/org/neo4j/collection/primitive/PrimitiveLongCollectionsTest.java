@@ -20,6 +20,8 @@
 package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -133,21 +135,6 @@ public class PrimitiveLongCollectionsTest
         assertEquals( 2, PrimitiveLongCollections.indexOf( items.get(), 30 ) );
     }
 
-    @Test
-    public void iteratorAsSet()
-    {
-        // GIVEN
-        LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
-
-        // WHEN
-        PrimitiveLongSet set = PrimitiveLongCollections.asSet( items );
-
-        // THEN
-        assertTrue( set.contains( 1 ) );
-        assertTrue( set.contains( 2 ) );
-        assertTrue( set.contains( 3 ) );
-        assertFalse( set.contains( 4 ) );
-    }
 
     @Test
     public void count()
@@ -215,23 +202,10 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void copyPrimitiveSet()
-    {
-        PrimitiveLongSet longSet = PrimitiveLongCollections.setOf( 1L, 3L, 5L );
-        PrimitiveLongSet copySet = PrimitiveLongCollections.asSet( longSet );
-        assertNotSame( copySet, longSet );
-
-        assertTrue( copySet.contains( 1L ) );
-        assertTrue( copySet.contains( 3L ) );
-        assertTrue( copySet.contains( 5L ) );
-        assertEquals( 3, copySet.size() );
-    }
-
-    @Test
     public void convertJavaCollectionToSetOfPrimitives()
     {
         List<Long> longs = asList( 1L, 4L, 7L );
-        PrimitiveLongSet longSet = PrimitiveLongCollections.asSet( longs );
+        LongSet longSet = PrimitiveLongCollections.asSet( longs );
         assertTrue( longSet.contains( 1L ) );
         assertTrue( longSet.contains( 4L ) );
         assertTrue( longSet.contains( 7L ) );
@@ -241,7 +215,7 @@ public class PrimitiveLongCollectionsTest
     @Test
     public void convertPrimitiveSetToJavaSet()
     {
-        PrimitiveLongSet longSet = PrimitiveLongCollections.setOf( 1L, 3L, 5L );
+        LongSet longSet = LongHashSet.newSetWith( 1L, 3L, 5L );
         Set<Long> longs = PrimitiveLongCollections.toSet( longSet );
         assertThat( longs, containsInAnyOrder(1L, 3L, 5L) );
     }

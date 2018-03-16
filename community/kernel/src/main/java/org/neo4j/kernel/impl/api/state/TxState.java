@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,7 +36,6 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -1307,14 +1307,15 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             relationshipStatesMap.close();
         }
-        if ( nodes != null && nodes.removedFromAdded != null )
-        {
-            nodes.removedFromAdded.close();
-        }
-        if ( relationships != null && relationships.removedFromAdded != null )
-        {
-            relationships.removedFromAdded.close();
-        }
+        // todo ak
+//        if ( nodes != null && nodes.removedFromAdded != null )
+//        {
+//            nodes.removedFromAdded.close();
+//        }
+//        if ( relationships != null && relationships.removedFromAdded != null )
+//        {
+//            relationships.removedFromAdded.close();
+//        }
     }
 
     private static class LabelTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
@@ -1396,7 +1397,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     private class RemovalsCountingDiffSets extends DiffSets<Long>
     {
-        private PrimitiveLongSet removedFromAdded;
+        private MutableLongSet removedFromAdded;
 
         @Override
         public boolean remove( Long elem )
@@ -1425,7 +1426,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     private class RemovalsCountingRelationshipsDiffSets extends RelationshipDiffSets<Long>
     {
-        private PrimitiveLongSet removedFromAdded;
+        private MutableLongSet removedFromAdded;
 
         private RemovalsCountingRelationshipsDiffSets( RelationshipVisitor.Home txStateRelationshipHome )
         {

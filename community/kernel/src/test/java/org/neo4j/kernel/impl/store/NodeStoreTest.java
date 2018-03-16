@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.store;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -35,8 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 import java.util.stream.LongStream;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -229,7 +229,7 @@ public class NodeStoreTest
         nodeStore = newNodeStore( fs );
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
-        final PrimitiveLongSet nextRelSet = Primitive.longSet();
+        final MutableLongSet nextRelSet = new LongHashSet();
         for ( int i = 0; i < 10_000; i++ )
         {
             // Enough records to span several pages

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongSet
+import org.eclipse.collections.api.set.primitive.LongSet
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
@@ -36,7 +36,7 @@ class QueryState(val query: QueryContext,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  val initialContext: Option[ExecutionContext] = None,
-                 val triadicState: mutable.Map[String, PrimitiveLongSet] = mutable.Map.empty,
+                 val triadicState: mutable.Map[String, LongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] =
                  new SingleThreadedLRUCache(maxSize = 16)) {

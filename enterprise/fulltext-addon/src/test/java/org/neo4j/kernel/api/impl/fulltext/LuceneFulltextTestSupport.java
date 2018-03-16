@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -28,8 +30,6 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -151,7 +151,7 @@ public class LuceneFulltextTestSupport
 
     protected void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
     {
-        PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
+        final MutableLongSet set = LongHashSet.newSetWith( ids );
         while ( result.hasNext() )
         {
             long next = result.next().entityId();

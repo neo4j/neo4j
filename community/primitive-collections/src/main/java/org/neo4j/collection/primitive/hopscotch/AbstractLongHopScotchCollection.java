@@ -22,7 +22,6 @@ package org.neo4j.collection.primitive.hopscotch;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollection;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
 public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
         implements PrimitiveLongCollection
@@ -36,20 +35,5 @@ public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHop
     public LongIterator longIterator()
     {
         return new TableKeyIterator<>( table, this );
-    }
-
-    @Override
-    public <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
-    {
-        int capacity = table.capacity();
-        long nullKey = table.nullKey();
-        for ( int i = 0; i < capacity; i++ )
-        {
-            long key = table.key( i );
-            if ( key != nullKey && visitor.visited( key ) )
-            {
-                return;
-            }
-        }
     }
 }

@@ -22,16 +22,14 @@ package org.neo4j.collection.primitive;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
-import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
@@ -57,32 +55,11 @@ public class Primitive
     {
     }
 
-    // Some example would be...
-    public static PrimitiveLongSet longSet()
+    public static MutableLongSet offHeapLongSet( MemoryAllocationTracker allocationTracker )
     {
-        return longSet( DEFAULT_HEAP_CAPACITY );
-    }
+//        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
 
-    public static PrimitiveLongSet longSet( int initialCapacity )
-    {
-        return new PrimitiveLongHashSet( new LongKeyTable<>( initialCapacity, VALUE_MARKER ),
-                VALUE_MARKER, NO_MONITOR );
-    }
-
-    public static PrimitiveLongSet offHeapLongSet()
-    {
-        return offHeapLongSet( GlobalMemoryTracker.INSTANCE );
-    }
-
-    public static PrimitiveLongSet offHeapLongSet( MemoryAllocationTracker allocationTracker )
-    {
-        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
-    }
-
-    public static PrimitiveLongSet offHeapLongSet( int initialCapacity, MemoryAllocationTracker allocationTracker )
-    {
-        return new PrimitiveLongHashSet( new LongKeyUnsafeTable<>( initialCapacity, VALUE_MARKER, allocationTracker ),
-                VALUE_MARKER, NO_MONITOR );
+        return new LongHashSet();
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()

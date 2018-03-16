@@ -21,10 +21,9 @@ package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;import org.eclipse.collections.api.set.primitive.LongSet;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+import  org.eclipse.collections.impl.factory.primitive.LongSets;
 
 /**
  * Read only variant of specialised primitive longs collection that with given a sequence of add
@@ -49,21 +48,21 @@ public interface PrimitiveLongReadableDiffSets
         }
 
         @Override
-        public PrimitiveLongSet getAdded()
+        public LongSet getAdded()
         {
-            return emptySet();
+            return LongSets.immutable.empty();
         }
 
         @Override
-        public PrimitiveLongSet getAddedSnapshot()
+        public LongSet getAddedSnapshot()
         {
-            return emptySet();
+            return LongSets.immutable.empty();
         }
 
         @Override
-        public PrimitiveLongSet getRemoved()
+        public LongSet getRemoved()
         {
-            return emptySet();
+            return LongSets.immutable.empty();
         }
 
         @Override
@@ -109,19 +108,19 @@ public interface PrimitiveLongReadableDiffSets
      * All elements that added into this collection
      * @return all added elements
      */
-    PrimitiveLongSet getAdded();
+    LongSet getAdded();
 
     /**
      * Snapshot of added elements infot this collection on the moment of invocation
      * @return snapshot of added elements
      */
-    PrimitiveLongSet getAddedSnapshot();
+    LongSet getAddedSnapshot();
 
     /**
      * All elements that are removed according to underlying collection
      * @return all removed elements
      */
-    PrimitiveLongSet getRemoved();
+    LongSet getRemoved();
 
     /**
      * Check if underlying diff set is empty

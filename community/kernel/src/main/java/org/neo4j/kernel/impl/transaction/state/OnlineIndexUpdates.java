@@ -20,15 +20,16 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -88,12 +89,17 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
     }
 
-    private PrimitiveLongSet allKeys( PrimitiveLongObjectMap... maps )
+    private LongSet allKeys( PrimitiveLongObjectMap... maps )
     {
-        PrimitiveLongSet union = Primitive.longSet();
+        final MutableLongSet union = new LongHashSet();
         for ( PrimitiveLongObjectMap map : maps )
         {
-            union.addAll( map.longIterator() );
+            // todo ak
+            final LongIterator iter = map.longIterator();
+            while ( iter.hasNext() )
+            {
+                union.add( iter.next() );
+            }
         }
         return union;
     }

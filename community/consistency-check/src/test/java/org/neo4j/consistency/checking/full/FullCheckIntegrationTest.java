@@ -41,8 +41,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -523,11 +521,6 @@ public class FullCheckIntegrationTest
             longs[i] = in.get( i ).longValue();
         }
         return longs;
-    }
-
-    private PrimitiveLongSet asPrimitiveLongSet( List<? extends Number> in )
-    {
-        return PrimitiveLongCollections.setOf( asArray( in ) );
     }
 
     @Test

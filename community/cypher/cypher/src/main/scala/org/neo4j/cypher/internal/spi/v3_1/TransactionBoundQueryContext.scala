@@ -23,6 +23,7 @@ import java.net.URL
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}

@@ -50,12 +50,6 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
     }
 
     @Override
-    public <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isEmpty()
     {
         return head == tail;
