@@ -19,8 +19,8 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
@@ -65,12 +65,24 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
      */
     static class HilbertCurve3D extends CurveRule
     {
-        CurveRule[] children;
+        HilbertCurve3D[] children;
 
         private HilbertCurve3D( int... npointValues )
         {
             super( 3, npointValues );
             assert npointValues[0] == 0 || npointValues[0] == 3 || npointValues[0] == 5 || npointValues[0] == 6;
+        }
+
+        @Override
+        public CurveRule childAt( int npoint )
+        {
+            return children[npoint];
+        }
+
+        @Override
+        public String toString()
+        {
+            return name().toString();
         }
 
         static String binaryString( int value )
@@ -168,47 +180,36 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
             return new HilbertCurve3D( newNpoints );
         }
 
-        private HilbertCurve3D singleTon( HilbertCurve3D curve )
-        {
-            SubCurve3D name = curve.name();
-            if ( curves.containsKey( name ) )
-            {
-                return curves.get( name );
-            }
-            else
-            {
-                curves.put( name, curve );
-                return curve;
-            }
-        }
-
-        private void makeChildren()
-        {
-            this.children = new HilbertCurve3D[length()];
-            this.children[0] = singleTon( rotateOneThirdDiagonalPos( true ) );
-            this.children[1] = singleTon( rotateOneThirdDiagonalPos( false ) );
-            this.children[2] = singleTon( rotateOneThirdDiagonalPos( false ) );
-            this.children[3] = singleTon( rotateAboutX() );
-            this.children[4] = singleTon( rotateAboutX() );
-            this.children[5] = singleTon( rotateOneThirdDiagonalNeg( true ) );
-            this.children[6] = singleTon( rotateOneThirdDiagonalNeg( true ) );
-            this.children[7] = singleTon( rotateOneThirdDiagonalNeg( false ) );
-        }
-
-        @Override
-        public CurveRule childAt( int npoint )
+        private void buildCurveTree( Map<SubCurve3D,HilbertCurve3D> curves )
         {
             if ( children == null )
             {
-                makeChildren();
+                makeChildren( curves );
+                curves.put( name(), this );
+
+                for ( HilbertCurve3D child : children )
+                {
+                    child.buildCurveTree( curves );
+                }
             }
-            return children[npoint];
         }
 
-        @Override
-        public String toString()
+        private void makeChildren( Map<SubCurve3D,HilbertCurve3D> curves )
         {
-            return name().toString();
+            children = new HilbertCurve3D[length()];
+            children[0] = singleton( curves, rotateOneThirdDiagonalPos( true ) );
+            children[1] = singleton( curves, rotateOneThirdDiagonalPos( false ) );
+            children[2] = singleton( curves, rotateOneThirdDiagonalPos( false ) );
+            children[3] = singleton( curves, rotateAboutX() );
+            children[4] = singleton( curves, rotateAboutX() );
+            children[5] = singleton( curves, rotateOneThirdDiagonalNeg( true ) );
+            children[6] = singleton( curves, rotateOneThirdDiagonalNeg( true ) );
+            children[7] = singleton( curves, rotateOneThirdDiagonalNeg( false ) );
+        }
+
+        private HilbertCurve3D singleton( Map<SubCurve3D,HilbertCurve3D> curves, HilbertCurve3D newCurve )
+        {
+            return curves.computeIfAbsent( newCurve.name(), key -> newCurve );
         }
     }
 
@@ -254,20 +255,20 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
         }
     }
 
-    static HashMap<SubCurve3D,HilbertCurve3D> curves = new LinkedHashMap<>();
+    // this is left accessible to make debugging easier
+    static Map<SubCurve3D,HilbertCurve3D> curves = new LinkedHashMap<>();
 
-    private static HilbertCurve3D addCurveRule( int... npointValues )
+    private static HilbertCurve3D buildTheCurve()
     {
-        HilbertCurve3D curve = new HilbertCurve3D( npointValues );
-        SubCurve3D name = curve.name();
-        if ( !curves.containsKey( name ) )
-        {
-            curves.put( name, curve );
-        }
-        return curve;
+        // We start with a UFR curve
+        int[] npointValues = {0b000, 0b010, 0b011, 0b001, 0b101, 0b111, 0b110, 0b100};
+        HilbertCurve3D theCurve = new HilbertCurve3D( npointValues );
+
+        theCurve.buildCurveTree( curves );
+        return theCurve;
     }
 
-    private static final HilbertCurve3D curveUFR = addCurveRule( 0b000, 0b010, 0b011, 0b001, 0b101, 0b111, 0b110, 0b100 );
+    private static final HilbertCurve3D THE_CURVE = buildTheCurve();
 
     public static final int MAX_LEVEL = 63 / 3 - 1;
 
@@ -286,6 +287,6 @@ public class HilbertSpaceFillingCurve3D extends SpaceFillingCurve
     @Override
     protected CurveRule rootCurve()
     {
-        return curveUFR;
+        return THE_CURVE;
     }
 }
