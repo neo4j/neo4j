@@ -19,24 +19,44 @@
  */
 package org.neo4j.backup.impl;
 
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
+
 import java.io.OutputStream;
 import java.time.Clock;
+import java.util.Collection;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
+import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
+import org.neo4j.causalclustering.catchup.CatchupProtocolClientInstaller;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
+import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
+import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
+import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
+import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.Collections.singletonList;
 
 /**
  * The dependencies for the backup strategies require a valid configuration for initialisation.
@@ -88,9 +108,7 @@ public class BackupSupportingClassesFactory
 
     private BackupDelegator backupDelegatorFromConfig( PageCache pageCache, Config config )
     {
-        PipelineWrapper pipelineWrapper = createPipelineWrapper( config );
-        CatchUpClient catchUpClient = new CatchUpClient(
-                logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, monitors, pipelineWrapper );
+        CatchUpClient catchUpClient = new CatchUpClient( logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, channelInitializer( config ) );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
 
@@ -104,8 +122,28 @@ public class BackupSupportingClassesFactory
 
     protected PipelineWrapper createPipelineWrapper( Config config )
     {
-        DuplexPipelineWrapperFactory pipelineWrapperFactory = new VoidPipelineWrapperFactory();
-        return pipelineWrapperFactory.forServer( config, null, logProvider );
+        return new VoidPipelineWrapperFactory().forServer( config, null, logProvider );
+    }
+
+    private Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer( Config config )
+    {
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
+        ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+
+        ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(),
+                supportedCatchupProtocols );
+        ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
+
+        NettyPipelineBuilderFactory clientPipelineBuilderFactory = new NettyPipelineBuilderFactory( createPipelineWrapper( config ) );
+
+        return handler -> {
+            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository = new ProtocolInstallerRepository<>(
+                    singletonList( new CatchupProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider, handler ) ),
+                    ModifierProtocolInstaller.allClientInstallers );
+            return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
+                    clientPipelineBuilderFactory, config, logProvider );
+        };
     }
 
     private static BackupDelegator backupDelegator(

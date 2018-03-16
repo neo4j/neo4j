@@ -21,12 +21,13 @@ package org.neo4j.causalclustering.protocol;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 
 import org.neo4j.logging.Log;
 
 public class ServerNettyPipelineBuilder extends NettyPipelineBuilder<ProtocolInstaller.Orientation.Server, ServerNettyPipelineBuilder>
 {
-    protected ServerNettyPipelineBuilder( ChannelPipeline pipeline, Log log )
+    ServerNettyPipelineBuilder( ChannelPipeline pipeline, Log log )
     {
         super( pipeline, log );
     }
@@ -34,6 +35,7 @@ public class ServerNettyPipelineBuilder extends NettyPipelineBuilder<ProtocolIns
     @Override
     public ServerNettyPipelineBuilder addFraming()
     {
+        add( "frame_encoder", new LengthFieldPrepender( 4 ) );
         add( "frame_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
         return this;
     }

@@ -51,12 +51,9 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private final TimeoutStrategy timeoutStrategy;
     private final Log log;
 
-    public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository,
-            ModifierProtocolRepository modifierProtocolRepository,
-            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository,
-            NettyPipelineBuilderFactory pipelineBuilderFactory,
-            Config config,
-            LogProvider logProvider )
+    public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
+            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory,
+            Config config, LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
         this.applicationProtocolRepository = applicationProtocolRepository;

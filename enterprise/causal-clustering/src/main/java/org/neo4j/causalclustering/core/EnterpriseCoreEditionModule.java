@@ -292,7 +292,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
-                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineWrapper,
+                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
                 serverPipelineBuilderFactory );
 
         RaftServerModule raftServerModule = RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase,

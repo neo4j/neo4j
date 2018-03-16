@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +38,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.StrippedCatchupServer;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -50,7 +51,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -104,7 +104,7 @@ public class CatchupServerIT
         catchupServer = new RealStrippedCatchupServer( fsa, graphDb );
         catchupServer.before();
         catchupServer.start();
-        catchUpClient = new CatchUpClient( LOG_PROVIDER, Clock.systemUTC(), 10000, new Monitors(), VoidPipelineWrapperFactory.VOID_WRAPPER );
+        catchUpClient = new CatchUpClient( LOG_PROVIDER, Clock.systemUTC(), 10000, handler -> emptyInitializer() );
         catchUpClient.start();
         pageCache = graphDb.getDependencyResolver().resolveDependency( PageCache.class );
     }
@@ -341,5 +341,17 @@ public class CatchupServerIT
             nodeIndex.add( graphDb.createNode(), "some-key", "som-value" );
             tx.success();
         }
+    }
+
+    private ChannelInitializer<SocketChannel> emptyInitializer()
+    {
+        return new ChannelInitializer<SocketChannel>()
+        {
+            @Override
+            protected void initChannel( SocketChannel ch )
+            {
+
+            }
+        };
     }
 }
