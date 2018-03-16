@@ -37,7 +37,7 @@ public class ZonedTimeSchemaKeyTest
     {
         Value[] values = {TimeValue.time( 9999, ZoneOffset.of( "+18:00" ) ),
                           TimeValue.time( 10000, ZoneOffset.of( "-18:00" ) ),
-                          TimeValue.time( 10000, ZoneOffset.of( "UTC" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "-00:00" ) ),
                           TimeValue.time( 10000, ZoneOffset.of( "+01:00" ) ),
                           TimeValue.time( 10000, ZoneOffset.of( "+03:00" ) ),
                           TimeValue.time( 10000, ZoneOffset.of( "-18:00" ) )};
