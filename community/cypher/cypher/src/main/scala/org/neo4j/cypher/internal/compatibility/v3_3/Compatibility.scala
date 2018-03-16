@@ -122,11 +122,11 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         // Create graph-statistics to be shared between 3.3 logical planning and 3.4 physical planning
         val graphStatisticsSnapshotV3_4 = new MutableGraphStatisticsSnapshotV3_4()
         val graphStatisticsV3_3 = new WrappedInstrumentedGraphStatistics(
-          TransactionBoundGraphStatisticsV3_3(transactionalContext.tc.readOperations()),
+          TransactionBoundGraphStatisticsV3_3(transactionalContext.dataRead, transactionalContext.schemaRead),
           graphStatisticsSnapshotV3_4)
 
         val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(
-          new TransactionBoundPlanContextV3_3(() => transactionalContext.tc.readOperations(),
+          new TransactionBoundPlanContextV3_3(() => transactionalContext.kernelTransaction,
             notificationLoggerV3_3, graphStatisticsV3_3))
 
         val graphStatisticsV3_4 = InstrumentedGraphStatisticsV3_4(
