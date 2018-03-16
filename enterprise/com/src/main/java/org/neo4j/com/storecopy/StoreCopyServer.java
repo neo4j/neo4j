@@ -190,7 +190,7 @@ public class StoreCopyServer
                                 {
                                     doWrite( writer, temporaryBuffer, file, recordSize, fileChannel, fileSize, storeCopyIdentifier );
                                 }
-                                return anonymous( lastAppliedTransaction );
+                                continue;
                             }
                         }
                     }
