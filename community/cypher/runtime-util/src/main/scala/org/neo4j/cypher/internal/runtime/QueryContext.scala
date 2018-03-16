@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -255,8 +254,6 @@ trait QueryTransactionalContext extends CloseableResource {
   def schemaRead: SchemaRead
 
   def dataWrite: Write
-
-  def readOperations: ReadOperations
 
   def dbmsOperations: DbmsOperations
 

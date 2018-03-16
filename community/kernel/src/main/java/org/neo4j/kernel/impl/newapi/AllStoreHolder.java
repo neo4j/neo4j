@@ -437,7 +437,8 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLabelLock( index.label() );
         ktx.assertOpen();
-        return storeReadLayer.indexUniqueValuesPercentage( new LabelSchemaDescriptor(index.label(), index.properties() ) );
+        return storeReadLayer
+                .indexUniqueValuesPercentage( new LabelSchemaDescriptor( index.label(), index.properties() ) );
     }
 
     @Override
@@ -445,8 +446,7 @@ public class AllStoreHolder extends Read
     {
         acquireSharedLabelLock( index.label() );
         ktx.assertOpen();
-        return storeReadLayer.indexSize( new LabelSchemaDescriptor(index.label(), index.properties() ) );
-
+        return storeReadLayer.indexSize( new LabelSchemaDescriptor( index.label(), index.properties() ) );
     }
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
