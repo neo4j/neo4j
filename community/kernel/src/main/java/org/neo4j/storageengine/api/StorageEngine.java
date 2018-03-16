@@ -23,9 +23,11 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -43,7 +45,7 @@ public interface StorageEngine
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageStatement, ResourceLocker,
+     * {@link #createCommands(Collection, Collection, ReadableTransactionState, StorageStatement, ResourceLocker,
      * long)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
@@ -56,7 +58,8 @@ public interface StorageEngine
      * storage using {@link #apply(CommandsToApply, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things
      * than applying to storage, f.ex replicating to another storage engine.
-     * @param target {@link Collection} to put {@link StorageCommand commands} into.
+     * @param commandsTarget {@link Collection} to put {@link StorageCommand commands} into.
+     * @param indexUpdatesTarget {@link Collection} to put {@link IndexEntryUpdate} instances into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageStatement {@link StorageStatement} to use for reading store state during creation of commands.
      * @param locks {@link ResourceLocker} can grab additional locks.
@@ -76,7 +79,8 @@ public interface StorageEngine
      * and some data violates that constraint.
      */
     void createCommands(
-            Collection<StorageCommand> target,
+            Collection<StorageCommand> commandsTarget,
+            Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdatesTarget,
             ReadableTransactionState state,
             StorageStatement storageStatement,
             ResourceLocker locks,

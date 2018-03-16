@@ -123,7 +123,7 @@ public class ReplicatedTokenHolderTest
         doAnswer( invocation ->
         {
             Collection<StorageCommand> target = invocation.getArgument( 0 );
-            ReadableTransactionState txState = invocation.getArgument( 1 );
+            ReadableTransactionState txState = invocation.getArgument( 2 );
             txState.accept( new TxStateVisitor.Adapter()
             {
                 @Override
@@ -136,7 +136,7 @@ public class ReplicatedTokenHolderTest
                 }
             } );
             return null;
-        } ).when( storageEngine ).createCommands( anyCollection(), any( ReadableTransactionState.class ),
+        } ).when( storageEngine ).createCommands( anyCollection(), anyCollection(), any( ReadableTransactionState.class ),
                 any( StorageStatement.class ), any( ResourceLocker.class ), anyLong() );
 
         StoreReadLayer readLayer = mock( StoreReadLayer.class );

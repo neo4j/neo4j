@@ -30,6 +30,8 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface IndexCapability
 {
+    IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
+
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueGroup}.
      * Ordering of ValueGroup correspond to ordering of related {@link IndexReference#properties()}.
@@ -55,6 +57,17 @@ public interface IndexCapability
      * {@code valueGroups} and {@link IndexReference#properties()} differ {@link IndexValueCapability#NO} is returned.
      */
     IndexValueCapability valueCapability( ValueGroup... valueGroups );
+
+    /**
+     * Whether or not an index can handle values of certain types (i.e. belonging to certain groups.
+     *
+     * @param valueGroups {@link ValueGroup} to check for.
+     * @return whether or not those groups can be handled.
+     */
+    default IndexValueCapability handleValueCapability( ValueGroup... valueGroups )
+    {
+        return valueCapability( valueGroups );
+    }
 
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {

@@ -19,12 +19,23 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import java.io.IOException;
+import java.util.Collection;
+
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
+import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.id.RenewableBatchIdSequences;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
+import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
 import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
@@ -34,14 +45,17 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
 import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
+ * Meant to be allocated and used in one and same thread.
  */
 public class RecordStorageCommandCreationContext implements CommandCreationContext
 {
     private final NeoStores neoStores;
+    private final IndexingService indexingService;
     private final Loaders loaders;
     private final RelationshipCreator relationshipCreator;
     private final RelationshipDeleter relationshipDeleter;
@@ -49,9 +63,14 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
     private final PropertyDeleter propertyDeleter;
     private final RenewableBatchIdSequences idBatches;
 
-    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize )
+    private final PropertyPhysicalToLogicalConverter physicalToLogicalPropertyChangeConverter;
+    private final OnlineIndexUpdates indexUpdates;
+    private final NodePropertyCommandsExtractor extractor;
+
+    RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize, IndexingService indexingService )
     {
         this.neoStores = neoStores;
+        this.indexingService = indexingService;
         this.idBatches = new RenewableBatchIdSequences( neoStores, idBatchSize );
 
         this.loaders = new Loaders( neoStores );
@@ -68,6 +87,9 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
                         neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
                 idBatches.idGenerator( StoreType.PROPERTY ),
                 propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
+        this.physicalToLogicalPropertyChangeConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
+        this.indexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), indexingService, physicalToLogicalPropertyChangeConverter );
+        this.extractor = new NodePropertyCommandsExtractor();
     }
 
     public long nextId( StoreType storeType )
@@ -88,5 +110,32 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
         return new TransactionRecordState( neoStores, integrityValidator,
                 recordChangeSet, lastTransactionIdWhenStarted, locks,
                 relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter );
+    }
+
+    void extractIndexUpdates( Iterable<StorageCommand> commands, Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdatesTarget )
+            throws TransactionFailureException
+    {
+        // extract physical commands --> logical index updates
+        try
+        {
+            for ( StorageCommand command : commands )
+            {
+                extractor.visit( command );
+            }
+        }
+        catch ( IOException e )
+        {
+            // Catching IOException is mostly for show and a problem with signatures of our command Visitors,
+            // since we know that this particular visitor won't throw.
+            throw new TransactionFailureException( Status.General.UnknownError, "Unknown error", e );
+        }
+        indexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
+        indexUpdates.forEach( indexUpdatesTarget::add );
+
+        indexingService.validateIndexUpdates( indexUpdatesTarget );
+
+        // clear state for the next invocation
+        extractor.close();
+        indexUpdates.clear();
     }
 }

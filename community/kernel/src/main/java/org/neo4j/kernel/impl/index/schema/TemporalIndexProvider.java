@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,11 +35,14 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 public class TemporalIndexProvider extends IndexProvider
 {
     public static final String KEY = "temporal";
     public static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final IndexCapability CAPABILITY = new TemporalIndexCapability();
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -129,7 +134,7 @@ public class TemporalIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        return IndexCapability.NO_CAPABILITY;
+        return CAPABILITY;
     }
 
     @Override
@@ -138,5 +143,40 @@ public class TemporalIndexProvider extends IndexProvider
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    private static class TemporalIndexCapability implements IndexCapability
+    {
+        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
+
+        @Override
+        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        {
+            return support( valueGroups ) ? SUPPORTED_ORDER : EMPTY_ORDER;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        {
+            if ( support( valueGroups ) )
+            {
+                return IndexValueCapability.YES;
+            }
+            if ( singleWildcard( valueGroups ) )
+            {
+                return IndexValueCapability.PARTIAL;
+            }
+            return IndexValueCapability.NO;
+        }
+
+        private boolean singleWildcard( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
+        }
+
+        private boolean support( ValueGroup[] valueGroups )
+        {
+            return valueGroups.length == 1 && Values.isTemporalValue( valueGroups[0] );
+        }
     }
 }

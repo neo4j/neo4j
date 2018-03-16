@@ -23,8 +23,10 @@ import java.io.IOException;
 import java.util.function.LongConsumer;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -75,6 +77,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     private Commitment commitment;
     private LongConsumer closedCallback;
     private LogPosition logPosition;
+    private Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates;
 
     /**
      * Used when committing a transaction that hasn't already gotten a transaction id assigned.
@@ -211,5 +214,19 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         {
             return "(unable to count: " + e.getMessage() + ")";
         }
+    }
+
+    public void indexUpdates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates )
+    {
+        this.indexUpdates = indexUpdates;
+    }
+
+    /**
+     * @return pre-calculated {@link IndexEntryUpdate index entry updates}. May return {@code null} if the index entry updates
+     * haven't already been calculated.
+     */
+    public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates()
+    {
+        return this.indexUpdates;
     }
 }

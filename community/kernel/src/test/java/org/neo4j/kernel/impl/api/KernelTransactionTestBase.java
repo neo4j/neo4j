@@ -117,6 +117,7 @@ public class KernelTransactionTestBase
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
+                    anyCollection(),
                     any( ReadableTransactionState.class ),
                     any( StorageStatement.class ), any( ResourceLocker.class ),
                     anyLong() );

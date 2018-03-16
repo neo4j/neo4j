@@ -546,6 +546,7 @@ public class KernelTransactionsTest
             return null;
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
+                anyCollection(),
                 any( ReadableTransactionState.class ),
                 any( StorageStatement.class ),
                 any( ResourceLocker.class ),

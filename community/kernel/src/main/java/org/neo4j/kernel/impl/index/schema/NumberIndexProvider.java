@@ -100,7 +100,6 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     private static class NumberIndexCapability implements IndexCapability
     {
         private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
-        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
 
         @Override
         public IndexOrder[] orderCapability( ValueGroup... valueGroups )

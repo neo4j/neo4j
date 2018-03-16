@@ -19,6 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+
 /**
  * Group of commands to apply onto {@link StorageEngine}, as well as reference to {@link #next()} group of commands.
  * The linked list will form a batch.
@@ -47,4 +50,12 @@ public interface CommandsToApply extends CommandStream
      */
     @Override
     String toString();
+
+    void indexUpdates( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates );
+
+    /**
+     * @return pre-calculated {@link IndexEntryUpdate index entry updates}. May return {@code null} if the index entry updates
+     * haven't already been calculated.
+     */
+    Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates();
 }

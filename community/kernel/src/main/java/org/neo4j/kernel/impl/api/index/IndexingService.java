@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -38,19 +39,22 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -64,6 +68,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -556,6 +563,50 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             UniquePropertyValueValidationException
     {
         getIndexProxy( indexId ).validate();
+    }
+
+    public void validateIndexUpdates( Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates ) throws TransactionFailureException
+    {
+        Map<LabelSchemaDescriptor,ValueGroup[]> indexesToCheck = null;
+        for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : indexUpdates )
+        {
+            UpdateMode mode = indexUpdate.updateMode();
+            if ( mode == UpdateMode.ADDED || mode == UpdateMode.CHANGED )
+            {
+                Value[] values = indexUpdate.values();
+                for ( int i = 0; i < values.length; i++ )
+                {
+                    Value value = values[i];
+                    if ( Values.isGeometryValue( value ) || Values.isTemporalValue( value ) )
+                    {
+                        if ( indexesToCheck == null )
+                        {
+                            indexesToCheck = new HashMap<>();
+                        }
+                        ValueGroup[] groups = new ValueGroup[values.length];
+                        for ( int j = 0; j < values.length; j++ )
+                        {
+                            groups[j] = values[j].valueGroup();
+                        }
+                        indexesToCheck.put( indexUpdate.indexKey(), groups );
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ( indexesToCheck != null )
+        {
+            IndexMap indexMap = indexMapRef.indexMapSnapshot();
+            for ( Map.Entry<LabelSchemaDescriptor,ValueGroup[]> entry : indexesToCheck.entrySet() )
+            {
+                if ( indexMap.getIndexProxy( entry.getKey() ).getIndexCapability().handleValueCapability( entry.getValue() ) == IndexValueCapability.NO )
+                {
+                    throw new TransactionFailureException( Status.Schema.IndexNotApplicable,
+                            "Spatial/temporal values not supported in index " + entry.getKey() );
+                }
+            }
+        }
     }
 
     public void forceAll( IOLimiter limiter )

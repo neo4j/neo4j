@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -63,6 +64,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -608,8 +610,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                 // Gather up commands from the various sources
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
+                Collection<IndexEntryUpdate<LabelSchemaDescriptor>> indexUpdates = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
+                        indexUpdates,
                         txState,
                         storageStatement,
                         commitLocks,
@@ -641,10 +645,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
                             commitLocks.getLockSessionId() );
 
-                    // Commit the transaction
                     success = true;
                     TransactionToApply batch = new TransactionToApply( transactionRepresentation,
                             versionContextSupplier.getVersionContext() );
+
+                    // We've extracted index updates for this transaction. Might as well attach them to this tx-to-apply instance
+                    // so that the appliers don't have to do this work again.
+                    batch.indexUpdates( indexUpdates );
+
+                    // Commit the transaction
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }
