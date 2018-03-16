@@ -144,7 +144,13 @@ class SpatialFusionIndexReader implements IndexReader
             IndexReader reader = selectIf( predicates );
             if ( reader != null )
             {
+                // Index exists, which also means there is data in it, cursor will be initialized inside the reader
                 reader.query( cursor, indexOrder, predicates );
+            }
+            else
+            {
+                // Index does not exist, so there is no data, but there could be in the transaction state, so we still need to initialize the cursor
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates );
             }
         }
     }
