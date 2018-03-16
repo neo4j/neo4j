@@ -36,6 +36,8 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   private val oneDay = DurationValue.duration(0, 1, 0, 0)
   private val oneSecond = DurationValue.duration(0, 0, 1, 0)
   private val timeZones:Seq[ZoneId] = ZoneId.getAvailableZoneIds.toSeq.map(ZoneId.of)
+  private val NANOS_PER_SECOND = 1000000000L
+  private val MAX_NANOS_PER_DAY = 86399999999999L
 
   // ----------------
   // the actual test
@@ -88,14 +90,14 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     } yield Values.pointValue(crs, coordinates:_*)
 
   def timeGen: Gen[TimeValue] =
-    for {
-      nanosOfDay <- Gen.chooseNum(1000000000, 86399999999999L - 1000000000)
+    for { // stay one second off min and max time, to allow getting a bigger and smaller value
+      nanosOfDay <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
       timeZone <- zoneOffsetGen
     } yield TimeValue.time(nanosOfDay, timeZone)
 
   def localTimeGen: Gen[LocalTimeValue] =
     for {
-      nanosOfDay <- Gen.chooseNum(1000000000, 86399999999999L - 1000000000)
+      nanosOfDay <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
     } yield LocalTimeValue.localTime(nanosOfDay)
 
   def dateGen: Gen[DateValue] =
@@ -107,14 +109,14 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   def dateTimeGen: Gen[DateTimeValue] =
     for {
       epochSecondsUTC <- arbitrary[Int]
-      nanosOfSecond <- Gen.chooseNum(0, 999999999)
+      nanosOfSecond <- Gen.chooseNum(0, NANOS_PER_SECOND-1)
       timeZone <- Gen.oneOf(zoneIdGen, zoneOffsetGen)
     } yield DateTimeValue.datetime(epochSecondsUTC, nanosOfSecond, timeZone)
 
   def localDateTimeGen: Gen[LocalDateTimeValue] =
     for {
       epochSeconds <- arbitrary[Int]
-      nanosOfSecond <- Gen.chooseNum(0, 999999999)
+      nanosOfSecond <- Gen.chooseNum(0, NANOS_PER_SECOND-1)
     } yield LocalDateTimeValue.localDateTime(epochSeconds, nanosOfSecond)
 
   def zoneIdGen: Gen[ZoneId] = Gen.oneOf(timeZones)

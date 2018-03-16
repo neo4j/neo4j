@@ -85,7 +85,7 @@ public class TimeZones
     {
         String latestVersion = "";
         Pattern version = Pattern.compile( "# tzdata([0-9]{4}[a-z])" );
-        Map<String,Short> tempStringToShort = new HashMap<>( 1024 );
+        Map<String,String> oldToNewName = new HashMap<>( 1024 );
 
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZones.class.getResourceAsStream( "/TZIDS" ) ) ) )
         {
@@ -110,12 +110,12 @@ public class TimeZones
                     String oldName = line.substring( 0, sep );
                     String newName = line.substring( sep + 1 );
                     TIME_ZONE_SHORT_TO_STRING.add( newName );
-                    tempStringToShort.put( oldName, (short) (TIME_ZONE_SHORT_TO_STRING.size() - 1) );
+                    oldToNewName.put( oldName, newName );
                 }
                 else
                 {
                     TIME_ZONE_SHORT_TO_STRING.add( line );
-                    tempStringToShort.put( line, (short) (TIME_ZONE_SHORT_TO_STRING.size() - 1) );
+                    TIME_ZONE_STRING_TO_SHORT.put( line, (short) (TIME_ZONE_SHORT_TO_STRING.size() - 1) );
                 }
             }
             LATEST_SUPPORTED_IANA_VERSION = latestVersion;
@@ -125,11 +125,11 @@ public class TimeZones
             throw new RuntimeException( "Failed to read time zone id file." );
         }
 
-        for ( Map.Entry<String,Short> entry : tempStringToShort.entrySet() )
+        for ( Map.Entry<String,String> entry : oldToNewName.entrySet() )
         {
             String oldName = entry.getKey();
-            String newName = TIME_ZONE_SHORT_TO_STRING.get( entry.getValue() );
-            Short newNameId = tempStringToShort.get( newName );
+            String newName = entry.getValue();
+            Short newNameId = TIME_ZONE_STRING_TO_SHORT.get( newName );
             TIME_ZONE_STRING_TO_SHORT.put( oldName, newNameId );
         }
     }
