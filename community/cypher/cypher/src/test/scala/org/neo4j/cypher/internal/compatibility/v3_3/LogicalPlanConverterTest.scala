@@ -470,7 +470,6 @@ class LogicalPlanConverterTest extends FunSuite with Matchers {
       case "QualifiedName" => plansV3_3.QualifiedName(Seq.empty, "c")
       case "ProcedureAccessMode" => plansV3_3.ProcedureReadWriteAccess(Array())
       case "RelTypeName" => astV3_3.RelTypeName("x")(pos3_3)
-      case "QueryExpression" => plansV3_3.ScanQueryExpression(variable)
       case "SeekableArgs" => plansV3_3.SingleSeekableArg(variable)
       case "ExpansionMode" => plansV3_3.ExpandAll
       case "ShortestPathPattern" => irV3_3.ShortestPathPattern(None, argumentProvider(classOf[irV3_3.PatternRelationship]), single = true)(argumentProvider(classOf[astV3_3.ShortestPaths]))

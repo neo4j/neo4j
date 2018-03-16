@@ -40,9 +40,8 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("a.age" -> 23, "b.age" -> null)))
   }
 
-  // Fixed in 3.3.4
   test("remove property from null literal") {
-    executeWith(Configs.Interpreted - Configs.Version3_3 - Configs.Cost2_3, "REMOVE null.p") should have size 0
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "REMOVE null.p") should have size 0
   }
 
 }
