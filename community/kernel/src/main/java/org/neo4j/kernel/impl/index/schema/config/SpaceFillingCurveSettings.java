@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.index.internal.gbptree.Header;
+import org.neo4j.io.pagecache.PageCursor;
 
 /**
  * These settings affect the creation of the 2D (or 3D) to 1D mapper.
@@ -36,7 +37,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
  */
 public class SpaceFillingCurveSettings
 {
-    private static final String SPATIAL_INDEX_TYPE = "SingleSpaceFillingCurve";
     private int dimensions;
     private int maxLevels;
     private Envelope extents;
@@ -109,62 +109,85 @@ public class SpaceFillingCurveSettings
                 Arrays.toString( extents.getMin() ), Arrays.toString( extents.getMax() ) );
     }
 
-    public void read( BufferedReader in ) throws IOException
+    private enum SpatialIndexType
     {
-        this.dimensions = -1;
-        this.maxLevels = -1;
-        double[] min = null;
-        double[] max = null;
-
-        String line;
-        while ( (line = in.readLine()) != null )
-        {
-            String[] fields = line.trim().split( "\\t", 2 );
-            switch ( fields[0] )
-            {
-            case "indexType":
-                if ( !fields[1].equals( SPATIAL_INDEX_TYPE ) )
+        SingleSpaceFillingCurve( 1 )
                 {
-                    throw new IllegalArgumentException( "Unknown spatial index type: " + fields[1] );
-                }
-                break;
-            case "dimensions":
-                this.dimensions = Integer.parseInt( fields[1].trim() );
-                break;
-            case "maxLevels":
-                this.maxLevels = Integer.parseInt( fields[1].trim() );
-                break;
-            case "min":
-                min = splitDoubleArray( fields[1].trim() );
-                break;
-            case "max":
-                max = splitDoubleArray( fields[1].trim() );
-                break;
-            default:
-                break;
-            }
-        }
+                    @Override
+                    public void writeHeader( SpaceFillingCurveSettings settings, PageCursor cursor )
+                    {
+                        cursor.putInt( settings.maxLevels );
+                        cursor.putInt( settings.dimensions );
+                        double[] min = settings.extents.getMin();
+                        double[] max = settings.extents.getMax();
+                        for ( int i = 0; i < settings.dimensions; i++ )
+                        {
+                            cursor.putLong( Double.doubleToLongBits( min[i] ) );
+                            cursor.putLong( Double.doubleToLongBits( max[i] ) );
+                        }
+                    }
 
-        if ( min == null || max == null || dimensions < 2 || maxLevels < 0 || min.length != this.dimensions || max.length != this.dimensions )
+                    @Override
+                    public void readHeader( SpaceFillingCurveSettings settings, ByteBuffer headerBytes )
+                    {
+                        settings.maxLevels = headerBytes.getInt();
+                        settings.dimensions = headerBytes.getInt();
+                        double[] min = new double[settings.dimensions];
+                        double[] max = new double[settings.dimensions];
+                        for ( int i = 0; i < settings.dimensions; i++ )
+                        {
+                            min[i] = headerBytes.getDouble();
+                            max[i] = headerBytes.getDouble();
+                        }
+                        settings.extents = new Envelope( min, max );
+                    }
+                };
+        private int id;
+
+        public abstract void writeHeader( SpaceFillingCurveSettings settings, PageCursor cursor );
+
+        public abstract void readHeader( SpaceFillingCurveSettings settings, ByteBuffer headerBytes );
+
+        SpatialIndexType( int id )
         {
-            throw new IllegalArgumentException(
-                    String.format( "Invalid space filling curves settings: dimensions=%d, maxLevels=%d, min=%s, max=%s", dimensions, maxLevels,
-                            Arrays.toString( min ), Arrays.toString( max ) ) );
+            this.id = id;
         }
-        this.extents = new Envelope( min, max );
+
+        static SpatialIndexType get( int id )
+        {
+            for ( SpatialIndexType type : values() )
+            {
+                if ( type.id == id )
+                {
+                    return type;
+                }
+            }
+            return null;
+        }
     }
 
-    private double[] splitDoubleArray( String field )
+    public Consumer<PageCursor> headerWriter( byte initialIndexState )
     {
-        return Arrays.stream( field.substring( 1, field.length() - 1 ).split( "," ) ).mapToDouble( Double::parseDouble ).toArray();
+        return cursor ->
+        {
+            cursor.putByte( initialIndexState );
+            cursor.putInt( SpatialIndexType.SingleSpaceFillingCurve.id );
+            SpatialIndexType.SingleSpaceFillingCurve.writeHeader( this, cursor );
+        };
     }
 
-    public void write( PrintWriter out ) throws IOException
+    public Header.Reader headerReader()
     {
-        out.println( "indexType\t" + SPATIAL_INDEX_TYPE );
-        out.println( "dimensions\t" + dimensions );
-        out.println( "maxLevels\t" + maxLevels );
-        out.println( "min\t" + Arrays.toString( extents.getMin() ) );
-        out.println( "max\t" + Arrays.toString( extents.getMax() ) );
+        return headerBytes ->
+        {
+            int typeId = headerBytes.getInt();
+            SpatialIndexType indexType = SpatialIndexType.get( typeId );
+            if ( indexType == null )
+            {
+                // TODO store this somewhere else and report later
+                throw new IllegalArgumentException( "Unknown spatial index type: " + typeId );
+            }
+            indexType.readHeader( SpaceFillingCurveSettings.this, headerBytes );
+        };
     }
 }
