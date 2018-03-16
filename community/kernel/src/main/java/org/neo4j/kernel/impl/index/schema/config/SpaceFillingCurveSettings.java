@@ -180,6 +180,7 @@ public class SpaceFillingCurveSettings
     {
         return headerBytes ->
         {
+            headerBytes.get();  // ignore state
             int typeId = headerBytes.getInt();
             SpatialIndexType indexType = SpatialIndexType.get( typeId );
             if ( indexType == null )
