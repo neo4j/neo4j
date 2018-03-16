@@ -105,7 +105,7 @@ public class LogTestUtils
         filter.file( file );
         try ( StoreChannel in = fileSystem.open( file, OpenMode.READ ) )
         {
-            LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), in, true, file );
+            LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), in, true, file );
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
             ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );

@@ -95,7 +95,7 @@ public abstract class RecordFormat
     {
         int recordSize = getRecordSize();
         long recordsInFile = channel.size() / recordSize;
-        ByteBuffer buffer = ByteBuffer.allocateDirect( recordSize );
+        ByteBuffer buffer = ByteBuffer.allocate( recordSize );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         for ( int i = 0; i < recordsInFile; i++ )
         {

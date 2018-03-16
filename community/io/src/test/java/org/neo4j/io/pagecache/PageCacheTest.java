@@ -4416,7 +4416,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void copyToDirectByteBufferFromReadPageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffer.allocateDirect( filePageSize );
+        ByteBuffer buffer = ByteBuffer.allocate( filePageSize );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize );
@@ -4446,7 +4446,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void copyToDirectByteBufferFromWritePageCursorMustCheckBounds() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buffer = ByteBuffer.allocateDirect( filePageSize );
+        ByteBuffer buffer = ByteBuffer.allocate( filePageSize );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize );
@@ -4554,7 +4554,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void copyToReadOnlyDirectByteBufferMustThrow() throws Exception
     {
         configureStandardPageCache();
-        ByteBuffer buf = ByteBuffer.allocateDirect( filePageSize ).asReadOnlyBuffer();
+        ByteBuffer buf = ByteBuffer.allocate( filePageSize ).asReadOnlyBuffer();
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
         {
