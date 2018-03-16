@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.PageCache;
 
@@ -36,10 +35,10 @@ public class NativeSchemaIndexes
     private  NativeSchemaIndexes()
     {}
 
-    public static InternalIndexState readState( PageCache pageCache, File indexFile, Layout<?,?> layout ) throws IOException
+    public static InternalIndexState readState( PageCache pageCache, File indexFile ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -53,11 +52,11 @@ public class NativeSchemaIndexes
         }
     }
 
-    public static String readFailureMessage( PageCache pageCache, File indexFile, Layout<?,?> layout )
+    static String readFailureMessage( PageCache pageCache, File indexFile )
             throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader );
         return headerReader.failureMessage;
     }
 }
