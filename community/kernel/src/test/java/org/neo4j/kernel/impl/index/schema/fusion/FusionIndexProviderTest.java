@@ -22,6 +22,12 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -48,32 +54,43 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 
+@RunWith( Parameterized.class )
 public class FusionIndexProviderTest
 {
     private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "test-fusion", "1" );
 
-    private StringIndexProvider stringProvider;
-    private NumberIndexProvider numberProvider;
-    private SpatialFusionIndexProvider spatialProvider;
-    private TemporalIndexProvider temporalProvider;
-    private IndexProvider luceneProvider;
     private IndexProvider[] providers;
+    private IndexProvider[] aliveProviders;
+    private IndexProvider fusionIndexProvider;
+    private Selector selector;
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static FusionVersion[] versions()
+    {
+        return new FusionVersion[]
+                {
+                        v00, v10, v20
+                };
+    }
+
+    @Parameterized.Parameter
+    public static FusionVersion fusionVersion;
 
     @Before
     public void setup()
     {
-        stringProvider = mock( StringIndexProvider.class );
-        numberProvider = mock( NumberIndexProvider.class );
-        spatialProvider = mock( SpatialFusionIndexProvider.class );
-        temporalProvider = mock( TemporalIndexProvider.class );
-        luceneProvider = mock( IndexProvider.class );
-        when( stringProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "string", "1" ) );
-        when( numberProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "number", "1" ) );
-        when( spatialProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "spatial", "1" ) );
-        when( temporalProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "temporal", "1" ) );
-        when( luceneProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "lucene", "1" ) );
-        providers = array( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
+        selector = fusionVersion.selector();
+        setupMocks();
     }
 
     @Rule
@@ -85,7 +102,6 @@ public class FusionIndexProviderTest
         // given
         Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
-        Selector selector = new FusionSelector();
 
         for ( int i = 0; i < values.length; i++ )
         {
@@ -96,7 +112,7 @@ public class FusionIndexProviderTest
                 IndexProvider selected = selector.select( providers, value );
 
                 // then
-                assertSame( providers[i], selected );
+                assertSame( orLucene( providers[i] ), selected );
             }
         }
 
@@ -109,7 +125,7 @@ public class FusionIndexProviderTest
                 IndexProvider selected = selector.select( providers, firstValue, secondValue );
 
                 // then
-                assertSame( luceneProvider, selected );
+                assertSame( providers[LUCENE], selected );
             }
         }
     }
@@ -145,13 +161,10 @@ public class FusionIndexProviderTest
     @Test
     public void getPopulationFailureMustThrowIfNoFailure()
     {
-        // given
-        FusionIndexProvider fusionIndexProvider = fusionProvider();
-
         // when
         // ... no failure
         IllegalStateException failure = new IllegalStateException( "not failed" );
-        for ( IndexProvider provider : providers )
+        for ( IndexProvider provider : aliveProviders )
         {
             when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( failure );
         }
@@ -170,48 +183,45 @@ public class FusionIndexProviderTest
     @Test
     public void getPopulationFailureMustReportFailureWhenAnyFailed()
     {
-        for ( int i = 0; i < providers.length; i++ )
+        for ( IndexProvider failingProvider : aliveProviders )
         {
-            FusionIndexProvider fusionSchemaIndexProvider = fusionProvider();
-
             // when
             String failure = "failure";
             IllegalStateException exception = new IllegalStateException( "not failed" );
-            for ( int j = 0; j < providers.length; j++ )
+            for ( IndexProvider provider : aliveProviders )
             {
-                if ( j == i )
+                if ( provider == failingProvider )
                 {
-                    when( providers[j].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( providers[j].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( exception );
                 }
             }
 
             // then
-            assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( failure ) );
+            assertThat( fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( failure ) );
         }
     }
 
     @Test
     public void getPopulationFailureMustReportFailureWhenMultipleFail()
     {
-        FusionIndexProvider fusionSchemaIndexProvider = fusionProvider();
-
         // when
-        String[] failures = new String[providers.length];
-        for ( int i = 0; i < providers.length; i++ )
+        List<String> failureMessages = new ArrayList<>();
+        for ( IndexProvider aliveProvider : aliveProviders )
         {
-            failures[i] = "FAILURE[" + i + "]";
-            when( providers[i].getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failures[i] );
+            String failureMessage = "FAILURE[" + aliveProvider + "]";
+            failureMessages.add( failureMessage );
+            when( aliveProvider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
-        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
-        for ( String failure : failures )
+        String populationFailure = fusionIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
+        for ( String failureMessage : failureMessages )
         {
-            assertThat( populationFailure, containsString( failure ) );
+            assertThat( populationFailure, containsString( failureMessage ) );
         }
     }
 
@@ -219,17 +229,17 @@ public class FusionIndexProviderTest
     public void shouldReportFailedIfAnyIsFailed()
     {
         // given
-        IndexProvider provider = fusionProvider();
+        IndexProvider provider = fusionIndexProvider;
         SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
-            for ( int i = 0; i < providers.length; i++ )
+            for ( IndexProvider failedProvider : aliveProviders )
             {
                 // when
-                for ( int j = 0; j < providers.length; j++ )
+                for ( IndexProvider aliveProvider : aliveProviders )
                 {
-                    setInitialState( providers[j], i == j ? InternalIndexState.FAILED : state );
+                    setInitialState( aliveProvider, failedProvider == aliveProvider ? InternalIndexState.FAILED : state );
                 }
                 InternalIndexState initialState = provider.getInitialState( 0, schemaIndexDescriptor );
 
@@ -243,19 +253,18 @@ public class FusionIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
-        IndexProvider provider = fusionProvider();
         SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
-            for ( int i = 0; i < providers.length; i++ )
+            for ( IndexProvider populatingProvider : aliveProviders )
             {
                 // when
-                for ( int j = 0; j < providers.length; j++ )
+                for ( IndexProvider aliveProvider : aliveProviders )
                 {
-                    setInitialState( providers[j], i == j ? InternalIndexState.POPULATING : state );
+                    setInitialState( aliveProvider, populatingProvider == aliveProvider ? InternalIndexState.POPULATING : state );
                 }
-                InternalIndexState initialState = provider.getInitialState( 0, schemaIndexDescriptor );
+                InternalIndexState initialState = fusionIndexProvider.getInitialState( 0, schemaIndexDescriptor );
 
                 // then
                 assertEquals( InternalIndexState.POPULATING, initialState );
@@ -263,14 +272,68 @@ public class FusionIndexProviderTest
         }
     }
 
-    private FusionIndexProvider fusionProvider()
+    private void setupMocks()
     {
-        return new FusionIndexProvider( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider, new FusionSelector(),
-                DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ) );
+        int[] aliveSlots = fusionVersion.aliveSlots();
+        aliveProviders = new IndexProvider[aliveSlots.length];
+        providers = new IndexProvider[INSTANCE_COUNT];
+        Arrays.fill( providers, IndexProvider.EMPTY );
+        for ( int i = 0; i < aliveSlots.length; i++ )
+        {
+            switch ( aliveSlots[i] )
+            {
+            case STRING:
+                IndexProvider string = mockProvider( StringIndexProvider.class, "string" );
+                providers[STRING] = string;
+                aliveProviders[i] = string;
+                break;
+            case NUMBER:
+                IndexProvider number = mockProvider( NumberIndexProvider.class, "number" );
+                providers[NUMBER] = number;
+                aliveProviders[i] = number;
+                break;
+            case SPATIAL:
+                IndexProvider spatial = mockProvider( SpatialFusionIndexProvider.class, "spatial" );
+                providers[SPATIAL] = spatial;
+                aliveProviders[i] = spatial;
+                break;
+            case TEMPORAL:
+                IndexProvider temporal = mockProvider( TemporalIndexProvider.class, "temporal" );
+                providers[TEMPORAL] = temporal;
+                aliveProviders[i] = temporal;
+                break;
+            case LUCENE:
+                IndexProvider lucene = mockProvider( IndexProvider.class, "lucene" );
+                providers[LUCENE] = lucene;
+                aliveProviders[i] = lucene;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexProvider = new FusionIndexProvider(
+                providers[STRING],
+                providers[NUMBER],
+                providers[SPATIAL],
+                providers[TEMPORAL],
+                providers[LUCENE],
+                fusionVersion.selector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ) );
+    }
+
+    private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
+    {
+        IndexProvider mock = mock( providerClass );
+        when( mock.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( name, "1" ) );
+        return mock;
     }
 
     private void setInitialState( IndexProvider mockedProvider, InternalIndexState state )
     {
         when( mockedProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( state );
+    }
+
+    private IndexProvider orLucene( IndexProvider provider )
+    {
+        return provider != IndexProvider.EMPTY ? provider : providers[LUCENE];
     }
 }

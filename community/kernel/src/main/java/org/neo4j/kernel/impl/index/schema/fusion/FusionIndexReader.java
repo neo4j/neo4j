@@ -27,13 +27,11 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
-
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
@@ -41,9 +39,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {
@@ -76,103 +71,28 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        if ( predicates.length > 1 )
+        IndexReader instance = selector.select( instances, predicates );
+        if ( instance != null )
         {
-            return instances[LUCENE].query( predicates );
+            return instance.query( predicates );
         }
-        IndexQuery predicate = predicates[0];
-
-        if ( predicate instanceof ExactPredicate )
-        {
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            return selector.select( instances, exactPredicate.value() ).query( predicates );
-        }
-
-        if ( predicate instanceof StringPrefixPredicate ||
-             predicate instanceof StringSuffixPredicate ||
-             predicate instanceof StringContainsPredicate )
-        {
-            return instances[STRING].query( predicate );
-        }
-
-        if ( predicate instanceof RangePredicate )
-        {
-            switch ( predicate.valueGroup() )
-            {
-            case NUMBER:
-                return instances[NUMBER].query( predicates );
-            case GEOMETRY:
-                return instances[SPATIAL].query( predicates );
-            case TEXT:
-                return instances[STRING].query( predicates );
-            case DATE:
-            case LOCAL_DATE_TIME:
-            case ZONED_DATE_TIME:
-            case LOCAL_TIME:
-            case ZONED_TIME:
-            case DURATION:
-                return instances[TEMPORAL].query( predicates );
-            default: // fall through
-            }
-            // TODO: support temporal range queries
-        }
-
-        // todo: There will be no ordering of the node ids here. Is this a problem?
-        if ( predicate instanceof ExistsPredicate )
+        else
         {
             PrimitiveLongResourceIterator[] converted = instancesAs( PrimitiveLongResourceIterator.class, reader -> reader.query( predicates ) );
             return PrimitiveLongResourceCollections.concat( converted );
         }
-
-        return instances[LUCENE].query( predicates );
     }
 
     @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {
-        if ( predicates.length > 1 )
+        IndexReader instance = selector.select( instances, predicates );
+        if ( instance != null )
         {
-            instances[LUCENE].query( cursor, indexOrder, predicates );
-            return;
+            instance.query( cursor, indexOrder, predicates );
         }
-        IndexQuery predicate = predicates[0];
-
-        if ( predicate instanceof ExactPredicate )
-        {
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            selector.select( instances, exactPredicate.value() ).query( cursor, indexOrder, predicate );
-            return;
-        }
-
-        if ( predicate instanceof StringPrefixPredicate ||
-             predicate instanceof StringSuffixPredicate ||
-             predicate instanceof StringContainsPredicate )
-        {
-            instances[STRING].query( cursor, indexOrder, predicate );
-            return;
-        }
-
-        if ( predicate instanceof RangePredicate )
-        {
-            switch ( predicate.valueGroup() )
-            {
-            case NUMBER:
-                instances[NUMBER].query( cursor, indexOrder, predicates );
-                return;
-            case GEOMETRY:
-                instances[SPATIAL].query( cursor, indexOrder, predicates );
-                return;
-            case TEXT:
-                instances[STRING].query( cursor, indexOrder, predicates );
-                return;
-            default: // fall through
-            }
-            // TODO: support temporal range queries
-        }
-
-        // todo: There will be no ordering of the node ids here. Is this a problem?
-        if ( predicate instanceof ExistsPredicate )
+        else
         {
             if ( indexOrder != IndexOrder.NONE )
             {
@@ -185,12 +105,9 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             cursor.initialize( descriptor, multiProgressor, predicates );
             for ( IndexReader reader : instances )
             {
-                reader.query( multiProgressor, indexOrder, predicate );
+                reader.query( multiProgressor, indexOrder, predicates );
             }
-            return;
         }
-
-        instances[LUCENE].query( cursor, indexOrder, predicates );
     }
 
     @Override

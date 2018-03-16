@@ -19,51 +19,58 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
-
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 
-public class FusionSelector implements FusionIndexProvider.Selector
+enum FusionVersion
 {
-    @Override
-    public int selectSlot( Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            // Multiple values must be handled by lucene
-            return LUCENE;
-        }
+    v00
+            {
+                @Override
+                int[] aliveSlots()
+                {
+                    return new int[]{LUCENE};
+                }
 
-        Value singleValue = values[0];
-        if ( singleValue.valueGroup() == ValueGroup.TEXT )
-        {
-            // It's a string, the native string index can handle this
-            return STRING;
-        }
+                @Override
+                FusionIndexProvider.Selector selector()
+                {
+                    return new FusionSelector00();
+                }
+            },
+    v10
+            {
+                @Override
+                int[] aliveSlots()
+                {
+                    return new int[]{NUMBER, LUCENE};
+                }
 
-        if ( singleValue.valueGroup() == ValueGroup.NUMBER )
-        {
-            // It's a number, the native index can handle this
-            return NUMBER;
-        }
+                @Override
+                FusionIndexProvider.Selector selector()
+                {
+                    return new FusionSelector10();
+                }
+            },
+    v20
+            {
+                @Override
+                int[] aliveSlots()
+                {
+                    return new int[]{STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE};
+                }
 
-        if ( Values.isGeometryValue( singleValue ) )
-        {
-            // It's a geometry, the spatial index can handle this
-            return SPATIAL;
-        }
+                @Override
+                FusionIndexProvider.Selector selector()
+                {
+                    return new FusionSelector20();
+                }
+            };
 
-        if ( Values.isTemporalValue( singleValue ) )
-        {
-            return TEMPORAL;
-        }
+    abstract int[] aliveSlots();
 
-        return LUCENE;
-    }
+    abstract FusionIndexProvider.Selector selector();
 }
