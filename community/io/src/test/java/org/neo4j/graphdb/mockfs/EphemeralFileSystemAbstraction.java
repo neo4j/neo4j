@@ -665,12 +665,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
         EphemeralFileData data = files.get( canonicalFile( file ) );
         if ( data == null )
         {
-            throw new FileNotFoundException( "File " + file + " not found" );
+            return 0;
         }
         return data.lastModified;
     }
