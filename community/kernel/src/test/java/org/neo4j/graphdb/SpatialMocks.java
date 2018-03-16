@@ -139,5 +139,11 @@ public class SpatialMocks
         {
             return crs;
         }
+
+        @Override
+        public String toString()
+        {
+            return geometryType;
+        }
     }
 }
