@@ -23,8 +23,8 @@ import java.util.Arrays;
 
 public class Envelope
 {
-    private final double[] min;
-    private final double[] max;
+    protected final double[] min;
+    protected final double[] max;
 
     /**
      * Copy constructor
@@ -36,8 +36,6 @@ public class Envelope
 
     /**
      * General constructor for the n-dimensional case
-     * @param min
-     * @param max
      */
     public Envelope( double[] min, double[] max )
     {
@@ -51,10 +49,6 @@ public class Envelope
 
     /**
      * Special constructor for the 2D case
-     * @param xmin
-     * @param xmax
-     * @param ymin
-     * @param ymax
      */
     public Envelope( double xmin, double xmax, double ymin, double ymax )
     {
@@ -159,8 +153,6 @@ public class Envelope
 
     /**
      * Return the distance between the two envelopes on one dimension. This can return negative values if the envelopes intersect on this dimension.
-     * @param other
-     * @param dimension
      * @return distance between envelopes
      */
     public double distance( Envelope other, int dimension )
@@ -177,8 +169,6 @@ public class Envelope
 
     /**
      * Find the pythagorean distance between two envelopes
-     * @param other
-     * @return
      */
     public double distance( Envelope other )
     {
@@ -209,7 +199,6 @@ public class Envelope
 
     /**
      * Return the width of the envelope at the specified dimension
-     * @param dimension
      * @return with of that dimension, ie. max[d] - min[d]
      */
     public double getWidth( int dimension )
@@ -220,7 +209,7 @@ public class Envelope
     /**
      * Return the fractional widths of the envelope at all axes
      *
-     * @param divisor te number of segments to divide by (a 2D envelope will be divided into quadrants using 2)
+     * @param divisor the number of segments to divide by (a 2D envelope will be divided into quadrants using 2)
      * @return double array of widths, ie. max[d] - min[d]
      */
     public double[] getWidths( int divisor )
@@ -269,19 +258,6 @@ public class Envelope
             valid = min[i] <= max[i];
         }
         return valid;
-    }
-
-    /**
-     * Move this Envelope by the specified offsets
-     * @param offset array of offsets
-     */
-    public void translate( double[] offset )
-    {
-        for ( int i = 0; i < Math.min(offset.length, min.length); i++ )
-        {
-            min[i] += offset[i];
-            max[i] += offset[i];
-        }
     }
 
     @Override
