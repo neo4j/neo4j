@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -264,7 +265,7 @@ public class ValueComparisonTest
         }
     }
 
-    @Test
+    @Ignore // only runnable it JVM supports East-Saskatchewan
     public void shouldCompareRenamedTimeZonesByZoneNumber()
     {
         int cmp = Values.COMPARATOR.compare( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
