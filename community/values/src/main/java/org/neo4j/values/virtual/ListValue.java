@@ -19,13 +19,15 @@
  */
 package org.neo4j.values.virtual;
 
+import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
-
+import java.util.function.Predicate;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
@@ -33,8 +35,6 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
-
-import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
@@ -524,10 +524,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class FilteredListValue extends ListValue
     {
         private final ListValue inner;
-        private final Function<AnyValue,Boolean> filter;
+        private final Predicate<AnyValue> filter;
         private int size = -1;
 
-        FilteredListValue( ListValue inner, Function<AnyValue,Boolean> filter )
+        FilteredListValue( ListValue inner, Predicate<AnyValue> filter )
         {
             this.inner = inner;
             this.filter = filter;
@@ -540,7 +540,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( filter.test( value ) )
                 {
                     value.writeTo( writer );
                 }
@@ -557,7 +557,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 int s = 0;
                 for ( int i = 0; i < inner.size(); i++ )
                 {
-                    if ( filter.apply( inner.value( i ) ) )
+                    if ( filter.test( inner.value( i ) ) )
                     {
                         s++;
                     }
@@ -576,7 +576,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < size; i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( filter.test( value ) )
                 {
                     if ( actualOffset == offset )
                     {
@@ -598,7 +598,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( filter.test( value ) )
                 {
                     anyValues[index++] = value;
                 }
@@ -613,7 +613,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( filter.test( value ) )
                 {
                     hashCode = 31 * hashCode + value.hashCode();
                 }
@@ -710,7 +710,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                             return;
                         }
                         AnyValue candidate = inner.value( index++ );
-                        if ( filter.apply( candidate ) )
+                        if ( filter.test( candidate ) )
                         {
                             next = candidate;
                             return;

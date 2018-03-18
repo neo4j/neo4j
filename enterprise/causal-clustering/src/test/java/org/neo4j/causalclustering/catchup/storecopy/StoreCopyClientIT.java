@@ -19,10 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,9 +28,14 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
@@ -48,8 +50,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.rule.TestDirectory;
-
-import static org.junit.Assert.assertEquals;
 
 public class StoreCopyClientIT
 {
@@ -207,9 +207,9 @@ public class StoreCopyClientIT
             final int MAX_BUFFER_SIZE = 100;
             ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[MAX_BUFFER_SIZE] );
             StringBuilder stringBuilder = new StringBuilder();
-            Predicate<Integer> inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
-            Supplier<Integer> readNext = unchecked( () -> storeChannel.read( byteBuffer ) );
-            for ( int readBytes = readNext.get(); inRange.test( readBytes ); readBytes = readNext.get() )
+            IntPredicate inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
+            IntSupplier readNext = unchecked( () -> storeChannel.read( byteBuffer ) );
+            for ( int readBytes = readNext.getAsInt(); inRange.test( readBytes ); readBytes = readNext.getAsInt() )
             {
                 for ( byte index = 0; index < readBytes; index++ )
                 {
@@ -230,7 +230,7 @@ public class StoreCopyClientIT
         return serverFileContentsStringBuilder( file, fileSystemAbstraction ).toString();
     }
 
-    private static Supplier<Integer> unchecked( ThrowingSupplier<Integer,?> throwableSupplier )
+    private static IntSupplier unchecked( ThrowingSupplier<Integer,?> throwableSupplier )
     {
         return () ->
         {
@@ -245,7 +245,7 @@ public class StoreCopyClientIT
         };
     }
 
-    private static Predicate<Integer> betweenZeroAndRange( int RANGE )
+    private static IntPredicate betweenZeroAndRange( int RANGE )
     {
         return bytes -> bytes > 0 && bytes <= RANGE;
     }

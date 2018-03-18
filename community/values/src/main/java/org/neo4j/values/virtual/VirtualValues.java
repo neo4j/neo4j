@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
+import java.util.function.Predicate;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -67,7 +67,7 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue filter( ListValue list, Function<AnyValue,Boolean> filter )
+    public static ListValue filter( ListValue list, Predicate<AnyValue> filter )
     {
         return new ListValue.FilteredListValue( list, filter );
     }

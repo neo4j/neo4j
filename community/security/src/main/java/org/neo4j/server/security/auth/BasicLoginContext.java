@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.function.Function;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
+import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.security.User;
-
-import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILURE;
-import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 
 public class BasicLoginContext implements LoginContext
 {
@@ -108,7 +108,7 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    public SecurityContext authorize( ToIntFunction<String> propertyIdLookup )
     {
         return new SecurityContext( authSubject, accessMode );
     }

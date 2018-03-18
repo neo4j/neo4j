@@ -37,8 +37,8 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
 
   protected override def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.createOrGetInitialContext(executionContextFactory)
-    val relIds = VirtualValues.filter(relIdExpr.expressions(ctx, state), new function.Function[AnyValue, java.lang.Boolean] {
-      override def apply(t: AnyValue): lang.Boolean = t != Values.NO_VALUE
+    val relIds = VirtualValues.filter(relIdExpr.expressions(ctx, state), new function.Predicate[AnyValue] {
+      override def test(t: AnyValue): Boolean = t != Values.NO_VALUE
     })
     new UndirectedRelationshipIdSeekIterator(
       ident,

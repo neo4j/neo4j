@@ -19,8 +19,26 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.junit.Rule;
-import org.junit.Test;
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.nio.charset.Charset.defaultCharset;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
+import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
+import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,10 +67,12 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
-
+import java.util.function.ToIntFunction;
+import org.junit.Rule;
+import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -77,34 +97,11 @@ import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.values.storable.PointValue;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.nio.charset.Charset.defaultCharset;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
-import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
 public class CsvInputBatchImportIT
 {
@@ -388,7 +385,7 @@ public class CsvInputBatchImportIT
             // Verify counts, TODO how to get counts store other than this way?
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
                     RecordStorageEngine.class ).testAccessNeoStores();
-            Function<String, Integer> labelTranslationTable =
+            ToIntFunction<String> labelTranslationTable =
                     translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
@@ -399,7 +396,7 @@ public class CsvInputBatchImportIT
                                 .readSecond() );
             }
 
-            Function<String, Integer> relationshipTypeTranslationTable =
+            ToIntFunction<String> relationshipTypeTranslationTable =
                     translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
@@ -441,8 +438,8 @@ public class CsvInputBatchImportIT
     }
 
     private Iterable<Pair<RelationshipCountKey,Long>> allRelationshipCounts(
-            Function<String, Integer> labelTranslationTable,
-            Function<String, Integer> relationshipTypeTranslationTable,
+            ToIntFunction<String> labelTranslationTable,
+            ToIntFunction<String> relationshipTypeTranslationTable,
             Map<String, Map<String, Map<String, AtomicLong>>> counts )
     {
         Collection<Pair<RelationshipCountKey,Long>> result = new ArrayList<>();
@@ -453,9 +450,9 @@ public class CsvInputBatchImportIT
                 for ( Map.Entry<String, AtomicLong> endLabel : type.getValue().entrySet() )
                 {
                     RelationshipCountKey key = new RelationshipCountKey(
-                            labelTranslationTable.apply( startLabel.getKey() ),
-                            relationshipTypeTranslationTable.apply( type.getKey() ),
-                            labelTranslationTable.apply( endLabel.getKey() ) );
+                            labelTranslationTable.applyAsInt( startLabel.getKey() ),
+                            relationshipTypeTranslationTable.applyAsInt( type.getKey() ),
+                            labelTranslationTable.applyAsInt( endLabel.getKey() ) );
                     result.add( Pair.of( key, endLabel.getValue().longValue() ) );
                 }
             }
@@ -463,19 +460,19 @@ public class CsvInputBatchImportIT
         return result;
     }
 
-    private Iterable<Pair<Integer,Long>> allNodeCounts( Function<String, Integer> labelTranslationTable,
+    private Iterable<Pair<Integer,Long>> allNodeCounts( ToIntFunction<String> labelTranslationTable,
             Map<String, AtomicLong> counts )
     {
         Collection<Pair<Integer,Long>> result = new ArrayList<>();
         for ( Map.Entry<String, AtomicLong> count : counts.entrySet() )
         {
-            result.add( Pair.of( labelTranslationTable.apply( count.getKey() ), count.getValue().get() ) );
+            result.add( Pair.of( labelTranslationTable.applyAsInt( count.getKey() ), count.getValue().get() ) );
         }
         counts.put( null, new AtomicLong( counts.size() ) );
         return result;
     }
 
-    private Function<String, Integer> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
+    private ToIntFunction<String> translationTable( TokenStore<?, ?> tokenStore, final int anyValue )
     {
         final Map<String, Integer> translationTable = new HashMap<>();
         for ( Token token : tokenStore.getTokens( Integer.MAX_VALUE ) )

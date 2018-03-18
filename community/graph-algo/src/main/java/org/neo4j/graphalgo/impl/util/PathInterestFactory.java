@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import java.util.Comparator;
-import java.util.function.BiFunction;
-
-import org.neo4j.kernel.impl.util.NoneStrictMath;
-
 import static org.neo4j.graphalgo.impl.util.PathInterest.PriorityBasedPathInterest;
 import static org.neo4j.graphalgo.impl.util.PathInterest.VisitCountBasedPathInterest;
+
+import java.util.Comparator;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 /**
  * @author Anton Persson
