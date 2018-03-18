@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format;
 
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
@@ -39,19 +40,19 @@ import org.neo4j.kernel.impl.store.record.Record;
 public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
 {
     public static final int IN_USE_BIT = 0b0000_0001;
-    public static final Function<StoreHeader,Integer> INT_STORE_HEADER_READER =
+    public static final ToIntFunction<StoreHeader> INT_STORE_HEADER_READER =
             header -> ((IntStoreHeader) header).value();
 
-    public static Function<StoreHeader,Integer> fixedRecordSize( int recordSize )
+    public static ToIntFunction<StoreHeader> fixedRecordSize( int recordSize )
     {
         return header -> recordSize;
     }
 
-    private final Function<StoreHeader,Integer> recordSize;
+    private final ToIntFunction<StoreHeader> recordSize;
     private final int recordHeaderSize;
     private final long maxId;
 
-    protected BaseRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize, int idBits )
+    protected BaseRecordFormat( ToIntFunction<StoreHeader> recordSize, int recordHeaderSize, int idBits )
     {
         this.recordSize = recordSize;
         this.recordHeaderSize = recordHeaderSize;
@@ -61,7 +62,7 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
     @Override
     public int getRecordSize( StoreHeader header )
     {
-        return recordSize.apply( header );
+        return recordSize.applyAsInt( header );
     }
 
     @Override

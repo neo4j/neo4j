@@ -19,12 +19,15 @@
  */
 package org.neo4j.values.virtual;
 
+import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-
+import java.util.function.Function;
+import java.util.function.Predicate;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
@@ -32,7 +35,6 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
-
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
@@ -460,6 +462,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class DropNoValuesListValue extends ListValue
     {
         private final ListValue inner;
+        
         private int size = -1;
 
         DropNoValuesListValue( ListValue inner )
@@ -532,6 +535,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
+
                 if ( value != NO_VALUE )
                 {
                     anyValues[index++] = value;
@@ -547,6 +551,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
+
                 if ( value != NO_VALUE )
                 {
                     hashCode = 31 * hashCode + value.hashCode();

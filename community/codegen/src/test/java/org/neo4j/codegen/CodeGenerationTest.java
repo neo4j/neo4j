@@ -19,28 +19,6 @@
  */
 package org.neo4j.codegen;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.mockito.InOrder;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.neo4j.codegen.bytecode.ByteCode;
-import org.neo4j.codegen.source.SourceCode;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertArrayEquals;
@@ -83,6 +61,27 @@ import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.mockito.InOrder;
+import org.neo4j.codegen.bytecode.ByteCode;
+import org.neo4j.codegen.source.SourceCode;
 
 @RunWith( Parameterized.class )
 public class CodeGenerationTest
@@ -1584,7 +1583,7 @@ public class CodeGenerationTest
     }
 
     private <T> boolean compareForType( Class<T> clazz, T lhs, T rhs,
-            BiFunction<Expression,Expression,Expression> compare ) throws Throwable
+            BinaryOperator<Expression> compare ) throws Throwable
     {
         // given
         createGenerator();

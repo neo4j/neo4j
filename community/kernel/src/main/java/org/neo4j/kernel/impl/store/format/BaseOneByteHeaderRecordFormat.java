@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.format;
 
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -36,7 +37,7 @@ public abstract class BaseOneByteHeaderRecordFormat<RECORD extends AbstractBaseR
 {
     private final int inUseBitMaskForFirstByte;
 
-    protected BaseOneByteHeaderRecordFormat( Function<StoreHeader,Integer> recordSize, int recordHeaderSize,
+    protected BaseOneByteHeaderRecordFormat( ToIntFunction<StoreHeader> recordSize, int recordHeaderSize,
             int inUseBitMaskForFirstByte, int idBits )
     {
         super( recordSize, recordHeaderSize, idBits );
