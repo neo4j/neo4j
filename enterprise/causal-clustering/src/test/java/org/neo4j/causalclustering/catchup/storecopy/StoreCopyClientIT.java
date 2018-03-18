@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -71,6 +70,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
 
 public class StoreCopyClientIT
 {
@@ -336,6 +336,7 @@ public class StoreCopyClientIT
         }
         return stringBuilder.toString();
     }
+
 
     private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
     {

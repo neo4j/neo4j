@@ -38,6 +38,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
+
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
     public abstract int size();
@@ -478,6 +479,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             {
                 AnyValue value = inner.value( i );
                 if ( value != NO_VALUE )
+
                 {
                     value.writeTo( writer );
                 }
@@ -514,6 +516,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             {
                 AnyValue value = inner.value( i );
                 if ( value != NO_VALUE )
+
                 {
                     if ( actualOffset == offset )
                     {
