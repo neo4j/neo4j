@@ -26,6 +26,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -257,7 +259,7 @@ public class FulltextIndexProviderTest
         return secondNodeId;
     }
 
-    private void verifyNodeData( FulltextIndexProvider provider, long thircNodeid ) throws IOException, IndexNotFoundKernelException
+    private void verifyNodeData( FulltextIndexProvider provider, long thirdNodeid ) throws IOException, IndexNotFoundKernelException
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -268,14 +270,17 @@ public class FulltextIndexProviderTest
 
             result = provider.query( "fulltext", "villa" );
             assertTrue( result.hasNext() );
-            assertEquals( thircNodeid, result.next().entityId() );
+            assertEquals( thirdNodeid, result.next().entityId() );
             assertFalse( result.hasNext() );
 
             result = provider.query( "fulltext", "value3" );
+            PrimitiveLongSet ids = Primitive.longSet();
+            ids.add( 0L );
+            ids.add( thirdNodeid );
             assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next().entityId() );
+            assertTrue( ids.remove( result.next().entityId() ) );
             assertTrue( result.hasNext() );
-            assertEquals( thircNodeid, result.next().entityId() );
+            assertTrue( ids.remove( result.next().entityId() ) );
             assertFalse( result.hasNext() );
             transaction.success();
         }

@@ -246,6 +246,7 @@ public class BloomQueryIT
             thirdID = db.createNodeId();
             fourthID = db.createNodeId();
             fifthID = db.createNodeId();
+            tx.success();
         }
         setNodeProp( firstID, "first", "Full" );
         setNodeProp( firstID, "last", "Hanks" );
@@ -277,6 +278,7 @@ public class BloomQueryIT
             thirdID = db.createNodeId();
             fourthID = db.createNodeId();
             fifthID = db.createNodeId();
+            tx.success();
         }
         setNodeProp( firstID, "first", "Christian" );
         setNodeProp( firstID, "last", "Hanks" );
