@@ -149,7 +149,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         {
             return value.with( TemporalAdjusters.firstDayOfYear() );
         }
-        else if ( unit == IsoFields.WEEK_BASED_YEARS)
+        else if ( unit == IsoFields.WEEK_BASED_YEARS )
         {
             return value.with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 ).with( ChronoField.DAY_OF_WEEK, 1 );
         }

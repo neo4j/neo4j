@@ -90,7 +90,7 @@ class DurationFunction implements CallableUserFunction
     private static class Between implements CallableUserFunction
     {
         private static final String DESCRIPTION =
-                "Compute the duration between the 'form' instant (inclusive) and the 'to' instant (exclusive) in %s.";
+                "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in %s.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
                 inputField( "from", Neo4jTypes.NTAny ),
                 inputField( "to", Neo4jTypes.NTAny ) );
@@ -99,28 +99,33 @@ class DurationFunction implements CallableUserFunction
 
         private Between( String unit )
         {
-            this.signature = new UserFunctionSignature(
-                    new QualifiedName( new String[] {"duration"}, unit ),
-                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
-                    String.format(
-                            DESCRIPTION, "between".equals( unit ) ? "logical units" : unit ) );
+            String unitString;
             switch ( unit )
             {
             case "between":
                 this.unit = null;
+                unitString = "logical units";
                 break;
             case "inMonths":
                 this.unit = ChronoUnit.MONTHS;
+                unitString = "months";
                 break;
             case "inDays":
                 this.unit = ChronoUnit.DAYS;
+                unitString = "days";
                 break;
             case "inSeconds":
                 this.unit = ChronoUnit.SECONDS;
+                unitString = "seconds";
                 break;
             default:
                 throw new IllegalStateException( "Unsupported unit: " + unit );
             }
+            this.signature = new UserFunctionSignature(
+                    new QualifiedName( new String[] {"duration"}, unit ),
+                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
+                    String.format(
+                            DESCRIPTION, unitString ) );
         }
 
         @Override

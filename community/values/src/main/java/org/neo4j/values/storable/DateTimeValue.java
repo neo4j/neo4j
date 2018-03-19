@@ -238,7 +238,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                 }
                 else if ( selectingEpoch )
                 {
-                    if( fields.containsKey( Field.epochSeconds ) )
+                    if ( fields.containsKey( Field.epochSeconds ) )
                     {
                         AnyValue epochField = fields.get( Field.epochSeconds );
                         if ( !(epochField instanceof IntegralValue) )

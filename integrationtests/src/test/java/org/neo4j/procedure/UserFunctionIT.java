@@ -817,7 +817,9 @@ public class UserFunctionIT
                 new InputStreamReader( UserFunctionIT.class.getResourceAsStream( "/misc/userDefinedFunctions" ) ) ) )
         {
             String expected = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
-            assertThat( res.resultAsString(), equalTo(expected) );
+            String actual = res.resultAsString();
+            // Be aware that the text file "userDefinedFunctions" must end with two newlines
+            assertThat( actual, equalTo(expected) );
         }
         catch ( IOException e )
         {
