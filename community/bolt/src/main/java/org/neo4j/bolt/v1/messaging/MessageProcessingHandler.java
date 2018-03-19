@@ -20,14 +20,18 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
@@ -35,6 +39,9 @@ import org.neo4j.values.virtual.VirtualValues;
 
 class MessageProcessingHandler implements BoltResponseHandler
 {
+    // Errors that are expected when the client disconnects mid-operation
+    private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS = new HashSet<>( Arrays.asList(
+            Status.Transaction.Terminated, Status.Transaction.LockClientStopped ) );
     protected final Map<String,AnyValue> metadata = new HashMap<>();
 
     protected final Log log;
@@ -139,8 +146,23 @@ class MessageProcessingHandler implements BoltResponseHandler
         }
         catch ( PackOutputClosedException e )
         {
-            // we tried to write error back to the client and realized that the underlying channel is closed
-            // log a warning, client driver might have just been stopped and closed all socket connections
+            // Can't write error to the client, because the connection is closed.
+            // Very likely our error is related to the connection being closed.
+
+            // If the error is that the transaction was terminated, then the error is a side-effect of
+            // us cleaning up stuff that was running when the client disconnected. Log a warning without
+            // stack trace to highlight clients are disconnecting while stuff is running:
+            if ( CLIENT_MID_OP_DISCONNECT_ERRORS.contains( error.status() ) )
+            {
+                log.warn( "Client %s disconnected while query was running. Session has been cleaned up. " +
+                          "This can be caused by temporary network problems, but if you see this often, " +
+                          "ensure your applications are properly waiting for operations to complete before exiting.",
+                        e.clientAddress() );
+                return;
+            }
+
+            // If the error isn't that the tx was terminated, log it to the console for debugging. It's likely
+            // there are other "ok" errors that we can whitelist into the conditional above over time.
             log.warn( "Unable to send error back to the client. " + e.getMessage(), error.cause() );
         }
         catch ( Throwable t )

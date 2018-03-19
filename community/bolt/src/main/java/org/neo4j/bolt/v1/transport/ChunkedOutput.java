@@ -50,9 +50,9 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
     private final int maxChunkSize;
     private final AtomicBoolean closed = new AtomicBoolean( false );
     private final TransportThrottleGroup throttleGroup;
+    private final Channel channel;
 
     private ByteBuf buffer;
-    private Channel channel;
     private int currentChunkHeaderOffset;
 
     /** Are currently in the middle of writing a chunk? */
@@ -186,7 +186,9 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         assert size <= maxChunkSize : size + " > " + maxChunkSize;
         if ( closed.get() )
         {
-            throw new PackOutputClosedException( "Network channel towards " + channel.remoteAddress() + " is closed. " + "Client has probably been stopped." );
+            throw new PackOutputClosedException(
+                    String.format( "Network channel towards %s is closed. Client has probably been stopped.",
+                            channel.remoteAddress() ), String.format( "%s", channel.remoteAddress() ) );
         }
         int toWriteSize = chunkOpen ? size : size + CHUNK_HEADER_SIZE;
         synchronized ( this )
