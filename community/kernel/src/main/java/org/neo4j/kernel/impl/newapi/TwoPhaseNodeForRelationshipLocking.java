@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 
@@ -43,6 +42,7 @@ class TwoPhaseNodeForRelationshipLocking
 
     private long firstRelId;
     private long[] sortedNodeIds;
+    private static final long[] EMPTY = new long[0];
 
     TwoPhaseNodeForRelationshipLocking(
             ThrowingConsumer<Long,KernelException> relIdAction )
@@ -61,7 +61,6 @@ class TwoPhaseNodeForRelationshipLocking
 
             // lock all the nodes involved by following the node id ordering
             collectAndSortNodeIds( nodeId, transaction );
-
             lockAllNodes( transaction, sortedNodeIds );
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains
@@ -69,17 +68,17 @@ class TwoPhaseNodeForRelationshipLocking
             NodeCursor nodes = transaction.nodeCursor();
             org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
             read.singleNode( nodeId, nodes );
-            if ( !nodes.next() )
+            //if the node is not there, someone else probably deleted it, just ignore
+            if ( nodes.next() )
             {
-                throw new EntityNotFoundException( EntityType.NODE, nodeId );
-            }
-            RelationshipSelectionCursor rels =
-                    RelationshipSelections.allCursor( transaction.cursors(), nodes, null );
-            boolean first = true;
-            while ( rels.next() && !retry )
-            {
-                retry = performAction( transaction, rels.relationshipReference(), first );
-                first = false;
+                RelationshipSelectionCursor rels =
+                        RelationshipSelections.allCursor( transaction.cursors(), nodes, null );
+                boolean first = true;
+                while ( rels.next() && !retry )
+                {
+                    retry = performAction( transaction, rels.relationshipReference(), first );
+                    first = false;
+                }
             }
         }
         while ( retry );
@@ -95,7 +94,8 @@ class TwoPhaseNodeForRelationshipLocking
         read.singleNode( nodeId, nodes );
         if ( !nodes.next() )
         {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
+            this.sortedNodeIds = EMPTY;
+            return;
         }
         RelationshipSelectionCursor rels =
                 RelationshipSelections.allCursor( transaction.cursors(), nodes, null );

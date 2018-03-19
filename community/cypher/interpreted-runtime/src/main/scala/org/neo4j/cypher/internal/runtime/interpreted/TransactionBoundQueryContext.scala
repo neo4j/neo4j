@@ -377,11 +377,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class NodeOperations extends BaseOperations[NodeValue] {
 
     override def delete(id: Long) {
-      try {
         writes().nodeDelete(id)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -495,11 +491,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class RelationshipOperations extends BaseOperations[RelationshipValue] {
 
     override def delete(id: Long) {
-      try {
         writes().relationshipDelete(id)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -963,13 +955,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def detachDeleteNode(node: Long): Int = {
-    try {
-      transactionalContext.dataWrite.nodeDetachDelete(node)
-    } catch {
-      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
-    }
-  }
+  override def detachDeleteNode(node: Long): Int = transactionalContext.dataWrite.nodeDetachDelete(node)
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.kernelTransaction.schemaWrite()

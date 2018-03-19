@@ -416,11 +416,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
 
   class NodeOperations extends BaseOperations[Node] {
     override def delete(obj: Node) {
-      try {
         writes().nodeDelete(obj.getId)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -549,11 +545,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   class RelationshipOperations extends BaseOperations[Relationship] {
 
     override def delete(obj: Relationship) {
-      try {
         writes().relationshipDelete(obj.getId)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -957,13 +949,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     }
   }
 
-  override def detachDeleteNode(node: Node): Int = {
-    try {
-      writes().nodeDetachDelete(node.getId)
-    } catch {
-      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
-    }
-  }
+  override def detachDeleteNode(node: Node): Int = writes().nodeDetachDelete(node.getId)
 
   override def assertSchemaWritesAllowed(): Unit =
     txContext.kernelTransaction.schemaWrite()

@@ -186,7 +186,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     val read = reads()
     val cursor = nodeCursor
     read.singleNode(node.getId, cursor)
-    if (!cursor.next())Iterator.empty
+    if (!cursor.next()) Iterator.empty
     else {
       val selectionCursor = dir match {
         case OUTGOING => outgoingCursor(tc.kernelTransaction.cursors(), cursor, types.map(_.toArray).orNull)
@@ -262,7 +262,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     if (anyRange.nonEmpty) {
       // If we get back an exclusion test, the range could return values otherwise it is empty
       anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
-        throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
+        throw new IllegalArgumentException(
+          "Cannot compare a property against values that are neither strings nor numbers.")
       }.getOrElse(Iterator.empty)
     } else {
       (optNumericRange, optStringRange) match {
@@ -374,7 +375,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     }
   }
 
-  def nodeGetDegree(node: Long, dir: SemanticDirection): Int ={
+  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = {
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
     if (!cursor.next()) 0
@@ -409,21 +410,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
-      try {
         writes().nodeDelete(obj.getId)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
-    def detachDelete(obj: Node): Int = {
-      try {
-        writes().nodeDetachDelete(obj.getId)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // the node has been deleted by another transaction, oh well...
-          0
-      }
-    }
+    def detachDelete(obj: Node): Int = writes().nodeDetachDelete(obj.getId)
 
     def propertyKeyIds(id: Long): Iterator[Int] = {
       val node = nodeCursor
@@ -540,11 +530,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
   class RelationshipOperations extends BaseOperations[Relationship] {
     override def delete(obj: Relationship) {
-      try {
         writes().relationshipDelete(obj.getId)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
