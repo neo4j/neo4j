@@ -25,7 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler.Group;
@@ -39,7 +39,7 @@ public class ContinuousJobTest
 {
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
     private final Group jobGroup = new Group( "test" );
-    private final Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+    private final CentralJobScheduler scheduler = new CentralJobScheduler();
 
     @Test
     public void shouldRunJobContinuously() throws Throwable

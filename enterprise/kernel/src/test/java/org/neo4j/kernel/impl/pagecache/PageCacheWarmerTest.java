@@ -41,7 +41,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.PageCacheRule;
@@ -72,7 +72,7 @@ public class PageCacheWarmerTest
     public void setUp() throws IOException
     {
         life = new LifeSupport();
-        scheduler = life.add( new Neo4jJobScheduler() );
+        scheduler = life.add( new CentralJobScheduler() );
         life.start();
         cacheTracer = new DefaultPageCacheTracer();
         cursorTracer = DefaultPageCursorTracerSupplier.INSTANCE;

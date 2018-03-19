@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
@@ -301,7 +301,7 @@ public class PlatformModule
 
     protected JobScheduler createJobScheduler()
     {
-        return new Neo4jJobScheduler();
+        return new CentralJobScheduler();
     }
 
     protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging,

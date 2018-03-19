@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -54,7 +54,7 @@ public class FulltextUpdateApplierTest
         life = new LifeSupport();
         log = NullLog.getInstance();
         availabilityGuard = new AvailabilityGuard( Clock.systemUTC(), log );
-        scheduler = life.add( new Neo4jJobScheduler() );
+        scheduler = life.add( new CentralJobScheduler() );
         life.start();
     }
 

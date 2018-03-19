@@ -41,7 +41,7 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.NullLog;
@@ -218,7 +218,7 @@ public class TestMasterCommittingAtSlave
 
         Config config = Config.defaults( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
-        Neo4jJobScheduler scheduler = cleanup.add( new Neo4jJobScheduler() );
+        CentralJobScheduler scheduler = cleanup.add( new CentralJobScheduler() );
         TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 NullLog.getInstance(), () -> slaves, new CommitPusher( scheduler ) );
         // Life

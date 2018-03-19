@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -235,7 +235,7 @@ public class TimerServiceTest
     public void shouldAwaitCancellationUnderRealScheduler() throws Throwable
     {
         // given
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        CentralJobScheduler scheduler = new CentralJobScheduler();
         scheduler.init();
         scheduler.start();
 
@@ -274,7 +274,7 @@ public class TimerServiceTest
     public void shouldBeAbleToCancelBeforeHandlingWithRealScheduler() throws Throwable
     {
         // given
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
+        CentralJobScheduler scheduler = new CentralJobScheduler();
         scheduler.init();
         scheduler.start();
 

@@ -42,7 +42,7 @@ import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -64,7 +64,7 @@ public class RaftLogShipperTest
 {
     @Rule
     public LifeRule life = new LifeRule( true );
-    private JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+    private JobScheduler scheduler = life.add( new CentralJobScheduler() );
 
     private OutboundMessageCollector outbound;
     private RaftLog raftLog;

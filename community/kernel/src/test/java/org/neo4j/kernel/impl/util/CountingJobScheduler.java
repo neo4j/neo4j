@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.JobScheduler;
 
 public class CountingJobScheduler implements JobScheduler
 {
     private final AtomicInteger counter;
-    private final Neo4jJobScheduler delegate;
+    private final CentralJobScheduler delegate;
 
-    public CountingJobScheduler( AtomicInteger counter, Neo4jJobScheduler delegate )
+    public CountingJobScheduler( AtomicInteger counter, CentralJobScheduler delegate )
     {
         this.counter = counter;
         this.delegate = delegate;
@@ -62,13 +62,6 @@ public class CountingJobScheduler implements JobScheduler
     {
         counter.getAndIncrement();
         return delegate.schedule( group, job );
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-    {
-        counter.getAndIncrement();
-        return delegate.schedule( group, job, metadata );
     }
 
     @Override
@@ -107,7 +100,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void stop()
+    public void stop() throws Throwable
     {
         delegate.stop();
     }
