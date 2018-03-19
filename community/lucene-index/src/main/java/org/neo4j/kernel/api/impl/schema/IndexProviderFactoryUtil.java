@@ -42,31 +42,29 @@ class IndexProviderFactoryUtil
         return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
     }
 
-    static NumberIndexProvider numberProvider( PageCache pageCache, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDirectoryStructure.Factory childDirectoryStructure, boolean readOnly )
+    static NumberIndexProvider numberProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory childDirectoryStructure,
+            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         return new NumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
-    static SpatialFusionIndexProvider spatialProvider( PageCache pageCache, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, IndexDirectoryStructure.Factory directoryStructure,
-            Config config )
+    static SpatialFusionIndexProvider spatialProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         return new SpatialFusionIndexProvider( pageCache, fs, directoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
     }
 
-    static TemporalIndexProvider temporalProvider( PageCache pageCache, FileSystemAbstraction fs, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, IndexDirectoryStructure.Factory directoryStructure )
+    static TemporalIndexProvider temporalProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         return new TemporalIndexProvider( pageCache, fs, directoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
-    static LuceneIndexProvider luceneProvider( FileSystemAbstraction fileSystemAbstraction,
-            IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, Config config,
-            OperationalMode operationalMode )
+    static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor,
+            Config config, OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config, operationalMode );
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fs );
+        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
     }
 }

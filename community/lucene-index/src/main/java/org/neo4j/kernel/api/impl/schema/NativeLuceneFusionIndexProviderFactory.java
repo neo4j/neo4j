@@ -33,8 +33,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector10;
+import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -84,14 +86,18 @@ public class NativeLuceneFusionIndexProviderFactory
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
 
-        // This is the v1.0 of the lucene+native fusion setup where there's only number+lucene indexes
+        // This is the v1.0 of the lucene+native fusion setup where there's only number+spatial+temporal+lucene indexes
         NumberIndexProvider number =
-                IndexProviderFactoryUtil.numberProvider( pageCache, fs, monitor, recoveryCleanupWorkCollector, childDirectoryStructure, readOnly );
+                IndexProviderFactoryUtil.numberProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        SpatialFusionIndexProvider spatial =
+                IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
+        TemporalIndexProvider temporal =
+                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
-        return new FusionIndexProvider( EMPTY, number, EMPTY, EMPTY, lucene, new FusionSelector10(),
+        return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSelector10(),
                 DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 

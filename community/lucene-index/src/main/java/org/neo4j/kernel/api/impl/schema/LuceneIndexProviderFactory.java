@@ -100,9 +100,9 @@ public class LuceneIndexProviderFactory extends
 
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, baseDirStructure, monitor, config, operationalMode );
         TemporalIndexProvider temporal =
-                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, childDirectoryStructure );
+                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         SpatialFusionIndexProvider spatial =
-                IndexProviderFactoryUtil.spatialProvider( pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, childDirectoryStructure, config );
+                IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
 
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
                 PROVIDER_DESCRIPTOR, LuceneIndexProvider.PRIORITY, directoriesByProvider( storeDir ), fs );
