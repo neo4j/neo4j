@@ -164,12 +164,12 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
         // The file contents checks out. Let's load it in.
         long pagesLoaded = 0;
-        try ( InputStream inputStream = savedProfile.get().read( fs );
+        try ( InputStream input = savedProfile.get().read( fs );
               PageLoader loader = pageLoaderFactory.getLoader( file ) )
         {
             long pageId = 0;
             int b;
-            while ( (b = inputStream.read()) != -1 )
+            while ( (b = input.read()) != -1 )
             {
                 for ( int i = 0; i < 8; i++ )
                 {
@@ -195,12 +195,12 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private boolean verifyChecksum( Profile profile )
     {
         // Successfully reading through and closing the compressed file implies verifying the gzip checksum.
-        try ( InputStream inputStream = profile.read( fs ) )
+        try ( InputStream input = profile.read( fs ) )
         {
             int b;
             do
             {
-                b = inputStream.read();
+                b = input.read();
             }
             while ( b != -1 );
         }
@@ -254,7 +254,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 .map( Profile::next )
                 .orElse( Profile.first( file.file() ) );
 
-        try ( OutputStream outputStream = nextProfile.write( fs );
+        try ( OutputStream output = nextProfile.write( fs );
               PageCursor cursor = file.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
         {
             int stepper = 0;
@@ -273,19 +273,19 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 stepper++;
                 if ( stepper == 8 )
                 {
-                    outputStream.write( b );
+                    output.write( b );
                     b = 0;
                     stepper = 0;
                 }
             }
-            outputStream.write( b );
-            outputStream.flush();
+            output.write( b );
+            output.flush();
         }
 
         // Delete previous profile files.
         filterRelevant( existingProfiles, file )
                 .filter( profile -> !refCounts.contains( profile ) )
-                .forEach( p -> p.delete( fs ) );
+                .forEach( profile -> profile.delete( fs ) );
 
         return pagesInMemory;
     }

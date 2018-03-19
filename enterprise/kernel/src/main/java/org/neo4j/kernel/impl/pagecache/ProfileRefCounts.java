@@ -26,18 +26,18 @@ import java.util.Map;
 
 class ProfileRefCounts
 {
-    private final Map<Profile,MutableInt> fileBag;
+    private final Map<Profile,MutableInt> bag;
 
     public ProfileRefCounts()
     {
-        fileBag = new HashMap<>();
+        bag = new HashMap<>();
     }
 
     synchronized void incrementRefCounts( Profile[] profiles )
     {
         for ( Profile profile : profiles )
         {
-            fileBag.computeIfAbsent( profile, p -> new MutableInt() ).increment();
+            bag.computeIfAbsent( profile, p -> new MutableInt() ).increment();
         }
     }
 
@@ -45,12 +45,12 @@ class ProfileRefCounts
     {
         for ( Profile profile : profiles )
         {
-            fileBag.computeIfPresent( profile, (p,i) -> i.decrementAndGet() == 0 ? null : i );
+            bag.computeIfPresent( profile, ( p, i) -> i.decrementAndGet() == 0 ? null : i );
         }
     }
 
     synchronized boolean contains( Profile profile )
     {
-        return fileBag.containsKey( profile );
+        return bag.containsKey( profile );
     }
 }
