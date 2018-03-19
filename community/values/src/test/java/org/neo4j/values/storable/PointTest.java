@@ -19,9 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -121,7 +123,7 @@ public class PointTest
         String data = "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
 
         PointValue expected = PointValue.parse( data );
-        PointValue actual = PointValue.parse( data, PointValue.parseIntoArray( headerInformation ) );
+        PointValue actual = PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
 
         assertEqual( expected, actual );
         assertEquals( "wgs-84-3d", actual.getCoordinateReferenceSystem().getName().toLowerCase() );
@@ -144,7 +146,7 @@ public class PointTest
         }
 
         // this should work
-        PointValue.parse( data, PointValue.parseIntoArray( headerInformation ) );
+        PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
 
     }
 
@@ -168,9 +170,11 @@ public class PointTest
     @Test
     public void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
     {
-        assertTrue( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage().contains( "Duplicate field" ) );
-        assertTrue( assertCannotParse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ).getMessage().contains( "Duplicate field" ) );
-        assertTrue( assertCannotParse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ).getMessage().contains( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ).getMessage(),
+                CoreMatchers.containsString( "Duplicate field" ) );
     }
 
     @Test

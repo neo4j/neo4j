@@ -422,6 +422,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return name.substring( 0, name.length() - /*"Value" is*/5/*characters*/ );
     }
 
+    public static TimeCSVHeaderInformation parseHeaderInformation( String text )
+    {
+        TimeCSVHeaderInformation fields = new TimeCSVHeaderInformation();
+        Value.parseHeaderInformation( text, "time/datetime", fields );
+        return fields;
+    }
+
     abstract static class Builder<Result> implements StructureBuilder<AnyValue,Result>
     {
         private final Supplier<ZoneId> defaultZone;
@@ -1330,5 +1337,41 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             truncatedTime = localTime.truncatedTo( unit );
         }
         return Pair.of( truncatedDate, truncatedTime );
+    }
+
+    static class TimeCSVHeaderInformation implements CSVHeaderInformation
+    {
+        String timezone;
+
+        @Override
+        public void assign( String key, String value )
+        {
+            if ( "timezone".equals( key.toLowerCase() ) )
+            {
+                if ( timezone == null )
+                {
+                    timezone = value;
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Cannot set timezone twice" );
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unsupported header field: " + value );
+            }
+        }
+
+        Supplier<ZoneId> zoneSupplier( Supplier<ZoneId> defaultSupplier )
+        {
+            if ( timezone != null )
+            {
+                ZoneId tz = ZoneId.of( timezone );
+                // Override defaultZone
+                return () -> tz;
+            }
+            return defaultSupplier;
+        }
     }
 }

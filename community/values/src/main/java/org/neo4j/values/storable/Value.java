@@ -24,16 +24,26 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 
+import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class Value extends AnyValue
 {
+    static final Pattern mapPattern = Pattern.compile( "\\{(.*)\\}" );
+
+    static final Pattern keyValuePattern =
+            Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
+
+    static final Pattern quotesPattern = Pattern.compile( "^[\"']|[\"']$" );
+
     @Override
     public boolean eq( Object other )
     {
@@ -220,5 +230,41 @@ public abstract class Value extends AnyValue
     public boolean isNaN()
     {
         return false;
+    }
+
+    static void parseHeaderInformation( CharSequence text, String type, CSVHeaderInformation info )
+    {
+        Matcher mapMatcher = mapPattern.matcher( text );
+        String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
+        {
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        String mapContents = mapMatcher.group( 1 );
+        if ( mapContents.isEmpty() )
+        {
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        Matcher matcher = keyValuePattern.matcher( mapContents );
+        if ( !(matcher.find()) )
+        {
+            throw new IllegalArgumentException( errorMessage );
+        }
+
+        do
+        {
+            String key = matcher.group( "k" );
+            if ( key != null )
+            {
+                String value = matcher.group( "v" );
+                if ( value != null )
+                {
+                    info.assign( key, value );
+                }
+            }
+        }
+        while ( matcher.find() );
     }
 }
