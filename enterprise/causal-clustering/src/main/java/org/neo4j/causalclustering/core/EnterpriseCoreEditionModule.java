@@ -154,7 +154,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
-        procedures.registerComponent( Replicator.class, ( x ) -> replicationModule.getReplicator(), true );
+        procedures.registerComponent( Replicator.class, ( x ) -> replicationModule.getReplicator(), false );
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
