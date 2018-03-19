@@ -137,7 +137,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     {
         // given
         File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( dir );
-        fileSystemRule.create( labelScanStoreFile );
+        fileSystemRule.create( labelScanStoreFile ).close();
         TrackingMonitor monitor = new TrackingMonitor();
         LifeSupport life = new LifeSupport();
 
