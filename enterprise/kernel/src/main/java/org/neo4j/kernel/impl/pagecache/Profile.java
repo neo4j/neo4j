@@ -20,27 +20,41 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PagedFile;
+
+import static org.neo4j.kernel.impl.pagecache.PageCacheWarmer.SUFFIX_CACHEPROF;
 
 final class Profile implements Comparable<Profile>
 {
-    final File profileFile;
-    final String mappedFileName;
-    final long profileCount;
+    private final File profileFile;
+    private final File pagedFile;
+    private final long profileCount;
 
-    Profile( File profileFile, String mappedFileName, long profileCount )
+    private Profile( File profileFile, File pagedFile, long profileCount )
     {
         Objects.requireNonNull( profileFile );
-        Objects.requireNonNull( mappedFileName );
+        Objects.requireNonNull( pagedFile );
         this.profileFile = profileFile;
-        this.mappedFileName = mappedFileName;
+        this.pagedFile = pagedFile;
         this.profileCount = profileCount;
     }
 
     @Override
     public int compareTo( Profile that )
     {
-        return Long.compare( profileCount, that.profileCount );
+        int compare = profileFile.compareTo( that.profileFile );
+        return compare == 0 ? Long.compare( profileCount, that.profileCount ) : compare;
     }
 
     @Override
@@ -58,5 +72,99 @@ final class Profile implements Comparable<Profile>
     public int hashCode()
     {
         return profileFile.hashCode();
+    }
+
+    File file()
+    {
+        return profileFile;
+    }
+
+    void delete( FileSystemAbstraction fs )
+    {
+        fs.deleteFile( profileFile );
+    }
+
+    InputStream read( FileSystemAbstraction fs ) throws IOException
+    {
+        InputStream source = fs.openAsInputStream( profileFile );
+        try
+        {
+            return new GZIPInputStream( source );
+        }
+        catch ( IOException e )
+        {
+            IOUtils.closeAllSilently( source );
+            throw new IOException( "Exception when building decompressor.", e );
+        }
+    }
+
+    OutputStream write( FileSystemAbstraction fs ) throws IOException
+    {
+        OutputStream sink = fs.openAsOutputStream( profileFile, false );
+        try
+        {
+            return new GZIPOutputStream( sink );
+        }
+        catch ( IOException e )
+        {
+            IOUtils.closeAllSilently( sink );
+            throw new IOException( "Exception when building compressor.", e );
+        }
+    }
+
+    Profile next()
+    {
+        long nextCount = profileCount + 1L;
+        return new Profile( profileName( pagedFile, nextCount ), pagedFile, nextCount );
+    }
+
+    static Profile first( File file )
+    {
+        return new Profile( profileName( file, 0 ), file, 0 );
+    }
+
+    private static File profileName( File file, long count )
+    {
+        String name = file.getName();
+        File dir = file.getParentFile();
+        return new File( dir, "." + name + "." + Long.toHexString( count ) + SUFFIX_CACHEPROF );
+    }
+
+    static Predicate<Profile> relevantTo( PagedFile pagedFile )
+    {
+        return p -> p.pagedFile.equals( pagedFile.file() );
+    }
+
+    static Stream<Profile> findProfilesInDirectory( FileSystemAbstraction fs, File dir )
+    {
+        File[] files = fs.listFiles( dir );
+        if ( files == null )
+        {
+            return Stream.empty();
+        }
+        return Stream.of( files ).flatMap( Profile::parseProfileName );
+    }
+
+    private static Stream<Profile> parseProfileName( File profile )
+    {
+        File dir = profile.getParentFile();
+        String name = profile.getName();
+        if ( !name.startsWith( "." ) && !name.endsWith( SUFFIX_CACHEPROF ) )
+        {
+            return Stream.empty();
+        }
+        int lastDot = name.lastIndexOf( '.' );
+        int secondLastDot = name.lastIndexOf( '.', lastDot - 1 );
+        String countStr = name.substring( secondLastDot + 1, lastDot );
+        try
+        {
+            long count = Long.parseLong( countStr, 16 );
+            String mappedFileName = name.substring( 1, secondLastDot );
+            return Stream.of( new Profile( profile, new File( dir, mappedFileName ), count ) );
+        }
+        catch ( NumberFormatException e )
+        {
+            return Stream.empty();
+        }
     }
 }

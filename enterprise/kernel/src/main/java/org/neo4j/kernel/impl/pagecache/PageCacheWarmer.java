@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -37,14 +35,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -53,7 +46,7 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-import static java.lang.Long.toHexString;
+import static java.util.Comparator.naturalOrder;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
@@ -110,7 +103,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         Profile[] existingProfiles = findExistingProfiles( files );
         for ( Profile profile : existingProfiles )
         {
-            coll.add( new StoreFileMetadata( profile.profileFile, 1, false ) );
+            coll.add( new StoreFileMetadata( profile.file(), 1, false ) );
         }
         refCounts.incrementRefCounts( existingProfiles );
         return () ->
@@ -171,7 +164,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
         // The file contents checks out. Let's load it in.
         long pagesLoaded = 0;
-        try ( InputStream inputStream = compressedInputStream( savedProfile.get().profileFile );
+        try ( InputStream inputStream = savedProfile.get().read( fs );
               PageLoader loader = pageLoaderFactory.getLoader( file ) )
         {
             long pageId = 0;
@@ -202,7 +195,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private boolean verifyChecksum( Profile profile )
     {
         // Successfully reading through and closing the compressed file implies verifying the gzip checksum.
-        try ( InputStream inputStream = compressedInputStream( profile.profileFile ) )
+        try ( InputStream inputStream = profile.read( fs ) )
         {
             int b;
             do
@@ -256,9 +249,12 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private long profile( PagedFile file, Profile[] existingProfiles ) throws IOException
     {
         long pagesInMemory = 0;
-        File outputFile = profileOutputFileName( file, filterRelevant( existingProfiles, file ) );
+        Profile nextProfile = filterRelevant( existingProfiles, file )
+                .max( naturalOrder() )
+                .map( Profile::next )
+                .orElse( Profile.first( file.file() ) );
 
-        try ( OutputStream outputStream = compressedOutputStream( outputFile );
+        try ( OutputStream outputStream = nextProfile.write( fs );
               PageCursor cursor = file.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
         {
             int stepper = 0;
@@ -289,73 +285,14 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         // Delete previous profile files.
         filterRelevant( existingProfiles, file )
                 .filter( profile -> !refCounts.contains( profile ) )
-                .forEach( p -> fs.deleteFile( p.profileFile ) );
+                .forEach( p -> p.delete( fs ) );
 
         return pagesInMemory;
     }
 
-    private InputStream compressedInputStream( File input ) throws IOException
-    {
-        InputStream source = fs.openAsInputStream( input );
-        try
-        {
-            return new GZIPInputStream( source );
-        }
-        catch ( IOException e )
-        {
-            IOUtils.closeAllSilently( source );
-            throw new IOException( "Exception when building decompressor.", e );
-        }
-    }
-
-    private OutputStream compressedOutputStream( File output ) throws IOException
-    {
-        StoreChannel channel = fs.open( output, OpenMode.READ_WRITE );
-        ByteBuffer buf = ByteBuffer.allocate( 1 );
-        OutputStream sink = new OutputStream()
-        {
-            @Override
-            public void write( int b ) throws IOException
-            {
-                buf.put( (byte) b );
-                buf.flip();
-                channel.write( buf );
-                buf.flip();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                channel.truncate( channel.position() );
-                channel.close();
-            }
-        };
-        try
-        {
-            return new GZIPOutputStream( sink );
-        }
-        catch ( IOException e )
-        {
-            // We close the channel instead of the sink here, because we don't want to truncate the file if we fail
-            // to open the gzip output stream.
-            IOUtils.closeAllSilently( channel );
-            throw new IOException( "Exception when building compressor.", e );
-        }
-    }
-
-    private File profileOutputFileName( PagedFile file, Stream<Profile> existingProfiles )
-    {
-        long lastFileCount = existingProfiles.mapToLong( p -> p.profileCount ).max().orElse( 0L );
-        long nextFileCount = lastFileCount + 1L;
-        File mappedFile = file.file();
-        File parent = mappedFile.getParentFile();
-        String profileOutputName = "." + mappedFile.getName() + "." + toHexString( nextFileCount ) + SUFFIX_CACHEPROF;
-        return new File( parent, profileOutputName );
-    }
-
     private Stream<Profile> filterRelevant( Profile[] profiles, PagedFile pagedFile )
     {
-        return Stream.of( profiles ).filter( profile -> profile.mappedFileName.equals( pagedFile.file().getName() ) );
+        return Stream.of( profiles ).filter( Profile.relevantTo( pagedFile ) );
     }
 
     private Profile[] findExistingProfiles( List<PagedFile> pagedFiles )
@@ -363,41 +300,8 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         return pagedFiles.stream()
                          .map( pf -> pf.file().getParentFile() )
                          .distinct()
-                         .flatMap( this::listFiles )
-                         .flatMap( this::parseProfileName )
+                         .flatMap( dir -> Profile.findProfilesInDirectory( fs, dir ) )
                          .sorted()
                          .toArray( Profile[]::new );
-    }
-
-    private Stream<File> listFiles( File dir )
-    {
-        File[] files = fs.listFiles( dir );
-        if ( files == null )
-        {
-            return Stream.empty();
-        }
-        return Stream.of( files );
-    }
-
-    private Stream<Profile> parseProfileName( File profile )
-    {
-        String name = profile.getName();
-        if ( !name.startsWith( "." ) && !name.endsWith( SUFFIX_CACHEPROF ) )
-        {
-            return Stream.empty();
-        }
-        int lastDot = name.lastIndexOf( '.' );
-        int secondLastDot = name.lastIndexOf( '.', lastDot - 1 );
-        String countStr = name.substring( secondLastDot + 1, lastDot );
-        try
-        {
-            long count = Long.parseLong( countStr, 16 );
-            String mappedFileName = name.substring( 1, secondLastDot );
-            return Stream.of( new Profile( profile, mappedFileName, count ) );
-        }
-        catch ( NumberFormatException e )
-        {
-            return Stream.empty();
-        }
     }
 }
