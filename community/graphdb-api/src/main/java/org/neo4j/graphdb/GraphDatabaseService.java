@@ -118,7 +118,7 @@ public interface GraphDatabaseService
      * scan all labeled nodes looking for the property value.
      * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
      * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
      * <p>
@@ -143,7 +143,7 @@ public interface GraphDatabaseService
      * scan all labeled nodes looking for matching nodes.
      * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
      * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
      * <p>
@@ -173,7 +173,7 @@ public interface GraphDatabaseService
      * scan all labeled nodes looking for matching nodes.
      * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
      * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
      * <p>
@@ -208,7 +208,7 @@ public interface GraphDatabaseService
      * scan all labeled nodes looking for matching nodes.
      * <p>
      * Note that equality for values do not follow the rules of Java. This means that the number 42 is equals to all
-     * other 42 numbers, indifferently of if they are encoded as Integer, Long, Float, Short, Byte or Double.
+     * other 42 numbers, regardless of whether they are encoded as Integer, Long, Float, Short, Byte or Double.
      * <p>
      * Same rules follow Character and String - the Character 'A' is equal to the String 'A'.
      * <p>
@@ -237,7 +237,7 @@ public interface GraphDatabaseService
      * The search mode and value template are used to select nodes of interest. The search mode can
      * be one of
      * <ul>
-     *   <li>EXACT: The value has to match the template exactly.</li>
+     *   <li>EXACT: The value has to match the template exactly. This is the same behavior as {@link GraphDatabaseService#findNode(Label, String, Object)}.</li>
      *   <li>PREFIX: The value must have a prefix matching the template.</li>
      *   <li>SUFFIX: The value must have a suffix matching the template.</li>
      *   <li>CONTAINS: The value must contain the template. Only exact matches are supported.</li>

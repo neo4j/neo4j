@@ -88,7 +88,7 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
         if ( propertyIds.length != 1 )
         {
             throw new IllegalStateException(
-                    "Single property schema required one property but had " + propertyIds.length );
+                    "Single property schema requires one property but had " + propertyIds.length );
         }
         return propertyIds[0];
     }
