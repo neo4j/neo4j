@@ -28,7 +28,7 @@ class ProfileRefCounts
 {
     private final Map<Profile,MutableInt> bag;
 
-    public ProfileRefCounts()
+    ProfileRefCounts()
     {
         bag = new HashMap<>();
     }
@@ -45,7 +45,7 @@ class ProfileRefCounts
     {
         for ( Profile profile : profiles )
         {
-            bag.computeIfPresent( profile, ( p, i) -> i.decrementAndGet() == 0 ? null : i );
+            bag.computeIfPresent( profile, ( p, i ) -> i.decrementAndGet() == 0 ? null : i );
         }
     }
 
