@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
@@ -81,6 +82,12 @@ public interface PrimitiveLongReadableDiffSets
         {
             return elements;
         }
+
+        @Override
+        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements )
+        {
+            return elements;
+        }
     };
 
     /**
@@ -134,4 +141,13 @@ public interface PrimitiveLongReadableDiffSets
      * @return iterator that will iterate over augmented elements as well as over diff set
      */
     PrimitiveLongIterator augment( PrimitiveLongIterator elements );
+
+    /**
+     * Augment current diff sets with elements. Provided element will be augmented if diffset
+     * does not remove and add that specific element.
+     *
+     * @param elements elements to augment with
+     * @return iterator that will iterate over augmented elements as well as over diff set
+     */
+    PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements );
 }

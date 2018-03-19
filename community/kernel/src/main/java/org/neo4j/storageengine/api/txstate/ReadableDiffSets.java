@@ -24,15 +24,13 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added items.
  */
-public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLongResourceIterator, PrimitiveLongIterator>
+public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T>
 {
     @Override
     ReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
@@ -106,21 +104,21 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         }
 
         @Override
-        public PrimitiveLongResourceIterator augment( PrimitiveLongIterator source )
-        {
-            return primitiveLongResourceIterator( source );
-        }
-
-        @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
+        public PrimitiveLongIterator augment( PrimitiveLongIterator source )
         {
             return source;
         }
 
         @Override
-        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongIterator source )
+        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
         {
-            return primitiveLongResourceIterator( source );
+            return source;
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
+        {
+            return source;
         }
 
         @Override
@@ -132,18 +130,6 @@ public interface ReadableDiffSets<T> extends SuperReadableDiffSets<T,PrimitiveLo
         @Override
         public void accept( DiffSetsVisitor<T> visitor )
         {
-        }
-
-        private PrimitiveLongResourceIterator primitiveLongResourceIterator( PrimitiveLongIterator source )
-        {
-            if ( source instanceof PrimitiveLongResourceIterator )
-            {
-                return (PrimitiveLongResourceIterator) source;
-            }
-            else
-            {
-                return PrimitiveLongCollections.resourceIterator( source, null );
-            }
         }
     }
 }

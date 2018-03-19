@@ -24,13 +24,14 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
  * {@link SuperReadableDiffSets} with added method for filtering added relationships.
  */
-public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T,RelationshipIterator, RelationshipIterator>
+public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T>
 {
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
@@ -106,12 +107,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         }
 
         @Override
-        public PrimitiveIntIterator augment( PrimitiveIntIterator source )
-        {
-            return source;
-        }
-
-        @Override
         public RelationshipIterator augmentWithRemovals( RelationshipIterator source )
         {
             return source;
@@ -127,5 +122,27 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         public void accept( DiffSetsVisitor<T> visitor )
         {
         }
+    }
+
+    RelationshipIterator augment( RelationshipIterator source );
+
+    RelationshipIterator augmentWithRemovals( RelationshipIterator source );
+
+    @Override
+    default PrimitiveLongIterator augment( PrimitiveLongIterator source )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
+    {
+        throw new UnsupportedOperationException();
     }
 }
