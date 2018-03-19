@@ -373,8 +373,19 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        this.value = value;
-        this.epochSeconds = value.toEpochSecond();
+        // truncate the offset to whole minutes, unless we have a named timezone
+        if ( value.getZone() instanceof ZoneOffset )
+        {
+            LocalDateTime time = value.toLocalDateTime();
+            int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
+            ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
+            this.value = ZonedDateTime.of( time, truncatedOffset );
+        }
+        else
+        {
+            this.value = value;
+        }
+        this.epochSeconds = this.value.toEpochSecond();
     }
 
     @Override
