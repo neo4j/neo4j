@@ -919,7 +919,7 @@
         <jdk>9</jdk>
       </activation>
       <properties>
-        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java9.exports>
+        <java9.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java9.exports>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java9.arg>-nobootcp</scala.java9.arg>
       </properties>
