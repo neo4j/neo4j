@@ -137,8 +137,7 @@ public interface GraphDatabaseService
     /**
      * Returns all nodes having the label, and the wanted property values.
      * If an online index is found, it will be used to look up the requested
-     * nodes. The specified properties do not have to be provided in the same order
-     * as they were defined in the index.
+     * nodes.
      * <p>
      * If no indexes exist for the label with all provided properties, the database will
      * scan all labeled nodes looking for matching nodes.
@@ -162,14 +161,13 @@ public interface GraphDatabaseService
      */
     default ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
     {
-        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+        throw new UnsupportedOperationException( "findNodes by multiple property names and values is not supported." );
     }
 
     /**
      * Returns all nodes having the label, and the wanted property values.
      * If an online index is found, it will be used to look up the requested
-     * nodes. The specified properties do not have to be provided in the same order
-     * as they were defined in the index.
+     * nodes.
      * <p>
      * If no indexes exist for the label with all provided properties, the database will
      * scan all labeled nodes looking for matching nodes.
@@ -198,14 +196,13 @@ public interface GraphDatabaseService
                                       String key2, Object value2,
                                       String key3, Object value3 )
     {
-        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+        throw new UnsupportedOperationException( "findNodes by multiple property names and values is not supported." );
     }
 
     /**
      * Returns all nodes having the label, and the wanted property values.
      * If an online index is found, it will be used to look up the requested
-     * nodes. The specified properties do not have to be provided in the same order
-     * as they were defined in the index.
+     * nodes.
      * <p>
      * If no indexes exist for the label with all provided properties, the database will
      * scan all labeled nodes looking for matching nodes.
@@ -226,7 +223,7 @@ public interface GraphDatabaseService
      */
     default ResourceIterator<Node> findNodes( Label label, Map<String, Object> propertyValues )
     {
-        throw new UnsupportedOperationException( "Composite findNodes is not supported by this GraphDatabaseService" );
+        throw new UnsupportedOperationException( "findNodes by multiple property names and values is not supported." );
     }
 
     /**
@@ -258,7 +255,7 @@ public interface GraphDatabaseService
      */
     default ResourceIterator<Node> findNodes( Label label, String key, String template, StringSearchMode searchMode )
     {
-        throw new UnsupportedOperationException( "Specialized string queries are not supported by this GraphDatabaseService" );
+        throw new UnsupportedOperationException( "Specialized string queries are not supported" );
     }
 
     /**

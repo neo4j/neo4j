@@ -85,6 +85,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             break;
 
         case stringPrefix:
+            assert query.length == 1;
             prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) firstPredicate );
             break;
 

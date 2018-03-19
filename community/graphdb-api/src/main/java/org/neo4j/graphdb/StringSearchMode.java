@@ -44,7 +44,7 @@ public enum StringSearchMode
      */
     SUFFIX,
     /**
-     * The value must contain the template. Only exact matches are supported.
+     * The value must contain the template exactly. Regular expressions are not supported.
      */
     CONTAINS;
 }

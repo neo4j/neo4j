@@ -76,6 +76,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
@@ -617,7 +618,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
         TokenRead tokenRead = transaction.tokenRead();
         int labelId = tokenRead.nodeLabel( label.name() );
-        IndexQuery[] queries = new IndexQuery[propertyValues.size()];
+        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
         int i = 0;
         for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
         {
@@ -722,7 +723,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperties( KernelTransaction transaction, int labelId, IndexQuery... queries )
+    private ResourceIterator<Node> nodesByLabelAndProperties(
+            KernelTransaction transaction, int labelId, IndexQuery.ExactPredicate... queries )
     {
         Statement statement = transaction.acquireStatement();
         Read read = transaction.dataRead();
@@ -733,33 +735,54 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             return emptyResourceIterator();
         }
 
-        int[] propertyIds = getSortedPropertyIds( queries );
-        int[] workingCopy = new int[propertyIds.length];
+        int[] propertyIds = getPropertyIds( queries );
+        CapableIndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
 
-        Iterator<CapableIndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
-        while ( indexes.hasNext() )
+        if ( index != CapableIndexReference.NO_INDEX )
         {
-            CapableIndexReference index = indexes.next();
-            int[] original = index.properties();
-            if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+            try
             {
-                // Ha! We found an index - let's use it to find matching nodes
-                try
-                {
-                    NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                    read.nodeIndexSeek( index, cursor, IndexOrder.NONE, getReorderedIndexQueries( original, queries ) );
-
-                    return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
-                }
-                catch ( KernelException e )
-                {
-                    // weird at this point but ignore and fallback to a label scan
-                    break;
-                }
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, getReorderedIndexQueries( index.properties(), queries ) );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
             }
         }
-
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
+    }
+
+    private CapableIndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    {
+        CapableIndexReference index = transaction.schemaRead().index( labelId, propertyIds );
+        if ( index != CapableIndexReference.NO_INDEX )
+        {
+            // index found with property order matching the query
+            return index;
+        }
+        else
+        {
+            // attempt to find matching index with different property order
+            Arrays.sort( propertyIds );
+            assertNoDuplicates( propertyIds, transaction.tokenRead() );
+
+            int[] workingCopy = new int[propertyIds.length];
+
+            Iterator<CapableIndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            while ( indexes.hasNext() )
+            {
+                index = indexes.next();
+                int[] original = index.properties();
+                if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+                {
+                    // Ha! We found an index with the same properties in another order
+                    return index;
+                }
+            }
+            return CapableIndexReference.NO_INDEX;
+        }
     }
 
     private IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
@@ -791,14 +814,13 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return false;
     }
 
-    private int[] getSortedPropertyIds( IndexQuery[] queries )
+    private int[] getPropertyIds( IndexQuery[] queries )
     {
         int[] propertyIds = new int[queries.length];
         for ( int i = 0; i < queries.length; i++ )
         {
             propertyIds[i] = queries[i].propertyKeyId();
         }
-        Arrays.sort( propertyIds );
         return propertyIds;
     }
 
@@ -809,9 +831,25 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             int propertyKeyId = query.propertyKeyId();
             invalidQuery = invalidQuery || propertyKeyId == NO_SUCH_PROPERTY_KEY;
-
         }
         return invalidQuery;
+    }
+
+    private void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
+    {
+        int prev = propertyIds[0];
+        for ( int i = 1; i < propertyIds.length; i++ )
+        {
+            int curr = propertyIds[i];
+            if ( curr == prev )
+            {
+                SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
+                throw new IllegalArgumentException(
+                        format( "Provided two queries for property %s. Only one query per property key can be performed",
+                                tokenLookup.propertyKeyGetName( curr ) ) );
+            }
+            prev = curr;
+        }
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
@@ -1030,13 +1068,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 {
                     for ( IndexQuery query : queries )
                     {
-                        if ( propertyCursor.propertyKey() == query.propertyKeyId() &&
-                             query.acceptsValueAt( propertyCursor ) )
+                        if ( propertyCursor.propertyKey() == query.propertyKeyId() )
                         {
-                            targetCount--;
-                            if ( targetCount == 0 )
+                            if ( query.acceptsValueAt( propertyCursor ) )
                             {
-                                return true;
+                                targetCount--;
+                                if ( targetCount == 0 )
+                                {
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                return false;
                             }
                         }
                     }

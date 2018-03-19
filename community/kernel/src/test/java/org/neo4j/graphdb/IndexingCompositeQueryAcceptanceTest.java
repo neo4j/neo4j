@@ -32,11 +32,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.test.mockito.matcher.Neo4jMatchers;
+import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -84,8 +85,24 @@ public class IndexingCompositeQueryAcceptanceTest
         db = dbRule.getGraphDatabaseAPI();
         if ( withIndex )
         {
-            Neo4jMatchers.createIndex( db, LABEL, keys );
-            Neo4jMatchers.createIndex( db, LABEL, keys[0] );
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( LABEL ).on( keys[0] ).create();
+
+                IndexCreator indexCreator = db.schema().indexFor( LABEL );
+                for ( String key : keys )
+                {
+                    indexCreator = indexCreator.on( key );
+                }
+                indexCreator.create();
+                tx.success();
+            }
+
+            try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 5, TimeUnit.MINUTES );
+                tx.success();
+            }
         }
     }
 

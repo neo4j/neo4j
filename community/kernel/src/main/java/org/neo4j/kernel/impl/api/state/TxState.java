@@ -1018,7 +1018,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor descriptor, IndexQuery query )
     {
-        descriptor.schema().getPropertyId(); // assert single property index
+        assert descriptor.schema().getPropertyIds().length == 0 :
+                "Suffix and contains queries are only supported for single property queries";
 
         if ( indexUpdates == null )
         {
