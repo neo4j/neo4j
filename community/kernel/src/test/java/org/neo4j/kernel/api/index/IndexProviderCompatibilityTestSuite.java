@@ -115,8 +115,9 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" ),
-                            // only runnable it JVM supports East-Saskatchewan
-                            // DateTimeValue.datetime( 2001, 1, 25, 11, 11, 30, 0, "Canada/East-Saskatchewan" ),
+                            DateTimeValue.parse( "2001-01-25T11:11:30[Canada/East-Saskatchewan]", null ),
+                                                // we cannot use regular construction for East-Saskatchewan,
+                                                // as all JVMs do not support it
                             DateTimeValue.datetime( 2038, 1, 18, 9, 14, 7, 0, "-18:00" ),
                             DateTimeValue.datetime( 10000, 100, ZoneOffset.ofTotalSeconds( 3 ) ),
                             DateTimeValue.datetime( 10000, 101, ZoneOffset.ofTotalSeconds( -3 ) ),
