@@ -19,31 +19,18 @@
  */
 package org.neo4j.values.storable;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Test;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -83,125 +70,20 @@ public class TimeZonesTest
         }
     }
 
-    @Test
-    public void updateTimeZoneMappings() throws IOException
-    {
-        List<String> versionsToUpgrade = new ArrayList<>();
-
-        readTZDBFile( null, "NEWS", line ->
-        {
-            if ( line.startsWith( "Release " ) )
-            {
-                String substring = line.substring( line.indexOf( ' ' ) + 1 );
-                String release = substring.substring( 0, substring.indexOf( ' ' ) );
-                if ( TimeZones.LATEST_SUPPORTED_IANA_VERSION.equals( release ) )
-                {
-                    return false; // stop reading
-                }
-                versionsToUpgrade.add( release );
-            }
-            return true; // continue reading
-        } );
-
-        HashSet<String> upgradedAlready = new HashSet<>();
-        StringBuilder builder = new StringBuilder();
-        for ( int i = versionsToUpgrade.size(); i-- > 0; )
-        {
-            upgradeIANATo( versionsToUpgrade.get( i ), upgradedAlready, builder );
-        }
-        String s = builder.toString();
-        assertThat( "Please append the following to the end of `TZIDS`: \n" + s, s, isEmptyString() );
-    }
-
     /**
      * If this test fails, you have changed something in TZIDS. This is fine, as long as you only append lines to the end,
      * or add a mapping to a deleted timezone. You are not allowed to change the order of lines or remove a line.
-     * <p>
+     * p>
      * If your changes were legit, please change the expected byte[] below.
      */
     @Test
-    public void tzidsOrderMustNotChange() throws IOException
+    public void tzidsOrderMustNotChange() throws URISyntaxException, IOException
     {
-        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( TimeZones.class.getResourceAsStream( "/TZIDS" ) ) ) )
-        {
-            String text = reader.lines().collect( Collectors.joining( "\n" ) );
-            MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
-            byte[] hash = digest.digest( text.getBytes( StandardCharsets.UTF_8 ) );
-            assertThat( hash, equalTo(
-                    new byte[]{111, -66, -51, 110, -47, -67, -23, 32, -112, -49, -111, -83, -81, 67, 58, 89, -19, -50, 49, 21, -12, -12, 120, -38, 36, -102, 28,
-                            51, 95, -16, 90, 109} ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Failed to read time zone id file.", e );
-        }
-        catch ( NoSuchAlgorithmException e )
-        {
-            throw new RuntimeException( "SHA-256 unsupported.", e );
-        }
-    }
-
-    private void upgradeIANATo( String release, Set<String> upgradedAlready, StringBuilder builder ) throws IOException
-    {
-        Set<String> ianaSupportedTzs = new HashSet<>();
-
-        readTZDBFile( release, "zone1970.tab", line ->
-        {
-            if ( !line.startsWith( "#" ) )
-            {
-                ianaSupportedTzs.add( line.split( "\\t" )[2] );
-            }
-            return true; // read all lines
-        } );
-
-        // TODO assertion for removals
-        Set<String> neo4jSupportedTzs = TimeZones.supportedTimeZones();
-        Set<String> removedTzs = new HashSet<>( neo4jSupportedTzs );
-        removedTzs.removeAll( ianaSupportedTzs );
-        //assertThat( "There were removals from the IANA database. Please upgrade manually.", removedTzs, empty() );
-
-        Set<String> addedTzs = new HashSet<>( ianaSupportedTzs );
-        addedTzs.removeAll( neo4jSupportedTzs );
-        addedTzs.removeAll( upgradedAlready );
-        if ( !addedTzs.isEmpty() )
-        {
-            String[] added = addedTzs.toArray( new String[0] );
-            Arrays.sort( added );
-            builder.append( "# tzdata" );
-            builder.append( release );
-            builder.append( System.lineSeparator() );
-            for ( String unsupported : added )
-            {
-                builder.append( unsupported ).append( System.lineSeparator() );
-            }
-            // Update for the next round
-            Collections.addAll( upgradedAlready, added );
-        }
-    }
-
-    private void readTZDBFile( String release, String file, Predicate<String> consumer ) throws IOException
-    {
-        String uri = release == null ? "https://data.iana.org/time-zones/tzdata-latest.tar.gz"
-                                     : "https://data.iana.org/time-zones/releases/tzdata" + release + ".tar.gz";
-        try ( TarArchiveInputStream tar = new TarArchiveInputStream( new GZIPInputStream( new URL( uri ).openStream() ) ) )
-        {
-            for ( ArchiveEntry entry; (entry = tar.getNextEntry()) != null; )
-            {
-                if ( file.equalsIgnoreCase( entry.getName() ) )
-                {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( tar ) ) )
-                    {
-                        for ( String line; (line = reader.readLine()) != null; )
-                        {
-                            if ( !consumer.test( line ) )
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-        }
+        Path path = Paths.get( TimeZones.class.getResource( "/TZIDS" ).toURI() );
+        byte[] timeZonesInfo = Files.readAllBytes( path );
+        byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
+        assertThat( timeZonesHash, equalTo(
+                new byte[]{-2, 114, 100, -95, -108, -101, 81, -40, -13, 78, 40, -12, -128, -125, 93, -100, 19, 122, -98, -80, -30, 109, 39, 7, 83, 54, -53, 30,
+                        -6, 26, 8, -103} ) );
     }
 }
