@@ -48,4 +48,20 @@ class HintAcceptanceTest
     result should use("NodeOuterHashJoin")
     result shouldNot use("NodeHashJoin")
   }
+
+  test("solve join hint after ") {
+    val query =
+      """MATCH path=allShortestPaths((p1:Person {id: 17592186045594})-[:KNOWS*]-(p2:Person {id: 2199023256530}))
+        |UNWIND relationships(path) AS k
+        |WITH path, startNode(k) AS pA, endNode(k) AS pB
+        |
+        |OPTIONAL MATCH
+        |  (pA)<-[:HAS_CREATOR]-(c:Comment)-[:REPLY_OF]->(post:Post)-[:HAS_CREATOR]->(pB),
+        |  (post)<-[:CONTAINER_OF]-(forum:Forum)
+        |USING JOIN ON pB
+        |WHERE forum.creationDate >= 20110201000000000 AND forum.creationDate <= 20110301000000000
+        |RETURN *""".stripMargin
+    val result = execute(query)
+    result should use("NodeHashJoin")
+  }
 }
