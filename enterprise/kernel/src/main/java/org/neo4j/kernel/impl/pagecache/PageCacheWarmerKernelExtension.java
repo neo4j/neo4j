@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -68,7 +67,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( ENABLED )
         {
@@ -108,7 +107,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
                            " to load " + pagesLoaded + " pages." );
             } );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             log.debug( "Active page cache warmup failed, " +
                        "so it may take longer for the cache to be populated with hot data.", e );
@@ -143,7 +142,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
                            ", and found " + pagesInMemory + " pages in memory." );
             });
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             log.debug( "Page cache profiling failed, so no new profile of what data is hot or not was produced. " +
                        "This may reduce the effectiveness of a future page cache warmup process.", e );
