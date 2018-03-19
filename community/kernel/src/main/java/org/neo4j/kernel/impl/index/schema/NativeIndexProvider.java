@@ -94,7 +94,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     {
         try
         {
-            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
+            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ) );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + indexId + " isn't failed" );
@@ -112,7 +112,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     {
         try
         {
-            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
+            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ) );
         }
         catch ( IOException e )
         {

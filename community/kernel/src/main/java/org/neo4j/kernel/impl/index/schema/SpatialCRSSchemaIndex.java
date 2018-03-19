@@ -44,8 +44,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateApply;
@@ -327,12 +327,12 @@ public class SpatialCRSSchemaIndex
 
     public String readPopulationFailure() throws IOException
     {
-        return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile, layout );
+        return NativeSchemaIndexes.readFailureMessage( pageCache, indexFile );
     }
 
     public InternalIndexState readState() throws IOException
     {
-        return NativeSchemaIndexes.readState( pageCache, indexFile, layout );
+        return NativeSchemaIndexes.readState( pageCache, indexFile );
     }
 
     private synchronized void create() throws IOException

@@ -580,18 +580,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
-     * @param layout {@link Layout} only used to verify compatibility with stored identifier and version. Can be 'dummy' implementation.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
      * @throws IOException On page cache error
-     * @throws MetadataMismatchException if metadata does match given parameters
+     * @throws MetadataMismatchException if some meta page is missing (tree not fully initialized)
      */
-    public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader )
+    public static void readHeader( PageCache pageCache, File indexFile, Header.Reader headerReader )
             throws IOException, MetadataMismatchException
     {
         try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile ) )
         {
-            readMeta( layout, pagedFile ).verify( layout );
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
@@ -605,7 +603,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // Decorate outgoing exceptions with basic tree information. This is similar to how the constructor
             // appends its information, but the constructor has read more information at that point so this one
             // is a bit more sparse on information.
-            withMessage( t, t.getMessage() + " | " + format( "GBPTree[file:%s, layout:%s]", indexFile, layout ) );
+            withMessage( t, t.getMessage() + " | " + format( "GBPTree[file:%s]", indexFile ) );
             throw t;
         }
     }
@@ -696,22 +694,23 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @param pagedFile {@link PagedFile} to read the state pages from.
      * @return both read state pages.
-     * @throws IOException if state pages are missing (file is smaller than that) or if they are both empty.
+     * @throws MetadataMismatchException if state pages are missing (file is smaller than that) or if they are both empty.
+     * @throws IOException on {@link PageCursor} error.
      */
-    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile ) throws IOException
+    private static Pair<TreeState,TreeState> loadStatePages( PagedFile pagedFile ) throws MetadataMismatchException, IOException
     {
         try
         {
             Pair<TreeState,TreeState> states = readStatePages( pagedFile );
             if ( states.getLeft().isEmpty() && states.getRight().isEmpty() )
             {
-                throw new IOException( "Index is not fully initialized since its state pages are empty" );
+                throw new MetadataMismatchException( "Index is not fully initialized since its state pages are empty" );
             }
             return states;
         }
         catch ( IllegalStateException e )
         {
-            throw new IOException( "Index is not fully initialized since it's missing state pages", e );
+            throw new MetadataMismatchException( "Index is not fully initialized since it's missing state pages", e );
         }
     }
 

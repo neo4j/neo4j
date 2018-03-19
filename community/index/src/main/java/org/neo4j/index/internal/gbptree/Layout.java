@@ -19,10 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import java.io.File;
 import java.util.Comparator;
 
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -187,10 +185,6 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * <p>
      * When opening a {@link GBPTree tree} to 'use' it, read and write to it, providing a layout with the right compatibility is
      * important because it decides how to read and write entries in the tree.
-     * A layout also needs to be provided when only {@link GBPTree#readHeader(PageCache, File, Layout, Header.Reader)} reading header}
-     * of tree. In this case there is no intention of reading or writing entries in the tree. If multiple layout implementations share
-     * the same header layout (but have different structure for entries) then a layout that is compatible with either of those layouts
-     * can be provided for the read header operation.
      *
      * @param layoutIdentifier the stored layout identifier we want to check compatibility against.
      * @param majorVersion the stored major version we want to check compatibility against.

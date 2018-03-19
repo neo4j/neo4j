@@ -84,7 +84,7 @@ public class TemporalIndexProvider extends IndexProvider
         {
             for ( TemporalIndexFiles.FileLayout subIndex : temporalIndexFiles.existing() )
             {
-                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile, subIndex.layout );
+                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -108,7 +108,7 @@ public class TemporalIndexProvider extends IndexProvider
         {
             try
             {
-                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile, subIndex.layout ) )
+                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;
