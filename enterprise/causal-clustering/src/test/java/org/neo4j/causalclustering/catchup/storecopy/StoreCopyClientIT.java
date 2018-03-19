@@ -71,6 +71,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class StoreCopyClientIT
 {
@@ -178,7 +180,7 @@ public class StoreCopyClientIT
     public void reconnectingWorks() throws StoreCopyFailedException
     {
         // given local client has a store
-        InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider(
+        InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
 
                 // and file B is broken once (after retry it works)
                 fileB.setRemainingNoResponse( 1 );
@@ -220,12 +222,12 @@ public class StoreCopyClientIT
                         File file = new File( fileName );
                         String thisConent = contents.next();
                         writeContents( fsa, file, thisConent );
-                        PageCache pageCache = StandalonePageCacheFactory.createPageCache( fsa );
+                        PageCache pageCache = neverSupportingFileOperationPageCache( StandalonePageCacheFactory.createPageCache( fsa ) );
                         PagedFile pagedFile =
                                 pageCache.map( new File( pageCacheFileName ), pageCache.pageSize(), StandardOpenOption.CREATE, StandardOpenOption.WRITE );
                         try ( WritableByteChannel writableByteChannel = pagedFile.openWritableByteChannel() )
                         {
-                            writableByteChannel.write( ByteBuffer.wrap( thisConent.getBytes() ) );
+                            writableByteChannel.write( ByteBuffer.wrap( thisConent.getBytes( Charsets.UTF_8 ) ) );
                         }
 
                         sendFile( ctx, file, pageCache );
@@ -281,11 +283,12 @@ public class StoreCopyClientIT
         {
             // when
             ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
-            halfWayFailingServer = new CatchupServerBuilder( protocol -> serverHandler ).listenAddress( listenAddress ).build();
+            halfWayFailingServer = new CatchupServerBuilder( protocol -> halfWayFailingServerhandler ).listenAddress( listenAddress ).build();
             halfWayFailingServer.start();
 
-            CatchupAddressProvider addressProvider = CatchupAddressProvider.fromSingleAddress( ListenSocketAddress
-                    listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
+            CatchupAddressProvider addressProvider =
+                    CatchupAddressProvider.fromSingleAddress( new AdvertisedSocketAddress( listenAddress.getHostname(), listenAddress.getPort() ) );
+
             StoreId storeId = halfWayFailingServerhandler.getStoreId();
             File storeDir = testDirectory.makeGraphDbDir();
             PageCache pageCache = StandalonePageCacheFactory.createPageCache( fsa );
@@ -311,6 +314,13 @@ public class StoreCopyClientIT
             halfWayFailingServer.stop();
             halfWayFailingServer.shutdown();
         }
+    }
+
+    private PageCache neverSupportingFileOperationPageCache( PageCache pageCache )
+    {
+        PageCache spy = spy( pageCache );
+        when( spy.fileSystemSupportsFileOperations() ).thenReturn( false );
+        return spy;
     }
 
     private static AdvertisedSocketAddress from( int port )
