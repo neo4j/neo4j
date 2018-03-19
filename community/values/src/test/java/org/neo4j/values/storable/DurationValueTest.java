@@ -367,9 +367,7 @@ public class DurationValueTest
     {
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 0, 693, 0, 0 ), between(DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 0, 693, 0, 0 ), between(WEEKS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 22, 0, 0, 0 ), between(MONTHS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
-        assertEquals( duration( 12, 0, 0, 0 ), between(YEARS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
     }
 
     @Test
@@ -377,10 +375,6 @@ public class DurationValueTest
     {
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        assertEquals( duration( 0, 0, 7200, 0 ), between(
-                HOURS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
-        assertEquals( duration( 0, 0, 10620, 0 ), between(
-                MINUTES, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
         assertEquals( duration( 0, 0, 10623, 0 ), between(
                 SECONDS, localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
     }
@@ -390,10 +384,6 @@ public class DurationValueTest
     {
         assertEquals( duration( 0, 0, 140223, 0 ), durationBetween(
                 time( 11, 30, 52, 0, ofHours( 18 ) ), time( 14, 27, 55, 0, ofHours( -18 ) ) ) );
-        assertEquals( duration( 0, 0, 0, 0 ), between(
-                HOURS, time( 11, 30, 52, 0, ofHours( -1 ) ), time( 14, 27, 55, 0, ofHours( 1 ) ) ) );
-        assertEquals( duration( 0, 0, 3420, 0 ), between(
-                MINUTES, time( 11, 30, 52, 0, ofHours( 2 ) ), time( 14, 27, 55, 0, ofHours( 4 ) ) ) );
         assertEquals( duration( 0, 0, 10623, 0 ), between(
                 SECONDS, time( 11, 30, 52, 0, UTC ), time( 14, 27, 55, 0, UTC ) ) );
 

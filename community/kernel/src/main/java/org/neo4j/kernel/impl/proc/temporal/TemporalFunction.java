@@ -316,6 +316,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
                 return ChronoUnit.DECADES;
             case "year":
                 return ChronoUnit.YEARS;
+            case "weekYear":
+                return IsoFields.WEEK_BASED_YEARS;
             case "quarter":
                 return IsoFields.QUARTER_YEARS;
             case "month":

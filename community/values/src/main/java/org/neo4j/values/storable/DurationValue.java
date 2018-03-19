@@ -128,27 +128,15 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             switch ( (ChronoUnit) unit )
             {
-            case YEARS:
-                return newDuration( from.until( to, unit ) * 12, 0, 0, 0 );
             case MONTHS:
                 return newDuration( from.until( to, unit ), 0, 0, 0 );
-            case WEEKS:
-                return newDuration( 0, from.until( to, unit ) * 7, 0, 0 );
             case DAYS:
                 return newDuration( 0, from.until( to, unit ), 0, 0 );
-            case HOURS:
-                return newDuration( 0, 0, from.until( to, unit ) * 3600, 0 );
-            case MINUTES:
-                return newDuration( 0, 0, from.until( to, unit ) * 60, 0 );
             case SECONDS:
                 return durationInSecondsAndNanos( from, to );
             default:
                 throw new IllegalArgumentException( "Unsupported unit: " + unit );
             }
-        }
-        else if ( unit == IsoFields.QUARTER_YEARS )
-        {
-            return newDuration( from.until( to, unit ) * 3, 0, 0, 0 );
         }
         else
         {
