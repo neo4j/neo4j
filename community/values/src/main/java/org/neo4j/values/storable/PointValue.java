@@ -488,7 +488,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 checkUnassigned( crs, lowercaseKey );
                 crs = quotesPattern.matcher( value ).replaceAll( "" );
                 break;
-            default: // ignore
+            default:
+                throwOnUnrecognizedKey( key );
             }
         }
 
@@ -521,7 +522,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 checkUnassigned( height, lowercaseKey );
                 height = value;
                 break;
-            default: // ignore
+            default:
+                throwOnUnrecognizedKey( key );
             }
         }
 
@@ -544,7 +546,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
                 }
                 srid = (int) value;
                 break;
-            default: // ignore
+            default:
+                throwOnUnrecognizedKey( key );
             }
         }
 
@@ -566,8 +569,14 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             case "srid":
                 assignIntegral( key, Integer.parseInt( value ) );
                 break;
-            default: // ignore
+            default:
+                throwOnUnrecognizedKey( key );
             }
+        }
+
+        private void throwOnUnrecognizedKey( String key )
+        {
+            throw new IllegalArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
         }
 
         void mergeWithHeader( PointCSVHeaderInformation header )
