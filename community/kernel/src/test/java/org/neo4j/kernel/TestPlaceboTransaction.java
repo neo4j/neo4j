@@ -38,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -94,7 +95,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( kernelTransaction, times( 0 ) ).failure();
+        verify( kernelTransaction, never() ).failure();
     }
 
     @Test
@@ -107,7 +108,7 @@ public class TestPlaceboTransaction
 
         // Then
         verify( kernelTransaction ).failure();
-        verify( kernelTransaction, times( 0 ) ).success();
+        verify( kernelTransaction, never() ).success();
     }
 
     @Test

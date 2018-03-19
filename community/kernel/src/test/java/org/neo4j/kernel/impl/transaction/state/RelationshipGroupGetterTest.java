@@ -48,8 +48,8 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 
 public class RelationshipGroupGetterTest
 {
@@ -94,7 +94,7 @@ public class RelationshipGroupGetterTest
             verification.verify( store ).getRecord( eq( group2.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group4.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
             verification.verify( store ).getRecord( eq( group10.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
-            verification.verify( store, times( 0 ) )
+            verification.verify( store, never() )
                     .getRecord( eq( group23.getId() ), any( RelationshipGroupRecord.class ), any( RecordLoad.class ) );
 
             // it should also be reported as not found

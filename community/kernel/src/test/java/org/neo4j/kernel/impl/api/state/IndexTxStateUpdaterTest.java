@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -137,7 +138,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onLabelChange( state, unIndexedLabelId, node, REMOVED_LABEL );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test
@@ -174,7 +175,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyChange( state, node, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test

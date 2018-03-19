@@ -85,6 +85,7 @@ import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -324,7 +325,7 @@ public class IndexPopulationJobTest
 
         // THEN
         verify( populator, times( 1 ) ).close( false );
-        verify( index, times( 0 ) ).flip( any(), any() );
+        verify( index, never() ).flip( any(), any() );
     }
 
     @Test

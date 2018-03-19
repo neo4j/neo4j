@@ -207,7 +207,7 @@ public class CatchupPollingProcessTest
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        verify( timer, times( 0 ) ).reset();
+        verify( timer, never() ).reset();
     }
 
     @Test

@@ -45,8 +45,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -70,6 +70,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -113,7 +114,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) )
                 .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
+        verify( mockedIndexProvider, never() ).getOnlineAccessor(
                 anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
@@ -151,7 +152,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) )
                 .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
+        verify( mockedIndexProvider, never() ).getOnlineAccessor(
                 anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();

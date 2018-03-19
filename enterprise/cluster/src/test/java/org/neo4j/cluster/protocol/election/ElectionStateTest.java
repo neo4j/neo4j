@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -135,7 +136,7 @@ public class ElectionStateTest
           // Make sure that we asked ourselves to vote for that role and that no timer was set
         verify( holder, times(1) ).offer( ArgumentMatchers.argThat( new MessageArgumentMatcher<ElectionMessage>()
                 .onMessageType( ElectionMessage.vote ).withPayload( voteRequest ) ) );
-        verify( context, times( 0 ) ).setTimeout( ArgumentMatchers.any(), ArgumentMatchers.any() );
+        verify( context, never() ).setTimeout( ArgumentMatchers.any(), ArgumentMatchers.any() );
     }
 
     @Test

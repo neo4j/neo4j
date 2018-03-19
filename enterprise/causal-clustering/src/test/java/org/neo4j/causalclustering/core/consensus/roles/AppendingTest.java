@@ -38,6 +38,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -178,7 +179,7 @@ public class AppendingTest
 
         // then
         // there should be no truncate commands. Actually, the whole thing should be a no op
-        verify( outcome, times( 0 ) ).addLogCommand( any() );
+        verify( outcome, never() ).addLogCommand( any() );
     }
 
     private static class LogCommandMatcher extends TypeSafeMatcher<RaftLogCommand>

@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,7 +82,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         catch ( IllegalArgumentException e )
         {
             //Then
-            verify( jsonGenerator, times( 0 ) ).writeEndObject();
+            verify( jsonGenerator, never() ).writeEndObject();
             exceptionThrown = true;
         }
 
