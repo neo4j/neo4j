@@ -454,11 +454,11 @@ public class DateTimeValueTest
         assertEqual( datetime( 10000, 100, UTC ), datetime( 10000, 100, UTC ) );
     }
 
-    @Ignore // only runnable it JVM supports East-Saskatchewan
+    @Test
     public void shouldEqualRenamedTimeZone()
     {
-        assertEqual( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
-                     datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
+        assertEqual( DateTimeValue.parse( Values.stringValue( "2018-02-11T11:23:34[Canada/Saskatchewan]" ), null ),
+                     DateTimeValue.parse( Values.stringValue( "2018-02-11T11:23:34[Canada/East-Saskatchewan]" ), null ) );
     }
 
     @Test

@@ -29,10 +29,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
@@ -265,11 +267,14 @@ public class ValueComparisonTest
         }
     }
 
-    @Ignore // only runnable it JVM supports East-Saskatchewan
+    @Test
     public void shouldCompareRenamedTimeZonesByZoneNumber()
     {
-        int cmp = Values.COMPARATOR.compare( datetime( 10000, 100, ZoneId.of( "Canada/Saskatchewan" ) ),
-                                             datetime( 10000, 100, ZoneId.of( "Canada/East-Saskatchewan" ) ) );
+        Supplier<ZoneId> utc = () -> ZoneOffset.UTC;
+        TextValue old = Values.stringValue( "2018-02-11T11:23:34[Canada/East-Saskatchewan]" );
+        TextValue renamed = Values.stringValue( "2018-02-11T11:23:34[Canada/Saskatchewan]" );
+        int cmp = Values.COMPARATOR.compare( DateTimeValue.parse( renamed, utc ),
+                                             DateTimeValue.parse( old, utc ) );
         assertEquals( "East-Saskatchewan and Saskatchewan are the same place", 0, cmp );
     }
 
