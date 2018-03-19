@@ -132,6 +132,7 @@ public class LogFilesBuilderTest
         logFiles.start();
 
         assertEquals( new File( storeDirectory, customLogLocation ), logFiles.getHighestLogFile().getParentFile() );
+        logFiles.shutdown();
     }
 
     @Test
@@ -146,6 +147,7 @@ public class LogFilesBuilderTest
         logFiles.start();
 
         assertEquals( customLogDirectory, logFiles.getHighestLogFile().getParentFile() );
+        logFiles.shutdown();
     }
 
     @Test( expected = NullPointerException.class )

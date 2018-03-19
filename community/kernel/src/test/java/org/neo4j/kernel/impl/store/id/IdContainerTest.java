@@ -156,6 +156,7 @@ public class IdContainerTest
         // Then
         // Init should return false
         assertFalse( idContainer.init() );
+        idContainer.close( 100 );
     }
 
     @Test
@@ -174,6 +175,7 @@ public class IdContainerTest
         // Then
         // init() should return true
         assertTrue( idContainer.init() );
+        idContainer.close( 100 );
     }
 
     @Test
@@ -188,6 +190,7 @@ public class IdContainerTest
         idContainer.init();
         assertEquals( 100, idContainer.getInitialHighId() );
         fileSystem.close();
+        idContainer.close( 100 );
     }
 
     private void createEmptyFile()

@@ -70,26 +70,27 @@ public class FreeIdsAfterRecoveryTest
 
         // populating its .id file with a bunch of ids
         File nodeIdFile = new File( directory.directory(), StoreFile.NODE_STORE.fileName( StoreFileType.ID ) );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false,
-                IdType.NODE, () -> highId );
-        for ( long id = 0; id < 15; id++ )
+        try ( IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, IdType.NODE, () -> highId ) )
         {
-            idGenerator.freeId( id );
-        }
+            for ( long id = 0; id < 15; id++ )
+            {
+                idGenerator.freeId( id );
+            }
 
-        // WHEN
-        try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
-        {
-            NodeStore nodeStore = stores.getNodeStore();
-            assertFalse( nodeStore.getStoreOk() );
+            // WHEN
+            try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
+            {
+                NodeStore nodeStore = stores.getNodeStore();
+                assertFalse( nodeStore.getStoreOk() );
 
-            // simulating what recovery does
-            nodeStore.deleteIdGenerator();
-            // recovery happens here...
-            nodeStore.makeStoreOk();
+                // simulating what recovery does
+                nodeStore.deleteIdGenerator();
+                // recovery happens here...
+                nodeStore.makeStoreOk();
 
-            // THEN
-            assertEquals( highId, nodeStore.nextId() );
+                // THEN
+                assertEquals( highId, nodeStore.nextId() );
+            }
         }
     }
 

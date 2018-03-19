@@ -79,30 +79,32 @@ public class ReplicatedIdRangeAcquirerTest
         int idRangeLength = 8;
 
         FileSystemAbstraction fs = defaultFileSystemRule.get();
-        ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength(
-                memberA, initialHighId, idRangeLength, fs, testDirectory.file( "gen1" ) );
-        ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength(
-                memberB, initialHighId, idRangeLength, fs, testDirectory.file( "gen2" ) );
-
-        // First iteration is bootstrapping the set, so we do it outside the loop to avoid an if check in there
-        long newId = generatorOne.nextId();
-        idAllocations.add( newId );
-
-        for ( int i = 1; i < idRangeLength - initialHighId; i++ )
+        File generatorFile1 = testDirectory.file( "gen1" );
+        File generatorFile2 = testDirectory.file( "gen2" );
+        try ( ReplicatedIdGenerator generatorOne = createForMemberWithInitialIdAndRangeLength( memberA, initialHighId, idRangeLength, fs, generatorFile1 );
+              ReplicatedIdGenerator generatorTwo = createForMemberWithInitialIdAndRangeLength( memberB, initialHighId, idRangeLength, fs, generatorFile2 ); )
         {
-            newId = generatorOne.nextId();
-            boolean wasNew = idAllocations.add( newId );
-            assertTrue( "Id " + newId + " has already been returned", wasNew );
-            assertTrue( "Detected gap in id generation, missing " + (newId - 1), idAllocations.contains( newId - 1 ) );
+            // First iteration is bootstrapping the set, so we do it outside the loop to avoid an if check in there
+            long newId = generatorOne.nextId();
+            idAllocations.add( newId );
+
+            for ( int i = 1; i < idRangeLength - initialHighId; i++ )
+            {
+                newId = generatorOne.nextId();
+                boolean wasNew = idAllocations.add( newId );
+                assertTrue( "Id " + newId + " has already been returned", wasNew );
+                assertTrue( "Detected gap in id generation, missing " + (newId - 1), idAllocations.contains( newId - 1 ) );
+            }
+
+            for ( int i = 0; i < idRangeLength; i++ )
+            {
+                newId = generatorTwo.nextId();
+                boolean wasNew = idAllocations.add( newId );
+                assertTrue( "Id " + newId + " has already been returned", wasNew );
+                assertTrue( "Detected gap in id generation, missing " + (newId - 1), idAllocations.contains( newId - 1 ) );
+            }
         }
 
-        for ( int i = 0; i < idRangeLength; i++ )
-        {
-            newId = generatorTwo.nextId();
-            boolean wasNew = idAllocations.add( newId );
-            assertTrue( "Id " + newId + " has already been returned", wasNew );
-            assertTrue( "Detected gap in id generation, missing " + (newId - 1), idAllocations.contains( newId - 1 ) );
-        }
     }
 
     private ReplicatedIdGenerator createForMemberWithInitialIdAndRangeLength( MemberId member, long initialHighId,
