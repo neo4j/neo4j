@@ -302,8 +302,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
-    val predicates = indexReference.properties.zip(queries).map(p => IndexQuery.exact(p._1, p._2.value()))
-    val nodeId = reads().nodeUniqueIndexSeek(index, predicates:_*)
+    val nodeId = reads().nodeUniqueIndexSeek(index, queries:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 

@@ -265,12 +265,14 @@ public class AllStoreHolder extends Read
     @Override
     ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         return explicitIndexes.get().nodeChanges( indexName );
     }
 
     @Override
     ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         return explicitIndexes.get().relationshipChanges( indexName );
     }
 
@@ -284,6 +286,7 @@ public class AllStoreHolder extends Read
     @Override
     public String[] relationshipExplicitIndexesGetAll()
     {
+        ktx.assertOpen();
         return explicitIndexStore.getAllRelationshipIndexNames();
     }
 

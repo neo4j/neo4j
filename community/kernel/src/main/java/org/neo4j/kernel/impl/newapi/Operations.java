@@ -203,8 +203,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                 relId ->
                 {
                     ktx.assertOpen();
-                    relationshipDelete( relId );
-                    count.increment();
+                    if ( relationshipDelete( relId ) )
+                    {
+                        count.increment();
+                    }
                 } );
 
         locking.lockAllNodesAndConsumeRelationships( nodeId, ktx );

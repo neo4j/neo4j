@@ -844,7 +844,6 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     pathFinder.findAllPaths(left, right).iterator().asScala
-    pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
   def nodeCountByCountStore(labelId: Int): Long = {

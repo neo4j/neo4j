@@ -407,7 +407,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
     }
   }
 
-  override def nodeIsDense(node: Long): Boolean ={
+  override def nodeIsDense(node: Long): Boolean = {
     val cursor = nodeCursor
     reads().singleNode(node, cursor)
     if (!cursor.next()) false

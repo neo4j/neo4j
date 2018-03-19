@@ -49,13 +49,13 @@ public class KernelToken implements Token
     public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         ktx.assertOpen();
-        int labelId = store.labelGetForName( labelName );
+        int labelId = store.labelGetForName( checkValidTokenName( labelName ) );
         if ( labelId != TokenHolder.NO_ID )
         {
             return labelId;
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
-        return store.labelGetOrCreateForName( checkValidTokenName( labelName ) );
+        return store.labelGetOrCreateForName( labelName );
     }
 
     @Override
@@ -83,26 +83,26 @@ public class KernelToken implements Token
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
-        int propertyId = store.propertyKeyGetForName( propertyKeyName );
+        int propertyId = store.propertyKeyGetForName( checkValidTokenName( propertyKeyName ) );
         if ( propertyId != TokenHolder.NO_ID )
         {
             return propertyId;
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
-        return store.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
+        return store.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
-        int typeId = store.relationshipTypeGetForName( relationshipTypeName );
+        int typeId = store.relationshipTypeGetForName( checkValidTokenName( relationshipTypeName ) );
         if ( typeId != TokenHolder.NO_ID )
         {
             return typeId;
         }
         ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
-        return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
+        return store.relationshipTypeGetOrCreateForName( relationshipTypeName );
     }
 
     @Override
