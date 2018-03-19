@@ -53,7 +53,7 @@ case class OptionalSlottedPipe(source: Pipe,
     }
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
-    val context = SlottedExecutionContext(slots)
+    val context = executionContextFactory.newExecutionContext()
     state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
     setNullableSlotsToNull(context)
     context

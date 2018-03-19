@@ -62,29 +62,32 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
         val fromNode = getFromNodeFunction(inputRow)
         val toNode = getToNodeFunction(inputRow)
 
-        if (entityIsNull(fromNode) || entityIsNull(toNode)) {
-          Iterator(withNulls(inputRow))
-        } else {
-          val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
-            .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
-
-          val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
-            val outputRow = SlottedExecutionContext(slots)
-            inputRow.copyTo(outputRow)
-            outputRow.setLongAt(relOffset, relId)
-            outputRow
-          }).filter(ctx => predicate.isTrue(ctx, state))
-
-          if (matchIterator.isEmpty)
+        val output =
+          if (entityIsNull(fromNode) || entityIsNull(toNode)) {
             Iterator(withNulls(inputRow))
-          else
-            matchIterator
-        }
+          } else {
+            val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
+              .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+
+            val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
+              val outputRow = executionContextFactory.newExecutionContext()
+              inputRow.copyTo(outputRow)
+              outputRow.setLongAt(relOffset, relId)
+              outputRow
+            }).filter(ctx => predicate.isTrue(ctx, state))
+
+            if (matchIterator.isEmpty)
+              Iterator(withNulls(inputRow))
+            else
+              matchIterator
+          }
+        inputRow.release()
+        output
     }
   }
 
   private def withNulls(inputRow: ExecutionContext) = {
-    val outputRow = SlottedExecutionContext(slots)
+    val outputRow = executionContextFactory.newExecutionContext()
     inputRow.copyTo(outputRow)
     outputRow.setLongAt(relOffset, -1)
     outputRow

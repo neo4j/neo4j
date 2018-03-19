@@ -126,35 +126,38 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
     input.flatMap {
       inputRow =>
         val fromNode = getFromNodeFunction(inputRow)
-        if (entityIsNull(fromNode)) {
-          val resultRow = SlottedExecutionContext(slots)
-          resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
-          resultRow.setRefAt(relOffset, Values.NO_VALUE)
-          if (shouldExpandAll)
-            resultRow.setLongAt(toOffset, -1L)
-          Iterator(resultRow)
-        }
-        else {
-          // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
-          // the start node is valid
-          inputRow.setLongAt(tempNodeOffset, fromNode)
-          if (nodePredicate.isTrue(inputRow, state)) {
-
-            val paths: Iterator[(LNode, Seq[RelationshipValue])] = varLengthExpand(fromNode, state, inputRow)
-            paths collect {
-              case (toNode: LNode, rels: Seq[RelationshipValue])
-                if rels.length >= min && isToNodeValid(inputRow, toNode) =>
-                val resultRow = SlottedExecutionContext(slots)
-                resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
-                if (shouldExpandAll)
-                  resultRow.setLongAt(toOffset, toNode)
-                resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray: _*))
-                resultRow
-            }
+        val output =
+          if (entityIsNull(fromNode)) {
+            val resultRow = executionContextFactory.newExecutionContext()
+            resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+            resultRow.setRefAt(relOffset, Values.NO_VALUE)
+            if (shouldExpandAll)
+              resultRow.setLongAt(toOffset, -1L)
+            Iterator(resultRow)
           }
-          else
-            Iterator.empty
-        }
+          else {
+            // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
+            // the start node is valid
+            inputRow.setLongAt(tempNodeOffset, fromNode)
+            if (nodePredicate.isTrue(inputRow, state)) {
+
+              val paths: Iterator[(LNode, Seq[RelationshipValue])] = varLengthExpand(fromNode, state, inputRow)
+              paths collect {
+                case (toNode: LNode, rels: Seq[RelationshipValue])
+                  if rels.length >= min && isToNodeValid(inputRow, toNode) =>
+                  val resultRow = executionContextFactory.newExecutionContext()
+                  resultRow.copyFrom(inputRow, argumentSize.nLongs, argumentSize.nReferences)
+                  if (shouldExpandAll)
+                    resultRow.setLongAt(toOffset, toNode)
+                  resultRow.setRefAt(relOffset, VirtualValues.list(rels.toArray: _*))
+                  resultRow
+              }
+            }
+            else
+              Iterator.empty
+          }
+        inputRow.release()
+        output
     }
   }
 

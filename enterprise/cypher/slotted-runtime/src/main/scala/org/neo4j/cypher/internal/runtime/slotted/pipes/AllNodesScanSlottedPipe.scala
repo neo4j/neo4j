@@ -34,7 +34,7 @@ case class AllNodesScanSlottedPipe(ident: String, slots: SlotConfiguration, argu
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
-      val context = SlottedExecutionContext(slots)
+      val context = executionContextFactory.newExecutionContext()
       state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
       context.setLongAt(offset, nodeId)
       context

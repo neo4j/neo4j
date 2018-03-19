@@ -554,7 +554,7 @@ object SlottedPipeBuilder {
       throw new InternalException(s"Do not know how to project $slot")
   }
 
-  type RowMapping = (ExecutionContext, QueryState) => ExecutionContext
+  type RowMapping = (ExecutionContext, QueryState, ExecutionContextFactory) => ExecutionContext
 
   //compute mapping from incoming to outgoing pipe line, the slot order may differ
   //between the output and the input (lhs and rhs) and it may be the case that
@@ -577,7 +577,7 @@ object SlottedPipeBuilder {
 
     //If we overlap we can just pass the result right through
     if (overlaps) {
-      (incoming: ExecutionContext, _: QueryState) =>
+      (incoming: ExecutionContext, _: QueryState, _: ExecutionContextFactory) =>
         incoming
     }
     else {
@@ -601,9 +601,10 @@ object SlottedPipeBuilder {
           }
       }
       //Create a new context and apply all transformations
-      (incoming: ExecutionContext, state: QueryState) =>
-        val outgoing = SlottedExecutionContext(out)
+      (incoming: ExecutionContext, state: QueryState, factory: ExecutionContextFactory) =>
+        val outgoing = factory.newExecutionContext()
         mapSlots.foreach(f => f(incoming, outgoing, state))
+        incoming.release()
         outgoing
     }
 

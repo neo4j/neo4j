@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ClosingQueryResultRecordIterator, ResultIterator}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{BaseExecutionResultBuilderFactory, ExecutionResultBuilder, PipeInfo}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
@@ -39,6 +41,12 @@ class SlottedExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     override protected def createQueryState(params: MapValue) = {
       new SlottedQueryState(queryContext, externalResource, params, pipeDecorator,
         triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+    }
+
+    override def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
+      val closingIterator = new ClosingQueryResultRecordIterator(results, taskCloser, exceptionDecorator)
+      val resultIterator = if (isUpdating) closingIterator.toEager else closingIterator
+      resultIterator
     }
   }
 }

@@ -36,6 +36,10 @@ object ExecutionContext {
 }
 
 trait ExecutionContext extends MutableMap[String, AnyValue] {
+  // For instance caching
+  def release(): Unit // Release for possible reuse by an instance cache
+  def reset(): Unit   // Clean up internal state for reuse
+
   def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def setLongAt(offset: Int, value: Long): Unit
@@ -80,7 +84,7 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
   override def getRefAt(offset: Int): AnyValue = fail()
   override def refs(): Array[AnyValue] = fail()
 
-  private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
+  private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
 
   override def get(key: String): Option[AnyValue] = m.get(key)
 
@@ -172,4 +176,8 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
       case Some(Values.NO_VALUE) => true
       case _ => false
     }
+
+  override def release(): Unit = ()
+
+  override def reset(): Unit = ()
 }

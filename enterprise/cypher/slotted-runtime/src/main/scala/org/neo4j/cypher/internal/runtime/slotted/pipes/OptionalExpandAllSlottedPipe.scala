@@ -56,39 +56,42 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
       (inputRow: ExecutionContext) =>
         val fromNode = getFromNodeFunction(inputRow)
 
-        if (NullChecker.entityIsNull(fromNode)) {
-          Iterator(withNulls(inputRow))
-        } else {
-          val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
-          var otherSide: Long = 0
-
-          val relVisitor = new RelationshipVisitor[InternalException] {
-            override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
-              if (fromNode == startNodeId)
-                otherSide = endNodeId
-              else
-                otherSide = startNodeId
-          }
-
-          val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
-            relationships.relationshipVisit(relId, relVisitor)
-            val outputRow = SlottedExecutionContext(slots)
-            inputRow.copyTo(outputRow)
-            outputRow.setLongAt(relOffset, relId)
-            outputRow.setLongAt(toOffset, otherSide)
-            outputRow
-          }).filter(ctx => predicate.isTrue(ctx, state))
-
-          if (matchIterator.isEmpty)
+        val output =
+          if (NullChecker.entityIsNull(fromNode)) {
             Iterator(withNulls(inputRow))
-          else
-            matchIterator
-        }
+          } else {
+            val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
+            var otherSide: Long = 0
+
+            val relVisitor = new RelationshipVisitor[InternalException] {
+              override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
+                if (fromNode == startNodeId)
+                  otherSide = endNodeId
+                else
+                  otherSide = startNodeId
+            }
+
+            val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
+              relationships.relationshipVisit(relId, relVisitor)
+              val outputRow = executionContextFactory.newExecutionContext()
+              inputRow.copyTo(outputRow)
+              outputRow.setLongAt(relOffset, relId)
+              outputRow.setLongAt(toOffset, otherSide)
+              outputRow
+            }).filter(ctx => predicate.isTrue(ctx, state))
+
+            if (matchIterator.isEmpty)
+              Iterator(withNulls(inputRow))
+            else
+              matchIterator
+          }
+        inputRow.release()
+        output
     }
   }
 
   private def withNulls(inputRow: ExecutionContext) = {
-    val outputRow = SlottedExecutionContext(slots)
+    val outputRow = executionContextFactory.newExecutionContext()
     inputRow.copyTo(outputRow)
     outputRow.setLongAt(relOffset, -1)
     outputRow.setLongAt(toOffset, -1)

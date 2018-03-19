@@ -36,11 +36,13 @@ case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
       lhsCtx =>
         rhs.createResults(state) map {
           rhsCtx =>
-            val context = SlottedExecutionContext(slots)
+            val context = executionContextFactory.newExecutionContext()
             lhsCtx.copyTo(context)
+            lhsCtx.release()
             rhsCtx.copyTo(context,
               fromLongOffset = argumentSize.nLongs, fromRefOffset = argumentSize.nReferences, // Skip over arguments since they should be identical to lhsCtx
               toLongOffset = lhsLongCount, toRefOffset = lhsRefCount)
+            rhsCtx.release()
             context
         }
     }

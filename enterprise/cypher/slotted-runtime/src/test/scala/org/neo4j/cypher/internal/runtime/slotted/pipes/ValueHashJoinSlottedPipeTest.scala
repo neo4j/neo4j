@@ -24,6 +24,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContextFactory
 import org.neo4j.cypher.internal.runtime.slotted.expressions.ReferenceFromSlot
 import org.neo4j.cypher.internal.runtime.slotted.pipes.HashJoinSlottedPipeTestHelper.{Longs, Refs, RowR, RowRL, mockPipeFor, testableResult}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -52,6 +53,8 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
     )
 
     val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 1, SlotConfiguration.Size.zero)()
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slotInfoForJoin))
+
     // when
     val result = pipe.createResults(queryState)
 
@@ -85,6 +88,8 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
     )
 
     val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfoForJoin, 0, 2, SlotConfiguration.Size.zero)()
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slotInfoForJoin))
+
     // when
     val result = pipe.createResults(queryState)
 
@@ -109,6 +114,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
 
     val right = mock[Pipe]
     val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1, SlotConfiguration.Size.zero)()
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slotInfo))
 
     // when
     val result = pipe.createResults(queryState)
@@ -129,6 +135,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
     val right = mockPipeFor(slotInfo, RowR(intValue(42)))
 
     val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(0), ReferenceFromSlot(0), left, right, slotInfo, 0, 1, SlotConfiguration.Size.zero)()
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slotInfo))
 
     // when
     val result = pipe.createResults(queryState)
@@ -166,6 +173,7 @@ class ValueHashJoinSlottedPipeTest extends CypherFunSuite {
 
     val pipe = ValueHashJoinSlottedPipe(ReferenceFromSlot(1), ReferenceFromSlot(1), left, right, slotInfoForJoin,
       longOffset = 1, refsOffset = 2, SlotConfiguration.Size(1, 1))()
+    pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slotInfoForJoin))
 
     // when
     val result = pipe.createResults(queryState)

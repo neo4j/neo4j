@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, TaskCloser}
+import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
 
 trait ResultIterator extends Iterator[collection.Map[String, AnyValue]] {
   def toEager: EagerResultIterator
   def wasMaterialized: Boolean
   def close()
+  def recordIterator: Option[Iterator[QueryResult.Record]] = None
 }
 
 class EagerResultIterator(result: ResultIterator) extends ResultIterator {
@@ -101,4 +103,13 @@ class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
         throw exceptionDecorator(e)
     }
   }
+}
+
+class ClosingQueryResultRecordIterator(inner: Iterator[collection.Map[String, AnyValue]],
+                                       closer: TaskCloser,
+                                       exceptionDecorator: CypherException => CypherException)
+  extends ClosingIterator(inner, closer, exceptionDecorator) {
+
+  override def recordIterator =
+    Some(this.asInstanceOf[Iterator[QueryResult.Record]])
 }

@@ -60,16 +60,20 @@ case class UnwindSlottedPipe(source: Pipe,
     private def prefetch() {
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
-        nextItem = SlottedExecutionContext(slots)
+        nextItem = executionContextFactory.newExecutionContext().asInstanceOf[SlottedExecutionContext]
         currentInputRow.copyTo(nextItem)
         nextItem.setRefAt(offset, unwindIterator.next())
       } else {
         if (input.hasNext) {
+          if (currentInputRow != null)
+            currentInputRow.release()
           currentInputRow = input.next()
           val value: AnyValue = collection(currentInputRow, state)
           unwindIterator = makeTraversable(value).iterator.asScala
           prefetch()
         }
+        else if (currentInputRow != null)
+          currentInputRow.release()
       }
     }
   }

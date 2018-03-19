@@ -38,7 +38,7 @@ case class NodesByLabelScanSlottedPipe(ident: String,
     label.getOptId(state.query) match {
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
-          val context = SlottedExecutionContext(slots)
+          val context = executionContextFactory.newExecutionContext()
           state.copyArgumentStateTo(context, argumentSize.nLongs, argumentSize.nReferences)
           context.setLongAt(offset, nodeId)
           context
