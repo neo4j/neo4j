@@ -209,6 +209,33 @@ public class TimeValueTest
         assertNotEquals( unexpected, actual );
     }
 
+    @Test
+    public void shouldBeAbleToParseTimeThatOverridesHeaderInformation()
+    {
+        String headerInformation = "{timezone:-01:00}";
+        String data = "14:05:17Z";
+
+        TimeValue expected = TimeValue.parse( data, orFail );
+        TimeValue actual = TimeValue.parse( data, orFail, TemporalValue.parseHeaderInformation( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertEquals( UTC, actual.getZoneOffset() );
+    }
+
+    @Test
+    public void shouldBeAbleToParseTimeWithoutTimeZoneWithHeaderInformation()
+    {
+        String headerInformation = "{timezone:-01:00}";
+        String data = "14:05:17";
+
+        TimeValue expected = TimeValue.parse( data, () -> ZoneId.of( "-01:00" ) );
+        TimeValue unexpected = TimeValue.parse( data, inUTC );
+        TimeValue actual = TimeValue.parse( data, orFail, TemporalValue.parseHeaderInformation( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertNotEquals( unexpected, actual );
+    }
+
     @SuppressWarnings( "UnusedReturnValue" )
     private DateTimeException assertCannotParse( String text )
     {

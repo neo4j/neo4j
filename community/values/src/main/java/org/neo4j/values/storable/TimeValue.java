@@ -92,6 +92,20 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
     }
 
+    public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
+    {
+        if ( fieldsFromHeader != null )
+        {
+            if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
+            {
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+            }
+            // Override defaultZone
+            defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );
+        }
+        return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
+    }
+
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
     {
         return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
