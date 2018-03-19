@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.queryparser.classic.ParseException;
+
 import java.io.IOException;
 import java.util.stream.Stream;
 
@@ -35,5 +37,5 @@ public interface FulltextAdapter
 
     IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties );
 
-    ScoreEntityIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException;
+    ScoreEntityIterator query( String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 }

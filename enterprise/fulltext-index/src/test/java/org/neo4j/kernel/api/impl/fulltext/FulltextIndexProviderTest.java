@@ -20,11 +20,10 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -259,7 +258,7 @@ public class FulltextIndexProviderTest
         return secondNodeId;
     }
 
-    private void verifyNodeData( FulltextIndexProvider provider, long thirdNodeid ) throws IOException, IndexNotFoundKernelException
+    private void verifyNodeData( FulltextIndexProvider provider, long thirdNodeid ) throws IndexNotFoundKernelException, ParseException
     {
         try ( Transaction transaction = db.beginTx() )
         {
@@ -286,7 +285,7 @@ public class FulltextIndexProviderTest
         }
     }
 
-    private void verifyRelationshipData( FulltextIndexProvider provider, long secondRelId ) throws IOException, IndexNotFoundKernelException
+    private void verifyRelationshipData( FulltextIndexProvider provider, long secondRelId ) throws IndexNotFoundKernelException, ParseException
     {
         try ( Transaction transaction = db.beginTx() )
         {

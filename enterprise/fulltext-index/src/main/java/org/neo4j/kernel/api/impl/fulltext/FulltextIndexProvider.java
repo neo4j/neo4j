@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -195,7 +196,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider<FulltextIndexDes
     }
 
     @Override
-    public ScoreEntityIterator query( String indexName, String queryString ) throws IndexNotFoundKernelException
+    public ScoreEntityIterator query( String indexName, String queryString ) throws IndexNotFoundKernelException, ParseException
     {
         FulltextIndexAccessor fulltextIndexAccessor = accessorsByName.get( indexName );
         if ( fulltextIndexAccessor == null )

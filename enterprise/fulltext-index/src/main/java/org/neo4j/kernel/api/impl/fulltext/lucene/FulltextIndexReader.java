@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
+import org.apache.lucene.queryparser.classic.ParseException;
+
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -37,7 +39,7 @@ public abstract class FulltextIndexReader implements IndexReader
      * @param query the lucene query
      * @return A {@link ScoreEntityIterator} over the results
      */
-    public abstract ScoreEntityIterator query( String query );
+    public abstract ScoreEntityIterator query( String query ) throws ParseException;
 
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )

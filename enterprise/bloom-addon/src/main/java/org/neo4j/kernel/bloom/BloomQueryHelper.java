@@ -21,7 +21,9 @@ package org.neo4j.kernel.bloom;
 
 import org.apache.lucene.queryparser.classic.QueryParser;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 
@@ -29,6 +31,8 @@ public class BloomQueryHelper
 {
     public static String createQuery( Collection<String> query, boolean fuzzy, boolean matchAll )
     {
+        query = query.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
+
         String delim = "";
         if ( matchAll )
         {

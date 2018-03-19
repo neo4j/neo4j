@@ -66,19 +66,11 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     }
 
     @Override
-    public ScoreEntityIterator query( String queryString )
+    public ScoreEntityIterator query( String queryString ) throws ParseException
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         Query query;
-        try
-        {
-            query = multiFieldQueryParser.parse( queryString );
-        }
-        catch ( ParseException e )
-        {
-            assert false;
-            return ScoreEntityIterator.emptyIterator();
-        }
+        query = multiFieldQueryParser.parse( queryString );
         return indexQuery( query );
     }
 

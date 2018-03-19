@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.bloom;
 
+import org.apache.lucene.queryparser.classic.ParseException;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -218,7 +220,7 @@ public class BloomProcedures
     @Description( "Query the Bloom fulltext index for nodes" )
     @Procedure( name = "bloom.searchNodes", mode = READ )
     public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
-            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll )
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws ParseException
     {
         try
         {
@@ -233,7 +235,7 @@ public class BloomProcedures
     @Description( "Query the Bloom fulltext index for relationships" )
     @Procedure( name = "bloom.searchRelationships", mode = READ )
     public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
-            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll )
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws ParseException
     {
         try
         {
@@ -246,9 +248,8 @@ public class BloomProcedures
     }
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, String indexName, boolean fuzzy, boolean matchAll )
-            throws IOException, IndexNotFoundKernelException
+            throws IOException, IndexNotFoundKernelException, ParseException
     {
-        terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
         String query = BloomQueryHelper.createQuery( terms, fuzzy, matchAll );
         ScoreEntityIterator resultIterator = accessor.query( indexName, query );
         return resultIterator.stream().map( QUERY_RESULT_MAPPER );

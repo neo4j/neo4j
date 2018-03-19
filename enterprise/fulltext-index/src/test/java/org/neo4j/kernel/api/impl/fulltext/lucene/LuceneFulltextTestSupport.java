@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -114,20 +115,18 @@ public class LuceneFulltextTestSupport
         return relationship.getId();
     }
 
-    void assertQueryFindsNothing( String indexName, String query ) throws IOException, IndexNotFoundKernelException
+    void assertQueryFindsNothing( String indexName, String query ) throws IOException, IndexNotFoundKernelException, ParseException
     {
         assertQueryFindsIds( indexName, query );
     }
 
-    void assertQueryFindsIds( String indexName, String query, long... ids )
-            throws IOException, IndexNotFoundKernelException
+    void assertQueryFindsIds( String indexName, String query, long... ids ) throws IOException, IndexNotFoundKernelException, ParseException
     {
         ScoreEntityIterator result = fulltextAdapter.query( indexName, query );
         assertQueryResultsMatch( result, ids );
     }
 
-    void assertQueryFindsIdsInOrder( String indexName, String query, long... ids )
-            throws IOException, IndexNotFoundKernelException
+    void assertQueryFindsIdsInOrder( String indexName, String query, long... ids ) throws IOException, IndexNotFoundKernelException, ParseException
     {
         ScoreEntityIterator result = fulltextAdapter.query( indexName, query );
         assertQueryResultsMatchInOrder( result, ids );

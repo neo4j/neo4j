@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.io.IOUtils;
@@ -53,9 +54,9 @@ class PartitionedFulltextIndexReader extends FulltextIndexReader
     }
 
     @Override
-    public ScoreEntityIterator query( String query )
+    public ScoreEntityIterator query( String query ) throws ParseException
     {
-        return partitionedOperation( reader -> reader.query( query ) );
+        return partitionedQuery( query );
     }
 
     @Override
@@ -71,8 +72,13 @@ class PartitionedFulltextIndexReader extends FulltextIndexReader
         }
     }
 
-    private ScoreEntityIterator partitionedOperation( Function<FulltextIndexReader,ScoreEntityIterator> readerFunction )
+    private ScoreEntityIterator partitionedQuery( String query ) throws ParseException
     {
-        return ScoreEntityIterator.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
+        List<ScoreEntityIterator> results = new ArrayList<>();
+        for ( FulltextIndexReader indexReader : indexReaders )
+        {
+            results.add( indexReader.query( query ) );
+        }
+        return ScoreEntityIterator.concat( results );
     }
 }
