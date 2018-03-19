@@ -332,13 +332,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     void assertAllows( Function<AccessMode,Boolean> allows, String mode )
     {
-        AccessMode accessMode = transaction.securityContext().mode();
-        if ( !allows.apply( accessMode ) )
-        {
-            throw accessMode.onViolation(
-                    format( "%s operations are not allowed for %s.", mode,
-                            transaction.securityContext().description() ) );
-        }
+      transaction.assertAllows( allows, mode );
     }
 
     private void recordOpenCloseMethods()

@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
 public class KernelToken implements Token
@@ -47,13 +48,47 @@ public class KernelToken implements Token
     @Override
     public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
+        ktx.assertOpen();
+        int labelId = store.labelGetForName( labelName );
+        if ( labelId != TokenHolder.NO_ID )
+        {
+            return labelId;
+        }
+        ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.labelGetOrCreateForName( checkValidTokenName( labelName ) );
+    }
+
+    @Override
+    public void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException
+    {
+        ktx.assertOpen();
+        ktx.txState().labelDoCreateForName( labelName, id );
+    }
+
+    @Override
+    public void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
+    }
+
+    @Override
+    public void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException
+    {
+        ktx.assertOpen();
+        ktx.txState().propertyKeyDoCreateForName( propertyKeyName, id );
     }
 
     @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
+        int propertyId = store.propertyKeyGetForName( propertyKeyName );
+        if ( propertyId != TokenHolder.NO_ID )
+        {
+            return propertyId;
+        }
+        ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.propertyKeyGetOrCreateForName( checkValidTokenName( propertyKeyName ) );
     }
 
@@ -61,6 +96,12 @@ public class KernelToken implements Token
     public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
+        int typeId = store.relationshipTypeGetForName( relationshipTypeName );
+        if ( typeId != TokenHolder.NO_ID )
+        {
+            return typeId;
+        }
+        ktx.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         return store.relationshipTypeGetOrCreateForName( checkValidTokenName( relationshipTypeName ) );
     }
 
