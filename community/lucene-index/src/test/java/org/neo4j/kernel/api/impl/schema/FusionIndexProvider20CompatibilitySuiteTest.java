@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class FusionIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
+public class FusionIndexProvider20CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
@@ -42,7 +42,7 @@ public class FusionIndexProviderCompatibilitySuiteTest extends IndexProviderComp
         Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
-        return NativeLuceneFusionIndexProviderFactory.newInstance( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
+        return NativeLuceneFusionIndexProviderFactory20.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
     }
 
     @Override

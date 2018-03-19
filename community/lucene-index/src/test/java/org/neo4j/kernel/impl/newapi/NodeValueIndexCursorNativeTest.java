@@ -41,6 +41,6 @@ public class NodeValueIndexCursorNativeTest extends AbstractNodeValueIndexCursor
     @Override
     protected String providerVersion()
     {
-        return "1.0";
+        return "2.0";
     }
 }

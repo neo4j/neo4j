@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionIndexProvider;
 
@@ -40,6 +41,12 @@ class IndexProviderFactoryUtil
     static boolean isReadOnly( Config config, OperationalMode operationalMode )
     {
         return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+    }
+
+    static StringIndexProvider stringProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory childDirectoryStructure,
+            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    {
+        return new StringIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     static NumberIndexProvider numberProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory childDirectoryStructure,
