@@ -21,11 +21,14 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.graphdb.Resource;
 
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.arrayWithSize;
@@ -33,7 +36,9 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 
@@ -46,7 +51,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
         PrimitiveLongSet added = setOf( 1L, 2L );
         PrimitiveLongSet removed = setOf( 3L );
 
-        DiffApplyingPrimitiveLongIterator iterator = createIterator( emptySource, added, removed );
+        PrimitiveLongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( emptySource, added, removed );
         Set<Long> resultSet = toSet( iterator );
         assertThat( resultSet, containsInAnyOrder(1L, 2L) );
     }
@@ -58,7 +63,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
         PrimitiveLongSet added = setOf( 1L, 2L );
         PrimitiveLongSet removed = setOf( 3L );
 
-        DiffApplyingPrimitiveLongIterator iterator = createIterator( source, added, removed );
+        PrimitiveLongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
         assertThat( resultSet, containsInAnyOrder(1L, 2L, 4L, 5L) );
     }
@@ -70,7 +75,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
         PrimitiveLongSet added = setOf( 1L, 4L );
         PrimitiveLongSet removed = setOf( 3L );
 
-        DiffApplyingPrimitiveLongIterator iterator = createIterator( source, added, removed );
+        PrimitiveLongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Long[] values = ArrayUtils.toObject( asArray( iterator ) );
         assertThat( values, arrayContainingInAnyOrder( 1L, 4L, 5L ) );
         assertThat( values, arrayWithSize( 3 ) );
@@ -83,14 +88,21 @@ public class DiffApplyingPrimitiveLongIteratorTest
         PrimitiveLongSet added = setOf( 1L );
         PrimitiveLongSet removed = setOf( 3L );
 
-        DiffApplyingPrimitiveLongIterator iterator = createIterator( source, added, removed );
+        PrimitiveLongIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, added, removed );
         Set<Long> resultSet = toSet( iterator );
         assertThat( resultSet, containsInAnyOrder(1L, 5L) );
     }
 
-    private DiffApplyingPrimitiveLongIterator createIterator( PrimitiveLongIterator source, PrimitiveLongSet added,
-            PrimitiveLongSet removed )
+    @Test
+    public void closeResource()
     {
-        return new DiffApplyingPrimitiveLongIterator( source, added, removed );
+        Resource resource = Mockito.mock( Resource.class );
+        PrimitiveLongResourceIterator source = resourceIterator( emptyIterator(), resource );
+
+        PrimitiveLongResourceIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, emptySet(), emptySet() );
+
+        iterator.close();
+
+        Mockito.verify( resource ).close();
     }
 }
