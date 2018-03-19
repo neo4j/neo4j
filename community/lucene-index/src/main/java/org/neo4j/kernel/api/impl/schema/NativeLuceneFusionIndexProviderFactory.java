@@ -54,9 +54,6 @@ public class NativeLuceneFusionIndexProviderFactory
 
     public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
     {
-        PageCache pageCache();
-
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
     }
 
     public NativeLuceneFusionIndexProviderFactory()
@@ -85,17 +82,17 @@ public class NativeLuceneFusionIndexProviderFactory
                                                    RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
-        boolean readOnly = isReadOnly( config, operationalMode );
+        boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
 
         // This is the v1.0 of the lucene+native fusion setup where there's only number+lucene indexes
-        NumberIndexProvider numberProvider =
-                new NumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-        LuceneIndexProvider luceneProvider = LuceneIndexProviderFactory.createLuceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
+        NumberIndexProvider number =
+                IndexProviderFactoryUtil.numberProvider( pageCache, fs, monitor, recoveryCleanupWorkCollector, childDirectoryStructure, readOnly );
+        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
-        return new FusionIndexProvider( EMPTY, numberProvider,
-                EMPTY, EMPTY, luceneProvider, new FusionSelector10(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+        return new FusionIndexProvider( EMPTY, number, EMPTY, EMPTY, lucene, new FusionSelector10(),
+                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
@@ -103,10 +100,4 @@ public class NativeLuceneFusionIndexProviderFactory
         IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( storeDir ).forProvider( DESCRIPTOR );
         return directoriesBySubProvider( parentDirectoryStructure );
     }
-
-    private static boolean isReadOnly( Config config, OperationalMode operationalMode )
-    {
-        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
-    }
-
 }

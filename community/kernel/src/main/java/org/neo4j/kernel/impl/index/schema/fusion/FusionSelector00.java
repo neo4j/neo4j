@@ -22,8 +22,11 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 
 /**
  * Selector for index provider "lucene-1.x".
@@ -34,18 +37,68 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
     @Override
     public void validateSatisfied( Object[] instances )
     {
-        FusionIndexBase.validateSelectorInstances( instances, LUCENE );
+        FusionIndexBase.validateSelectorInstances( instances, LUCENE, SPATIAL, TEMPORAL );
     }
 
     @Override
     public int selectSlot( Value... values )
     {
+        if ( values.length > 1 )
+        {
+            // Multiple values must be handled by lucene
+            return LUCENE;
+        }
+
+        Value singleValue = values[0];
+        if ( Values.isGeometryValue( singleValue ) )
+        {
+            // It's a geometry, the spatial index can handle this
+            return SPATIAL;
+        }
+
+        if ( Values.isTemporalValue( singleValue ) )
+        {
+            return TEMPORAL;
+        }
+
         return LUCENE;
     }
 
     @Override
     public IndexReader select( IndexReader[] instances, IndexQuery... predicates )
     {
+        if ( predicates.length > 1 )
+        {
+            return instances[LUCENE];
+        }
+        IndexQuery predicate = predicates[0];
+
+        if ( predicate instanceof IndexQuery.ExactPredicate )
+        {
+            IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
+            return select( instances, exactPredicate.value() );
+        }
+
+        if ( predicate instanceof IndexQuery.RangePredicate )
+        {
+            switch ( predicate.valueGroup() )
+            {
+            case GEOMETRY:
+                return instances[SPATIAL];
+            case DATE:
+            case LOCAL_DATE_TIME:
+            case ZONED_DATE_TIME:
+            case LOCAL_TIME:
+            case ZONED_TIME:
+            case DURATION:
+                return instances[TEMPORAL];
+            default: // fall through
+            }
+        }
+        if ( predicate instanceof IndexQuery.ExistsPredicate )
+        {
+            return null;
+        }
         return instances[LUCENE];
     }
 }

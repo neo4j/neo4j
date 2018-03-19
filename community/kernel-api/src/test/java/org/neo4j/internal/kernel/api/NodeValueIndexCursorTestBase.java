@@ -333,7 +333,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, 5, true, 12, false ) );
 
             // then
-
             assertFoundNodesAndValue( node, uniqueIds, numberCapability, num5, num6 );
 
             // when

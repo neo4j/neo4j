@@ -32,7 +32,7 @@ enum FusionVersion
                 @Override
                 int[] aliveSlots()
                 {
-                    return new int[]{LUCENE};
+                    return new int[]{LUCENE, SPATIAL, TEMPORAL};
                 }
 
                 @Override

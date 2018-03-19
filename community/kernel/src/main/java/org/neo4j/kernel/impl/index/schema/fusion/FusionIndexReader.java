@@ -26,8 +26,6 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
@@ -36,7 +34,6 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 
@@ -113,24 +110,13 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        if ( predicates.length > 1 )
+        IndexReader instance = selector.select( instances, predicates );
+        if ( instance == null )
         {
-            return false;
+            // null means ExistsPredicate and we don't care about
+            // full value precision for that, therefor true.
+            return true;
         }
-
-        IndexQuery predicate = predicates[0];
-        if ( predicate instanceof ExactPredicate )
-        {
-            Value value = ((ExactPredicate) predicate).value();
-            return selector.select( instances, value ).hasFullValuePrecision( predicates );
-        }
-
-        if ( predicate instanceof RangePredicate && predicate.valueGroup() == ValueGroup.NUMBER )
-        {
-            return instances[NUMBER].hasFullValuePrecision( predicates );
-        }
-        // TODO: support temporal range queries
-
-        return false;
+        return instance.hasFullValuePrecision( predicates );
     }
 }

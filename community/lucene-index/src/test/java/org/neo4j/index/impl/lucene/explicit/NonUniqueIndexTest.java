@@ -162,14 +162,16 @@ public class NonUniqueIndexTest
         PageCache pageCache = resources.pageCache();
         Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         IndexProvider indexProvider;
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
         if ( useFusionIndex )
         {
             indexProvider = NativeLuceneFusionIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
         else
         {
-            indexProvider = LuceneIndexProviderFactory.createLuceneProvider( fs, storeDir, monitor, config, operationalMode );
+            indexProvider = LuceneIndexProviderFactory
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
