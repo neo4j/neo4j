@@ -25,20 +25,19 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.Role;
-import org.neo4j.causalclustering.routing.RoutingResult;
 import org.neo4j.causalclustering.routing.multi_cluster.MultiClusterRoutingResult;
-import org.neo4j.causalclustering.routing.procedure.RoutingResultFormat;
+import static org.neo4j.causalclustering.routing.procedure.RoutingResultFormatHelper.parseEndpoints;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * The result format of Get*ClusterRouting procedures.
+ * The result format of {@link GetSubClusterRoutersProcedure} and
+ * {@link GetSuperClusterRoutersProcedure} procedures.
  */
-public class MultiClusterRoutingResultFormat extends RoutingResultFormat
+public class MultiClusterRoutingResultFormat
 {
 
     private static final String DB_NAME_KEY = "database";

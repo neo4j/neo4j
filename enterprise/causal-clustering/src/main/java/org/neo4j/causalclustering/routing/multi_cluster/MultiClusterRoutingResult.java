@@ -32,12 +32,12 @@ import org.neo4j.causalclustering.routing.Endpoint;
 public class MultiClusterRoutingResult implements RoutingResult
 {
     private final Map<String,List<Endpoint>> routers;
-    private final long ttl;
+    private final long timeToLiveMillis;
 
-    public MultiClusterRoutingResult( Map<String,List<Endpoint>> routers, long ttl )
+    public MultiClusterRoutingResult( Map<String,List<Endpoint>> routers, long timeToLiveMillis )
     {
         this.routers = routers;
-        this.ttl = ttl;
+        this.timeToLiveMillis = timeToLiveMillis;
     }
 
     public Map<String,List<Endpoint>> routers()
@@ -47,7 +47,7 @@ public class MultiClusterRoutingResult implements RoutingResult
 
     public long ttlMillis()
     {
-        return ttl;
+        return timeToLiveMillis;
     }
 
     @Override
@@ -62,14 +62,13 @@ public class MultiClusterRoutingResult implements RoutingResult
             return false;
         }
         MultiClusterRoutingResult that = (MultiClusterRoutingResult) o;
-        return ttl == that.ttl && Objects.equals( routers, that.routers );
+        return timeToLiveMillis == that.timeToLiveMillis && Objects.equals( routers, that.routers );
     }
 
     @Override
     public int hashCode()
     {
-
-        return Objects.hash( routers, ttl );
+        return Objects.hash( routers, timeToLiveMillis );
     }
 }
 

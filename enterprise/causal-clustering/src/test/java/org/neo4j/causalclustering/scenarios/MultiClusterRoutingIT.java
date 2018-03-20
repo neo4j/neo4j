@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -152,7 +150,7 @@ public class MultiClusterRoutingIT
     }
 
     @Test
-    public void subCallShouldRerturnLocalRouters()
+    public void subCallShouldReturnLocalRouters()
     {
         String dbName = getFirstDbName( dbNames );
         Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );

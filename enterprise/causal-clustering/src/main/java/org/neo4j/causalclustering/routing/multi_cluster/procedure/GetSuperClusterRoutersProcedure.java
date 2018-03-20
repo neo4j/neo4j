@@ -53,17 +53,17 @@ public class GetSuperClusterRoutersProcedure implements CallableProcedure
     private final ProcedureSignature procedureSignature =
             procedureSignature( GET_SUPER_CLUSTER_ROUTERS.fullyQualifiedProcedureName() )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
-                    .out( ROUTERS.parameterName(), Neo4jTypes.NTMap )
+                    .out( ROUTERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                     .description( DESCRIPTION )
                     .build();
 
     private final TopologyService topologyService;
-    private final Config config;
+    private final long timeToLiveMillis;
 
     public GetSuperClusterRoutersProcedure( TopologyService topologyService, Config config )
     {
         this.topologyService = topologyService;
-        this.config = config;
+        this.timeToLiveMillis = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
     }
 
     @Override
@@ -76,8 +76,7 @@ public class GetSuperClusterRoutersProcedure implements CallableProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         Map<String,List<Endpoint>> routersPerDb = routeEndpoints();
-        long ttl = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
-        MultiClusterRoutingResult result = new MultiClusterRoutingResult( routersPerDb, ttl );
+        MultiClusterRoutingResult result = new MultiClusterRoutingResult( routersPerDb, timeToLiveMillis );
         return RawIterator.<Object[], ProcedureException>of( MultiClusterRoutingResultFormat.build( result ) );
     }
 

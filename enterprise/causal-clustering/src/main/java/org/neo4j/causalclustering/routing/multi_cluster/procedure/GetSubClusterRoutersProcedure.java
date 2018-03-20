@@ -54,17 +54,17 @@ public class GetSubClusterRoutersProcedure implements CallableProcedure
             procedureSignature( GET_SUB_CLUSTER_ROUTERS.fullyQualifiedProcedureName() )
                     .in( DATABASE.parameterName(), Neo4jTypes.NTString )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
-                    .out( ROUTERS.parameterName(), Neo4jTypes.NTMap )
+                    .out( ROUTERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                     .description( DESCRIPTION )
                     .build();
 
     private final TopologyService topologyService;
-    private final Config config;
+    private final long timeToLiveMillis;
 
     public GetSubClusterRoutersProcedure( TopologyService topologyService, Config config )
     {
         this.topologyService = topologyService;
-        this.config = config;
+        this.timeToLiveMillis = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
     }
 
     @Override
@@ -79,12 +79,11 @@ public class GetSubClusterRoutersProcedure implements CallableProcedure
         @SuppressWarnings( "unchecked" )
         String dbName = (String) input[0];
         List<Endpoint> routers = routeEndpoints( dbName );
-        long ttl = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
 
         HashMap<String,List<Endpoint>> routerMap = new HashMap<>();
         routerMap.put( dbName, routers );
 
-        MultiClusterRoutingResult result = new MultiClusterRoutingResult( routerMap, ttl );
+        MultiClusterRoutingResult result = new MultiClusterRoutingResult( routerMap, timeToLiveMillis );
         return RawIterator.<Object[], ProcedureException>of( MultiClusterRoutingResultFormat.build( result ) );
     }
 

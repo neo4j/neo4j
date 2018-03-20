@@ -26,26 +26,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.routing.Endpoint;
 import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
 import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.routing.Role;
-import org.neo4j.causalclustering.routing.procedure.RoutingResultFormat;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.causalclustering.routing.Role.READ;
 import static org.neo4j.causalclustering.routing.Role.ROUTE;
 import static org.neo4j.causalclustering.routing.Role.WRITE;
+import static org.neo4j.causalclustering.routing.procedure.RoutingResultFormatHelper.parseEndpoints;
 
 /**
  * The result format of GetServersV1 and GetServersV2 procedures.
  */
-public class ResultFormatV1 extends RoutingResultFormat
+public class ResultFormatV1
 {
     private static final String ROLE_KEY = "role";
     private static final String ADDRESSES_KEY = "addresses";

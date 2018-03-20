@@ -28,10 +28,10 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.stream.Collectors.toList;
 
-public abstract class RoutingResultFormat
+public final class RoutingResultFormatHelper
 {
 
-    protected static List<Endpoint> parseEndpoints( Object[] addresses, Role role )
+    public static List<Endpoint> parseEndpoints( Object[] addresses, Role role )
     {
         return Stream.of( addresses )
                 .map( rawAddress -> parseAddress( (String) rawAddress ) )

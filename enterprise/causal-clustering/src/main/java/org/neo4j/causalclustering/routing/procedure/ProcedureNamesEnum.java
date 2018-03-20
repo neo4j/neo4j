@@ -24,7 +24,6 @@ import static java.lang.String.join;
 
 public interface ProcedureNamesEnum
 {
-
      String[] procedureNameSpace();
      String procedureName();
 
