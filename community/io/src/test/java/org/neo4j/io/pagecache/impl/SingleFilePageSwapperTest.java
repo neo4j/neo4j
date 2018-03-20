@@ -423,7 +423,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
     private ByteBuffer wrap( byte[] bytes )
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( bytes.length );
+        ByteBuffer buffer = ByteBuffer.allocate( bytes.length );
         for ( byte b : bytes )
         {
             buffer.put( b );
