@@ -651,7 +651,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           if (cursor.next()) entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                           cursor.relationshipLabel(), cursor.targetNodeReference() )
+                                                                 cursor.`type`(), cursor.targetNodeReference() )
           else null
         }
 
@@ -665,7 +665,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           if (cursor.next()) entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                           cursor.relationshipLabel(), cursor.targetNodeReference() )
+                                                                 cursor.`type`(), cursor.targetNodeReference() )
           else null
         }
 

@@ -267,7 +267,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipExplicitIndexCursor == null )
         {
-            return trace( new DefaultRelationshipExplicitIndexCursor( this ) );
+            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null ), this ) );
         }
 
         try

@@ -632,7 +632,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           if (cursor.next()) proxySpi.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                           cursor.relationshipLabel(), cursor.targetNodeReference() )
+                                                           cursor.`type`(), cursor.targetNodeReference() )
           else null
         }
 
@@ -646,7 +646,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           if (cursor.next()) proxySpi.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                           cursor.relationshipLabel(), cursor.targetNodeReference() )
+                                                           cursor.`type`(), cursor.targetNodeReference() )
           else null
         }
 
