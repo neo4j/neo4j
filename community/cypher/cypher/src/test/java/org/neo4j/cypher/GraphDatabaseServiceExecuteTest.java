@@ -92,7 +92,7 @@ public class GraphDatabaseServiceExecuteTest
 
         CRS crs = point.getCRS();
         assertThat( crs.getCode(), equalTo(4326));
-        assertThat( crs.getType(), equalTo("WGS-84"));
+        assertThat( crs.getType(), equalTo("wgs-84"));
         assertThat( crs.getHref(), equalTo("http://spatialreference.org/ref/epsg/4326/"));
     }
 
