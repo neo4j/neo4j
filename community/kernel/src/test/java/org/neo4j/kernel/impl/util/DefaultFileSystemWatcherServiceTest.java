@@ -29,11 +29,11 @@ import java.util.concurrent.CountDownLatch;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.fs.watcher.SilentFileWatcher;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
-import org.neo4j.kernel.impl.util.watcher.FileWatcherLifecycleAdapter;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 
 import static org.mockito.Mockito.verify;
 
-public class FileWatcherLifecycleAdapterTest
+public class DefaultFileSystemWatcherServiceTest
 {
 
     private static CentralJobScheduler jobScheduler;
@@ -56,9 +56,9 @@ public class FileWatcherLifecycleAdapterTest
     {
         CountDownLatch latch = new CountDownLatch( 1 );
         FileWatcher watcher = new TestFileWatcher( latch );
-        FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, watcher );
-        watcherAdapter.init();
-        watcherAdapter.start();
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, watcher );
+        service.init();
+        service.start();
 
         latch.await();
     }
@@ -66,10 +66,10 @@ public class FileWatcherLifecycleAdapterTest
     @Test
     public void stopMonitoringWhenLifecycleStops() throws Throwable
     {
-        FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, fileWatcher );
-        watcherAdapter.init();
-        watcherAdapter.start();
-        watcherAdapter.stop();
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
+        service.init();
+        service.start();
+        service.stop();
 
         verify( fileWatcher ).stopWatching();
     }
@@ -77,11 +77,11 @@ public class FileWatcherLifecycleAdapterTest
     @Test
     public void closeFileWatcherOnShutdown() throws Throwable
     {
-        FileWatcherLifecycleAdapter watcherAdapter = new FileWatcherLifecycleAdapter( jobScheduler, fileWatcher );
-        watcherAdapter.init();
-        watcherAdapter.start();
-        watcherAdapter.stop();
-        watcherAdapter.shutdown();
+        DefaultFileSystemWatcherService service = new DefaultFileSystemWatcherService( jobScheduler, fileWatcher );
+        service.init();
+        service.start();
+        service.stop();
+        service.shutdown();
 
         verify( fileWatcher ).close();
     }
