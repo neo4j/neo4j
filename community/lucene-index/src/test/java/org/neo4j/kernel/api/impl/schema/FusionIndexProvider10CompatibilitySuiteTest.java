@@ -21,16 +21,16 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_index;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FusionIndexProvider10CompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
@@ -39,7 +39,7 @@ public class FusionIndexProvider10CompatibilitySuiteTest extends IndexProviderCo
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
+        Config config = Config.defaults( stringMap( default_schema_index.name(), NATIVE10.param() ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
         return NativeLuceneFusionIndexProviderFactory10.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

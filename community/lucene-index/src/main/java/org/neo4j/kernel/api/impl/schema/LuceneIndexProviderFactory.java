@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -104,8 +105,14 @@ public class LuceneIndexProviderFactory extends
         SpatialFusionIndexProvider spatial =
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
 
+        String defaultSchemaIndex = config.get( GraphDatabaseSettings.default_schema_index );
+        int priority = LuceneIndexProvider.PRIORITY;
+        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.param().equals( defaultSchemaIndex ) )
+        {
+            priority = 100;
+        }
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
-                PROVIDER_DESCRIPTOR, LuceneIndexProvider.PRIORITY, directoriesByProvider( storeDir ), fs );
+                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
 }

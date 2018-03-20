@@ -59,6 +59,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 
 public class RecoveryCleanupIT
 {
@@ -141,7 +142,7 @@ public class RecoveryCleanupIT
     public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.enable_native_schema_index, "true" );
+        setTestConfig( GraphDatabaseSettings.default_schema_index, NATIVE20.param() );
         dirtyDatabase();
 
         // when
@@ -172,7 +173,7 @@ public class RecoveryCleanupIT
         db = null;
     }
 
-    private void setTestConfig( Setting<Boolean> setting, String value )
+    private void setTestConfig( Setting<?> setting, String value )
     {
         testSpecificConfig.put( setting, value );
     }

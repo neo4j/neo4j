@@ -86,13 +86,17 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
-        int priority = useNativeIndex ? PRIORITY : 0;
+        String defaultSchemaIndex = config.get( GraphDatabaseSettings.default_schema_index );
+        int priority = PRIORITY;
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE10.param().equals( defaultSchemaIndex ) )
+        {
+            priority = 100;
+        }
         return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSelector10(),
                 DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
     {
         return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, DESCRIPTOR );
     }

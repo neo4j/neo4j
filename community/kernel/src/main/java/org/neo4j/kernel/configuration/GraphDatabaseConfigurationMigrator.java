@@ -118,5 +118,17 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 rawConfiguration.put( GraphDatabaseSettings.db_timezone.name(), value );
             }
         } );
+        add( new SpecificPropertyMigration( "unsupported.dbms.enable_native_schema_index",
+                "unsupported.dbms.enable_native_schema_index has been replaced with dbms.default_schema_index." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                if ( value.equals( Settings.FALSE ) )
+                {
+                    rawConfiguration.putIfAbsent( GraphDatabaseSettings.default_schema_index.name(), GraphDatabaseSettings.SchemaIndex.LUCENE10.param() );
+                }
+            }
+        } );
     }
 }

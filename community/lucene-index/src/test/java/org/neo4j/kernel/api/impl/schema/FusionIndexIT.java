@@ -33,7 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -51,7 +50,7 @@ public class FusionIndexIT
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule()
-            .withSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
+            .withSetting( GraphDatabaseSettings.default_schema_index, GraphDatabaseSettings.SchemaIndex.NATIVE20.param() );
 
     private File storeDir;
     private final Label label = Label.label( "label" );
