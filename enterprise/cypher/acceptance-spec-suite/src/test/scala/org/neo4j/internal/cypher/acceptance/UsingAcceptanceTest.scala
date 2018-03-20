@@ -785,7 +785,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
           |WHERE a.prop = 'foo' and b.prop = 'bar'
           |RETURN b.prop AS res""".stripMargin
 
-    val result = executeWith(Configs.All - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query,
+    val result = executeWith(Configs.All - Configs.SlottedInterpreted - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
