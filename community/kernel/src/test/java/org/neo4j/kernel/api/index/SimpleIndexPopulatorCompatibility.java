@@ -28,11 +28,11 @@ import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -137,7 +137,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             long nodeId = 1;
 
             // update using populator...
-            IndexEntryUpdate<LabelSchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
+            IndexEntryUpdate<SchemaDescriptor> update = add( nodeId, descriptor.schema(), propertyValue );
             p.add( singletonList( update ) );
             // ...is the same as update using updater
             try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId ) -> propertyValue ) )

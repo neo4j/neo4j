@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 
 /**
@@ -30,12 +31,12 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 public interface SchemaWrite
 {
     /**
-     * Create index from label descriptor
+     * Create index from schema descriptor
      *
      * @param descriptor description of the index
      * @return the newly created index
      */
-    IndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
      * Drop the given index
@@ -49,7 +50,7 @@ public interface SchemaWrite
      *
      * @param descriptor description of the constraint
      */
-    ConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException;
+    ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
 
     /**
      * Create node key constraint

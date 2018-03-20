@@ -558,7 +558,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( KernelStatement state, SchemaDescriptor descriptor )
     {
         SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
         state.txState().indexRuleDoAdd( schemaIndexDescriptor );
@@ -631,7 +631,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -726,7 +726,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
         SchemaIndexDescriptor schemaIndexDescriptor = storeLayer.indexGetForSchema( descriptor );
         Iterator<SchemaIndexDescriptor> rules = iterator( schemaIndexDescriptor );
@@ -734,7 +734,7 @@ public class StateHandlingStatementOperations implements
         {
             rules = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    state.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ) );
+                    state.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( rules ) );
         }
         return singleOrNull( rules );
     }
@@ -747,7 +747,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -762,7 +762,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {
                 return IndexProvider.UNDECIDED;
             }
@@ -778,7 +778,7 @@ public class StateHandlingStatementOperations implements
         if ( state.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {
                 return PopulationProgress.NONE;
             }

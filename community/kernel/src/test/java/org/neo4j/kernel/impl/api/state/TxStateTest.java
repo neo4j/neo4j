@@ -271,7 +271,7 @@ public class TxStateTest
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ),
-                state.indexDiffSetsByLabel( indexOn_1_1.schema().getLabelId() ).getAdded() );
+                state.indexDiffSetsByLabel( indexOn_1_1.schema().keyId() ).getAdded() );
     }
 
     @Test
@@ -1773,7 +1773,7 @@ public class TxStateTest
 
             private <T> void withProperties( Collection<Pair<Long,T>> nodesWithValues )
             {
-                final int labelId = descriptor.schema().getLabelId();
+                final int labelId = descriptor.schema().keyId();
                 final int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( Pair<Long,T> entry : nodesWithValues )
                 {

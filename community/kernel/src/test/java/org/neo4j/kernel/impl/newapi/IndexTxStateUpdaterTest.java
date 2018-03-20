@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -205,7 +205,7 @@ public class IndexTxStateUpdaterTest
     }
 
     private void verifyIndexUpdate(
-            LabelSchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
+            SchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId ), eq( before ), eq( after ) );
     }

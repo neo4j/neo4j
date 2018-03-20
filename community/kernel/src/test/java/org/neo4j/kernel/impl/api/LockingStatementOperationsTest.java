@@ -228,7 +228,7 @@ public class LockingStatementOperationsTest
         lockingOps.indexDrop( state, index );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, index.schema().getLabelId() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, index.schema().keyId() );
         order.verify( schemaWriteOps ).indexDrop( state, index );
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.operations;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -41,7 +42,7 @@ public interface SchemaWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    SchemaIndexDescriptor indexCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
     /** Drops a {@link SchemaIndexDescriptor} from the database */
@@ -57,7 +58,7 @@ public interface SchemaWriteOperations
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException;
 
-    UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException;
 

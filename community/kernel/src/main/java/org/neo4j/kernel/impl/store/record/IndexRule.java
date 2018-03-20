@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -143,7 +143,7 @@ public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Suppl
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return descriptor.schema();
     }

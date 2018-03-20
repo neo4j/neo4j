@@ -25,8 +25,8 @@ import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
@@ -37,7 +37,7 @@ import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Filter.UNI
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class SchemaIndexDescriptor implements LabelSchemaSupplier
+public class SchemaIndexDescriptor implements SchemaDescriptorSupplier
 {
     public enum Type
     {
@@ -78,10 +78,10 @@ public class SchemaIndexDescriptor implements LabelSchemaSupplier
         SchemaIndexDescriptor getIndexDescriptor();
     }
 
-    private final LabelSchemaDescriptor schema;
+    private final SchemaDescriptor schema;
     private final SchemaIndexDescriptor.Type type;
 
-    public SchemaIndexDescriptor( LabelSchemaDescriptor schema, Type type )
+    public SchemaIndexDescriptor( SchemaDescriptor schema, Type type )
     {
         this.schema = schema;
         this.type = type;
@@ -99,7 +99,7 @@ public class SchemaIndexDescriptor implements LabelSchemaSupplier
      * When we do, consider down-typing this to a SchemaDescriptor.
      */
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return schema;
     }

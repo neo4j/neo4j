@@ -40,7 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -363,7 +363,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         closeAllIndexes();
     }
 
-    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -371,7 +371,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         return output;
     }
 
-    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
@@ -422,12 +422,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> updates, IndexUpdateMode updateMode )
+    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
+            for ( IndexEntryUpdate<SchemaDescriptor> indexUpdate : updates )
             {
                 processUpdate( updaterMap, indexUpdate );
             }
@@ -435,9 +435,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
     {
-        Iterable<LabelSchemaDescriptor> relatedIndexes =
+        Iterable<SchemaDescriptor> relatedIndexes =
                                             indexMapRef.getRelatedIndexes(
                                                 nodeUpdates.labelsChanged(),
                                                 nodeUpdates.labelsUnchanged(),
@@ -460,7 +460,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         populationStarter.startPopulation();
     }
 
-    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
+    private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate )
             throws IOException, IndexEntryConflictException
     {
         IndexUpdater updater = updaterMap.getUpdater( indexUpdate.indexKey().schema() );
@@ -498,7 +498,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         samplingController.sampleIndexes( mode );
     }
 
-    public void triggerIndexSampling( LabelSchemaDescriptor descriptor, IndexSamplingMode mode )
+    public void triggerIndexSampling( SchemaDescriptor descriptor, IndexSamplingMode mode )
             throws IndexNotFoundKernelException
     {
         String description = descriptor.userDescription( tokenNameLookup );
@@ -541,12 +541,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         return indexMapRef.getIndexProxy( indexId );
     }
 
-    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProxy getIndexProxy( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexProxy( descriptor );
     }
 
-    public long getIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long getIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexMapRef.getIndexId( descriptor );
     }

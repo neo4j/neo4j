@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -226,8 +225,10 @@ public interface ReadOperations
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /** Returns the index rule for the given LabelSchemaDescriptor. */
-    SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    /**
+     * Returns the index rule for the given SchemaDescriptor.
+     */
+    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */

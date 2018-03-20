@@ -113,7 +113,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
         assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
@@ -173,7 +173,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
-            KernelStatement state, LabelSchemaDescriptor descriptor )
+            KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {
@@ -225,7 +225,7 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,
-            LabelSchemaDescriptor descriptor )
+            SchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         SchemaIndexDescriptor existingIndex = schemaReadDelegate.indexGetForSchema( state, descriptor );

@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 
@@ -56,7 +56,7 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
     @Override
     public String getUserMessage( TokenNameLookup tokenNameLookup )
     {
-        LabelSchemaDescriptor schema = (LabelSchemaDescriptor)constraint.schema();
+        SchemaDescriptor schema = constraint.schema();
         StringBuilder message = new StringBuilder();
         for ( Iterator<IndexEntryConflictException> iterator = conflicts.iterator(); iterator.hasNext(); )
         {

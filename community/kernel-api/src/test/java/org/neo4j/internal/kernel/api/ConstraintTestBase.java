@@ -80,7 +80,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat( constraints, hasSize( 1 ) );
-            assertThat( constraints.get( 0 ).schema().getPropertyIds()[0], equalTo( prop ) );
+            assertThat( constraints.get( 0 ).schema().getPropertyId(), equalTo( prop ) );
         }
     }
 

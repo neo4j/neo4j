@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.index;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -172,7 +172,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         }
     }
 
-    private static IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, LabelSchemaDescriptor schema, Object value1, Object value2 )
+    private static IndexEntryUpdate<SchemaDescriptor> add( long nodeId, SchemaDescriptor schema, Object value1, Object value2 )
     {
         return IndexEntryUpdate.add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
     }

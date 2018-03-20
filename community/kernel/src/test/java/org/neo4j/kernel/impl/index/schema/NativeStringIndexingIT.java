@@ -82,7 +82,7 @@ public class NativeStringIndexingIT
             {
                 for ( int i = 0; i < strings.size(); i++ )
                 {
-                    try ( PrimitiveLongResourceIterator result = reader.query( exact( descriptor.schema().getPropertyIds()[0], strings.get( i ) ) ) )
+                    try ( PrimitiveLongResourceIterator result = reader.query( exact( descriptor.schema().getPropertyId(), strings.get( i ) ) ) )
                     {
                         assertEquals( i, single( result, -1 ) );
                     }

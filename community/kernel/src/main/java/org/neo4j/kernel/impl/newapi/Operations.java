@@ -71,6 +71,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
@@ -361,7 +362,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             SchemaIndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
-            int labelId = schemaIndexDescriptor.schema().getLabelId();
+            int labelId = schemaIndexDescriptor.schema().keyId();
 
             //Take a big fat lock, and check for existing node in index
             ktx.statementLocks().optimistic().acquireExclusive(
@@ -781,9 +782,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public IndexReference indexCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        acquireExclusiveLabelLock( descriptor.getLabelId() );
+        acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
@@ -826,11 +827,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
             throws SchemaKernelException
     {
         //Lock
-        acquireExclusiveLabelLock( descriptor.getLabelId() );
+        acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
 
         //Check data integrity
@@ -944,8 +945,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context,
-            LabelSchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException
+            SchemaDescriptor descriptor ) throws AlreadyIndexedException, AlreadyConstrainedException
     {
         SchemaIndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
         if ( existingIndex != null )
@@ -1077,13 +1077,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
     private org.neo4j.kernel.api.schema.LabelSchemaDescriptor labelDescriptor( IndexReference index )
     {
-        return new org.neo4j.kernel.api.schema.LabelSchemaDescriptor( index.label(), index.properties() );
+        return SchemaDescriptorFactory.forLabel( index.label(), index.properties() );
     }
 
     private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint )
             throws CreateConstraintFailureException
     {
-        LabelSchemaDescriptor descriptor = constraint.schema();
+        SchemaDescriptor descriptor = constraint.schema();
         try
         {
             if ( ktx.hasTxStateWithChanges() &&
@@ -1128,7 +1128,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         if ( index == CapableIndexReference.NO_INDEX )
         {
-            throw new NoSuchIndexException( new org.neo4j.kernel.api.schema.LabelSchemaDescriptor( index.label(), index.properties() ) );
+            throw new NoSuchIndexException( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
         }
     }
 }

@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -29,10 +29,10 @@ import static java.lang.String.format;
 
 public class NoSuchIndexException extends SchemaKernelException
 {
-    private final LabelSchemaDescriptor descriptor;
+    private final SchemaDescriptor descriptor;
     private static final String message = "No such INDEX ON %s.";
 
-    public NoSuchIndexException( LabelSchemaDescriptor descriptor )
+    public NoSuchIndexException( SchemaDescriptor descriptor )
     {
         super( Status.Schema.IndexNotFound, format( message,
                 descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ) );

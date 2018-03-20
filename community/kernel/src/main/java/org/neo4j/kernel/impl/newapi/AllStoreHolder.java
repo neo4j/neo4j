@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -277,11 +278,19 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        SchemaIndexDescriptor indexDescriptor =
-                storeReadLayer.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        LabelSchemaDescriptor descriptor;
+        try
+        {
+            descriptor = SchemaDescriptorFactory.forLabel( label, properties );
+        }
+        catch ( IllegalArgumentException ignore )
+        {
+            // This means we have invalid label or property ids.
+            return CapableIndexReference.NO_INDEX;
+        }
+        SchemaIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
-            LabelSchemaDescriptor descriptor = new LabelSchemaDescriptor( label, properties );
             ReadableDiffSets<SchemaIndexDescriptor> diffSets =
                     ktx.txState().indexDiffSetsByLabel( label );
             if ( indexDescriptor != null )
@@ -341,7 +350,7 @@ public class AllStoreHolder extends Read
 
         return Iterators.map( indexDescriptor ->
         {
-            sharedOptimisticLock( ResourceTypes.LABEL, indexDescriptor.schema().getLabelId() );
+            sharedOptimisticLock( ResourceTypes.LABEL, indexDescriptor.schema().keyId() );
             return fromDescriptor( indexDescriptor );
         }, iterator );
     }
@@ -406,7 +415,7 @@ public class AllStoreHolder extends Read
     @Override
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
-        return storeReadLayer.indexGetFailure( new LabelSchemaDescriptor( index.label(), index.properties() ) );
+        return storeReadLayer.indexGetFailure( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
     }
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
@@ -427,7 +436,7 @@ public class AllStoreHolder extends Read
         if ( ktx.hasTxStateWithChanges() )
         {
             if ( checkIndexState( descriptor,
-                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+                    ktx.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -441,7 +450,7 @@ public class AllStoreHolder extends Read
         return storeReadLayer.indexGetOwningUniquenessConstraintId( index );
     }
 
-    SchemaIndexDescriptor indexGetForSchema( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor descriptor )
+    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         SchemaIndexDescriptor indexDescriptor = storeReadLayer.indexGetForSchema( descriptor );
         Iterator<SchemaIndexDescriptor> rules = iterator( indexDescriptor );
@@ -449,7 +458,7 @@ public class AllStoreHolder extends Read
         {
             rules = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    ktx.txState().indexDiffSetsByLabel( descriptor.getLabelId() ).apply( rules ) );
+                    ktx.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( rules ) );
         }
         return singleOrNull( rules );
     }

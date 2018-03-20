@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -92,7 +93,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private PartitionedIndexStorage indexStorage;
     private SchemaIndex index;
     private UniqueLuceneIndexPopulator populator;
-    private LabelSchemaDescriptor schemaDescriptor;
+    private SchemaDescriptor schemaDescriptor;
 
     @Before
     public void setUp()

@@ -27,6 +27,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,19 +104,19 @@ public class IndexMapTest
     {
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, noLabel, emptySet() ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( label( 2 ), noLabel, emptySet() ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( noLabel, label( 2 ), properties( 1 ) ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
 
         assertThat(
                 indexMap.getRelatedIndexes( label( 2 ), label( 2 ), properties( 1 ) ),
-                emptyIterableOf( LabelSchemaDescriptor.class ) );
+                emptyIterableOf( SchemaDescriptor.class ) );
     }
 
     // HELPERS

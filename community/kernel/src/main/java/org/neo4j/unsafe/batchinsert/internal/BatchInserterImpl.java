@@ -52,7 +52,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -490,7 +491,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final List<IndexPopulatorWithSchema> populators = new ArrayList<>( rules.length );
 
-        final LabelSchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
+        final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
 
         for ( int i = 0; i < rules.length; i++ )
         {
@@ -522,9 +523,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return true;
         };
 
-        List<LabelSchemaDescriptor> descriptorList = Arrays.asList( descriptors );
+        List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
         int[] labelIds = descriptorList.stream()
-                .mapToInt( LabelSchemaDescriptor::getLabelId )
+                .mapToInt( SchemaDescriptor::keyId )
                 .toArray();
 
         int[] propertyKeyIds = descriptorList.stream()
@@ -1301,7 +1302,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
+    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements SchemaDescriptorSupplier
     {
         private static final int batchSize = 1_000;
         private final IndexPopulator populator;
@@ -1315,7 +1316,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public LabelSchemaDescriptor schema()
+        public SchemaDescriptor schema()
         {
             return index.schema();
         }

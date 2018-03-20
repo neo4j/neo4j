@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -41,7 +42,7 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
                     statement.schemaWriteOperations();
             TokenWriteOperations token = statement.tokenWriteOperations();
             schemaWriteOperations.indexCreate(
-                    new org.neo4j.kernel.api.schema.LabelSchemaDescriptor( token.labelGetOrCreateForName( "Person" ),
+                    SchemaDescriptorFactory.forLabel( token.labelGetOrCreateForName( "Person" ),
                             token.propertyKeyGetOrCreateForName( "firstname" ),
                             token.propertyKeyGetOrCreateForName( "surname" ) ) );
         }
