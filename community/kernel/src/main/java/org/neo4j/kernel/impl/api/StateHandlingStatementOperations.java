@@ -1097,7 +1097,7 @@ public class StateHandlingStatementOperations implements
                     existingValue = properties.get().value();
 
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
-                    state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId, existingValue );
+                    state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId );
 
                     indexTxStateUpdater.onPropertyRemove( state, node, propertyKeyId, existingValue );
                 }
@@ -1123,8 +1123,7 @@ public class StateHandlingStatementOperations implements
                     existingValue = properties.get().value();
 
                     autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
-                    state.txState()
-                            .relationshipDoRemoveProperty( relationship.id(), propertyKeyId, existingValue );
+                    state.txState().relationshipDoRemoveProperty( relationship.id(), propertyKeyId );
                 }
             }
             return existingValue;
@@ -1137,7 +1136,7 @@ public class StateHandlingStatementOperations implements
         Value existingValue = graphGetProperty( state, propertyKeyId );
         if ( existingValue != Values.NO_VALUE )
         {
-            state.txState().graphDoRemoveProperty( propertyKeyId, existingValue );
+            state.txState().graphDoRemoveProperty( propertyKeyId );
         }
         return existingValue;
     }

@@ -569,23 +569,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
+    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId )
     {
-        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId, removedValue );
+        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue )
+    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId )
     {
-        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId, removedValue );
+        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void graphDoRemoveProperty( int propertyKeyId, Value removedValue )
+    public void graphDoRemoveProperty( int propertyKeyId )
     {
-        getOrCreateGraphState().removeProperty( propertyKeyId, removedValue );
+        getOrCreateGraphState().removeProperty( propertyKeyId );
         dataChanged();
     }
 
