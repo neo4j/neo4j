@@ -135,7 +135,6 @@ public class PrimitiveLongCollectionsTest
         assertEquals( 2, PrimitiveLongCollections.indexOf( items.get(), 30 ) );
     }
 
-
     @Test
     public void count()
     {
