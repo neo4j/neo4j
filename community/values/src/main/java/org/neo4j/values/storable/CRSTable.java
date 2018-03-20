@@ -19,9 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum CRSTable
 {
     CUSTOM( "custom", 0 ),
@@ -29,15 +26,6 @@ public enum CRSTable
     SR_ORG( "sr-org", 2 );
 
     private static final CRSTable[] TYPES = CRSTable.values();
-    private static final Map<String, CRSTable> all = new HashMap<>( TYPES.length );
-
-    static
-    {
-        for ( CRSTable table : TYPES )
-        {
-            all.put( table.name, table );
-        }
-    }
 
     private final String prefix;
 
@@ -50,19 +38,6 @@ public enum CRSTable
         else
         {
             throw new IllegalArgumentException( "No known Coordinate Reference System table: " + tableId );
-        }
-    }
-
-    public static CRSTable find( String name )
-    {
-        CRSTable table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Coordinate Reference System table: " + name );
         }
     }
 
