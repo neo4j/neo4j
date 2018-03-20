@@ -48,11 +48,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static KernelAPIWriteTestSupport testSupport;
     protected Session session;
     protected Modes modes;
-    protected ManagedTestCursors cursors;
     protected static GraphDatabaseService graphDb;
-
-    @Rule
-    public CursorsClosedPostCondition conditionalTeardown = new CursorsClosedPostCondition( () -> cursors );
 
     /**
      * Creates a new instance of WriteSupport, which will be used to execute the concrete test
@@ -73,7 +69,6 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( LoginContext.AUTH_DISABLED );
         modes = kernel.modes();
-        cursors = new ManagedTestCursors( kernel.cursors() );
     }
 
     @After

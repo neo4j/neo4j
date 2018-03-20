@@ -111,7 +111,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try ( Transaction tx = session.beginTransaction();
-              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+              PropertyCursor cursor = tx.cursors().allocatePropertyCursor() )
         {
             tx.dataRead().graphProperties( cursor );
 
@@ -135,7 +135,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     public void shouldSeeNewGraphPropertyInTransaction() throws Exception
     {
         try ( Transaction tx = session.beginTransaction();
-              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+              PropertyCursor cursor = tx.cursors().allocatePropertyCursor() )
         {
             int prop = tx.tokenWrite().propertyKeyGetOrCreateForName( "prop" );
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
@@ -159,7 +159,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try ( Transaction tx = session.beginTransaction();
-              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+              PropertyCursor cursor = tx.cursors().allocatePropertyCursor() )
         {
             assertThat( tx.dataWrite().graphSetProperty( prop, stringValue( "good bye" ) ),
                     equalTo( stringValue( "hello" ) ) );
@@ -184,7 +184,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
         }
 
         try ( Transaction tx = session.beginTransaction();
-              PropertyCursor cursor = cursors.allocatePropertyCursor() )
+              PropertyCursor cursor = tx.cursors().allocatePropertyCursor() )
         {
             assertThat( tx.dataWrite().graphRemoveProperty( prop ), equalTo( stringValue( "hello" ) ) );
 
