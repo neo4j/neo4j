@@ -225,7 +225,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.nodeDoRemoveProperty( 1L, propertyKeyId );
+        state.nodeDoRemoveProperty( 1L, propertyKeyId, prevValue );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
@@ -250,7 +250,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.relationshipDoRemoveProperty( 1L, propertyKeyId );
+        state.relationshipDoRemoveProperty( 1L, propertyKeyId, prevValue );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) )

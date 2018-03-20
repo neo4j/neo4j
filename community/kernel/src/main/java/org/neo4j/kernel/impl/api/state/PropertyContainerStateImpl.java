@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -32,13 +33,13 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 
-class PropertyContainerStateImpl implements PropertyContainerState
+public class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
     private VersionedHashMap<Integer, Value> addedProperties;
     private VersionedHashMap<Integer, Value> changedProperties;
-    private VersionedHashMap<Integer, Object> removedProperties;
+    private VersionedHashMap<Integer, Value> removedProperties;
 
     private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
     {
@@ -61,7 +62,7 @@ class PropertyContainerStateImpl implements PropertyContainerState
         return id;
     }
 
-    void clear()
+    public void clear()
     {
         if ( changedProperties != null )
         {
@@ -79,10 +80,13 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
     void changeProperty( int propertyKeyId, Value value )
     {
-        if ( addedProperties != null && addedProperties.containsKey( propertyKeyId ) )
+        if ( addedProperties != null )
         {
-            addedProperties.put( propertyKeyId, value );
-            return;
+            if ( addedProperties.containsKey( propertyKeyId ) )
+            {
+                addedProperties.put( propertyKeyId, value );
+                return;
+            }
         }
 
         if ( changedProperties == null )
@@ -99,12 +103,16 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
     void addProperty( int propertyKeyId, Value value )
     {
-        if ( removedProperties != null && removedProperties.remove( propertyKeyId ) != null )
+        if ( removedProperties != null )
         {
-            // This indicates the user did remove+add as two discrete steps, which should be translated to
-            // a single change operation.
-            changeProperty( propertyKeyId, value );
-            return;
+            Value removed = removedProperties.remove( propertyKeyId );
+            if ( removed != null )
+            {
+                // This indicates the user did remove+add as two discrete steps, which should be translated to
+                // a single change operation.
+                changeProperty( propertyKeyId, value );
+                return;
+            }
         }
         if ( addedProperties == null )
         {
@@ -113,17 +121,20 @@ class PropertyContainerStateImpl implements PropertyContainerState
         addedProperties.put( propertyKeyId, value );
     }
 
-    void removeProperty( int propertyKeyId )
+    public void removeProperty( int propertyKeyId, Value value )
     {
-        if ( addedProperties != null && addedProperties.remove( propertyKeyId ) != null )
+        if ( addedProperties != null )
         {
-            return;
+            if ( addedProperties.remove( propertyKeyId ) != null )
+            {
+                return;
+            }
         }
         if ( removedProperties == null )
         {
             removedProperties = new VersionedHashMap<>();
         }
-        removedProperties.put( propertyKeyId, Boolean.TRUE );
+        removedProperties.put( propertyKeyId, value );
         if ( changedProperties != null )
         {
             changedProperties.remove( propertyKeyId );
@@ -224,8 +235,8 @@ class PropertyContainerStateImpl implements PropertyContainerState
 
     private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
     {
-        return propertyMap == null ? emptyIterator() :
-               Iterators.map(
+        return propertyMap == null ? Collections.emptyIterator() :
+                Iterators.map(
                     entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
                     propertyMap.entrySet().iterator()
                 );

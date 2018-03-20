@@ -42,7 +42,7 @@ public class PropertyContainerStateImplTest
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
-        state.removeProperty( 1 );
+        state.removeProperty( 1, Values.of( "Hello" ) );
 
         // When
         Iterator<StorageProperty> added = state.addedProperties();
@@ -79,7 +79,7 @@ public class PropertyContainerStateImplTest
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
 
         // When
-        state.removeProperty( 4 );
+        state.removeProperty( 4, Values.of( "a value" ) );
         state.addProperty( 4, Values.of( "another value" ) );
 
         // Then

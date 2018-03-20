@@ -483,7 +483,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey );
-            ktx.txState().nodeDoRemoveProperty( node, propertyKey );
+            ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue );
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
         }
 
@@ -529,7 +529,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             autoIndexing.relationships().propertyRemoved( this, relationship, propertyKey );
-            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
+            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey, existingValue );
         }
 
         return existingValue;
@@ -559,7 +559,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )
         {
-            ktx.txState().graphDoRemoveProperty( propertyKey );
+            ktx.txState().graphDoRemoveProperty( propertyKey, existingValue );
         }
         return existingValue;
     }
