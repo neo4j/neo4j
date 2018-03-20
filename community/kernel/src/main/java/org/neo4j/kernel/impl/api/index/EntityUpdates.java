@@ -277,9 +277,9 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
     private boolean atLeastOneRelevantChange( SchemaDescriptorSupplier indexKey )
     {
         SchemaDescriptor schema = indexKey.schema();
-        boolean labelBefore = schema.isAffected( entityTokensBefore );
-        boolean labelAfter = schema.isAffected( entityTokensAfter );
-        if ( labelBefore && labelAfter )
+        boolean affectedBefore = schema.isAffected( entityTokensBefore );
+        boolean affectedAfter = schema.isAffected( entityTokensAfter );
+        if ( affectedBefore && affectedAfter )
         {
             for ( int propertyId : schema.getPropertyIds() )
             {
@@ -290,7 +290,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
             }
             return false;
         }
-        return labelBefore || labelAfter;
+        return affectedBefore || affectedAfter;
     }
 
     private boolean hasPropsBefore( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )

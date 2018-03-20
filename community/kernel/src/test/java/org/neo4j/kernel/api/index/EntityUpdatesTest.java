@@ -22,14 +22,15 @@ package org.neo4j.kernel.api.index;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyLoader;
@@ -39,6 +40,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
@@ -48,19 +50,26 @@ import static org.junit.Assert.fail;
 public class EntityUpdatesTest
 {
     private static final long nodeId = 0;
-    private static final int labelId = 0;
+    private static final int labelId1 = 0;
+    private static final int labelId2 = 1;
+    private static final int unusedLabelId = 2;
     private static final int propertyKeyId1 = 0;
     private static final int propertyKeyId2 = 1;
     private static final int propertyKeyId3 = 2;
-    private static final long[] labels = new long[]{labelId};
+    private static final long[] label = new long[]{labelId1};
+    private static final long[] allLabels = new long[]{labelId1, labelId2};
     private static final long[] empty = new long[]{};
 
-    private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1 );
-    private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
-    private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId3 );
+    private static final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1 );
+    private static final LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId2 );
+    private static final LabelSchemaDescriptor index3 = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId3 );
     private static final LabelSchemaDescriptor index123
-            = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+            = SchemaDescriptorFactory.forLabel( labelId1, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
     private static final List<LabelSchemaDescriptor> indexes = Arrays.asList( index1, index2, index3, index123 );
+    private static final MultiTokenSchemaDescriptor nonSchemaIndex =
+            SchemaDescriptorFactory.multiToken( new int[]{labelId1, labelId2}, EntityType.NODE, propertyKeyId1, propertyKeyId2, propertyKeyId3 );
+    private static final MultiTokenSchemaDescriptor anyEntityTokenIndex =
+            SchemaDescriptorFactory.multiToken( SchemaDescriptor.ANY_ENTITY_TOKEN, EntityType.NODE, propertyKeyId1, propertyKeyId2 );
 
     private static final StorageProperty property1 = new PropertyKeyValue( propertyKeyId1, Values.of( "Neo" ) );
     private static final StorageProperty property2 = new PropertyKeyValue( propertyKeyId2, Values.of( 100L ) );
@@ -81,7 +90,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdateForMultipleExistingPropertiesAndLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label )
                 .existing( propertyKeyId1, Values.of( "Neo" ) )
                 .existing( propertyKeyId2, Values.of( 100L ) )
                 .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
@@ -95,7 +104,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAdditionWithNoProperties()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, label ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
@@ -105,7 +114,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, label ).build();
 
         // Then
         assertThat(
@@ -120,7 +129,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId, empty, labels )
+                EntityUpdates.forEntity( nodeId, empty, label )
                         .existing( propertyKeyId1, Values.of( "Neo" ) )
                         .existing( propertyKeyId2, Values.of( 100L ) )
                         .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
@@ -138,10 +147,44 @@ public class EntityUpdatesTest
     }
 
     @Test
+    public void shouldNotGenerateUpdateForPartialCompositeSchemaIndexUpdate()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( propertyKeyId1, Values.of( "Neo" ) )
+                        .added( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( index123 ), propertyLoader(), EntityType.NODE ),
+               emptyIterable() );
+    }
+
+    @Test
+    public void shouldGenerateUpdateForWhenCompletingCompositeSchemaIndexUpdate()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( propertyKeyId1, Values.of( "Neo" ) )
+                        .added( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( index123 ), propertyLoader( property2 ), EntityType.NODE ),
+                containsInAnyOrder(
+                        IndexEntryUpdate.add( nodeId, index123, values123 )
+                ) );
+    }
+
+    @Test
     public void shouldNotGenerateUpdatesForLabelRemovalWithNoProperties()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label, empty ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader(), EntityType.NODE ), emptyIterable() );
@@ -152,7 +195,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId, labels, empty ).build();
+                EntityUpdates.forEntity( nodeId, label, empty ).build();
 
         // Then
         assertThat(
@@ -167,7 +210,7 @@ public class EntityUpdatesTest
     {
         // When
         EntityUpdates updates =
-                EntityUpdates.forEntity( nodeId, labels, empty ).build();
+                EntityUpdates.forEntity( nodeId, label, empty ).build();
 
         // Then
         assertThat(
@@ -196,7 +239,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdatesForSinglePropertyAdditionWithLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -212,7 +255,7 @@ public class EntityUpdatesTest
     public void shouldGenerateUpdatesForMultiplePropertyAdditionWithLabels()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .added( property3.propertyKeyId(), property3.value() )
@@ -233,7 +276,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAddAndPropertyRemove()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, label )
                 .removed( property1.propertyKeyId(), property1.value() )
                 .removed( property2.propertyKeyId(), property2.value() )
                 .removed( property3.propertyKeyId(), property3.value() )
@@ -247,7 +290,7 @@ public class EntityUpdatesTest
     public void shouldNotGenerateUpdatesForLabelRemoveAndPropertyAdd()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label, empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .added( property3.propertyKeyId(), property3.value() )
@@ -261,11 +304,11 @@ public class EntityUpdatesTest
     public void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
     {
         // When
-        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, label ).build();
 
         // Then
         assertThat(
-                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading(), EntityType.NODE ),
+                updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE ),
                 emptyIterable() );
     }
 
@@ -279,8 +322,275 @@ public class EntityUpdatesTest
 
         // Then
         assertThat(
-                updates.forIndexKeys( Collections.singleton( index1 ), assertNoLoading(), EntityType.NODE ),
+                updates.forIndexKeys( singleton( index1 ), assertNoLoading(), EntityType.NODE ),
                 emptyIterable() );
+    }
+
+    @Test
+    public void shouldGenerateUpdateForPartialNonSchemaIndexUpdate()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( propertyKeyId1, Values.of( "Neo" ) )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, nonSchemaIndex, property1.value(), null, null )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateForFullNonSchemaIndexUpdate()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( property1.propertyKeyId(), property1.value() )
+                        .added( property2.propertyKeyId(), property2.value() )
+                        .added( property3.propertyKeyId(), property3.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader(), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateForSingleChangeNonSchemaIndex()
+    {
+        // When
+        Value newValue2 = Values.of( 10L );
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .changed( property2.propertyKeyId(), property2.value(), newValue2 )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{property1.value(), newValue2, property3.value()} )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateForAllChangedNonSchemaIndex()
+    {
+        // When
+        Value newValue1 = Values.of( "Nio" );
+        Value newValue2 = Values.of( 10L );
+        Value newValue3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 32.3, 15.6 );
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .changed( property1.propertyKeyId(), property1.value(), newValue1 )
+                        .changed( property2.propertyKeyId(), property2.value(), newValue2 )
+                        .changed( property3.propertyKeyId(), property3.value(), newValue3 )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{newValue1, newValue2, newValue3} )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenRemovingLastPropForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .removed( property2.propertyKeyId(), property2.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property2), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.remove( nodeId, nonSchemaIndex, null, property2.value(), null )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenRemovingOnePropertyForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .removed( property2.propertyKeyId(), property2.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.change( nodeId, nonSchemaIndex, values123, new Value[]{property1.value(), null, property3.value()} )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenAddingOneTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, empty, label ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenAddingMultipleTokensForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, empty, allLabels ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, nonSchemaIndex, values123 )
+                ) );
+    }
+
+    @Test
+    public void shouldNotGenerateUpdateWhenAddingAnotherTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, allLabels ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                emptyIterable()
+        );
+    }
+
+    @Test
+    public void shouldNotGenerateUpdateWhenAddingAnotherUselessTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, new long[]{labelId1, unusedLabelId} ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                emptyIterable()
+        );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenSwitchingToUselessTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, new long[]{unusedLabelId} ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.remove( nodeId, nonSchemaIndex, values123 ) )
+        );
+    }
+
+    @Test
+    public void shouldNotGenerateUpdateWhenRemovingOneTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, allLabels, label ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                emptyIterable()
+        );
+    }
+
+    @Test
+    public void shouldGenerateUpdateWhenRemovingLastTokenForNonSchemaIndex()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, empty ).build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( nonSchemaIndex ), propertyLoader( property1, property2, property3 ), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.remove( nodeId, nonSchemaIndex, values123 ) )
+        );
+    }
+
+    @Test
+    public void shouldGenerateUpdateAnyEntityTokenIndexWithoutLabels()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, empty, empty )
+                        .added( property1.propertyKeyId(), property1.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateAnyEntityTokenIndexWithLabel()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( property1.propertyKeyId(), property1.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
+                ) );
+    }
+
+    @Test
+    public void shouldGenerateUpdateAnyEntityTokenIndexWithLabelRemove()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, empty )
+                        .added( property1.propertyKeyId(), property1.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
+                containsInAnyOrder( IndexEntryUpdate.add( nodeId, anyEntityTokenIndex, property1.value(), null )
+                ) );
+    }
+
+
+    @Test
+    public void shouldNotGenerateUpdateAnyEntityTokenIndexWithIrrelevantProperty()
+    {
+        // When
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, label, label )
+                        .added( property3.propertyKeyId(), property3.value() )
+                        .build();
+
+        // Then
+        assertThat(
+                updates.forIndexKeys( singleton( anyEntityTokenIndex ), propertyLoader(), EntityType.NODE ),
+                emptyIterable()
+                );
     }
 
     private PropertyLoader propertyLoader( StorageProperty... properties )

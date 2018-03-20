@@ -74,7 +74,7 @@ public class SchemaDescriptorFactory
         }
     }
 
-    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int[] propertyIds )
+    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
     {
         validatePropertyIds( propertyIds );
         IntConsumer validator;
