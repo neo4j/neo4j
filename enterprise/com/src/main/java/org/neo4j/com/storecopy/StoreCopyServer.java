@@ -168,7 +168,7 @@ public class StoreCopyServer
             {
                 lastAppliedTransaction = checkPointer.lastCheckPointedTransactionId();
                 monitor.startStreamingStoreFiles( storeCopyIdentifier );
-                ByteBuffer temporaryBuffer = ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 1 ) );
+                ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 1 ) );
                 while ( files.hasNext() )
                 {
                     StoreFileMetadata meta = files.next();

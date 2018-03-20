@@ -46,7 +46,7 @@ class FileSender implements ChunkedInput<FileChunk>
     FileSender( StoreResource resource )
     {
         this.resource = resource;
-        this.byteBuffer = ByteBuffer.allocate( MAX_SIZE );
+        this.byteBuffer = ByteBuffer.allocateDirect( MAX_SIZE );
     }
 
     @Override
