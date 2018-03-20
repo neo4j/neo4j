@@ -57,9 +57,9 @@ public class CoordinateReferenceSystem implements CRS
     {
         CRSTable table = CRSTable.find( tableId );
         String href = table.href( code );
-        if ( all_by_href.containsKey( href.toLowerCase() ) )
+        if ( all_by_href.containsKey( href ) )
         {
-            return all_by_href.get( href.toLowerCase() );
+            return all_by_href.get( href );
         }
         else
         {

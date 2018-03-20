@@ -39,6 +39,8 @@ public enum CRSTable
         }
     }
 
+    private final String prefix;
+
     public static CRSTable find( int tableId )
     {
         if ( tableId < TYPES.length )
@@ -69,20 +71,20 @@ public enum CRSTable
 
     CRSTable( String name, int tableId )
     {
+        assert lowerCase( name );
         this.name = name;
         this.tableId = tableId;
+        this.prefix = tableId == 0 ? "crs://" + name + "/" : "http://spatialreference.org/ref/" + name + "/";
     }
 
     public String href( int code )
     {
-        if ( tableId == CUSTOM.tableId )
-        {
-            return "crs://" + name + "/" + code + "/";
-        }
-        else
-        {
-            return "http://spatialreference.org/ref/" + name + "/" + code + "/";
-        }
+        return prefix + code + "/";
+    }
+
+    private boolean lowerCase( String string )
+    {
+        return string.toLowerCase().equals( string );
     }
 
     public String getName()
