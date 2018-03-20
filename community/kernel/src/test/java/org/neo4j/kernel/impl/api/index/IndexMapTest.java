@@ -34,6 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 import static org.neo4j.storageengine.api.EntityType.NODE;
 import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
@@ -48,8 +49,8 @@ public class IndexMapTest
     private LabelSchemaDescriptor schema5_8 = SchemaDescriptorFactory.forLabel( 5, 8 );
     private SchemaDescriptor node35_8 = SchemaDescriptorFactory.multiToken( new int[] {3,5}, NODE, 8 );
     private SchemaDescriptor rel35_8 = SchemaDescriptorFactory.multiToken( new int[] {3,5}, RELATIONSHIP, 8 );
-    private SchemaDescriptor anynode_8 = SchemaDescriptorFactory.multiToken( new int[0], NODE, 8 );
-    private SchemaDescriptor anyrel_8 = SchemaDescriptorFactory.multiToken( new int[0], RELATIONSHIP, 8 );
+    private SchemaDescriptor anynode_8 = SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, NODE, 8 );
+    private SchemaDescriptor anyrel_8 = SchemaDescriptorFactory.multiToken( ANY_ENTITY_TOKEN, RELATIONSHIP, 8 );
 
     @Before
     public void setup()
