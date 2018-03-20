@@ -20,38 +20,8 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-class InMemoryFileSystemStream implements StoreFileStreams
+public interface StoreFileStream extends AutoCloseable
 {
-    Map<String,StringBuffer> filesystem = new HashMap<>();
-
-    /**
-     *
-     * @param destination
-     * @param requiredAlignment
-     * @param data
-     * @throws IOException
-     */
-    public void write( String destination, int requiredAlignment, byte[] data ) throws IOException
-    {
-        StringBuffer buffer = filesystem.getOrDefault( destination, new StringBuffer() );
-        for ( byte b : data )
-        {
-            buffer.append( (char) b );
-        }
-        filesystem.put( destination, buffer );
-    }
-
-    @Override
-    public void close() throws Exception
-    {
-        throw new RuntimeException( "Unimplemented" );
-    }
-
-    public Map<String,StringBuffer> getFilesystem()
-    {
-        return filesystem;
-    }
+    void write( byte[] data ) throws IOException;
 }

@@ -40,7 +40,7 @@ public class CatchUpResponseAdaptor<T> implements CatchUpResponseCallback<T>
     }
 
     @Override
-    public boolean onFileContent( CompletableFuture<T> signal, FileChunk response ) throws IOException
+    public boolean onFileContent( CompletableFuture<T> signal, FileChunk response )
     {
         unimplementedMethod( signal, response );
         return false;
