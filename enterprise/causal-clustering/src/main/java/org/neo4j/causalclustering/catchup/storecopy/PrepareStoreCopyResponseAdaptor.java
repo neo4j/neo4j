@@ -20,8 +20,6 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
