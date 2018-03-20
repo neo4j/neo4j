@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
@@ -37,7 +37,7 @@ public interface CollectionsFactory
 
     <V> PrimitiveLongObjectMap<V> newLongObjectMap();
 
-    <V> PrimitiveIntObjectMap<V> newIntObjectMap();
+    <V> MutableIntObjectMap<V> newIntObjectMap();
 
     PrimitiveLongDiffSets newLongDiffSets();
 

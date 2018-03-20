@@ -19,16 +19,16 @@
  */
 package org.neo4j.graphdb.traversal;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.graphdb.Path;
 
 class LevelUnique extends AbstractUniquenessFilter
 {
-    private final PrimitiveIntObjectMap<MutableLongSet> idsPerLevel = Primitive.intObjectMap();
+    private final MutableIntObjectMap<MutableLongSet> idsPerLevel = new IntObjectHashMap<>();
 
     LevelUnique( PrimitiveTypeFetcher type )
     {

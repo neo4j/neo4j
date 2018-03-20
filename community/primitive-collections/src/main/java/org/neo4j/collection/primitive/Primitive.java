@@ -26,9 +26,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 import org.neo4j.memory.MemoryAllocationTracker;
 
@@ -76,16 +74,6 @@ public class Primitive
     {
         // todo ak
         return new IntHashSet();
-    }
-
-    public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()
-    {
-        return intObjectMap( DEFAULT_HEAP_CAPACITY );
-    }
-
-    public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )
-    {
-        return new PrimitiveIntObjectHashMap<>( new IntKeyObjectValueTable<>( initialCapacity ), NO_MONITOR );
     }
 
     public static LongIterator iterator( final long... longs )

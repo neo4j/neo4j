@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +34,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -48,8 +49,8 @@ public final class IndexMap implements Cloneable
     private final PrimitiveLongObjectMap<IndexProxy> indexesById;
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final Map<SchemaDescriptor,Long> indexIdsByDescriptor;
-    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
-    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
+    private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
+    private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
 
     public IndexMap()
     {
@@ -69,8 +70,8 @@ public final class IndexMap implements Cloneable
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
-        this.descriptorsByLabel = Primitive.intObjectMap();
-        this.descriptorsByProperty = Primitive.intObjectMap();
+        this.descriptorsByLabel = new IntObjectHashMap<>();
+        this.descriptorsByProperty = new IntObjectHashMap<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
@@ -214,7 +215,7 @@ public final class IndexMap implements Cloneable
     private void addToLookup(
             int key,
             SchemaDescriptor schema,
-            PrimitiveIntObjectMap<Set<SchemaDescriptor>> lookup )
+            MutableIntObjectMap<Set<SchemaDescriptor>> lookup )
     {
         Set<SchemaDescriptor> descriptors = lookup.get( key );
         if ( descriptors == null )
@@ -228,7 +229,7 @@ public final class IndexMap implements Cloneable
     private void removeFromLookup(
             int key,
             SchemaDescriptor schema,
-            PrimitiveIntObjectMap<Set<SchemaDescriptor>> lookup )
+            MutableIntObjectMap<Set<SchemaDescriptor>> lookup )
     {
         Set<SchemaDescriptor> descriptors = lookup.get( key );
         descriptors.remove( schema );

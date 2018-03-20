@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.mockito.Mockito;
@@ -28,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Transaction.Type;
@@ -204,7 +204,7 @@ public class KernelTransactionTestBase
         }
 
         @Override
-        public <V> PrimitiveIntObjectMap<V> newIntObjectMap()
+        public <V> MutableIntObjectMap<V> newIntObjectMap()
         {
             return OnHeapCollectionsFactory.INSTANCE.newIntObjectMap();
         }

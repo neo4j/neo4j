@@ -21,6 +21,8 @@ package org.neo4j.graphalgo.impl.path;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,8 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.impl.util.PathImpl;
 import org.neo4j.graphalgo.impl.util.PathImpl.Builder;
@@ -572,13 +572,13 @@ public class ShortestPath implements PathFinder<Path>
     // One long lived instance
     private static class Hits
     {
-        private final PrimitiveIntObjectMap<Collection<Hit>> hits = Primitive.intObjectMap();
+        private final MutableIntObjectMap<Collection<Hit>> hits = new IntObjectHashMap<>();
         private int lowestDepth;
         private int totalHitCount;
 
         int add( Hit hit, int atDepth )
         {
-            Collection<Hit> depthHits = hits.computeIfAbsent( atDepth, k -> new HashSet<>() );
+            Collection<Hit> depthHits = hits.getIfAbsentPut( atDepth, HashSet::new );
             if ( depthHits.add( hit ) )
             {
                 totalHitCount++;

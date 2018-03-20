@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -33,8 +34,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
@@ -103,13 +102,13 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
      */
     private final CollectionsFactory collectionsFactory;
 
-    private PrimitiveIntObjectMap<DiffSets<Long>> labelStatesMap;
+    private MutableIntObjectMap<DiffSets<Long>> labelStatesMap;
     private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
-    private PrimitiveIntObjectMap<String> createdLabelTokens;
-    private PrimitiveIntObjectMap<String> createdPropertyKeyTokens;
-    private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
+    private MutableIntObjectMap<String> createdLabelTokens;
+    private MutableIntObjectMap<String> createdPropertyKeyTokens;
+    private MutableIntObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
     private DiffSets<SchemaIndexDescriptor> indexChanges;
@@ -234,17 +233,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( createdLabelTokens != null )
         {
-            createdLabelTokens.visitEntries( new LabelTokenStateVisitor( visitor ) );
+            createdLabelTokens.forEachKeyValue( visitor::visitCreatedLabelToken );
         }
 
         if ( createdPropertyKeyTokens != null )
         {
-            createdPropertyKeyTokens.visitEntries( new PropertyKeyTokenStateVisitor( visitor ) );
+            createdPropertyKeyTokens.forEachKeyValue( visitor::visitCreatedPropertyKeyToken );
         }
 
         if ( createdRelationshipTypeTokens != null )
         {
-            createdRelationshipTypeTokens.visitEntries( new RelationshipTypeTokenStateVisitor( visitor ) );
+            createdRelationshipTypeTokens.forEachKeyValue( visitor::visitCreatedRelationshipTypeToken );
         }
     }
 
@@ -369,7 +368,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             labelStatesMap = collectionsFactory.newIntObjectMap();
         }
-        return labelStatesMap.computeIfAbsent( labelId, unused -> new DiffSets<>() );
+        return labelStatesMap.getIfAbsentPut( labelId, DiffSets::new );
     }
 
     private ReadableDiffSets<Long> getLabelStateNodeDiffSets( int labelId )
@@ -1287,18 +1286,19 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             return;
         }
-        if ( labelStatesMap != null )
-        {
-            labelStatesMap.close();
-        }
-        if ( createdLabelTokens != null )
-        {
-            createdLabelTokens.close();
-        }
-        if ( createdRelationshipTypeTokens != null )
-        {
-            createdRelationshipTypeTokens.close();
-        }
+        // todo ak
+//        if ( labelStatesMap != null )
+//        {
+//            labelStatesMap.close();
+//        }
+//        if ( createdLabelTokens != null )
+//        {
+//            createdLabelTokens.close();
+//        }
+//        if ( createdRelationshipTypeTokens != null )
+//        {
+//            createdRelationshipTypeTokens.close();
+//        }
         if ( nodeStatesMap != null )
         {
             nodeStatesMap.close();
@@ -1316,57 +1316,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 //        {
 //            relationships.removedFromAdded.close();
 //        }
-    }
-
-    private static class LabelTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
-    {
-        private final TxStateVisitor visitor;
-
-        LabelTokenStateVisitor( TxStateVisitor visitor )
-        {
-            this.visitor = visitor;
-        }
-
-        @Override
-        public boolean visited( int key, String value )
-        {
-            visitor.visitCreatedLabelToken( value, key );
-            return false;
-        }
-    }
-
-    private static class PropertyKeyTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
-    {
-        private final TxStateVisitor visitor;
-
-        PropertyKeyTokenStateVisitor( TxStateVisitor visitor )
-        {
-            this.visitor = visitor;
-        }
-
-        @Override
-        public boolean visited( int key, String value )
-        {
-            visitor.visitCreatedPropertyKeyToken( value, key );
-            return false;
-        }
-    }
-
-    private static class RelationshipTypeTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
-    {
-        private final TxStateVisitor visitor;
-
-        RelationshipTypeTokenStateVisitor( TxStateVisitor visitor )
-        {
-            this.visitor = visitor;
-        }
-
-        @Override
-        public boolean visited( int key, String value )
-        {
-            visitor.visitCreatedRelationshipTypeToken( value, key );
-            return false;
-        }
     }
 
     private static class ConstraintDiffSetsVisitor implements DiffSetsVisitor<ConstraintDescriptor>

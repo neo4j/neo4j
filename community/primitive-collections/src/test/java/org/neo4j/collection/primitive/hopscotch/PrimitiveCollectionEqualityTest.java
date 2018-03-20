@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveCollection;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.function.Factory;
 
@@ -84,32 +83,6 @@ public class PrimitiveCollectionEqualityTest
     // ==== Test Value Producers ====
 
     @DataPoint
-    public static ValueProducer<PrimitiveIntObjectMap> intObjV =
-            new ValueProducer<PrimitiveIntObjectMap>( PrimitiveIntObjectMap.class )
-    {
-        @Override
-        public Value<PrimitiveIntObjectMap> randomValue()
-        {
-            final int x = randomInt();
-            final Object y = new Object();
-            return new Value<PrimitiveIntObjectMap>()
-            {
-                @Override
-                public void add( PrimitiveIntObjectMap coll )
-                {
-                    coll.put( x, y );
-                }
-
-                @Override
-                public boolean remove( PrimitiveIntObjectMap coll )
-                {
-                    return coll.remove( x ) == y;
-                }
-            };
-        }
-    };
-
-    @DataPoint
     public static ValueProducer<PrimitiveLongObjectMap> longObjV =
             new ValueProducer<PrimitiveLongObjectMap>( PrimitiveLongObjectMap.class )
     {
@@ -136,13 +109,6 @@ public class PrimitiveCollectionEqualityTest
     };
 
     // ==== Primitive Collection Implementations ====
-
-    @DataPoint
-    public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;
-
-    @DataPoint
-    public static Factory<PrimitiveIntObjectMap> intObjMapWithCapacity =
-            () -> Primitive.intObjectMap( randomCapacity() );
 
     @DataPoint
     public static Factory<PrimitiveLongObjectMap> longObjectMap = Primitive::longObjectMap;

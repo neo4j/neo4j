@@ -20,16 +20,16 @@
 package org.neo4j.consistency.checking.full;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -94,7 +94,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             Collection<PropertyRecord> propertyRecs )
     {
         Set<Long> labels = NodeLabelReader.getListOfLabels( record, records, engine );
-        PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
+        IntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.onlineRules() )
         {
             long labelId = indexRule.schema().keyId();
@@ -200,7 +200,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         }
     }
 
-    private Value[] getPropertyValues( PrimitiveIntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
+    private Value[] getPropertyValues( IntObjectMap<PropertyBlock> propertyMap, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];
         for ( int i = 0; i < indexPropertyIds.length; i++ )
@@ -211,9 +211,9 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return values;
     }
 
-    private PrimitiveIntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
+    private IntObjectMap<PropertyBlock> properties( List<PropertyBlock> propertyBlocks )
     {
-        PrimitiveIntObjectMap<PropertyBlock> propertyIds = Primitive.intObjectMap();
+        final MutableIntObjectMap<PropertyBlock> propertyIds = new IntObjectHashMap<>();
         for ( PropertyBlock propertyBlock : propertyBlocks )
         {
             propertyIds.put( propertyBlock.getKeyIndexId(), propertyBlock );
@@ -252,7 +252,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     private static boolean nodeHasSchemaProperties(
-            PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
+            IntObjectMap<PropertyBlock> nodePropertyMap, int[] indexPropertyIds )
     {
         for ( int indexPropertyId : indexPropertyIds )
         {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,8 +33,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntFunction;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -188,7 +188,7 @@ public class NativeAllEntriesLabelScanReaderTest
 
     private static IntFunction<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> store( Labels... labels )
     {
-        PrimitiveIntObjectMap<Labels> labelsMap = Primitive.intObjectMap( labels.length );
+        final MutableIntObjectMap<Labels> labelsMap = new IntObjectHashMap<>( labels.length );
         for ( Labels item : labels )
         {
             labelsMap.put( item.labelId, item );
