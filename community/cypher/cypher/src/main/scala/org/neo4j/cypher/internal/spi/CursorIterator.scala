@@ -27,12 +27,19 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import scala.collection.Iterator
 
 abstract class CursorIterator[T] extends Iterator[T] {
-  private var _next: T = fetchNext()
+  private var _next: T = _
+  private var intialzed = false
 
   protected def fetchNext(): T
   protected def close(): Unit
 
-  override def hasNext: Boolean = _next != null
+  override def hasNext: Boolean = {
+    if (!intialzed) {
+      _next = fetchNext()
+      intialzed = true
+    }
+    _next != null
+  }
 
   override def next(): T = {
     if (!hasNext) {

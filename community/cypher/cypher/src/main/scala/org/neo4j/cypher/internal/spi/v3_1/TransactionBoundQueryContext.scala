@@ -511,8 +511,12 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       txContext.kernelTransaction.indexRead().nodeExplicitIndexLookup(cursor, name, key, Values.of(value))
       new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
-          if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
-          else null
+          while (cursor.next() ) {
+            if (reads().nodeExists(cursor.nodeReference())) {
+              return entityAccessor.newNodeProxy(cursor.nodeReference())
+            }
+          }
+          null
         }
         override protected def close(): Unit = cursor.close()
       }
@@ -523,8 +527,12 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       txContext.kernelTransaction.indexRead().nodeExplicitIndexQuery(cursor, name, query)
       new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
-          if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
-          else null
+          while (cursor.next() ) {
+            if (reads().nodeExists(cursor.nodeReference())) {
+              return entityAccessor.newNodeProxy(cursor.nodeReference())
+            }
+          }
+          null
         }
         override protected def close(): Unit = cursor.close()
       }
@@ -650,11 +658,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       txContext.kernelTransaction.indexRead().relationshipExplicitIndexGet(cursor, name, key, Values.of(value), -1, -1)
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
-          if (cursor.next()) entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                                 cursor.`type`(), cursor.targetNodeReference() )
-          else null
+          while (cursor.next() ) {
+            if (reads().relationshipExists(cursor.relationshipReference())) {
+              return entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
+                                                  cursor.`type`(), cursor.targetNodeReference() )
+            }
+          }
+          null
         }
-
         override protected def close(): Unit = cursor.close()
       }
     }
@@ -664,9 +675,13 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       txContext.kernelTransaction.indexRead().relationshipExplicitIndexQuery(cursor, name, query, -1, -1)
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
-          if (cursor.next()) entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
-                                                                 cursor.`type`(), cursor.targetNodeReference() )
-          else null
+          while (cursor.next() ) {
+            if (reads().relationshipExists(cursor.relationshipReference())) {
+              return entityAccessor.newRelationshipProxy(cursor.relationshipReference(), cursor.sourceNodeReference(),
+                                                         cursor.`type`(), cursor.targetNodeReference() )
+            }
+          }
+          null
         }
 
         override protected def close(): Unit = cursor.close()
