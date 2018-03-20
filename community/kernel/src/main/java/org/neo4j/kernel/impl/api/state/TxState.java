@@ -113,6 +113,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<SchemaIndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
+    private PropertyChanges propertyChangesForNodes;
+
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
 
@@ -529,6 +531,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
         nodeState.addProperty( newPropertyKeyId, value );
+        nodePropertyChanges().addProperty( nodeId, newPropertyKeyId, value );
         dataChanged();
     }
 
@@ -536,6 +539,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue )
     {
         getOrCreateNodeState( nodeId ).changeProperty( propertyKeyId, newValue );
+        nodePropertyChanges().changeProperty( nodeId, propertyKeyId, replacedValue, newValue );
         dataChanged();
     }
 
@@ -572,6 +576,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
     {
         getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId, removedValue );
+        nodePropertyChanges().removeProperty( nodeId, propertyKeyId, removedValue );
         dataChanged();
     }
 
@@ -1224,6 +1229,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap != null && nodeStatesMap.containsKey( nodeId );
     }
 
+    private PropertyChanges nodePropertyChanges()
+    {
+        return propertyChangesForNodes == null ? propertyChangesForNodes = new PropertyChanges( collectionsFactory ) : propertyChangesForNodes;
+    }
+
     @Override
     public PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
@@ -1276,6 +1286,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( relationshipStatesMap != null )
         {
             relationshipStatesMap.close();
+        }
+        if ( propertyChangesForNodes != null )
+        {
+            propertyChangesForNodes.release();
         }
         if ( nodes != null && nodes.removedFromAdded != null )
         {
