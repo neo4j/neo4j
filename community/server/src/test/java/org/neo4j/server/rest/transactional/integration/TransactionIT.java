@@ -603,7 +603,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final Future<Response> executeFuture = executors.submit( () ->
         {
-            Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
+            HTTP.Builder requestBuilder = HTTP.withBaseUri( server().baseUri() );
+            Response response = requestBuilder.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
             assertThat( response.status(), equalTo( 200 ) );
             return response;
@@ -615,8 +616,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         {
             waitForStatementExecution( statement );
 
-            Response response = http.DELETE( begin.location() );
-            assertThat( response.status(), equalTo( 200 ) );
+            Response response = http.DELETE( executeResource );
+            assertThat( response.toString(), response.status(), equalTo( 200 ) );
             nodeReleaseLatch.countDown();
             return response;
         } );
@@ -627,7 +628,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
         Response execute2 =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+                http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
         assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
