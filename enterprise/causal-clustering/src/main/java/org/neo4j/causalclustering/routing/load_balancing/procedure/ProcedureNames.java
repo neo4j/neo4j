@@ -19,11 +19,7 @@
  */
 package org.neo4j.causalclustering.routing.load_balancing.procedure;
 
-import java.util.Arrays;
-
 import org.neo4j.causalclustering.routing.procedure.ProcedureNamesEnum;
-
-import static java.lang.String.join;
 
 /**
  * This is part of the cluster / driver interface specification and
@@ -57,5 +53,4 @@ public enum ProcedureNames implements ProcedureNamesEnum
     {
         return nameSpace;
     }
-
 }
