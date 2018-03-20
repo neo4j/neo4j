@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -117,7 +118,7 @@ public class TemporalIndexProvider extends IndexProvider
                 default: // continue
                 }
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;
