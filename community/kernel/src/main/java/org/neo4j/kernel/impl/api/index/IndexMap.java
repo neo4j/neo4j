@@ -119,7 +119,7 @@ public final class IndexMap implements Cloneable
             return null;
         }
 
-        SchemaDescriptor schema = removedProxy.getDescriptor().schema();
+        SchemaDescriptor schema = removedProxy.schema();
         indexesByDescriptor.remove( schema );
         if ( schema.entityType() == EntityType.NODE )
         {
@@ -354,6 +354,12 @@ public final class IndexMap implements Cloneable
         {
             return Collections.emptySet();
         }
+        if ( unchangedLabels.length == 0 )
+        {
+            Set<SchemaDescriptor> descriptors = extractIndexesByProperties( properties, descriptorsByProperty );
+            descriptors.retainAll( descriptorsForAllEntityTokens );
+            return descriptors;
+        }
         if ( nIndexesForLabels < nIndexesForProperties )
         {
             return extractIndexesByEntityTokens( unchangedLabels, descriptorsByEntityToken, descriptorsForAllEntityTokens );
@@ -376,7 +382,10 @@ public final class IndexMap implements Cloneable
                 set.addAll( forLabel );
             }
         }
-        set.addAll( descriptorsForAllEntityTokens );
+        if ( entityTokenIds.length!=0 )
+        {
+            set.addAll( descriptorsForAllEntityTokens );
+        }
         return set;
     }
 
