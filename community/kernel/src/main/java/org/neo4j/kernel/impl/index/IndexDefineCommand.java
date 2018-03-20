@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.Primitive.intObjectMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
@@ -53,15 +54,15 @@ public class IndexDefineCommand extends Command
     private final AtomicInteger nextKeyId = new AtomicInteger();
     private Map<String,Integer> indexNameIdRange;
     private Map<String,Integer> keyIdRange;
-    private PrimitiveIntObjectMap<String> idToIndexName;
-    private PrimitiveIntObjectMap<String> idToKey;
+    private MutableIntObjectMap<String> idToIndexName;
+    private MutableIntObjectMap<String> idToKey;
 
     public IndexDefineCommand()
     {
         setIndexNameIdRange( new HashMap<>() );
         setKeyIdRange( new HashMap<>() );
-        idToIndexName = intObjectMap( 16 );
-        idToKey = intObjectMap( 16 );
+        idToIndexName = new IntObjectHashMap<>();
+        idToKey = new IntObjectHashMap<>();
     }
 
     public void init( Map<String,Integer> indexNames, Map<String,Integer> keys )
@@ -72,9 +73,9 @@ public class IndexDefineCommand extends Command
         idToKey = reverse( keys );
     }
 
-    private static PrimitiveIntObjectMap<String> reverse( Map<String,Integer> map )
+    private static MutableIntObjectMap<String> reverse( Map<String, Integer> map )
     {
-        PrimitiveIntObjectMap<String> result = Primitive.intObjectMap( map.size() );
+        final MutableIntObjectMap<String> result = new IntObjectHashMap<>( map.size() );
         for ( Map.Entry<String,Integer> entry : map.entrySet() )
         {
             result.put( entry.getValue(), entry.getKey() );
@@ -82,7 +83,7 @@ public class IndexDefineCommand extends Command
         return result;
     }
 
-    private static String getFromMap( PrimitiveIntObjectMap<String> map, int id )
+    private static String getFromMap( IntObjectMap<String> map, int id )
     {
         if ( id == -1 )
         {
@@ -116,7 +117,7 @@ public class IndexDefineCommand extends Command
         return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
     }
 
-    private int getOrAssignId( Map<String,Integer> stringToId, PrimitiveIntObjectMap<String> idToString,
+    private int getOrAssignId( Map<String, Integer> stringToId, MutableIntObjectMap<String> idToString,
             AtomicInteger nextId, String string )
     {
         if ( string == null )

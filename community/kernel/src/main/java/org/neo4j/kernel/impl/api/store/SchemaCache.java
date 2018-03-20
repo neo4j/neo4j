@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,8 +34,6 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterators;
@@ -178,10 +179,10 @@ public class SchemaCache
         private final PrimitiveLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,SchemaIndexDescriptor> indexDescriptors;
-        private final PrimitiveIntObjectMap<Set<SchemaIndexDescriptor>> indexDescriptorsByLabel;
+        private final MutableIntObjectMap<Set<SchemaIndexDescriptor>> indexDescriptorsByLabel;
 
         private final Map<Class<?>,Object> dependantState;
-        private final PrimitiveIntObjectMap<List<SchemaIndexDescriptor>> indexByProperty;
+        private final MutableIntObjectMap<List<SchemaIndexDescriptor>> indexByProperty;
 
         SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
         {
@@ -191,9 +192,9 @@ public class SchemaCache
             this.constraintRuleById = Primitive.longObjectMap();
 
             this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByLabel = Primitive.intObjectMap();
+            this.indexDescriptorsByLabel = new IntObjectHashMap<>();
             this.dependantState = new HashMap<>();
-            this.indexByProperty = Primitive.intObjectMap();
+            this.indexByProperty = new IntObjectHashMap<>();
             load( rules );
         }
 
@@ -205,9 +206,9 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByLabel = PrimitiveIntCollections.copy( schemaCacheState.indexDescriptorsByLabel );
+            this.indexDescriptorsByLabel = IntObjectHashMap.newMap( schemaCacheState.indexDescriptorsByLabel );
             this.dependantState = new HashMap<>();
-            this.indexByProperty = PrimitiveIntCollections.copy( schemaCacheState.indexByProperty );
+            this.indexByProperty = IntObjectHashMap.newMap( schemaCacheState.indexByProperty );
         }
 
         private void load( Iterable<SchemaRule> schemaRuleIterator )
@@ -287,13 +288,13 @@ public class SchemaCache
                 indexDescriptors.put( schemaDescriptor, schemaIndexDescriptor );
 
                 Set<SchemaIndexDescriptor> forLabel =
-                        indexDescriptorsByLabel.computeIfAbsent( schemaDescriptor.keyId(), k -> new HashSet<>() );
+                        indexDescriptorsByLabel.getIfAbsentPut( schemaDescriptor.keyId(), HashSet::new );
                 forLabel.add( schemaIndexDescriptor );
 
                 for ( int propertyId : indexRule.schema().getPropertyIds() )
                 {
                     List<SchemaIndexDescriptor> indexesForProperty =
-                            indexByProperty.computeIfAbsent( propertyId, k -> new ArrayList<>() );
+                            indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
                     indexesForProperty.add( schemaIndexDescriptor );
                 }
             }

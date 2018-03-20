@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.enterprise;
 
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
@@ -31,8 +33,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -66,8 +66,8 @@ class PropertyExistenceEnforcer
 
     private final List<LabelSchemaDescriptor> nodeConstraints;
     private final List<RelationTypeSchemaDescriptor> relationshipConstraints;
-    private final PrimitiveIntObjectMap<int[]> mandatoryNodePropertiesByLabel = Primitive.intObjectMap();
-    private final PrimitiveIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = Primitive.intObjectMap();
+    private final MutableIntObjectMap<int[]> mandatoryNodePropertiesByLabel = new IntObjectHashMap<>();
+    private final MutableIntObjectMap<int[]> mandatoryRelationshipPropertiesByType = new IntObjectHashMap<>();
 
     private PropertyExistenceEnforcer( List<LabelSchemaDescriptor> nodes, List<RelationTypeSchemaDescriptor> rels )
     {
@@ -85,7 +85,7 @@ class PropertyExistenceEnforcer
         }
     }
 
-    private static void update( PrimitiveIntObjectMap<int[]> map, int key, int[] sortedValues )
+    private static void update( MutableIntObjectMap<int[]> map, int key, int[] sortedValues )
     {
         int[] current = map.get( key );
         if ( current != null )
@@ -324,7 +324,7 @@ class PropertyExistenceEnforcer
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            for ( IntIterator labels = mandatoryNodePropertiesByLabel.intIterator(); labels.hasNext(); )
+            for ( IntIterator labels = mandatoryNodePropertiesByLabel.keySet().intIterator(); labels.hasNext(); )
             {
                 int label = labels.next();
                 if ( labelIds.contains( label ) )

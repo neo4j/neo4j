@@ -19,12 +19,13 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
@@ -51,7 +52,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.newChunkHeaderB
 abstract class InputEntityCacheReader implements InputIterator
 {
     // Used by workers, immutable
-    private final PrimitiveIntObjectMap<String>[] tokens;
+    private final MutableIntObjectMap<String>[] tokens;
 
     // Not used by workers
     private final StoreChannel channel;
@@ -62,11 +63,11 @@ abstract class InputEntityCacheReader implements InputIterator
     InputEntityCacheReader( StoreChannel channel, StoreChannel header )
             throws IOException
     {
-        tokens = new PrimitiveIntObjectMap[HIGH_TOKEN_TYPE];
-        tokens[PROPERTY_KEY_TOKEN] = Primitive.intObjectMap();
-        tokens[LABEL_TOKEN] = Primitive.intObjectMap();
-        tokens[RELATIONSHIP_TYPE_TOKEN] = Primitive.intObjectMap();
-        tokens[GROUP_TOKEN] = Primitive.intObjectMap();
+        tokens = new MutableIntObjectMap[HIGH_TOKEN_TYPE];
+        tokens[PROPERTY_KEY_TOKEN] = new IntObjectHashMap<>();
+        tokens[LABEL_TOKEN] = new IntObjectHashMap<>();
+        tokens[RELATIONSHIP_TYPE_TOKEN] = new IntObjectHashMap<>();
+        tokens[GROUP_TOKEN] = new IntObjectHashMap<>();
         this.channel = channel;
         readHeader( header );
     }

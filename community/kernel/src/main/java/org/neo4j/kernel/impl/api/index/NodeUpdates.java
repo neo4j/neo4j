@@ -20,17 +20,18 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveArrays;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
@@ -39,7 +40,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asSet;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
 
@@ -56,7 +56,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     private final long[] labelsBefore;
     private final long[] labelsAfter;
 
-    private final PrimitiveIntObjectMap<PropertyValue> knownProperties;
+    private final MutableIntObjectMap<PropertyValue> knownProperties;
     private boolean hasLoadedAdditionalProperties;
 
     public static class Builder
@@ -123,7 +123,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         this.nodeId = nodeId;
         this.labelsBefore = labelsBefore;
         this.labelsAfter = labelsAfter;
-        this.knownProperties = Primitive.intObjectMap();
+        this.knownProperties = new IntObjectHashMap<>();
     }
 
     public final long getNodeId()
@@ -145,7 +145,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
-        return asSet( knownProperties.intIterator() );
+        return knownProperties.keySet().toImmutable();
     }
 
     @Override
@@ -369,13 +369,12 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( nodeId );
         result.append( ", labelsBefore:" ).append( Arrays.toString( labelsBefore ) );
         result.append( ", labelsAfter:" ).append( Arrays.toString( labelsAfter ) );
-        knownProperties.visitEntries( ( key, propertyValue ) ->
+        knownProperties.forEachKeyValue( ( key, propertyValue ) ->
         {
             result.append( ", " );
             result.append( key );
             result.append( " -> " );
             result.append( propertyValue );
-            return false;
         } );
         return result.append( ']' ).toString();
     }
@@ -389,7 +388,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         result = prime * result + Arrays.hashCode( labelsAfter );
         result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
 
-        final IntIterator propertyKeyIds = knownProperties.intIterator();
+        final IntIterator propertyKeyIds = knownProperties.keySet().intIterator();
         while ( propertyKeyIds.hasNext() )
         {
             int propertyKeyId = propertyKeyIds.next();
@@ -418,27 +417,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return Arrays.equals( labelsBefore, other.labelsBefore ) &&
                Arrays.equals( labelsAfter, other.labelsAfter ) &&
                nodeId == other.nodeId &&
-               propertyMapEquals( knownProperties, other.knownProperties );
-    }
-
-    private boolean propertyMapEquals(
-            PrimitiveIntObjectMap<PropertyValue> a,
-            PrimitiveIntObjectMap<PropertyValue> b )
-    {
-        if ( a.size() != b.size() )
-        {
-            return false;
-        }
-        final IntIterator aIterator = a.intIterator();
-        while ( aIterator.hasNext() )
-        {
-            int key = aIterator.next();
-            if ( !a.get( key ).equals( b.get( key ) ) )
-            {
-                return false;
-            }
-        }
-        return true;
+               Objects.equals( knownProperties, other.knownProperties );
     }
 
     enum PropertyValueType
