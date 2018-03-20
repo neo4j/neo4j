@@ -29,6 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
@@ -55,7 +56,7 @@ public class FusionIndexProviderTest
 
     private StringIndexProvider stringProvider;
     private NumberIndexProvider numberProvider;
-    private SpatialFusionIndexProvider spatialProvider;
+    private SpatialIndexProvider spatialProvider;
     private TemporalIndexProvider temporalProvider;
     private IndexProvider luceneProvider;
     private IndexProvider[] providers;
@@ -65,7 +66,7 @@ public class FusionIndexProviderTest
     {
         stringProvider = mock( StringIndexProvider.class );
         numberProvider = mock( NumberIndexProvider.class );
-        spatialProvider = mock( SpatialFusionIndexProvider.class );
+        spatialProvider = mock( SpatialIndexProvider.class );
         temporalProvider = mock( TemporalIndexProvider.class );
         luceneProvider = mock( IndexProvider.class );
         when( stringProvider.getProviderDescriptor() ).thenReturn( new IndexProvider.Descriptor( "string", "1" ) );
