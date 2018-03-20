@@ -17,26 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.protocol;
+package org.neo4j.causalclustering.catchup;
 
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.channel.ChannelHandler;
 
-import org.neo4j.logging.Log;
+import java.util.Optional;
 
-public class ServerNettyPipelineBuilder extends NettyPipelineBuilder<ProtocolInstaller.Orientation.Server, ServerNettyPipelineBuilder>
+public interface CatchupServerHandler
 {
-    ServerNettyPipelineBuilder( ChannelPipeline pipeline, Log log )
-    {
-        super( pipeline, log );
-    }
+    ChannelHandler txPullRequestHandler();
 
-    @Override
-    public ServerNettyPipelineBuilder addFraming()
-    {
-        add( "frame_encoder", new LengthFieldPrepender( 4 ) );
-        add( "frame_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-        return this;
-    }
+    ChannelHandler getStoreIdRequestHandler();
+
+    ChannelHandler storeListingRequestHandler();
+
+    ChannelHandler getStoreFileRequestHandler();
+
+    ChannelHandler getIndexSnapshotRequestHandler();
+
+    Optional<ChannelHandler> snapshotHandler();
 }

@@ -46,7 +46,6 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMAT
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {

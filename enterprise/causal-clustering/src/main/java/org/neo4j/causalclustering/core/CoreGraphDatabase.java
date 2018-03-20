@@ -39,8 +39,7 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     {
     }
 
-    public CoreGraphDatabase( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public CoreGraphDatabase( File storeDir, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
     }
@@ -56,5 +55,10 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
     public Role getRole()
     {
         return getDependencyResolver().resolveDependency( RaftMachine.class ).currentRole();
+    }
+
+    public void stopCatchupServer()
+    {
+        ((EnterpriseCoreEditionModule) editionModule).stopCatchupServer();
     }
 }

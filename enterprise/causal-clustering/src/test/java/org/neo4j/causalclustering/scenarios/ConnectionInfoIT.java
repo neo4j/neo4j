@@ -26,22 +26,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
-import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
-import org.neo4j.causalclustering.core.state.CoreSnapshotService;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.causalclustering.ClusterRule;
-
-import static org.mockito.Mockito.mock;
 
 public class ConnectionInfoIT
 {
@@ -61,7 +51,7 @@ public class ConnectionInfoIT
     }
 
     @Test
-    public void catchupServerMessage() throws Throwable
+    public void testAddressAlreadyBoundMessage() throws Throwable
     {
         // given
         testSocket = bindPort( "localhost", PortAuthority.allocatePort() );
@@ -69,13 +59,9 @@ public class ConnectionInfoIT
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider();
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
-        CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( "localhost", testSocket.getLocalPort() );
 
-        CatchupServer catchupServer =
-                new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(), mockSupplier(), mock( BooleanSupplier.class ),
-                        snapshotService, new Monitors(), mock( CheckpointerSupplier.class ), mock( FileSystemAbstraction.class ),
-                        mock( PageCache.class ), listenSocketAddress, new StoreCopyCheckPointMutex(), null );
+        Server catchupServer = new Server( channel -> { }, logProvider, userLogProvider, listenSocketAddress, "server-name" );
 
         //then
         try
@@ -86,16 +72,11 @@ public class ConnectionInfoIT
         {
             //expected.
         }
-        logProvider.assertContainsMessageContaining( "Address is already bound for setting" );
-        userLogProvider.assertContainsMessageContaining( "Address is already bound for setting" );
+        logProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
+        userLogProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private <T> Supplier<T> mockSupplier()
-    {
-        return mock( Supplier.class );
-    }
-
+    @SuppressWarnings( "SameParameterValue" )
     private Socket bindPort( String address, int port ) throws IOException
     {
         Socket socket = new Socket();

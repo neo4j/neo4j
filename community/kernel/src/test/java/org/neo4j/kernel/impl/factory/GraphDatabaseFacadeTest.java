@@ -63,6 +63,7 @@ public class GraphDatabaseFacadeTest
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
+        EditionModule editionModule = mock( EditionModule.class );
         Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
         readOperations = mock( ReadOperations.class );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
@@ -77,7 +78,7 @@ public class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
         when( statement.readOperations() ).thenReturn( readOperations );
 
-        graphDatabaseFacade.init( spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
+        graphDatabaseFacade.init( editionModule, spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
     }
 
     @Test

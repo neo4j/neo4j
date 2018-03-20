@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.protocol;
+package org.neo4j.causalclustering.net;
 
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 
-import org.neo4j.logging.Log;
-
-public class ServerNettyPipelineBuilder extends NettyPipelineBuilder<ProtocolInstaller.Orientation.Server, ServerNettyPipelineBuilder>
+public interface ChildInitializer
 {
-    ServerNettyPipelineBuilder( ChannelPipeline pipeline, Log log )
-    {
-        super( pipeline, log );
-    }
+    void initChannel( SocketChannel channel ) throws Exception;
 
-    @Override
-    public ServerNettyPipelineBuilder addFraming()
+    default ChannelInitializer<SocketChannel> asChannelInitializer()
     {
-        add( "frame_encoder", new LengthFieldPrepender( 4 ) );
-        add( "frame_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-        return this;
+        return new ChannelInitializer<SocketChannel>()
+        {
+            @Override
+            protected void initChannel( SocketChannel channel ) throws Exception
+            {
+                ChildInitializer.this.initChannel( channel );
+            }
+        };
     }
 }

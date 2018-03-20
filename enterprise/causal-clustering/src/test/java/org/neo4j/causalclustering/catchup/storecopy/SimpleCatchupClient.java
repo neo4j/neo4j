@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.causalclustering.StrippedCatchupServer;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -31,19 +30,18 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static org.neo4j.causalclustering.catchup.storecopy.RealStrippedCatchupServer.getCheckPointer;
 
 class SimpleCatchupClient implements AutoCloseable
 {
     private final GraphDatabaseAPI graphDb;
     private final FileSystemAbstraction fsa;
     private final CatchUpClient catchUpClient;
-    private final StrippedCatchupServer catchupServer;
+    private final TestCatchupServer catchupServer;
 
     private final AdvertisedSocketAddress from;
     private final StoreId correctStoreId;
@@ -53,7 +51,7 @@ class SimpleCatchupClient implements AutoCloseable
     private final LogProvider logProvider;
 
     SimpleCatchupClient( GraphDatabaseAPI graphDb, FileSystemAbstraction fileSystemAbstraction, CatchUpClient catchUpClient,
-            StrippedCatchupServer catchupServer, File temporaryDirectory, LogProvider logProvider ) throws IOException
+            TestCatchupServer catchupServer, File temporaryDirectory, LogProvider logProvider ) throws IOException
     {
         this.graphDb = graphDb;
         this.fsa = fileSystemAbstraction;
@@ -104,7 +102,7 @@ class SimpleCatchupClient implements AutoCloseable
 
     private AdvertisedSocketAddress getCatchupServerAddress()
     {
-        return new AdvertisedSocketAddress( "localhost", catchupServer.getPort() );
+        return new AdvertisedSocketAddress( "localhost", catchupServer.address().getPort() );
     }
 
     StoreCopyFinishedResponse requestIndexSnapshot( long indexId ) throws CatchUpClientException
@@ -120,5 +118,10 @@ class SimpleCatchupClient implements AutoCloseable
     public void close() throws Exception
     {
         IOUtils.closeAll( streamToDisk, clientPageCache );
+    }
+
+    private static CheckPointer getCheckPointer( GraphDatabaseAPI graphDb )
+    {
+        return graphDb.getDependencyResolver().resolveDependency( CheckPointer.class );
     }
 }

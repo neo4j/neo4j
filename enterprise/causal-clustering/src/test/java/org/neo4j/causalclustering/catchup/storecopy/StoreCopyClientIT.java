@@ -30,22 +30,25 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
-import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
+import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
+import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
+import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -54,20 +57,20 @@ import static org.junit.Assert.assertThat;
 
 public class StoreCopyClientIT
 {
-    FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+    private FileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
     private final LogProvider logProvider = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
     private final TerminationCondition defaultTerminationCondition = TerminationCondition.CONTINUE_INDEFINITELY;
 
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemAbstraction );
-
-    private FakeCatchupServer catchupServerRule;
+    public TestDirectory testDirectory = TestDirectory.testDirectory( fsa );
 
     private StoreCopyClient subject;
     private FakeFile fileA = new FakeFile( "fileA", "This is file a content" );
     private FakeFile fileB = new FakeFile( "another-file-b", "Totally different content 123" );
 
     private FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
+    private Server catchupServer;
+    private TestCatchupServerHandler serverHandler;
 
     private static void writeContents( FileSystemAbstraction fileSystemAbstraction, File file, String contents )
     {
@@ -85,16 +88,19 @@ public class StoreCopyClientIT
     @Before
     public void setup()
     {
-        catchupServerRule = new FakeCatchupServer( this, logProvider );
-        catchupServerRule.addFile( fileA );
-        catchupServerRule.addFile( fileB );
-        catchupServerRule.addIndexFile( indexFileA );
-        writeContents( fileSystemAbstraction, relative( fileA.getFilename() ), fileA.getContent() );
-        writeContents( fileSystemAbstraction, relative( fileB.getFilename() ), fileB.getContent() );
-        writeContents( fileSystemAbstraction, relative( indexFileA.getFilename() ), indexFileA.getContent() );
+        serverHandler = new TestCatchupServerHandler( logProvider, new CatchupServerProtocol(), testDirectory, fsa );
+        serverHandler.addFile( fileA );
+        serverHandler.addFile( fileB );
+        serverHandler.addIndexFile( indexFileA );
+        writeContents( fsa, relative( fileA.getFilename() ), fileA.getContent() );
+        writeContents( fsa, relative( fileB.getFilename() ), fileB.getContent() );
+        writeContents( fsa, relative( indexFileA.getFilename() ), indexFileA.getContent() );
 
-        CatchUpClient catchUpClient =
-                new CatchUpClient( logProvider, Clock.systemDefaultZone(), 2000, new Monitors(), VoidPipelineWrapperFactory.VOID_WRAPPER );
+        ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
+        catchupServer = new CatchupServerBuilder( protocol -> serverHandler ).listenAddress( listenAddress ).build();
+        catchupServer.start();
+
+        CatchUpClient catchUpClient = new CatchupClientBuilder().build();
         catchUpClient.start();
         subject = new StoreCopyClient( catchUpClient, logProvider );
     }
@@ -102,22 +108,19 @@ public class StoreCopyClientIT
     @After
     public void shutdown()
     {
-        catchupServerRule.stop();
+        catchupServer.stop();
     }
 
     @Test
     public void canPerformCatchup() throws StoreCopyFailedException, IOException
     {
         // given remote node has a store
-        catchupServerRule.before(); // assume it is running
-        catchupServerRule.start();
-
         // and local client has a store
         InMemoryFileSystemStream storeFileStream = new InMemoryFileSystemStream();
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -133,15 +136,12 @@ public class StoreCopyClientIT
         fileB.setRemainingFailed( 2 );
 
         // and remote node has a store
-        catchupServerRule.before(); // assume it is running
-        catchupServerRule.start();
-
         // and local client has a store
         InMemoryFileSystemStream clientStoreFileStream = new InMemoryFileSystemStream();
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -152,19 +152,16 @@ public class StoreCopyClientIT
         assertEquals( fileContent( relative( fileB.getFilename() ) ), clientFileContents( clientStoreFileStream, fileB.getFilename() ) );
 
         // and verify server had exactly 2 failed calls before having a 3rd succeeding request
-        assertEquals( 3, catchupServerRule.getRequestCount( fileB.getFilename() ) );
+        assertEquals( 3, serverHandler.getRequestCount( fileB.getFilename() ) );
 
         // and verify server had exactly 1 call for all other files
-        assertEquals( 1, catchupServerRule.getRequestCount( fileA.getFilename() ) );
+        assertEquals( 1, serverHandler.getRequestCount( fileA.getFilename() ) );
     }
 
     @Test
     public void reconnectingWorks() throws StoreCopyFailedException, IOException
     {
         // given a remote catchup will fail midway
-        catchupServerRule.before();
-        catchupServerRule.start();
-
         // and local client has a store
         InMemoryFileSystemStream storeFileStream = new InMemoryFileSystemStream();
 
@@ -172,15 +169,15 @@ public class StoreCopyClientIT
         fileB.setRemainingNoResponse( 1 );
 
         // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServerRule.getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, catchupServerRule.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
+        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
 
         // then the catchup is possible to complete
         assertEquals( fileContent( relative( fileA.getFilename() ) ), clientFileContents( storeFileStream, fileA.getFilename() ) );
         assertEquals( fileContent( relative( fileB.getFilename() ) ), clientFileContents( storeFileStream, fileB.getFilename() ) );
 
         // and verify file was requested more than once
-        assertThat( catchupServerRule.getRequestCount( fileB.getFilename() ), greaterThan( 1 ) );
+        assertThat( serverHandler.getRequestCount( fileB.getFilename() ), greaterThan( 1 ) );
     }
 
     private static AdvertisedSocketAddress from( int port )
@@ -195,7 +192,7 @@ public class StoreCopyClientIT
 
     private String fileContent( File file ) throws IOException
     {
-        return fileContent( file, fileSystemAbstraction );
+        return fileContent( file, fsa );
     }
 
     static String fileContent( File file, FileSystemAbstraction fsa ) throws IOException
