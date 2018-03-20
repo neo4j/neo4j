@@ -19,12 +19,17 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.IOUtils.closeAll;
 
@@ -33,7 +38,17 @@ public class StreamToDisk implements StoreFileStream
     private WritableByteChannel writableByteChannel;
     private List<AutoCloseable> closeables;
 
-    public StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
+    static StreamToDisk fromPagedFile( PagedFile pagedFile ) throws IOException
+    {
+        return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile );
+    }
+
+    static StreamToDisk fromFile( FileSystemAbstraction fsa, File file ) throws IOException
+    {
+        return new StreamToDisk( fsa.open( file, OpenMode.READ_WRITE ) );
+    }
+
+    private StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
     {
         this.writableByteChannel = writableByteChannel;
         this.closeables = new ArrayList<>();

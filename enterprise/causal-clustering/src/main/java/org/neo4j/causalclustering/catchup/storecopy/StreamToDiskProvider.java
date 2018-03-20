@@ -25,7 +25,6 @@ import java.nio.file.StandardOpenOption;
 
 import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -56,11 +55,11 @@ public class StreamToDiskProvider implements StoreFileStreamProvider
         {
             int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
             PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-            return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile );
+            return StreamToDisk.fromPagedFile( pagedFile );
         }
         else
         {
-            return new StreamToDisk( fs.open( fileName, OpenMode.READ_WRITE ) );
+            return StreamToDisk.fromFile( fs, fileName );
         }
     }
 }
