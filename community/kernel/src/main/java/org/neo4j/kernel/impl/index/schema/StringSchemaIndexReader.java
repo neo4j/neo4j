@@ -117,7 +117,6 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        return false;
+        return true;
     }
-    // todo implement
 }
