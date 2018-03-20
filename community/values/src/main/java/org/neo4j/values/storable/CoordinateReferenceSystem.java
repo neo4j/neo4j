@@ -19,9 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
@@ -31,22 +29,11 @@ import org.neo4j.helpers.collection.Pair;
 public class CoordinateReferenceSystem implements CRS
 {
     public static final CoordinateReferenceSystem Cartesian = new CoordinateReferenceSystem( "cartesian", CRSTable.SR_ORG, 7203, 2, false );
-    public static final CoordinateReferenceSystem Cartesian_3D = new CoordinateReferenceSystem( "cartesian-3D", CRSTable.SR_ORG, 9157, 3, false );
-    public static final CoordinateReferenceSystem WGS84 = new CoordinateReferenceSystem( "WGS-84", CRSTable.EPSG, 4326, 2, true );
-    public static final CoordinateReferenceSystem WGS84_3D = new CoordinateReferenceSystem( "WGS-84-3D", CRSTable.EPSG, 4979, 3, true );
+    public static final CoordinateReferenceSystem Cartesian_3D = new CoordinateReferenceSystem( "cartesian-3d", CRSTable.SR_ORG, 9157, 3, false );
+    public static final CoordinateReferenceSystem WGS84 = new CoordinateReferenceSystem( "wgs-84", CRSTable.EPSG, 4326, 2, true );
+    public static final CoordinateReferenceSystem WGS84_3D = new CoordinateReferenceSystem( "wgs-84-3d", CRSTable.EPSG, 4979, 3, true );
 
     private static final CoordinateReferenceSystem[] TYPES = new CoordinateReferenceSystem[]{Cartesian, Cartesian_3D, WGS84, WGS84_3D};
-    private static final Map<String,CoordinateReferenceSystem> all_by_name = new HashMap<>( TYPES.length );
-    private static final Map<String,CoordinateReferenceSystem> all_by_href = new HashMap<>( TYPES.length );
-
-    static
-    {
-        for ( CoordinateReferenceSystem crs : TYPES )
-        {
-            all_by_name.put( crs.name.toLowerCase(), crs );
-            all_by_href.put( crs.href.toLowerCase(), crs );
-        }
-    }
 
     public static Iterator<CoordinateReferenceSystem> all()
     {
@@ -56,15 +43,14 @@ public class CoordinateReferenceSystem implements CRS
     public static CoordinateReferenceSystem get( int tableId, int code )
     {
         CRSTable table = CRSTable.find( tableId );
-        String href = table.href( code );
-        if ( all_by_href.containsKey( href ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_href.get( href );
+            if ( type.table == table && type.code == code )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
-        }
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )
@@ -73,28 +59,29 @@ public class CoordinateReferenceSystem implements CRS
         return get( crs.getHref() );
     }
 
-    public static CoordinateReferenceSystem byName( String name )
+    static CoordinateReferenceSystem byName( String name )
     {
-        if ( all_by_name.containsKey( name.toLowerCase() ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_name.get( name.toLowerCase() );
+            if ( type.name.equals( name.toLowerCase() ) )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
-        }
+
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
     }
 
     public static CoordinateReferenceSystem get( String href )
     {
-        if ( all_by_href.containsKey( href.toLowerCase() ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_href.get( href.toLowerCase() );
+            if ( type.href.equals( href ) )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
-        }
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
     }
 
     public static CoordinateReferenceSystem get( int code )
@@ -102,9 +89,12 @@ public class CoordinateReferenceSystem implements CRS
         for ( CRSTable table : CRSTable.values() )
         {
             String href = table.href( code );
-            if ( all_by_href.containsKey( href.toLowerCase() ) )
+            for ( CoordinateReferenceSystem type : TYPES )
             {
-                return all_by_href.get( href.toLowerCase() );
+                if ( type.href.equals( href ) )
+                {
+                    return type;
+                }
             }
         }
         throw new IllegalArgumentException( "Unknown coordinate reference system code: " + code );
@@ -121,6 +111,7 @@ public class CoordinateReferenceSystem implements CRS
 
     private CoordinateReferenceSystem( String name, CRSTable table, int code, int dimension, boolean geographic )
     {
+        assert name.toLowerCase().equals( name );
         this.name = name;
         this.table = table;
         this.code = code;
