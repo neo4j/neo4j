@@ -152,13 +152,13 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipLabelScan( int label, RelationshipScanCursor cursor )
+    public void relationshipTypeScan( int type, RelationshipScanCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Scan<RelationshipScanCursor> relationshipLabelScan( int label )
+    public Scan<RelationshipScanCursor> relationshipTypeScan( int type )
     {
         throw new UnsupportedOperationException();
     }

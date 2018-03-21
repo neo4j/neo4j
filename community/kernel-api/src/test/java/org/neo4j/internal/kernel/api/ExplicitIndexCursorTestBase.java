@@ -111,7 +111,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
               PrimitiveLongSet edges = Primitive.longSet() )
         {
             // when
-            indexRead.relationshipExplicitIndexGet(
+            indexRead.relationshipExplicitIndexLookup(
                     cursor,
                     "rels",
                     "alpha",
@@ -123,7 +123,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             assertFoundRelationships( cursor, 1, edges );
 
             // when
-            indexRead.relationshipExplicitIndexGet( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
+            indexRead.relationshipExplicitIndexLookup( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, edges );

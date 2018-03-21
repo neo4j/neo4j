@@ -301,14 +301,14 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void relationshipLabelScan( int label, RelationshipScanCursor cursor )
+    public final void relationshipTypeScan( int type, RelationshipScanCursor cursor )
     {
         ktx.assertOpen();
-        ((DefaultRelationshipScanCursor) cursor).scan( label, this );
+        ((DefaultRelationshipScanCursor) cursor).scan( type, this );
     }
 
     @Override
-    public final Scan<RelationshipScanCursor> relationshipLabelScan( int label )
+    public final Scan<RelationshipScanCursor> relationshipTypeScan( int type )
     {
         ktx.assertOpen();
         throw new UnsupportedOperationException( "not implemented" );
@@ -463,7 +463,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void relationshipExplicitIndexGet(
+    public void relationshipExplicitIndexLookup(
             RelationshipExplicitIndexCursor cursor,
             String index,
             String key,

@@ -934,7 +934,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertConstraintDoesNotExist( constraint );
 
         //enforce constraints
-        allStoreHolder.relationshipLabelScan( descriptor.getRelTypeId(), relationshipCursor );
+        allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
         constraintSemantics
                 .validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
 
