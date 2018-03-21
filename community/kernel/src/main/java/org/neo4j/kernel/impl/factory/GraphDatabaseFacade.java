@@ -58,6 +58,7 @@ import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -738,7 +739,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
 
         int[] propertyIds = getPropertyIds( queries );
-        CapableIndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
+        IndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
 
         if ( index != CapableIndexReference.NO_INDEX )
         {
@@ -756,9 +757,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
     }
 
-    private CapableIndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    private IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
     {
-        CapableIndexReference index = transaction.schemaRead().index( labelId, propertyIds );
+        IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
         if ( index != CapableIndexReference.NO_INDEX )
         {
             // index found with property order matching the query
@@ -772,7 +773,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
             int[] workingCopy = new int[propertyIds.length];
 
-            Iterator<CapableIndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            Iterator<IndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
             while ( indexes.hasNext() )
             {
                 index = indexes.next();

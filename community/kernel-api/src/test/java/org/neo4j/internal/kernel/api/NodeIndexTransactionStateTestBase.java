@@ -25,14 +25,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.Label.label;
 
 public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -59,7 +56,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "2suff" ) );
             nodeWithProp( tx, "skruff" );
             CapableIndexReference index = tx.schemaRead().index( label, prop );
-            try ( NodeValueIndexCursor nodes = cursors.allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringSuffix( prop, "suff" ) );
                 PrimitiveLongSet found = Primitive.longSet();
@@ -95,7 +92,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             expected.add( nodeWithProp( tx, "homeopatic" ) );
             nodeWithProp( tx, "telephonecompany" );
             CapableIndexReference index = tx.schemaRead().index( label, prop );
-            try ( NodeValueIndexCursor nodes = cursors.allocateNodeValueIndexCursor() )
+            try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
             {
                 tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, IndexQuery.stringContains( prop, "me" ) );
                 PrimitiveLongSet found = Primitive.longSet();
