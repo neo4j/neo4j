@@ -23,6 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -184,6 +185,24 @@ public class OnlineBackupCommandHaIT
             assertTrue( logFiles.versionExists( 0 ) );
             assertThat( logFiles.getLogFileForVersion( 0 ).length(), greaterThan( 50L ) );
         }
+    }
+
+    @Test
+    @Ignore( "This takes a long time due to the timeout lasting 20 minutes (see BackupClient)" )
+    public void backupFailsWithCatchupProtoOverride() throws Exception
+    {
+        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
+
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+
+        assertEquals(
+                1,
+                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--proto=catchup",
+                        "--name=" + backupName ) );
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
