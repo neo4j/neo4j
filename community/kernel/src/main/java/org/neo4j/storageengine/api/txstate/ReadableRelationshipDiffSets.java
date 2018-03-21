@@ -107,12 +107,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         }
 
         @Override
-        public RelationshipIterator augmentWithRemovals( RelationshipIterator source )
-        {
-            return source;
-        }
-
-        @Override
         public ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter )
         {
             return this;
@@ -125,8 +119,6 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
     }
 
     RelationshipIterator augment( RelationshipIterator source );
-
-    RelationshipIterator augmentWithRemovals( RelationshipIterator source );
 
     @Override
     default PrimitiveLongIterator augment( PrimitiveLongIterator source )

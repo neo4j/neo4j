@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -56,12 +55,6 @@ public class RelationshipDiffSets<T> extends SuperDiffSets<T> implements Readabl
     public RelationshipIterator augment( final RelationshipIterator source )
     {
         return new DiffApplyingRelationshipIterator( source, added( false ), removed( false ), txStateRelationshipHome );
-    }
-
-    @Override
-    public RelationshipIterator augmentWithRemovals( final RelationshipIterator source )
-    {
-        return new DiffApplyingRelationshipIterator( source, Collections.emptySet(), removed( false ), txStateRelationshipHome );
     }
 
     @Override
