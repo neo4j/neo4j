@@ -26,7 +26,7 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.values.storable.Value;
 
-class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
+class SpatialHitIndexProgressor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
 {
     SpatialHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )

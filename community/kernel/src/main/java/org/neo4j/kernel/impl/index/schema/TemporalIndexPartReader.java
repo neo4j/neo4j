@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
+class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
 {
     TemporalIndexPartReader( GBPTree<KEY,NativeSchemaValue> tree,
                              Layout<KEY,NativeSchemaValue> layout,

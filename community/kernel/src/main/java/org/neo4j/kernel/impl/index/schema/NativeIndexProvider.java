@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
  * @param <KEY> type of {@link NativeSchemaKey}
  * @param <VALUE> type of {@link NativeSchemaValue}
  */
-abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends IndexProvider
+abstract class NativeIndexProvider<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue> extends IndexProvider
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;

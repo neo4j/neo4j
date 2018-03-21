@@ -82,7 +82,7 @@ import static org.neo4j.values.storable.Values.of;
  * <li>{@link NumberSchemaIndexReader}</li>
  * </ul>
  */
-public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexTestUtil<KEY,VALUE>
 {
     NativeSchemaIndexAccessor<KEY,VALUE> accessor;

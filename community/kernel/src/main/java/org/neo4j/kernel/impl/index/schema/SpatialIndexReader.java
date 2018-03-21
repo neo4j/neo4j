@@ -39,7 +39,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue>,IOException> implements IndexReader
+class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeSchemaValue>,IOException> implements IndexReader
 {
     private final SchemaIndexDescriptor descriptor;
 
@@ -112,7 +112,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Spatia
                 {
                     throw new IllegalArgumentException( "Wrong type of predicate, couldn't get CoordinateReferenceSystem" );
                 }
-                SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue> part = uncheckedSelect( crs );
+                SpatialIndexPartReader<NativeSchemaValue> part = uncheckedSelect( crs );
                 if ( part != null )
                 {
                     part.query( cursor, indexOrder, predicates );
@@ -144,7 +144,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Spatia
      * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
      * The creation of a part reader can then be delegated to the correct PartAccessor.
      */
-    static class PartFactory implements Factory<SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue>,IOException>
+    static class PartFactory implements Factory<SpatialIndexPartReader<NativeSchemaValue>,IOException>
     {
         private final SpatialIndexAccessor accessor;
 
@@ -154,7 +154,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Spatia
         }
 
         @Override
-        public SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue> newSpatial( CoordinateReferenceSystem crs ) throws IOException
+        public SpatialIndexPartReader<NativeSchemaValue> newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
             return accessor.selectOrElse( crs, SpatialIndexAccessor.PartAccessor::newReader, null );
         }

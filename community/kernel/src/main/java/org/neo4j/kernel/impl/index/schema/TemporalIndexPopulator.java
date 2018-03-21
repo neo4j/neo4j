@@ -29,9 +29,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -173,7 +173,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
     }
 
-    static class PartPopulator<KEY extends NativeSchemaKey> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
+    static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
     {
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
@@ -277,7 +277,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeSchemaKey> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeSchemaKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
             populator.create();

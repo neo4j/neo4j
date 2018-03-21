@@ -116,7 +116,7 @@ class TemporalIndexFiles
 
     // .... we will add more explicit accessor methods later
 
-    static class FileLayout<KEY extends NativeSchemaKey>
+    static class FileLayout<KEY extends NativeSchemaKey<KEY>>
     {
         final File indexFile;
         final Layout<KEY,NativeSchemaValue> layout;
