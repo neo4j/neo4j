@@ -109,9 +109,16 @@ public abstract class CRSCalculator
             double dy = c2[1] - c1[1];
             double alpha = pow( sin( dy / 2 ), 2.0 ) + cos( c1[1] ) * cos( c2[1] ) * pow( sin( dx / 2.0 ), 2.0 );
             double greatCircleDistance = 2.0 * atan2( sqrt( alpha ), sqrt( 1 - alpha ) );
-            double distance2D = EARTH_RADIUS_METERS * greatCircleDistance;
-            if ( dimension > 2 )
+            if ( dimension == 2 )
             {
+                return EARTH_RADIUS_METERS * greatCircleDistance;
+            }
+            else if ( dimension == 3 )
+            {
+                // get average height
+                double avgHeight = (p1.coordinate()[2] + p2.coordinate()[2]) / 2;
+                double distance2D = (EARTH_RADIUS_METERS + avgHeight) * greatCircleDistance;
+
                 double[] a = new double[dimension - 1];
                 double[] b = new double[dimension - 1];
                 a[0] = distance2D;
@@ -125,7 +132,10 @@ public abstract class CRSCalculator
             }
             else
             {
-                return distance2D;
+                // The above calculation works for more than 3D if all higher dimensions are orthogonal to the 3rd dimension.
+                // This might not be true in the general case, and so until we genuinely support higher dimensions fullstack
+                // we will explicitly disabled them here for now.
+                throw new UnsupportedOperationException( "More than 3 dimensions are not supported for distance calculations." );
             }
         }
 
