@@ -158,7 +158,6 @@ public class LoadBalancingPluginLoaderTest
 
         public DummyLoadBalancingPlugin()
         {
-
         }
 
         @Override

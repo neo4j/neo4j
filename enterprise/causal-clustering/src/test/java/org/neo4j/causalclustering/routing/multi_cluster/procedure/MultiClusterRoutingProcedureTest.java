@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
 
@@ -37,14 +38,14 @@ public class MultiClusterRoutingProcedureTest
     @Test
     public void subClusterRoutingProcedureShouldHaveCorrectSignature()
     {
-        GetSubClusterRoutersProcedure proc = new GetSubClusterRoutersProcedure( null, null );
+        GetSubClusterRoutersProcedure proc = new GetSubClusterRoutersProcedure( null, Config.defaults() );
 
         ProcedureSignature procSig = proc.signature();
 
         List<FieldSignature> input = Collections.singletonList( FieldSignature.inputField( "database", Neo4jTypes.NTString ) );
         List<FieldSignature> output = Arrays.asList(
                 FieldSignature.outputField( "ttl", Neo4jTypes.NTInteger ),
-                FieldSignature.outputField( "routers", Neo4jTypes.NTMap ) );
+                FieldSignature.outputField( "routers", Neo4jTypes.NTList( Neo4jTypes.NTMap ) ) );
 
         assertEquals( "The input signature of the GetSubClusterRoutersProcedure should not change.", procSig.inputSignature(), input );
 
@@ -54,13 +55,13 @@ public class MultiClusterRoutingProcedureTest
     @Test
     public void superClusterRoutingProcedureShouldHaveCorrectSignature()
     {
-        GetSuperClusterRoutersProcedure proc = new GetSuperClusterRoutersProcedure( null, null );
+        GetSuperClusterRoutersProcedure proc = new GetSuperClusterRoutersProcedure( null, Config.defaults() );
 
         ProcedureSignature procSig = proc.signature();
 
         List<FieldSignature> output = Arrays.asList(
                 FieldSignature.outputField( "ttl", Neo4jTypes.NTInteger ),
-                FieldSignature.outputField( "routers", Neo4jTypes.NTMap ) );
+                FieldSignature.outputField( "routers", Neo4jTypes.NTList( Neo4jTypes.NTMap ) ) );
 
         assertEquals( "The output signature of the GetSuperClusterRoutersProcedure should not change.", procSig.outputSignature(), output );
     }

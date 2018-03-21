@@ -163,12 +163,12 @@ public class ClusterOverviewIT
         // given
         int initialCoreMembers = 3;
         clusterRule.withNumberOfCoreMembers( initialCoreMembers );
-        clusterRule.withNumberOfReadReplicas( 2 );
+        clusterRule.withNumberOfReadReplicas( 0 );
 
         Cluster cluster = clusterRule.startCluster();
 
         // when
-        int extraCoreMembers = 1;
+        int extraCoreMembers = 2;
         int finalCoreMembers = initialCoreMembers + extraCoreMembers;
         IntStream.range( 0, extraCoreMembers ).forEach( idx -> cluster.addCoreMemberWithId( initialCoreMembers + idx ).start() );
 
