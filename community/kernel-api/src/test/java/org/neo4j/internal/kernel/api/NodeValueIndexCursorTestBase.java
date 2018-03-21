@@ -203,7 +203,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             assertFoundNodesAndNoValue( node, uniqueIds, boolTrue );
 
             // when
-            valueCapability = index.valueCapability( ValueGroup.GEOMETRY );
+            valueCapability = index.valueCapability( ValueGroup.SPATIAL );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
 
             // then
@@ -455,7 +455,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
-        IndexValueCapability spatialCapability = index.valueCapability( ValueGroup.GEOMETRY );
+        IndexValueCapability spatialCapability = index.valueCapability( ValueGroup.SPATIAL );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
@@ -576,7 +576,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         CapableIndexReference index = schemaRead.index( label, prop );
-        IndexOrder[] orderCapabilities = index.orderCapability( ValueGroup.GEOMETRY );
+        IndexOrder[] orderCapabilities = index.orderCapability( ValueGroup.SPATIAL );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             for ( IndexOrder orderCapability : orderCapabilities )

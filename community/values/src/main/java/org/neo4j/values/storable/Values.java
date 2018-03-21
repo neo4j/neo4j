@@ -725,7 +725,7 @@ public final class Values
         {
         case TEXT: return MIN_STRING;
         case NUMBER: return MIN_NUMBER;
-        case GEOMETRY: return minPointValue( (PointValue)value );
+        case SPATIAL: return minPointValue( (PointValue)value );
         case DATE: return DateValue.MIN_VALUE;
         case LOCAL_DATE_TIME: return LocalDateTimeValue.MIN_VALUE;
         case ZONED_DATE_TIME: return DateTimeValue.MIN_VALUE;
@@ -742,7 +742,7 @@ public final class Values
         {
         case TEXT: return MAX_STRING;
         case NUMBER: return MAX_NUMBER;
-        case GEOMETRY: return maxPointValue( (PointValue)value );
+        case SPATIAL: return maxPointValue( (PointValue)value );
         case DATE: return DateValue.MAX_VALUE;
         case LOCAL_DATE_TIME: return LocalDateTimeValue.MAX_VALUE;
         case ZONED_DATE_TIME: return DateTimeValue.MAX_VALUE;

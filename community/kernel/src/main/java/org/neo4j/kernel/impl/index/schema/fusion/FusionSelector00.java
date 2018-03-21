@@ -86,7 +86,7 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
         {
             switch ( predicate.valueGroup() )
             {
-            case GEOMETRY:
+            case SPATIAL:
                 return instances[SPATIAL];
             case DATE:
             case LOCAL_DATE_TIME:

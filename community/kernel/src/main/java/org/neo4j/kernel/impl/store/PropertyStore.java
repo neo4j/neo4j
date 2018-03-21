@@ -94,7 +94,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  * 10: ARRAY  REFERENCE
  * 11: SHORT STRING
  * 12: SHORT ARRAY
- * 13: GEOMETRY
+ * 13: SPATIAL
  * </pre>
  * <h2>value formats</h2>
  * <pre>

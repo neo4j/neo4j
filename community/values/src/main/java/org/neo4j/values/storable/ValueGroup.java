@@ -40,7 +40,7 @@ public enum ValueGroup
     TEXT_ARRAY,
     BOOLEAN_ARRAY,
     NUMBER_ARRAY,
-    GEOMETRY,
+    SPATIAL,
     ZONED_DATE_TIME,
     LOCAL_DATE_TIME,
     DATE,

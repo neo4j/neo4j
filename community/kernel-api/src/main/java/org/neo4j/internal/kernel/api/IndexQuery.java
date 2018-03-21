@@ -110,7 +110,7 @@ public abstract class IndexQuery
                                            (TextValue)from, fromInclusive,
                                            (TextValue)to, toInclusive );
 
-        case GEOMETRY:
+        case SPATIAL:
             PointValue pFrom = (PointValue)from;
             PointValue pTo = (PointValue)to;
             CoordinateReferenceSystem crs = pFrom != null ? pFrom.getCoordinateReferenceSystem() : pTo.getCoordinateReferenceSystem();
@@ -126,7 +126,7 @@ public abstract class IndexQuery
      */
     public static RangePredicate range( int propertyKeyId, ValueGroup valueGroup )
     {
-        if ( valueGroup == ValueGroup.GEOMETRY )
+        if ( valueGroup == ValueGroup.SPATIAL )
         {
             throw new IllegalArgumentException( "Cannot create GeometryRangePredicate without a specified CRS" );
         }
@@ -401,7 +401,7 @@ public abstract class IndexQuery
 
         GeometryRangePredicate( int propertyKeyId, CoordinateReferenceSystem crs, PointValue from, boolean fromInclusive, PointValue to, boolean toInclusive )
         {
-            super( propertyKeyId, ValueGroup.GEOMETRY, from, fromInclusive, to, toInclusive );
+            super( propertyKeyId, ValueGroup.SPATIAL, from, fromInclusive, to, toInclusive );
             this.crs = crs;
         }
 

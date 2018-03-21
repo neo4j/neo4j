@@ -238,7 +238,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
                                     ValueGroup.TEXT,
-                                    ValueGroup.GEOMETRY,
+                                    ValueGroup.SPATIAL,
                                     ValueGroup.DATE,
                                     ValueGroup.LOCAL_DATE_TIME,
                                     ValueGroup.ZONED_DATE_TIME,

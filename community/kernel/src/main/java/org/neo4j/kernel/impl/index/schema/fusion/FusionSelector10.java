@@ -96,7 +96,7 @@ public class FusionSelector10 implements FusionIndexProvider.Selector
             {
             case NUMBER:
                 return instances[NUMBER];
-            case GEOMETRY:
+            case SPATIAL:
                 return instances[SPATIAL];
             case DATE:
             case LOCAL_DATE_TIME:

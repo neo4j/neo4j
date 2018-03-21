@@ -106,7 +106,7 @@ public class FusionSelector20 implements FusionIndexProvider.Selector
             {
             case NUMBER:
                 return instances[NUMBER];
-            case GEOMETRY:
+            case SPATIAL:
                 return instances[SPATIAL];
             case TEXT:
                 return instances[STRING];
