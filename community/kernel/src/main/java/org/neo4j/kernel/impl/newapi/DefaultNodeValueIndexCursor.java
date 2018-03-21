@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
@@ -237,9 +238,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
-        this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER ||
-                valueGroup == ValueGroup.DATE || valueGroup == ValueGroup.LOCAL_DATE_TIME || valueGroup == ValueGroup.ZONED_DATE_TIME ||
-                valueGroup == ValueGroup.DURATION || valueGroup == ValueGroup.LOCAL_TIME || valueGroup == ValueGroup.ZONED_TIME;
+        ValueCategory category = valueGroup.category();
+        this.needsValues = category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();

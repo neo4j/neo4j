@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import static org.neo4j.values.storable.ValueCategory.NO_CATEGORY;
+import static org.neo4j.values.storable.ValueCategory.REST;
+import static org.neo4j.values.storable.ValueCategory.TEMPORAL;
+
 /**
  * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
  * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
@@ -26,29 +30,43 @@ package org.neo4j.values.storable;
  * The order here is defined in <a href="https://github.com/opencypher/openCypher/blob/master/cip/1.accepted/CIP2016-06-14-Define-comparability-and-equality-as-well-as-orderability-and-equivalence.adoc">
  *   The Cypher CIP defining orderability
  * </a>
+ *
+ * Each ValueGroup belong to some larger grouping called {@link ValueCategory}.
  */
 public enum ValueGroup
 {
-    UNKNOWN,
-    GEOMETRY_ARRAY,
-    ZONED_DATE_TIME_ARRAY,
-    LOCAL_DATE_TIME_ARRAY,
-    DATE_ARRAY,
-    ZONED_TIME_ARRAY,
-    LOCAL_TIME_ARRAY,
-    DURATION_ARRAY,
-    TEXT_ARRAY,
-    BOOLEAN_ARRAY,
-    NUMBER_ARRAY,
-    SPATIAL,
-    ZONED_DATE_TIME,
-    LOCAL_DATE_TIME,
-    DATE,
-    ZONED_TIME,
-    LOCAL_TIME,
-    DURATION,
-    TEXT,
-    BOOLEAN,
-    NUMBER,
-    NO_VALUE,
+    UNKNOWN(                ValueCategory.UNKNOWN ),
+    GEOMETRY_ARRAY(         REST ),
+    ZONED_DATE_TIME_ARRAY(  REST ),
+    LOCAL_DATE_TIME_ARRAY(  REST ),
+    DATE_ARRAY(             REST ),
+    ZONED_TIME_ARRAY(       REST ),
+    LOCAL_TIME_ARRAY(       REST ),
+    DURATION_ARRAY(         REST ),
+    TEXT_ARRAY(             REST ),
+    BOOLEAN_ARRAY(          REST ),
+    NUMBER_ARRAY(           REST ),
+    SPATIAL(                ValueCategory.SPATIAL ),
+    ZONED_DATE_TIME(        TEMPORAL ),
+    LOCAL_DATE_TIME(        TEMPORAL ),
+    DATE(                   TEMPORAL ),
+    ZONED_TIME(             TEMPORAL ),
+    LOCAL_TIME(             TEMPORAL ),
+    DURATION(               TEMPORAL ),
+    TEXT(                   ValueCategory.TEXT ),
+    BOOLEAN(                REST ),
+    NUMBER(                 ValueCategory.NUMBER ),
+    NO_VALUE(               NO_CATEGORY );
+
+    private final ValueCategory category;
+
+    ValueGroup( ValueCategory category )
+    {
+        this.category = category;
+    }
+
+    public ValueCategory category()
+    {
+        return category;
+    }
 }

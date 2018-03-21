@@ -92,18 +92,13 @@ public class FusionSelector10 implements FusionIndexProvider.Selector
 
         if ( predicate instanceof RangePredicate )
         {
-            switch ( predicate.valueGroup() )
+            switch ( predicate.valueGroup().category() )
             {
             case NUMBER:
                 return instances[NUMBER];
             case SPATIAL:
                 return instances[SPATIAL];
-            case DATE:
-            case LOCAL_DATE_TIME:
-            case ZONED_DATE_TIME:
-            case LOCAL_TIME:
-            case ZONED_TIME:
-            case DURATION:
+            case TEMPORAL:
                 return instances[TEMPORAL];
             default: // fall through
             }
