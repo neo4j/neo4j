@@ -907,7 +907,7 @@ public class Extractors
         }
 
         @Override
-        protected void extract0( char[] data, int offset, int length, CSVHeaderInformation optionalDatah )
+        protected void extract0( char[] data, int offset, int length, CSVHeaderInformation optionalData )
         {
             int numberOfValues = numberOfValues( data, offset, length );
             value = numberOfValues > 0 ? new int[numberOfValues] : EMPTY;
@@ -1041,7 +1041,7 @@ public class Extractors
     {
         DateExtractor()
         {
-            super( "Date" );
+            super( NAME );
         }
 
         @Override
@@ -1056,6 +1056,8 @@ public class Extractors
         {
             return value;
         }
+
+        public static final String NAME = "Date";
     }
 
     public static class TimeExtractor extends AbstractSingleAnyValueExtractor
@@ -1114,7 +1116,7 @@ public class Extractors
     {
         LocalTimeExtractor()
         {
-            super( "LocalTime" );
+            super( NAME );
         }
 
         @Override
@@ -1129,13 +1131,15 @@ public class Extractors
         {
             return value;
         }
+
+        public static final String NAME = "LocalTime";
     }
 
     public static class LocalDateTimeExtractor extends AbstractSingleAnyValueExtractor
     {
         LocalDateTimeExtractor()
         {
-            super( "LocalDateTime" );
+            super( NAME );
         }
 
         @Override
@@ -1150,13 +1154,15 @@ public class Extractors
         {
             return value;
         }
+
+        public static final String NAME = "LocalDateTime";
     }
 
     public static class DurationExtractor extends AbstractSingleAnyValueExtractor
     {
         DurationExtractor()
         {
-            super( "Duration" );
+            super( NAME );
         }
 
         @Override
@@ -1171,6 +1177,8 @@ public class Extractors
         {
             return value;
         }
+
+        public static final String NAME = "Duration";
     }
 
     private static final Supplier<ZoneId> inUTC = () -> UTC;
