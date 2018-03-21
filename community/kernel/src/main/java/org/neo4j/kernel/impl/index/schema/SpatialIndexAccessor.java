@@ -255,6 +255,10 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             {
                 createEmptyIndex( fileLayout );
             }
+            else
+            {
+                fileLayout.readHeader( pageCache );
+            }
             return new PartAccessor( pageCache,
                                      fs,
                                      fileLayout,

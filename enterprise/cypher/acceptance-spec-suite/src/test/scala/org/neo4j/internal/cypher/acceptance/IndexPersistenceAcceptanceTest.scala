@@ -178,8 +178,8 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
     }.toMap
     val expected = Values.pointValue(CoordinateReferenceSystem.WGS84, 10, 50)
     val node = data(expected)
-    val min = Values.pointValue(CoordinateReferenceSystem.WGS84, 40, 0)
-    val max = Values.pointValue(CoordinateReferenceSystem.WGS84, 60, 20)
+    val min = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 40)
+    val max = Values.pointValue(CoordinateReferenceSystem.WGS84, 20, 60)
 
     assertRangeScanFor(">", min, "<", max, node)
 

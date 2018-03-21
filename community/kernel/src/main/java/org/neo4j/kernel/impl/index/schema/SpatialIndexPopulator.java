@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -180,6 +182,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     static class PartPopulator extends NativeSchemaIndexPopulator<SpatialSchemaKey, NativeSchemaValue>
     {
         private final SpaceFillingCurveConfiguration configuration;
+        private final SpaceFillingCurveSettings settings;
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
@@ -188,6 +191,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
+            this.settings = fileLayout.settings;
         }
 
         void batchUpdate( IndexEntryUpdate<?> update )
@@ -223,6 +227,18 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         public IndexSample sampleResult()
         {
             throw new UnsupportedOperationException( "this sampling code needs a rewrite." );
+        }
+
+        @Override
+        public synchronized void create() throws IOException
+        {
+            create( settings.headerWriter( BYTE_POPULATING ) );
+        }
+
+        @Override
+        void markTreeAsOnline() throws IOException
+        {
+            tree.checkpoint( IOLimiter.unlimited(), settings.headerWriter( BYTE_ONLINE ) );
         }
     }
 

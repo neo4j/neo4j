@@ -20,19 +20,18 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -67,10 +66,7 @@ class SpatialIndexFiles
 
     SpatialFileLayout forCrs( CoordinateReferenceSystem crs )
     {
-        SpaceFillingCurve curve = settingsFactory.settingsFor( crs ).curve();
-        String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
-        File file = new File( indexDirectory, s );
-        return new SpatialFileLayout( file, new SpatialLayout( crs, curve ), crs );
+        return new SpatialFileLayout( crs, settingsFactory.settingsFor( crs ), indexDirectory );
     }
 
     private void addExistingFiles( List<SpatialFileLayout> existing )
@@ -96,14 +92,23 @@ class SpatialIndexFiles
     static class SpatialFileLayout
     {
         final File indexFile;
-        final Layout<SpatialSchemaKey,NativeSchemaValue> layout;
-        final CoordinateReferenceSystem crs;
+        final SpaceFillingCurveSettings settings;
+        private final CoordinateReferenceSystem crs;
+        Layout<SpatialSchemaKey,NativeSchemaValue> layout;
 
-        SpatialFileLayout( File indexFile, Layout<SpatialSchemaKey,NativeSchemaValue> layout, CoordinateReferenceSystem crs )
+        private SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
         {
-            this.indexFile = indexFile;
-            this.layout = layout;
             this.crs = crs;
+            this.settings = settings;
+            this.layout = new SpatialLayout( crs, settings.curve() );
+            String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
+            this.indexFile = new File( indexDirectory, s );
+        }
+
+        public void readHeader( PageCache pageCache ) throws IOException
+        {
+            GBPTree.readHeader( pageCache, indexFile, settings.headerReader() );
+            this.layout = new SpatialLayout( crs, settings.curve() );
         }
     }
 }
