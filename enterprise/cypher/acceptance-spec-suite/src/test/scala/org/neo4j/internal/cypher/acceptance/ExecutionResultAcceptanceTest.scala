@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.junit.Assert
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.{CompiledRuntimeOption, InterpretedRuntimeOption, SlottedRuntimeOption}
+import org.neo4j.graphdb.Result
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -38,4 +41,40 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
       tx.close()
     })
   }
+
+  test("without PROFILE it shouldn't be needed to iterate over the results before calling getExecutionPlanDescription in compiled runtime") {
+    val query = "MATCH (n) WHERE n.prop = 1 RETURN n"
+
+    val runtime = CompiledRuntimeOption.name
+    val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
+    val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
+    Assert.assertEquals(description1, description2)
+  }
+
+  test("without PROFILE it shouldn't be needed to iterate over the results before calling getExecutionPlanDescription in interpreted runtime") {
+    val query = "MATCH (n) WHERE n.prop = 1 RETURN n"
+
+    val runtime = InterpretedRuntimeOption.name
+    val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
+    val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
+    Assert.assertEquals(description1, description2)
+  }
+
+  test("without PROFILE it shouldn't be needed to iterate over the results before calling getExecutionPlanDescription in slotted runtime") {
+    val query = "MATCH (n) WHERE n.prop = 1 RETURN n"
+
+    val runtime = SlottedRuntimeOption.name
+    val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
+    val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
+    Assert.assertEquals(description1, description2)
+  }
+
+  private def executeQueryAndGetExecutionPlanDescription(query: String, runtime: String, iterateOverResult: Boolean) = {
+    val executedQuery = "CYPHER runtime = " + runtime + " " + query
+    val result: Result = graph.execute(executedQuery)
+    if (iterateOverResult)
+      Assert.assertEquals("empty iterator", result.toString) // don't really care for the assertion, just consume the results
+    result.getExecutionPlanDescription
+  }
+
 }
