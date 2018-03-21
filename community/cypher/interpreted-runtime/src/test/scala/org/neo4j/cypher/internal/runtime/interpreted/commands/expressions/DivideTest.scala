@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.util.v3_4.ArithmeticException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.{NumberValue}
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
@@ -30,7 +31,11 @@ class DivideTest extends CypherFunSuite {
 
     intercept[ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
     intercept[ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
-    intercept[ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
-    intercept[ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
+    // Floating point division should not throw "/ by zero".
+    // The JVM does not trap IEEE-754 exceptional conditions (see https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.8.1)
+    // The behaviour is defined as:
+    Divide(Literal(1), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.PositiveInfinity)
+    Divide(Literal(-1), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.NegativeInfinity)
+    Divide(Literal(0), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].isNaN shouldBe true
   }
 }

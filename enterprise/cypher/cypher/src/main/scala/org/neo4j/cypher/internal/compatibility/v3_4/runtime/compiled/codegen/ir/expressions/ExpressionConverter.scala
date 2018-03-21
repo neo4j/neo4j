@@ -159,6 +159,21 @@ object ExpressionConverter {
         val rightOp = callback(rhs)
         Subtraction(leftOp, rightOp)
 
+      case ast.Multiply(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Multiplication(leftOp, rightOp)
+
+      case ast.Divide(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Division(leftOp, rightOp)
+
+      case ast.Modulo(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Modulo(leftOp, rightOp)
+
       case ast.MapExpression(items) =>
         val map = items.map {
           case (key, expr) => (key.name, callback(expr))

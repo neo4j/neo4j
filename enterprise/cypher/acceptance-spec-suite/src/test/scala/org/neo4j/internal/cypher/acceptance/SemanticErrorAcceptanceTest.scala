@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CompiledRuntimeName, InterpretedRuntimeName, SlottedRuntimeName}
 import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
@@ -426,9 +427,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when addition overflows in runtime") {
-    executeAndEnsureError(
+    executeAndEnsureErrorForAllRuntimes(
       s"RETURN {t1} + {t2}",
-      "result of 9223372036854775807 + 1 cannot be represented as an integer",
+      "long overflow", // "result of 9223372036854775807 + 1 cannot be represented as an integer",
       "t1" -> Long.MaxValue, "t2" -> 1
     )
   }
@@ -441,9 +442,9 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when subtraction underflows in runtime") {
-    executeAndEnsureError(
+    executeAndEnsureErrorForAllRuntimes(
       s"RETURN {t1} - {t2}",
-      "result of -9223372036854775808 - 1 cannot be represented as an integer",
+      "long overflow", // "result of -9223372036854775808 - 1 cannot be represented as an integer",
       "t1" -> Long.MinValue, "t2" -> 1
     )
   }
@@ -456,10 +457,26 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail nicely when multiplication overflows in runtime") {
-    executeAndEnsureError(
-      s"RETURN {t1} + {t2}",
-      "result of 9223372036854775807 + 1 cannot be represented as an integer",
-      "t1" -> Long.MaxValue, "t2" -> 1
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} * {t2}",
+      "long overflow", //"result of 9223372036854775807 * 10 cannot be represented as an integer",
+      "t1" -> Long.MaxValue, "t2" -> 10
+    )
+  }
+
+  test("should fail nicely when divide integer by zero in runtime") {
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} / {t2}",
+      "/ by zero",
+      "t1" -> 1, "t2" -> 0
+    )
+  }
+
+  test("should fail nicely when modulo integer by zero in runtime") {
+    executeAndEnsureErrorForAllRuntimes(
+      s"RETURN {t1} % {t2}",
+      "/ by zero",
+      "t1" -> 1, "t2" -> 0
     )
   }
 
@@ -467,6 +484,11 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       "RETURN toInt('10508455564958384115')",
       "integer, 10508455564958384115, is too large")
+  }
+
+  private def executeAndEnsureErrorForAllRuntimes(query: String, expected: String, params: (String,Any)*): Unit = {
+    val runtimes = List(CompiledRuntimeName.name, SlottedRuntimeName.name, InterpretedRuntimeName.name) // Non-experimental runtimes that support arithmetics
+    runtimes.foreach( r => executeAndEnsureError(s"CYPHER runtime=$r $query", expected, params: _*) )
   }
 
   private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
