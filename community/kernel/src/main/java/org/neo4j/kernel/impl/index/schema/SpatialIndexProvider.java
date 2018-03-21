@@ -25,6 +25,7 @@ import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -142,7 +143,7 @@ public class SpatialIndexProvider extends IndexProvider
                 default: // continue
                 }
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;

@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -114,7 +115,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         {
             return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ) );
         }
-        catch ( IOException e )
+        catch ( MetadataMismatchException | IOException e )
         {
             monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
