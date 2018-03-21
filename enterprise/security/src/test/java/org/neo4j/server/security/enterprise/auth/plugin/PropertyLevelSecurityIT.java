@@ -19,18 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -44,6 +43,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -55,7 +55,7 @@ import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 public class PropertyLevelSecurityIT
 {
     @Rule
-    public TemporaryFolder tmpdir = new TemporaryFolder();
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseFacade db;
     private EnterpriseAuthAndUserManager authManager;
@@ -67,7 +67,7 @@ public class PropertyLevelSecurityIT
     public void setUp() throws Throwable
     {
         TestGraphDatabaseFactory s = new TestEnterpriseGraphDatabaseFactory();
-        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( tmpdir.getRoot() )
+        db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( SecuritySettings.property_level_authorization_enabled, "true" )
                 .setConfig( SecuritySettings.property_level_authorization_permissions, "Agent=alias,secret" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" )
@@ -85,6 +85,12 @@ public class PropertyLevelSecurityIT
         neo = authManager.login( authToken( "Neo", "eon" ) );
         smith = authManager.login( authToken( "Smith", "mr" ) );
         morpheus = authManager.login( authToken( "Morpheus", "dealwithit" ) );
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
     }
 
     @Test
