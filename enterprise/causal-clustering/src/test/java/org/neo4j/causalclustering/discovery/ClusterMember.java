@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -33,6 +34,8 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
     ClientConnectorAddresses clientConnectorAddresses();
 
     String settingValue( String settingName );
+
+    Config config();
 
     /**
      * {@link Cluster} will use this {@link ThreadGroup} for the threads that start, and shut down, this cluster member.

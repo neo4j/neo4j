@@ -45,9 +45,9 @@ public abstract class RepeatUntilCallable implements Runnable
         catch ( Throwable t )
         {
             onFailure.run();
-            throw t;
+            throw new RuntimeException( t );
         }
     }
 
-    protected abstract void doWork();
+    protected abstract void doWork() throws Exception;
 }
