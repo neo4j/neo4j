@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.cypher.acceptance;
 
@@ -54,13 +54,13 @@ public class TestResourceProcedure
 
     public static class Counters
     {
-        public int closeCountTestResourceProcedure = 0;
-        public int closeCountTestFailingResourceProcedure = 0;
-        public int closeCountTestOnCloseFailingResourceProcedure = 0;
+        public int closeCountTestResourceProcedure;
+        public int closeCountTestFailingResourceProcedure;
+        public int closeCountTestOnCloseFailingResourceProcedure;
 
-        public int openCountTestResourceProcedure = 0;
-        public int openCountTestFailingResourceProcedure = 0;
-        public int openCountTestOnCloseFailingResourceProcedure = 0;
+        public int openCountTestResourceProcedure;
+        public int openCountTestFailingResourceProcedure;
+        public int openCountTestOnCloseFailingResourceProcedure;
 
         public int liveCountTestResourceProcedure()
         {
@@ -107,9 +107,8 @@ public class TestResourceProcedure
     @Description( "Returns a stream of integers from 1 to the given argument" )
     public Stream<Output> testResourceProcedure( @Name( value = "resultCount", defaultValue = "4" ) long resultCount ) throws Exception
     {
-        Stream<Output> stream = Stream.iterate( 1L, (i) -> i + 1 ).limit( resultCount ).map( Output::new );
-        stream.onClose( () ->
-        {
+        Stream<Output> stream = Stream.iterate( 1L, i -> i + 1 ).limit( resultCount ).map( Output::new );
+        stream.onClose( () -> {
             counters.closeCountTestResourceProcedure++;
         } );
         counters.openCountTestResourceProcedure++;
@@ -137,13 +136,12 @@ public class TestResourceProcedure
                 {
                     throw new SimulateFailureException();
                 }
-                return new Output(step++);
+                return new Output( step++ );
             }
         };
         Iterable<Output> failingIterable = () -> failingIterator;
-        Stream<Output> stream = StreamSupport.stream(failingIterable.spliterator(), false);
-        stream.onClose( () ->
-        {
+        Stream<Output> stream = StreamSupport.stream( failingIterable.spliterator(), false );
+        stream.onClose( () -> {
             counters.closeCountTestFailingResourceProcedure++;
         } );
         counters.openCountTestFailingResourceProcedure++;
@@ -154,9 +152,8 @@ public class TestResourceProcedure
     @Description( "Returns a stream of integers from 1 to the given argument. Throws an exception on close." )
     public Stream<Output> testOnCloseFailingResourceProcedure( @Name( value = "resultCount", defaultValue = "4" ) long resultCount ) throws Exception
     {
-        Stream<Output> stream = Stream.iterate( 1L, (i) -> i + 1 ).limit( resultCount ).map( Output::new );
-        stream.onClose( () ->
-        {
+        Stream<Output> stream = Stream.iterate( 1L, i -> i + 1 ).limit( resultCount ).map( Output::new );
+        stream.onClose( () -> {
             counters.closeCountTestOnCloseFailingResourceProcedure++;
             throw new SimulateFailureOnCloseException();
         } );
