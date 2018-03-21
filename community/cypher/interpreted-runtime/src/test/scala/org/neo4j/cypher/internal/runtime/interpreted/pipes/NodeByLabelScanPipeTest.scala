@@ -35,9 +35,9 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
   test("should scan labeled nodes") {
     // given
     val nodes = List(nodeValue(1), nodeValue(2))
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].getNodesByLabel(12)).thenReturn(nodes.iterator).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.getNodesByLabel(12)).thenReturn(nodes.iterator)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     implicit val table = new SemanticTable()
     table.resolvedLabelNames.put("Foo", LabelId(12))
