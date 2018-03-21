@@ -36,6 +36,21 @@ public class PackedOutputArray implements PackOutput
     }
 
     @Override
+    public void beginMessage()
+    {
+    }
+
+    @Override
+    public void messageSucceeded() throws IOException
+    {
+    }
+
+    @Override
+    public void messageFailed() throws IOException
+    {
+    }
+
+    @Override
     public PackOutput flush()
     {
         return this;

@@ -51,6 +51,21 @@ public class BufferedChannelOutput implements PackOutput
     }
 
     @Override
+    public void beginMessage()
+    {
+    }
+
+    @Override
+    public void messageSucceeded() throws IOException
+    {
+    }
+
+    @Override
+    public void messageFailed() throws IOException
+    {
+    }
+
+    @Override
     public BufferedChannelOutput flush() throws IOException
     {
         buffer.flip();
