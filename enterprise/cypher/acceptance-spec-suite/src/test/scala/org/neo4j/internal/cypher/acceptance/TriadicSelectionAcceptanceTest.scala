@@ -5,34 +5,43 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_4
+package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
-class TriadicIntegrationTest extends ExecutionEngineFunSuite {
+class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
   private val QUERY: String = """MATCH (p1:Person)-[:FRIEND]-()-[:FRIEND]-(p2:Person)
                                 |WHERE NOT (p1)-[:FRIEND]-(p2)
                                 |RETURN p1.name AS l, p2.name AS r""".stripMargin
+
+  private val usesTriadic = ComparePlansWithAssertion(_ should useOperators("TriadicSelection"), Configs.AllRulePlanners)
+  private val usesExpandInto = ComparePlansWithAssertion(_ should useOperators("Expand(Into)"), Configs.AllRulePlanners)
+  private val usesAntiSemiApply = ComparePlansWithAssertion(_ should useOperators("AntiSemiApply"), Configs.AllRulePlanners)
+  private val noTriadic = ComparePlansWithAssertion(_ should not(useOperators("TriadicSelection")))
+  private val configs = Configs.Interpreted
+
   test("find friends of others") {
     // given
     execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"}), (d:Person{name:"d"})
                |CREATE (a)-[:FRIEND]->(c), (b)-[:FRIEND]->(c), (c)-[:FRIEND]->(d)""".stripMargin)
 
     // when
-    val result = profile(QUERY)
+    val result = executeWith(configs, QUERY, planComparisonStrategy = usesTriadic)
 
     // then
     result.toSet should equal(Set(
@@ -42,7 +51,6 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
       Map("l" -> "b", "r" -> "d"),
       Map("l" -> "d", "r" -> "a"),
       Map("l" -> "d", "r" -> "b")))
-    result should use("TriadicSelection")
   }
 
   test("find friendly people") {
@@ -51,7 +59,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                |CREATE (a)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (c)-[:FRIEND]->(e), (d)-[:FRIEND]->(e)""".stripMargin)
 
     // when
-    val result = profile(QUERY)
+    val result = executeWith(configs, QUERY, planComparisonStrategy = usesTriadic)
 
     // then
     result.toSet should equal(Set(
@@ -61,7 +69,6 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
       Map("l" -> "c", "r" -> "d"),
       Map("l" -> "e", "r" -> "a"),
       Map("l" -> "e", "r" -> "b")))
-    result should use("TriadicSelection")
   }
 
   test("should not find my friends") {
@@ -71,10 +78,10 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (c)-[:FRIEND]->(a)""".stripMargin)
 
     // when
-    val result: InternalExecutionResult = profile(QUERY)
+    val result: InternalExecutionResult = executeWith(configs, QUERY, planComparisonStrategy = usesTriadic)
 
     // then
-    result should (use("TriadicSelection") and be(empty))
+    result should be(empty)
   }
 
   test("triadic should not handle complex incoming predicates for now") {
@@ -92,14 +99,14 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                |USING INDEX a:Person(name)
                |WHERE a.name = 'a' AND b.age = 39 AND exists(c.name) AND (a)-[:FRIEND]->(c)
                |RETURN a.name AS l, b.name as m, c.name AS r""".stripMargin
-    val result = profile(queryWithPredicates)
+    val result = executeWith(configs, queryWithPredicates, planComparisonStrategy = noTriadic)
 
     // then
     result.toSet should equal(Set(Map("l" -> "a", "m" -> "c", "r" -> "d")))
-    result shouldNot use("TriadicSelection")
   }
 
   test("Triadic should support StackOverflow example") {
+    // GIVEN
     val create_contraints =
       """
         |CREATE CONSTRAINT ON (user:User) ASSERT user.neogen_id IS UNIQUE;
@@ -189,48 +196,31 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         execute(query)
       }
     }
-    println(execute("MATCH (n) RETURN count(*)").toList)
-    Map(
-      "non-triadic1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
-        "command" -> "Expand(Into)",
-        "count" -> 3),
-      "non-triadic2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a",
-        "command" -> "Expand(Into)",
-        "count" -> 3),
-      "triadic-neg1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "TriadicSelection",
-        "count" -> 7),
-      "triadic-neg2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "TriadicSelection",
-        "count" -> 7),
-      "triadic-neg3" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "TriadicSelection",
-        "count" -> 7),
-      "triadic-neg4" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "AntiSemiApply",
-        "count" -> 7),
-      "triadic-pos1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "TriadicSelection",
-        "count" -> 3),
-      "triadic-pos2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a",
-        "command" -> "TriadicSelection",
-        "count" -> 3)
-    ).collect {
-      case (name, config:Map[String,Any]) =>
-        val query = config("query").asInstanceOf[String]
-        val count = config("count").asInstanceOf[Int]
-        val command = config("command").asInstanceOf[String]
-        val result = execute(query)
-        result should haveCount(count)
-        result should use(command)
+
+    // FOR QUERIES
+    val queries = List(
+        "non-triadic1" ->
+          (Configs.All, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a", usesExpandInto, 3),
+        "non-triadic2" ->
+          (Configs.All, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a", usesExpandInto, 3),
+        "triadic-neg1" ->
+          (configs, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
+        "triadic-neg2" ->
+          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
+        "triadic-neg3" ->
+          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
+        "triadic-neg4" ->
+          (Configs.All - Configs.Compiled, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesAntiSemiApply, 7),
+        "triadic-pos1" ->
+          (configs, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 3),
+        "triadic-pos2" ->
+          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 3)
+      )
+
+    // THEN
+    for ( (name, (configs, query, operator, count)) <- queries ) {
+      val result = executeWith(configs, query, planComparisonStrategy = operator)
+      result should haveCount(count)
     }
   }
 }
