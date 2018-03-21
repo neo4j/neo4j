@@ -62,6 +62,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     failWithError(expectedToFail, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points"))
   }
 
+  test("point function should throw on unrecognized map entry") {
+    // Fixed in 3.1.9 and 3.2.11
+    val notYetFixed = Configs.Version3_1 + Configs.Version3_2 + Configs.AllRulePlanners
+    failWithError(expectedToFail - notYetFixed, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+  }
+
   test("point function should work with integer arguments") {
     val result = executeWith(expectedToSucceed, "RETURN point({x: 2, y: 4}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
