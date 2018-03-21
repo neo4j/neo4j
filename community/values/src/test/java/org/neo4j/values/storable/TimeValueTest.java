@@ -36,6 +36,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.neo4j.values.storable.LocalTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeConstants.asValidLocalTime;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -114,10 +115,10 @@ public class TimeValueTest
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
+                public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
                 {
-                    values.add( time( nanosOfDayLocal, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-                    locals.add( localTime( nanosOfDayLocal ) );
+                    values.add( time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+                    locals.add( localTime( asValidLocalTime( nanosOfDayUTC ) ) );
                 }
             };
 
@@ -126,7 +127,7 @@ public class TimeValueTest
 
             // then
             assertEquals( singletonList( time ), values );
-            assertEquals( singletonList( localTime( time.getLocalTimePart() ) ), locals );
+            assertEquals( singletonList( inUTC( time ) ), locals );
         }
     }
 

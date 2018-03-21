@@ -48,9 +48,9 @@ import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
-import static org.neo4j.values.storable.DurationValue.SECONDS_PER_DAY;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
+import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
@@ -73,9 +73,9 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayLocal, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), offset ) );
+        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ), nanosOfDayUTC );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
@@ -250,13 +250,26 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     private final OffsetTime value;
+    private final long nanosOfDayUTC;
 
     private TimeValue( OffsetTime value )
     {
         // truncate the offset to whole minutes
-        int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
-        ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
-        this.value = value.withOffsetSameInstant( truncatedOffset );
+        this.value = TimeConstants.truncateOffsetToMinutes( value );
+        this.nanosOfDayUTC = getNanosOfDayUTC( this.value );
+    }
+
+    private static long getNanosOfDayUTC( OffsetTime value )
+    {
+        long secondsOfDayLocal = value.getLong( ChronoField.SECOND_OF_DAY );
+        long secondsOffset = value.getOffset().getTotalSeconds();
+        return ( secondsOfDayLocal - secondsOffset ) * NANOS_PER_SECOND + value.getNano();
+    }
+
+    private TimeValue( OffsetTime value, long nanosOfDayUTC )
+    {
+        this.value = TimeConstants.truncateOffsetToMinutes( value );
+        this.nanosOfDayUTC = nanosOfDayUTC;
     }
 
     @Override
@@ -324,9 +337,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         int zoneOffsetSeconds = value.getOffset().getTotalSeconds();
-        long seconds = value.getLong( ChronoField.SECOND_OF_DAY );
-        long nanosOfDayLocal = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
-        writer.writeTime( nanosOfDayLocal, zoneOffsetSeconds );
+        writer.writeTime( nanosOfDayUTC, zoneOffsetSeconds );
     }
 
     @Override
@@ -368,7 +379,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     TimeValue replacement( OffsetTime time )
     {
-        return time == value ? this : new TimeValue( time );
+        return time == value ? this : new TimeValue( time, nanosOfDayUTC );
     }
 
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
@@ -405,8 +416,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue( OffsetTime
-                .of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
+        return new TimeValue( OffsetTime.of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
     }
 
     private static ZoneOffset parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )

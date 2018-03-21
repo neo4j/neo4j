@@ -43,6 +43,7 @@ import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -136,10 +137,10 @@ public class Neo4jPackV2 extends Neo4jPackV1
         }
 
         @Override
-        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws IOException
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
         {
             packStructHeader( 2, TIME );
-            pack( nanosOfDayLocal );
+            pack( nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND );
             pack( offsetSeconds );
         }
 
@@ -246,7 +247,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
         {
             long nanosOfDayUTC = unpackLong();
             int offsetSeconds = unpackInteger();
-            return time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) );
+            return time( nanosOfDayUTC - offsetSeconds * NANOS_PER_SECOND, ZoneOffset.ofTotalSeconds( offsetSeconds ) );
         }
 
         private LocalDateTimeValue unpackLocalDateTime() throws IOException

@@ -54,6 +54,7 @@ import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
+import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
 
 /**
  * Used for turning parameters into appropriate types in the compiled runtime
@@ -376,27 +377,27 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
     public void writeLocalDateTime( long epochSecond, int nano )
     {
-        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond(epochSecond, nano), UTC ) );
+        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nano ), UTC ) );
     }
 
     @Override
     public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecondUTC, nano ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
     public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
+        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecondUTC, nano ), ZoneId.of( zoneId ) ) );
     }
 
     private interface Writer
