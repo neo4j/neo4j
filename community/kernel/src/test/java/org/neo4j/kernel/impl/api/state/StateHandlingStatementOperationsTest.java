@@ -396,7 +396,7 @@ public class StateHandlingStatementOperationsTest
         } );
 
         IndexReader indexReader = addMockedIndexReader( storageStatement );
-        RangePredicate indexQuery =
+        RangePredicate<?> indexQuery =
                 IndexQuery.range( index.schema().getPropertyId(), lower.asObject(), true, upper.asObject(), false );
         when( indexReader.query( indexQuery ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
@@ -435,7 +435,7 @@ public class StateHandlingStatementOperationsTest
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
-        RangePredicate rangePredicate =
+        RangePredicate<?> rangePredicate =
                 IndexQuery.range( index.schema().getPropertyId(), "Anne", true, "Bill", false );
         when( indexReader.query( rangePredicate ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );

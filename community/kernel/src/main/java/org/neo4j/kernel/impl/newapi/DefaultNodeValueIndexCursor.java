@@ -234,7 +234,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate predicate )
+    private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
         this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER;

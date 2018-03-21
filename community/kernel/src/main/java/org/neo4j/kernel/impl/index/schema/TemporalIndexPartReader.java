@@ -68,7 +68,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSc
             break;
 
         case range:
-            IndexQuery.RangePredicate rangePredicate = (IndexQuery.RangePredicate) predicate;
+            IndexQuery.RangePredicate<?> rangePredicate = (IndexQuery.RangePredicate<?>) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -79,7 +79,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSc
         return false; // no filtering
     }
 
-    private void initFromForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( IndexQuery.RangePredicate<?> rangePredicate, KEY treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -93,7 +93,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSc
         }
     }
 
-    private void initToForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( IndexQuery.RangePredicate<?> rangePredicate, KEY treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )

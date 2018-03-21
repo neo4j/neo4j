@@ -49,7 +49,8 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialIndexPartReader( GBPTree<SpatialSchemaKey,VALUE> tree, Layout<SpatialSchemaKey,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
+    SpatialIndexPartReader( GBPTree<SpatialSchemaKey,VALUE> tree, Layout<SpatialSchemaKey,VALUE> layout,
+            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
@@ -167,7 +168,8 @@ public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends Nat
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialSchemaKey treeKeyFrom, SpatialSchemaKey treeKeyTo, IndexQuery[] query, boolean needFilter )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialSchemaKey treeKeyFrom,
+            SpatialSchemaKey treeKeyTo, IndexQuery[] query, boolean needFilter )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {

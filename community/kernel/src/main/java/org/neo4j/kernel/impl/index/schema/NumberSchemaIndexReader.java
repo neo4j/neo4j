@@ -32,7 +32,8 @@ import org.neo4j.values.storable.Values;
 
 class NumberSchemaIndexReader<VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<NumberSchemaKey,VALUE>
 {
-    NumberSchemaIndexReader( GBPTree<NumberSchemaKey,VALUE> tree, Layout<NumberSchemaKey,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
+    NumberSchemaIndexReader( GBPTree<NumberSchemaKey,VALUE> tree, Layout<NumberSchemaKey,VALUE> layout,
+            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -64,7 +65,7 @@ class NumberSchemaIndexReader<VALUE extends NativeSchemaValue> extends NativeSch
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
         case range:
-            RangePredicate rangePredicate = (RangePredicate) predicate;
+            RangePredicate<?> rangePredicate = (RangePredicate<?>) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -74,7 +75,7 @@ class NumberSchemaIndexReader<VALUE extends NativeSchemaValue> extends NativeSch
         return false;
     }
 
-    private void initToForRange( RangePredicate rangePredicate, NumberSchemaKey treeKeyTo )
+    private void initToForRange( RangePredicate<?> rangePredicate, NumberSchemaKey treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )
@@ -88,7 +89,7 @@ class NumberSchemaIndexReader<VALUE extends NativeSchemaValue> extends NativeSch
         }
     }
 
-    private void initFromForRange( RangePredicate rangePredicate, NumberSchemaKey treeKeyFrom )
+    private void initFromForRange( RangePredicate<?> rangePredicate, NumberSchemaKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
