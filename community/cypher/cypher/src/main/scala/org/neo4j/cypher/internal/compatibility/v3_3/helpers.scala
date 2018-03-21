@@ -193,7 +193,12 @@ object helpers {
 
     val attributes = Attributes(idConverter.idGenFromMax, solveds, cardinalities)
     val planWithActiveReads = ActiveReadInjector(attributes).apply(plan3_4)
-    val semanticTable = SemanticTableConverter.convertSemanticTable(logicalPlanState.maybeSemanticTable.get, expressionMap)
+    val maybeTable = logicalPlanState.maybeSemanticTable
+    val semanticTable = if (maybeTable.isDefined) {
+      SemanticTableConverter.convertSemanticTable(maybeTable.get, expressionMap)
+    } else {
+      new SemanticTableV3_4()
+    }
     (planWithActiveReads, semanticTable)
   }
 }
