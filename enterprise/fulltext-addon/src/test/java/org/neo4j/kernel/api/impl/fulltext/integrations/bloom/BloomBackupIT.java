@@ -42,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.AWAIT_POPULATION;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.ENTITYID;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.RELS;
@@ -157,6 +158,7 @@ public class BloomBackupIT
 
     private void verifyStandardData( GraphDatabaseService backedUpDb )
     {
+        backedUpDb.execute( AWAIT_POPULATION ).close();
         Result result = backedUpDb.execute( String.format( NODES, "\"integration\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );
