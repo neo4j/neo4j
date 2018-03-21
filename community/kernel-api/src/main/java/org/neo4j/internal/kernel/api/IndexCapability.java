@@ -30,6 +30,9 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface IndexCapability
 {
+    IndexOrder[] ORDER_ASC = {IndexOrder.ASCENDING};
+    IndexOrder[] ORDER_NONE = new IndexOrder[0];
+
     /**
      * What possible orderings is this index capable to provide for a query on given combination of {@link ValueGroup}.
      * Ordering of ValueGroup correspond to ordering of related {@link IndexReference#properties()}.
@@ -56,12 +59,17 @@ public interface IndexCapability
      */
     IndexValueCapability valueCapability( ValueGroup... valueGroups );
 
+    default boolean singleWildcard( ValueGroup[] valueGroups )
+    {
+        return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
+    }
+
     IndexCapability NO_CAPABILITY = new IndexCapability()
     {
         @Override
         public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
-            return new IndexOrder[0];
+            return ORDER_NONE;
         }
 
         @Override

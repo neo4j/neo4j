@@ -99,17 +99,14 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
      */
     private static class NumberIndexCapability implements IndexCapability
     {
-        private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
-        private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
-
         @Override
         public IndexOrder[] orderCapability( ValueGroup... valueGroups )
         {
             if ( support( valueGroups ) )
             {
-                return SUPPORTED_ORDER;
+                return ORDER_ASC;
             }
-            return EMPTY_ORDER;
+            return ORDER_NONE;
         }
 
         @Override
@@ -124,11 +121,6 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
-        }
-
-        private boolean singleWildcard( ValueGroup[] valueGroups )
-        {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN;
         }
 
         private boolean support( ValueGroup[] valueGroups )

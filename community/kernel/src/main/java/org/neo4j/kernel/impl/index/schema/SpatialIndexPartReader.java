@@ -66,12 +66,7 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
             throw new UnsupportedOperationException( "Spatial index doesn't handle composite queries" );
         }
 
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException(
-                    format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder, Arrays.toString( predicates ),
-                            IndexOrder.NONE ) );
-        }
+        CapabilityValidator.validateQuery( SpatialIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

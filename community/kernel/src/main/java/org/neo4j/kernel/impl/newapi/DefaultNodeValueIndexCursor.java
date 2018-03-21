@@ -237,7 +237,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
-        this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER;
+        this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER ||
+                valueGroup == ValueGroup.DATE || valueGroup == ValueGroup.LOCAL_DATE_TIME || valueGroup == ValueGroup.ZONED_DATE_TIME ||
+                valueGroup == ValueGroup.DURATION || valueGroup == ValueGroup.LOCAL_TIME || valueGroup == ValueGroup.ZONED_TIME;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();

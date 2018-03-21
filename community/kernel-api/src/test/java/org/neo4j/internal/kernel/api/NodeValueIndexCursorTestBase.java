@@ -26,6 +26,9 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -38,6 +41,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -47,6 +54,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long boolTrue, num5, num6, num12a, num12b;
     private static long strOneNoLabel;
     private static long joeDalton, williamDalton, jackDalton, averellDalton;
+    private static long date891, date892, date86;
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
@@ -101,6 +109,18 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             williamDalton = person( graphDb, "William", "Dalton" );
             jackDalton = person( graphDb, "Jack", "Dalton" );
             averellDalton = person( graphDb, "Averell", "Dalton" );
+            nodeWithProp( graphDb, Values.pointValue( Cartesian, 1, 0 ) ); // Purposely mix order
+            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 0 ) );
+            nodeWithProp( graphDb, Values.pointValue( Cartesian, 0, 1 ) );
+            nodeWithProp( graphDb, Values.pointValue( Cartesian_3D, 0, 0, 0 ) );
+            nodeWithProp( graphDb, Values.pointValue( WGS84, 0, 0 ) );
+            nodeWithProp( graphDb, Values.pointValue( WGS84_3D, 0, 0, 0 ) );
+            date891 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) ); // Purposely mix order
+            date86 = nodeWithProp( graphDb, DateValue.date( 1986, 11, 18 ) );
+            date892 = nodeWithProp( graphDb, DateValue.date( 1989, 3, 24 ) );
+
             tx.success();
         }
     }
@@ -181,6 +201,44 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, boolTrue );
+
+            // when
+            valueCapability = index.valueCapability( ValueGroup.GEOMETRY );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 3, uniqueIds );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( Cartesian_3D, 0, 0, 0 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 1, uniqueIds );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( WGS84, 0, 0 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 1, uniqueIds );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( WGS84_3D, 0, 0, 0 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 1, uniqueIds );
+
+            // when
+            valueCapability = index.valueCapability( ValueGroup.DATE );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 2, uniqueIds );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, DateValue.date( 1986, 11, 18 ) ) );
+
+            // then
+            assertFoundNodesAndNoValue( node, 1, uniqueIds );
         }
     }
 
@@ -350,6 +408,84 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
+    public void shouldPerformTemporalRangeSearch() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability temporalCapability = index.valueCapability( ValueGroup.DATE );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, temporalCapability, date86, date891, date892 );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), false ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, temporalCapability, date86 );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), true ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, temporalCapability, date891, date892 );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE,
+                    IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), false, DateValue.date( 1989, 3, 24 ), false ) );
+
+            // then
+            assertFoundNodesAndValue( node, uniqueIds, temporalCapability );
+        }
+    }
+
+    @Test
+    public void shouldPerformSpatialRangeSearch() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexValueCapability spatialCapability = index.valueCapability( ValueGroup.GEOMETRY );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor();
+              PrimitiveLongSet uniqueIds = Primitive.longSet() )
+        {
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, Cartesian ) );
+
+            // then
+            assertFoundNodesAndValue( node, 5, uniqueIds, spatialCapability );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, Cartesian_3D ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, WGS84 ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability );
+
+            // when
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.range( prop, WGS84_3D ) );
+
+            // then
+            assertFoundNodesAndValue( node, 1, uniqueIds, spatialCapability );
+        }
+    }
+
+    @Test
     public void shouldPerformIndexScan() throws Exception
     {
         // given
@@ -365,7 +501,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, 24, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, 35, uniqueIds, wildcardCapability );
         }
     }
 
@@ -404,6 +540,49 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             {
                 // when
                 read.nodeIndexSeek( index, node, orderCapability, IndexQuery.range( prop, "one", true, "two", true ) );
+
+                // then
+                assertFoundNodesInOrder( node, orderCapability );
+            }
+        }
+    }
+
+    @Test
+    public void shouldRespectOrderCapabilitiesForTemporal() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexOrder[] orderCapabilities = index.orderCapability( ValueGroup.DATE );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            for ( IndexOrder orderCapability : orderCapabilities )
+            {
+                // when
+                read.nodeIndexSeek( index, node, orderCapability,
+                        IndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
+
+                // then
+                assertFoundNodesInOrder( node, orderCapability );
+            }
+        }
+    }
+
+    @Test
+    public void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        CapableIndexReference index = schemaRead.index( label, prop );
+        IndexOrder[] orderCapabilities = index.orderCapability( ValueGroup.GEOMETRY );
+        try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            for ( IndexOrder orderCapability : orderCapabilities )
+            {
+                // when
+                read.nodeIndexSeek( index, node, orderCapability, IndexQuery.range( prop, CoordinateReferenceSystem.Cartesian ) );
 
                 // then
                 assertFoundNodesInOrder( node, orderCapability );
@@ -593,12 +772,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
-            assertFoundNodesAndValue( node, 24, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, 35, uniqueIds, wildcardCapability );
 
             // then
             tx.dataWrite().nodeDelete( strOne );
             tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE );
-            assertFoundNodesAndValue( node, 23, uniqueIds, wildcardCapability );
+            assertFoundNodesAndValue( node, 34, uniqueIds, wildcardCapability );
         }
     }
 
