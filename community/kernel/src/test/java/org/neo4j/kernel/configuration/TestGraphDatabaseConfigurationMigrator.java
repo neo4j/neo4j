@@ -172,16 +172,16 @@ public class TestGraphDatabaseConfigurationMigrator
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.enable_native_schema_index", "false" ), getLog() );
         assertEquals( "Old property should be migrated to new",
-                migratedProperties, stringMap( "dbms.default_schema_index", LUCENE10.param() ));
+                migratedProperties, stringMap( "dbms.index.default_schema_provider", LUCENE10.param() ));
 
-        assertContainsWarningMessage("unsupported.dbms.enable_native_schema_index has been replaced with dbms.default_schema_index.");
+        assertContainsWarningMessage("unsupported.dbms.enable_native_schema_index has been replaced with dbms.index.default_schema_provider.");
     }
 
     @Test
     public void skipMigrationOfEnableNativeSchemaIndexIfNotPresent()
     {
-        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.default_schema_index", NATIVE10.param() ), getLog() );
-        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.default_schema_index", NATIVE10.param() ) );
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.index.default_schema_provider", NATIVE10.param() ), getLog() );
+        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.index.default_schema_provider", NATIVE10.param() ) );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -189,11 +189,11 @@ public class TestGraphDatabaseConfigurationMigrator
     public void skipMigrationOfEnableNativeSchemaIndexIfDefaultSchemaIndexConfigured()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap(
-                "dbms.default_schema_index", NATIVE10.param(),
+                "dbms.index.default_schema_provider", NATIVE10.param(),
                 "unsupported.dbms.enable_native_schema_index", "false"
                 ), getLog() );
         assertEquals( "Should keep pre configured default schema index.",
-                migratedProperties, stringMap( "dbms.default_schema_index", NATIVE10.param() ) );
+                migratedProperties, stringMap( "dbms.index.default_schema_provider", NATIVE10.param() ) );
         assertContainsWarningMessage();
     }
 

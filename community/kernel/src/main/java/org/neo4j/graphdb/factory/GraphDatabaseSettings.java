@@ -504,19 +504,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
-    // todo update ReplacedBy
     @Deprecated
-    @ReplacedBy( "dbms.default_schema_index" )
+    @ReplacedBy( "dbms.index.default_schema_provider" )
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
 
-    // todo optionNames
     public enum SchemaIndex
     {
-        NATIVE20( "native" ),
-        NATIVE10( "native_no_strings" ),
-        LUCENE10( "no_native" );
+        NATIVE20( "lucene+native-2.0" ),
+        NATIVE10( "lucene+native-1.0" ),
+        LUCENE10( "lucene-1.0" );
 
         private final String param;
 
@@ -531,12 +529,9 @@ public class GraphDatabaseSettings implements LoadableConfig
         }
     }
 
-    // todo name
-    // todo unsupported.?
-    // todo @Internal ?
     @Description( "Index provider to use when creating new indexes." )
-    public static final Setting<String> default_schema_index =
-            setting( "dbms.default_schema_index",
+    public static final Setting<String> default_schema_provider =
+            setting( "dbms.index.default_schema_provider",
                     optionsIgnoreCase( SchemaIndex.NATIVE20.param(), SchemaIndex.NATIVE10.param(), SchemaIndex.LUCENE10.param() ),
                     null );
 

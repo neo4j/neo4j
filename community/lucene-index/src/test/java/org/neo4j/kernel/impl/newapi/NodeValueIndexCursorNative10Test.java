@@ -27,7 +27,7 @@ public class NodeValueIndexCursorNative10Test extends AbstractNodeValueIndexCurs
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_index, GraphDatabaseSettings.SchemaIndex.NATIVE10.param() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.param() );
         return readTestSupport;
     }
 

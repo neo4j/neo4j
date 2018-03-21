@@ -105,9 +105,9 @@ public class LuceneIndexProviderFactory extends
         SpatialIndexProvider spatial =
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
 
-        String defaultSchemaIndex = config.get( GraphDatabaseSettings.default_schema_index );
+        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = LuceneIndexProvider.PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.param().equals( defaultSchemaIndex ) )
+        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.param().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }

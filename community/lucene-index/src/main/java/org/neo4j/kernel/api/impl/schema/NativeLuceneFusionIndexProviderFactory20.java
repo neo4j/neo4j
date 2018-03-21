@@ -88,9 +88,9 @@ public class NativeLuceneFusionIndexProviderFactory20 extends
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        String defaultSchemaIndex = config.get( GraphDatabaseSettings.default_schema_index );
+        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.param().equals( defaultSchemaIndex ) )
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE20.param().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }

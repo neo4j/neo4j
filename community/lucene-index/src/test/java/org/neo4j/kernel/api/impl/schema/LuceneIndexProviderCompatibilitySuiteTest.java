@@ -30,7 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_index;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
@@ -39,7 +39,7 @@ public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderComp
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_index.name(), LUCENE10.param() ) );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), LUCENE10.param() ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
         return LuceneIndexProviderFactory.newInstance( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

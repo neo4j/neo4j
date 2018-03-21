@@ -176,14 +176,14 @@ public class NonUniqueIndexTest
     private IndexProvider selectIndexProvider( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode operationalMode )
     {
-        String defaultSchemaIndex = config.get( GraphDatabaseSettings.default_schema_index );
+        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
-        if ( LUCENE10.param().equals( defaultSchemaIndex ) )
+        if ( LUCENE10.param().equals( defaultSchemaProvider ) )
         {
             return LuceneIndexProviderFactory
                     .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
         }
-        else if ( NATIVE10.param().equals( defaultSchemaIndex ) )
+        else if ( NATIVE10.param().equals( defaultSchemaProvider ) )
         {
             return NativeLuceneFusionIndexProviderFactory10
                     .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );

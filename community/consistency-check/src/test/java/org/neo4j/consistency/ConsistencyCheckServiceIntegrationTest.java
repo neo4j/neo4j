@@ -247,12 +247,12 @@ public class ConsistencyCheckServiceIntegrationTest
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
         File storeDir = testDirectory.graphDbDir();
-        String defaultSchemaIndex = GraphDatabaseSettings.default_schema_index.name();
+        String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
         Label label = Label.label( "label" );
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( storeDir, defaultSchemaIndex, LUCENE10.param() );
+        GraphDatabaseService db = getGraphDatabaseService( storeDir, defaultSchemaProvider, LUCENE10.param() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -264,7 +264,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
-                Config.defaults( settings( defaultSchemaIndex, NATIVE20.param() ) );
+                Config.defaults( settings( defaultSchemaProvider, NATIVE20.param() ) );
         Result result = runFullConsistencyCheck( service, configuration, storeDir );
         assertTrue( result.isSuccessful() );
     }
