@@ -36,6 +36,26 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
     @Override
     ReadableRelationshipDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
+    RelationshipIterator augment( RelationshipIterator source );
+
+    @Override
+    default PrimitiveLongIterator augment( PrimitiveLongIterator source )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
+    {
+        throw new UnsupportedOperationException();
+    }
+
     final class Empty<T> implements ReadableRelationshipDiffSets<T>
     {
         @SuppressWarnings( "unchecked" )
@@ -116,25 +136,5 @@ public interface ReadableRelationshipDiffSets<T> extends SuperReadableDiffSets<T
         public void accept( DiffSetsVisitor<T> visitor )
         {
         }
-    }
-
-    RelationshipIterator augment( RelationshipIterator source );
-
-    @Override
-    default PrimitiveLongIterator augment( PrimitiveLongIterator source )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    default PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    default PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source )
-    {
-        throw new UnsupportedOperationException();
     }
 }
