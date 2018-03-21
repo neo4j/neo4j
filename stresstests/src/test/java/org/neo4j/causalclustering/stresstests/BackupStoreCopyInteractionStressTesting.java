@@ -26,9 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntFunction;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,8 +37,6 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.concurrent.Futures;
-import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,8 +48,8 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureBackup;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
 import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.enableRaftMessageLogging;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
@@ -69,8 +65,6 @@ public class BackupStoreCopyInteractionStressTesting
     private static final String DEFAULT_ENABLE_INDEXES = "false";
     private static final String DEFAULT_TX_PRUNE = "50 files";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
-    private static final String DEFAULT_BASE_CORE_BACKUP_PORT = "8000";
-    private static final String DEFAULT_BASE_EDGE_BACKUP_PORT = "9000";
 
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -99,10 +93,6 @@ public class BackupStoreCopyInteractionStressTesting
                 parseLong( fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_DURATION", DEFAULT_DURATION_IN_MINUTES ) );
         String workingDirectory =
                 fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_WORKING_DIRECTORY", DEFAULT_WORKING_DIR );
-        int baseCoreBackupPort = parseInt( fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_BASE_CORE_BACKUP_PORT",
-                DEFAULT_BASE_CORE_BACKUP_PORT ) );
-        int baseEdgeBackupPort = parseInt( fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_BASE_EDGE_BACKUP_PORT",
-                DEFAULT_BASE_EDGE_BACKUP_PORT ) );
         boolean enableIndexes = parseBoolean(
                 fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_ENABLE_INDEXES", DEFAULT_ENABLE_INDEXES ) );
         String txPrune = fromEnv( "BACKUP_STORE_COPY_INTERACTION_STRESS_TX_PRUNE", DEFAULT_TX_PRUNE );
@@ -110,23 +100,13 @@ public class BackupStoreCopyInteractionStressTesting
         File clusterDirectory = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
         File backupDirectory = ensureExistsAndEmpty( new File( workingDirectory, "backups" ) );
 
-        BiFunction<Boolean,Integer,SocketAddress> backupAddress = ( isCore, id ) ->
-                new AdvertisedSocketAddress( "localhost", (isCore ? baseCoreBackupPort : baseEdgeBackupPort) + id );
-
         Map<String,String> coreParams = enableRaftMessageLogging(
                 configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ) ) );
         Map<String,String> readReplicaParams = configureTxLogRotationAndPruning( new HashMap<>(), txPrune );
 
-        Map<String,IntFunction<String>> instanceCoreParams =
-                configureBackup( new HashMap<>(), id -> backupAddress.apply( true, id ) );
-        Map<String,IntFunction<String>> instanceReadReplicaParams =
-                configureBackup( new HashMap<>(), id -> backupAddress.apply( false, id ) );
-
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
-        Cluster cluster =
-                new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        instanceCoreParams, readReplicaParams, instanceReadReplicaParams, Standard.LATEST_NAME,
-                        IpFamily.IPV4, false );
+        Cluster cluster = new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
+                emptyMap(), readReplicaParams, emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
@@ -146,8 +126,7 @@ public class BackupStoreCopyInteractionStressTesting
             Future<?> startStopWorker = service.submit(
                     new StartStopLoad( fs, pageCache, keepGoing, onFailure, cluster, numberOfCores, numberOfEdges ) );
             Future<?> backupWorker = service.submit(
-                    new BackupLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges, backupDirectory,
-                            backupAddress ) );
+                    new BackupLoad( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges, backupDirectory ) );
 
             Futures.combine(workload, startStopWorker, backupWorker).get( durationInMinutes + 5, MINUTES );
         }

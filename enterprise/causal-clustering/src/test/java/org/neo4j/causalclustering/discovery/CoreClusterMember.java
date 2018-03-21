@@ -196,11 +196,6 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return storeDir;
     }
 
-    public Config getMemberConfig()
-    {
-        return memberConfig;
-    }
-
     public RaftLogPruner raftLogPruner()
     {
         return database.getDependencyResolver().resolveDependency( RaftLogPruner.class );
@@ -258,6 +253,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    @Override
     public Config config()
     {
         return memberConfig;

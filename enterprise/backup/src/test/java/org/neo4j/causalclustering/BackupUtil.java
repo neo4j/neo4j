@@ -22,8 +22,12 @@ package org.neo4j.causalclustering;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.restore.RestoreDatabaseCommand;
@@ -46,7 +50,20 @@ public class BackupUtil
         return new File( baseBackupDir, backupName );
     }
 
-    static void restoreFromBackup( File backup, FileSystemAbstraction fsa, CoreClusterMember coreClusterMember ) throws IOException, CommandFailed
+    public static File createBackupInProcess( ClusterMember<?> member, File baseBackupDir, String backupName ) throws Exception
+    {
+        AdvertisedSocketAddress address = member.config().get( CausalClusteringSettings.transaction_advertised_address );
+        File targetDir = new File( baseBackupDir, backupName );
+
+        new OnlineBackupCommandBuilder()
+                .withHost( address.getHostname() )
+                .withPort( address.getPort() )
+                .backup( targetDir );
+
+        return targetDir;
+    }
+
+    public static void restoreFromBackup( File backup, FileSystemAbstraction fsa, CoreClusterMember coreClusterMember ) throws IOException, CommandFailed
     {
         Config config = coreClusterMember.config();
         RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( fsa, backup, config, "graph-db", true );
