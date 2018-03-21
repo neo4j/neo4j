@@ -21,6 +21,7 @@ package org.neo4j.causalclustering;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -34,6 +35,7 @@ import org.neo4j.restore.RestoreDatabaseCommand;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.BackupCoreIT.backupArguments;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupUtil
@@ -52,10 +54,16 @@ public class BackupUtil
 
     public static File createBackupInProcess( ClusterMember<?> member, File baseBackupDir, String backupName ) throws Exception
     {
+        return createBackupInProcess( member, baseBackupDir, backupName, NULL_OUTPUT_STREAM );
+    }
+
+    public static File createBackupInProcess( ClusterMember<?> member, File baseBackupDir, String backupName, OutputStream outputStream ) throws Exception
+    {
         AdvertisedSocketAddress address = member.config().get( CausalClusteringSettings.transaction_advertised_address );
         File targetDir = new File( baseBackupDir, backupName );
 
         new OnlineBackupCommandBuilder()
+                .withOutput( outputStream )
                 .withHost( address.getHostname() )
                 .withPort( address.getPort() )
                 .backup( targetDir );
@@ -63,9 +71,9 @@ public class BackupUtil
         return targetDir;
     }
 
-    public static void restoreFromBackup( File backup, FileSystemAbstraction fsa, CoreClusterMember coreClusterMember ) throws IOException, CommandFailed
+    public static void restoreFromBackup( File backup, FileSystemAbstraction fsa, ClusterMember clusterMember ) throws IOException, CommandFailed
     {
-        Config config = coreClusterMember.config();
+        Config config = clusterMember.config();
         RestoreDatabaseCommand restoreDatabaseCommand = new RestoreDatabaseCommand( fsa, backup, config, "graph-db", true );
         restoreDatabaseCommand.execute();
     }

@@ -21,12 +21,9 @@ package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.TemporaryStoreDirectory;
-import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,33 +31,35 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
-class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
+class StartStopRandomMember extends RepeatOnRandomMember
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final Log log;
 
-    StartStopLoad( FileSystemAbstraction fs, PageCache pageCache, BooleanSupplier keepGoing, Runnable onFailure,
-            Cluster cluster, int numberOfCores, int numberOfEdges )
+    StartStopRandomMember( Control control, Resources resources )
     {
-        super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
-        this.fs = fs;
-        this.pageCache = pageCache;
+        super( control, resources );
+        this.fs = resources.fileSystem();
+        this.pageCache = resources.pageCache();
+        this.log = resources.logProvider().getLog( getClass() );
     }
 
     @Override
-    protected void doWorkOnMember( boolean isCore, int id )
+    protected void doWorkOnMember( ClusterMember member ) throws InterruptedException
     {
-        ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getReadReplicaById( id );
         File storeDir = member.database().getStoreDir();
-        KernelExtensions kernelExtensions =
-                member.database().getDependencyResolver().resolveDependency( KernelExtensions.class );
+        KernelExtensions kernelExtensions = member.database().getDependencyResolver().resolveDependency( KernelExtensions.class );
+        log.info( "Stopping: " + member );
         member.shutdown();
         assertStoreConsistent( storeDir, kernelExtensions );
-        LockSupport.parkNanos( 5_000_000_000L );
+        Thread.sleep( 5000 );
+        log.info( "Starting: " + member );
         member.start();
     }
 

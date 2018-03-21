@@ -135,9 +135,21 @@ public class ReadReplica implements ClusterMember
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     public CatchupPollingProcess txPollingClient()
@@ -175,6 +187,7 @@ public class ReadReplica implements ClusterMember
         return monitors;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;

@@ -17,37 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helper;
+package org.neo4j.causalclustering.stresstests;
 
-import java.util.function.BooleanSupplier;
-
-public abstract class RepeatUntilCallable implements Runnable
+public enum Validations
 {
-    private BooleanSupplier keepGoing;
-    private Runnable onFailure;
-
-    public RepeatUntilCallable( BooleanSupplier keepGoing, Runnable onFailure )
-    {
-        this.keepGoing = keepGoing;
-        this.onFailure = onFailure;
-    }
-
-    @Override
-    public final void run()
-    {
-        try
-        {
-            while ( keepGoing.getAsBoolean() )
+    ConsistencyCheck
             {
-                doWork();
-            }
-        }
-        catch ( Throwable t )
-        {
-            onFailure.run();
-            throw new RuntimeException( t );
-        }
-    }
+                @Override
+                Validation create( Resources resources )
+                {
+                    return new ConsistencyCheck( resources );
+                }
+            },
+    IdReuseUniqueFreeIds
+            {
+                @Override
+                Validation create( Resources resources )
+                {
+                    return new IdReuse.UniqueFreeIds( resources );
+                }
+            };
 
-    protected abstract void doWork() throws Exception;
+    abstract Validation create( Resources resources );
 }

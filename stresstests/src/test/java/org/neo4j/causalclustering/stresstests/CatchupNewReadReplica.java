@@ -24,7 +24,6 @@ import io.netty.channel.Channel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -33,10 +32,9 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
-import org.neo4j.helper.IsConnectionRestByPeer;
+import org.neo4j.helper.IsConnectionResetByPeer;
 import org.neo4j.helper.IsStoreClosed;
-import org.neo4j.helper.RepeatUntilCallable;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.helper.Workload;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -45,18 +43,18 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-class CatchUpLoad extends RepeatUntilCallable
+class CatchupNewReadReplica extends Workload
 {
     private final Predicate<Throwable> isStoreClosed = new IsStoreClosed();
     private final FileSystemAbstraction fs;
     private Cluster cluster;
     private boolean deleteStore;
 
-    CatchUpLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
+    CatchupNewReadReplica( Control control, Resources resources )
     {
-        super( keepGoing, onFailure );
-        this.fs = new DefaultFileSystemAbstraction();
-        this.cluster = cluster;
+        super( control );
+        this.fs = resources.fileSystem();
+        this.cluster = resources.cluster();
     }
 
     @Override
@@ -129,7 +127,7 @@ class CatchUpLoad extends RepeatUntilCallable
         // the database is create when starting the edge...
         final Monitors monitors =
                 readReplica.database().getDependencyResolver().resolveDependency( Monitors.class );
-        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new IsConnectionRestByPeer() );
+        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new IsConnectionResetByPeer() );
         monitors.addMonitorListener( exceptionMonitor, CatchUpClient.class.getName() );
         return exceptionMonitor;
     }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
@@ -39,6 +40,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -50,7 +52,6 @@ import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManage
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
@@ -89,6 +90,8 @@ public class Cluster
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
+    private int highestCoreServerId;
+    private int highestReplicaServerId;
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
             DiscoveryServiceFactory discoveryServiceFactory,
@@ -156,6 +159,18 @@ public class Cluster
     public CoreClusterMember addCoreMemberWithId( int memberId )
     {
         return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
+    }
+
+    public CoreClusterMember newCoreMember()
+    {
+        int newCoreServerId = ++highestCoreServerId;
+        return addCoreMemberWithId( newCoreServerId );
+    }
+
+    public ReadReplica newReadReplica()
+    {
+        int newReplicaServerId = ++highestReplicaServerId;
+        return addReadReplicaWithId( newReplicaServerId );
     }
 
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
@@ -436,8 +451,6 @@ public class Cluster
             {
                 if ( isTransientFailure( e ) )
                 {
-                    // this is not the best, but it helps in debugging
-                    e.printStackTrace();
                     return null;
                 }
                 else
@@ -505,6 +518,7 @@ public class Cluster
             );
             coreMembers.put( i, coreClusterMember );
         }
+        highestCoreServerId = noOfCoreMembers - 1;
     }
 
     protected CoreClusterMember createCoreClusterMember( int serverId,
@@ -617,6 +631,7 @@ public class Cluster
 
             readReplicas.put( i, readReplica );
         }
+        highestReplicaServerId = noOfReadReplicas - 1;
     }
 
     private void shutdownReadReplicas( ErrorHandler errorHandler )
@@ -702,5 +717,25 @@ public class Cluster
         }
 
         throw new RuntimeException( "Could not find a member for bolt address " + advertisedSocketAddress );
+    }
+
+    public Optional<ClusterMember> randomMember( boolean mustBeStarted )
+    {
+        Stream<ClusterMember> members = Stream.concat( coreMembers().stream(), readReplicas().stream() );
+
+        if ( mustBeStarted )
+        {
+            members = members.filter( m -> !m.isShutdown() );
+        }
+
+        List<ClusterMember> eligible = members.collect( Collectors.toList() );
+
+        if ( eligible.size() == 0 )
+        {
+            return Optional.empty();
+        }
+
+        int ordinal = ThreadLocalRandom.current().nextInt( eligible.size() );
+        return Optional.of( eligible.get( ordinal ) );
     }
 }

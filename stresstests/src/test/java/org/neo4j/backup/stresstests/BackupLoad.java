@@ -22,22 +22,22 @@ package org.neo4j.backup.stresstests;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 
 import org.neo4j.backup.BackupHelper;
 import org.neo4j.backup.BackupResult;
-import org.neo4j.helper.RepeatUntilCallable;
+import org.neo4j.causalclustering.stresstests.Control;
+import org.neo4j.helper.Workload;
 
-class BackupLoad extends RepeatUntilCallable
+class BackupLoad extends Workload
 {
 
     private final String backupHostname;
     private final int backupPort;
     private final Path backupDir;
 
-    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, String backupHostname, int backupPort, Path backupDir )
+    BackupLoad( Control control, String backupHostname, int backupPort, Path backupDir )
     {
-        super( keepGoing, onFailure );
+        super( control );
         this.backupHostname = backupHostname;
         this.backupPort = backupPort;
         this.backupDir = backupDir;

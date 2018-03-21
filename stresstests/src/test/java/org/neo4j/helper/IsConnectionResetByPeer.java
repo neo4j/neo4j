@@ -22,7 +22,7 @@ package org.neo4j.helper;
 import java.io.IOException;
 import java.util.function.Predicate;
 
-public class IsConnectionRestByPeer implements Predicate<Throwable>
+public class IsConnectionResetByPeer implements Predicate<Throwable>
 {
     @Override
     public boolean test( Throwable e )

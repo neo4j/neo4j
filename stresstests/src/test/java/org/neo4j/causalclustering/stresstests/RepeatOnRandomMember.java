@@ -17,35 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helper;
+package org.neo4j.causalclustering.stresstests;
 
-import java.io.File;
-import java.io.IOException;
+import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.helper.Workload;
 
-import org.neo4j.io.fs.FileUtils;
-
-import static java.lang.System.getenv;
-
-public class StressTestingHelper
+abstract class RepeatOnRandomMember extends Workload
 {
-    private StressTestingHelper()
+    private final Cluster cluster;
+
+    RepeatOnRandomMember( Control control, Resources resources )
     {
+        super( control );
+        this.cluster = resources.cluster();
     }
 
-    public static File ensureExistsAndEmpty( File directory ) throws IOException
+    @Override
+    protected final void doWork() throws Exception
     {
-        FileUtils.deleteRecursively( directory );
-
-        if ( !directory.mkdirs() )
-        {
-            throw new RuntimeException( "Could not create directory: " + directory.getAbsolutePath() );
-        }
-        return directory;
+        doWorkOnMember( cluster.randomMember( true ).orElseThrow( IllegalStateException::new ) );
     }
 
-    public static String fromEnv( String environmentVariableName, String defaultValue )
-    {
-        String environmentVariableValue = getenv( environmentVariableName );
-        return environmentVariableValue == null ? defaultValue : environmentVariableValue;
-    }
+    protected abstract void doWorkOnMember( ClusterMember member ) throws Exception;
 }
