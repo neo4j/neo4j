@@ -19,9 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum CRSTable
 {
     CUSTOM( "custom", 0 ),
@@ -29,15 +26,8 @@ public enum CRSTable
     SR_ORG( "sr-org", 2 );
 
     private static final CRSTable[] TYPES = CRSTable.values();
-    private static final Map<String, CRSTable> all = new HashMap<>( TYPES.length );
 
-    static
-    {
-        for ( CRSTable table : TYPES )
-        {
-            all.put( table.name, table );
-        }
-    }
+    private final String prefix;
 
     public static CRSTable find( int tableId )
     {
@@ -51,38 +41,25 @@ public enum CRSTable
         }
     }
 
-    public static CRSTable find( String name )
-    {
-        CRSTable table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Coordinate Reference System table: " + name );
-        }
-    }
-
     private final String name;
     private final int tableId;
 
     CRSTable( String name, int tableId )
     {
+        assert lowerCase( name );
         this.name = name;
         this.tableId = tableId;
+        this.prefix = tableId == 0 ? "crs://" + name + "/" : "http://spatialreference.org/ref/" + name + "/";
     }
 
     public String href( int code )
     {
-        if ( tableId == CUSTOM.tableId )
-        {
-            return "crs://" + name + "/" + code + "/";
-        }
-        else
-        {
-            return "http://spatialreference.org/ref/" + name + "/" + code + "/";
-        }
+        return prefix + code + "/";
+    }
+
+    private boolean lowerCase( String string )
+    {
+        return string.toLowerCase().equals( string );
     }
 
     public String getName()
