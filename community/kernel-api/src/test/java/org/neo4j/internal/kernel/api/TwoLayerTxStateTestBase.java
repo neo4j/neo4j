@@ -54,7 +54,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         {
             node = tx.dataWrite().nodeCreate();
 
-            try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
             {
                 tx.stableDataRead().singleNode( node, cursor );
                 assertFalse( "not in stable tx state", cursor.next() );
@@ -80,7 +80,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
 
             tx.markAsStable();
 
-            try ( NodeCursor cursor = cursors.allocateNodeCursor() )
+            try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( node, cursor );
                 assertTrue( "in active tx state", cursor.next() );
@@ -118,8 +118,8 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
             tx.dataWrite().nodeDelete( n2 );
 
             // then
-            assertAllNodes( tx.stableDataRead(), n1, n2, n3 );
-            assertAllNodes( tx.dataRead(), n1, n3 );
+            assertAllNodes( tx.cursors(), tx.stableDataRead(), n1, n2, n3 );
+            assertAllNodes( tx.cursors(), tx.dataRead(), n1, n3 );
         }
     }
 
@@ -153,8 +153,8 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
             tx.dataWrite().relationshipDelete( r4 );
 
             // then
-            assertExpandNode( tx.stableDataRead(), n1, r1, r3, r4 );
-            assertExpandNode( tx.dataRead(), n1, r1, r3, r5 );
+            assertExpandNode( tx.cursors(), tx.stableDataRead(), n1, r1, r3, r4 );
+            assertExpandNode( tx.cursors(), tx.dataRead(), n1, r1, r3, r5 );
         }
     }
 
@@ -196,14 +196,14 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
             tx.dataWrite().nodeSetProperty( n1, prop6, intValue( 3 ) );
 
             // then
-            assertNode( tx.stableDataRead(), n1 )
+            assertNode( tx.cursors(), tx.stableDataRead(), n1 )
                     .hasProperty( prop1, intValue( 1 ) )
                     .hasProperty( prop2, stringValue( "yo2" ) )
                     .hasProperty( prop4, intValue( 2 ) )
                     .hasProperty( prop5, stringValue( "onlyInStable" ) )
                     .andNothingElse();
 
-            assertNode( tx.dataRead(), n1 )
+            assertNode( tx.cursors(), tx.dataRead(), n1 )
                     .hasProperty( prop1, intValue( 1 ) )
                     .hasProperty( prop2, stringValue( "yo3" ) )
                     .hasProperty( prop4, intValue( 2 ) )
@@ -212,7 +212,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    private void assertAllNodes( Read read, long... nodes )
+    private void assertAllNodes( CursorFactory cursors, Read read, long... nodes )
     {
         Set<Long> expectedSet = Arrays.stream( nodes ).boxed().collect( Collectors.toSet() );
         try ( NodeCursor node = cursors.allocateNodeCursor() )
@@ -228,7 +228,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    private void assertExpandNode( Read read, long nodeId, long... relationshipIds )
+    private void assertExpandNode( CursorFactory cursors, Read read, long nodeId, long... relationshipIds )
     {
         Set<Long> expectedSet = Arrays.stream( relationshipIds ).boxed().collect( Collectors.toSet() );
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -248,7 +248,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    private NodeProperties assertNode( Read read, long nodeId )
+    private NodeProperties assertNode( CursorFactory cursors, Read read, long nodeId )
     {
         Map<Integer,Value> properties = new HashMap<>();
         try ( NodeCursor node = cursors.allocateNodeCursor();

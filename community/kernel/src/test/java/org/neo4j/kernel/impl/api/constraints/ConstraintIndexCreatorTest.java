@@ -344,12 +344,6 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public CursorFactory cursors()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Session beginSession( LoginContext loginContext )
         {
             throw new UnsupportedOperationException();
