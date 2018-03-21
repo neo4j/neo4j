@@ -123,6 +123,20 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return new DateTimeValue( ofInstant( ofEpochMilli( millisUTC.longValue() ), UTC ) );
     }
 
+    public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
+    {
+        if ( fieldsFromHeader != null )
+        {
+            if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
+            {
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+            }
+            // Override defaultZone
+            defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );
+        }
+        return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );
+    }
+
     public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
     {
         return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );

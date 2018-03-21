@@ -22,11 +22,11 @@ package org.neo4j.csv.reader;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CSVHeaderInformation;
 /**
  * Seeks for specific characters in a stream of characters, e.g. a {@link CharReadable}. Uses a {@link Mark}
  * as keeper of position. Once a {@link #seek(Mark, int)} has succeeded the characters specified by
- * the mark can be {@link #extract(Mark, Extractor, AnyValue[]) extracted} into a value of an arbitrary type.
+ * the mark can be {@link #extract(Mark, Extractor, CSVHeaderInformation) extracted} into a value of an arbitrary type.
  *
  * Typical usage is:
  *
@@ -70,10 +70,10 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * @param optionalData holds additional information for spatial and temporal values or null
      * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
-     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, AnyValue[]) extraction}
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, org.neo4j.values.storable.CSVHeaderInformation) extraction}
      * returns {@code false}.
      */
-    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, AnyValue[] optionalData );
+    <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, CSVHeaderInformation optionalData );
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.
@@ -81,7 +81,7 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * @param extractor {@link Extractor} capable of extracting the value.
      * @return the supplied {@link Extractor}, which after the call carries the extracted value itself,
      * where either {@link Extractor#value()} or a more specific accessor method can be called to access the value.
-     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, AnyValue[]) extraction}
+     * @throws IllegalStateException if the {@link Extractor#extract(char[], int, int, boolean, org.neo4j.values.storable.CSVHeaderInformation) extraction}
      * returns {@code false}.
      */
     <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor );
@@ -94,7 +94,7 @@ public interface CharSeeker extends Closeable, SourceTraceability
      * @return {@code true} if a value was extracted, otherwise {@code false}. Probably the only reason for
      * returning {@code false} would be if the data to extract was empty.
      */
-    boolean tryExtract( Mark mark, Extractor<?> extractor, AnyValue[] optionalData );
+    boolean tryExtract( Mark mark, Extractor<?> extractor, CSVHeaderInformation optionalData );
 
     /**
      * Extracts the value specified by the {@link Mark}, previously populated by a call to {@link #seek(Mark, int)}.

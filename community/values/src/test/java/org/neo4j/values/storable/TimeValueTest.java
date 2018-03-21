@@ -32,6 +32,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.neo4j.values.storable.LocalTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
@@ -179,6 +180,33 @@ public class TimeValueTest
     public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
         assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToParseTimeThatOverridesHeaderInformation()
+    {
+        String headerInformation = "{timezone:-01:00}";
+        String data = "14:05:17Z";
+
+        TimeValue expected = TimeValue.parse( data, orFail );
+        TimeValue actual = TimeValue.parse( data, orFail, TemporalValue.parseHeaderInformation( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertEquals( UTC, actual.getZoneOffset() );
+    }
+
+    @Test
+    public void shouldBeAbleToParseTimeWithoutTimeZoneWithHeaderInformation()
+    {
+        String headerInformation = "{timezone:-01:00}";
+        String data = "14:05:17";
+
+        TimeValue expected = TimeValue.parse( data, () -> ZoneId.of( "-01:00" ) );
+        TimeValue unexpected = TimeValue.parse( data, inUTC );
+        TimeValue actual = TimeValue.parse( data, orFail, TemporalValue.parseHeaderInformation( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertNotEquals( unexpected, actual );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

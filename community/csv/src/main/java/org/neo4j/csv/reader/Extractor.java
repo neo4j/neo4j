@@ -19,7 +19,7 @@
  */
 package org.neo4j.csv.reader;
 
-import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CSVHeaderInformation;
 /**
  * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#string()},
  * {@link Extractors#long_() long} or {@link Extractors#intArray()}.
@@ -44,7 +44,7 @@ public interface Extractor<T> extends Cloneable
      * @param optionalData optional data to be used for spatial or temporal values or null if csv header did not use it
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
-    boolean extract( char[] data, int offset, int length, boolean hadQuotes, AnyValue[] optionalData );
+    boolean extract( char[] data, int offset, int length, boolean hadQuotes, CSVHeaderInformation optionalData );
 
     /**
      * Extracts value of type {@code T} from the given character data.

@@ -47,8 +47,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.HeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
-import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.CSVHeaderInformation;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TemporalValue;
 
 import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
@@ -343,7 +344,7 @@ public class DataFactories
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
             Type type = null;
             Extractor<?> extractor = null;
-            AnyValue[] optionalParameter = null;
+            CSVHeaderInformation optionalParameter = null;
             if ( typeSpec == null )
             {
                 type = Type.PROPERTY;
@@ -356,7 +357,14 @@ public class DataFactories
                 String optionalParameterString = split.other();
                 if ( optionalParameterString != null )
                 {
-                    optionalParameter = PointValue.parseIntoArray( optionalParameterString );
+                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
+                    {
+                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
+                    }
+                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
+                    {
+                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
+                    }
                 }
                 if ( typeSpec.equalsIgnoreCase( Type.ID.name() ) )
                 {
@@ -396,7 +404,7 @@ public class DataFactories
         {
             Type type = null;
             Extractor<?> extractor = null;
-            AnyValue[] optionalParameter = null;
+            CSVHeaderInformation optionalParameter = null;
             if ( typeSpec == null )
             {   // Property
                 type = Type.PROPERTY;
@@ -409,7 +417,14 @@ public class DataFactories
                 String optionalParameterString = split.other();
                 if ( optionalParameterString != null )
                 {
-                    optionalParameter = PointValue.parseIntoArray( optionalParameterString );
+                    if ( Extractors.PointExtractor.NAME.equals( typeSpec ) )
+                    {
+                        optionalParameter = PointValue.parseHeaderInformation( optionalParameterString );
+                    }
+                    else if ( Extractors.TimeExtractor.NAME.equals( typeSpec ) || Extractors.DateTimeExtractor.NAME.equals( typeSpec ) )
+                    {
+                        optionalParameter = TemporalValue.parseHeaderInformation( optionalParameterString );
+                    }
                 }
 
                 if ( typeSpec.equalsIgnoreCase( Type.START_ID.name() ) )

@@ -44,6 +44,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
+import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -75,6 +76,20 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public static TimeValue time( long nanosOfDayLocal, ZoneOffset offset )
     {
         return new TimeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), offset ) );
+    }
+
+    public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
+    {
+        if ( fieldsFromHeader != null )
+        {
+            if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
+            {
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+            }
+            // Override defaultZone
+            defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );
+        }
+        return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
