@@ -338,6 +338,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // nothing found in the index after deletion
     val result = executeWith(expectedToSucceed, "start n=node:index(key = 'value') return n")
+
     result.size should equal(0)
   }
 }

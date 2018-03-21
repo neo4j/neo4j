@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_1._
-import org.neo4j.cypher.internal.spi.v3_1.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.compiler.v3_1.codegen._
+import org.neo4j.cypher.internal.compiler.v3_1.executionplan.GeneratedQuery
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -58,9 +60,20 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
 
     val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
-    CypherCompilerFactory.costBasedCompiler(graph, config, clock, GeneratedQueryStructure, monitors, logger,
+    CypherCompilerFactory.costBasedCompiler(graph, config, clock, NOT_SUPPORTED, monitors, logger,
       rewriterSequencer, plannerName, runtimeName, updateStrategy, typeConversions)
   }
 
   override val queryCacheSize: Int = config.queryCacheSize
+
+  private object NOT_SUPPORTED extends CodeStructure[GeneratedQuery] {
+
+    override def generateQuery(className: String, columns: Seq[String],
+                               operatorIds: Map[String, Id],
+                               conf: CodeGenConfiguration)
+                              (block: (MethodStructure[_]) => Unit)
+                              (implicit
+                               codeGenContext: CodeGenContext): CodeStructureResult[GeneratedQuery] =
+      throw new IllegalArgumentException("Runtime is not supported in Cypher 3.1")
+  }
 }

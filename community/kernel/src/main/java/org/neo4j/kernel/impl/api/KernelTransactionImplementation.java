@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -98,6 +99,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -720,14 +722,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
     }
 
     @Override
     public Read stableDataRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
     }
 
@@ -741,7 +743,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         upgradeToDataWrites();
         return operations;
     }
@@ -749,32 +751,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenWrite tokenWrite()
     {
-        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
-
         return operations.token();
     }
 
     @Override
     public Token token()
     {
-        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
-
         return operations.token();
     }
 
     @Override
     public TokenRead tokenRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.token();
     }
 
     @Override
     public ExplicitIndexRead indexRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
 
         return operations.indexRead();
     }
@@ -783,7 +781,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         upgradeToDataWrites();
 
         return operations;
@@ -792,7 +790,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SchemaRead schemaRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.schemaRead();
     }
 
@@ -800,7 +798,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
+        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
 
         upgradeToSchemaWrites();
         return operations;
@@ -832,6 +830,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
+    }
+
+    public void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !allows.apply( accessMode ) )
+        {
+            throw accessMode.onViolation(
+                    format( "%s operations are not allowed for %s.", mode,
+                           securityContext().description() ) );
+        }
     }
 
     private void afterCommit( long txId )

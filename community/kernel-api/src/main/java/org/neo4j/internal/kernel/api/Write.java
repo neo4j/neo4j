@@ -44,6 +44,13 @@ public interface Write
     boolean nodeDelete( long node ) throws AutoIndexingKernelException;
 
     /**
+     * Deletes the node and all relationships connecting the node
+     * @param node the node to delete
+     * @return the number of deleted relationships
+     */
+    int nodeDetachDelete( long node ) throws KernelException;
+
+    /**
      * Create a relationship between two nodes.
      * @param sourceNode the source internal node id
      * @param relationshipType the type of the relationship to create

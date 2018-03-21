@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -55,15 +55,15 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
         InwardKernel kernel = kernelSupplier.get();
         try ( KernelTransaction transaction = kernel.newTransaction( Type.implicit, AUTH_DISABLED ) )
         {
-            try ( Statement statement = transaction.acquireStatement() )
+            try ( Statement ignore = transaction.acquireStatement() )
             {
-                int id = createKey( statement, name );
+                int id = createKey( transaction, name );
                 transaction.success();
                 return id;
             }
         }
     }
 
-    protected abstract int createKey( Statement statement, String name )
+    protected abstract int createKey( KernelTransaction transaction, String name )
             throws IllegalTokenNameException, TooManyLabelsException;
 }

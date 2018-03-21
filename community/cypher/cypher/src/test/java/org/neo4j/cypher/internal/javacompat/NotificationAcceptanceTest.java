@@ -592,14 +592,13 @@ public class NotificationAcceptanceTest
     public void shouldWarnOnCartesianProduct()
     {
 
-        Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
-        {
-            assertNotifications( version + "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
+        assertNotifications( "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
 
-            assertNotifications( version + "explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
+        assertNotifications( "explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *",
+                containsItem( cartesianProductWarning ) );
 
-            assertNotifications( version + "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
-        } );
+        assertNotifications( "explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *",
+                containsItem( cartesianProductWarning ) );
     }
 
     @Test

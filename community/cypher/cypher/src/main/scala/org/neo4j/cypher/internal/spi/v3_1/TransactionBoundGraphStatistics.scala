@@ -22,24 +22,25 @@ package org.neo4j.cypher.internal.spi.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, RelTypeId}
-import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference
 
 object TransactionBoundGraphStatistics {
-  def apply(ops: ReadOperations) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(ops))
+  def apply(read: Read, schemaRead: SchemaRead) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
 
-  private class BaseTransactionBoundGraphStatistics(operations: ReadOperations) extends GraphStatistics {
+  private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead) extends GraphStatistics {
 
     import NameId._
 
     def indexSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = SchemaIndexDescriptorFactory.forLabel( label, property )
-        val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
+        val labeledNodes = read.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a property with a given value
-        val indexEntrySelectivity = operations.indexUniqueValuesSelectivity(indexDescriptor)
+        val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
+          DefaultIndexReference.general(label.id, property.id)
+        )
         val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
         val indexSelectivity = frequencyOfNodesWithSameValue / labeledNodes
 
@@ -51,11 +52,10 @@ object TransactionBoundGraphStatistics {
 
     def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
       try {
-        val indexDescriptor = SchemaIndexDescriptorFactory.forLabel( label, property )
-        val labeledNodes = operations.countsForNodeWithoutTxState( label ).toDouble
+        val labeledNodes = read.countsForNodeWithoutTxState( label ).toDouble
 
         // Probability of any node with the given label, to have a given property
-        val indexSize = operations.indexSize(indexDescriptor)
+        val indexSize = schemaRead.indexSize(DefaultIndexReference.general(label.id, property.id))
         val indexSelectivity = indexSize / labeledNodes
 
         Selectivity.of(indexSelectivity)
@@ -65,10 +65,10 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForNodeWithoutTxState(labelId))
+      atLeastOne(read.countsForNodeWithoutTxState(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     /**
       * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out

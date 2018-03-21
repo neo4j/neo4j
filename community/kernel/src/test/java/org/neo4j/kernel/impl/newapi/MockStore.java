@@ -61,6 +61,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -377,6 +378,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
         throw new UnsupportedOperationException();
@@ -396,6 +403,18 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
     {
         throw new UnsupportedOperationException();
     }
@@ -609,6 +628,18 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

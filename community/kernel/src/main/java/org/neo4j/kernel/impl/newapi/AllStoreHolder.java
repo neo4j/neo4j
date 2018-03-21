@@ -89,6 +89,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -264,13 +265,29 @@ public class AllStoreHolder extends Read
     @Override
     ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         return explicitIndexes.get().nodeChanges( indexName );
     }
 
     @Override
     ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         return explicitIndexes.get().relationshipChanges( indexName );
+    }
+
+    @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        ktx.assertOpen();
+        return explicitIndexStore.getAllNodeIndexNames();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
+    {
+        ktx.assertOpen();
+        return explicitIndexStore.getAllRelationshipIndexNames();
     }
 
     @Override
@@ -416,6 +433,23 @@ public class AllStoreHolder extends Read
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
     {
         return storeReadLayer.indexGetFailure( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+    }
+
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        acquireSharedLabelLock( index.label() );
+        ktx.assertOpen();
+        return storeReadLayer
+                .indexUniqueValuesPercentage( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        acquireSharedLabelLock( index.label() );
+        ktx.assertOpen();
+        return storeReadLayer.indexSize( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
     }
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )
@@ -920,6 +954,12 @@ public class AllStoreHolder extends Read
     {
         return aggregationFunction( name,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
+    }
+
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        return procedures.valueMapper();
     }
 
     @Override

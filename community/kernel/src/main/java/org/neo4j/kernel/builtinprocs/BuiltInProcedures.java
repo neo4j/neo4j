@@ -264,7 +264,7 @@ public class BuiltInProcedures
         try ( Statement ignore = tx.acquireStatement() )
         {
             RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
-            tx.indexRead().relationshipExplicitIndexGet( cursor, manualIndexName, key, Values.of( value ),
+            tx.indexRead().relationshipExplicitIndexLookup( cursor, manualIndexName, key, Values.of( value ),
                     -1, -1 );
             return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
@@ -406,7 +406,7 @@ public class BuiltInProcedures
         {
             RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
             tx.indexRead()
-                    .relationshipExplicitIndexGet( cursor, "relationship_auto_index", key, Values.of( value ), -1, -1 );
+                    .relationshipExplicitIndexLookup( cursor, "relationship_auto_index", key, Values.of( value ), -1, -1 );
             return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( KernelException e )

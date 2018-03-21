@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.kernel.api.InternalIndexState
 import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
 import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
@@ -35,20 +35,20 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with SchemaDescriptorTranslation {
+  extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with SchemaDescriptorTranslation {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(tc.schemaRead.index(labelId, propertyKeyId))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
     val labelId = getLabelId(labelName)
 
-    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = tc.schemaRead.indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
@@ -57,18 +57,18 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
     val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
-    val schema = tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+    val ref = tc.schemaRead.index(labelId, propertyKeyId)
 
-    if (schema.`type`() == KernelIndexDescriptor.Type.UNIQUE) getOnlineIndex(schema)
+    if (ref.isUnique) getOnlineIndex(ref)
     else None
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try { f } catch { case _: KernelException => None }
 
-  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[SchemaTypes.IndexDescriptor] =
-    tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(descriptor)
+  private def getOnlineIndex(descriptor: IndexReference): Option[SchemaTypes.IndexDescriptor] =
+    tc.schemaRead.indexGetState(descriptor) match {
+      case InternalIndexState.ONLINE => Some(SchemaTypes.IndexDescriptor(descriptor.label(), descriptor.properties()(0)))
       case _                         => None
     }
 
@@ -77,7 +77,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForSchema(
+    tc.schemaRead.constraintsGetForSchema(
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
     ).asScala.collectFirst {
       case constraint: ConstraintDescriptor if constraint.enforcesUniqueness() =>
@@ -86,13 +86,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
+    val read = tc.kernelTransaction.indexRead()
+
+    if (!read.nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
+    val read = tc.kernelTransaction.indexRead()
+
+    if (!read.relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
@@ -101,7 +105,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     val javaCreator = new java.util.function.Function[Any, T]() {
       def apply(key: Any) = f
     }
-    tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    tc.schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
 
@@ -115,7 +119,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), new MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.dataRead, tc.schemaRead), new MutableGraphStatisticsSnapshot())
 
   val txIdProvider: () => Long = tc.graph
     .getDependencyResolver

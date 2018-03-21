@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -192,6 +193,27 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         // tried to delete node that does not exist
         return false;
+    }
+
+    @Override
+    public int nodeDetachDelete( final long nodeId ) throws KernelException
+    {
+        final MutableInt count = new MutableInt();
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking(
+                relId ->
+                {
+                    ktx.assertOpen();
+                    if ( relationshipDelete( relId ) )
+                    {
+                        count.increment();
+                    }
+                } );
+
+        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx );
+        ktx.assertOpen();
+
+        nodeDelete( nodeId );
+        return count.intValue();
     }
 
     @Override
@@ -912,7 +934,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertConstraintDoesNotExist( constraint );
 
         //enforce constraints
-        allStoreHolder.relationshipLabelScan( descriptor.getRelTypeId(), relationshipCursor );
+        allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
         constraintSemantics
                 .validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
 
@@ -985,7 +1007,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            ktx.statementLocks().optimistic()
+                    .acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 

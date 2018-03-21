@@ -52,7 +52,6 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 import org.neo4j.kernel.impl.api.store.{DefaultIndexReference, RelationshipIterator}
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
@@ -70,7 +69,7 @@ import scala.collection.mutable.ArrayBuffer
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
                                           val resources: ResourceManager = new ResourceManager)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with
+  extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext with
     IndexDescriptorCompatibility {
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
@@ -136,12 +135,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def createNodeId(): Long = writes().nodeCreate()
 
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = {
-    val relId = transactionalContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
+    val relId = transactionalContext.kernelTransaction.dataWrite().relationshipCreate(start, relType, end)
     fromRelationshipProxy(entityAccessor.newRelationshipProxy(relId, start, relType, end))
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
-    transactionalContext.statement.tokenWriteOperations().relationshipTypeGetOrCreateForName(relTypeName)
+    transactionalContext.kernelTransaction.tokenWrite().relationshipTypeGetOrCreateForName(relTypeName)
 
   override def getLabelsForNode(node: Long): ListValue = {
     val cursor = nodeCursor
@@ -172,7 +171,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def getOrCreateLabelId(labelName: String): Int = {
     val id = tokenRead.nodeLabel(labelName)
-    if (id != KeyReadOperations.NO_SUCH_LABEL) id
+    if (id != TokenRead.NO_TOKEN) id
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
@@ -303,14 +302,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def lockingUniqueIndexSeek(indexReference: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] = {
     indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
     val index = DefaultIndexReference.general(indexReference.label(), indexReference.properties():_*)
-    val predicates = indexReference.properties.zip(queries).map(p => IndexQuery.exact(p._1, p._2.value()))
-    val nodeId = transactionalContext.kernelTransaction.dataRead().nodeUniqueIndexSeek(index, predicates:_*)
+    val nodeId = reads().nodeUniqueIndexSeek(index, queries:_*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) =>
-      if (transactionalContext.statement.dataWriteOperations().nodeRemoveLabel(node, labelId)) count + 1 else count
+      if (transactionalContext.kernelTransaction.dataWrite().nodeRemoveLabel(node, labelId)) count + 1 else count
   }
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
@@ -378,11 +376,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class NodeOperations extends BaseOperations[NodeValue] {
 
     override def delete(id: Long) {
-      try {
         writes().nodeDelete(id)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -496,11 +490,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   class RelationshipOperations extends BaseOperations[RelationshipValue] {
 
     override def delete(id: Long) {
-      try {
         writes().relationshipDelete(id)
-      } catch {
-        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
-      }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = {
@@ -636,7 +626,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val javaCreator = new java.util.function.Function[K, V]() {
       override def apply(key: K) = creator
     }
-    transactionalContext.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
+    transactionalContext.schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
@@ -799,9 +789,9 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelProcedureCall =
       if (shouldElevate(allowed))
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallReadOverride(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
       else
-        transactionalContext.tc.kernelTransaction().procedures().procedureCallRead(id, _)
+        transactionalContext.kernelTransaction.procedures().procedureCallRead(id, _)
 
     callProcedure(args, call)
   }
@@ -964,13 +954,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def detachDeleteNode(node: Long): Int = {
-    try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
-    } catch {
-      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
-    }
-  }
+  override def detachDeleteNode(node: Long): Int = transactionalContext.dataWrite.nodeDetachDelete(node)
 
   override def assertSchemaWritesAllowed(): Unit =
     transactionalContext.kernelTransaction.schemaWrite()

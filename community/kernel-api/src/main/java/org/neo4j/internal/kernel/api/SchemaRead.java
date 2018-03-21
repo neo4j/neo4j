@@ -92,6 +92,22 @@ public interface SchemaRead
     String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
+     * Computes the selectivity of the unique values
+     * @param index The index of interest
+     * @return The selectivity of the given index
+     * @throws IndexNotFoundKernelException if the index is not there
+     */
+    double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Returns the size of the index
+     * @param index The index of interest
+     * @return The size of the current index
+     * @throws IndexNotFoundKernelException if the index is not there
+     */
+    long indexSize( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
      * Finds all constraints for the given schema
      *
      * @param descriptor The descriptor of the schema
