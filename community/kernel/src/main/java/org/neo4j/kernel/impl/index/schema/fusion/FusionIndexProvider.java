@@ -68,6 +68,9 @@ public class FusionIndexProvider extends IndexProvider
             return instances[selectSlot( values )];
         }
 
+        /**
+         * @return Appropriate IndexReader for given predicate or null if predicate needs all readers.
+         */
         IndexReader select( IndexReader[] instances, IndexQuery... predicates );
     }
 
