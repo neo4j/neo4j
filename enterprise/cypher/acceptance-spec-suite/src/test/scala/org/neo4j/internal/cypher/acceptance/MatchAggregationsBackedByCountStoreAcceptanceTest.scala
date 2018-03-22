@@ -103,8 +103,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n) RETURN count(n)/2.0*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.Interpreted)
-    compareCount(query, 7.5, Configs.Interpreted, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All)
+    compareCount(query, 7.5, Configs.All, executeBefore = executeBefore)
   }
 
   test("counts relationships with unspecified type using count store") {
@@ -330,9 +330,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n) RETURN count(n)/3*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.Interpreted)
+    compareCount(query, 0, Configs.All)
     setupBigModel()
-    compareCount(query, 5, Configs.Interpreted, assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 5, Configs.All, assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships using count store considering transaction state") {
@@ -385,9 +385,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH ()-[r]->() RETURN count(r)/3*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.Interpreted, expectedLogicalPlan = "RelationshipCountFromCountStore")
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "RelationshipCountFromCountStore")
     setupBigModel()
-    compareCount(query, 5, Configs.Interpreted, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 5, Configs.All, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships using count store and horizon with further query") {

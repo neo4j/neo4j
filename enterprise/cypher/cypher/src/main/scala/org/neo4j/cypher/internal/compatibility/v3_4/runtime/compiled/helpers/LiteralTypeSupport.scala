@@ -45,17 +45,22 @@ object LiteralTypeSupport {
     case _ => CypherCodeGenType(ct, toRepresentationType(ct))
   }
 
+//  def deriveCodeGenTypeWithRepresentation(ct: CypherType, representationAs: RepresentationType): CypherCodeGenType = ct match {
+//    case ListType(innerCt) => CypherCodeGenType(CTList(innerCt), ListReferenceType(representationAs))
+//    case _ => CypherCodeGenType(ct, representationAs)
+//  }
+
   private def toRepresentationType(ct: CypherType): RepresentationType = ct match {
     case CTInteger => LongType
     case CTFloat => expressions.FloatType
     case CTBoolean => BoolType
     case CTNode => LongType
     case CTRelationship => LongType
-//    case _ => ReferenceType
     case _ => ValueType
   }
 
   def selectRepresentationType(ct: CypherType, reprTypes: Seq[RepresentationType]): RepresentationType =
+    // TODO: Handle ListReferenceType(_)?
     reprTypes.reduce[RepresentationType]({
       case (ReferenceType, _) =>
         ReferenceType
@@ -69,6 +74,15 @@ object LiteralTypeSupport {
         ValueType
       case (_, ValueType) =>
         ValueType
+      case (LongType, LongType) =>
+        ct match {
+          case CTNode | CTRelationship | CTInteger =>
+            LongType // All elements have the same
+          case _ =>
+            // We cannot mix longs from different value domains, so we have to fallback on ReferenceType
+            // e.g. literal list of [node, relationship, node]
+            ReferenceType
+        }
       case (t1, t2) =>
         if (t1 != t2)
           toRepresentationType(ct)

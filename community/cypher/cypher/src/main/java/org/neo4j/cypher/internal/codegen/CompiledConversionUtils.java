@@ -519,23 +519,26 @@ public abstract class CompiledConversionUtils
                 {
                     copy[i] = materializeAnyResult( proxySpi, Array.get( anyValue, i ) );
                 }
-                return ValueUtils.of( copy );
+                return VirtualValues.list( copy );
             }
         }
-        // TODO: Do we need to do anything for Values (sequence or map) ?
-        // Yes, run through a modified DefaultValueMapper, without the mappings to Java types, that will create proxy objects for entities
         else if ( anyValue instanceof AnyValue )
         {
+            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities (storable arrays should
+            // TODO: This is expensive and will copy all the data even if no conversion is actually performed.
+            // Investigate if it pays off to (1) first do a dry run and return as is if no conversion is needed,
+            // or (2) always create proxy objects directly whenever we create values so we can skip this,
+            // or (3) wrap with TransformedListValue (existing) or TransformedMapValue (non-existing) that does the conversion lazily
+            if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
+            {
+                return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
+            }
             return (AnyValue) anyValue;
         }
         else
         {
             return ValueUtils.of( anyValue );
         }
-//        else
-//        {
-//            throw new IllegalArgumentException( "Do not know how to materialize value of type " + anyValue.getClass().getName() );
-//        }
     }
 
     public static NodeValue materializeNodeValue( EmbeddedProxySPI proxySpi, Object anyValue )
