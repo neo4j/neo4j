@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.cypher.acceptance
 
@@ -23,11 +23,11 @@ import java.io.PrintWriter
 
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.graphdb.{QueryExecutionException, TransactionFailureException}
-import org.neo4j.internal.cypher.acceptance.TestResourceProcedure.{SimulateFailureException, SimulateFailureOnCloseException}
-import org.neo4j.kernel.api.KernelTransaction
-import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.cypher.acceptance.TestResourceProcedure._
+import org.neo4j.internal.kernel.api.Transaction
+import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.proc.Procedures
 
 import scala.collection.mutable.ArrayBuffer
@@ -53,7 +53,7 @@ class ReflectiveProcedureCallAcceptanceTest extends ExecutionEngineFunSuite with
   private def setUpProcedures(): TestResourceProcedure.Counters = {
     val procedures = graph.getDependencyResolver.resolveDependency(classOf[Procedures])
     val counters = new TestResourceProcedure.Counters
-    procedures.registerComponent(classOf[TestResourceProcedure.Counters], TestResourceProcedure.countersProvider(counters))
+    procedures.registerComponent(classOf[TestResourceProcedure.Counters], TestResourceProcedure.countersProvider(counters), true)
 
     procedures.registerProcedure(classOf[TestResourceProcedure])
     procedures.registerFunction(classOf[TestResourceProcedure])
@@ -87,7 +87,7 @@ class ReflectiveProcedureCallAcceptanceTest extends ExecutionEngineFunSuite with
   test("should close resources on mid-stream transaction close") {
     val counters = setUpProcedures()
 
-    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`, AUTH_DISABLED)
+    val tx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val result = graph.execute(defaultQuery)
 
     // Pull one row and then close the transaction
@@ -115,7 +115,7 @@ class ReflectiveProcedureCallAcceptanceTest extends ExecutionEngineFunSuite with
   test("should not leave any resources open on transaction close before pulling on the result") {
     val counters = setUpProcedures()
 
-    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`, AUTH_DISABLED)
+    val tx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val result = graph.execute(defaultQuery)
 
     // Close the transaction directly without pulling the result
@@ -130,7 +130,7 @@ class ReflectiveProcedureCallAcceptanceTest extends ExecutionEngineFunSuite with
     val counters = setUpProcedures()
     val numberOfRows = 100
 
-    val tx = graph.beginTransaction(KernelTransaction.Type.`implicit`, AUTH_DISABLED)
+    val tx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val result = graph.execute(s"UNWIND range(1,$numberOfRows) as i CALL org.neo4j.test.testResourceProcedure(1) YIELD value RETURN value")
 
     // Pull one row and then close the transaction
