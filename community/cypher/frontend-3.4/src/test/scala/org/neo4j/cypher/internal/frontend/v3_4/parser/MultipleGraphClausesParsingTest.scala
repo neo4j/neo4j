@@ -48,17 +48,15 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(creates = List(ast.Create(exp.Pattern(patternParts)(pos))(pos))))
   }
 
-  test("CONSTRUCT { MERGE () CREATE () REMOVE a.prop SET a.prop = 1 }") {
+  test("CONSTRUCT { MERGE () CREATE () SET a.prop = 1 }") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
     val merge: ast.Merge = ast.Merge(exp.Pattern(patternParts)(pos), Seq.empty)(pos)
     val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
-    val remove: ast.Remove = ast.Remove(Seq(ast.RemovePropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos))))(pos)
     val set: ast.SetClause = ast.SetClause(Seq(ast.SetPropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos), exp.SignedDecimalIntegerLiteral("1")(pos))(pos)))(pos)
 
     yields(ast.ConstructGraph(
       merges = List(merge),
       creates = List(create),
-      removes = List(remove),
       sets = List(set))
     )
   }

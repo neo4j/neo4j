@@ -47,9 +47,8 @@ trait Clauses extends Parser
     group(keyword("CONSTRUCT") ~~ "{" ~~
       zeroOrMore(WS ~ Merge) ~~
       zeroOrMore(WS ~ Create) ~~
-      zeroOrMore(WS ~ Remove) ~~
       zeroOrMore(WS ~ SetClause) ~~
-      "}" ~~>> (ast.ConstructGraph(_, _, _, _)))
+      "}" ~~>> (ast.ConstructGraph(_, _, _)))
   }
 
   def CreateGraph = rule("CREATE GRAPH") {
