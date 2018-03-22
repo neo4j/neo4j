@@ -31,7 +31,6 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
@@ -449,70 +448,6 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = inner.size() - 1; i >= 0; i-- )
             {
                 hashCode = 31 * hashCode + inner.value( i ).hashCode();
-            }
-            return hashCode;
-        }
-    }
-
-    static final class TransformedListValue extends ListValue
-    {
-        private final ListValue inner;
-        private final Function<AnyValue,AnyValue> transform;
-
-        TransformedListValue( ListValue inner, Function<AnyValue,AnyValue> transform )
-        {
-            this.inner = inner;
-            this.transform = transform;
-        }
-
-        @Override
-        public IterationPreference iterationPreference()
-        {
-            return inner.iterationPreference();
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            writer.beginList( size() );
-            for ( int i = 0; i < inner.size(); i++ )
-            {
-                transform.apply( inner.value( i ) ).writeTo( writer );
-            }
-            writer.endList();
-        }
-
-        @Override
-        public int size()
-        {
-            return inner.size();
-        }
-
-        @Override
-        public AnyValue value( int offset )
-        {
-            return transform.apply( inner.value( offset ) );
-        }
-
-        @Override
-        public AnyValue[] asArray()
-        {
-            int len = size();
-            AnyValue[] anyValues = new AnyValue[len];
-            for ( int i = 0; i < len; i++ )
-            {
-                anyValues[i] = transform.apply( inner.value( i ) );
-            }
-            return anyValues;
-        }
-
-        @Override
-        public int computeHash()
-        {
-            int hashCode = 1;
-            for ( int i = 0; i < size(); i++ )
-            {
-                hashCode = 31 * hashCode + transform.apply( inner.value( i ) ).hashCode();
             }
             return hashCode;
         }

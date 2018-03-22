@@ -97,10 +97,17 @@ public final class VirtualValues
         return new ListValue.ListSlice( list, 0, end );
     }
 
-    public static ListValue transform( ListValue list, Function<AnyValue,AnyValue> transForm )
-    {
-        return new ListValue.TransformedListValue( list, transForm );
-    }
+    /*
+    TOMBSTONE: TransformedListValue
+
+    This list value variant would lazily apply a transform on a inner list. The lazy behavior made it hard
+    to guarantee that the transform was still evaluable and correct on reading the transformed list, so
+    this was removed. If we want lazy values again, remember the problems of
+
+       - returning results out of Cypher combined with auto-closing iterators
+       - reading modified tx-state which was not visible at TransformedListValue creation
+
+    */
 
     public static ListValue reverse( ListValue list )
     {

@@ -226,8 +226,6 @@ public class ListTest
                     VirtualValues.slice( list( -2L, 1L, 4L, 7L, 10L ), 1, 4 ),
                     VirtualValues.drop( list( -2L, 1L, 4L, 7L ), 1 ),
                     VirtualValues.take( list( 1L, 4L, 7L, 10L, 13L ), 3 ),
-                    VirtualValues.transform( list( 0L, 3L, 6L ),
-                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 1L ) ),
                     VirtualValues.reverse( list( 7L, 4L, 1L ) ),
                     VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
             };
@@ -245,8 +243,6 @@ public class ListTest
                     VirtualValues.slice( list( -2L, 1L, 5L, 8L, 11L ), 1, 4 ),
                     VirtualValues.drop( list( -2L, 6L, 9L, 12L ), 1 ),
                     VirtualValues.take( list( 7L, 10L, 13L, 10L, 13L ), 3 ),
-                    VirtualValues.transform( list( 0L, 3L, 6L ),
-                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 8L ) ),
                     VirtualValues.reverse( list( 15L, 12L, 9L ) ),
                     VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
             };
