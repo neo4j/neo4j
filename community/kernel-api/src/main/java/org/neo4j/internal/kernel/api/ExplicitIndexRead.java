@@ -29,12 +29,38 @@ import org.neo4j.values.storable.Value;
  */
 public interface ExplicitIndexRead
 {
+    /**
+     * Finds item from explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param key the key to find
+     * @param value the value corresponding to the value
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value )
             throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Queries explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param query the query object
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, Object query )
             throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Queries explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param key the key to find
+     * @param query the query object
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
             throws ExplicitIndexNotFoundKernelException;
 
@@ -47,14 +73,41 @@ public interface ExplicitIndexRead
      */
     boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
+    /**
+     * Finds item from explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param key the key to find
+     * @param value the value corresponding to the value
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void relationshipExplicitIndexLookup(
             RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
             throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Queries explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param query the query object
+     * @param source the source node or <code>-1</code> if
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void relationshipExplicitIndexQuery(
             RelationshipExplicitIndexCursor cursor, String index, Object query, long source, long target )
             throws ExplicitIndexNotFoundKernelException;
 
+    /**
+     * Queries explicit index
+     *
+     * @param cursor the cursor to use for consuming the result
+     * @param index the name of the explicit index
+     * @param key the key to find
+     * @param query the query object
+     * @throws ExplicitIndexNotFoundKernelException if index is not there
+     */
     void relationshipExplicitIndexQuery(
             RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
             throws ExplicitIndexNotFoundKernelException;
@@ -68,7 +121,15 @@ public interface ExplicitIndexRead
      */
     boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
+    /**
+     * Retrieve all node explicit indexes
+     * @return the names of all node explicit indexes
+     */
     String[] nodeExplicitIndexesGetAll();
 
+    /**
+     * Retrieve all relationship explicit indexes
+     * @return the names of all relationship explicit indexes
+     */
     String[] relationshipExplicitIndexesGetAll();
 }
