@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -53,6 +54,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public final KernelTransaction.Type transactionType;
     public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
+    private final Kernel kernel;
 
     /**
      * Current transaction.
@@ -73,7 +75,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
         PropertyContainerLocker locker,
         InternalTransaction initialTransaction,
         Statement initialStatement,
-        ExecutingQuery executingQuery
+        ExecutingQuery executingQuery,
+        Kernel kernel
     )
     {
         this.graph = graph;
@@ -87,6 +90,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         this.transaction = initialTransaction;
         this.statement = initialStatement;
+
+        this.kernel = kernel;
     }
 
     @Override
@@ -227,6 +232,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
+    public boolean twoLayerTransactionState()
+    {
+        return kernel.modes().twoLayerTransactionState();
+    }
+
+    @Override
     public TransactionalContext getOrBeginNewIfClosed()
     {
         checkNotTerminated();
@@ -245,7 +256,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     {
         InternalTransaction newTx = graph.beginTransaction( transactionType, securityContext );
         return new Neo4jTransactionalContext( graph, statementSupplier, guard, txBridge, locker, newTx,
-                statementSupplier.get(), executingQuery );
+                statementSupplier.get(), executingQuery, kernel );
     }
 
     private void checkNotTerminated()
@@ -327,6 +338,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
         PageCursorTracer pageCursorTracer = statement.executionStatisticsOperations().getPageCursorTracer();
         pageHits += pageCursorTracer.hits();
         pageMisses += pageCursorTracer.faults();
+    }
+
+    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph, Supplier<Statement> statementSupplier, Guard guard,
+            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker, InternalTransaction initialTransaction, Statement initialStatement,
+            ExecutingQuery executingQuery )
+    {
+        return new Neo4jTransactionalContext( graph, statementSupplier, guard, txBridge, locker, initialTransaction, initialStatement, executingQuery, kernel );
     }
 
     interface Creator

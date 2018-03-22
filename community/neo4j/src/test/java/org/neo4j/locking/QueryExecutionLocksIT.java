@@ -330,6 +330,12 @@ public class QueryExecutionLocksIT
         }
 
         @Override
+        public boolean twoLayerTransactionState()
+        {
+            return delegate.twoLayerTransactionState();
+        }
+
+        @Override
         public TransactionalContext getOrBeginNewIfClosed()
         {
             if ( isOpen() )

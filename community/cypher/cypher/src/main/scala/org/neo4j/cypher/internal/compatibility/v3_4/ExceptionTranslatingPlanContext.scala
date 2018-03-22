@@ -95,4 +95,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def notificationLogger(): InternalNotificationLogger =
     translateException(inner.notificationLogger())
+
+  override def twoLayerTransactionState(): Boolean =
+    translateException(inner.twoLayerTransactionState())
 }

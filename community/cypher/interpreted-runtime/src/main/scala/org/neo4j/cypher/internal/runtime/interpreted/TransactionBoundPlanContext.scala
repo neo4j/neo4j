@@ -208,4 +208,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger
+
+  override def twoLayerTransactionState(): Boolean = tc.twoLayerTransactionState
 }
