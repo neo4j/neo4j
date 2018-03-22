@@ -587,8 +587,4 @@ class PageList
         sb.append( " ] " ).append( OffHeapPageLock.toString( offLock( pageRef ) ) );
     }
 
-    public void close()
-    {
-        memoryAllocator.freeMemory();
-    }
 }
