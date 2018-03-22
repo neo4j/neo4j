@@ -22,13 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.StringPredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
@@ -52,32 +46,23 @@ public class FusionSelector20 implements FusionIndexProvider.Selector
     {
         if ( values.length > 1 )
         {
-            // Multiple values must be handled by lucene
             return LUCENE;
         }
 
         Value singleValue = values[0];
-        if ( singleValue.valueGroup() == ValueGroup.TEXT )
+        switch ( singleValue.valueGroup().category() )
         {
-            return STRING;
-        }
-
-        if ( singleValue.valueGroup() == ValueGroup.NUMBER )
-        {
+        case NUMBER:
             return NUMBER;
-        }
-
-        if ( Values.isGeometryValue( singleValue ) )
-        {
+        case TEXT:
+            return STRING;
+        case SPATIAL:
             return SPATIAL;
-        }
-
-        if ( Values.isTemporalValue( singleValue ) )
-        {
+        case TEMPORAL:
             return TEMPORAL;
+        default:
+            return LUCENE;
         }
-
-        return LUCENE;
     }
 
     @Override
@@ -87,38 +72,22 @@ public class FusionSelector20 implements FusionIndexProvider.Selector
         {
             return instances[LUCENE];
         }
+
         IndexQuery predicate = predicates[0];
-
-        if ( predicate instanceof ExactPredicate )
+        switch ( predicate.valueGroup().category() )
         {
-            ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            return select( instances, exactPredicate.value() );
-        }
-
-        if ( predicate instanceof StringPredicate )
-        {
+        case NUMBER:
+            return instances[NUMBER];
+        case TEXT:
             return instances[STRING];
-        }
-
-        if ( predicate instanceof RangePredicate )
-        {
-            switch ( predicate.valueGroup().category() )
-            {
-            case NUMBER:
-                return instances[NUMBER];
-            case TEXT:
-                return instances[STRING];
-            case SPATIAL:
-                return instances[SPATIAL];
-            case TEMPORAL:
-                return instances[TEMPORAL];
-            default: // fall through
-            }
-        }
-        if ( predicate instanceof ExistsPredicate )
-        {
+        case SPATIAL:
+            return instances[SPATIAL];
+        case TEMPORAL:
+            return instances[TEMPORAL];
+        case UNKNOWN:
             return null;
+        default:
+            return instances[LUCENE];
         }
-        throw new UnsupportedOperationException( "This selector does not have support for predicate " + predicate );
     }
 }
