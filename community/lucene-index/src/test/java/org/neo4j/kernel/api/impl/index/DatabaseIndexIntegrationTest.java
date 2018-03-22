@@ -78,6 +78,7 @@ public class DatabaseIndexIntegrationTest
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( repeatRule )
             .around( fileSystemRule );
 
+    @Rule
     public final VerboseTimeout timeout = VerboseTimeout.builder()
             .withTimeout( 60, TimeUnit.SECONDS )
             .build();
@@ -111,7 +112,7 @@ public class DatabaseIndexIntegrationTest
         directoryFactory.close();
     }
 
-    @Test( timeout = 70000 )
+    @Test
     @RepeatRule.Repeat( times = 2 )
     public void testSaveCallCommitAndCloseFromMultipleThreads() throws Exception
     {
@@ -127,7 +128,7 @@ public class DatabaseIndexIntegrationTest
         assertFalse( luceneIndex.isOpen() );
     }
 
-    @Test( timeout = 70000 )
+    @Test
     @RepeatRule.Repeat( times = 2 )
     public void saveCallCloseAndDropFromMultipleThreads() throws Exception
     {
