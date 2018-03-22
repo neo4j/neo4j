@@ -46,6 +46,8 @@ Apache Software License, Version 2.0
   Graphite Integration for Metrics
   hazelcast-all
   Jackson
+  Java Native Access
+  Java Native Access Platform
   jPowerShell
   jProcesses
   Lucene codecs
@@ -81,7 +83,22 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
 MIT License
   SLF4J API Module
   SLF4J NOP Binding
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 

@@ -32,6 +32,8 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
+  Java Native Access
+  Java Native Access Platform
   jPowerShell
   jProcesses
   Lucene codecs
@@ -59,4 +61,19 @@ BSD License
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 

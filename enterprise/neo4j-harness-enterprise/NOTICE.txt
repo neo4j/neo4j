@@ -52,6 +52,8 @@ Apache Software License, Version 2.0
   Guava: Google Core Libraries for Java
   hazelcast-all
   Jackson
+  Java Native Access
+  Java Native Access Platform
   JAX-RS provider for JSON content type
   Jetty :: Http Utility
   Jetty :: IO Utility
@@ -108,6 +110,10 @@ Common Development and Distribution License Version 1.1
 GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
 MIT License
   scallop
   SLF4J API Module
@@ -119,6 +125,14 @@ Mozilla Public License, Version 2.0
 
 Dependencies with multiple licenses
 -----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 
 Java Servlet API
   Common Development and Distribution License Version 1.1
