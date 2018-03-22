@@ -20,9 +20,12 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.logging.Log;
+
+import static java.lang.String.format;
 
 public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdaptor<T>
 {
@@ -46,23 +49,21 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
         this.log = log;
     }
 
+    /**
+     * Files will be sent in order but multiple files may be sent during one response.
+     *
+     * @param requestOutcomeSignal signal
+     * @param fileHeader header for most resent file being sent
+     */
     @Override
     public void onFileHeader( CompletableFuture<T> requestOutcomeSignal, FileHeader fileHeader )
     {
         try
         {
-            storeFileStream = storeFileStreamProvider.acquire( fileHeader.fileName(), fileHeader.requiredAlignment() );
-            requestOutcomeSignal.whenComplete( ( storeCopyFinishedResponse, throwable ) ->
-            {
-                try
-                {
-                    storeFileStream.close();
-                }
-                catch ( Exception e )
-                {
-                    log.error( "Unable to close store file stream", e );
-                }
-            } );
+            final StoreFileStream fileStream = storeFileStreamProvider.acquire( fileHeader.fileName(), fileHeader.requiredAlignment() );
+            // Make sure that each stream closes on complete but only the latest is written to
+            requestOutcomeSignal.whenComplete( new CloseFileStreamOnComplete<>( fileStream, fileHeader.fileName() ) );
+            this.storeFileStream = fileStream;
         }
         catch ( Exception e )
         {
@@ -109,6 +110,31 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
         public void onFileStreamingComplete( CompletableFuture<StoreCopyFinishedResponse> signal, StoreCopyFinishedResponse response )
         {
             signal.complete( response );
+        }
+    }
+
+    private class CloseFileStreamOnComplete<RESPONSE> implements BiConsumer<RESPONSE,Throwable>
+    {
+        private final StoreFileStream fileStream;
+        private String fileName;
+
+        private CloseFileStreamOnComplete( StoreFileStream fileStream, String fileName )
+        {
+            this.fileStream = fileStream;
+            this.fileName = fileName;
+        }
+
+        @Override
+        public void accept( RESPONSE response, Throwable throwable )
+        {
+            try
+            {
+                fileStream.close();
+            }
+            catch ( Exception e )
+            {
+                log.error( format( "Unable to close store file stream for file '%s'", fileName ), e );
+            }
         }
     }
 }
