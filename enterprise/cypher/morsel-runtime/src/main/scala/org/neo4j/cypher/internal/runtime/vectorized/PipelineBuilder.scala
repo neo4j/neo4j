@@ -64,8 +64,17 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           label, propertyKeys.head, converters.toCommandExpression(valueExpr))
 
+      case plans.NodeUniqueIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
+        new NodeIndexSeekOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          label, propertyKeys.head, converters.toCommandExpression(valueExpr))
+
       case plans.Argument(_) =>
         new ArgumentOperator
+
+      case p => throw new CantCompileQueryException(s"$p not supported in morsel runtime")
     }
 
     Pipeline(thisOp, IndexedSeq.empty, slots, NoDependencies)()
