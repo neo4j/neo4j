@@ -92,6 +92,17 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph())
   }
 
+  test("CONSTRUCT ON foo.bar {}") {
+    yields(ast.ConstructGraph(on = List(ast.QualifiedGraphName("foo", List("bar")))))
+  }
+
+  test("CONSTRUCT ON foo.bar, baz.boz {}") {
+    yields(ast.ConstructGraph(on = List(
+      ast.QualifiedGraphName("foo", List("bar")),
+      ast.QualifiedGraphName("baz", List("boz"))
+    )))
+  }
+
   test("CONSTRUCT { SET a:A CREATE (b) }") {
     failsToParse
   }
