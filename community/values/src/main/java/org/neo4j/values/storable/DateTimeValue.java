@@ -369,10 +369,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     private final ZonedDateTime value;
+    private final long epochSeconds;
 
     private DateTimeValue( ZonedDateTime value )
     {
         this.value = value;
+        this.epochSeconds = value.toEpochSecond();
     }
 
     @Override
@@ -464,18 +466,18 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     int unsafeCompareTo( Value other )
     {
-        ZonedDateTime that = ((DateTimeValue) other).value;
-        int cmp = Long.compare( value.toEpochSecond(), that.toEpochSecond() );
+        DateTimeValue that = (DateTimeValue) other;
+        int cmp = Long.compare( epochSeconds, that.epochSeconds );
         if ( cmp == 0 )
         {
-            cmp = value.toLocalTime().getNano() - that.toLocalTime().getNano();
+            cmp = value.toLocalTime().getNano() - that.value.toLocalTime().getNano();
             if ( cmp == 0 )
             {
-                cmp = value.toLocalDateTime().compareTo( that.toLocalDateTime() );
+                cmp = value.toLocalDateTime().compareTo( that.value.toLocalDateTime() );
                 if ( cmp == 0 )
                 {
                     ZoneId thisZone = value.getZone();
-                    ZoneId thatZone = that.getZone();
+                    ZoneId thatZone = that.value.getZone();
                     boolean thisIsOffset = thisZone instanceof ZoneOffset;
                     boolean thatIsOffset = thatZone instanceof ZoneOffset;
                     cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
@@ -485,7 +487,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     }
                     if ( cmp == 0 )
                     {
-                        cmp = value.getChronology().compareTo( that.getChronology() );
+                        cmp = value.getChronology().compareTo( that.value.getChronology() );
                     }
                 }
             }
