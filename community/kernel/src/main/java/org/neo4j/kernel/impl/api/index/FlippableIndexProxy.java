@@ -39,9 +39,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -436,7 +436,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    public void flip( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
+    public void flip( Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
             throws FlipFailedKernelException
     {
         lock.writeLock().lock();
@@ -445,11 +445,14 @@ public class FlippableIndexProxy implements IndexProxy
             assertOpen();
             try
             {
-                actionDuringFlip.call();
-                this.delegate = flipTarget.create();
-                if ( started )
+                if ( actionDuringFlip.call() )
                 {
-                    this.delegate.start();
+                    this.delegate = flipTarget.create();
+                    if ( started )
+                    {
+                        this.delegate.start();
+
+                    }
                 }
             }
             catch ( Exception e )
