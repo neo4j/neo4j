@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
@@ -91,9 +91,9 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     private static class StringIndexCapability implements IndexCapability
     {
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return ORDER_ASC;
             }
@@ -101,22 +101,22 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return IndexValueCapability.YES;
             }
-            if ( singleWildcard( valueGroups ) )
+            if ( singleWildcard( valueCategories ) )
             {
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
         }
 
-        private boolean support( ValueGroup[] valueGroups )
+        private boolean support( ValueCategory[] valueCategories )
         {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.TEXT;
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEXT;
         }
     }
 }

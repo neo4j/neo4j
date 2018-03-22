@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -61,7 +61,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
         IndexQuery.RangePredicate supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueCategory.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {

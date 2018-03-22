@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 public class SpatialIndexProvider extends IndexProvider
 {
@@ -185,13 +185,13 @@ public class SpatialIndexProvider extends IndexProvider
     private static class SpatialIndexCapability implements IndexCapability
     {
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
             return ORDER_NONE;
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
         }

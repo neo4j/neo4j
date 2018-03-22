@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 public class TemporalIndexProvider extends IndexProvider
 {
@@ -155,9 +155,9 @@ public class TemporalIndexProvider extends IndexProvider
     private static class TemporalIndexCapability implements IndexCapability
     {
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return ORDER_ASC;
             }
@@ -165,28 +165,22 @@ public class TemporalIndexProvider extends IndexProvider
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            if ( support( valueGroups ) )
+            if ( support( valueCategories ) )
             {
                 return IndexValueCapability.YES;
             }
-            if ( singleWildcard( valueGroups ) )
+            if ( singleWildcard( valueCategories ) )
             {
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
         }
 
-        private boolean support( ValueGroup[] valueGroups )
+        private boolean support( ValueCategory[] valueCategories )
         {
-            return valueGroups.length == 1 &&
-                    (valueGroups[0] == ValueGroup.DATE ||
-                     valueGroups[0] == ValueGroup.DURATION ||
-                     valueGroups[0] == ValueGroup.LOCAL_DATE_TIME ||
-                     valueGroups[0] == ValueGroup.LOCAL_TIME ||
-                     valueGroups[0] == ValueGroup.ZONED_DATE_TIME ||
-                     valueGroups[0] == ValueGroup.ZONED_TIME );
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEMPORAL;
         }
     }
 }
