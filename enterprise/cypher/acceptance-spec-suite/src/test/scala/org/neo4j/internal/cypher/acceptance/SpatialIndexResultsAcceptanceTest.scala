@@ -19,17 +19,34 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 
 import scala.collection.Map
 
-class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
   private val equalityConfig = Configs.Interpreted - Configs.OldAndRule
   private val indexConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+
+  override def cypherComparisonSupport = true
+
+  test("inequality query should give same answer for indexed and non-indexed property") {
+    createIndex()
+    val point = Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)
+    val node = createIndexedNode(point)
+    setNonIndexedValue(node, point)
+
+    assertRangeScanFor("<", point)
+    assertLabelRangeScanFor("<", point)
+
+    assertRangeScanFor("<=", point, node)
+    assertLabelRangeScanFor("<=", point, node)
+
+    assertRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
+    assertLabelRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
+  }
 
   test("indexed point should be readable from node property") {
     // Given
