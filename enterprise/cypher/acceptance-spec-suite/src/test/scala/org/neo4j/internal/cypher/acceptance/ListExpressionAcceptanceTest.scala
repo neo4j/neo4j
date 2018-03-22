@@ -40,4 +40,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     result should equal(List(Map("n.name" -> "newName", "oldNames" -> List("original"))))
   }
+
+  test("length on filter") {
+    val q = "MATCH (n) OPTIONAL MATCH (n)-[r]->(m) RETURN length(filter(x in collect(r) WHERE x <> null)) as cn"
+
+    executeWith(Configs.CommunityInterpreted, q)
+      .toList should equal(List(Map("cn" -> 0)))
+  }
 }
