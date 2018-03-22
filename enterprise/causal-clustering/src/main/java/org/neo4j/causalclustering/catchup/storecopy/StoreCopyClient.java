@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -35,28 +34,29 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+
 public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
     private final Log log;
-    private final LogProvider logProvider;
 
     public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider )
     {
         this.catchUpClient = catchUpClient;
         log = logProvider.getLog( getClass() );
-        this.logProvider = logProvider;
     }
 
-    long copyStoreFiles( CatchupAddressProvider catchupAddressProvider, StoreId expectedStoreId, StoreFileStreams storeFileStreams,
+    long copyStoreFiles( CatchupAddressProvider catchupAddressProvider, StoreId expectedStoreId, StoreFileStreamProvider storeFileStreamProvider,
             Supplier<TerminationCondition> requestWiseTerminationCondition )
             throws StoreCopyFailedException
     {
         try
         {
-            PrepareStoreCopyResponse prepareStoreCopyResponse = listFiles( catchupAddressProvider.primary(), expectedStoreId, storeFileStreams );
-            copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams, requestWiseTerminationCondition );
-            copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreams,
+            PrepareStoreCopyResponse prepareStoreCopyResponse = prepareStoreCopy( catchupAddressProvider.primary(), expectedStoreId, storeFileStreamProvider );
+            copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
+                    requestWiseTerminationCondition );
+            copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
                     requestWiseTerminationCondition );
             return prepareStoreCopyResponse.lastTransactionId();
         }
@@ -67,9 +67,8 @@ public class StoreCopyClient
     }
 
     private void copyFilesIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId, CatchupAddressProvider addressProvider,
-            StoreFileStreams storeFileStreams, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
     {
-        CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler = new StoreFileCopyResponseAdaptor( storeFileStreams, log );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
@@ -80,9 +79,10 @@ public class StoreCopyClient
                 try
                 {
                     AdvertisedSocketAddress from = addressProvider.primary();
-                    log.info( String.format( "Downloading file '%s' from '%s'", file, from ) );
+                    log.info( format( "Downloading file '%s' from '%s'", file, from ) );
                     StoreCopyFinishedResponse response =
-                            catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), copyHandler );
+                            catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ),
+                                    StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log ) );
                     successful = successfulFileDownload( response );
                 }
                 catch ( CatchUpClientException | CatchupAddressResolutionException e )
@@ -100,10 +100,9 @@ public class StoreCopyClient
     }
 
     private void copyIndexSnapshotIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId,
-            CatchupAddressProvider addressProvider,
-            StoreFileStreams storeFileStreams, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            CatchupAddressProvider addressProvider, StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions )
+            throws StoreCopyFailedException
     {
-        CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler = new StoreFileCopyResponseAdaptor( storeFileStreams, log );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
         while ( indexIds.hasNext() )
@@ -116,10 +115,10 @@ public class StoreCopyClient
                 try
                 {
                     AdvertisedSocketAddress from = addressProvider.primary();
-                    log.info( String.format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
+                    log.info( format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ),
-                                    copyHandler );
+                                    StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log ) );
                     successful = successfulFileDownload( response );
                 }
                 catch ( CatchUpClientException | CatchupAddressResolutionException e )
@@ -136,12 +135,12 @@ public class StoreCopyClient
         }
     }
 
-    private PrepareStoreCopyResponse listFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams )
+    private PrepareStoreCopyResponse prepareStoreCopy( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreamProvider storeFileStream )
             throws CatchUpClientException, StoreCopyFailedException
     {
         log.info( "Requesting store listing from: " + from );
         PrepareStoreCopyResponse prepareStoreCopyResponse = catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
-                new PrepareStoreCopyResponseAdaptor( storeFileStreams, logProvider ) );
+                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( storeFileStream, log ) );
         if ( prepareStoreCopyResponse.status() != PrepareStoreCopyResponse.Status.SUCCESS )
         {
             throw new StoreCopyFailedException( "Preparing store failed due to: " + prepareStoreCopyResponse.status() );
@@ -173,56 +172,25 @@ public class StoreCopyClient
     {
         StoreCopyFinishedResponse.Status responseStatus = response.status();
         log.debug( "Request for individual file resulted in response type: %s", response.status() );
-        if ( responseStatus == StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND )
-        {
-            return false;
-        }
-        else if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
+        if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
         {
             return true;
         }
+        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND )
+        {
+            return false;
+        }
+        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_UNKNOWN )
+        {
+            return false;
+        }
         else if ( responseStatus == StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH )
         {
-            throw new StoreCopyFailedException( "Store id mismatch" );
+            return false;
         }
         else
         {
             throw new StoreCopyFailedException( "Unknown response type: " + responseStatus );
-        }
-    }
-
-    public static class StoreFileCopyResponseAdaptor extends CatchUpResponseAdaptor<StoreCopyFinishedResponse>
-    {
-        private final StoreFileStreams storeFileStreams;
-        private final Log log;
-        private String destination;
-        private int requiredAlignment;
-
-        StoreFileCopyResponseAdaptor( StoreFileStreams storeFileStreams, Log log )
-        {
-            this.storeFileStreams = storeFileStreams;
-            this.log = log;
-        }
-
-        @Override
-        public void onFileHeader( CompletableFuture<StoreCopyFinishedResponse> requestOutcomeSignal, FileHeader fileHeader )
-        {
-            this.destination = fileHeader.fileName();
-            this.requiredAlignment = fileHeader.requiredAlignment();
-        }
-
-        @Override
-        public boolean onFileContent( CompletableFuture<StoreCopyFinishedResponse> signal, FileChunk fileChunk ) throws IOException
-        {
-            storeFileStreams.write( destination, requiredAlignment, fileChunk.bytes() );
-            return fileChunk.isLast();
-        }
-
-        @Override
-        public void onFileStreamingComplete( CompletableFuture<StoreCopyFinishedResponse> signal, StoreCopyFinishedResponse response )
-        {
-            log.info( "Finished streaming" );
-            signal.complete( response );
         }
     }
 }
