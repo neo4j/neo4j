@@ -183,8 +183,8 @@ public class FixturesTestIT
         catch ( RuntimeException e )
         {
             assertThat( e.getMessage(), equalTo(
-                    "Invalid input 'h': expected 'r/R' (line 1, column 2 (offset: 1))" + lineSeparator() +
-                    "\"this is not a valid cypher statement\"" + lineSeparator() + "  ^" ) );
+                    "Invalid input 't': expected <init> (line 1, column 1 (offset: 0))" + lineSeparator() +
+                    "\"this is not a valid cypher statement\"" + lineSeparator() + " ^" ) );
         }
     }
 

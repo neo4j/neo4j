@@ -68,24 +68,4 @@ class ProjectionClauseParserTest
     failsToParse
   }
 
-  test("RETURN GRAPHS a, b") {
-    failsToParse
-  }
-
-  test("RETURN GRAPHS *, a, b") {
-    failsToParse
-  }
-
-  test("RETURN 1 AS a GRAPHS *") {
-    failsToParse
-  }
-
-  test("RETURN * GRAPHS *") {
-    failsToParse
-  }
-
-  test("RETURN * GRAPH foo AT 'url' ORDER BY 2 LIMIT 1") {
-    failsToParse
-  }
-
 }
