@@ -262,8 +262,27 @@ public abstract class SpaceFillingCurve
 
     public List<LongRange> getTilesIntersectingEnvelope( double[] fromOrNull, double[] toOrNull, SpaceFillingCurveConfiguration config )
     {
-        double[] from = fromOrNull == null ? range.getMin() : fromOrNull;
-        double[] to = toOrNull == null ? range.getMax() : toOrNull;
+        double[] from = fromOrNull == null ? range.getMin() : fromOrNull.clone();
+        double[] to = toOrNull == null ? range.getMax() : toOrNull.clone();
+
+        for ( int i = 0; i < from.length; i++ )
+        {
+            if ( from[i] > to[i] )
+            {
+                if ( fromOrNull == null )
+                {
+                    to[i] = from[i];
+                }
+                else if ( toOrNull == null )
+                {
+                    from[i] = to[i];
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Invalid range, min greater than max: " + from[i] + " > " + to[i] );
+                }
+            }
+        }
         Envelope referenceEnvelope = new Envelope( from, to );
         return getTilesIntersectingEnvelope( referenceEnvelope, config, null );
     }
