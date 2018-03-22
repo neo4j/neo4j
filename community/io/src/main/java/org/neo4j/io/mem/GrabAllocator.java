@@ -19,6 +19,11 @@
  */
 package org.neo4j.io.mem;
 
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
+import org.apache.commons.lang3.SystemUtils;
+
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.memory.MemoryAllocationTracker;
