@@ -62,7 +62,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     @Override
     public ValueGroup valueGroup()
     {
-        return ValueGroup.SPATIAL;
+        return ValueGroup.GEOMETRY;
     }
 
     @Override

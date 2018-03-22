@@ -75,7 +75,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
-import static org.neo4j.values.storable.ValueGroup.SPATIAL;
+import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 abstract class Read implements TxStateHolder,
@@ -121,14 +121,14 @@ abstract class Read implements TxStateHolder,
                 {
                 case range:
                     ValueGroup valueGroup = q.valueGroup();
-                    if ( ( valueGroup == NUMBER || valueGroup == SPATIAL) && !reader.hasFullValuePrecision( q ) )
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
                     break;
                 case exact:
                     Value value = ((IndexQuery.ExactPredicate) q).value();
-                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) || value.valueGroup() == ValueGroup.SPATIAL )
+                    if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) || value.valueGroup() == ValueGroup.GEOMETRY )
                     {
                         if ( !reader.hasFullValuePrecision( q ) )
                         {
