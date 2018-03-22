@@ -48,10 +48,6 @@ trait Query extends Parser
       UseGraph
     | ConstructGraph
     | CreateGraph
-    | CopyGraph
-    | RenameGraph
-    | TruncateGraph
-    | DeleteGraph
     | LoadCSV
     | Start
     | Match

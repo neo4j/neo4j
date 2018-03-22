@@ -100,22 +100,6 @@ class MultipleGraphClausesParsingTest
     yields(ast.CreateGraph(fooBarGraph))
   }
 
-  test("COPY GRAPH foo.bar TO foo.diff") {
-    yields(ast.CopyGraph(fooBarGraph, fooDiffGraph))
-  }
-
-  test("RENAME GRAPH foo.bar TO foo.diff") {
-    yields(ast.RenameGraph(fooBarGraph, fooDiffGraph))
-  }
-
-  test("TRUNCATE GRAPH foo.bar") {
-    yields(ast.TruncateGraph(fooBarGraph))
-  }
-
-  test("DELETE GRAPH foo.bar") {
-    yields(ast.DeleteGraph(fooBarGraph))
-  }
-
   test("RETURN GRAPH") {
     yields(ast.ReturnGraph(None))
   }
