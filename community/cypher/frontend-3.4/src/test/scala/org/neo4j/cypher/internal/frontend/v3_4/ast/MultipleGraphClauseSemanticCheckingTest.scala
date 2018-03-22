@@ -35,15 +35,37 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
-  test("finds semantic errors in clauses inside CONSTRUCT") {
-    parsing(
-      """CONSTRUCT { REMOVE a.prop }
-        |RETURN 1 as a
-      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
-
-      result.errorMessages should equal(Set("Variable `a` not defined"))
-    }
-  }
+//  test("finds semantic errors in clauses inside CONSTRUCT") {
+//    parsing(
+//      """CONSTRUCT { SET a.prop = 1 }
+//        |RETURN 1 as a
+//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+//
+//      result.errorMessages should equal(Set("Variable `a` not defined"))
+//    }
+//  }
+//
+//  test("foo merge") {
+//    parsing(
+//      """MATCH (a)
+//        |CONSTRUCT { MERGE (a) }
+//        |RETURN 1 as b
+//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+//
+//      result.errorMessages shouldBe empty
+//    }
+//  }
+//
+//  test("foo create") {
+//    parsing(
+//      """MATCH (a)
+//        |CONSTRUCT { CREATE (a) }
+//        |RETURN 1 as b
+//      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+//
+//      result.errorMessages shouldBe empty
+//    }
+//  }
 
 //
 //  test("sets the working with CONSTRUCT GRAPH") {
