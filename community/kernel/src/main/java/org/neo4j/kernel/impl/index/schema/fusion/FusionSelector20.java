@@ -56,7 +56,7 @@ public class FusionSelector20 implements FusionIndexProvider.Selector
             return NUMBER;
         case TEXT:
             return STRING;
-        case SPATIAL:
+        case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:
             return TEMPORAL;
@@ -80,7 +80,7 @@ public class FusionSelector20 implements FusionIndexProvider.Selector
             return instances[NUMBER];
         case TEXT:
             return instances[STRING];
-        case SPATIAL:
+        case GEOMETRY:
             return instances[SPATIAL];
         case TEMPORAL:
             return instances[TEMPORAL];

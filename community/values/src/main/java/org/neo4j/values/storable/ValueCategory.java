@@ -23,7 +23,7 @@ public enum ValueCategory
 {
     NUMBER,
     TEXT,
-    SPATIAL,
+    GEOMETRY,
     TEMPORAL,
     REST,
     UNKNOWN,

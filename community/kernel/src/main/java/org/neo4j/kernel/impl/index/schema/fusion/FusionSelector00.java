@@ -53,7 +53,7 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
         Value singleValue = values[0];
         switch ( singleValue.valueGroup().category() )
         {
-        case SPATIAL:
+        case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:
             return TEMPORAL;
@@ -73,7 +73,7 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
         IndexQuery predicate = predicates[0];
         switch ( predicate.valueGroup().category() )
         {
-        case SPATIAL:
+        case GEOMETRY:
             return instances[SPATIAL];
         case TEMPORAL:
             return instances[TEMPORAL];

@@ -46,7 +46,7 @@ public enum ValueGroup
     TEXT_ARRAY(             REST ),
     BOOLEAN_ARRAY(          REST ),
     NUMBER_ARRAY(           REST ),
-    GEOMETRY(                ValueCategory.SPATIAL ),
+    GEOMETRY(               ValueCategory.GEOMETRY ),
     ZONED_DATE_TIME(        TEMPORAL ),
     LOCAL_DATE_TIME(        TEMPORAL ),
     DATE(                   TEMPORAL ),

@@ -54,7 +54,7 @@ public class FusionSelector10 implements FusionIndexProvider.Selector
         {
         case NUMBER:
             return NUMBER;
-        case SPATIAL:
+        case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:
             return TEMPORAL;
@@ -76,7 +76,7 @@ public class FusionSelector10 implements FusionIndexProvider.Selector
         {
         case NUMBER:
             return instances[NUMBER];
-        case SPATIAL:
+        case GEOMETRY:
             return instances[SPATIAL];
         case TEMPORAL:
             return instances[TEMPORAL];
