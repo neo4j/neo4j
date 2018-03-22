@@ -715,8 +715,17 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
 
     private static Predicate<IndexEntryUpdate<SchemaIndexDescriptor>> skipExisting( IndexEntryUpdate<SchemaIndexDescriptor>[] existing )
     {
-        Set<IndexEntryUpdate<SchemaIndexDescriptor>> set = new HashSet<>( Arrays.asList( existing ) );
-        return set::add;
+        return update ->
+        {
+            for ( IndexEntryUpdate<SchemaIndexDescriptor> e : existing )
+            {
+                if ( Arrays.equals( e.values(), update.values() ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        };
     }
 
     private Object valueOf( IndexEntryUpdate<SchemaIndexDescriptor> update )

@@ -30,8 +30,8 @@ import org.neo4j.values.storable.Value;
 
 public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements IndexProgressor
 {
-    final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    final NodeValueClient client;
+    private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
+    private final NodeValueClient client;
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
@@ -65,7 +65,7 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
         }
     }
 
-    boolean acceptValue( Value[] values )
+    protected boolean acceptValue( Value[] values )
     {
         return true;
     }

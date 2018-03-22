@@ -188,8 +188,8 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     private IndexProgressor getIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, IndexProgressor.NodeValueClient client, boolean needFilter,
             IndexQuery[] query )
     {
-        return needFilter ? new FilteringNativeHitIndexProgressor<KEY,VALUE>( seeker, client, openSeekers, query )
-                          : new NativeHitIndexProgressor<KEY,VALUE>( seeker, client, openSeekers );
+        return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, openSeekers, query )
+                          : new NativeHitIndexProgressor<>( seeker, client, openSeekers );
     }
 
     private boolean isBackwardsSeek( KEY treeKeyFrom, KEY treeKeyTo )
