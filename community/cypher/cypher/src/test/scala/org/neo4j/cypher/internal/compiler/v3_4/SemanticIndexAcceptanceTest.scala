@@ -25,10 +25,23 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.PropertyChecks
 
 import scala.collection.JavaConversions._
 
+/**
+  * After a failure, do this to reproduce with the actual values that caused the error:
+  *
+  * place a single call to testOperator after the for-loop. As an example
+  * {{{
+  * testOperator("=", ValueSetup[DateTimeValue]("dateTimes", Gen.oneOf(Seq(
+  *     DateTimeValue.parse("1901-12-13T20:45:52Z", null),
+  *     DateTimeValue.parse("1901-12-13T20:45:52Z[Europe/Brussels]", null)
+  * )), x => x.sub(oneDay), x => x.add(oneDay)))
+  * }}}
+  *
+  */
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
   private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
@@ -69,7 +82,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     * Value distribution to test. Allow value generation. Can also provide a slightly smaller
     * or larger version of a value, which allows testing around a property bound.
     */
-  case class ValueSetup[T <: Value](name: String, generator:Gen[T], lessThan: T => T, moreThan: T => T)
+  case class ValueSetup[T <: Value](name: String, generator: Gen[T], lessThan: T => T, moreThan: T => T)
 
   // GENERATORS
 
@@ -135,8 +148,25 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Value): Unit = {
       val valueObject = value.asObject()
       val indexedResult = execute(queryUsingIndex, "prop" -> valueObject)
-      execute(queryNotUsingIndex, "prop" -> valueObject).toList should equal(indexedResult.toList)
+      val nonIndexedResult = execute(queryNotUsingIndex, "prop" -> valueObject)
+      nonIndexedResult.toList should equal(indexedResult.toList)
       indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
+    }
+
+    case object behaveEqualWithAndWithoutIndex extends Matcher[Value] {
+      def apply(value: Value): MatchResult = {
+        val valueObject = value.asObject()
+        val indexedResult = execute(queryUsingIndex, "prop" -> valueObject)
+        val nonIndexedResult = execute(queryNotUsingIndex, "prop" -> valueObject)
+        indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
+        val result = nonIndexedResult.toList.equals(indexedResult.toList)
+
+        MatchResult(
+          result,
+          s"Different results with and without index. Without index: ${nonIndexedResult.toList} vs. with index: ${indexedResult.toList}",
+          s"Expected different results without without index but were the same: ${nonIndexedResult.toList}."
+        )
+      }
     }
 
     test(s"testing ${setup.name} with n.prop $operator $$argument") {
@@ -145,16 +175,16 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
         graph.inTx {
           createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
 
-          withClue("with TxState") {
-            testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-            testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
-            testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
+          withClue("with TxState\n") {
+            propertyValue should behaveEqualWithAndWithoutIndex
+            setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
+            setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
           }
         }
-        withClue("without TxState") {
-          testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-          testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
-          testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
+        withClue("without TxState\n") {
+          propertyValue should behaveEqualWithAndWithoutIndex
+          setup.lessThan(propertyValue) should behaveEqualWithAndWithoutIndex
+          setup.moreThan(propertyValue) should behaveEqualWithAndWithoutIndex
         }
       }
     }
