@@ -48,14 +48,44 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(creates = List(ast.Create(exp.Pattern(patternParts)(pos))(pos))))
   }
 
-  test("CONSTRUCT { MERGE () CREATE () SET a.prop = 1 }") {
+  test("CONSTRUCT { CLONE a }") {
+    val item = ast.UnaliasedReturnItem(varFor("a"), "a")(pos)
+    val clone = ast.Clone(List(item))(pos)
+
+    yields(ast.ConstructGraph(clones = List(clone)))
+  }
+
+  test("CONSTRUCT { CLONE a, b }") {
+    val item1 = ast.UnaliasedReturnItem(varFor("a"), "a")(pos)
+    val item2 = ast.UnaliasedReturnItem(varFor("b"), "b")(pos)
+    val clone = ast.Clone(List(item1, item2))(pos)
+
+    yields(ast.ConstructGraph(clones = List(clone)))
+  }
+
+  test("CONSTRUCT { CLONE a AS x, b }") {
+    val item1 = ast.AliasedReturnItem(varFor("a"), varFor("x"))(pos)
+    val item2 = ast.UnaliasedReturnItem(varFor("b"), "b")(pos)
+    val clone = ast.Clone(List(item1, item2))(pos)
+
+    yields(ast.ConstructGraph(clones = List(clone)))
+  }
+
+  test("CONSTRUCT { CLONE a CLONE b AS b }") {
+    val aClone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos)
+    val bClone: ast.Clone = ast.Clone(List(ast.AliasedReturnItem(varFor("b"), varFor("b"))(pos)))(pos)
+
+    yields(ast.ConstructGraph(clones = List(aClone, bClone)))
+  }
+
+  test("CONSTRUCT { CLONE x CREATE () SET a.prop = 1 }") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    val merge: ast.Merge = ast.Merge(exp.Pattern(patternParts)(pos), Seq.empty)(pos)
+    val clone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("x"), "x")(pos)))(pos)
     val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
     val set: ast.SetClause = ast.SetClause(Seq(ast.SetPropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos), exp.SignedDecimalIntegerLiteral("1")(pos))(pos)))(pos)
 
     yields(ast.ConstructGraph(
-      merges = List(merge),
+      clones = List(clone),
       creates = List(create),
       sets = List(set))
     )
@@ -69,21 +99,6 @@ class MultipleGraphClausesParsingTest
 
     yields(ast.ConstructGraph(
       creates = List(create),
-      sets = List(set))
-    )
-  }
-
-  test("CONSTRUCT { MERGE (a) MERGE (b) SET a:A }") {
-    val a = exp.Variable("a")(pos)
-    val aPattern = List(exp.EveryPath(exp.NodePattern(Some(a),List(),None)(pos)))
-    val aMerge: ast.Merge = ast.Merge(exp.Pattern(aPattern)(pos), Seq.empty)(pos)
-    val b = exp.Variable("b")(pos)
-    val bPattern = List(exp.EveryPath(exp.NodePattern(Some(b),List(),None)(pos)))
-    val bMerge: ast.Merge = ast.Merge(exp.Pattern(bPattern)(pos), Seq.empty)(pos)
-    val set: ast.SetClause = ast.SetClause(Seq(ast.SetLabelItem(a, Seq(exp.LabelName("A")(pos)))(pos)))(pos)
-
-    yields(ast.ConstructGraph(
-      merges = List(aMerge, bMerge),
       sets = List(set))
     )
   }

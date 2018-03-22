@@ -87,8 +87,16 @@ final case class UseGraph(graphName: QualifiedGraphName)(val position: InputPosi
 
 }
 
+final case class Clone(items: List[ReturnItem])(val position: InputPosition) extends MultipleGraphClause {
+  override def name: String = "CLONE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      items.semanticCheck
+}
+
 final case class ConstructGraph(
-  merges: List[Merge] = List.empty,
+  clones: List[Clone] = List.empty,
   creates: List[Create] = List.empty,
   sets: List[SetClause] = List.empty,
   on: List[QualifiedGraphName] = List.empty
@@ -99,7 +107,7 @@ final case class ConstructGraph(
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this) chain
-      merges.semanticCheck chain
+      clones.semanticCheck chain
       creates.semanticCheck chain
       sets.semanticCheck
 

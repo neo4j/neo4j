@@ -46,12 +46,16 @@ trait Clauses extends Parser
   def ConstructGraph = rule("CONSTRUCT") {
     group(keyword("CONSTRUCT") ~~ optional(keyword("ON") ~~ oneOrMore(QualifiedGraphName, CommaSep)) ~~
       "{" ~~
-      zeroOrMore(WS ~ Merge) ~~
+      zeroOrMore(WS ~ Clone) ~~
       zeroOrMore(WS ~ Create) ~~
       zeroOrMore(WS ~ SetClause) ~~
-      "}" ~~>> { (on, merge, create, set) =>
-        ast.ConstructGraph(merge, create, set, on.getOrElse(List.empty))
+      "}" ~~>> { (on, clones, create, set) =>
+        ast.ConstructGraph(clones, create, set, on.getOrElse(List.empty))
     })
+  }
+
+  def Clone: Rule1[ast.Clone] = rule("CLONE") {
+    group(keyword("CLONE") ~~ oneOrMore(ReturnItem, CommaSep)) ~~>> (ast.Clone(_))
   }
 
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
