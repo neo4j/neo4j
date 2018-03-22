@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.mem.GrabAllocator;
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.io.mem.WindowsMemoryTracker;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
@@ -135,14 +136,11 @@ class PageList
 
         long bytesToFree = GrabAllocator.leakedBytesCounter.get();
         long currentThreadID = Thread.currentThread().getId();
-        if ( bytesToFree > 0 )
-        {
-            System.out.println( currentThreadID + ":have " + bytesToFree + " bytes to free, but open new page cache already." );
-        }
-        else
-        {
-            System.out.println( currentThreadID + ":no bytes kept. Good to allocate." );
-        }
+        WindowsMemoryTracker.PROCESS_MEMORY_COUNTERS_EX memoryCounters = WindowsMemoryTracker.getMemoryCounters();
+        String memoryDebugMessage = (bytesToFree > 0) ?
+                        currentThreadID + ": have " + bytesToFree + " bytes to free, but open new page cache already. Memory state:" + memoryCounters :
+                        currentThreadID + ": no bytes kept. Good to allocate. Memory state:" + memoryCounters;
+        System.out.println( memoryDebugMessage );
         this.baseAddress = memoryAllocator.allocateAligned( bytes, Long.BYTES );
 
         this.bufferAlignment = bufferAlignment;
