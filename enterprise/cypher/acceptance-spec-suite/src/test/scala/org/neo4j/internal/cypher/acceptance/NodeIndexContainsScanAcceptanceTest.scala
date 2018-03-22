@@ -187,6 +187,6 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
       TestConfiguration(Versions.all, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
       TestConfiguration(Versions.V2_3, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)),
       query, message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42"),
-      params = "param" -> 42)
+      params = Map("param" -> 42))
   }
 }

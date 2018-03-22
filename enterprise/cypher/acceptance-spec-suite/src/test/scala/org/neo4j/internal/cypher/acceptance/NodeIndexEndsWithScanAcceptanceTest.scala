@@ -187,6 +187,6 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
     val message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42")
 
-    failWithError(config, query, message, params = "param" -> 42)
+    failWithError(config, query, message, params = Map("param" -> 42))
   }
 }

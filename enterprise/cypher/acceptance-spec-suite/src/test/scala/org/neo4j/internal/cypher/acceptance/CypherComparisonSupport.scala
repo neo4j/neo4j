@@ -96,8 +96,10 @@ trait CypherComparisonSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
-  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: Seq[String], params: (String, Any)*):
-  Unit = {
+  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
+                                      query: String,
+                                      message: Seq[String],
+                                      params: Map[String, Any] = Map.empty): Unit = {
     // Never consider Morsel even if test requests it
     val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
 
@@ -107,7 +109,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       thisScenario.prepare()
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
-      val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
+      val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
       tryResult match {
         case (Success(_)) =>
           if (expectedToFailWithSpecificMessage) {

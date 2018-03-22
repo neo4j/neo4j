@@ -895,7 +895,7 @@ order by a.COL1""".format(a, b))
   }
 
   test("merge should not support map parameters for defining properties") {
-    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = ("merge_map", Map("email" -> "test")) )
+    failWithError(Configs.AbsolutelyAll, "MERGE (n:User {merge_map})", List("Parameter maps cannot be used in MERGE patterns"), params = Map("merge_map" -> Map("email" -> "test")))
   }
 
   test("should return null on all comparisons against null") {

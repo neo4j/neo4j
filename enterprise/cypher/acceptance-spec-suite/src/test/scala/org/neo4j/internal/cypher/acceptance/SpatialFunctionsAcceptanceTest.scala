@@ -122,27 +122,27 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     failWithError(pointConfig, "RETURN point({params}) as point",
       List("A cartesian point must contain 'x' and 'y'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
+      params = Map("params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
   }
 
   test("should fail properly if missing geographic longitude") {
     failWithError(pointConfig, "RETURN point({params}) as point",
       List("A wgs-84 point must contain 'latitude' and 'longitude'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
+      params = Map("params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if missing geographic latitude") {
     failWithError(pointConfig, "RETURN point({params}) as point",
       List("A wgs-84 point must contain 'latitude' and 'longitude'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
+      params = Map("params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if unknown coordinate system") {
     failWithError(pointConfig, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: WGS-1337"),
-      params = "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+      params = Map("params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337")))
   }
 
   test("should default to Cartesian if missing cartesian CRS") {
