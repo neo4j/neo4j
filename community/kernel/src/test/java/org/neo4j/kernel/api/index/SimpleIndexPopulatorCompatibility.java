@@ -169,7 +169,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             p.create();
             p.add( updates( valueSet1 ) );
-            p.close( true );
         } );
 
         // THEN
@@ -191,8 +190,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     updater.process( IndexEntryUpdate.add( entry.nodeId, descriptor.schema(), entry.value ) );
                 }
             }
-
-            p.close( true );
         } );
 
         // THEN
@@ -207,7 +204,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             p.create();
             p.add( updates( valueSet1 ) );
-            p.close( true );
         } );
 
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
@@ -285,7 +281,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 p.create();
                 p.add( updates( valueSet1, 0 ) );
                 p.add( updates( valueSet1, offset ) );
-                p.close( true );
             } );
 
             // then
