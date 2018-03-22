@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 
 class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -34,6 +34,7 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   private val usesAntiSemiApply = ComparePlansWithAssertion(_ should useOperators("AntiSemiApply"), Configs.AllRulePlanners)
   private val noTriadic = ComparePlansWithAssertion(_ should not(useOperators("TriadicSelection")))
   private val configs = Configs.Interpreted
+  private val noCompiled = Configs.All - Configs.Compiled
 
   test("find friends of others") {
     // given
@@ -199,28 +200,22 @@ class TriadicSelectionAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // FOR QUERIES
     val queries = List(
-        "non-triadic1" ->
-          (Configs.All, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a", usesExpandInto, 3),
-        "non-triadic2" ->
-          (Configs.All, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a", usesExpandInto, 3),
-        "triadic-neg1" ->
-          (configs, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
-        "triadic-neg2" ->
-          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
-        "triadic-neg3" ->
-          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 7),
-        "triadic-neg4" ->
-          (Configs.All - Configs.Compiled, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a", usesAntiSemiApply, 7),
-        "triadic-pos1" ->
-          (configs, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 3),
-        "triadic-pos2" ->
-          (configs, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a", usesTriadic, 3)
+        Query("non-triadic1", Configs.All, usesExpandInto,    3, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a"),
+        Query("non-triadic2", Configs.All, usesExpandInto,    3, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a"),
+        Query("triadic-neg1", configs,     usesTriadic,       7, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a"),
+        Query("triadic-neg2", configs,     usesTriadic,       7, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a"),
+        Query("triadic-neg3", configs,     usesTriadic,       7, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a"),
+        Query("triadic-neg4", noCompiled,  usesAntiSemiApply, 7, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a"),
+        Query("triadic-pos1", configs,     usesTriadic,       3, "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a"),
+        Query("triadic-pos2", configs,     usesTriadic,       3, "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a")
       )
 
     // THEN
-    for ( (name, (configs, query, operator, count)) <- queries ) {
+    for ( Query(name, configs, operator, count, query) <- queries ) {
       val result = executeWith(configs, query, planComparisonStrategy = operator)
       result should haveCount(count)
     }
   }
+
+  case class Query(name: String, configs: TestConfiguration, operator: ComparePlansWithAssertion, expectedCount: Int, query: String)
 }
