@@ -52,7 +52,7 @@ trait NodeIndexSeeker {
       case _: ExactSeek |
            _: SeekByRange =>
         val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.flatMap(query => state.query.indexSeek(indexReference, query)).toIterator
+        indexQueries.toIterator.flatMap(query => state.query.indexSeek(indexReference, query))
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
