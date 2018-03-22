@@ -32,6 +32,8 @@ Apache Software License, Version 2.0
   casbah-core
   casbah-query
   Gherkin Repackaged Dependencies
+  Java Native Access
+  Java Native Access Platform
   Joda convert
   Joda-Time
   json4s-ast
@@ -67,7 +69,22 @@ Eclipse Public License v2.0
   org.junit.jupiter:junit-jupiter-api
   org.junit.platform:junit-platform-commons
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
 MIT License
   Gherkin
   SLF4J API Module
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 
