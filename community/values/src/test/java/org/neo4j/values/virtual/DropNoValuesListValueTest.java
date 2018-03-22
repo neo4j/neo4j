@@ -21,28 +21,27 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
-import org.neo4j.values.storable.LongValue;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.virtual.VirtualValues.filter;
+import static org.neo4j.values.virtual.VirtualValues.dropNoValues;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class FilterListValueTest
+public class DropNoValuesListValueTest
 {
     @Test
     public void shouldFilterList()
     {
         // Given
-        ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ),
-                longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        ListValue inner = list( NO_VALUE, longValue( 6L ), NO_VALUE,
+                                longValue( 8L ), longValue( 9L ), longValue( 11L ), NO_VALUE );
 
         // When
-        ListValue filter = filter( inner, v -> ((LongValue) v).value() > 7L );
+        ListValue filter = dropNoValues( inner );
 
         // Then
-        ListValue expected = list( longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
+        ListValue expected = list( longValue( 6L ), longValue( 8L ), longValue( 9L ), longValue( 11L ) );
         assertEquals( filter, expected );
         assertEquals( filter.hashCode(), expected.hashCode() );
         assertArrayEquals( filter.asArray(), expected.asArray() );

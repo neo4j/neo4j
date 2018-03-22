@@ -26,6 +26,8 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   private val combinedCallconfiguration = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3
 
+  // EXTRACT
+
   test("extract eagerly") {
     val a = createNode("name" -> "original")
 
@@ -39,6 +41,23 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, QUERY).toList
 
     result should equal(List(Map("n.name" -> "newName", "oldNames" -> List("original"))))
+  }
+
+  // FILTER
+
+  test("filter eagerly") {
+    val a = createNode("name" -> "original")
+
+    val QUERY = """MATCH (a)
+                  |WITH collect(a) AS nodes
+                  |WITH nodes, filter(x in nodes WHERE x.name = "original") as noopFiltered
+                  |UNWIND nodes AS n
+                  |SET n.name = "newName"
+                  |RETURN n.name, length(noopFiltered)""".stripMargin
+
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, QUERY).toList
+
+    result should equal(List(Map("n.name" -> "newName", "length(noopFiltered)" -> 1)))
   }
 
   test("length on filter") {

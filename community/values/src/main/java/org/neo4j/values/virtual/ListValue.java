@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.Function;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -33,6 +32,7 @@ import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
@@ -453,16 +453,14 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
-    static final class FilteredListValue extends ListValue
+    static final class DropNoValuesListValue extends ListValue
     {
         private final ListValue inner;
-        private final Function<AnyValue,Boolean> filter;
         private int size = -1;
 
-        FilteredListValue( ListValue inner, Function<AnyValue,Boolean> filter )
+        DropNoValuesListValue( ListValue inner )
         {
             this.inner = inner;
-            this.filter = filter;
         }
 
         @Override
@@ -472,7 +470,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( value != NO_VALUE )
                 {
                     value.writeTo( writer );
                 }
@@ -489,7 +487,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 int s = 0;
                 for ( int i = 0; i < inner.size(); i++ )
                 {
-                    if ( filter.apply( inner.value( i ) ) )
+                    if ( inner.value( i ) != NO_VALUE )
                     {
                         s++;
                     }
@@ -508,7 +506,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < size; i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( value != NO_VALUE )
                 {
                     if ( actualOffset == offset )
                     {
@@ -530,7 +528,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( value != NO_VALUE )
                 {
                     anyValues[index++] = value;
                 }
@@ -545,7 +543,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( filter.apply( value ) )
+                if ( value != NO_VALUE )
                 {
                     hashCode = 31 * hashCode + value.hashCode();
                 }
@@ -642,7 +640,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                             return;
                         }
                         AnyValue candidate = inner.value( index++ );
-                        if ( filter.apply( candidate ) )
+                        if ( candidate != NO_VALUE )
                         {
                             next = candidate;
                             return;
@@ -862,7 +860,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
         //more efficient to use another implementation here
-        if ( other instanceof FilteredListValue )
+        if ( other instanceof DropNoValuesListValue )
         {
             return -other.compareTo( this, comparator );
         }

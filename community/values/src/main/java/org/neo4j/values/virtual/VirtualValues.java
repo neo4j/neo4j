@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -66,9 +65,9 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue filter( ListValue list, Function<AnyValue,Boolean> filter )
+    public static ListValue dropNoValues( ListValue list )
     {
-        return new ListValue.FilteredListValue( list, filter );
+        return new ListValue.DropNoValuesListValue( list );
     }
 
     public static ListValue slice( ListValue list, int from, int to )
@@ -98,10 +97,10 @@ public final class VirtualValues
     }
 
     /*
-    TOMBSTONE: TransformedListValue
+    TOMBSTONE: TransformedListValue & FilteredListValue
 
-    This list value variant would lazily apply a transform on a inner list. The lazy behavior made it hard
-    to guarantee that the transform was still evaluable and correct on reading the transformed list, so
+    This list value variant would lazily apply a transform/filter on a inner list. The lazy behavior made it hard
+    to guarantee that the transform/filter was still evaluable and correct on reading the transformed list, so
     this was removed. If we want lazy values again, remember the problems of
 
        - returning results out of Cypher combined with auto-closing iterators
