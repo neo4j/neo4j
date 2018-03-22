@@ -73,6 +73,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
+  test("point function should not work with NaN or infinity") {
+    for(invalidDouble <- Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) {
+      failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted,
+        "RETURN point({x: 2.3, y: $v}) as point", List("Cannot create a point with non-finite coordinate values"), ("v", invalidDouble))
+    }
+  }
+
   test("point function should not work with literal map and incorrect cartesian CRS") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: cart"))

@@ -43,6 +43,13 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     {
         this.crs = crs;
         this.coordinate = coordinate;
+        for ( double c : coordinate )
+        {
+            if ( !Double.isFinite( c ) )
+            {
+                throw new IllegalArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString(coordinate) );
+            }
+        }
     }
 
     @Override
