@@ -376,10 +376,9 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         // truncate the offset to whole minutes, unless we have a named timezone
         if ( value.getZone() instanceof ZoneOffset )
         {
-            LocalDateTime time = value.toLocalDateTime();
             int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
             ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
-            this.value = ZonedDateTime.of( time, truncatedOffset );
+            this.value = value.withZoneSameInstant( truncatedOffset );
         }
         else
         {

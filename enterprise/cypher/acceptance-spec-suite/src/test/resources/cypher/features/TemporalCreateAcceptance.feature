@@ -416,9 +416,9 @@ Feature: TemporalCreateAcceptance
     Then the result should be, in order:
       | d                           |
       | '12:34:56+02:05'            |
-      | '12:34:56+02:05'            |
-      | '12:34:56-02:05'            |
-      | '1984-10-11T12:34:56+02:05' |
+      | '12:33:57+02:05'            |
+      | '12:35:03-02:05'            |
+      | '1984-10-11T12:33:57+02:05' |
 
     And no side effects
 
