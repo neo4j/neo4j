@@ -52,4 +52,20 @@ class HintAcceptanceTest
         p should not(useOperators("NodeHashJoin"))
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
   }
+
+  test("should solve join hint on 1 variable with join on more, if possible") {
+    val query =
+      """MATCH (pA:Person),(pB:Person) WITH pA, pB
+        |
+        |OPTIONAL MATCH
+        |  (pA)<-[:HAS_CREATOR]-(pB)
+        |USING JOIN ON pB
+        |RETURN *""".stripMargin
+
+    // TODO: Once 3.2 comes out with the same bugfix, we should change the following line to not exclude 3.2
+    executeWith(Configs.CommunityInterpreted - Configs.Cost3_2 - Configs.Cost2_3 - Configs.Cost3_1, query,
+      planComparisonStrategy = ComparePlansWithAssertion((p) => {
+        p should useOperators("NodeOuterHashJoin")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+  }
 }
