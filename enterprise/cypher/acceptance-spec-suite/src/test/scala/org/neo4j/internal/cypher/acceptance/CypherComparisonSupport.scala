@@ -97,9 +97,10 @@ trait CypherComparisonSupport extends CypherTestSupport {
   }
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
-                                      query: String,
-                                      message: Seq[String],
-                                      params: Map[String, Any] = Map.empty): Unit = {
+                              query: String,
+                              message: Seq[String] = Seq.empty,
+                              errorType: Seq[String] = Seq.empty,
+                              params: Map[String, Any] = Map.empty): Unit = {
     // Never consider Morsel even if test requests it
     val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
 
@@ -116,26 +117,27 @@ trait CypherComparisonSupport extends CypherTestSupport {
             fail("Unexpectedly Succeeded in " + thisScenario.name)
           }
         // It was not expected to fail with the specified error message, do nothing
-        case Failure(e: CypherException) =>
+        case Failure(e: Throwable) =>  {
+          val actualErrorType = if( e.getCause == null) e.toString else e.getCause.toString
           if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || !message.exists(s => e.getMessage.replaceAll("\\r", "").contains(s.replaceAll("\\r", "")))) {
+            if (!correctError(actualErrorType, errorType)) {
+              fail("Correctly failed in " + thisScenario.name + " but instead of one the given error types, the error was '" + actualErrorType + "'", e)
+            }
+            if (!correctError(e.getMessage, message)) {
               fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'", e)
             }
           } else {
-            if (message.exists(e.getMessage.contains(_))) {
-              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?", e)
-            }
-            // It failed like expected, and we did not specify any message for this config
-          }
-        case Failure(e: Throwable) => {
-          if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
-              fail(s"Unexpected exception in ${thisScenario.name} with error message " + e.getMessage, e)
+            if (correctError(e.getMessage, message) && correctError(actualErrorType, errorType)) {
+              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct error. Did you forget to add this config?", e)
             }
           }
         }
       }
     }
+  }
+
+  private def correctError(actualError: String, possibleErrors: Seq[String]): Boolean = {
+    possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
   }
 
   protected def executeWith(expectSucceed: TestConfiguration,

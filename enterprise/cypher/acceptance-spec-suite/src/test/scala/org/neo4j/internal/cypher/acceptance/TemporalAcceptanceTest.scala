@@ -127,7 +127,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
-    failWithError(Configs.Interpreted - Configs.Version2_3, query, Seq(errorMsg))
+    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Procs, query, Seq(errorMsg))
   }
 
   // Failing when selecting a wrong group
