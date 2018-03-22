@@ -50,4 +50,12 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     result.toList should equal(List(Map("y" -> 1, "y3" -> 3), Map("y" -> 1, "y3" -> 4), Map("y" -> 2, "y3" -> 3), Map("y" -> 2, "y3" -> 4)))
   }
 
+  test("should unwind nodes") {
+    val n = createNode("prop" -> 42)
+
+    val query = "UNWIND $nodes AS n WITH n WHERE n.prop = 42 RETURN n"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("nodes" -> List(n)))
+
+    result.toList should equal(List(Map("n" -> n)))
+  }
 }
