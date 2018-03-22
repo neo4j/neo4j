@@ -180,7 +180,7 @@ public class HaCountsIT
     private SchemaIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
-        try ( Transaction tx = db.beginTx())
+        try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( db );
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label.name() );

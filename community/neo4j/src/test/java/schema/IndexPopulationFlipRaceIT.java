@@ -137,7 +137,7 @@ public class IndexPopulationFlipRaceIT
             throws Exception
     {
         InwardKernel kernelAPI = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ))
+        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
         {
             int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );

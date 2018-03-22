@@ -439,7 +439,7 @@ public class StoreUpgradeIT
                        schemaRead.indexUpdatesAndSize( reference, register ) );
                 assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
                         schemaRead.indexSample( reference, register ) );
-                double selectivity =schemaRead.indexUniqueValuesSelectivity( reference );
+                double selectivity = schemaRead.indexUniqueValuesSelectivity( reference );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
             }
         }

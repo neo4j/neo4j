@@ -217,7 +217,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.statementContext = txBridge;
         this.indexManager = Suppliers.lazySingleton( () ->
         {
-            IndexProviderImpl idxProvider = new IndexProviderImpl( this, txBridge );
+            IndexProviderImpl idxProvider = new IndexProviderImpl( this, () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
             AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                     () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
                     spi.autoIndexing().nodes() );

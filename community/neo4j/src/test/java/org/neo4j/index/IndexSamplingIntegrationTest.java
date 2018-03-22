@@ -199,11 +199,11 @@ public class IndexSamplingIntegrationTest
     {
         ThreadToStatementContextBridge contextBridge =
                 api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = api.beginTx())
+        try ( Transaction tx = api.beginTx() )
         {
             KernelTransaction ktx =
                     contextBridge.getKernelTransactionBoundToThisThread( true );
-            try (Statement ignore = ktx.acquireStatement() )
+            try ( Statement ignore = ktx.acquireStatement() )
             {
                 IndexingService indexingService =
                         api.getDependencyResolver().resolveDependency( IndexingService.class );

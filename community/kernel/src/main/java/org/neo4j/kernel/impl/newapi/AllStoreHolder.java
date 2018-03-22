@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.RecordCursor;
@@ -287,10 +288,24 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        ktx.assertOpen();
+        return explicitIndexes.get().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration  );
+    }
+
+    @Override
     public String[] relationshipExplicitIndexesGetAll()
     {
         ktx.assertOpen();
         return explicitIndexStore.getAllRelationshipIndexNames();
+    }
+
+    @Override
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        ktx.assertOpen();
+        return explicitIndexes.get().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
     }
 
     @Override

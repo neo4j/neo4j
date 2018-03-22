@@ -354,7 +354,6 @@ public class CompositeIndexingIT
         return query;
     }
 
-
     private KernelTransaction ktx()
     {
         return graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );

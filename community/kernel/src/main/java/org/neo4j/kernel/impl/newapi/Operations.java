@@ -632,8 +632,16 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
+    public void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        ktx.explicitIndexTxState().nodeChanges( indexName ).drop();
+        ktx.explicitIndexTxState().deleteIndex( IndexEntityType.Node, indexName );
+    }
+
+    @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         ktx.assertOpen();
         allStoreHolder.singleRelationship( relationship, relationshipCursor );
@@ -660,6 +668,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
             throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
 
     }
@@ -668,6 +677,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
             throws ExplicitIndexNotFoundKernelException
     {
+        ktx.assertOpen();
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
     }
 
@@ -683,6 +693,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         ktx.assertOpen();
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        ktx.explicitIndexTxState().relationshipChanges( indexName );
+        ktx.explicitIndexTxState().deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     private Value readNodeProperty( int propertyKey )

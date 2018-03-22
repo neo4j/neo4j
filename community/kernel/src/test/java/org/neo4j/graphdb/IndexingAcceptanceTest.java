@@ -524,9 +524,10 @@ public class IndexingAcceptanceTest
             KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
             CapableIndexReference reference = indexReference( ktx, index );
             int propertyKeyId = reference.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor())
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Karl" ) );
+                ktx.dataRead()
+                        .nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Karl" ) );
                 while ( cursor.next() )
                 {
                     found.add( cursor.nodeReference() );
@@ -556,9 +557,10 @@ public class IndexingAcceptanceTest
 
             CapableIndexReference reference = indexReference( ktx, index );
             int propertyKeyId = reference.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor())
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Carl" ) );
+                ktx.dataRead()
+                        .nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Carl" ) );
                 while ( cursor.next() )
                 {
                     found.add( cursor.nodeReference() );
@@ -641,7 +643,7 @@ public class IndexingAcceptanceTest
             KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
             CapableIndexReference descriptor = indexReference( ktx, index );
             int propertyKeyId = descriptor.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor())
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 ktx.dataRead().nodeIndexSeek( descriptor, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, prefix ) );
                 while ( cursor.next() )
