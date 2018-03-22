@@ -159,17 +159,6 @@ final case class ReturnGraph(graphName: Option[QualifiedGraphName])(val position
       SemanticState.recordCurrentScope(this)
 }
 
-//final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-//  extends MultipleGraphClause with UpdateClause {
-//
-//  override def name = "RELOCATE"
-//
-//  override def semanticCheck: SemanticCheck =
-//    super.semanticCheck chain
-//      graph.semanticCheck chain
-//      SemanticState.recordCurrentScope(this)
-//}
-
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
 
