@@ -187,7 +187,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> msgSuccess( final Matcher<Map<? extends String,?>> matcher )
+    public static Matcher<ResponseMessage> msgSuccess( final Matcher<Map<String,?>> matcher )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {
