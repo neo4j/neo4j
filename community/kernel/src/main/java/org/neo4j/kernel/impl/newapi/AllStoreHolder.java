@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -80,6 +81,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -92,6 +94,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -450,6 +453,34 @@ public class AllStoreHolder extends Read
         acquireSharedLabelLock( index.label() );
         ktx.assertOpen();
         return storeReadLayer.indexSize( SchemaDescriptorFactory.forLabel( index.label(), index.properties() ) );
+    }
+
+    @Override
+    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    {
+        ktx.assertOpen();
+        IndexReader reader = statement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
+        return reader.countIndexedNodes( nodeId, value );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return storeReadLayer.indexUpdatesAndSize(
+                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
+
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        ktx.assertOpen();
+        return storeReadLayer.indexUpdatesAndSize(
+                SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
     CapableIndexReference indexGetCapability( SchemaIndexDescriptor schemaIndexDescriptor )

@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -640,6 +642,26 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

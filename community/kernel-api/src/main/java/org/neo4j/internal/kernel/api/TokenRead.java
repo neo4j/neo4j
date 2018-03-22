@@ -82,9 +82,39 @@ public interface TokenRead
      */
     String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
 
+    /**
+     * Returns all all label tokens
+     * @return an iterator over all label tokens in the database
+     */
     Iterator<NamedToken> labelsGetAllTokens();
 
+    /**
+     * Returns all all property tokens
+     * @return an iterator over all property tokens in the database
+     */
     Iterator<NamedToken> propertyKeyGetAllTokens();
 
+    /**
+     * Returns all all relationship type tokens
+     * @return an iterator over all relationship type tokens in the database
+     */
     Iterator<NamedToken> relationshipTypesGetAllTokens();
+
+    /**
+     * Returns the number of labels in the database
+     * @return the number of labels in the database
+     */
+    int labelCount( );
+
+    /**
+     * Returns the number of properties in the database
+     * @return the number of properties in the database
+     */
+    int propertyKeyCount( );
+
+    /**
+     * Returns the number of relationship types in the database
+     * @return the number of relationship types in the database
+     */
+    int relationshipTypeCount( );
 }

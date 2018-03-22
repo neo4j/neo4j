@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -74,10 +73,7 @@ public class LabelIT
         try ( Transaction ignore = db.beginTx() )
         {
             ThreadToStatementContextBridge bridge = threadToStatementContextBridgeFrom( db );
-            try ( Statement statement = bridge.get() )
-            {
-                return statement.readOperations().labelGetForName( label.name() );
-            }
+            return bridge.getKernelTransactionBoundToThisThread( true ).tokenRead().nodeLabel( label.name() );
         }
     }
 

@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.InwardKernel;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -85,13 +85,13 @@ public class KernelSchemaStateFlushingTest
     @Test
     public void shouldInvalidateSchemaStateOnDropIndex() throws Exception
     {
-        SchemaIndexDescriptor descriptor = createIndex();
+        IndexReference ref = createIndex();
 
-        awaitIndexOnline( descriptor, "test" );
+        awaitIndexOnline( ref, "test" );
 
         commitToSchemaState( "test", "before" );
 
-        dropIndex( descriptor );
+        dropIndex( ref );
 
         // when
         String after = commitToSchemaState( "test", "after" );
@@ -155,35 +155,35 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private SchemaIndexDescriptor createIndex() throws KernelException
+    private IndexReference createIndex() throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+              Statement ignore = transaction.acquireStatement() )
         {
-            SchemaIndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate(
+            IndexReference reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
             transaction.success();
-            return descriptor;
+            return reference;
         }
     }
 
-    private void dropIndex( SchemaIndexDescriptor descriptor ) throws KernelException
+    private void dropIndex( IndexReference reference ) throws KernelException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+              Statement ignore = transaction.acquireStatement() )
         {
-            statement.schemaWriteOperations().indexDrop( descriptor );
+            transaction.schemaWrite().indexDrop( reference );
             transaction.success();
         }
     }
 
-    private void awaitIndexOnline( SchemaIndexDescriptor descriptor, String keyForProbing )
+    private void awaitIndexOnline( IndexReference descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+              Statement ignore = transaction.acquireStatement() )
         {
-            SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
+            SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.success();
         }
         awaitSchemaStateCleared( keyForProbing );
@@ -192,9 +192,9 @@ public class KernelSchemaStateFlushingTest
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+              Statement ignore = transaction.acquireStatement() )
         {
-            while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
+            while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
@@ -214,9 +214,9 @@ public class KernelSchemaStateFlushingTest
 
     private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            return statement.readOperations().schemaStateGetOrCreate( key, from -> value );
+            return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
         }
     }
 

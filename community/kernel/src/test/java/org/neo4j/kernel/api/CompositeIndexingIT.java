@@ -30,22 +30,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -59,7 +55,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -84,25 +82,23 @@ public class CompositeIndexingIT
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            try ( Statement statement = statement() )
+            KernelTransaction ktx = ktx();
+            if ( index.type() == UNIQUE )
             {
-                if ( index.type() == UNIQUE )
-                {
-                    statement.schemaWriteOperations().uniquePropertyConstraintCreate(
-                            (LabelSchemaDescriptor) index.schema() );
-                }
-                else
-                {
-                    statement.schemaWriteOperations().indexCreate( index.schema() );
-                }
+                ktx.schemaWrite().uniquePropertyConstraintCreate( index.schema() );
+            }
+            else
+            {
+                ktx.schemaWrite().indexCreate( index.schema() );
             }
             tx.success();
         }
 
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            while ( statement.readOperations().indexGetState( index ) != InternalIndexState.ONLINE )
+            KernelTransaction ktx = ktx();
+            while ( ktx.schemaRead().indexGetState( fromDescriptor( index ) ) !=
+                    InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
             } // Will break loop on test timeout
@@ -112,17 +108,17 @@ public class CompositeIndexingIT
     @After
     public void clean() throws Exception
     {
-        try ( Transaction tx = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
+            KernelTransaction ktx = ktx();
             if ( index.type() == UNIQUE )
             {
-                statement.schemaWriteOperations().constraintDrop(
+                ktx.schemaWrite().constraintDrop(
                         ConstraintDescriptorFactory.uniqueForSchema( index.schema() ) );
             }
             else
             {
-                statement.schemaWriteOperations().indexDrop( index );
+                ktx.schemaWrite().indexDrop( fromDescriptor( index ) );
             }
             tx.success();
         }
@@ -158,38 +154,44 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeNodeAddedByPropertyToIndexInTranslation() throws Exception
     {
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            DataWriteOperations writeOperations = statement.dataWriteOperations();
-            long nodeID = writeOperations.nodeCreate();
-            writeOperations.nodeAddLabel( nodeID, LABEL_ID );
+            KernelTransaction ktx = ktx();
+            Write write = ktx.dataWrite();
+            long nodeID = write.nodeCreate();
+            write.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
+                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
-            PrimitiveLongIterator resultIterator = seek( statement );
-            assertThat( resultIterator.next(), equalTo( nodeID ) );
-            assertFalse( resultIterator.hasNext() );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( cursor.nodeReference(), equalTo( nodeID ) );
+                assertFalse( cursor.next() );
+            }
         }
     }
 
     @Test
     public void shouldSeeNodeAddedToByLabelIndexInTransaction() throws Exception
     {
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            DataWriteOperations writeOperations = statement.dataWriteOperations();
-            long nodeID = writeOperations.nodeCreate();
+            KernelTransaction ktx = ktx();
+            Write write = ktx.dataWrite();
+            long nodeID = write.nodeCreate();
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
+                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
-            writeOperations.nodeAddLabel( nodeID, LABEL_ID );
-            PrimitiveLongIterator resultIterator = seek( statement );
-            assertThat( resultIterator.next(), equalTo( nodeID ) );
-            assertFalse( resultIterator.hasNext() );
+            write.nodeAddLabel( nodeID, LABEL_ID );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                assertTrue( cursor.next() );
+                assertThat( cursor.nodeReference(), equalTo( nodeID ) );
+                assertFalse( cursor.next() );
+            }
         }
     }
 
@@ -197,11 +199,14 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatWasDeletedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            statement.dataWriteOperations().nodeDelete( nodeID );
-            assertFalse( seek( statement ).hasNext() );
+            KernelTransaction ktx = ktx();
+            ktx.dataWrite().nodeDelete( nodeID );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                assertFalse( cursor.next() );
+            }
         }
     }
 
@@ -209,11 +214,14 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            statement.dataWriteOperations().nodeRemoveLabel( nodeID, LABEL_ID );
-            assertFalse( seek( statement ).hasNext() );
+            KernelTransaction ktx = ktx();
+            ktx.dataWrite().nodeRemoveLabel( nodeID, LABEL_ID );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                assertFalse( cursor.next() );
+            }
         }
     }
 
@@ -221,11 +229,14 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            statement.dataWriteOperations().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
-            assertFalse( seek( statement ).hasNext() );
+            KernelTransaction ktx = ktx();
+            ktx.dataWrite().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                assertFalse( cursor.next() );
+            }
         }
     }
 
@@ -234,14 +245,20 @@ public class CompositeIndexingIT
     {
         if ( index.type() != UNIQUE ) // this test does not make any sense for UNIQUE indexes
         {
-            try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                    Statement statement = statement() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
                 long nodeID1 = createNode();
                 long nodeID2 = createNode();
                 long nodeID3 = createNode();
-                PrimitiveLongIterator resultIterator = seek( statement );
-                Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
+                KernelTransaction ktx = ktx();
+                Set<Long> result = new HashSet<>(  );
+                try ( NodeValueIndexCursor cursor = seek( ktx ) )
+                {
+                    while ( cursor.next() )
+                    {
+                        result.add( cursor.nodeReference() );
+                    }
+                }
                 assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
@@ -255,11 +272,17 @@ public class CompositeIndexingIT
             long nodeID1 = createNode();
             long nodeID2 = createNode();
             long nodeID3 = createNode();
-            try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                  Statement statement = statement() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
-                PrimitiveLongIterator resultIterator = seek( statement );
-                Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
+                KernelTransaction ktx = ktx();
+                Set<Long> result = new HashSet<>(  );
+                try ( NodeValueIndexCursor cursor = seek( ktx ) )
+                {
+                    while ( cursor.next() )
+                    {
+                        result.add( cursor.nodeReference() );
+                    }
+                }
                 assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
@@ -269,48 +292,54 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodesLackingOneProperty() throws Exception
     {
         long nodeID1 = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
         {
-            DataWriteOperations writeOperations = statement.dataWriteOperations();
-            long irrelevantNodeID = writeOperations.nodeCreate();
-            writeOperations.nodeAddLabel( irrelevantNodeID, LABEL_ID );
+            KernelTransaction ktx = ktx();
+            Write write = ktx.dataWrite();
+            long irrelevantNodeID = write.nodeCreate();
+            write.nodeAddLabel( irrelevantNodeID, LABEL_ID );
             int[] propertyIds = index.schema().getPropertyIds();
             for ( int i = 0; i < propertyIds.length - 1; i++ )
             {
                 int propID = propertyIds[i];
-                writeOperations.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
+                write.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
             }
-            PrimitiveLongIterator resultIterator = seek( statement );
-            Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
+            Set<Long> result = new HashSet<>(  );
+            try ( NodeValueIndexCursor cursor = seek( ktx ) )
+            {
+                while ( cursor.next() )
+                {
+                    result.add( cursor.nodeReference() );
+                }
+            }
             assertThat( result, contains( nodeID1 ) );
         }
     }
 
     private long createNode()
-            throws InvalidTransactionTypeKernelException, EntityNotFoundException, ConstraintValidationException,
-            AutoIndexingKernelException
+            throws KernelException
     {
         long nodeID;
-        try ( Transaction tx = graphDatabaseAPI.beginTx() ;
-              Statement statement = statement() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            DataWriteOperations writeOperations = statement.dataWriteOperations();
-            nodeID = writeOperations.nodeCreate();
-            writeOperations.nodeAddLabel( nodeID, LABEL_ID );
+            KernelTransaction ktx = ktx();
+            Write write = ktx.dataWrite();
+            nodeID = write.nodeCreate();
+            write.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
             {
-                writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
+                write.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
             tx.success();
         }
         return nodeID;
     }
 
-    private PrimitiveLongIterator seek( Statement statement ) throws IndexNotFoundKernelException,
-            IndexNotApplicableKernelException
+    private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
     {
-        return statement.readOperations().indexQuery( index, exactQuery() );
+        NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+        transaction.dataRead().nodeIndexSeek( fromDescriptor( index ), cursor, IndexOrder.NONE, exactQuery() );
+        return cursor;
     }
 
     private IndexQuery[] exactQuery()
@@ -325,10 +354,6 @@ public class CompositeIndexingIT
         return query;
     }
 
-    private Statement statement()
-    {
-        return graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get();
-    }
 
     private KernelTransaction ktx()
     {

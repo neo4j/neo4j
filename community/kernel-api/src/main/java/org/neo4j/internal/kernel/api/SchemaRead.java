@@ -22,11 +22,14 @@ package org.neo4j.internal.kernel.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 /**
  * Surface for getting schema information, such as fetching specific indexes or constraints.
@@ -107,6 +110,19 @@ public interface SchemaRead
      */
     long indexSize( IndexReference index ) throws IndexNotFoundKernelException;
 
+    /**
+     * @param index The index of interest
+     * @param nodeId node id to match.
+     * @param value the property value
+     * @return number of index entries for the given {@code nodeId} and {@code value}.
+     */
+    long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException;
+
+    Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
+
+    Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException;
     /**
      * Finds all constraints for the given schema
      *

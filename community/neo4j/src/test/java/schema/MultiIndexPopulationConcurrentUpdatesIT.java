@@ -44,10 +44,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
@@ -398,12 +398,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
         Map<String,Integer> labelNameIdMap = new HashMap<>();
-        try ( Statement statement = transactionStatementContextBridge.get() )
+        KernelTransaction ktx =
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
+            TokenRead tokenRead = ktx.tokenRead();
             for ( String name : names )
             {
-                labelNameIdMap.put( name, readOperations.labelGetForName( name ) );
+                labelNameIdMap.put( name, tokenRead.nodeLabel( name ) );
             }
         }
         return labelNameIdMap;
@@ -412,10 +414,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private int getPropertyIdByName( String name )
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
-        try ( Statement statement = transactionStatementContextBridge.get() )
+        KernelTransaction ktx =
+                transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true );
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            return readOperations.propertyKeyGetForName( name );
+            return ktx.tokenRead().propertyKey( name );
         }
     }
 

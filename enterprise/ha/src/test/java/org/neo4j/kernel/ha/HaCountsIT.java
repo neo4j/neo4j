@@ -28,12 +28,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -178,15 +180,15 @@ public class HaCountsIT
     private SchemaIndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = statement( db ) )
+        try ( Transaction tx = db.beginTx())
         {
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
-            SchemaIndexDescriptor index = statement.schemaWriteOperations()
+            KernelTransaction ktx = kernelTransaction( db );
+            int labelId = ktx.tokenWrite().labelGetOrCreateForName( label.name() );
+            int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyName );
+            IndexReference index = ktx.schemaWrite()
                                                    .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
             tx.success();
-            return index;
+            return DefaultIndexReference.toDescriptor( index );
         }
     }
 
@@ -252,10 +254,10 @@ public class HaCountsIT
         long end = start + 60_000;
         while ( System.currentTimeMillis() < end )
         {
-            try ( Transaction tx = db.beginTx();
-                  Statement statement = statement( db ) )
+            try ( Transaction tx = db.beginTx() )
             {
-                switch ( statement.readOperations().indexGetState( index ) )
+                KernelTransaction transaction = kernelTransaction( db );
+                switch ( transaction.schemaRead().indexGetState( DefaultIndexReference.fromDescriptor( index  ) ) )
                 {
                 case ONLINE:
                     return indexingService( db ).getIndexId( index.schema() );
