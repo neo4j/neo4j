@@ -472,4 +472,10 @@ public class DateTimeValueTest
     {
         assertNotEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 11, 52, 5, 6, "+01:00" ) );
     }
+
+    @Test
+    public void shouldNotEqualSameInstantButDifferentTimezoneWithSameOffset()
+    {
+        assertNotEqual( datetime( 1969, 12, 31, 23, 59, 59, 0, UTC ), datetime(1969, 12, 31, 23, 59, 59, 0, "Africa/Freetown" ) );
+    }
 }
