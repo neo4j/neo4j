@@ -48,4 +48,16 @@ class HintAcceptanceTest
     result should use("NodeOuterHashJoin")
     result shouldNot use("NodeHashJoin")
   }
+
+  test("should solve join hint on 1 variable with join on more, if possible") {
+    val query =
+      """MATCH (pA:Person),(pB:Person) WITH pA, pB
+        |
+        |OPTIONAL MATCH
+        |  (pA)<-[:HAS_CREATOR]-(pB)
+        |USING JOIN ON pB
+        |RETURN *""".stripMargin
+    val result = execute(query)
+    result should use("NodeOuterHashJoin")
+  }
 }

@@ -40,19 +40,15 @@ case object applyOptional extends OptionalSolver {
 case object outerHashJoin extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val joinNodes = optionalQg.argumentIds
-    val hintsToIgnore = optionalQg.hints.filter { hint =>
-      val hintDependencies = joinNodes -- hint.variables.map(v => IdName(v.name)).toSet
-      hintDependencies.isEmpty
+    val solvedHints = optionalQg.joinHints.filter { hint =>
+      val hintVariables = hint.variables.map(v => IdName(v.name)).toSet
+      hintVariables.subsetOf(joinNodes)
     }
-    val rhs = context.strategy.plan(optionalQg.withoutArguments().withoutHints(hintsToIgnore))
+    val rhs = context.strategy.plan(optionalQg.withoutArguments().withoutHints(solvedHints))
 
     if (joinNodes.nonEmpty &&
       joinNodes.forall(lhs.availableSymbols) &&
       joinNodes.forall(optionalQg.patternNodes)) {
-      val solvedHints = optionalQg.joinHints.filter { hint =>
-        joinNodes == hint.variables.map(v => IdName(v.name)).toSet
-      }
-
       Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs, solvedHints))
     } else {
       None
