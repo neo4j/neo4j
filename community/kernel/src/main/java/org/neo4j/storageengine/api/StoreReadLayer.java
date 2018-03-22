@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
@@ -159,7 +158,7 @@ public interface StoreReadLayer
     /**
      * Returns state of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get state for.
+     * @param descriptor {@link SchemaIndexDescriptor} to get state for.
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
@@ -168,7 +167,7 @@ public interface StoreReadLayer
     /**
      * Return index provider descriptor of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get provider descriptor for.
+     * @param descriptor {@link SchemaIndexDescriptor} to get provider descriptor for.
      * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
@@ -177,14 +176,14 @@ public interface StoreReadLayer
     /**
      * Return index reference of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get provider reference for.
+     * @param descriptor {@link SchemaIndexDescriptor} to get provider reference for.
      * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
     CapableIndexReference indexReference( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.
+     * @param descriptor {@link SchemaDescriptor} to get population progress for.
      * @return progress of index population, which is the initial state of an index when it's created.
      * @throws IndexNotFoundKernelException if index not found.
      */
@@ -194,7 +193,7 @@ public interface StoreReadLayer
      * Returns any failure that happened during population or operation of an index. Such failures
      * are persisted and can be accessed even after restart.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get failure for.
+     * @param descriptor {@link SchemaDescriptor} to get failure for.
      * @return failure of an index, or {@code null} if index is working as it should.
      * @throws IndexNotFoundKernelException if index not found.
      */
@@ -358,7 +357,7 @@ public interface StoreReadLayer
     /**
      * Returns size of index, i.e. number of entities in that index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to return size for.
+     * @param descriptor {@link SchemaDescriptor} to return size for.
      * @return number of entities in the given index.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
@@ -369,7 +368,7 @@ public interface StoreReadLayer
      * all values in the index are unique, e.g. that there are no duplicate values. A value of, say {@code 0.9}
      * means that 10% of the values are duplicates.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get uniqueness percentage for.
+     * @param descriptor {@link SchemaDescriptor} to get uniqueness percentage for.
      * @return percentage of values being unique in this index, max {@code 1.0} for all unique.
      * @throws IndexNotFoundKernelException if no such index exists.
      */

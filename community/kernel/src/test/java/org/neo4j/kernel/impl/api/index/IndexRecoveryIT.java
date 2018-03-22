@@ -75,6 +75,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -113,21 +114,15 @@ public class IndexRecoveryIT
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
-        try
-        {
-            // Then
-            assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-            assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-            verify( mockedIndexProvider, times( 2 ) )
-                    .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-            verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                    anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
-            );
-        }
-        finally
-        {
-            latch.countDown();
-        }
+        // Then
+        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+        verify( mockedIndexProvider, times( 2 ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, never() ).getOnlineAccessor(
+                anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
+        );
+        latch.countDown();
     }
 
     @Test
@@ -160,7 +155,7 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
+        verify( mockedIndexProvider, never() ).getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }

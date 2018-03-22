@@ -641,7 +641,7 @@ public class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+        GBPTree.readHeader( pageCache, indexFile, headerReader );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -654,7 +654,7 @@ public class GBPTreeTest
         File doesNotExist = new File( "Does not exist" );
         try
         {
-            GBPTree.readHeader( createPageCache( DEFAULT_PAGE_SIZE ), doesNotExist, layout, NO_HEADER_READER );
+            GBPTree.readHeader( createPageCache( DEFAULT_PAGE_SIZE ), doesNotExist, NO_HEADER_READER );
             fail( "Should have failed" );
         }
         catch ( NoSuchFileException e )
@@ -664,18 +664,18 @@ public class GBPTreeTest
     }
 
     @Test
-    public void openWithReadHeaderMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    public void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
     }
 
     @Test
-    public void openWithConstructorMustThrowIOExceptionIfFileIsEmpty() throws Exception
+    public void openWithConstructorMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowIOExceptionIfFileIsEmpty( pageCache -> index( pageCache ).build() );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> index( pageCache ).build() );
     }
 
-    private void openMustThrowIOExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    private void openMustThrowMetadataMismatchExceptionIfFileIsEmpty( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing empty file
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
@@ -687,26 +687,26 @@ public class GBPTreeTest
             opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
-        catch ( IOException e )
+        catch ( MetadataMismatchException e )
         {
             // then good
         }
     }
 
     @Test
-    public void readHeaderMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    public void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
-        openMustThrowIOExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
     }
 
     @Test
-    public void constructorMustThrowIOExceptionIfSomeMetaPageIsMissing() throws Exception
+    public void constructorMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
-        openMustThrowIOExceptionIfSomeMetaPageIsMissing( pageCache -> index( pageCache ).build() );
+        openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing( pageCache -> index( pageCache ).build() );
     }
 
-    private void openMustThrowIOExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    private void openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
@@ -721,7 +721,7 @@ public class GBPTreeTest
             opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
-        catch ( IOException e )
+        catch ( MetadataMismatchException e )
         {
             // then good
         }
@@ -730,17 +730,17 @@ public class GBPTreeTest
     @Test
     public void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
-        openMustThrowIOExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, layout, NO_HEADER_READER ) );
+        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER ) );
     }
 
     @Test
-    public void constructorMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
+    public void constructorMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros() throws Exception
     {
-        openMustThrowIOExceptionIfStatePagesAreAllZeros( pageCache -> index( pageCache ).build() );
+        openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros( pageCache -> index( pageCache ).build() );
     }
 
-    private void openMustThrowIOExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
+    private void openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros( ThrowingConsumer<PageCache,IOException> opener ) throws Exception
     {
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
@@ -761,7 +761,7 @@ public class GBPTreeTest
             opener.accept( pageCache );
             fail( "Should've thrown IOException" );
         }
-        catch ( IOException e )
+        catch ( MetadataMismatchException e )
         {
             // then good
         }
@@ -786,7 +786,7 @@ public class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+            GBPTree.readHeader( pageCache, indexFile, headerReader );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );

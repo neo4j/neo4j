@@ -120,7 +120,7 @@ public class LockingStatementOperations implements
     public SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
     {
-        exclusiveLabelLock( state, descriptor.getLabelId() );
+        exclusiveLabelLock( state, descriptor.keyId() );
         state.assertOpen();
         return schemaWriteDelegate.indexCreate( state, descriptor );
     }
@@ -145,7 +145,7 @@ public class LockingStatementOperations implements
     @Override
     public void uniqueIndexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        exclusiveLabelLock( state, descriptor.schema().getLabelId() );
+        exclusiveLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         schemaWriteDelegate.uniqueIndexDrop( state, descriptor );
     }
@@ -355,11 +355,11 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {
-        exclusiveLabelLock( state, descriptor.getLabelId() );
+        exclusiveLabelLock( state, descriptor.keyId() );
         state.assertOpen();
         return schemaWriteDelegate.uniquePropertyConstraintCreate( state, descriptor );
     }

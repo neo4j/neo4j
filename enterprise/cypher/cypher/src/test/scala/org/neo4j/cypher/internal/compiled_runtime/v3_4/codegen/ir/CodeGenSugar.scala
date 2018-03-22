@@ -44,7 +44,6 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
@@ -148,9 +147,7 @@ trait CodeGenSugar extends MockitoSugar with LogicalPlanConstructionTestSupport 
   private def mockQueryContext() = {
     val qc = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
-    val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext)
-    when(transactionalContext.statement).thenReturn(statement)
 
     qc
   }

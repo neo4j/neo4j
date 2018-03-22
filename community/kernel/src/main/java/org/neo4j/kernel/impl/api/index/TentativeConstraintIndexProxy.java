@@ -27,7 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -161,9 +161,9 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     {
         if ( !failures.isEmpty() )
         {
-            LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) getDescriptor().schema();
+            SchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
+                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.keyId(), descriptor.getPropertyIds() ),
                     ConstraintValidationException.Phase.VERIFICATION,
                     new HashSet<>( failures )
                 );

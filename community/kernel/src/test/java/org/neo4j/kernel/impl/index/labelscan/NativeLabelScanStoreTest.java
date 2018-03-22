@@ -131,4 +131,23 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         assertTrue( monitor.rebuiltCalled );
         life.shutdown();
     }
+
+    @Test
+    public void shouldRestartPopulationIfIndexFileWasNeverFullyInitialized() throws IOException
+    {
+        // given
+        File labelScanStoreFile = NativeLabelScanStore.getLabelScanStoreFile( dir );
+        fileSystemRule.create( labelScanStoreFile ).close();
+        TrackingMonitor monitor = new TrackingMonitor();
+        LifeSupport life = new LifeSupport();
+
+        // when
+        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.start();
+
+        // then
+        assertTrue( monitor.corruptedIndex );
+        assertTrue( monitor.rebuildingCalled );
+        life.shutdown();
+    }
 }

@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.io.File;
@@ -28,36 +29,41 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.StrippedCatchupServer;
+import org.neo4j.causalclustering.catchup.CatchupServerHandler;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.mockito.Mockito.mock;
 
-/**
- * The purpose of having a fake catchup server, that has separate code from the production catchup server is so that we have finer grained control over how it
- * behaves. Otherwise we would need to prepare difficult conditions on a production instance which could be difficult to compose or reproduce.
- */
-class FakeCatchupServer extends StrippedCatchupServer
+class TestCatchupServerHandler implements CatchupServerHandler
 {
-    private StoreCopyClientIT storeCopyClientIT;
     private final Set<FakeFile> filesystem = new HashSet<>();
     private final Set<FakeFile> indexFiles = new HashSet<>();
     private final Map<String,Integer> pathToRequestCountMapping = new HashMap<>();
     private final Log log;
+    final CatchupServerProtocol protocol;
+    private TestDirectory testDirectory;
+    private FileSystemAbstraction fileSystemAbstraction;
 
-    FakeCatchupServer( StoreCopyClientIT storeCopyClientIT, LogProvider logProvider )
+    TestCatchupServerHandler( LogProvider logProvider, CatchupServerProtocol protocol, TestDirectory testDirectory,
+            FileSystemAbstraction fileSystemAbstraction )
     {
-        this.storeCopyClientIT = storeCopyClientIT;
-        log = logProvider.getLog( FakeCatchupServer.class );
+        log = logProvider.getLog( TestCatchupServerHandler.class );
+        this.protocol = protocol;
+        this.testDirectory = testDirectory;
+        this.fileSystemAbstraction = fileSystemAbstraction;
     }
 
     void addFile( FakeFile fakeFile )
@@ -70,13 +76,13 @@ class FakeCatchupServer extends StrippedCatchupServer
         indexFiles.add( fakeFile );
     }
 
-    int getRequestCount( String file )
+    public int getRequestCount( String file )
     {
         return pathToRequestCountMapping.getOrDefault( file, 0 );
     }
 
     @Override
-    protected ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol protocol )
+    public ChannelHandler getStoreFileRequestHandler()
     {
         return new SimpleChannelInboundHandler<GetStoreFileRequest>()
         {
@@ -134,7 +140,7 @@ class FakeCatchupServer extends StrippedCatchupServer
                 .orElseThrow( () -> new RuntimeException( "FakeFile should handle all cases with regards to how server should respond" ) );
     }
 
-    private boolean handleFileExists( ChannelHandlerContext channelHandlerContext, File file )
+    private void handleFileExists( ChannelHandlerContext channelHandlerContext, File file )
     {
         log.info( "FakeServer File %s does exist", file );
         channelHandlerContext.writeAndFlush( ResponseMessageType.FILE );
@@ -142,7 +148,6 @@ class FakeCatchupServer extends StrippedCatchupServer
         StoreResource storeResource = storeResourceFromEntry( file );
         channelHandlerContext.writeAndFlush( new FileSender( storeResource ) );
         new StoreFileStreamingProtocol().end( channelHandlerContext, StoreCopyFinishedResponse.Status.SUCCESS );
-        return true;
     }
 
     private void incrementRequestCount( File file )
@@ -154,12 +159,24 @@ class FakeCatchupServer extends StrippedCatchupServer
 
     private StoreResource storeResourceFromEntry( File file )
     {
-        file = storeCopyClientIT.testDirectory.file( file.getName() );
-        return new StoreResource( file, file.getAbsolutePath(), 16, mock( PageCache.class ), storeCopyClientIT.fileSystemAbstraction );
+        file = testDirectory.file( file.getName() );
+        return new StoreResource( file, file.getAbsolutePath(), 16, mock( PageCache.class ), fileSystemAbstraction );
     }
 
     @Override
-    protected ChannelHandler getStoreListingRequestHandler( CatchupServerProtocol protocol )
+    public ChannelHandler txPullRequestHandler()
+    {
+        return new ChannelInboundHandlerAdapter();
+    }
+
+    @Override
+    public ChannelHandler getStoreIdRequestHandler()
+    {
+        return new ChannelInboundHandlerAdapter();
+    }
+
+    @Override
+    public ChannelHandler storeListingRequestHandler()
     {
         return new SimpleChannelInboundHandler<PrepareStoreCopyRequest>()
         {
@@ -181,7 +198,7 @@ class FakeCatchupServer extends StrippedCatchupServer
     }
 
     @Override
-    protected ChannelHandler getIndexRequestHandler( CatchupServerProtocol protocol )
+    public ChannelHandler getIndexSnapshotRequestHandler()
     {
         return new SimpleChannelInboundHandler<GetIndexFilesRequest>()
         {
@@ -207,5 +224,16 @@ class FakeCatchupServer extends StrippedCatchupServer
                 }
             }
         };
+    }
+
+    @Override
+    public Optional<ChannelHandler> snapshotHandler()
+    {
+        return Optional.empty();
+    }
+
+    public StoreId getStoreId()
+    {
+        return new StoreId( 1, 2, 3, 4 );
     }
 }

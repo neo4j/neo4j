@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.neo4j.helpers.Strings;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
@@ -50,7 +51,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             RelExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeExistenceConstraintDescriptor.class.getCanonicalName(),
             NodeKeyConstraintDescriptor.class.getCanonicalName(),
-            LabelSchemaDescriptor.class.getCanonicalName(),
+            SchemaDescriptor.class.getCanonicalName(),
             SchemaDescriptorFactory.class.getCanonicalName(),
             SchemaIndexDescriptor.class.getCanonicalName(),
             SchemaIndexDescriptorFactory.class.getCanonicalName()
@@ -105,7 +106,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
         {
             SchemaIndexDescriptor descriptor = (SchemaIndexDescriptor) arg;
             String className = SchemaIndexDescriptorFactory.class.getSimpleName();
-            int labelId = descriptor.schema().getLabelId();
+            int labelId = descriptor.schema().keyId();
             String methodName = descriptor.type() == GENERAL ? "forLabel" : "uniqueForLabel";
             builder.append( format( "%s.%s( %d, %s )",
                     className, methodName, labelId, asString( descriptor.schema().getPropertyIds() ) ) );

@@ -59,7 +59,7 @@ public class StandardConstraintSemantics implements ConstraintSemantics
     public void validateNodeKeyConstraint( NodeLabelIndexCursor allNodes, NodeCursor nodeCursor,
             PropertyCursor propertyCursor, LabelSchemaDescriptor descriptor ) throws CreateConstraintFailureException
     {
-        throw propertyExistenceConstraintsNotAllowed( descriptor );
+        throw nodeKeyConstraintsNotAllowed( descriptor );
     }
 
     @Override

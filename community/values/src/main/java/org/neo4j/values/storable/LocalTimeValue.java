@@ -36,7 +36,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -50,6 +49,9 @@ import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
+    public static final LocalTimeValue MIN_VALUE = new LocalTimeValue( LocalTime.MIN );
+    public static final LocalTimeValue MAX_VALUE = new LocalTimeValue( LocalTime.MAX );
+
     public static LocalTimeValue localTime( LocalTime value )
     {
         return new LocalTimeValue( requireNonNull( value, "LocalTime" ) );

@@ -24,8 +24,6 @@ import java.lang.ref.WeakReference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.function.Factory;
-
 import static java.util.Collections.newSetFromMap;
 
 /**
@@ -57,20 +55,14 @@ public class MarshlandPool<T> implements Pool<T>
         protected LocalSlot<T> initialValue()
         {
             LocalSlot<T> localSlot = new LocalSlot<>( objectsFromDeadThreads );
-            slotReferences.add( localSlot.phantomReference );
+            slotReferences.add( localSlot.slotWeakReference );
             return localSlot;
         }
     };
 
     // Used to reclaim objects from dead threads
-    private final Set<LocalSlotReference> slotReferences =
-            newSetFromMap( new ConcurrentHashMap<LocalSlotReference, Boolean>() );
+    private final Set<LocalSlotReference> slotReferences = newSetFromMap( new ConcurrentHashMap<>() );
     private final ReferenceQueue<LocalSlot<T>> objectsFromDeadThreads = new ReferenceQueue<>();
-
-    public MarshlandPool( Factory<T> objectFactory )
-    {
-        this( new LinkedQueuePool<>( 4, objectFactory ) );
-    }
 
     public MarshlandPool( Pool<T> delegatePool )
     {
@@ -123,37 +115,46 @@ public class MarshlandPool<T> implements Pool<T>
     /**
      * Dispose of all objects in this pool, releasing them back to the delegate pool
      */
-    public void disposeAll()
+    @Override
+    public void close()
     {
         for ( LocalSlotReference slotReference : slotReferences )
         {
-            LocalSlot<T> slot = (LocalSlot) slotReference.get();
-            if ( slot != null )
+            T object = (T) slotReference.object;
+            if ( object != null )
             {
-                T obj = slot.object;
-                if ( obj != null )
+                slotReference.object = null;
+                LocalSlot<T> slot = (LocalSlot<T>) slotReference.get();
+                if ( slot != null )
                 {
                     slot.set( null );
-                    pool.release( obj );
                 }
+                slotReference.clear();
+                pool.release( object );
             }
         }
-
-        for ( LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll();
-            reference != null;
-            reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
-        {
-            T instance = reference.object;
-            if ( instance != null )
-            {
-                pool.release( instance );
-            }
-        }
+        slotReferences.clear();
     }
 
-    public void close()
+    /**
+     * Container for the "puddle", the small local pool each thread keeps.
+     */
+    private static class LocalSlot<T>
     {
-        disposeAll();
+
+        private T object;
+        private final LocalSlotReference slotWeakReference;
+
+        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
+        {
+            slotWeakReference = new LocalSlotReference( this, referenceQueue );
+        }
+
+        public void set( T obj )
+        {
+            slotWeakReference.object = obj;
+            this.object = obj;
+        }
     }
 
     /**
@@ -166,26 +167,6 @@ public class MarshlandPool<T> implements Pool<T>
         private LocalSlotReference( LocalSlot referent, ReferenceQueue<? super LocalSlot> q )
         {
             super( referent, q );
-        }
-    }
-
-    /**
-     * Container for the "puddle", the small local pool each thread keeps.
-     */
-    private static class LocalSlot<T>
-    {
-        private T object;
-        private final LocalSlotReference phantomReference;
-
-        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
-        {
-            phantomReference = new LocalSlotReference( this, referenceQueue );
-        }
-
-        public void set( T obj )
-        {
-            phantomReference.object = obj;
-            this.object = obj;
         }
     }
 }

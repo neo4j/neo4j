@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 
 import java.time.Clock;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -81,8 +82,10 @@ public class RaftProtocolServerInstaller implements ProtocolInstaller<Orientatio
     }
 
     @Override
-    public List<Protocol.ModifierProtocol> modifiers()
+    public Collection<Collection<Protocol.ModifierProtocol>> modifiers()
     {
-        return modifiers.stream().map( ModifierProtocolInstaller::protocol ).collect( Collectors.toList() );
+        return modifiers.stream()
+                .map( ModifierProtocolInstaller::protocols )
+                .collect( Collectors.toList() );
     }
 }

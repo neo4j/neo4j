@@ -23,6 +23,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import java.util.function.BiConsumer;
+
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 
 /**
@@ -56,14 +58,14 @@ public class ClientMessageEncoder extends MessageToByteEncoder<ServerMessage>
         public void handle( ApplicationProtocolRequest applicationProtocolRequest )
         {
             out.writeInt( 1 );
-            encodeProtocolRequest( applicationProtocolRequest );
+            encodeProtocolRequest( applicationProtocolRequest, ByteBuf::writeInt );
         }
 
         @Override
         public void handle( ModifierProtocolRequest modifierProtocolRequest )
         {
             out.writeInt( 2 );
-            encodeProtocolRequest( modifierProtocolRequest );
+            encodeProtocolRequest( modifierProtocolRequest, StringMarshal::marshal );
         }
 
         @Override
@@ -76,16 +78,16 @@ public class ClientMessageEncoder extends MessageToByteEncoder<ServerMessage>
             switchOverRequest.modifierProtocols().forEach( pair ->
                     {
                         StringMarshal.marshal( out, pair.first() );
-                        out.writeInt( pair.other() );
+                        StringMarshal.marshal( out, pair.other() );
                     }
             );
         }
 
-        private void encodeProtocolRequest( BaseProtocolRequest applicationProtocolRequest )
+        private <U extends Comparable<U>> void encodeProtocolRequest( BaseProtocolRequest<U> protocolRequest, BiConsumer<ByteBuf,U> writer )
         {
-            StringMarshal.marshal( out, applicationProtocolRequest.protocolName() );
-            out.writeInt( applicationProtocolRequest.versions().size() );
-            applicationProtocolRequest.versions().forEach( out::writeInt );
+            StringMarshal.marshal( out, protocolRequest.protocolName() );
+            out.writeInt( protocolRequest.versions().size() );
+            protocolRequest.versions().forEach( version -> writer.accept( out, version) );
         }
     }
 }

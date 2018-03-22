@@ -33,6 +33,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.ArrayUtil.without;
@@ -168,7 +169,7 @@ public class FusionIndexUpdaterTest
         {
             if ( populator != correctPopulator )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }
@@ -183,7 +184,7 @@ public class FusionIndexUpdaterTest
         {
             if ( populator != correctPopulator )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }
@@ -198,7 +199,7 @@ public class FusionIndexUpdaterTest
         {
             if ( populator != correctPopulator )
             {
-                verify( populator, times( 0 ) ).process( update );
+                verify( populator, never() ).process( update );
             }
         }
     }

@@ -869,7 +869,7 @@ public class CodeGenerationTest
 
         // then
         verify( runner1, times( 3 ) ).run();
-        verify( runner2, times( 0 ) ).run();
+        verify( runner2, never() ).run();
     }
 
     @Test

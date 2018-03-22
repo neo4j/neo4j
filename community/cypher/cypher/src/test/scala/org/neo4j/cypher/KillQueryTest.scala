@@ -120,9 +120,10 @@ class KillQueryTest extends ExecutionEngineFunSuite {
             case _: TransientTransactionFailureException =>
 
             case e: Throwable =>
-              tx.close()
               continue.set(false)
               exLogger(e)
+          } finally {
+            tx.close()
           }
         }
       }

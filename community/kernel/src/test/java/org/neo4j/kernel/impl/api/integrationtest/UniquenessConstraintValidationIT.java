@@ -21,17 +21,16 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
@@ -41,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
@@ -53,21 +51,21 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        long node = createLabeledNode( statement, "Label1" );
+        long node = createLabeledNode( transaction, "Label1" );
         try
         {
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-            statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( "value1" ) );
+            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+            transaction.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( "value1" ) );
 
             fail( "should have thrown exception" );
         }
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value1'" ) );
         }
         commit();
     }
@@ -80,9 +78,9 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         long propertyValue = 285414114323346805L;
         long firstNode = constrainedNode( "label1", "key1", propertyValue );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
-        long node = createLabeledNode( statement, "label1" );
+        long node = createLabeledNode( transaction, "label1" );
 
         assertNotEquals( firstNode, node );
 
@@ -90,8 +88,8 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // a new node with the same constraint is added, with a value not equal but which would be mapped to the same double
         propertyValue++;
         // note how propertyValue is definitely not equal to propertyValue++ but they do equal if they are cast to double
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( propertyValue ) );
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+        transaction.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( propertyValue ) );
 
         // Then
         // the commit should still succeed
@@ -105,22 +103,22 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         constrainedNode( "Label1", "key1", 1 );
 
         // when
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        long node = createNode( statement, "key1", 1 );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        long node = createNode( transaction, "key1", 1 );
         commit();
 
-        statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        transaction = newTransaction( AnonymousContext.writeToken() );
         try
         {
-            int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
-            statement.dataWriteOperations().nodeAddLabel( node, label );
+            int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+            transaction.dataWrite().nodeAddLabel( node, label );
 
             fail( "should have thrown exception" );
         }
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 1" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 1" ) );
         }
         commit();
     }
@@ -131,21 +129,21 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        long node = createNode( statement, "key1", "value1" );
+        long node = createNode( transaction, "key1", "value1" );
         try
         {
-            int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
-            statement.dataWriteOperations().nodeAddLabel( node, label );
+            int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+            transaction.dataWrite().nodeAddLabel( node, label );
 
             fail( "should have thrown exception" );
         }
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value1'" ) );
         }
         commit();
     }
@@ -156,11 +154,11 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        statement.dataWriteOperations().nodeDelete( node );
-        createLabeledNode( statement, "Label1", "key1", "value1" );
+        transaction.dataWrite().nodeDelete( node );
+        createLabeledNode( transaction, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -170,12 +168,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
-        statement.dataWriteOperations().nodeRemoveLabel( node, label );
-        createLabeledNode( statement, "Label1", "key1", "value1" );
+        int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+        transaction.dataWrite().nodeRemoveLabel( node, label );
+        createLabeledNode( transaction, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -185,12 +183,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        int key = statement.readOperations().propertyKeyGetForName( "key1" );
-        statement.dataWriteOperations().nodeRemoveProperty( node, key );
-        createLabeledNode( statement, "Label1", "key1", "value1" );
+        int key = transaction.tokenRead().propertyKey( "key1" );
+        transaction.dataWrite().nodeRemoveProperty( node, key );
+        createLabeledNode( transaction, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -200,12 +198,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( "value2" ) );
-        createLabeledNode( statement, "Label1", "key1", "value1" );
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+        transaction.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( "value2" ) );
+        createLabeledNode( transaction, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -215,20 +213,20 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        createLabeledNode( statement, "Label1", "key1", "value2" );
+        createLabeledNode( transaction, "Label1", "key1", "value2" );
         try
         {
-            createLabeledNode( statement, "Label1", "key1", "value2" );
+            createLabeledNode( transaction, "Label1", "key1", "value2" );
 
             fail( "expected exception" );
         }
         // then
         catch ( UniquePropertyValueValidationException e )
         {
-            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value2'" ) );
+            assertThat( e.getUserMessage( tokenLookup( transaction ) ), containsString( "`key1` = 'value2'" ) );
         }
         commit();
     }
@@ -239,11 +237,11 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-        statement.dataWriteOperations().nodeSetProperty( node, key, Values.of( "value1" ) );
+        int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+        transaction.dataWrite().nodeSetProperty( node, key, Values.of( "value1" ) );
 
         // then should not throw exception
         commit();
@@ -255,11 +253,11 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         long node = constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
-        statement.dataWriteOperations().nodeAddLabel( node, label );
+        int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+        transaction.dataWrite().nodeAddLabel( node, label );
 
         // then should not throw exception
         commit();
@@ -271,19 +269,19 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         // when
-        createNode( statement, "key1", "value1" );
-        createLabeledNode( statement, "Label2", "key1", "value1" );
-        createLabeledNode( statement, "Label1", "key1", "value2" );
-        createLabeledNode( statement, "Label1", "key2", "value1" );
+        createNode( transaction, "key1", "value1" );
+        createLabeledNode( transaction, "Label2", "key1", "value1" );
+        createLabeledNode( transaction, "Label1", "key1", "value2" );
+        createLabeledNode( transaction, "Label1", "key2", "value1" );
 
         commit();
 
         // then
-        statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        assertEquals( "number of nodes", 5, count( statement.readOperations().nodesGetAll() ) );
+        transaction = newTransaction( AnonymousContext.writeToken() );
+        assertEquals( "number of nodes", 5, countNodes( transaction) );
         rollback();
     }
 
@@ -295,23 +293,27 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         long ourNode;
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-            ourNode = createLabeledNode( statement, "Person", "id", 1 );
-            createLabeledNode( statement, "Item", "id", 2 );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            ourNode = createLabeledNode( transaction, "Person", "id", 1 );
+            createLabeledNode( transaction, "Item", "id", 2 );
             commit();
         }
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        ReadOperations readOps = statement.readOperations();
-        int person = readOps.labelGetForName( "Person" );
-        int propId = readOps.propertyKeyGetForName( "id" );
-        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            TokenRead tokenRead = transaction.tokenRead();
+            int person = tokenRead.nodeLabel( "Person" );
+            int propId = tokenRead.propertyKey( "id" );
+            CapableIndexReference idx = transaction.schemaRead().index(  person, propId );
 
-        // when
-        createLabeledNode( statement, "Item", "id", 2 );
+            // when
+            createLabeledNode( transaction, "Item", "id", 2 );
 
-        // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ) );
+            // then I should find the original node
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+                    equalTo( ourNode ) );
+        }
         commit();
     }
 
@@ -323,52 +325,56 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         long ourNode;
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-            ourNode = createLabeledNode( statement, "Person", "id", 1 );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            ourNode = createLabeledNode( transaction, "Person", "id", 1 );
             commit();
         }
 
-        Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        ReadOperations readOps = statement.readOperations();
-        int person = readOps.labelGetForName( "Person" );
-        int propId = readOps.propertyKeyGetForName( "id" );
-        IndexDescriptor idx = readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( person, propId ) );
+        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            TokenRead tokenRead = transaction.tokenRead();
+            int person = tokenRead.nodeLabel( "Person" );
+            int propId = tokenRead.propertyKey( "id" );
+            CapableIndexReference idx = transaction.schemaRead().index( person, propId  );
 
-        // when
-        createLabeledNode( statement, "Person", "id", 2 );
+            // when
+            createLabeledNode( transaction, "Person", "id", 2 );
 
-        // then I should find the original node
-        assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ));
+            // then I should find the original node
+            assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+                    equalTo( ourNode ) );
+        }
         commit();
     }
 
-    private TokenNameLookup tokenLookup( Statement statement )
+    private TokenNameLookup tokenLookup( KernelTransaction transaction )
     {
-        return new StatementTokenNameLookup( statement.readOperations() );
+        return new SilentTokenNameLookup( transaction.tokenRead() );
     }
 
-    private long createLabeledNode( Statement statement, String label ) throws KernelException
+    private long createLabeledNode( KernelTransaction transaction, String label ) throws KernelException
     {
-        long node = statement.dataWriteOperations().nodeCreate();
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
-        statement.dataWriteOperations().nodeAddLabel( node, labelId );
+        long node = transaction.dataWrite().nodeCreate();
+        int labelId = transaction.tokenWrite().labelGetOrCreateForName( label );
+        transaction.dataWrite().nodeAddLabel( node, labelId );
         return node;
     }
 
-    private long createNode( Statement statement, String key, Object value ) throws KernelException
+    private long createNode( KernelTransaction transaction, String key, Object value ) throws KernelException
     {
-        long node = statement.dataWriteOperations().nodeCreate();
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
+        long node = transaction.dataWrite().nodeCreate();
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+        transaction.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
         return node;
     }
 
-    private long createLabeledNode( Statement statement, String label, String key, Object value )
+    private long createLabeledNode( KernelTransaction transaction, String label, String key, Object value )
             throws KernelException
     {
-        long node = createLabeledNode( statement, label );
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
-        statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
+        long node = createLabeledNode( transaction, label );
+        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+        transaction.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( value ) );
         return node;
     }
 
@@ -377,12 +383,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         long node;
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-            int label = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
-            node = statement.dataWriteOperations().nodeCreate();
-            statement.dataWriteOperations().nodeAddLabel( node, label );
-            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
-            statement.dataWriteOperations().nodeSetProperty( node, key, Values.of( propertyValue ) );
+            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            int label = transaction.tokenWrite().labelGetOrCreateForName( labelName );
+            node = transaction.dataWrite().nodeCreate();
+            transaction.dataWrite().nodeAddLabel( node, label );
+            int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
+            transaction.dataWrite().nodeSetProperty( node, key, Values.of( propertyValue ) );
             commit();
         }
         createConstraint( labelName, propertyKey );
@@ -393,13 +399,13 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     {
         int labelId;
         int propertyKeyId;
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        labelId = tokenWriteOperations.labelGetOrCreateForName( label );
-        propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( propertyKey );
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        labelId = tokenWrite.labelGetOrCreateForName( label );
+        propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( propertyKey );
         commit();
 
-        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
-        schemaWriteOperations.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ) );
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        schemaWrite.uniquePropertyConstraintCreate( forLabel( labelId, propertyKeyId ) );
         commit();
     }
 }

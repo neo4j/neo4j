@@ -35,16 +35,18 @@ public abstract class IdGeneratorContractTest
     public void shouldReportCorrectHighId()
     {
         // given
-        IdGenerator idGenerator = createIdGenerator( 2 );
-        assertEquals( 0, idGenerator.getHighId() );
-        assertEquals( -1, idGenerator.getHighestPossibleIdInUse() );
+        try ( IdGenerator idGenerator = createIdGenerator( 2 ) )
+        {
+            assertEquals( 0, idGenerator.getHighId() );
+            assertEquals( -1, idGenerator.getHighestPossibleIdInUse() );
 
-        // when
-        idGenerator.nextId();
+            // when
+            idGenerator.nextId();
 
-        // then
-        assertEquals( 1, idGenerator.getHighId() );
-        assertEquals( 0, idGenerator.getHighestPossibleIdInUse() );
+            // then
+            assertEquals( 1, idGenerator.getHighId() );
+            assertEquals( 0, idGenerator.getHighestPossibleIdInUse() );
+        }
     }
 
 }

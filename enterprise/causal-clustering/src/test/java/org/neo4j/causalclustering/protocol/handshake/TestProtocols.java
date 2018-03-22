@@ -19,97 +19,127 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.Protocol;
 
 public interface TestProtocols
 {
-    static <T extends Protocol> T latest( Protocol.Identifier<T> identifier, T[] values )
+    static <U extends Comparable<U>,T extends Protocol<U>> T latest( Protocol.Category<T> category, T[] values )
     {
         return Stream.of( values )
-                .filter( protocol -> protocol.identifier().equals( identifier.canonicalName() ) )
-                .max( Comparator.comparing( T::version ) )
+                .filter( protocol -> protocol.category().equals( category.canonicalName() ) )
+                .max( Comparator.comparing( T::implementation ) )
                 .get();
+    }
+
+    static <U extends Comparable<U>,T extends Protocol> U[] allVersionsOf( Protocol.Category<T> category, T[] values, IntFunction<U[]> constructor )
+    {
+        return Stream.of( values )
+                .filter( protocol -> protocol.category().equals( category.canonicalName() ) )
+                .map( Protocol::implementation )
+                .toArray( constructor );
     }
 
     enum TestApplicationProtocols implements Protocol.ApplicationProtocol
     {
-        RAFT_1( ApplicationProtocolIdentifier.RAFT, 1 ),
-        RAFT_2( ApplicationProtocolIdentifier.RAFT, 2 ),
-        RAFT_3( ApplicationProtocolIdentifier.RAFT, 3 ),
-        RAFT_4( ApplicationProtocolIdentifier.RAFT, 4 ),
-        CATCHUP_1( ApplicationProtocolIdentifier.CATCHUP, 1 ),
-        CATCHUP_2( ApplicationProtocolIdentifier.CATCHUP, 2 ),
-        CATCHUP_3( ApplicationProtocolIdentifier.CATCHUP, 3 ),
-        CATCHUP_4( ApplicationProtocolIdentifier.CATCHUP, 4 );
+        RAFT_1( ApplicationProtocolCategory.RAFT, 1 ),
+        RAFT_2( ApplicationProtocolCategory.RAFT, 2 ),
+        RAFT_3( ApplicationProtocolCategory.RAFT, 3 ),
+        RAFT_4( ApplicationProtocolCategory.RAFT, 4 ),
+        CATCHUP_1( ApplicationProtocolCategory.CATCHUP, 1 ),
+        CATCHUP_2( ApplicationProtocolCategory.CATCHUP, 2 ),
+        CATCHUP_3( ApplicationProtocolCategory.CATCHUP, 3 ),
+        CATCHUP_4( ApplicationProtocolCategory.CATCHUP, 4 );
 
-        private final int version;
+        private final Integer version;
 
-        private final ApplicationProtocolIdentifier identifier;
-        TestApplicationProtocols( ApplicationProtocolIdentifier identifier, int version )
+        private final ApplicationProtocolCategory identifier;
+        TestApplicationProtocols( ApplicationProtocolCategory identifier, int version )
         {
             this.identifier = identifier;
             this.version = version;
         }
 
         @Override
-        public String identifier()
+        public String category()
         {
             return this.identifier.canonicalName();
         }
 
         @Override
-        public int version()
+        public Integer implementation()
         {
             return version;
         }
 
-        static ApplicationProtocol latest( ApplicationProtocolIdentifier identifier )
+        public static ApplicationProtocol latest( ApplicationProtocolCategory identifier )
         {
             return TestProtocols.latest( identifier, values() );
+        }
+
+        public static Integer[] allVersionsOf( ApplicationProtocolCategory identifier )
+        {
+            return TestProtocols.allVersionsOf( identifier, TestApplicationProtocols.values(), Integer[]::new );
+        }
+
+        public static List<Integer> listVersionsOf( ApplicationProtocolCategory identifier )
+        {
+            return Arrays.asList( allVersionsOf( identifier ) );
         }
     }
 
     enum TestModifierProtocols implements Protocol.ModifierProtocol
     {
-        SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 1, "TestSnappy" ),
-        LZH( ModifierProtocolIdentifier.COMPRESSION, 2, "TestLZH" ),
-        ROT13( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION, 1, "ROT13" );
+        SNAPPY( ModifierProtocolCategory.COMPRESSION, "TestSnappy" ),
+        LZO( ModifierProtocolCategory.COMPRESSION, "TestLZO" ),
+        LZ4( ModifierProtocolCategory.COMPRESSION, "TestLZ4" ),
+        LZ4_VALIDATING( ModifierProtocolCategory.COMPRESSION, "TestLZ4Validating" ),
+        LZ4_HIGH_COMPRESSION( ModifierProtocolCategory.COMPRESSION, "TestLZ4High" ),
+        LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolCategory.COMPRESSION, "TestLZ4HighValidating" ),
+        ROT13( ModifierProtocolCategory.GRATUITOUS_OBFUSCATION, "ROT13" ),
+        NAME_CLASH( ModifierProtocolCategory.GRATUITOUS_OBFUSCATION, "TestSnappy" );
 
-        private final int version;
-        private final ModifierProtocolIdentifier identifier;
+        private final ModifierProtocolCategory identifier;
         private final String friendlyName;
 
-        TestModifierProtocols( ModifierProtocolIdentifier identifier, int version, String friendlyName )
+        TestModifierProtocols( ModifierProtocolCategory identifier, String friendlyName )
         {
-            this.version = version;
             this.identifier = identifier;
             this.friendlyName = friendlyName;
         }
 
         @Override
-        public String identifier()
+        public String category()
         {
             return identifier.canonicalName();
         }
 
         @Override
-        public int version()
-        {
-            return version;
-        }
-
-        @Override
-        public String friendlyName()
+        public String implementation()
         {
             return friendlyName;
         }
 
-        static ModifierProtocol latest( ModifierProtocolIdentifier identifier )
+        public static ModifierProtocol latest( ModifierProtocolCategory identifier )
         {
             return TestProtocols.latest( identifier, values() );
+        }
+
+        public static String[] allVersionsOf( ModifierProtocolCategory identifier )
+        {
+            return TestProtocols.allVersionsOf( identifier, TestModifierProtocols.values(), String[]::new );
+        }
+
+        public static List<String> listVersionsOf( ModifierProtocolCategory identifier )
+        {
+            List<String> versions = Arrays.asList( allVersionsOf( identifier ) );
+            versions.sort( Comparator.reverseOrder() );
+            return versions;
         }
     }
 }

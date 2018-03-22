@@ -24,18 +24,25 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
+import java.util.Iterator;
+
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -45,8 +52,14 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class KernelIntegrationTest
 {
@@ -62,42 +75,24 @@ public abstract class KernelIntegrationTest
     protected IndexingService indexingService;
 
     private KernelTransaction transaction;
-    private Statement statement;
     private DbmsOperations dbmsOperations;
 
-    protected Statement statementInNewTransaction( LoginContext loginContext ) throws KernelException
-    {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
-        statement = transaction.acquireStatement();
-        return statement;
-    }
-
-    protected TokenWriteOperations tokenWriteOperationsInNewTransaction() throws KernelException
+    protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
-        statement = transaction.acquireStatement();
-        return statement.tokenWriteOperations();
+        return transaction.tokenWrite();
     }
 
-    protected DataWriteOperations dataWriteOperationsInNewTransaction() throws KernelException
+    protected Write dataWriteInNewTransaction() throws KernelException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
-        statement = transaction.acquireStatement();
-        return statement.dataWriteOperations();
+        return transaction.dataWrite();
     }
 
-    protected SchemaWriteOperations schemaWriteOperationsInNewTransaction() throws KernelException
+    protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
     {
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        statement = transaction.acquireStatement();
-        return statement.schemaWriteOperations();
-    }
-
-    protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
-    {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-        statement = transaction.acquireStatement();
-        return statement.readOperations();
+        return transaction.schemaWrite();
     }
 
     protected Procedures procs() throws TransactionFailureException
@@ -108,7 +103,14 @@ public abstract class KernelIntegrationTest
 
     protected KernelTransaction newTransaction() throws TransactionFailureException
     {
-        return kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        return transaction;
+    }
+
+    protected KernelTransaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
+    {
+        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
+        return transaction;
     }
 
     protected DbmsOperations dbmsOperations()
@@ -118,11 +120,6 @@ public abstract class KernelIntegrationTest
 
     protected void commit() throws TransactionFailureException
     {
-        if ( statement != null )
-        {
-            statement.close();
-        }
-        statement = null;
         transaction.success();
         try
         {
@@ -136,8 +133,6 @@ public abstract class KernelIntegrationTest
 
     protected void rollback() throws TransactionFailureException
     {
-        statement.close();
-        statement = null;
         transaction.failure();
         try
         {
@@ -190,7 +185,7 @@ public abstract class KernelIntegrationTest
 
     private void stopDb() throws TransactionFailureException
     {
-        if ( transaction != null )
+        if ( transaction != null && transaction.isOpen() )
         {
             transaction.close();
         }
@@ -201,5 +196,166 @@ public abstract class KernelIntegrationTest
     {
         stopDb();
         startDb();
+    }
+
+    boolean nodeHasLabel( KernelTransaction transaction, long node, int label )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            return cursor.next() && cursor.labels().contains( label );
+        }
+    }
+
+    boolean nodeHasProperty( KernelTransaction transaction, long node, int property )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return false;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+
+    Value nodeGetProperty( KernelTransaction transaction, long node, int property )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleNode( node, cursor );
+            if ( !cursor.next() )
+            {
+                return NO_VALUE;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return properties.propertyValue();
+                    }
+                }
+                return NO_VALUE;
+            }
+        }
+    }
+
+    PrimitiveIntIterator nodeGetPropertyKeys( KernelTransaction transaction, long node )
+    {
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            PrimitiveIntSet props = Primitive.intSet();
+            transaction.dataRead().singleNode( node, cursor );
+            if ( cursor.next() )
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    props.add( properties.propertyKey() );
+                }
+            }
+            return props.iterator();
+        }
+    }
+
+    Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
+    {
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor();
+              PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
+        {
+            transaction.dataRead().singleRelationship( relationship, cursor );
+            if ( !cursor.next() )
+            {
+                return NO_VALUE;
+            }
+            else
+            {
+                cursor.properties( properties );
+                while ( properties.next() )
+                {
+                    if ( properties.propertyKey() == property )
+                    {
+                        return properties.propertyValue();
+                    }
+                }
+                return NO_VALUE;
+            }
+        }
+    }
+
+    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction )
+    {
+        return nodeGetRelationships( transaction, node, direction, null );
+    }
+
+    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
+    {
+        NodeCursor cursor = transaction.cursors().allocateNodeCursor();
+        transaction.dataRead().singleNode( node, cursor );
+        if ( !cursor.next() )
+        {
+            return emptyIterator();
+        }
+
+        switch ( direction )
+        {
+        case OUTGOING:
+            return outgoingIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        case INCOMING:
+            return incomingIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        case BOTH:
+            return allIterator( transaction.cursors(), cursor, types,
+                    ( id, startNodeId, typeId, endNodeId ) -> id );
+        default:
+            throw new IllegalStateException( direction + " is not a valid direction" );
+        }
+    }
+
+    protected int countNodes( KernelTransaction transaction )
+    {
+        int result = 0;
+        try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
+        {
+            transaction.dataRead().allNodesScan( cursor );
+            while ( cursor.next() )
+            {
+                result++;
+            }
+        }
+        return result;
+    }
+
+    int countRelationships( KernelTransaction transaction )
+    {
+        int result = 0;
+        try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )
+        {
+            transaction.dataRead().allRelationshipsScan( cursor );
+            while ( cursor.next() )
+            {
+                result++;
+            }
+        }
+        return result;
     }
 }

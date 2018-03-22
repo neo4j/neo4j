@@ -396,7 +396,10 @@ public class Exceptions
             return current;
         }
 
-        initial.addSuppressed( current );
+        if ( current != null )
+        {
+            initial.addSuppressed( current );
+        }
         return initial;
     }
 

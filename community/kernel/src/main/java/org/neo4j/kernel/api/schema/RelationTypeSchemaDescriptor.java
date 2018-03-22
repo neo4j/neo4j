@@ -69,6 +69,12 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        return tokenNameLookup.relationshipTypeGetName( relTypeId );
+    }
+
+    @Override
     public int getRelTypeId()
     {
         return relTypeId;
@@ -108,17 +114,6 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     public PropertySchemaType propertySchemaType()
     {
         return PropertySchemaType.SCHEMA_ALL_TOKENS;
-    }
-
-    @Override
-    public int getPropertyId()
-    {
-        if ( propertyIds.length != 1 )
-        {
-            throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
-        }
-        return propertyIds[0];
     }
 
     @Override

@@ -25,12 +25,12 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, ResourceTracker, Statement}
+import org.neo4j.kernel.api.{KernelTransaction, ResourceTracker, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
-  override type ReadOps = ReadOperations
+  override type ReadOps = Nothing
 
   override type DbmsOps = DbmsOperations
 
@@ -46,7 +46,7 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def stateView: TxStateHolder = tc.stateView()
 
-  override def readOperations: ReadOperations = tc.readOperations()
+  override def readOperations: Nothing = ???
 
   override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
 

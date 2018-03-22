@@ -79,12 +79,12 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         }
         Kernel kernel = testSupport.kernelToTest();
         session = kernel.beginSession( LoginContext.AUTH_DISABLED );
-        cursors = new ManagedTestCursors( kernel.cursors() );
         tx = session.beginTransaction( Transaction.Type.explicit );
         token = tx.token();
         read = tx.dataRead();
         indexRead = tx.indexRead();
         schemaRead = tx.schemaRead();
+        cursors = new ManagedTestCursors( tx.cursors() );
     }
 
     @Rule

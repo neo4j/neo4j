@@ -29,4 +29,16 @@ public class Streams
     {
         return opt.map( Stream::of ).orElse( Stream.empty() );
     }
+
+    public static <T> Stream<T> ofNullable( T obj )
+    {
+        if ( obj == null )
+        {
+            return Stream.empty();
+        }
+        else
+        {
+            return Stream.of( obj );
+        }
+    }
 }

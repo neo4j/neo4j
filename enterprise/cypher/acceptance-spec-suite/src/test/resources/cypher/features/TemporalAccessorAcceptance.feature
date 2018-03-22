@@ -61,11 +61,11 @@ Feature: TemporalAccessorAcceptance
     When executing query:
       """
       WITH time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'+01:00'}) as d
-      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond, d.timezone, d.offset
+      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond, d.timezone, d.offset, d.offsetMinutes
       """
     Then the result should be, in order:
-      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone | d.offset |
-      | 12     | 31       | 14       | 645           | 645876        | 645876123    | '+01:00'   | '+01:00' |
+      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone | d.offset | d.offsetMinutes |
+      | 12     | 31       | 14       | 645           | 645876        | 645876123    | '+01:00'   | '+01:00' | 60              |
     And no side effects
 
   Scenario: Should provide accessors for local date time
@@ -88,11 +88,11 @@ Feature: TemporalAccessorAcceptance
       WITH datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'Europe/Stockholm'}) as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter,
              d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond,
-             d.timezone, d.offset, d.epoch
+             d.timezone, d.offset, d.offsetMinutes, d.epochSeconds, d.epochMillis
       """
     Then the result should be, in order:
-      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone         | d.offset | d.epoch      |
-      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    | 'Europe/Stockholm' | '+01:00' | 469020674645 |
+      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone         | d.offset | d.offsetMinutes | d.epochSeconds | d.epochMillis |
+      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    | 'Europe/Stockholm' | '+01:00' | 60              | 469020674      | 469020674645 |
     And no side effects
 
   Scenario: Should provide accessors for duration

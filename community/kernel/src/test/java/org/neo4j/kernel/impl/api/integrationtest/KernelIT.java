@@ -37,16 +37,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.NodeItem;
@@ -495,12 +495,12 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
         // GIVEN
-        schemaWriteOperationsInNewTransaction();
+        schemaWriteInNewTransaction();
         getOrCreateSchemaState( "my key", "my state" );
         commit();
 
         // WHEN
-        createIndex( statementInNewTransaction( AUTH_DISABLED ) );
+        createIndex( newTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -518,7 +518,7 @@ public class KernelIT extends KernelIntegrationTest
     public void schemaStateShouldBeEvictedOnIndexDropped() throws Exception
     {
         // GIVEN
-        SchemaIndexDescriptor idx = createIndex( statementInNewTransaction( AUTH_DISABLED ) );
+        IndexReference idx = createIndex( newTransaction( AUTH_DISABLED ) );
         commit();
 
         try ( Transaction tx = db.beginTx() )
@@ -528,7 +528,7 @@ public class KernelIT extends KernelIntegrationTest
             tx.success();
         }
         // WHEN
-        schemaWriteOperationsInNewTransaction().indexDrop( idx );
+        schemaWriteInNewTransaction().indexDrop( idx );
         commit();
 
         // THEN schema state should be immediately updated (this works because the schema cache is updated during
@@ -637,14 +637,14 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private SchemaIndexDescriptor createIndex( Statement statement )
+    private IndexReference createIndex( KernelTransaction transaction )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
-        TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-        SchemaWriteOperations schemaWriteOperations = statement.schemaWriteOperations();
-        LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWriteOperations.labelGetOrCreateForName( "hello" ),
-                        tokenWriteOperations.propertyKeyGetOrCreateForName( "hepp" ) );
-        return schemaWriteOperations.indexCreate( schemaDescriptor );
+        TokenWrite tokenWrite = transaction.tokenWrite();
+        SchemaWrite schemaWrite = transaction.schemaWrite();
+        LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWrite.labelGetOrCreateForName( "hello" ),
+                        tokenWrite.propertyKeyGetOrCreateForName( "hepp" ) );
+        return schemaWrite.indexCreate( schemaDescriptor );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )

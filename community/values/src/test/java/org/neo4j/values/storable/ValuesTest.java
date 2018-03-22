@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -84,5 +85,27 @@ public class ValuesTest
         assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
         assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
         assertEqual( stringArray( "hi" ), stringArray( "hi" ) );
+    }
+
+    @Test
+    public void pointValueShouldRequireConsistentInput()
+    {
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian, 1, 2, 3 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.Cartesian_3D, 1, 2 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84, 1, 2, 3 );
+        assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84_3D, 1, 2 );
+    }
+
+    private void assertThrowsIllegalArgument( CoordinateReferenceSystem crs, double... coordinates )
+    {
+        try
+        {
+            Values.pointValue( crs, coordinates );
+            fail( "exception expected" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // this is what we want
+        }
     }
 }

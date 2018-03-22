@@ -22,8 +22,6 @@ package org.neo4j.causalclustering.core.state.snapshot;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-import java.io.IOException;
-
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;

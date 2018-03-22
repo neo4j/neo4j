@@ -79,14 +79,42 @@ public class MultipleIndexPopulatorTest
     private MultipleIndexPopulator multipleIndexPopulator;
 
     @Test
-    public void indexPopulationCompletionOnlyOnce()
+    public void canceledPopulationNotAbleToCreateNewIndex() throws IOException
     {
-        IndexPopulator indexPopulator1 = createIndexPopulator();
-        IndexPopulation indexPopulation = addPopulator( indexPopulator1, 1 );
-        assertTrue( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
-        assertFalse( indexPopulation.markCompleted() );
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.cancel();
+
+        multipleIndexPopulator.create();
+
+        verify( populator, never() ).create();
+    }
+
+    @Test
+    public void canceledPopulationNotAbleToFlip() throws IOException, FlipFailedKernelException
+    {
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.cancel();
+
+        indexPopulation.flip();
+
+        verify( indexPopulation.flipper, never() ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
+    }
+
+    @Test
+    public void flippedPopulationAreNotCanceable() throws IOException, FlipFailedKernelException
+    {
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.flip();
+
+        indexPopulation.cancel();
+
+        verify( indexPopulation.populator, never() ).close( false );
     }
 
     @Test
@@ -150,7 +178,6 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.indexAllEntities();
 
-        assertFalse( populationToCancel.markCompleted() );
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
         multipleIndexPopulator.flipAfterPopulation();
@@ -173,7 +200,6 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.indexAllEntities();
 
-        assertFalse( populationToCancel.markCompleted() );
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
         multipleIndexPopulator.flipAfterPopulation();

@@ -148,14 +148,15 @@ public class SimpleIndexReader extends AbstractIndexReader
             switch ( predicate.valueGroup() )
             {
             case NUMBER:
-                IndexQuery.RangePredicate np = (IndexQuery.RangePredicate) predicate;
-                return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( (Number)np.fromValue().asObject(),
-                                                                                  (Number)np.toValue().asObject() );
+                IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+                return LuceneDocumentStructure.newInclusiveNumericRangeSeekQuery( np.from(),
+                                                                                  np.to() );
 
             case TEXT:
-                IndexQuery.RangePredicate sp = (IndexQuery.RangePredicate) predicate;
-                return LuceneDocumentStructure.newRangeSeekByStringQuery( (String)sp.fromValue().asObject(), sp.fromInclusive(),
-                                                                          (String)sp.toValue().asObject(), sp.toInclusive() );
+                IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) predicate;
+                return LuceneDocumentStructure.newRangeSeekByStringQuery( sp.from(), sp.fromInclusive(),
+                                                                          sp.to(), sp.toInclusive() );
+
             default:
                 throw new UnsupportedOperationException(
                         format( "Range scans of value group %s are not supported", predicate.valueGroup() ) );

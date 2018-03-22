@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -95,7 +96,7 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         {
             for ( TemporalIndexFiles.FileLayout subIndex : temporalIndexFiles.existing() )
             {
-                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile, subIndex.layout );
+                String indexFailure = NativeSchemaIndexes.readFailureMessage( pageCache, subIndex.indexFile );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -119,7 +120,7 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         {
             try
             {
-                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile, subIndex.layout ) )
+                switch ( NativeSchemaIndexes.readState( pageCache, subIndex.indexFile ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;
@@ -128,7 +129,7 @@ public class TemporalIndexProvider extends IndexProvider<SchemaIndexDescriptor>
                 default: // continue
                 }
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;

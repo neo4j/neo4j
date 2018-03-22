@@ -223,11 +223,12 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
 
     private IndexQuery[] seek( SchemaDescriptor schema, Value[] propertyValues )
     {
-        assert schema.getPropertyIds().length == propertyValues.length;
+        int[] propertyIds = schema.getPropertyIds();
+        assert propertyIds.length == propertyValues.length;
         IndexQuery[] query = new IndexQuery[propertyValues.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            query[i] = IndexQuery.exact( schema.getPropertyIds()[i], propertyValues[i] );
+            query[i] = IndexQuery.exact( propertyIds[i], propertyValues[i] );
         }
         return query;
     }

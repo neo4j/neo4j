@@ -19,9 +19,13 @@
  */
 package org.neo4j.values.storable;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -89,6 +93,8 @@ public class PointTest
                 PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" ) ); // - explicitly WGS84
         assertEqual( pointValue( Cartesian, -21, -45.3 ),
                 PointValue.parse( "{x: -21, y: -45.3}" ) ); // - default to cartesian 2D
+        assertEqual( pointValue( WGS84, -21, -45.3 ),
+                PointValue.parse( "{x: -21, y: -45.3, srid: 4326}" ) ); // - explicitly set WGS84 by SRID
         assertEqual( pointValue( Cartesian, 17, -52.8 ),
                 PointValue.parse( "{x: 17, y: -52.8, crs: 'cartesian'}" ) ); // - explicit cartesian 2D
         assertEqual( pointValue( WGS84_3D, 13.2, 56.7, 123.4 ),
@@ -111,6 +117,40 @@ public class PointTest
     }
 
     @Test
+    public void shouldBeAbleToParsePointThatOverridesHeaderInformation()
+    {
+        String headerInformation = "{crs:wgs-84}";
+        String data = "{latitude: 40.7128, longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
+
+        PointValue expected = PointValue.parse( data );
+        PointValue actual = PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
+
+        assertEqual( expected, actual );
+        assertEquals( "wgs-84-3d", actual.getCoordinateReferenceSystem().getName().toLowerCase() );
+    }
+
+    @Test
+    public void shouldBeAbleToParseIncompletePointWithHeaderInformation()
+    {
+        String headerInformation = "{latitude: 40.7128}";
+        String data = "{longitude: -74.0060, height: 567.8, crs:wgs-84-3D}";
+
+        try
+        {
+            PointValue.parse( data ); // this shouldn't work
+            fail( "Was able to parse point although latitude was missing" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // this is expected
+        }
+
+        // this should work
+        PointValue.parse( data, PointValue.parseHeaderInformation( headerInformation ) );
+
+    }
+
+    @Test
     public void shouldBeAbleToParseWeirdlyFormattedPoints()
     {
         assertEqual( pointValue( WGS84, 1.0, 2.0 ), PointValue.parse( " \t\n { latitude : 2.0  ,longitude :1.0  } \t" ) );
@@ -122,17 +162,13 @@ public class PointTest
     }
 
     @Test
-    public void shouldBeAbleToParsePointAndIgnoreUnknownFields()
-    {
-        assertEqual( pointValue( WGS84, 1.0, 2.0 ), PointValue.parse( "{latitude:2.0,longitude:1.0,unknown_field:\"hello\"}" ) );
-    }
-
-    @Test
     public void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
     {
-        assertTrue( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage().contains( "Duplicate field" ) );
-        assertTrue( assertCannotParse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ).getMessage().contains( "Duplicate field" ) );
-        assertTrue( assertCannotParse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ).getMessage().contains( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{crs: 'cartesian', x: 2.0, x: 1.0, y: 3}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );
+        assertThat( assertCannotParse( "{crs: 'invalid crs', x: 1.0, y: 3, crs: 'cartesian'}" ).getMessage(),
+                CoreMatchers.containsString( "Duplicate field" ) );
     }
 
     @Test
@@ -146,6 +182,7 @@ public class PointTest
         assertCannotParse( "{a:a}" );
         assertCannotParse( "{ : 2.0, x : 1.0 }" );
         assertCannotParse( "x:1,y:2" );
+        assertCannotParse( "{x:1,y:2,srid:-9}" );
         assertCannotParse( "{x:1,y:'2'}" );
         assertCannotParse( "{crs:WGS-84 , lat:1, y:2}" );
     }

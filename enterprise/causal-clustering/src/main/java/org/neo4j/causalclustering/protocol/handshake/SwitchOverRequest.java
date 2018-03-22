@@ -27,10 +27,10 @@ import org.neo4j.helpers.collection.Pair;
 public class SwitchOverRequest implements ServerMessage
 {
     private final String protocolName;
-    private final int version;
-    private final List<Pair<String,Integer>> modifierProtocols;
+    private final Integer version;
+    private final List<Pair<String,String>> modifierProtocols;
 
-    public SwitchOverRequest( String applicationProtocolName, int applicationProtocolVersion, List<Pair<String,Integer>> modifierProtocols )
+    public SwitchOverRequest( String applicationProtocolName, int applicationProtocolVersion, List<Pair<String,String>> modifierProtocols )
     {
         this.protocolName = applicationProtocolName;
         this.version = applicationProtocolVersion;
@@ -48,7 +48,7 @@ public class SwitchOverRequest implements ServerMessage
         return protocolName;
     }
 
-    public List<Pair<String,Integer>> modifierProtocols()
+    public List<Pair<String,String>> modifierProtocols()
     {
         return modifierProtocols;
     }
@@ -70,7 +70,9 @@ public class SwitchOverRequest implements ServerMessage
             return false;
         }
         SwitchOverRequest that = (SwitchOverRequest) o;
-        return version == that.version && Objects.equals( protocolName, that.protocolName ) && Objects.equals( modifierProtocols, that.modifierProtocols );
+        return Objects.equals( version, that.version ) &&
+                Objects.equals( protocolName, that.protocolName ) &&
+                Objects.equals( modifierProtocols, that.modifierProtocols );
     }
 
     @Override

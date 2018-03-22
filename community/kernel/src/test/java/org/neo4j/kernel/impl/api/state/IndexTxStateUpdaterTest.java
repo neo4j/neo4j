@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -47,6 +47,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -136,7 +137,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onLabelChange( state, unIndexedLabelId, node, REMOVED_LABEL );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test
@@ -173,7 +174,7 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyChange( state, node, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test
@@ -218,7 +219,7 @@ public class IndexTxStateUpdaterTest
     }
 
     private void verifyIndexUpdate(
-            LabelSchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
+            SchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId), eq( before ), eq( after ) );
     }

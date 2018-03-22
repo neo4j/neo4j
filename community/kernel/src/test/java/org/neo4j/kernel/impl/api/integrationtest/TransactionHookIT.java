@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.api.DataWriteOperations;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -48,7 +48,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         kernel.registerTransactionHook( hook );
 
         // When
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+        Write ops = dataWriteInNewTransaction();
         ops.nodeCreate();
         commit();
 
@@ -83,7 +83,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         kernel.registerTransactionHook( hook );
 
         // When
-        DataWriteOperations ops = dataWriteOperationsInNewTransaction();
+        Write ops = dataWriteInNewTransaction();
         ops.nodeCreate();
 
         try

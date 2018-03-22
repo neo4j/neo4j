@@ -47,7 +47,7 @@ class SchemaRuleException extends SchemaKernelException
     {
         super( status, format( messageTemplate, kind.userString().toLowerCase(), descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ) );
         this.descriptor = descriptor;
-        this.name="";
+        this.name = "";
         this.messageTemplate = messageTemplate;
         this.kind = kind;
     }

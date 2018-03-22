@@ -55,15 +55,9 @@ public class StringIndexProvider extends NativeIndexProvider<StringSchemaKey,Nat
     }
 
     @Override
-    protected StringLayoutUnique layoutUnique()
+    Layout<StringSchemaKey,NativeSchemaValue> layout( SchemaIndexDescriptor descriptor )
     {
-        return new StringLayoutUnique();
-    }
-
-    @Override
-    protected StringLayoutNonUnique layoutNonUnique()
-    {
-        return new StringLayoutNonUnique();
+        return new StringLayout();
     }
 
     @Override

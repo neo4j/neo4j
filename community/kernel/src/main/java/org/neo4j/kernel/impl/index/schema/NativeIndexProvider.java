@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -54,8 +55,8 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean readOnly;
 
-    protected NativeIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
-                                   FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    protected NativeIndexProvider( Descriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs,
+            Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( descriptor, priority, directoryStructureFactory );
         this.pageCache = pageCache;
@@ -64,6 +65,8 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
     }
+
+    abstract Layout<KEY,VALUE> layout( SchemaIndexDescriptor descriptor );
 
     @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -74,8 +77,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         }
 
         File storeFile = nativeIndexFileFromIndexId( indexId );
-        Layout<KEY,VALUE> layout = layout( descriptor );
-        return newIndexPopulator( storeFile, layout, descriptor, indexId, samplingConfig );
+        return newIndexPopulator( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
     protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout,
@@ -87,8 +89,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
             long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         File storeFile = nativeIndexFileFromIndexId( indexId );
-        Layout<KEY,VALUE> layout = layout( descriptor );
-        return newIndexAccessor( storeFile, layout, descriptor, indexId, samplingConfig );
+        return newIndexAccessor( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
     @Override
@@ -112,7 +113,7 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     {
         try
         {
-            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
+            String failureMessage = NativeSchemaIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( indexId ) );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + indexId + " isn't failed" );
@@ -130,9 +131,9 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
     {
         try
         {
-            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ), layout( descriptor ) );
+            return NativeSchemaIndexes.readState( pageCache, nativeIndexFileFromIndexId( indexId ) );
         }
-        catch ( IOException e )
+        catch ( MetadataMismatchException | IOException e )
         {
             monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
@@ -146,23 +147,6 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
-
-    private Layout<KEY,VALUE> layout( IndexDescriptor descriptor )
-    {
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return layoutNonUnique();
-        case UNIQUE:
-            return layoutUnique();
-        default:
-            throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
-        }
-    }
-
-    protected abstract Layout<KEY,VALUE> layoutUnique();
-
-    protected abstract Layout<KEY,VALUE> layoutNonUnique();
 
     private File nativeIndexFileFromIndexId( long indexId )
     {

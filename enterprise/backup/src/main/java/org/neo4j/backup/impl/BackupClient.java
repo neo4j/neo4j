@@ -81,12 +81,12 @@ public class BackupClient extends Client<TheBackupInterface> implements TheBacku
     }
 
     @Override
-    protected boolean shouldCheckStoreId( RequestType<TheBackupInterface> type )
+    protected boolean shouldCheckStoreId( RequestType type )
     {
         return type != BackupRequestType.FULL_BACKUP;
     }
 
-    public enum BackupRequestType implements RequestType<TheBackupInterface>
+    public enum BackupRequestType implements RequestType
     {
         FULL_BACKUP( (TargetCaller<TheBackupInterface, Void>) ( master, context, input, target ) ->
         {

@@ -113,9 +113,10 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater
     private IndexQuery[] queryOf( ValueTuple tuple )
     {
         IndexQuery[] predicates = new IndexQuery[tuple.size()];
+        int[] propertyIds = indexDescriptor.schema().getPropertyIds();
         for ( int i = 0; i < predicates.length; i++ )
         {
-            predicates[i] = exact( indexDescriptor.schema().getPropertyIds()[i], tuple.valueAt( i ) );
+            predicates[i] = exact( propertyIds[i], tuple.valueAt( i ) );
         }
         return predicates;
     }

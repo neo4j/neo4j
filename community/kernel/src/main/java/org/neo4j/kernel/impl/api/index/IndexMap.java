@@ -178,7 +178,7 @@ public final class IndexMap implements Cloneable
      * @param unchangedEntityTokens set of labels that are unchanged
      * @param properties set of properties
      * @param entityType
-     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
+     * @return set of SchemaDescriptors describing the potentially affected indexes
      */
     public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntSet properties,
             EntityType entityType )
@@ -341,7 +341,7 @@ public final class IndexMap implements Cloneable
      * @param descriptorsByEntityToken
      * @param descriptorsForAllEntityTokens
      * @param descriptorsByProperty
-     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
+     * @return set of SchemaDescriptors describing the potentially affected indexes
      */
     private Set<SchemaDescriptor> getDescriptorsByProperties( long[] unchangedLabels, PrimitiveIntSet properties,
             PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, Set<SchemaDescriptor> descriptorsForAllEntityTokens,
@@ -382,7 +382,7 @@ public final class IndexMap implements Cloneable
                 set.addAll( forLabel );
             }
         }
-        if ( entityTokenIds.length!=0 )
+        if ( entityTokenIds.length != 0 )
         {
             set.addAll( descriptorsForAllEntityTokens );
         }

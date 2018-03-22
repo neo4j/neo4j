@@ -100,7 +100,7 @@ public class StorePropertyCursorTest
             new Object[]{"alongershortstring", PropertyType.SHORT_STRING},
             new Object[]{"areallylongshortstringbutstillnotsobig", PropertyType.SHORT_STRING},
             new Object[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 4.321 ), PropertyType.GEOMETRY},
-            new Object[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.234, 4.321, -6.543 ), PropertyType.GEOMETRY},
+            new Object[]{Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1.234, 4.321, -6.543 ), PropertyType.GEOMETRY},
             new Object[]{new double[]{0.0d}, PropertyType.SHORT_ARRAY},
             new Object[]{new double[]{1.2d}, PropertyType.SHORT_ARRAY},
             new Object[]{new double[]{1.2d, 1.4d}, PropertyType.SHORT_ARRAY},
@@ -113,8 +113,8 @@ public class StorePropertyCursorTest
                     Values.pointValue( CoordinateReferenceSystem.WGS84, 4.321, -6.543 )
             }, PropertyType.ARRAY},
             new Object[]{new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 3.987, 1.234, 4.321 ),
-                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.234, 4.321, -6.543 )
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 3.987, 1.234, 4.321 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1.234, 4.321, -6.543 )
             }, PropertyType.ARRAY},
 
             new Object[]{"thisisaveryveryveryverylongstringwhichisnotgonnafiteverintothepropertyblock",

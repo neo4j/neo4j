@@ -123,7 +123,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
         |M, N
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
     val expected = List(Map("M" -> b, "N" -> a), Map("M" -> a, "N" -> b))
 
     result.toList should equal(expected)
@@ -145,7 +145,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
         |M.a as B
       """.stripMargin
 
-    val expectedToWorkIn = Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3
+    val expectedToWorkIn = Configs.Interpreted - Configs.Cost2_3
     val result = executeWith(expectedToWorkIn, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 

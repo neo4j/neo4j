@@ -631,7 +631,7 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws CreateConstraintFailureException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -841,19 +841,20 @@ public class StateHandlingStatementOperations implements
             KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
-
-        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
-         * since subsequent filtering will happen outside, but at the same time have the ability to
-         * close the IndexReader when done iterating over the lookup result. This is because we get
-         * a fresh reader that isn't associated with the current transaction and hence will not be
-         * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( query )
-                ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
-        PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
-        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        try ( IndexReader reader = state.getStoreStatement().getFreshIndexReader( index ) )
+        {
+            /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
+             * since subsequent filtering will happen outside, but at the same time have the ability to
+             * close the IndexReader when done iterating over the lookup result. This is because we get
+             * a fresh reader that isn't associated with the current transaction and hence will not be
+             * automatically closed. */
+            PrimitiveLongResourceIterator committed = reader.query( query );
+            PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( query )
+                                                         ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
+            PrimitiveLongResourceIterator changesFiltered =
+                    filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
+            return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        }
     }
 
     @Override

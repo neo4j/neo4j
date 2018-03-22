@@ -23,6 +23,8 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -35,8 +37,10 @@ import org.junit.Test;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.SocketAddress;
+import org.neo4j.causalclustering.net.Server;
+import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -49,28 +53,41 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class ReconnectingChannelIT
 {
     private static final int PORT = PortAuthority.allocatePort();
-    private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
+    private static final long DEFAULT_TIMEOUT_MS = 20_000;
+    private final Log log = NullLogProvider.getInstance().getLog( getClass() );
+    private final ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PORT );
+    private final Server server = new Server( channel -> {}, listenAddress, "test-server" );
+    private EventLoopGroup elg;
+    private ReconnectingChannel channel;
+    private AtomicInteger childCount = new AtomicInteger();
+    private final ChannelHandler childCounter = new ChannelInitializer<SocketChannel>()
     {
         @Override
         protected void initChannel( SocketChannel ch )
         {
+            ch.pipeline().addLast( new ChannelInboundHandlerAdapter()
+            {
+                @Override
+                public void channelActive( ChannelHandlerContext ctx )
+                {
+                    childCount.incrementAndGet();
+                }
+
+                @Override
+                public void channelInactive( ChannelHandlerContext ctx )
+                {
+                    childCount.decrementAndGet();
+                }
+            } );
         }
     };
-    private static final long DEFAULT_TIMEOUT_MS = 20_000;
-
-    private final Log log = NullLogProvider.getInstance().getLog( getClass() );
-    private final SocketAddress serverAddress = new SocketAddress( "localhost", PORT );
-    private final TestServer server = new TestServer( PORT );
-
-    private EventLoopGroup elg;
-    private ReconnectingChannel channel;
 
     @Before
     public void before()
     {
         elg = new NioEventLoopGroup( 0 );
-        Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( VOID_HANDLER );
-        channel = new ReconnectingChannel( bootstrap, elg.next(), serverAddress, log );
+        Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( childCounter );
+        channel = new ReconnectingChannel( bootstrap, elg.next(), listenAddress, log );
     }
 
     @After
@@ -172,7 +189,7 @@ public class ReconnectingChannelIT
         // ensure we are connected
         Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
-        assertEventually( "", server::childCount, equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
+        assertEventually( childCount::get, equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
 
         // when
         channel.dispose();
@@ -187,7 +204,7 @@ public class ReconnectingChannelIT
         }
 
         // then
-        assertEventually( "", server::childCount, equalTo( 0 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
+        assertEventually( childCount::get, equalTo( 0 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
     }
 
     private ByteBuf emptyBuffer()

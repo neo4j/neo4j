@@ -84,4 +84,10 @@ public class InitialMagicMessage implements ServerMessage, ClientMessage
     {
         return magic;
     }
+
+    @Override
+    public String toString()
+    {
+        return "InitialMagicMessage{" + "magic='" + magic + '\'' + '}';
+    }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
-
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
   same node and property (n.prop) during planning, esp. for generating index seek by range plans.

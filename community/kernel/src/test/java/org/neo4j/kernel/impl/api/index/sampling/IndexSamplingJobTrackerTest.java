@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
@@ -63,7 +63,7 @@ public class IndexSamplingJobTrackerTest
     {
         // given
         when( config.jobLimit() ).thenReturn( 2 );
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
         final DoubleLatch latch = new DoubleLatch();
@@ -104,7 +104,7 @@ public class IndexSamplingJobTrackerTest
     {
         // given
         when( config.jobLimit() ).thenReturn( 1 );
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
@@ -168,7 +168,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 1 );
 
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
@@ -254,7 +254,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 2 );
 
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );
@@ -292,7 +292,7 @@ public class IndexSamplingJobTrackerTest
         // Given
         when( config.jobLimit() ).thenReturn( 2 );
 
-        JobScheduler jobScheduler = new Neo4jJobScheduler();
+        JobScheduler jobScheduler = new CentralJobScheduler();
         jobScheduler.init();
 
         final IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, jobScheduler );

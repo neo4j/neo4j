@@ -542,12 +542,25 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldGetNoIndex()
+    public void shouldGetNoIndexForMissingTokens()
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         int badLabel = 1024;
         int badProp = 1024;
+
+        assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
+        assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
+        assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+    }
+
+    @Test
+    public void shouldGetNoIndexForUnknownTokens()
+    {
+        int label = token.nodeLabel( "Node" );
+        int prop = token.propertyKey( "prop" );
+        int badLabel = Integer.MAX_VALUE;
+        int badProp = Integer.MAX_VALUE;
 
         assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
         assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );

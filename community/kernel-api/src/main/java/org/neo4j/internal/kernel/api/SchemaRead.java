@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import java.util.Iterator;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -47,14 +48,14 @@ public interface SchemaRead
      * @param labelId The id of the label which associated indexes you are looking for
      * @return The indexes associated with the given label
      */
-    Iterator<CapableIndexReference> indexesGetForLabel( int labelId );
+    Iterator<IndexReference> indexesGetForLabel( int labelId );
 
     /**
      * Returns all indexes used in the database
      *
      * @return all indexes used in the database
      */
-    Iterator<CapableIndexReference> indexesGetAll();
+    Iterator<IndexReference> indexesGetAll();
 
     /**
      * Retrieves the state of an index
@@ -63,7 +64,7 @@ public interface SchemaRead
      * @return The state of the provided index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Retrives the population progress of the index
@@ -72,14 +73,14 @@ public interface SchemaRead
      * @return The population progress of the given index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    PopulationProgress indexGetPopulationProgress( CapableIndexReference index ) throws
+    PopulationProgress indexGetPopulationProgress( IndexReference index ) throws
             IndexNotFoundKernelException;
 
     /**
      * Get the index id (the id or the schema rule record) for a committed index
      * - throws exception for indexes that aren't committed.
      */
-    long indexGetCommittedId( CapableIndexReference index ) throws SchemaKernelException;
+    long indexGetCommittedId( IndexReference index ) throws SchemaKernelException;
 
     /**
      * Returns the failure description of a failed index.
@@ -88,7 +89,23 @@ public interface SchemaRead
      * @return The failure message from the index
      * @throws IndexNotFoundKernelException if the index was not found in the database
      */
-    String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException;
+    String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Computes the selectivity of the unique values
+     * @param index The index of interest
+     * @return The selectivity of the given index
+     * @throws IndexNotFoundKernelException if the index is not there
+     */
+    double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Returns the size of the index
+     * @param index The index of interest
+     * @return The size of the current index
+     * @throws IndexNotFoundKernelException if the index is not there
+     */
+    long indexSize( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Finds all constraints for the given schema
@@ -133,5 +150,29 @@ public interface SchemaRead
      * Get the owning constraint for a constraint index or <tt>null</tt> if the index does not have an owning
      * constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( CapableIndexReference index );
+    Long indexGetOwningUniquenessConstraintId( IndexReference index );
+
+    /**
+     * Returns schema state for the given key or create a new state if not there
+     * @param key The key to access
+     * @param creator function creating schema state
+     * @param <K> type of the key
+     * @param <V> type of the schema state value
+     * @return the state associated with the key or a new value if non-existing
+     */
+    <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
+
+    /**
+     * Returns the state associated with the key or <tt>null</tt> if nothing assocated with key
+     * @param key The key to access
+     * @param <K> The type of the key
+     * @param <V> The type of the assocated value
+     * @return The value associated with the given key or <tt>null</tt>
+     */
+    <K, V> V schemaStateGet( K key );
+
+    /**
+     * Flush the schema state
+     */
+    void schemaStateFlush();
 }

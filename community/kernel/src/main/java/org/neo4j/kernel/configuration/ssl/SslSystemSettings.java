@@ -21,13 +21,10 @@ package org.neo4j.kernel.configuration.ssl;
 
 import io.netty.handler.ssl.SslProvider;
 
-import java.util.List;
-
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -37,15 +34,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Description( "System-wide settings for SSL." )
 public class SslSystemSettings implements LoadableConfig
 {
-    static final String TLS_PROTOCOL_DEFAULT_KEY = "org.neo4j.tls.protocol.default";
-    private static final String TLS_DEFAULT = "TLSv1.2";
-
     @Description( "Netty SSL provider" )
     public static final Setting<SslProvider> netty_ssl_provider = setting( "dbms.netty.ssl.provider", options( SslProvider.class ), SslProvider.JDK.name() );
-
-    static List<String> getTlsDefault()
-    {
-        String protocolProperty = System.getProperty( TLS_PROTOCOL_DEFAULT_KEY, TLS_DEFAULT ).trim();
-        return asList( protocolProperty.split( "\\s*,\\s*" ) );
-    }
 }

@@ -75,9 +75,9 @@ public class GBPTreePartialCreateFuzzIT
             // check readHeader
             try
             {
-                GBPTree.readHeader( pageCache, file, layout, NO_HEADER_READER );
+                GBPTree.readHeader( pageCache, file, NO_HEADER_READER );
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 // It's OK if the process was destroyed
                 assertNotEquals( 0, exitCode );
@@ -88,7 +88,7 @@ public class GBPTreePartialCreateFuzzIT
             {
                 new GBPTreeBuilder<>( pageCache, file, layout ).build().close();
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 // It's OK if the process was destroyed
                 assertNotEquals( 0, exitCode );

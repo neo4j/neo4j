@@ -19,14 +19,18 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Set;
+
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 public interface Procedures
 {
@@ -51,6 +55,13 @@ public interface Procedures
      * @throws ProcedureException
      */
     ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException;
+
+    /**
+     * Fetch all procedures
+     * @return all procedures
+     * @throws ProcedureException
+     */
+    Set<ProcedureSignature> proceduresGetAll( ) throws ProcedureException;
 
     /**
      * Invoke a read-only procedure by id.
@@ -233,4 +244,10 @@ public interface Procedures
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException;
+
+    /**
+     * Retrieve a value mapper for mapping values to regular Java objects.
+     * @return a value mapper that maps to Java objects.
+     */
+    ValueMapper<Object> valueMapper();
 }

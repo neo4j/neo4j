@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
@@ -147,7 +147,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         forEachPopulation( population ->
         {
             log.info( "Index population started: [%s]", population.indexUserDescription );
-            population.populator.create();
+            population.create();
         } );
     }
 
@@ -219,9 +219,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             return;
         }
 
-        // If the cause of index population failure is a conflict in a (unique) index, the conflict is the
-        // failure
-        // TODO do we need this?
+        // If the cause of index population failure is a conflict in a (unique) index, the conflict is the failure
         if ( failure instanceof IndexPopulationFailedKernelException )
         {
             Throwable cause = failure.getCause();
@@ -232,7 +230,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
 
         // Index conflicts are expected (for unique indexes) so we don't need to log them.
-        if ( !(failure instanceof IndexEntryConflictException) /*TODO: && this is a unique index...*/ )
+        if ( !(failure instanceof IndexEntryConflictException) )
         {
             log.error( format( "Failed to populate index: [%s]", population.indexUserDescription ), failure );
         }
@@ -316,11 +314,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try
             {
-                if ( population.markCompleted() )
-                {
-                    population.flip();
-                    removeFromOngoingPopulations( population );
-                }
+                population.flip();
             }
             catch ( Throwable t )
             {
@@ -355,18 +349,13 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     void cancelIndexPopulation( IndexPopulation indexPopulation )
     {
-        if ( indexPopulation.markCompleted() )
+        try
         {
-            try
-            {
-                resetIndexCountsForPopulation( indexPopulation );
-                indexPopulation.populator.close( false );
-                removeFromOngoingPopulations( indexPopulation );
-            }
-            catch ( IOException e )
-            {
-                fail( indexPopulation, e );
-            }
+            indexPopulation.cancel();
+        }
+        catch ( IOException e )
+        {
+            fail( indexPopulation, e );
         }
     }
 
@@ -515,7 +504,8 @@ public class MultipleIndexPopulator implements IndexPopulator
         private final IndexCountsRemover indexCountsRemover;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
         private final String indexUserDescription;
-        private final AtomicBoolean completedPopulation = new AtomicBoolean();
+        private boolean populationOngoing = true;
+        private final ReentrantLock populatorLock = new ReentrantLock();
 
         List<IndexEntryUpdate<?>> batchedUpdates;
 
@@ -542,9 +532,39 @@ public class MultipleIndexPopulator implements IndexPopulator
             flipper.flipTo( new FailedIndexProxy( indexMeta, indexUserDescription, populator, failure, indexCountsRemover, logProvider ) );
         }
 
-        boolean markCompleted()
+        void create() throws IOException
         {
-            return completedPopulation.compareAndSet( false, true );
+            populatorLock.lock();
+            try
+            {
+                if ( populationOngoing )
+                {
+                    populator.create();
+                }
+            }
+            finally
+            {
+                populatorLock.unlock();
+            }
+        }
+
+        void cancel() throws IOException
+        {
+            populatorLock.lock();
+            try
+            {
+                if ( populationOngoing )
+                {
+                    populator.close( false );
+                    resetIndexCountsForPopulation( this );
+                    removeFromOngoingPopulations( this );
+                    populationOngoing = false;
+                }
+            }
+            finally
+            {
+                populatorLock.unlock();
+            }
         }
 
         private void onUpdate( IndexEntryUpdate<?> update )
@@ -556,24 +576,42 @@ public class MultipleIndexPopulator implements IndexPopulator
             }
         }
 
-        private void flip() throws FlipFailedKernelException
+        void flip() throws FlipFailedKernelException
         {
-            flipper.flip( () ->
+            populatorLock.lock();
+            try
             {
-                populator.add( takeCurrentBatch() );
-                populateFromQueueIfAvailable( Long.MAX_VALUE );
-                IndexSample sample = populator.sampleResult();
-                storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
-                        sample.indexSize() );
-                if ( populations.contains( IndexPopulation.this ) )
+                if ( populationOngoing )
                 {
-                    populator.close( true );
+                    try
+                    {
+                        flipper.flip( () ->
+                        {
+                            populator.add( takeCurrentBatch() );
+                            populateFromQueueIfAvailable( Long.MAX_VALUE );
+                            IndexSample sample = populator.sampleResult();
+                            storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
+                            if ( populations.contains( IndexPopulation.this ) )
+                            {
+                                populator.close( true );
+                            }
+                            // else it has failed when applying the last updates from queue. This is done because a multi-populator
+                            // may have multiple populators running and they should not affect each other
+                            return null;
+                        }, failedIndexProxyFactory );
+                        log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
+                        removeFromOngoingPopulations( this );
+                    }
+                    finally
+                    {
+                        populationOngoing = false;
+                    }
                 }
-                // else it has failed when applying the last updates from queue. This is done because a multi-populator
-                // may have multiple populators running and they should not affect each other
-                return null;
-            }, failedIndexProxyFactory );
-            log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
+            }
+            finally
+            {
+                populatorLock.unlock();
+            }
         }
 
         @Override

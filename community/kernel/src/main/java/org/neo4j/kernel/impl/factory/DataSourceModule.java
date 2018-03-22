@@ -225,7 +225,7 @@ public class DataSourceModule
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, editionModule, this, deps,
                 editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }

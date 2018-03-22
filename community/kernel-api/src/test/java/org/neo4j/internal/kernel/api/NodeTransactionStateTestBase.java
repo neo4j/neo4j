@@ -46,7 +46,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = session.beginTransaction() )
         {
             nodeId = tx.dataWrite().nodeCreate();
-            try ( NodeCursor node = cursors.allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -75,7 +75,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             labelId = tx.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeAddLabel( nodeId, labelId );
 
-            try ( NodeCursor node = cursors.allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -128,7 +128,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeAddLabel( nodeId, toAdd );
             tx.dataWrite().nodeRemoveLabel( nodeId, toDelete );
 
-            try ( NodeCursor node = cursors.allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -160,7 +160,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = session.beginTransaction() )
         {
             assertTrue( tx.dataWrite().nodeDelete( nodeId ) );
-            try ( NodeCursor node = cursors.allocateNodeCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertFalse( node.next() );
@@ -202,8 +202,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop1, stringValue( "hello" ) ), NO_VALUE );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, prop2, stringValue( "world" ) ), NO_VALUE );
 
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -243,8 +243,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             int propToken = tx.token().propertyKeyGetOrCreateForName( propKey );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "hello" ) ), NO_VALUE );
 
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -291,8 +291,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             propToken2 = tx.token().propertyKeyGetOrCreateForName( propKey2 );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken2, stringValue( "world" ) ), NO_VALUE );
 
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -344,8 +344,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ),
                     stringValue( "hello" ) );
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -389,8 +389,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         try ( Transaction tx = session.beginTransaction() )
         {
             assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -430,8 +430,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         {
             assertEquals( tx.dataWrite().nodeRemoveProperty( nodeId, propToken ), stringValue( "hello" ) );
             assertEquals( tx.dataWrite().nodeSetProperty( nodeId, propToken, stringValue( "world" ) ), NO_VALUE );
-            try ( NodeCursor node = cursors.allocateNodeCursor();
-                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            try ( NodeCursor node = tx.cursors().allocateNodeCursor();
+                  PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
                 assertTrue( "should access node", node.next() );
@@ -522,7 +522,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
@@ -540,7 +540,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
@@ -558,7 +558,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode(  );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             int label = tx.tokenWrite().labelGetOrCreateForName( "label" );
@@ -579,7 +579,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node2 = createNode();
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node1.node, node1.labels[0] );
@@ -599,7 +599,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1", "label2" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
@@ -617,7 +617,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1", "label2" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[1] );
@@ -636,7 +636,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1", "label2" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[0] );
@@ -655,7 +655,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1");
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             int label1 = tx.tokenWrite().labelGetOrCreateForName( "label1" );
@@ -676,7 +676,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
@@ -696,7 +696,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1", "label2" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeDelete( node.node );
@@ -714,7 +714,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode( "label1", "label2" );
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node.node, node.labels[1] );
@@ -732,7 +732,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode("label1");
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
@@ -752,7 +752,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node = createNode();
 
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+              NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
         {
             // when
             int label1 = tx.tokenWrite().labelGetOrCreateForName( "labe1" );
@@ -772,8 +772,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode();
 
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
         {
             // when
             tx.dataWrite().nodeAddLabel( node2.node, node1.labels[0] );
@@ -793,8 +792,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         createNode();
         createNode();
 
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
         {
             // when
             tx.dataWrite().nodeCreate();
@@ -814,8 +812,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode( "label" );
 
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
         {
             // when
             tx.dataWrite().nodeRemoveLabel( node2.node, node2.labels[0] );
@@ -835,8 +832,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         Node node1 = createNode( "label" );
         Node node2 = createNode( "label" );
 
-        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
-              NodeLabelIndexCursor cursor = cursors.allocateNodeLabelIndexCursor() )
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
         {
             // when
             tx.dataWrite().nodeDelete( node2.node );

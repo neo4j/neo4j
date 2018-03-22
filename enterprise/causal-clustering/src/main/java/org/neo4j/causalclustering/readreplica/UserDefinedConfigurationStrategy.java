@@ -30,10 +30,10 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.DiscoveryServerInfo;
 import org.neo4j.causalclustering.discovery.Topology;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.filters.Filter;
-import org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterConfigParser;
-import org.neo4j.causalclustering.load_balancing.plugins.server_policies.InvalidFilterSpecification;
-import org.neo4j.causalclustering.load_balancing.plugins.server_policies.ServerInfo;
+import org.neo4j.causalclustering.routing.load_balancing.filters.Filter;
+import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.FilterConfigParser;
+import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.InvalidFilterSpecification;
+import org.neo4j.causalclustering.routing.load_balancing.plugins.server_policies.ServerInfo;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )

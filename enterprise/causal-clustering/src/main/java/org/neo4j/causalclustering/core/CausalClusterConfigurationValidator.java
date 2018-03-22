@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;

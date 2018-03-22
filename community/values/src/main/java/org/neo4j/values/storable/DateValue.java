@@ -52,6 +52,9 @@ import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
 {
+    public static final DateValue MIN_VALUE = new DateValue( LocalDate.MIN );
+    public static final DateValue MAX_VALUE = new DateValue( LocalDate.MAX );
+
     public static DateValue date( LocalDate value )
     {
         return new DateValue( requireNonNull( value, "LocalDate" ) );
@@ -148,6 +151,10 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
         else if ( unit == ChronoUnit.YEARS )
         {
             return value.with( TemporalAdjusters.firstDayOfYear() );
+        }
+        else if ( unit == IsoFields.WEEK_BASED_YEARS )
+        {
+            return value.with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 ).with( ChronoField.DAY_OF_WEEK, 1 );
         }
         else if ( unit == IsoFields.QUARTER_YEARS )
         {

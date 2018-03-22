@@ -146,4 +146,14 @@ public interface PageCache extends AutoCloseable
      * tracer, and reporting the events collected within it.
      */
     void reportEvents();
+
+    /**
+     * Check if the backing {@link FileSystemAbstraction file system} supports regular file operations or not.
+     * <p>
+     * E.g. the file system for block device will not work with generic open and read/write calls and all operations
+     * needs to be done through the page cache.
+     *
+     * @return {@code true} if the backing file system supports regular file operations.
+     */
+    boolean fileSystemSupportsFileOperations();
 }

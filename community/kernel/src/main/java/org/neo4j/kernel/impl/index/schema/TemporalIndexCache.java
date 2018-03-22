@@ -151,7 +151,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( date == null )
         {
             date = factory.newDate();
-            parts.add( date );
+            addPartToList( date );
         }
         return date;
     }
@@ -161,7 +161,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( localDateTime == null )
         {
             localDateTime = factory.newLocalDateTime();
-            parts.add( localDateTime );
+            addPartToList( localDateTime );
         }
         return localDateTime;
     }
@@ -171,7 +171,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( zonedDateTime == null )
         {
             zonedDateTime = factory.newZonedDateTime();
-            parts.add( zonedDateTime );
+            addPartToList( zonedDateTime );
         }
         return zonedDateTime;
     }
@@ -181,7 +181,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( localTime == null )
         {
             localTime = factory.newLocalTime();
-            parts.add( localTime );
+            addPartToList( localTime );
         }
         return localTime;
     }
@@ -191,7 +191,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( zonedTime == null )
         {
             zonedTime = factory.newZonedTime();
-            parts.add( zonedTime );
+            addPartToList( zonedTime );
         }
         return zonedTime;
     }
@@ -201,9 +201,34 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         if ( duration == null )
         {
             duration = factory.newDuration();
-            parts.add( duration );
+            addPartToList( duration );
         }
         return duration;
+    }
+
+    private void addPartToList( T t )
+    {
+        if ( t != null )
+        {
+            parts.add( t );
+        }
+    }
+
+    void loadAll()
+    {
+        try
+        {
+            date();
+            zonedDateTime();
+            localDateTime();
+            zonedTime();
+            localTime();
+            duration();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override

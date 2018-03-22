@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
  * Super class of diff sets where use of {@link PrimitiveLongIterator} can be parameterized
  * to a specific subclass instead.
  */
-public interface SuperReadableDiffSets<T,LONGITERATOR_OUT extends PrimitiveLongIterator, LONGITERATOR_IN extends PrimitiveLongIterator>
+public interface SuperReadableDiffSets<T>
 {
     boolean isAdded( T elem );
 
@@ -50,13 +50,13 @@ public interface SuperReadableDiffSets<T,LONGITERATOR_OUT extends PrimitiveLongI
 
     int delta();
 
-    LONGITERATOR_OUT augment( LONGITERATOR_IN source );
+    PrimitiveLongIterator augment( PrimitiveLongIterator source );
 
-    PrimitiveIntIterator augment( PrimitiveIntIterator source );
+    PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source );
 
-    LONGITERATOR_OUT augmentWithRemovals( LONGITERATOR_IN source );
+    PrimitiveLongResourceIterator augmentWithRemovals( PrimitiveLongResourceIterator source );
 
-    SuperReadableDiffSets<T,LONGITERATOR_OUT, LONGITERATOR_IN> filterAdded( Predicate<T> addedFilter );
+    SuperReadableDiffSets<T> filterAdded( Predicate<T> addedFilter );
 
     void accept( DiffSetsVisitor<T> visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
 }

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
-import org.neo4j.management.CausalClustering;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
@@ -198,11 +196,6 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return storeDir;
     }
 
-    public Config getMemberConfig()
-    {
-        return memberConfig;
-    }
-
     public RaftLogPruner raftLogPruner()
     {
         return database.getDependencyResolver().resolveDependency( RaftLogPruner.class );
@@ -260,6 +253,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    @Override
     public Config config()
     {
         return memberConfig;
@@ -289,7 +283,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
     public void stopCatchupServer()
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.stopCatchupServer();
     }
 
     int discoveryPort()

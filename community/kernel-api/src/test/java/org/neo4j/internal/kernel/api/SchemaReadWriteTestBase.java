@@ -63,7 +63,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             {
                 schemaWrite.constraintDrop( constraints.next() );
             }
-            Iterator<CapableIndexReference> indexes = schemaRead.indexesGetAll();
+            Iterator<IndexReference> indexes = schemaRead.indexesGetAll();
             while ( indexes.hasNext() )
             {
                 schemaWrite.indexDrop( indexes.next() );
@@ -81,7 +81,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldCreateIndex() throws Exception
     {
-        CapableIndexReference index;
+        IndexReference index;
         try ( Transaction transaction = session.beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -98,7 +98,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldDropIndex() throws Exception
     {
-        CapableIndexReference index;
+        IndexReference index;
         try ( Transaction transaction = session.beginTransaction() )
         {
             index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
@@ -161,7 +161,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldNotSeeDroppedIndexFromTransaction() throws Exception
     {
-        CapableIndexReference index;
+        IndexReference index;
         try ( Transaction transaction = session.beginTransaction() )
         {
             index =

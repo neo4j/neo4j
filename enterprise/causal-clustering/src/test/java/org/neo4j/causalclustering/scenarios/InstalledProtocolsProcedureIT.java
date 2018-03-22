@@ -48,7 +48,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.COMPRESSION_SNAPPY;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Client.OUTBOUND;
 import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Server.INBOUND;
@@ -63,6 +63,7 @@ public class InstalledProtocolsProcedureIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
+            .withSharedCoreParam( CausalClusteringSettings.compression_implementations, "snappy" )
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 );
     private Cluster cluster;
@@ -79,7 +80,7 @@ public class InstalledProtocolsProcedureIT
     public void shouldSeeOutboundInstalledProtocolsOnLeader() throws Throwable
     {
         String modifiers = new StringJoiner( ",", "[", "]" )
-                .add( COMPRESSION_SNAPPY.friendlyName() )
+                .add( COMPRESSION_SNAPPY.implementation() )
                 .toString();
 
         ProtocolInfo[] expectedProtocolInfos = cluster.coreMembers()

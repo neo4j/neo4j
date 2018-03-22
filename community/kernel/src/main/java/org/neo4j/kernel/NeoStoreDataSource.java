@@ -690,7 +690,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
-                explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics ) );
+                explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
+                databaseSchemaState ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 

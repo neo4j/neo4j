@@ -332,7 +332,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws IOException
         {
             error = new Error( Status.Request.Invalid,
                     "Time is not yet supported as a return type in Bolt" );

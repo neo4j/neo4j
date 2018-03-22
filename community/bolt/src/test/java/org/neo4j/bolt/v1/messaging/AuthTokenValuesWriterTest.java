@@ -80,7 +80,7 @@ public class AuthTokenValuesWriterTest
     public void shouldFailToWritePoint()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
-        PointValue value = pointValue( CoordinateReferenceSystem.WGS84, new double[42] );
+        PointValue value = pointValue( CoordinateReferenceSystem.WGS84, new double[2] );
 
         try
         {

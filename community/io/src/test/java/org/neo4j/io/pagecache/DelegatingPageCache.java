@@ -95,4 +95,10 @@ public class DelegatingPageCache implements PageCache
     {
         delegate.flushAndForce();
     }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        return delegate.fileSystemSupportsFileOperations();
+    }
 }

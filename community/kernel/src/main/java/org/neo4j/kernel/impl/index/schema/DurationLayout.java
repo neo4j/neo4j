@@ -21,24 +21,15 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 /**
  * {@link Layout} for durations.
  */
-class DurationLayout extends BaseLayout<DurationSchemaKey>
+class DurationLayout extends SchemaLayout<DurationSchemaKey>
 {
-    public static Layout<DurationSchemaKey,NativeSchemaValue> of( IndexDescriptor descriptor )
+    DurationLayout()
     {
-        return descriptor.type() == IndexDescriptor.Type.UNIQUE ? DurationLayout.UNIQUE : DurationLayout.NON_UNIQUE;
-    }
-
-    private static DurationLayout UNIQUE = new DurationLayout( "UTdu", 0, 1 );
-    private static DurationLayout NON_UNIQUE = new DurationLayout( "NTdu", 0, 1 );
-
-    private DurationLayout( String layoutName, int majorVersion, int minorVersion )
-    {
-        super( layoutName, majorVersion, minorVersion );
+        super( "Tdu", 0, 1 );
     }
 
     @Override

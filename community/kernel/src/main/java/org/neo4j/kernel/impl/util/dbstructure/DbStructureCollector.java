@@ -30,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntLongMap;
 import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -146,7 +145,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexSelectivity( int labelId, int... propertyKeyIds )
             {
-                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+                SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.uniqueValuesPercentage;
@@ -155,7 +154,7 @@ public class DbStructureCollector implements DbStructureVisitor
             @Override
             public double indexPropertyExistsSelectivity( int labelId, int... propertyKeyIds )
             {
-                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+                SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
                 IndexStatistics result1 = regularIndices.getIndex( descriptor );
                 IndexStatistics result2 = result1 == null ? uniqueIndices.getIndex( descriptor ) : result1;
                 return result2 == null ? Double.NaN : result2.size;
@@ -367,7 +366,7 @@ public class DbStructureCollector implements DbStructureVisitor
             indexMap.put( descriptor, new IndexStatistics( uniqueValuesPercentage, size ) );
         }
 
-        public IndexStatistics getIndex( LabelSchemaDescriptor descriptor )
+        public IndexStatistics getIndex( SchemaDescriptor descriptor )
         {
             return indexMap.get( descriptor );
         }

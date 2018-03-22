@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -167,7 +168,7 @@ public class KernelTransactionsTest
         assertThat( postDispose, not( equalTo( first ) ) );
         assertThat( postDispose, not( equalTo( second ) ) );
 
-        assertTrue( leftOpen.getReasonIfTerminated() != null );
+        assertNotNull( leftOpen.getReasonIfTerminated() );
     }
 
     @Test
@@ -590,9 +591,11 @@ public class KernelTransactionsTest
         return new KernelTransactions( statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(),
+                new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                new CanWrite(),
                 DefaultCursors::new, AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, null );
+                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                mock( ConstraintSemantics.class ), mock( SchemaState.class ) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -661,7 +664,7 @@ public class KernelTransactionsTest
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
-                    ON_HEAP, new StandardConstraintSemantics() );
+                    ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ) );
         }
 
         @Override

@@ -24,15 +24,19 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
@@ -57,6 +61,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -258,6 +263,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public Set<ProcedureSignature> proceduresGetAll(  ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
     public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
             throws ProcedureException
     {
@@ -366,6 +378,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
         throw new UnsupportedOperationException();
@@ -385,6 +403,18 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
     {
         throw new UnsupportedOperationException();
     }
@@ -566,38 +596,50 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetForLabel( int labelId )
+    public Iterator<IndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public Iterator<CapableIndexReference> indexesGetAll()
+    public Iterator<IndexReference> indexesGetAll()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public InternalIndexState indexGetState( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( CapableIndexReference index )
+    public PopulationProgress indexGetPopulationProgress( IndexReference index )
             throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public long indexGetCommittedId( CapableIndexReference index ) throws SchemaKernelException
+    public long indexGetCommittedId( IndexReference index ) throws SchemaKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public String indexGetFailure( CapableIndexReference index ) throws IndexNotFoundKernelException
+    public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -633,8 +675,26 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( CapableIndexReference index )
+    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
     {
         return null;
+    }
+
+    @Override
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void schemaStateFlush()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

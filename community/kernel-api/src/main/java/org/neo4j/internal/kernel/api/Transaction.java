@@ -123,5 +123,8 @@ public interface Transaction extends AutoCloseable
      */
     CursorFactory cursors();
 
+    /**
+     * @return Returns procedure operations
+     */
     Procedures procedures();
 }

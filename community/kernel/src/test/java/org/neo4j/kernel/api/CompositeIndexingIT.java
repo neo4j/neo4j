@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -87,7 +88,8 @@ public class CompositeIndexingIT
             {
                 if ( index.type() == UNIQUE )
                 {
-                    statement.schemaWriteOperations().uniquePropertyConstraintCreate( index.schema() );
+                    statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+                            (LabelSchemaDescriptor) index.schema() );
                 }
                 else
                 {
@@ -273,9 +275,10 @@ public class CompositeIndexingIT
             DataWriteOperations writeOperations = statement.dataWriteOperations();
             long irrelevantNodeID = writeOperations.nodeCreate();
             writeOperations.nodeAddLabel( irrelevantNodeID, LABEL_ID );
-            for ( int i = 0; i < index.schema().getPropertyIds().length - 1; i++ )
+            int[] propertyIds = index.schema().getPropertyIds();
+            for ( int i = 0; i < propertyIds.length - 1; i++ )
             {
-                int propID = index.schema().getPropertyIds()[i];
+                int propID = propertyIds[i];
                 writeOperations.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
             }
             PrimitiveLongIterator resultIterator = seek( statement );
@@ -312,10 +315,11 @@ public class CompositeIndexingIT
 
     private IndexQuery[] exactQuery()
     {
-        IndexQuery[] query = new IndexQuery[index.schema().getPropertyIds().length];
+        int[] propertyIds = index.schema().getPropertyIds();
+        IndexQuery[] query = new IndexQuery[propertyIds.length];
         for ( int i = 0; i < query.length; i++ )
         {
-            int propID = index.schema().getPropertyIds()[i];
+            int propID = propertyIds[i];
             query[i] = IndexQuery.exact( propID, Values.of( propID ) );
         }
         return query;

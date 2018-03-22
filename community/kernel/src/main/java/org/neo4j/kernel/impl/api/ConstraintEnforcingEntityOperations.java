@@ -247,7 +247,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             SchemaIndexDescriptor index = constraint.ownedIndexDescriptor();
             assertIndexOnline( state, index );
 
-            int labelId = index.schema().getLabelId();
+            int labelId = index.schema().keyId();
             state.locks().optimistic().acquireExclusive(
                     state.lockTracer(),
                     INDEX_ENTRY,
@@ -375,7 +375,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         int labelId = assertIndexHasOneEntityTokenAndFetchIt( index.schema() );
         assertIndexOnline( state, index );
         assertPredicatesMatchSchema( index.schema(), predicates );
-        // This is fine because of the assertion above
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
@@ -604,7 +603,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {

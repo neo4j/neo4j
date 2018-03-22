@@ -31,12 +31,20 @@ import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public class StubRead implements Read
 {
     @Override
     public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder,
             IndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long nodeUniqueIndexSeek( IndexReference index,
+            IndexQuery.ExactPredicate... predicates ) throws KernelException
     {
         throw new UnsupportedOperationException();
     }
@@ -144,13 +152,13 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipLabelScan( int label, RelationshipScanCursor cursor )
+    public void relationshipTypeScan( int type, RelationshipScanCursor cursor )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Scan<RelationshipScanCursor> relationshipLabelScan( int label )
+    public Scan<RelationshipScanCursor> relationshipTypeScan( int type )
     {
         throw new UnsupportedOperationException();
     }

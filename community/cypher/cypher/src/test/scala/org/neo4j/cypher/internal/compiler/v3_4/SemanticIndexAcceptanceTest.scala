@@ -19,73 +19,155 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
+import java.time.{ZoneId, ZoneOffset}
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.values.storable._
 import org.scalacheck.Gen
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.prop.PropertyChecks
+
+import scala.collection.JavaConversions._
 
 class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyChecks {
 
-  //the actual test
-  List("<", "<=", "=", ">", ">=").foreach(testOperator)
+  private val allCRS: Map[Int, Array[CoordinateReferenceSystem]] = CoordinateReferenceSystem.all().toArray.groupBy(_.getDimension)
+  private val allCRSDimensions = allCRS.keys.toArray
+  private val oneDay = DurationValue.duration(0, 1, 0, 0)
+  private val oneSecond = DurationValue.duration(0, 0, 1, 0)
+  private val timeZones:Seq[ZoneId] = ZoneId.getAvailableZoneIds.toSeq.map(ZoneId.of)
+  private val NANOS_PER_SECOND = 1000000000L
+  private val MAX_NANOS_PER_DAY = 86399999999999L
+
+  // ----------------
+  // the actual test
+  // ----------------
+
+  for {
+    valueGen <- List(
+      ValueSetup[LongValue]("longs", longGen, x => x.minus(1L), x => x.plus(1L)),
+      ValueSetup[DoubleValue]("doubles", doubleGen, x => x.minus(0.1), x => x.plus(0.1)),
+      ValueSetup[TextValue]("strings", textGen, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar)),
+//      ValueSetup[PointValue]("points", pointGen, modifyPoint(_ - 0.1), modifyPoint(_ + 0.1)), // TODO: here is a bug
+      ValueSetup[DateValue]("dates", dateGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[DateTimeValue]("dateTimes", dateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[LocalDateTimeValue]("localDateTimes", localDateTimeGen, x => x.sub(oneDay), x => x.add(oneDay)),
+      ValueSetup[TimeValue]("times", timeGen, x => x.sub(oneSecond), x => x.add(oneSecond)),
+      ValueSetup[LocalTimeValue]("localTimes", localTimeGen, x => x.sub(oneSecond), x => x.add(oneSecond))
+    )
+    bound <- List("<", "<=", "=", ">", ">=")
+  } {
+    testOperator(bound, valueGen)
+  }
 
   override protected def initTest(): Unit = {
     super.initTest()
     for(_ <- 1 to 1000) createLabeledNode("Label")
   }
 
-  private def changeLastChar(f: Char => Char)(in: String) =
-    if (in.isEmpty) ""
-    else
-      in.substring(0, in.length - 1) + (in.last - 1).toChar
+  /**
+    * Value distribution to test. Allow value generation. Can also provide a slightly smaller
+    * or larger version of a value, which allows testing around a property bound.
+    */
+  case class ValueSetup[T <: Value](name: String, generator:Gen[T], lessThan: T => T, moreThan: T => T)
 
-  private def testOperator(operator: String): Unit = {
+  // GENERATORS
 
-    val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
-    val queryUsingIndex = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
+  def longGen: Gen[LongValue] =
+    for (x <- Gen.chooseNum(Long.MinValue+1, Long.MaxValue-1)) yield Values.longValue(x)
 
-    def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Any): Unit = {
-      val indexedResult = execute(queryUsingIndex, "prop" -> value)
-      execute(queryNotUsingIndex, "prop" -> value).toList should equal(indexedResult.toList)
+  def doubleGen: Gen[DoubleValue] =
+    for (x <- arbitrary[Double]) yield Values.doubleValue(x)
+
+  def textGen: Gen[TextValue] =
+    for (x <- Gen.alphaStr) yield Values.stringValue(x)
+
+  def pointGen: Gen[PointValue] =
+    for {
+      dimension <- Gen.oneOf(allCRSDimensions)
+      coordinates <- Gen.listOfN(dimension, arbitrary[Double])
+      crs <- Gen.oneOf(allCRS(dimension))
+    } yield Values.pointValue(crs, coordinates:_*)
+
+  def timeGen: Gen[TimeValue] =
+    for { // stay one second off min and max time, to allow getting a bigger and smaller value
+      nanosOfDay <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
+      timeZone <- zoneOffsetGen
+    } yield TimeValue.time(nanosOfDay, timeZone)
+
+  def localTimeGen: Gen[LocalTimeValue] =
+    for {
+      nanosOfDay <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
+    } yield LocalTimeValue.localTime(nanosOfDay)
+
+  def dateGen: Gen[DateValue] =
+    for {
+      epochDays <- arbitrary[Int] // we only generate epochDays as an int, to avoid overflowing
+                                  // the limits of the underlying java types
+    } yield DateValue.epochDate(epochDays)
+
+  def dateTimeGen: Gen[DateTimeValue] =
+    for {
+      epochSecondsUTC <- arbitrary[Int]
+      nanosOfSecond <- Gen.chooseNum(0, NANOS_PER_SECOND-1)
+      timeZone <- Gen.oneOf(zoneIdGen, zoneOffsetGen)
+    } yield DateTimeValue.datetime(epochSecondsUTC, nanosOfSecond, timeZone)
+
+  def localDateTimeGen: Gen[LocalDateTimeValue] =
+    for {
+      epochSeconds <- arbitrary[Int]
+      nanosOfSecond <- Gen.chooseNum(0, NANOS_PER_SECOND-1)
+    } yield LocalDateTimeValue.localDateTime(epochSeconds, nanosOfSecond)
+
+  def zoneIdGen: Gen[ZoneId] = Gen.oneOf(timeZones)
+
+  def zoneOffsetGen: Gen[ZoneOffset] =
+    Gen.chooseNum(-18*60, 18*60).map(minute => ZoneOffset.ofTotalSeconds(minute * 60))
+
+  /**
+    * Test a single value setup and operator
+    */
+  private def testOperator[T <: Value](operator: String, setup: ValueSetup[T]): Unit = {
+
+    val queryNotUsingIndex = s"MATCH (n:Label) WHERE n.nonIndexed $operator {prop} RETURN n, n.nonIndexed AS prop ORDER BY id(n)"
+    val queryUsingIndex = s"MATCH (n:Label) WHERE n.indexed $operator {prop} RETURN n, n.indexed AS prop ORDER BY id(n)"
+
+    def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Value): Unit = {
+      val valueObject = value.asObject()
+      val indexedResult = execute(queryUsingIndex, "prop" -> valueObject)
+      execute(queryNotUsingIndex, "prop" -> valueObject).toList should equal(indexedResult.toList)
       indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
     }
 
-    def tester[T](propertyValue: T, prev: T => T, next: T => T): Unit = {
-      graph.inTx {
-        createLabeledNode(Map("nonIndexed" -> propertyValue, "indexed" -> propertyValue), "Label")
+    test(s"testing ${setup.name} with n.prop $operator $$argument") {
+      graph.createIndex("Label", "indexed")
+      forAll(setup.generator) { propertyValue: T =>
+        graph.inTx {
+          createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
 
-        withClue("with TxState") {
+          withClue("with TxState") {
+            testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
+            testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
+            testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
+          }
+        }
+        withClue("without TxState") {
           testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-          testValue(queryNotUsingIndex, queryUsingIndex, prev(propertyValue))
-          testValue(queryNotUsingIndex, queryUsingIndex, next(propertyValue))
+          testValue(queryNotUsingIndex, queryUsingIndex, setup.lessThan(propertyValue))
+          testValue(queryNotUsingIndex, queryUsingIndex, setup.moreThan(propertyValue))
         }
       }
-      withClue("without TxState") {
-        testValue(queryNotUsingIndex, queryUsingIndex, propertyValue)
-        testValue(queryNotUsingIndex, queryUsingIndex, prev(propertyValue))
-        testValue(queryNotUsingIndex, queryUsingIndex, next(propertyValue))
-      }
     }
-
-    test(s"testing long with $operator") {
-      graph.createIndex("Label", "indexed")
-      forAll { propertyValue: Long =>
-        tester(propertyValue, (l: Long) => l - 1L, (l: Long) => l + 1)
-      }
-    }
-
-    test(s"testing double with $operator") {
-      graph.createIndex("Label", "indexed")
-      forAll { propertyValue: Double =>
-        tester(propertyValue, (d: Double) => d - 0.5, (d: Double) => d + 0.5)
-      }
-    }
-
-    test(s"testing string with $operator") {
-      graph.createIndex("Label", "indexed")
-      forAll (Gen.alphaStr){ propertyValue: String =>
-        tester(propertyValue, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar))
-      }
-    }
-
   }
+
+  private def changeLastChar(f: Char => Char)(in: TextValue): TextValue = {
+    val str = in.stringValue()
+    if (str.isEmpty) in
+    else
+      Values.stringValue(str.substring(0, in.length - 1) + (str.last - 1).toChar)
+  }
+
+  private def modifyPoint(f: Double => Double)(in: PointValue): PointValue =
+    Values.pointValue(in.getCoordinateReferenceSystem, in.coordinate().map(f):_*)
+
 }

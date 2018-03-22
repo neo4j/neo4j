@@ -71,7 +71,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
@@ -230,7 +229,7 @@ public class LockingStatementOperationsTest
         lockingOps.indexDrop( state, index );
 
         // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, index.schema().getLabelId() );
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, index.schema().keyId() );
         order.verify( schemaWriteOps ).indexDrop( state, index );
     }
 
@@ -473,7 +472,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeDetachDelete( state, nodeId );
 
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( entityWriteOps ).nodeDetachDelete( state, nodeId );
     }
 
@@ -488,8 +487,8 @@ public class LockingStatementOperationsTest
 
         order.verify( locks ).acquireExclusive(
                 LockTracer.NONE, ResourceTypes.NODE, relationship.startNodeId, relationship.endNodeId );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, relationship.startNodeId );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, relationship.endNodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, relationship.startNodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, relationship.endNodeId );
         order.verify( entityWriteOps ).nodeDetachDelete( state, nodeId );
     }
 

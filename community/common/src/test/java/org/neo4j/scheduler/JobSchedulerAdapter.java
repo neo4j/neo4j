@@ -19,7 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -61,12 +60,6 @@ public class JobSchedulerAdapter implements JobScheduler
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
-    {
-        return null;
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         return null;
     }

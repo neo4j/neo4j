@@ -489,6 +489,71 @@ public class CsvInputTest
     }
 
     @Test
+    public void shouldNotParsePointPropertyValuesWithDuplicateKeys() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data( ":ID,name,point:Point\n" + "1,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2, latitude : 4.2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input =
+                new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(), IdType.ACTUAL, config( COMMAS ),
+                        silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            readNext( nodes );
+            fail( "Should have failed when key assigned multiple times, but didn't." );
+        }
+        catch ( InputException ignore )
+        {
+            // this is fine
+        }
+    }
+
+    @Test
+    public void shouldParsePointPropertyValuesWithCRSInHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,point:Point{crs:WGS-84-3D}\n" +
+                        "0,Johan,\" { height :0.01 ,longitude:5, latitude : -4.2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Johan", "point",
+                    Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 5, -4.2, 0.01)}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldUseHeaderInformationToParsePoint() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,point:Point{crs:WGS-84}\n" +
+                        "0,Johan,\" { x :1 ,y:2 } \"\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(), defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Johan", "point",
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2)}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
     public void shouldParseDatePropertyValues() throws Exception
     {
         // GIVEN
@@ -542,6 +607,34 @@ public class CsvInputTest
     }
 
     @Test
+    public void shouldParseTimePropertyValuesWithTimezoneInHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:Time{timezone:+02:00}\n" +
+                        "0,Mattias,13:37\n" +
+                        "1,Johan,\"16:20:01\"\n" +
+                        "2,Bob,07:30-05:00\n" );
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    TimeValue.time( 13, 37, 0, 0, "+02:00" )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    TimeValue.time( 16, 20, 1, 0, "+02:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    TimeValue.time( 7, 30, 0, 0, "-05:00" )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
     public void shouldParseDateTimePropertyValues() throws Exception
     {
         // GIVEN
@@ -564,6 +657,35 @@ public class CsvInputTest
                     DateTimeValue.datetime( 2018, 2, 27, 13, 37, 0, 0, "+00:00" )}, labels() );
             assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
                     DateTimeValue.datetime( 2018, 3, 1, 16, 20, 1, 0, "+00:00" )}, labels() );
+            assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
+                    DateTimeValue.datetime( 1981, 5, 11, 7, 30, 0, 0, "-05:00" )}, labels() );
+            assertFalse( readNext( nodes ) );
+        }
+    }
+
+    @Test
+    public void shouldParseDateTimePropertyValuesWithTimezoneInHeader() throws Exception
+    {
+        // GIVEN
+        DataFactory data = data(
+                ":ID,name,time:DateTime{timezone:Europe/Stockholm}\n" +
+                "0,Mattias,2018-02-27T13:37\n" +
+                "1,Johan,\"2018-03-01T16:20:01\"\n" +
+                "2,Bob,1981-05-11T07:30-05:00\n" );
+
+        Iterable<DataFactory> dataIterable = dataIterable( data );
+        Input input = new CsvInput( dataIterable, defaultFormatNodeFileHeader(), datas(),
+                defaultFormatRelationshipFileHeader(),
+                IdType.ACTUAL, config( COMMAS ), silentBadCollector( 0 ) );
+
+        // WHEN
+        try ( InputIterator nodes = input.nodes().iterator() )
+        {
+            // THEN
+            assertNextNode( nodes, 0L, new Object[]{"name", "Mattias", "time",
+                    DateTimeValue.datetime( 2018, 2, 27, 13, 37, 0, 0, "Europe/Stockholm" )}, labels() );
+            assertNextNode( nodes, 1L, new Object[]{"name", "Johan", "time",
+                    DateTimeValue.datetime( 2018, 3, 1, 16, 20, 1, 0, "Europe/Stockholm" )}, labels() );
             assertNextNode( nodes, 2L, new Object[]{"name", "Bob", "time",
                     DateTimeValue.datetime( 1981, 5, 11, 7, 30, 0, 0, "-05:00" )}, labels() );
             assertFalse( readNext( nodes ) );

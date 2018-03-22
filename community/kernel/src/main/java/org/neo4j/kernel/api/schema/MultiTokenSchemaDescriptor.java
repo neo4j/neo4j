@@ -88,6 +88,13 @@ public class MultiTokenSchemaDescriptor implements org.neo4j.internal.kernel.api
     }
 
     @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        //TODO remove this monstrosity
+        return "MultiToken";
+    }
+
+    @Override
     public int[] getPropertyIds()
     {
         return propertyIds;

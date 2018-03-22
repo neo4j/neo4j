@@ -541,11 +541,13 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         //{
         //    throw new IllegalArgumentException( "Nodes do not belong to same graph database." );
         //}
-        try ( Statement statement = spi.statement() )
+
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            int relationshipTypeId = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type.name() );
-            long relationshipId = statement.dataWriteOperations()
-                    .relationshipCreate( relationshipTypeId, nodeId, otherNode.getId() );
+            int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type.name() );
+            long relationshipId = transaction.dataWrite()
+                    .relationshipCreate( nodeId, relationshipTypeId, otherNode.getId() );
             return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
         }
         catch ( IllegalTokenNameException e )

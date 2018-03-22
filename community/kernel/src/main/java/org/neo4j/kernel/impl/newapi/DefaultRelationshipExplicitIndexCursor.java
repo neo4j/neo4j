@@ -33,11 +33,14 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     private int expectedSize;
     private long relationship;
     private float score;
+    private final DefaultRelationshipScanCursor scanCursor;
 
     private final DefaultCursors pool;
 
-    DefaultRelationshipExplicitIndexCursor( DefaultCursors pool )
+    DefaultRelationshipExplicitIndexCursor( DefaultRelationshipScanCursor scanCursor,
+            DefaultCursors pool )
     {
+        this.scanCursor = scanCursor;
         this.pool = pool;
     }
 
@@ -52,6 +55,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     public boolean acceptEntity( long reference, float score )
     {
         this.relationship = reference;
+        read.singleRelationship( reference, scanCursor );
         this.score = score;
         return true;
     }
@@ -88,31 +92,31 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     @Override
     public void sourceNode( NodeCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        read.singleNode( sourceNodeReference(), cursor );
     }
 
     @Override
     public void targetNode( NodeCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        read.singleNode( targetNodeReference(), cursor );
     }
 
     @Override
-    public int relationshipLabel()
+    public int type()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return scanCursor.type();
     }
 
     @Override
     public long sourceNodeReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return scanCursor.sourceNodeReference();
     }
 
     @Override
     public long targetNodeReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return scanCursor.targetNodeReference();
     }
 
     @Override
@@ -158,6 +162,6 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
 
     public void release()
     {
-        // nothing to do
+        scanCursor.release();
     }
 }

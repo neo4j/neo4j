@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -118,7 +119,7 @@ public class OperationsLockTest
         when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
         allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
-                ExplicitIndexStore.class ), mock( Procedures.class ) );
+                ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
                 store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
                 mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ) );

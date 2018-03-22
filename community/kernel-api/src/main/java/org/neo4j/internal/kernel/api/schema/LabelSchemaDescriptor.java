@@ -22,6 +22,4 @@ package org.neo4j.internal.kernel.api.schema;
 public interface LabelSchemaDescriptor extends SchemaDescriptor, LabelSchemaSupplier
 {
     int getLabelId();
-
-    int getPropertyId();
 }

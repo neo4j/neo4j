@@ -34,7 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -164,7 +164,7 @@ public class QuickImport
             else
             {
                 System.out.println( "Seed " + randomSeed );
-                final JobScheduler jobScheduler = new Neo4jJobScheduler();
+                final JobScheduler jobScheduler = new CentralJobScheduler();
                 consumer = BatchImporterFactory.withHighestPriority().instantiate( dir, fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
                         RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR );

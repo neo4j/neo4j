@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
@@ -35,6 +36,7 @@ import org.neo4j.helpers.collection.Pair;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -42,13 +44,15 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocol;
-import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolIdentifier;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocol;
-import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolIdentifier;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocolCategory.GRATUITOUS_OBFUSCATION;
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.FAILURE;
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.SUCCESS;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZ4;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZO;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.ROT13;
 import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.SNAPPY;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -59,11 +63,19 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class HandshakeServerTest
 {
     private Channel channel = mock( Channel.class );
-    private ProtocolRepository<ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
-    private ProtocolRepository<ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( TestModifierProtocols.values() );
+    private ApplicationSupportedProtocols supportedApplicationProtocol =
+            new ApplicationSupportedProtocols( RAFT, emptyList() );
+    private Collection<ModifierSupportedProtocols> supportedModifierProtocols = asList(
+            new ModifierSupportedProtocols( COMPRESSION, TestModifierProtocols.listVersionsOf( COMPRESSION ) ),
+            new ModifierSupportedProtocols( GRATUITOUS_OBFUSCATION, TestModifierProtocols.listVersionsOf( GRATUITOUS_OBFUSCATION ) )
+    );
+    private ApplicationProtocolRepository applicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedApplicationProtocol );
+    private ModifierProtocolRepository modifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), supportedModifierProtocols );
 
     private HandshakeServer server =
-            new HandshakeServer( channel, applicationProtocolRepository, modifierProtocolRepository, ApplicationProtocolIdentifier.RAFT );
+            new HandshakeServer( applicationProtocolRepository, modifierProtocolRepository, channel );
 
     @Test
     public void shouldDeclineUnallowedApplicationProtocol()
@@ -73,7 +85,7 @@ public class HandshakeServerTest
 
         // when
         server.handle(
-                new ApplicationProtocolRequest( TestApplicationProtocols.CATCHUP_1.identifier(), asSet( TestApplicationProtocols.CATCHUP_1.version() ) ) );
+                new ApplicationProtocolRequest( TestApplicationProtocols.CATCHUP_1.category(), asSet( TestApplicationProtocols.CATCHUP_1.implementation() ) ) );
 
         // then
         verify( channel ).dispose();
@@ -87,7 +99,7 @@ public class HandshakeServerTest
 
         // when
         server.handle(
-                new ApplicationProtocolRequest( TestApplicationProtocols.CATCHUP_1.identifier(), asSet( TestApplicationProtocols.CATCHUP_1.version() ) ) );
+                new ApplicationProtocolRequest( TestApplicationProtocols.CATCHUP_1.category(), asSet( TestApplicationProtocols.CATCHUP_1.implementation() ) ) );
 
         // then
         assertExceptionallyCompletedProtocolStackFuture();
@@ -131,11 +143,11 @@ public class HandshakeServerTest
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), versions ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), versions ) );
 
         // then
         verify( channel ).writeAndFlush(
-                new ApplicationProtocolResponse( SUCCESS, TestApplicationProtocols.RAFT_3.identifier(), TestApplicationProtocols.RAFT_3.version() ) );
+                new ApplicationProtocolResponse( SUCCESS, TestApplicationProtocols.RAFT_3.category(), TestApplicationProtocols.RAFT_3.implementation() ) );
     }
 
     @Test
@@ -146,7 +158,7 @@ public class HandshakeServerTest
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), versions ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), versions ) );
 
         // then
         assertUnfinished();
@@ -186,27 +198,27 @@ public class HandshakeServerTest
     public void shouldSendModifierProtocolResponseForGivenProtocol()
     {
         // given
-        Set<Integer> versions = asSet( 1, 2, 3 );
+        Set<String> versions = asSet( TestModifierProtocols.allVersionsOf( COMPRESSION ) );
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), versions ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), versions ) );
 
         // then
-        ModifierProtocol expected = TestModifierProtocols.latest( ModifierProtocolIdentifier.COMPRESSION );
+        ModifierProtocol expected = TestModifierProtocols.latest( COMPRESSION );
         verify( channel ).writeAndFlush(
-                new ModifierProtocolResponse( SUCCESS,  expected.identifier(), expected.version() ) );
+                new ModifierProtocolResponse( SUCCESS,  expected.category(), expected.implementation() ) );
     }
 
     @Test
     public void shouldNotCloseConnectionForGivenModifierProtocol()
     {
         // given
-        Set<Integer> versions = asSet( 1, 2, 3 );
+        Set<String> versions = asSet( SNAPPY.implementation(), LZO.implementation(), LZ4.implementation() );
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), versions ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), versions ) );
 
         // then
         assertUnfinished();
@@ -216,27 +228,27 @@ public class HandshakeServerTest
     public void shouldSendFailModifierProtocolResponseForUnknownVersion()
     {
         // given
-        Set<Integer> versions = asSet( Integer.MAX_VALUE );
+        Set<String> versions = asSet( "Not a real protocol" );
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        String protocolName = ModifierProtocolIdentifier.COMPRESSION.canonicalName();
+        String protocolName = COMPRESSION.canonicalName();
         server.handle( new ModifierProtocolRequest( protocolName, versions ) );
 
         // then
         verify( channel ).writeAndFlush(
-                new ModifierProtocolResponse( FAILURE, protocolName, 0 ) );
+                new ModifierProtocolResponse( FAILURE, protocolName, "" ) );
     }
 
     @Test
     public void shouldNotCloseConnectionIfUnknownModifierProtocolVersion()
     {
         // given
-        Set<Integer> versions = asSet( Integer.MAX_VALUE );
+        Set<String> versions = asSet( "not a real algorithm" );
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        String protocolName = ModifierProtocolIdentifier.COMPRESSION.canonicalName();
+        String protocolName = COMPRESSION.canonicalName();
         server.handle( new ModifierProtocolRequest( protocolName, versions ) );
 
         // then
@@ -247,7 +259,7 @@ public class HandshakeServerTest
     public void shouldSendFailModifierProtocolResponseForUnknownProtocol()
     {
         // given
-        Set<Integer> versions = asSet( 1, 2, 3 );
+        Set<String> versions = asSet( SNAPPY.implementation(), LZO.implementation(), LZ4.implementation() );
         server.handle( InitialMagicMessage.instance() );
 
         // when
@@ -256,14 +268,14 @@ public class HandshakeServerTest
 
         // then
         verify( channel ).writeAndFlush(
-                new ModifierProtocolResponse( FAILURE, protocolName, 0 ) );
+                new ModifierProtocolResponse( FAILURE, protocolName, "" ) );
     }
 
     @Test
     public void shouldNotCloseConnectionIfUnknownModifierProtocol()
     {
         // given
-        Set<Integer> versions = asSet( 1, 2, 3 );
+        Set<String> versions = asSet( SNAPPY.implementation(), LZO.implementation(), LZ4.implementation() );
         server.handle( InitialMagicMessage.instance() );
 
         // when
@@ -316,7 +328,7 @@ public class HandshakeServerTest
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version, emptyList() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), version, emptyList() ) );
 
         // then
         InOrder inOrder = Mockito.inOrder( channel );
@@ -332,7 +344,7 @@ public class HandshakeServerTest
         server.handle( InitialMagicMessage.instance() );
 
         // when
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version, emptyList() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), version, emptyList() ) );
 
         // then
         assertExceptionallyCompletedProtocolStackFuture();
@@ -344,10 +356,10 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
 
         // when
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version + 1, emptyList() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), version + 1, emptyList() ) );
 
         // then
         InOrder inOrder = Mockito.inOrder( channel );
@@ -361,10 +373,10 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
 
         // when
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version + 1, emptyList() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), version + 1, emptyList() ) );
 
         // then
         assertExceptionallyCompletedProtocolStackFuture();
@@ -374,16 +386,16 @@ public class HandshakeServerTest
     public void shouldSendFailureIfSwitchOverDiffersByNameFromNegotiatedModifierProtocol()
     {
         // given
-        int version = 1;
+        String modifierVersion = ROT13.implementation();
+        int applicationVersion = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( applicationVersion ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( modifierVersion ) ) );
 
         // when
         server.handle( new SwitchOverRequest(
-                ApplicationProtocolIdentifier.RAFT.canonicalName(),
-                version,
-                asList( Pair.of( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), version) ) ) );
+                RAFT.canonicalName(), applicationVersion,
+                asList( Pair.of( GRATUITOUS_OBFUSCATION.canonicalName(), modifierVersion ) ) ) );
 
         // then
         InOrder inOrder = Mockito.inOrder( channel );
@@ -395,16 +407,61 @@ public class HandshakeServerTest
     public void shouldExceptionallyCompleteProtocolStackIfSwitchOverDiffersByNameFromNegotiatedModifiedProtocol()
     {
         // given
-        int version = 1;
+        String modifierVersion = ROT13.implementation();
+        int applicationVersion = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( applicationVersion ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( modifierVersion ) ) );
 
         // when
         server.handle( new SwitchOverRequest(
-                ApplicationProtocolIdentifier.RAFT.canonicalName(),
+                RAFT.canonicalName(),
+                applicationVersion,
+                asList( Pair.of(  GRATUITOUS_OBFUSCATION.canonicalName(), modifierVersion ) ) ) );
+
+        // then
+        assertExceptionallyCompletedProtocolStackFuture();
+    }
+
+    @Test
+    public void shouldSendFailureIfSwitchOverChangesOrderOfModifierProtocols()
+    {
+        // given
+        int version = 1;
+        server.handle( InitialMagicMessage.instance() );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( SNAPPY.implementation() ) ) );
+        server.handle( new ModifierProtocolRequest( GRATUITOUS_OBFUSCATION.canonicalName(), asSet( ROT13.implementation() ) ) );
+
+        // when
+        server.handle( new SwitchOverRequest(
+                RAFT.canonicalName(),
                 version,
-                asList( Pair.of(  ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), version) ) ) );
+                asList( Pair.of( GRATUITOUS_OBFUSCATION.canonicalName(), ROT13.implementation() ),
+                        Pair.of( COMPRESSION.canonicalName(), SNAPPY.implementation() ) ) ) );
+
+        // then
+        InOrder inOrder = Mockito.inOrder( channel );
+        inOrder.verify( channel ).writeAndFlush( new SwitchOverResponse( FAILURE ) );
+        inOrder.verify( channel ).dispose();
+    }
+
+    @Test
+    public void shouldExceptionallyCompleteProtocolStackIfSwitchOverChangesOrderOfModifierProtocols()
+    {
+        // given
+        int version = 1;
+        server.handle( InitialMagicMessage.instance() );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( SNAPPY.implementation() ) ) );
+        server.handle( new ModifierProtocolRequest( GRATUITOUS_OBFUSCATION.canonicalName(), asSet( ROT13.implementation() ) ) );
+
+        // when
+        server.handle( new SwitchOverRequest(
+                RAFT.canonicalName(),
+                version,
+                asList( Pair.of( GRATUITOUS_OBFUSCATION.canonicalName(), ROT13.implementation() ),
+                        Pair.of( COMPRESSION.canonicalName(), SNAPPY.implementation() ) ) ) );
 
         // then
         assertExceptionallyCompletedProtocolStackFuture();
@@ -416,14 +473,14 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( SNAPPY.implementation() ) ) );
 
         // when
         server.handle( new SwitchOverRequest(
-                RAFT_1.identifier(),
+                RAFT_1.category(),
                 version,
-                asList( Pair.of( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), version + 1 ) )
+                asList( Pair.of( COMPRESSION.canonicalName(), LZ4.implementation() ) )
         ) );
 
         // then
@@ -438,14 +495,14 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( SNAPPY.implementation() ) ) );
 
         // when
         server.handle( new SwitchOverRequest(
-                RAFT_1.identifier(),
+                RAFT_1.category(),
                 version,
-                asList( Pair.of( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), version + 1 ) )
+                asList( Pair.of( COMPRESSION.canonicalName(), LZ4.implementation() ) )
         ) );
 
         // then
@@ -458,10 +515,10 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
 
         // when
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version, emptyList() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), version, emptyList() ) );
 
         // then
         verify( channel ).writeAndFlush( InitialMagicMessage.instance() );
@@ -475,16 +532,16 @@ public class HandshakeServerTest
     {
         // given
         server.handle( InitialMagicMessage.instance() );
-        server.handle( new ApplicationProtocolRequest( ApplicationProtocolIdentifier.RAFT.canonicalName(), asSet( RAFT_1.version()) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.COMPRESSION.canonicalName(), asSet( SNAPPY.version() ) ) );
-        server.handle( new ModifierProtocolRequest( ModifierProtocolIdentifier.GRATUITOUS_OBFUSCATION.canonicalName(), asSet( ROT13.version() ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( RAFT_1.implementation()) ) );
+        server.handle( new ModifierProtocolRequest( COMPRESSION.canonicalName(), asSet( SNAPPY.implementation() ) ) );
+        server.handle( new ModifierProtocolRequest( GRATUITOUS_OBFUSCATION.canonicalName(), asSet( ROT13.implementation() ) ) );
 
         // when
-        List<Pair<String,Integer>> modifierRequest = asList(
-                Pair.of( SNAPPY.identifier(), SNAPPY.version() ),
-                Pair.of( ROT13.identifier(), ROT13.version() )
+        List<Pair<String,String>> modifierRequest = asList(
+                Pair.of( SNAPPY.category(), SNAPPY.implementation() ),
+                Pair.of( ROT13.category(), ROT13.implementation() )
         );
-        server.handle( new SwitchOverRequest( RAFT_1.identifier(), RAFT_1.version(), modifierRequest ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), RAFT_1.implementation(), modifierRequest ) );
 
         // then
         verify( channel ).writeAndFlush( InitialMagicMessage.instance() );
@@ -492,6 +549,67 @@ public class HandshakeServerTest
         ProtocolStack protocolStack = server.protocolStackFuture().getNow( null );
         List<ModifierProtocol> modifiers = asList( SNAPPY, ROT13 );
         assertThat( protocolStack, equalTo( new ProtocolStack( RAFT_1, modifiers ) ) );
+    }
+
+    @Test
+    public void shouldCompleteProtocolStackOnSuccessfulSwitchOverWithConfiguredModifierProtocols()
+    {
+        // given
+        Set<String> requestedVersions = asSet( TestModifierProtocols.allVersionsOf( COMPRESSION ) );
+        String expectedNegotiatedVersion = SNAPPY.implementation();
+        List<String> configuredVersions = singletonList( expectedNegotiatedVersion );
+
+        List<ModifierSupportedProtocols> supportedModifierProtocols =
+                asList( new ModifierSupportedProtocols( COMPRESSION, configuredVersions ) );
+
+        ModifierProtocolRepository modifierProtocolRepository =
+                new ModifierProtocolRepository( TestModifierProtocols.values(), supportedModifierProtocols );
+
+        HandshakeServer server = new HandshakeServer( applicationProtocolRepository, modifierProtocolRepository, channel );
+
+        server.handle( InitialMagicMessage.instance() );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( RAFT_1.implementation()) ) );
+        server.handle( new ModifierProtocolRequest(
+                COMPRESSION.canonicalName(),
+                requestedVersions ) );
+
+        // when
+        List<Pair<String,String>> modifierRequest = asList( Pair.of( SNAPPY.category(), SNAPPY.implementation() ) );
+        server.handle( new SwitchOverRequest( RAFT_1.category(), RAFT_1.implementation(), modifierRequest ) );
+
+        // then
+        verify( channel ).writeAndFlush( InitialMagicMessage.instance() );
+        verify( channel ).writeAndFlush( new SwitchOverResponse( SUCCESS ) );
+        ProtocolStack protocolStack = server.protocolStackFuture().getNow( null );
+        List<ModifierProtocol> modifiers = asList( SNAPPY );
+        assertThat( protocolStack, equalTo( new ProtocolStack( RAFT_1, modifiers ) ) );
+    }
+
+    @Test
+    public void shouldSuccessfullySwitchOverWhenServerHasConfiguredRaftVersions()
+    {
+        // given
+        Set<Integer> requestedVersions = asSet( TestApplicationProtocols.allVersionsOf( RAFT ) );
+        Integer expectedNegotiatedVersion = 1;
+        ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository(
+                TestApplicationProtocols.values(), new ApplicationSupportedProtocols( RAFT, singletonList( expectedNegotiatedVersion ) ) );
+
+        HandshakeServer server = new HandshakeServer( applicationProtocolRepository, modifierProtocolRepository, channel );
+
+        server.handle( InitialMagicMessage.instance() );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), requestedVersions ) );
+
+        // when
+        server.handle( new SwitchOverRequest( RAFT_1.category(), expectedNegotiatedVersion, emptyList() ) );
+
+        // then
+        verify( channel ).writeAndFlush( InitialMagicMessage.instance() );
+        verify( channel ).writeAndFlush( new SwitchOverResponse( SUCCESS ) );
+        ProtocolStack protocolStack = server.protocolStackFuture().getNow( null );
+        ProtocolStack expectedProtocolStack = new ProtocolStack(
+                applicationProtocolRepository.select( RAFT.canonicalName(), expectedNegotiatedVersion ).get(),
+                emptyList() );
+        assertThat( protocolStack, equalTo( expectedProtocolStack ) );
     }
 
     private void assertUnfinished()

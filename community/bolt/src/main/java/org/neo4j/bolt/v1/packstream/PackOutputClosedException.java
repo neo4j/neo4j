@@ -23,8 +23,16 @@ import java.io.IOException;
 
 public class PackOutputClosedException extends IOException
 {
-    public PackOutputClosedException( String message )
+    private final String clientAddress;
+
+    public PackOutputClosedException( String message, String clientAddress )
     {
         super( message );
+        this.clientAddress = clientAddress;
+    }
+
+    public String clientAddress()
+    {
+        return clientAddress;
     }
 }

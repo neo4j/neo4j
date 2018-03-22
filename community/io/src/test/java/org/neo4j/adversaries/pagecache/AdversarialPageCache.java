@@ -134,4 +134,10 @@ public class AdversarialPageCache implements PageCache
     {
         delegate.reportEvents();
     }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        return delegate.fileSystemSupportsFileOperations();
+    }
 }

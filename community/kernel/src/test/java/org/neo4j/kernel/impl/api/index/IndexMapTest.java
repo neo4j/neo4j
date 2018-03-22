@@ -61,7 +61,7 @@ public class IndexMapTest
         map.put( 3L, new TestIndexProxy( schema5_8 ) );
         map.put( 4L, new TestIndexProxy( node35_8 ) );
         map.put( 5L, new TestIndexProxy( rel35_8 ) );
-        map.put( 6L, new TestIndexProxy( anynode_8) );
+        map.put( 6L, new TestIndexProxy( anynode_8 ) );
         map.put( 7L, new TestIndexProxy( anyrel_8 ) );
         indexMap = new IndexMap( map );
     }

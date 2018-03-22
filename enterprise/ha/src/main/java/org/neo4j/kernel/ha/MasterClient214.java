@@ -21,8 +21,6 @@ package org.neo4j.kernel.ha;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import java.io.IOException;
-
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.ObjectSerializer;
@@ -151,7 +149,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
     }
 
     @Override
-    protected long getReadTimeout( RequestType<Master> type, long readTimeout )
+    protected long getReadTimeout( RequestType type, long readTimeout )
     {
         if ( HaRequestTypes.Type.ACQUIRE_EXCLUSIVE_LOCK.is( type ) ||
              HaRequestTypes.Type.ACQUIRE_SHARED_LOCK.is( type ) )
@@ -166,7 +164,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
     }
 
     @Override
-    protected boolean shouldCheckStoreId( RequestType<Master> type )
+    protected boolean shouldCheckStoreId( RequestType type )
     {
         return !HaRequestTypes.Type.COPY_STORE.is( type );
     }

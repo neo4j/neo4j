@@ -29,10 +29,9 @@ class NumberLayoutUnique extends NumberLayout
     private static final String IDENTIFIER_NAME = "UNI";
     private static final int MAJOR_VERSION = 0;
     private static final int MINOR_VERSION = 1;
-    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE );
 
     NumberLayoutUnique()
     {
-        super( IDENTIFIER, MAJOR_VERSION, MINOR_VERSION );
+        super( Layout.namedIdentifier( IDENTIFIER_NAME, NumberSchemaKey.SIZE ), MAJOR_VERSION, MINOR_VERSION );
     }
 }

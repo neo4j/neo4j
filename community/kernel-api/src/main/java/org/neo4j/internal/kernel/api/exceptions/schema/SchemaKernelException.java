@@ -53,7 +53,8 @@ public abstract class SchemaKernelException extends KernelException
         super( statusCode, message );
     }
 
-    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString, SchemaDescriptor descriptor )
+    protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
+            SchemaDescriptor descriptor )
     {
         int[] propertyIds = descriptor.getPropertyIds();
 

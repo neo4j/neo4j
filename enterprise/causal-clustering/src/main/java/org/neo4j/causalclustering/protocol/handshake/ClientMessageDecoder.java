@@ -25,6 +25,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 
@@ -48,14 +49,14 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
         }
         case 0:
         {
-            ApplicationProtocolResponse applicationProtocolResponse = decodeProtocolResponse( ApplicationProtocolResponse::new, in );
+            ApplicationProtocolResponse applicationProtocolResponse = decodeProtocolResponse( ApplicationProtocolResponse::new, ByteBuf::readInt, in );
 
             out.add( applicationProtocolResponse );
             return;
         }
         case 1:
         {
-            ModifierProtocolResponse modifierProtocolResponse = decodeProtocolResponse( ModifierProtocolResponse::new, in );
+            ModifierProtocolResponse modifierProtocolResponse = decodeProtocolResponse( ModifierProtocolResponse::new, StringMarshal::unmarshal, in );
 
             out.add( modifierProtocolResponse );
             return;
@@ -80,12 +81,13 @@ public class ClientMessageDecoder extends ByteToMessageDecoder
         }
     }
 
-    private <T extends BaseProtocolResponse> T decodeProtocolResponse( TriFunction<StatusCode, String, Integer, T> constructor, ByteBuf in )
+    private <U extends Comparable<U>,T extends BaseProtocolResponse<U>> T decodeProtocolResponse( TriFunction<StatusCode,String,U,T> constructor,
+            Function<ByteBuf,U> reader, ByteBuf in )
             throws ClientHandshakeException
     {
         int statusCodeValue = in.readInt();
         String identifier = StringMarshal.unmarshal( in );
-        int version = in.readInt();
+        U version = reader.apply( in );
 
         Optional<StatusCode> statusCode = StatusCode.fromCodeValue( statusCodeValue );
 

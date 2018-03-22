@@ -30,7 +30,7 @@ import static java.lang.String.format;
  * Durations are tricky, because exactly how long a duration is depends on the start date. We therefore sort them by
  * average total time in seconds, but keep the original months and days so we can reconstruct the value.
  */
-class DurationSchemaKey extends ComparableNativeSchemaKey<DurationSchemaKey>
+class DurationSchemaKey extends NativeSchemaKey<DurationSchemaKey>
 {
     /**
      * An average month is 30 days, 10 hours and 30 minutes.

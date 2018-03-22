@@ -19,22 +19,36 @@
  */
 package org.neo4j.causalclustering.protocol;
 
-public interface Protocol
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+public interface Protocol<IMPL extends Comparable<IMPL>>
 {
-    String identifier();
+    String category();
 
-    int version();
+    IMPL implementation();
 
-    interface Identifier<T extends Protocol>
+    static <IMPL extends Comparable<IMPL>, T extends Protocol<IMPL>> Optional<T> find(
+            T[] values, Category<T> category, IMPL implementation, Function<IMPL,IMPL> normalise )
+    {
+        return Stream.of( values )
+                .filter( protocol -> Objects.equals( protocol.category(), category.canonicalName() ) )
+                .filter( protocol -> Objects.equals( normalise.apply( protocol.implementation() ), normalise.apply( implementation ) ) )
+                .findFirst();
+    }
+
+    interface Category<T extends Protocol>
     {
         String canonicalName();
     }
 
-    interface ApplicationProtocol extends Protocol
+    interface ApplicationProtocol extends Protocol<Integer>
     {
     }
 
-    enum ApplicationProtocolIdentifier implements Identifier<ApplicationProtocol>
+    enum ApplicationProtocolCategory implements Category<ApplicationProtocol>
     {
         RAFT,
         CATCHUP;
@@ -48,42 +62,44 @@ public interface Protocol
 
     enum ApplicationProtocols implements ApplicationProtocol
     {
-        RAFT_1( ApplicationProtocolIdentifier.RAFT, 1 ),
-        CATCHUP_1( ApplicationProtocolIdentifier.CATCHUP, 1 );
+        RAFT_1( ApplicationProtocolCategory.RAFT, 1 ),
+        CATCHUP_1( ApplicationProtocolCategory.CATCHUP, 1 );
 
-        private final int version;
-        private final ApplicationProtocolIdentifier identifier;
+        private final Integer version;
+        private final ApplicationProtocolCategory identifier;
 
-        ApplicationProtocols( ApplicationProtocolIdentifier identifier, int version )
+        ApplicationProtocols( ApplicationProtocolCategory identifier, int version )
         {
             this.identifier = identifier;
             this.version = version;
         }
 
         @Override
-        public String identifier()
+        public String category()
         {
             return identifier.canonicalName();
         }
 
         @Override
-        public int version()
+        public Integer implementation()
         {
             return version;
         }
+
+        public static Optional<ApplicationProtocol> find( ApplicationProtocolCategory category, Integer version )
+        {
+            return Protocol.find( ApplicationProtocols.values(), category, version, Function.identity() );
+        }
     }
 
-    interface ModifierProtocol extends Protocol
+    interface ModifierProtocol extends Protocol<String>
     {
-        /**
-         * Should be human readable in a comma separated list
-         */
-        String friendlyName();
     }
 
-    enum ModifierProtocolIdentifier implements Identifier<ModifierProtocol>
+    enum ModifierProtocolCategory implements Category<ModifierProtocol>
     {
         COMPRESSION,
+        // Need a second Category for testing purposes.
         GRATUITOUS_OBFUSCATION;
 
         @Override
@@ -95,35 +111,50 @@ public interface Protocol
 
     enum ModifierProtocols implements ModifierProtocol
     {
-        COMPRESSION_SNAPPY( ModifierProtocolIdentifier.COMPRESSION, 1, "Snappy" );
+        COMPRESSION_GZIP( ModifierProtocolCategory.COMPRESSION, Implementations.GZIP ),
+        COMPRESSION_SNAPPY( ModifierProtocolCategory.COMPRESSION, Implementations.SNAPPY ),
+        COMPRESSION_SNAPPY_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.SNAPPY_VALIDATING ),
+        COMPRESSION_LZ4( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4 ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4_HIGH_COMPRESSION ),
+        COMPRESSION_LZ4_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.LZ_VALIDATING ),
+        COMPRESSION_LZ4_HIGH_COMPRESSION_VALIDATING( ModifierProtocolCategory.COMPRESSION, Implementations.LZ4_HIGH_COMPRESSION_VALIDATING );
 
-        private final int version;
-        private final ModifierProtocolIdentifier identifier;
+        // Should be human writable into a comma separated list
         private final String friendlyName;
+        private final ModifierProtocolCategory identifier;
 
-        ModifierProtocols( ModifierProtocolIdentifier identifier, int version, String friendlyName )
+        ModifierProtocols( ModifierProtocolCategory identifier, String friendlyName )
         {
-            this.version = version;
             this.identifier = identifier;
             this.friendlyName = friendlyName;
         }
 
         @Override
-        public int version()
+        public String implementation()
         {
-            return version;
+            return friendlyName;
         }
 
         @Override
-        public String identifier()
+        public String category()
         {
             return identifier.canonicalName();
         }
 
-        @Override
-        public String friendlyName()
+        public static Optional<ModifierProtocol> find( ModifierProtocolCategory category, String friendlyName )
         {
-            return friendlyName;
+            return Protocol.find( ModifierProtocols.values(), category, friendlyName, String::toLowerCase );
+        }
+
+        public static class Implementations
+        {
+            public static final String GZIP = "Gzip";
+            public static final String SNAPPY = "Snappy";
+            public static final String SNAPPY_VALIDATING = "Snappy_validating";
+            public static final String LZ4 = "LZ4";
+            public static final String LZ4_HIGH_COMPRESSION = "LZ4_high_compression";
+            public static final String LZ_VALIDATING = "LZ_validating";
+            public static final String LZ4_HIGH_COMPRESSION_VALIDATING = "LZ4_high_compression_validating";
         }
     }
 }

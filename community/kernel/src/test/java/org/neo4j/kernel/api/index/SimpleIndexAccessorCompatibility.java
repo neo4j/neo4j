@@ -25,6 +25,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,6 +39,7 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -174,6 +176,20 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         assertThat( query( range( 1, d4, true, d7, true ) ), Matchers.contains( 4L, 5L, 6L, 7L ) );
     }
 
+    @Test
+    public void shouldScanAllValues() throws Exception
+    {
+        // GIVEN
+        List<IndexEntryUpdate<?>> updates = updates( valueSet1 );
+        updateAndCommit( updates );
+        Long[] allNodes = valueSet1.stream().map( x -> x.nodeId ).toArray( Long[]::new );
+
+        // THEN
+        int propertyKeyId = descriptor.schema().getPropertyId();
+        List<Long> result = query( IndexQuery.exists( propertyKeyId ) );
+        assertThat( result, containsInAnyOrder( allNodes ) );
+    }
+
     // This behaviour is expected by General indexes
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -294,6 +310,16 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                                               time( 1001, UTC ),
                                               time( 2000, UTC ),
                                               time( 3000, UTC ) );
+        }
+
+        @Test
+        public void testIndexRangeSeekByTimeWithZonesAndDuplicates() throws Exception
+        {
+            Assume.assumeTrue( testSuite.supportsTemporal() );
+            testIndexRangeSeekWithDuplicates( time( 20, 31, 53, 4, ZoneOffset.of("+17:02") ),
+                                              time( 20, 31, 54, 3, ZoneOffset.of("+17:02") ),
+                                              time( 19, 31, 54, 2, UTC ),
+                                              time( 18, 23, 27, 1, ZoneOffset.of("-18:00") ) );
         }
 
         @Test

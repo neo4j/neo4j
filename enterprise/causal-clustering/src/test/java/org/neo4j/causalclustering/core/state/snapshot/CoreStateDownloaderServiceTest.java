@@ -38,7 +38,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -55,19 +55,19 @@ public class CoreStateDownloaderServiceTest
     private final MemberId someMember = new MemberId( UUID.randomUUID() );
     private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
-    private Neo4jJobScheduler neo4jJobScheduler;
+    private CentralJobScheduler centralJobScheduler;
 
     @Before
     public void create()
     {
-        neo4jJobScheduler = new Neo4jJobScheduler();
-        neo4jJobScheduler.init();
+        centralJobScheduler = new CentralJobScheduler();
+        centralJobScheduler.init();
     }
 
     @After
     public void shutdown()
     {
-        neo4jJobScheduler.shutdown();
+        centralJobScheduler.shutdown();
     }
 
     @Test
@@ -78,7 +78,7 @@ public class CoreStateDownloaderServiceTest
 
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
-                new CoreStateDownloaderService( neo4jJobScheduler, coreStateDownloader, applicationProcess,
+                new CoreStateDownloaderService( centralJobScheduler, coreStateDownloader, applicationProcess,
                         logProvider( log ), new NoTimeout() );
         coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         waitForApplierToResume( applicationProcess );
@@ -92,7 +92,7 @@ public class CoreStateDownloaderServiceTest
     public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime()
     {
         AtomicInteger schedules = new AtomicInteger();
-        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
+        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, centralJobScheduler );
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
 

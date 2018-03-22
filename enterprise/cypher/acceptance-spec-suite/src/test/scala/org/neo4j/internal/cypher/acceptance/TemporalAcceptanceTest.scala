@@ -24,6 +24,8 @@ import java.time.temporal.UnsupportedTemporalTypeException
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -40,7 +42,8 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       shouldReturnSomething(s"$s.realtime('America/Los_Angeles')")
       shouldReturnSomething(s"$s({timezone: '+01:00'})")
     }
-    shouldReturnSomething("datetime({epoch:timestamp()})")
+    shouldReturnSomething("datetime({epochMillis:timestamp()})")
+    shouldReturnSomething("datetime({epochSeconds:timestamp() / 1000})")
   }
 
   // Failing when skipping certain values in create or specifying conflicting values
@@ -114,9 +117,17 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       "{year:1984, month: 2, quarter:11}", "{year:1984, month: 2, dayOfQuarter:11}",
       "{year:1984, week: 2, day:11}", "{year:1984, week: 2, quarter:11}", "{year:1984, week: 2, dayOfQuarter:11}",
       "{year:1984, quarter: 2, day:11}", "{year:1984, quarter: 2, dayOfWeek:6}", "{datetime: datetime(), date: date()}",
-      "{datetime: datetime(), time: time()}", "{datetime: datetime(), epoch: timestamp()}", "{date: date(), epoch: timestamp()}",
-      "{time: time(), epoch: timestamp()}")
+      "{datetime: datetime(), time: time()}", "{datetime: datetime(), epochSeconds:1}", "{datetime: datetime(), epochMillis: timestamp()}",
+      "{date: date(), epochSeconds:1}","{date: date(), epochMillis: timestamp()}",
+      "{time: time(), epochSeconds:1}", "{time: time(), epochMillis: timestamp()}", "{epochSeconds:1, epochMillis: timestamp()}")
     shouldNotConstructWithArg("datetime", queries)
+  }
+
+  test("should not create date time with conflicting time zones")
+  {
+    val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
+    val errorMsg = "Timezone and offset do not match"
+    failWithError(Configs.Interpreted - Configs.Version2_3, query, Seq(errorMsg))
   }
 
   // Failing when selecting a wrong group
@@ -220,6 +231,16 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to year with wrong argument") {
     shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "year",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+  }
+
+  test("should not truncate to weekYear with wrong receiver") {
+    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "weekYear",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+  }
+
+  test("should not truncate to weekYear with wrong argument") {
+    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "weekYear",
       Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
   }
 
@@ -411,8 +432,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val exception = intercept[QueryExecutionException] {
         println(graph.execute(query).next())
       }
-      exception.getMessage should be ("You cannot subtract a temporal instant from another. " +
-        "To obtain the duration, use 'duration.between(temporal1, temporal2)' instead.")
+      exception.getMessage should startWith("Type mismatch: expected Duration but was")
     }
   }
 
@@ -432,23 +452,24 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not provide undefined accessors for date") {
     shouldNotHaveAccessor("date", Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "epoch",
+      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
   test("should not provide undefined accessors for local time") {
     shouldNotHaveAccessor("localtime", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
-      "timezone", "offset", "epoch",
+      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
   test("should not provide undefined accessors for time") {
     shouldNotHaveAccessor("time", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
+      "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
   test("should not provide undefined accessors for local date time") {
-    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "epoch",
+    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
@@ -459,17 +480,53 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not provide undefined accessors for duration") {
     shouldNotHaveAccessor("duration", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
       "hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "epoch"), "{days: 14, hours:16, minutes: 12}")
+      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis"), "{days: 14, hours:16, minutes: 12}")
   }
 
   // Duration between
 
   test("should not compute the duration in day units between two time values") {
     val args = Seq("time()", "localtime()")
-    for (func <- Seq("years", "quarters", "months", "weeks", "days"); arg1 <- args; arg2 <- args) {
+    for (func <- Seq("inMonths", "inDays"); arg1 <- args; arg2 <- args) {
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
         an[UnsupportedTemporalTypeException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  // Comparison of durations
+
+  test("should not allow comparing durations") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = s"RETURN duration('P1Y1M') $op duration('P1Y30D')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
+      }
+    }
+  }
+
+  test("should return null when comparing durations and not able to fail at compile time") {
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val query = "RETURN $d1 " + op + " $d2 as x"
+      withClue(s"Executing $query") {
+        val res = innerExecuteDeprecated(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
+        res should be(List(Map("x" -> null)))
+      }
+    }
+  }
+
+  // Invalid signature
+
+  test("should not accept 4 parameters") {
+    for (func <- Seq("time", "localtime", "date", "datetime", "localdatetime", "duration")) {
+      val query = s"RETURN $func('', '', '', '')"
+      withClue(s"Executing $query") {
+        an[QueryExecutionException] shouldBe thrownBy {
           println(graph.execute(query).next())
         }
       }

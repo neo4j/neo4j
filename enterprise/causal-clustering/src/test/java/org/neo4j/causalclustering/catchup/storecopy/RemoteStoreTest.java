@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
@@ -72,7 +71,7 @@ public class RemoteStoreTest
         remoteStore.copy( catchupAddressProvider, storeId, new File( "destination" ) );
 
         // then
-        verify( storeCopyClient ).copyStoreFiles( eq( catchupAddressProvider ), eq( storeId ), any( StoreFileStreams.class ), any() );
+        verify( storeCopyClient ).copyStoreFiles( eq( catchupAddressProvider ), eq( storeId ), any( StoreFileStreamProvider.class ), any() );
         verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), isNull() );
     }
 
@@ -86,7 +85,7 @@ public class RemoteStoreTest
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( localhost );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStoreFiles( eq( catchupAddressProvider ), eq( wantedStoreId ), any( StoreFileStreams.class ), any() ) )
+        when( storeCopyClient.copyStoreFiles( eq( catchupAddressProvider ), eq( wantedStoreId ), any( StoreFileStreamProvider.class ), any() ) )
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );

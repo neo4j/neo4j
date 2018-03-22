@@ -36,7 +36,7 @@ public interface ExplicitIndexRead
     void nodeExplicitIndexQuery( NodeExplicitIndexCursor cursor, String index, String key, Object query )
             throws KernelException;
 
-    void relationshipExplicitIndexGet(
+    void relationshipExplicitIndexLookup(
             RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
             throws KernelException;
 
@@ -47,4 +47,8 @@ public interface ExplicitIndexRead
     void relationshipExplicitIndexQuery(
             RelationshipExplicitIndexCursor cursor, String index, String key, Object query, long source, long target )
             throws KernelException;
+
+    String[] nodeExplicitIndexesGetAll();
+
+    String[] relationshipExplicitIndexesGetAll();
 }

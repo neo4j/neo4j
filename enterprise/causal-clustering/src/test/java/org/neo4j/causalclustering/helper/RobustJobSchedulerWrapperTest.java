@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.Log;
 
@@ -44,7 +44,7 @@ public class RobustJobSchedulerWrapperTest
 
     @Rule
     public LifeRule schedulerLife = new LifeRule( true );
-    private final JobScheduler actualScheduler = new Neo4jJobScheduler();
+    private final JobScheduler actualScheduler = new CentralJobScheduler();
 
     private final Log log = mock( Log.class );
 

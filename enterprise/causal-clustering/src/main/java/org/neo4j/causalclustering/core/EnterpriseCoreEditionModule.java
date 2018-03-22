@@ -24,6 +24,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
+import java.util.Collection;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -52,11 +54,11 @@ import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForMultiDC;
-import org.neo4j.causalclustering.load_balancing.procedure.GetServersProcedureForSingleDC;
-import org.neo4j.causalclustering.load_balancing.procedure.LegacyGetServersProcedure;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -64,14 +66,20 @@ import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.ProtocolInstaller;
-import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
-import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
+import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSubClusterRoutersProcedure;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSuperClusterRoutersProcedure;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -121,7 +129,6 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -136,7 +143,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     protected final Config config;
     private final Supplier<Stream<Pair<AdvertisedSocketAddress,ProtocolStack>>> clientInstalledProtocols;
     private final Supplier<Stream<Pair<SocketAddress,ProtocolStack>>> serverInstalledProtocols;
-    private CoreStateMachinesModule coreStateMachinesModule;
+    private final CoreServerModule coreServerModule;
+    private final CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -171,10 +179,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     config, logProvider ) );
         }
 
+        procedures.register( new GetSuperClusterRoutersProcedure( topologyService, config ) );
+        procedures.register( new GetSubClusterRoutersProcedure( topologyService, config ) );
         procedures.register( new ClusterOverviewProcedure( topologyService, logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
         procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );
-        procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), true );
+        procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), false );
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
@@ -236,15 +246,23 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
-        ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( Protocol.ApplicationProtocols.values() );
-        ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( Protocol.ModifierProtocols.values() );
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
+        ApplicationSupportedProtocols supportedRaftProtocols = supportedProtocolCreator.createSupportedRaftProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+
+        ApplicationProtocolRepository applicationProtocolRepository =
+                new ApplicationProtocolRepository( Protocol.ApplicationProtocols.values(), supportedRaftProtocols );
+        ModifierProtocolRepository modifierProtocolRepository =
+                new ModifierProtocolRepository( Protocol.ModifierProtocols.values(), supportedModifierProtocols );
+
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
                 new ProtocolInstallerRepository<>(
                         singletonList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ) ),
                         ModifierProtocolInstaller.allClientInstallers );
-        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository,
-                Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ),
-                protocolInstallerRepository, clientPipelineBuilderFactory, config, logProvider );
+
+        Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
+        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
+                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;
@@ -281,13 +299,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.commitProcessFactory = coreStateMachinesModule.commitProcessFactory;
         this.accessCapability = new LeaderCanWrite( consensusModule.raftMachine() );
 
-        CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
-                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), serverPipelineWrapper, clientPipelineWrapper );
+        InstalledProtocolHandler serverInstalledProtocolHandler = new InstalledProtocolHandler();
 
-        serverInstalledProtocols = new RaftServerModule(
-                platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger,
-                topologyService
-        ).raftServer()::installedProtocols;
+        this.coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
+                replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), clientPipelineBuilderFactory,
+                serverPipelineBuilderFactory, serverInstalledProtocolHandler );
+
+        RaftServerModule.createAndStart( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory,
+                messageLogger, topologyService, supportedRaftProtocols, supportedModifierProtocols, serverInstalledProtocolHandler );
+        this.serverInstalledProtocols = serverInstalledProtocolHandler::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
@@ -445,5 +465,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
+    }
+
+    public void stopCatchupServer()
+    {
+        coreServerModule.catchupServer().stop();
     }
 }

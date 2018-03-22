@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
@@ -35,11 +35,10 @@ public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCrea
     }
 
     @Override
-    protected int createKey( Statement statement, String name ) throws IllegalTokenNameException
+    protected int createKey( KernelTransaction transaction, String name ) throws IllegalTokenNameException
     {
         int id = (int) idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).nextId();
-        statement.tokenWriteOperations().relationshipTypeCreateForName( name,
-                id );
+        transaction.tokenWrite().relationshipTypeCreateForName( name, id );
         return id;
     }
 }

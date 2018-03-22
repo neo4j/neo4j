@@ -28,11 +28,17 @@ abstract class SchemaLayout<KEY extends NativeSchemaKey> extends Layout.Adapter<
     private final int majorVersion;
     private final int minorVersion;
 
+    // allows more control of the identifier, needed for legacy reasons for the two number layouts
     SchemaLayout( long identifier, int majorVersion, int minorVersion )
     {
         this.identifier = identifier;
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
+    }
+
+    SchemaLayout( String layoutName, int majorVersion, int minorVersion )
+    {
+        this( Layout.namedIdentifier( layoutName, NativeSchemaValue.SIZE ), majorVersion, minorVersion );
     }
 
     @Override
@@ -98,5 +104,8 @@ abstract class SchemaLayout<KEY extends NativeSchemaKey> extends Layout.Adapter<
         return valueComparison;
     }
 
-    abstract int compareValue( KEY o1, KEY o2 );
+    int compareValue( KEY o1, KEY o2 )
+    {
+        return o1.compareValueTo( o2 );
+    }
 }

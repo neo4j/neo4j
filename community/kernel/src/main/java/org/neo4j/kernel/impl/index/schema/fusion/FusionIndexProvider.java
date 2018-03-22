@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
@@ -74,7 +75,7 @@ public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
             // good to be strict with specific providers here since this is dev facing
             StringIndexProvider stringProvider,
             NumberIndexProvider numberProvider,
-            SpatialFusionIndexProvider spatialProvider,
+            SpatialIndexProvider spatialProvider,
             TemporalIndexProvider temporalProvider,
             IndexProvider luceneProvider,
             Selector selector,

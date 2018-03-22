@@ -33,11 +33,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector;
-import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
@@ -92,8 +92,8 @@ public class NativeLuceneFusionIndexProviderFactory
                 new StringIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         NumberIndexProvider numberProvider =
                 new NumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-        SpatialFusionIndexProvider spatialProvider =
-                new SpatialFusionIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
+        SpatialIndexProvider spatialProvider =
+                new SpatialIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
         TemporalIndexProvider temporalProvider =
                 new TemporalIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,

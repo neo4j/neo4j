@@ -23,6 +23,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+import java.util.function.BiConsumer;
+
 import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 
 /**
@@ -56,14 +58,14 @@ public class ServerMessageEncoder extends MessageToByteEncoder<ClientMessage>
         public void handle( ApplicationProtocolResponse applicationProtocolResponse )
         {
             out.writeInt( 0 );
-            encodeProtocolResponse( applicationProtocolResponse );
+            encodeProtocolResponse( applicationProtocolResponse, ByteBuf::writeInt );
         }
 
         @Override
         public void handle( ModifierProtocolResponse modifierProtocolResponse )
         {
             out.writeInt( 1 );
-            encodeProtocolResponse( modifierProtocolResponse );
+            encodeProtocolResponse( modifierProtocolResponse, StringMarshal::marshal );
         }
 
         @Override
@@ -73,11 +75,11 @@ public class ServerMessageEncoder extends MessageToByteEncoder<ClientMessage>
             out.writeInt( switchOverResponse.status().codeValue() );
         }
 
-        private void encodeProtocolResponse( BaseProtocolResponse protocolResponse )
+        private <U extends Comparable<U>> void encodeProtocolResponse( BaseProtocolResponse<U> protocolResponse, BiConsumer<ByteBuf,U> writer )
         {
             out.writeInt( protocolResponse.statusCode().codeValue() );
             StringMarshal.marshal( out, protocolResponse.protocolName() );
-            out.writeInt( protocolResponse.version() );
+            writer.accept( out, protocolResponse.version() );
         }
     }
 }

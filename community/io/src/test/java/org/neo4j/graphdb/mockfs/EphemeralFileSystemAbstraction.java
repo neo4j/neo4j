@@ -843,7 +843,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             try
             {
                 long transferred = 0;
-                ByteBuffer intermediary = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 8 ) );
+                ByteBuffer intermediary = ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 8 ) );
                 while ( transferred < count )
                 {
                     intermediary.clear();
@@ -1196,22 +1196,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         private ByteBuffer allocate( long capacity )
         {
-            try
-            {
-                return ByteBuffer.allocateDirect( Math.toIntExact( capacity ) );
-            }
-            catch ( OutOfMemoryError oom )
-            {
-                try
-                {
-                    return ByteBuffer.allocate( Math.toIntExact( capacity ) );
-                }
-                catch ( OutOfMemoryError secondOom )
-                {
-                    oom.addSuppressed( secondOom );
-                    throw oom;
-                }
-            }
+            return ByteBuffer.allocate( Math.toIntExact( capacity ) );
         }
 
         void free()

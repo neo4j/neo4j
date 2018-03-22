@@ -29,16 +29,14 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
  * Applies a diffset to the given source {@link RelationshipIterator}.
  * If the given source is a {@link Resource}, then so is this {@link DiffApplyingRelationshipIterator}.
  */
-public class DiffApplyingRelationshipIterator extends DiffApplyingLongIterator implements RelationshipIterator
+class DiffApplyingRelationshipIterator extends DiffApplyingLongIterator implements RelationshipIterator
 {
     private final RelationshipVisitor.Home sourceHome;
     private final RelationshipVisitor.Home addedHome;
 
-    public DiffApplyingRelationshipIterator( RelationshipIterator source,
-                                             Set<?> addedElements, Set<?> removedElements,
-                                             RelationshipVisitor.Home addedHome )
+    DiffApplyingRelationshipIterator( RelationshipIterator source, Set<?> addedElements, Set<?> removedElements, RelationshipVisitor.Home addedHome )
     {
-        super( source, addedElements, removedElements );
+        super( source, addedElements, removedElements, null );
         this.sourceHome = source;
         this.addedHome = addedHome;
     }

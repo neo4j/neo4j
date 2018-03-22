@@ -183,7 +183,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     @Override
     public UniquenessConstraintDescriptor uniquePropertyConstraintCreate(
-            KernelStatement state, LabelSchemaDescriptor descriptor )
+            KernelStatement state, SchemaDescriptor descriptor )
             throws AlreadyConstrainedException, CreateConstraintFailureException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException
     {

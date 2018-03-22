@@ -20,10 +20,8 @@
 package org.neo4j.test;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -110,14 +108,6 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
-    {
-        JobHandle handle = schedule( job, now() );
-        processSchedule();
-        return handle;
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         JobHandle handle = schedule( job, now() );
         processSchedule();

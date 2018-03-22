@@ -25,7 +25,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 import java.io.File;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,7 +102,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             LocalTimeValue.localTime( 100000 ),
                             TimeValue.time( 43_200_000_000_000L, ZoneOffset.UTC ), // Noon
                             TimeValue.time( 43_201_000_000_000L, ZoneOffset.UTC ),
-                            TimeValue.time( 43_200_000_000_000L, ZoneId.of( "+01:00" ) ), // Noon in the next time-zone
+                            TimeValue.time( 43_200_000_000_000L, ZoneOffset.of( "+01:00" ) ), // Noon in the next time-zone
                             TimeValue.time( 46_800_000_000_000L, ZoneOffset.UTC ), // Same time UTC as prev time
                             LocalDateTimeValue.localDateTime( 2018, 3, 1, 13, 50, 42, 1337 ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 13, 7474, "UTC" ),
@@ -116,6 +115,11 @@ public abstract class IndexProviderCompatibilityTestSuite
                             DateTimeValue.datetime( 2014, 3, 25, 12, 46, 13, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7474, "+05:00" ),
                             DateTimeValue.datetime( 2014, 3, 25, 12, 45, 14, 7475, "+05:00" ),
+                            // only runnable it JVM supports East-Saskatchewan
+                            // DateTimeValue.datetime( 2001, 1, 25, 11, 11, 30, 0, "Canada/East-Saskatchewan" ),
+                            DateTimeValue.datetime( 2038, 1, 18, 9, 14, 7, 0, "-18:00" ),
+                            DateTimeValue.datetime( 10000, 100, ZoneOffset.ofTotalSeconds( 3 ) ),
+                            DateTimeValue.datetime( 10000, 101, ZoneOffset.ofTotalSeconds( -3 ) ),
                             DurationValue.duration( 10, 20, 30, 40 ),
                             DurationValue.duration( 11, 20, 30, 40 ),
                             DurationValue.duration( 10, 21, 30, 40 ),
@@ -141,7 +145,7 @@ public abstract class IndexProviderCompatibilityTestSuite
             pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
 
-        protected void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
+        void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
         {
             try
             {

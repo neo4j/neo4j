@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression}
-import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.virtual.NodeValue
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
@@ -43,48 +41,24 @@ object IndexSeekMode {
       throw new InternalException("Composite lookups not yet supported")
     values.head
   }
- }
-
-sealed trait IndexSeekMode {
-  def indexFactory(index: IndexReference): MultipleValueQuery
-
-  def name: String
 }
+
+sealed abstract class IndexSeekMode(val name: String)
 
 sealed trait ExactSeek {
   self: IndexSeekMode =>
-  override def indexFactory(index: IndexReference): MultipleValueQuery =
-    (state: QueryState) => (values: Seq[Any]) => state.query.indexSeek(index, values)
 }
 
-case object IndexSeek extends IndexSeekMode with ExactSeek {
-  override def name: String = "NodeIndexSeek"
-}
+case object IndexSeek extends IndexSeekMode("NodeIndexSeek") with ExactSeek
 
-case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
-  override def name: String = "NodeUniqueIndexSeek"
-}
+case object UniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek") with ExactSeek
 
-case object LockingUniqueIndexSeek extends IndexSeekMode {
-
-  override def indexFactory(index: IndexReference): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(index, x).toIterator
-    }
-
-  override def name: String = "NodeUniqueIndexSeek(Locking)"
-}
+case object LockingUniqueIndexSeek extends IndexSeekMode("NodeUniqueIndexSeek(Locking)")
 
 sealed trait SeekByRange {
   self: IndexSeekMode =>
-  override def indexFactory(index: IndexReference): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => state.query.indexSeekByRange(index, assertSingleValue(x))
 }
 
-case object IndexSeekByRange extends IndexSeekMode with SeekByRange {
-  override def name: String = "NodeIndexSeekByRange"
-}
+case object IndexSeekByRange extends IndexSeekMode("NodeIndexSeekByRange") with SeekByRange
 
-case object UniqueIndexSeekByRange extends IndexSeekMode with SeekByRange {
-  override def name: String = "NodeUniqueIndexSeekByRange"
-}
+case object UniqueIndexSeekByRange extends IndexSeekMode("NodeUniqueIndexSeekByRange") with SeekByRange

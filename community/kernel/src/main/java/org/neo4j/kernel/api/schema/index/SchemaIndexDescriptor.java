@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.schema.index;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)

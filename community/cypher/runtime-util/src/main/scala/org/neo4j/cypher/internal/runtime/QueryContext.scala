@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -95,16 +94,13 @@ trait QueryContext extends TokenContext {
 
   def getOrCreatePropertyKeyId(propertyKey: String): Int
 
-  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexDescriptor]
+  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference]
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  //TODO this should be `Seq[AnyValue]`
-  def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue]
-
-  def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue]
+  def indexSeek(index: IndexReference, queries: Seq[IndexQuery]): Iterator[NodeValue]
 
   def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue]
 
@@ -114,7 +110,7 @@ trait QueryContext extends TokenContext {
 
   def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator
 
-  def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue]
+  def lockingUniqueIndexSeek(index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): Option[NodeValue]
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -258,8 +254,6 @@ trait QueryTransactionalContext extends CloseableResource {
   def schemaRead: SchemaRead
 
   def dataWrite: Write
-
-  def readOperations: ReadOperations
 
   def dbmsOperations: DbmsOperations
 

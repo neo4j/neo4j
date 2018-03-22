@@ -29,16 +29,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import org.neo4j.causalclustering.messaging.Channel;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocolCategory.RAFT;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols.LZ4;
 
 @RunWith( Parameterized.class )
 public class HandshakeClientEnsureMagicTest
@@ -49,8 +51,8 @@ public class HandshakeClientEnsureMagicTest
     public static Collection<ClientMessage> data()
     {
         return asList(
-                new ApplicationProtocolResponse( StatusCode.SUCCESS, "protocol", 2 ),
-                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", 4 ),
+                new ApplicationProtocolResponse( StatusCode.SUCCESS, "protocol", RAFT_1.implementation() ),
+                new ModifierProtocolResponse( StatusCode.SUCCESS, "modifier", LZ4.implementation() ),
                 new SwitchOverResponse( StatusCode.SUCCESS )
         );
     }
@@ -59,16 +61,20 @@ public class HandshakeClientEnsureMagicTest
     public ClientMessage message;
 
     private Channel channel = mock( Channel.class );
-    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
-    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( TestModifierProtocols.values() );
+
+    private ApplicationSupportedProtocols supportedApplicationProtocol =
+            new ApplicationSupportedProtocols( RAFT, TestApplicationProtocols.listVersionsOf( RAFT ) );
+    private ApplicationProtocolRepository applicationProtocolRepository =
+            new ApplicationProtocolRepository( TestApplicationProtocols.values(), supportedApplicationProtocol );
+    private ModifierProtocolRepository modifierProtocolRepository =
+            new ModifierProtocolRepository( TestModifierProtocols.values(), emptyList() );
 
     private HandshakeClient client = new HandshakeClient();
 
     @Before
     public void setUp()
     {
-        protocolStackCompletableFuture =
-                client.initiate( channel, applicationProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, emptySet() );
+        protocolStackCompletableFuture = client.initiate( channel, applicationProtocolRepository, modifierProtocolRepository );
     }
 
     @Test( expected = IllegalStateException.class )

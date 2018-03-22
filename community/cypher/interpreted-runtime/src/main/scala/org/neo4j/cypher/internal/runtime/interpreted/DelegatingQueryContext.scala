@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write, _}
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -114,11 +113,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
 
-  override def indexSeek(index: IndexReference, values: Seq[Any]): Iterator[NodeValue] =
+  override def indexSeek(index: IndexReference, values: Seq[IndexQuery]): Iterator[NodeValue] =
     manyDbHits(inner.indexSeek(index, values))
-
-  override def indexSeekByRange(index: IndexReference, value: Any): Iterator[NodeValue] =
-    manyDbHits(inner.indexSeekByRange(index, value))
 
   override def indexScan(index: IndexReference): Iterator[NodeValue] = manyDbHits(inner.indexScan(index))
 
@@ -163,7 +159,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Option[NodeValue] =
+  override def lockingUniqueIndexSeek(index: IndexReference, values: Seq[IndexQuery.ExactPredicate]): Option[NodeValue] =
     singleDbHit(inner.lockingUniqueIndexSeek(index, values))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
@@ -298,8 +294,6 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
-
-  override def readOperations: ReadOperations = inner.readOperations
 
   override def dbmsOperations: DbmsOperations = inner.dbmsOperations
 

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -35,13 +35,12 @@ public class ZonedTimeSchemaKeyTest
     @Test
     public void compareToSameAsValue()
     {
-        Value[] values = {TimeValue.time( 9999, ZoneId.of( "+18:00" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "-18:00" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "UTC" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "Europe/Stockholm" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "+01:00" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "+03:00" ) ),
-                          TimeValue.time( 10000, ZoneId.of( "-18:00" ) )};
+        Value[] values = {TimeValue.time( 9999, ZoneOffset.of( "+18:00" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "-18:00" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "-00:00" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "+01:00" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "+03:00" ) ),
+                          TimeValue.time( 10000, ZoneOffset.of( "-18:00" ) )};
 
         ZonedTimeSchemaKey keyI = new ZonedTimeSchemaKey();
         ZonedTimeSchemaKey keyJ = new ZonedTimeSchemaKey();

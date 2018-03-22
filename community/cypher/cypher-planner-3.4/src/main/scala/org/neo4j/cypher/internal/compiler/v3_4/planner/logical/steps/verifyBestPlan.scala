@@ -46,26 +46,29 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
           val actualHints = constructed.allHints
-          val missing = expectedHints -- actualHints
+          val missing = expectedHints.diff(actualHints)
+          val solvedInAddition = actualHints.diff(expectedHints)
+          val inventedHintsAndThenSolvedThem = solvedInAddition.exists(!expectedHints.contains(_))
+          if (missing.nonEmpty || inventedHintsAndThenSolvedThem) {
+            def out(h: Seq[Hint]) = h.mkString("`", ", ", "`")
 
-          def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
-
-          val details = if (missing.isEmpty)
-            s"""Expected:
-               |${out(expectedHints)}
-               |
+            val details = if (missing.isEmpty)
+              s"""Expected:
+                 |${out(expectedHints)}
+                 |
                |Instead, got:
-               |${out(actualHints)}""".stripMargin
-          else
-            s"Could not solve these hints: ${out(missing)}"
+                 |${out(actualHints)}""".stripMargin
+            else
+              s"Could not solve these hints: ${out(missing)}"
 
-          val message =
-            s"""Failed to fulfil the hints of the query.
-               |$details
-               |
+            val message =
+              s"""Failed to fulfil the hints of the query.
+                 |$details
+                 |
                |Plan $plan""".stripMargin
 
-          throw new HintException(message)
+            throw new HintException(message)
+          }
         }
       } else {
         processUnfulfilledIndexHints(context, unfulfillableIndexHints)
@@ -75,7 +78,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     plan
   }
 
-  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Set[UsingIndexHint]) = {
+  private def processUnfulfilledIndexHints(context: LogicalPlanningContext, hints: Seq[UsingIndexHint]): Unit = {
     if (hints.nonEmpty) {
       // hints referred to non-existent indexes ("explicit hints")
       if (context.useErrorsOverWarnings) {
@@ -89,7 +92,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Set[UsingJoinHint]): Unit = {
+  private def processUnfulfilledJoinHints(plan: LogicalPlan, context: LogicalPlanningContext, hints: Seq[UsingJoinHint]): Unit = {
     if (hints.nonEmpty) {
       // we were unable to plan hash join on some requested nodes
       if (context.useErrorsOverWarnings) {
@@ -103,7 +106,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Set[UsingIndexHint] = {
+  private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
       case UsingIndexHint(_, LabelName(label), properties)
@@ -116,7 +119,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     }
   }
 
-  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Set[UsingJoinHint] = {
+  private def findUnfulfillableJoinHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingJoinHint] = {
     query.allHints.collect {
       case hint: UsingJoinHint => hint
     }

@@ -81,6 +81,13 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
+     * Translate the schema key to a key name using the given {@link TokenNameLookup}.
+     * @param tokenNameLookup used for looking up names for token ids.
+     * @return The string name of the key token.
+     */
+    String keyName( TokenNameLookup tokenNameLookup );
+
+    /**
      * This method return the property ids that are relevant to this Schema Descriptor.
      *
      * Putting this method here is a convenience that will break if/when we introduce more complicated schema
@@ -89,6 +96,23 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return the property ids
      */
     int[] getPropertyIds();
+
+    /**
+     * Assume that this schema descriptor describes a schema that includes a single property id, and return that id.
+     *
+     * @return The presumed single property id of this schema.
+     * @throws IllegalStateException if this schema does not have exactly one property.
+     */
+    default int getPropertyId()
+    {
+        int[] propertyIds = getPropertyIds();
+        if ( propertyIds.length != 1 )
+        {
+            throw new IllegalStateException(
+                    "Single property schema requires one property but had " + propertyIds.length );
+        }
+        return propertyIds[0];
+    }
 
     /**
      * This method returns the entity token ids handled by this descriptor.
@@ -101,7 +125,7 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * Key is part of schema unit that determines which resources with specified properties are applicable.
      * @return id of underlying key
      */
-    //TODO MultiTokenSchema support for the new kernel api. This method is only used in the AllStoreHolder
+    //TODO MultiTokenSchema support for the new kernel api.
     int keyId();
 
     /**

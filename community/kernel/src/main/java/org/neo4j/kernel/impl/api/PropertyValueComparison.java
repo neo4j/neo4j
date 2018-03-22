@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.time.LocalDate;
+
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.values.storable.PointValue;
@@ -44,6 +46,8 @@ public class PropertyValueComparison
     public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
     public static final PropertyValueComparator<PointValue> COMPARE_POINTS = new PointPropertyValueComparator();
+
+    public static final PropertyValueComparator<LocalDate> COMPARE_DATES = new DatePropertyValueComparator();
 
     public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
@@ -252,6 +256,16 @@ public class PropertyValueComparison
         @SuppressWarnings( "unchecked" )
         @Override
         public int compare( PointValue left, PointValue right )
+        {
+            return left.compareTo( right );
+        }
+    }
+
+    private static class DatePropertyValueComparator extends PropertyValueComparator<LocalDate>
+    {
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public int compare( LocalDate left, LocalDate right )
         {
             return left.compareTo( right );
         }

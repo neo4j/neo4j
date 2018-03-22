@@ -58,14 +58,9 @@ class DurationFunction implements CallableUserFunction
     {
         procedures.register( new DurationFunction() );
         procedures.register( new Between( "between" ) );
-        procedures.register( new Between( "years" ) );
-        procedures.register( new Between( "quarters" ) );
-        procedures.register( new Between( "months" ) );
-        procedures.register( new Between( "weeks" ) );
-        procedures.register( new Between( "days" ) );
-        procedures.register( new Between( "hours" ) );
-        procedures.register( new Between( "minutes" ) );
-        procedures.register( new Between( "seconds" ) );
+        procedures.register( new Between( "inMonths" ) );
+        procedures.register( new Between( "inDays" ) );
+        procedures.register( new Between( "inSeconds" ) );
     }
 
     @Override
@@ -95,7 +90,7 @@ class DurationFunction implements CallableUserFunction
     private static class Between implements CallableUserFunction
     {
         private static final String DESCRIPTION =
-                "Compute the duration between the 'form' instant (inclusive) and the 'to' instant (exclusive) in %s.";
+                "Compute the duration between the 'from' instant (inclusive) and the 'to' instant (exclusive) in %s.";
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
                 inputField( "from", Neo4jTypes.NTAny ),
                 inputField( "to", Neo4jTypes.NTAny ) );
@@ -104,43 +99,33 @@ class DurationFunction implements CallableUserFunction
 
         private Between( String unit )
         {
-            this.signature = new UserFunctionSignature(
-                    new QualifiedName( new String[] {"duration"}, unit ),
-                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
-                    String.format(
-                            DESCRIPTION, "between".equals( unit ) ? "logical units" : unit ) );
+            String unitString;
             switch ( unit )
             {
             case "between":
                 this.unit = null;
+                unitString = "logical units";
                 break;
-            case "years":
-                this.unit = ChronoUnit.YEARS;
-                break;
-            case "quarters":
-                this.unit = IsoFields.QUARTER_YEARS;
-                break;
-            case "months":
+            case "inMonths":
                 this.unit = ChronoUnit.MONTHS;
+                unitString = "months";
                 break;
-            case "weeks":
-                this.unit = ChronoUnit.WEEKS;
-                break;
-            case "days":
+            case "inDays":
                 this.unit = ChronoUnit.DAYS;
+                unitString = "days";
                 break;
-            case "hours":
-                this.unit = ChronoUnit.HOURS;
-                break;
-            case "minutes":
-                this.unit = ChronoUnit.MINUTES;
-                break;
-            case "seconds":
+            case "inSeconds":
                 this.unit = ChronoUnit.SECONDS;
+                unitString = "seconds";
                 break;
             default:
                 throw new IllegalStateException( "Unsupported unit: " + unit );
             }
+            this.signature = new UserFunctionSignature(
+                    new QualifiedName( new String[] {"duration"}, unit ),
+                    SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
+                    String.format(
+                            DESCRIPTION, unitString ) );
         }
 
         @Override

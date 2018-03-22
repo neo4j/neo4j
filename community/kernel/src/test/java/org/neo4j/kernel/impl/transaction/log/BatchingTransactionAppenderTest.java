@@ -63,6 +63,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -264,7 +265,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 0 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
     }
@@ -305,7 +306,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 0 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
     }

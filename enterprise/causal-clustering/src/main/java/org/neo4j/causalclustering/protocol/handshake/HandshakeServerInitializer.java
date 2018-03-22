@@ -19,37 +19,36 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 
 import java.net.InetSocketAddress;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
+import org.neo4j.causalclustering.net.ChildInitializer;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel>
+public class HandshakeServerInitializer implements ChildInitializer
 {
     private final Log log;
-    private final ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
-    private final ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
-    private final Protocol.ApplicationProtocolIdentifier allowedProtocol;
+    private final ApplicationProtocolRepository applicationProtocolRepository;
+    private final ModifierProtocolRepository modifierProtocolRepository;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
 
-    public HandshakeServerInitializer( LogProvider logProvider, ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository,
-            ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier allowedProtocol,
-            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository, NettyPipelineBuilderFactory pipelineBuilderFactory )
+    public HandshakeServerInitializer( ApplicationProtocolRepository applicationProtocolRepository,
+            ModifierProtocolRepository modifierProtocolRepository,
+            ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository,
+            NettyPipelineBuilderFactory pipelineBuilderFactory,
+            LogProvider logProvider )
     {
         this.log = logProvider.getLog( getClass() );
         this.applicationProtocolRepository = applicationProtocolRepository;
         this.modifierProtocolRepository = modifierProtocolRepository;
-        this.allowedProtocol = allowedProtocol;
         this.protocolInstallerRepository = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
     }
@@ -67,8 +66,12 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
 
     private NettyHandshakeServer createHandshakeServer( SocketChannel channel )
     {
-        HandshakeServer handshakeServer =
-                new HandshakeServer( new SimpleNettyChannel( channel, log ), applicationProtocolRepository, modifierProtocolRepository, allowedProtocol );
+        HandshakeServer handshakeServer = new HandshakeServer(
+                applicationProtocolRepository,
+                modifierProtocolRepository,
+                new SimpleNettyChannel( channel, log )
+        );
+
         handshakeServer.protocolStackFuture().whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
         channel.closeFuture().addListener(
                 ignored -> channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Closed( toSocketAddress( channel ) ) )
