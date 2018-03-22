@@ -276,7 +276,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     int unsafeCompareTo( Value otherValue )
     {
         TimeValue other = (TimeValue) otherValue;
-        return value.compareTo( other.value );
+        int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
+        if ( compare == 0 )
+        {
+            compare = Integer.compare( value.getOffset().getTotalSeconds(), other.value.getOffset().getTotalSeconds() );
+        }
+        return compare;
     }
 
     @Override
@@ -379,7 +384,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     TimeValue replacement( OffsetTime time )
     {
-        return time == value ? this : new TimeValue( time, nanosOfDayUTC );
+        return time == value ? this : new TimeValue( time );
     }
 
     private static final String OFFSET_PATTERN = "(?<zone>Z|[+-](?<zoneHour>[0-9]{2})(?::?(?<zoneMinute>[0-9]{2}))?)";
