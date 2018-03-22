@@ -85,7 +85,8 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        String operation = format( "Completed exceptionally when executing operation %s on %s ", request, upstream );
+        String operation = format( "Timed out executing operation %s on %s ",
+                request, upstream );
 
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }

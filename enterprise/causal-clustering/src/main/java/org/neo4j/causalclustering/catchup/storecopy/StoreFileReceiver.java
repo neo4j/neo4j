@@ -21,6 +21,6 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 public interface StoreFileReceiver
 {
-    StoreFileStream getStoreFileStreams();
+    StoreFileStreams getStoreFileStreams();
 }
 

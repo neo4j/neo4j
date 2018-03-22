@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
@@ -44,13 +45,13 @@ class SimpleCatchupClient implements AutoCloseable
 
     private final AdvertisedSocketAddress from;
     private final StoreId correctStoreId;
-    private final StreamToDiskProvider streamToDiskProvider;
+    private final StreamToDisk streamToDisk;
     private final PageCache clientPageCache;
     private final Log log;
     private final LogProvider logProvider;
 
     SimpleCatchupClient( GraphDatabaseAPI graphDb, FileSystemAbstraction fileSystemAbstraction, CatchUpClient catchUpClient,
-            TestCatchupServer catchupServer, File temporaryDirectory, LogProvider logProvider )
+            TestCatchupServer catchupServer, File temporaryDirectory, LogProvider logProvider ) throws IOException
     {
         this.graphDb = graphDb;
         this.fsa = fileSystemAbstraction;
@@ -60,7 +61,7 @@ class SimpleCatchupClient implements AutoCloseable
         from = getCatchupServerAddress();
         correctStoreId = getStoreIdFromKernelStoreId( graphDb );
         clientPageCache = createPageCache();
-        streamToDiskProvider = new StreamToDiskProvider( temporaryDirectory, fsa, clientPageCache, new Monitors() );
+        streamToDisk = new StreamToDisk( temporaryDirectory, fsa, clientPageCache, new Monitors() );
         log = logProvider.getLog( SimpleCatchupClient.class );
         this.logProvider = logProvider;
     }
@@ -78,7 +79,7 @@ class SimpleCatchupClient implements AutoCloseable
     PrepareStoreCopyResponse requestListOfFilesFromServer( StoreId expectedStoreId ) throws CatchUpClientException
     {
         return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
-                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, logProvider.getLog( SimpleCatchupClient.class ) ) );
+                new PrepareStoreCopyResponseAdaptor( streamToDisk, logProvider ) );
     }
 
     StoreCopyFinishedResponse requestIndividualFile( File file ) throws CatchUpClientException
@@ -90,7 +91,7 @@ class SimpleCatchupClient implements AutoCloseable
     {
         long lastTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId );
-        return catchUpClient.makeBlockingRequest( from, storeFileRequest, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
+        return catchUpClient.makeBlockingRequest( from, storeFileRequest, new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDisk, log ) );
     }
 
     private StoreId getStoreIdFromKernelStoreId( GraphDatabaseAPI graphDb )
@@ -109,13 +110,14 @@ class SimpleCatchupClient implements AutoCloseable
         long lastCheckPointedTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         StoreId storeId = getStoreIdFromKernelStoreId( graphDb );
         GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId );
-        return catchUpClient.makeBlockingRequest( from, request, StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, log ) );
+        return catchUpClient.makeBlockingRequest( from,
+                request, new StoreCopyClient.StoreFileCopyResponseAdaptor( streamToDisk, log ) );
     }
 
     @Override
     public void close() throws Exception
     {
-        IOUtils.closeAll( clientPageCache );
+        IOUtils.closeAll( streamToDisk, clientPageCache );
     }
 
     private static CheckPointer getCheckPointer( GraphDatabaseAPI graphDb )

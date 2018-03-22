@@ -53,7 +53,7 @@ class TestCatchupServerHandler implements CatchupServerHandler
     private final Set<FakeFile> indexFiles = new HashSet<>();
     private final Map<String,Integer> pathToRequestCountMapping = new HashMap<>();
     private final Log log;
-    final CatchupServerProtocol protocol;
+    private final CatchupServerProtocol protocol;
     private TestDirectory testDirectory;
     private FileSystemAbstraction fileSystemAbstraction;
 
