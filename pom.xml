@@ -818,7 +818,7 @@
         </property>
       </activation>
       <properties>
-        <forkCounts>1C</forkCounts>
+        <forkCounts>1</forkCounts>
       </properties>
     </profile>
 
