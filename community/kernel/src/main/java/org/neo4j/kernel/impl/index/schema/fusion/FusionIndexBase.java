@@ -92,30 +92,7 @@ public abstract class FusionIndexBase<T>
     @SafeVarargs
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
     {
-        E exception = null;
-        for ( T subject : subjects )
-        {
-            try
-            {
-                consumer.accept( subject );
-            }
-            catch ( Throwable t )
-            {
-                E e = (E) t;
-                if ( exception == null )
-                {
-                    exception = e;
-                }
-                else
-                {
-                    exception.addSuppressed( e );
-                }
-            }
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
+        forAll( consumer, Arrays.asList( subjects ) );
     }
 
     /**
@@ -148,16 +125,16 @@ public abstract class FusionIndexBase<T>
             {
                 consumer.accept( subject );
             }
-            catch ( Throwable t )
+            catch ( Exception caught )
             {
-                E e = (E) t;
+                E castedException = (E) caught;
                 if ( exception == null )
                 {
-                    exception = e;
+                    exception = castedException;
                 }
                 else
                 {
-                    exception.addSuppressed( e );
+                    exception.addSuppressed( castedException );
                 }
             }
         }
