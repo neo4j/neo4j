@@ -190,14 +190,9 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
         void applyUpdateBatch() throws IOException, IndexEntryConflictException
         {
-            try
-            {
-                add( updates );
-            }
-            finally
-            {
-                updates = new ArrayList<>();
-            }
+            List<IndexEntryUpdate<?>> batch = updates;
+            updates = new ArrayList<>();
+            add( batch );
         }
 
         @Override

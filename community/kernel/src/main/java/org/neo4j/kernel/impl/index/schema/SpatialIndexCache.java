@@ -37,9 +37,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  */
 class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
 {
-    private static final CoordinateReferenceSystem[] referenceSystems =
-            {CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.WGS84_3D, CoordinateReferenceSystem.Cartesian, CoordinateReferenceSystem.Cartesian_3D};
-
     private final Factory<T, E> factory;
 
     private Map<CoordinateReferenceSystem,T> spatials = new CopyOnWriteHashMap<>();
@@ -112,9 +109,10 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
 
     void loadAll()
     {
-        for ( CoordinateReferenceSystem crs : referenceSystems )
+        Iterator<CoordinateReferenceSystem> crsIterator = CoordinateReferenceSystem.all();
+        while ( crsIterator.hasNext() )
         {
-            uncheckedSelect( crs );
+            uncheckedSelect( crsIterator.next() );
         }
     }
 
