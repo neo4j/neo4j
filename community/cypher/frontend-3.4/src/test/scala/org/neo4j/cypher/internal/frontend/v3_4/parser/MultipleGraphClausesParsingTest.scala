@@ -107,22 +107,12 @@ class MultipleGraphClausesParsingTest
     failsToParse
   }
 
-  test("CREATE GRAPH foo.bar") {
-    yields(ast.CreateGraph(fooBarGraph))
-  }
-
   test("RETURN GRAPH") {
     yields(ast.ReturnGraph(None))
   }
 
-  test("RETURN GRAPH foo.bar") {
-    yields(ast.ReturnGraph(Some(fooBarGraph)))
+  // TODO: Parsing ambiguity; is it a graph name 'union' or no graph name and a UNION clause?
+  ignore("RETURN GRAPH union") {
+    yields(ast.ReturnGraph(Some(ast.QualifiedGraphName("union"))))
   }
-
-  private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
-
-  private val complexPattern = exp.Pattern(List(
-    exp.NamedPatternPart(varFor("p"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos),
-    exp.NamedPatternPart(varFor("q"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos)
-  ))(pos)
 }

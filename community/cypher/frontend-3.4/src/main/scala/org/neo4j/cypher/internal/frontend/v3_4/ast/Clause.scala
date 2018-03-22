@@ -105,15 +105,6 @@ final case class ConstructGraph(
 
 }
 
-final case class CreateGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
-
-  override def name = "CREATE GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
-}
-
 final case class ReturnGraph(graphName: Option[QualifiedGraphName])(val position: InputPosition) extends MultipleGraphClause {
 
   override def name = "RETURN GRAPH"

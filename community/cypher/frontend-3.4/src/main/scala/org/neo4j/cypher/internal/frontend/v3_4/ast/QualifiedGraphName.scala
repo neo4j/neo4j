@@ -21,6 +21,10 @@ object QualifiedGraphName {
   def apply(head: String, tail: List[String]): QualifiedGraphName = {
     QualifiedGraphName(head :: tail)
   }
+
+  def apply(parts: String*): QualifiedGraphName = {
+    QualifiedGraphName(parts.head, parts.tail.toList)
+  }
 }
 
 /**

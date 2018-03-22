@@ -54,10 +54,6 @@ trait Clauses extends Parser
     })
   }
 
-  def CreateGraph = rule("CREATE GRAPH") {
-    group(keyword("CREATE GRAPH") ~~ QualifiedGraphName ~~>> (ast.CreateGraph(_)))
-  }
-
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {
     group(SymbolicNameString ~~ zeroOrMore("." ~~ SymbolicNameString) ~~> (ast.QualifiedGraphName(_, _)))
   }
@@ -119,7 +115,7 @@ trait Clauses extends Parser
   )
 
   def Return: Rule1[ast.Clause] = rule("RETURN")(
-    group(keyword("RETURN GRAPH") ~~ optional(QualifiedGraphName) ~~>> (ast.ReturnGraph(_)))
+    group(keyword("RETURN GRAPH")) ~ push(ast.ReturnGraph(None)(_))
       | group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
   )
