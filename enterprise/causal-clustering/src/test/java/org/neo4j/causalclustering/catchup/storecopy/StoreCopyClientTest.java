@@ -68,7 +68,7 @@ public class StoreCopyClientTest
     private final AdvertisedSocketAddress expectedAdvertisedAddress = new AdvertisedSocketAddress( "host", 1234 );
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( expectedAdvertisedAddress );
     private final StoreId expectedStoreId = new StoreId( 1, 2, 3, 4 );
-    private final StoreFileStreamProvider expectedStoreFileStream = mock( StoreFileStreamProvider.class );
+    private final StoreFileStreams expectedStoreFileStreams = mock( StoreFileStreams.class );
 
     // helpers
     private File[] serverFiles = new File[]{new File( "fileA.txt" ), new File( "fileB.bmp" )};
@@ -96,7 +96,7 @@ public class StoreCopyClientTest
         when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
 
         // when client requests catchup
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, continueIndefinitely() );
 
         // then there are as many requests to the server for individual requests
         List<String> filteredRequests = filenamesFromIndividualFileRequests( getRequests() );
@@ -146,7 +146,7 @@ public class StoreCopyClientTest
         // when we perform catchup
         try
         {
-            subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, () -> () ->
+            subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, () -> () ->
             {
                 throw new StoreCopyFailedException( "This can't go on" );
             } );
@@ -174,7 +174,7 @@ public class StoreCopyClientTest
         expectedException.expect( StoreCopyFailedException.class );
 
         // when
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, continueIndefinitely() );
     }
 
     @Test
@@ -190,7 +190,26 @@ public class StoreCopyClientTest
         expectedException.expect( StoreCopyFailedException.class );
 
         // when
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, continueIndefinitely() );
+    }
+
+    @Test
+    public void storeIdMismatchOnCopyIndividualFile() throws StoreCopyFailedException, CatchUpClientException
+    {
+        // given listing response will be successful
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
+        when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn( prepareStoreCopyResponse );
+
+        // and individual file requests get store id mismatch
+        StoreCopyFinishedResponse individualFileStoreCopyResposne = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH );
+        when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn( prepareStoreCopyResponse, individualFileStoreCopyResposne );
+
+        // then exception denotes store id mismatch
+        expectedException.expect( StoreCopyFailedException.class );
+        expectedException.expectMessage( "Store id mismatch" );
+
+        // when copy is performed
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStreams, continueIndefinitely() );
     }
 
     private List<CatchUpRequest> getRequests() throws CatchUpClientException

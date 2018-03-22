@@ -23,6 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -55,26 +58,28 @@ public class StreamToDiskTest
         // GIVEN
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs ) );
         Monitors monitors = new Monitors();
-        StreamToDiskProvider writerProvider = new StreamToDiskProvider( directory.absolutePath(), fs, pageCache, monitors );
-
-        // WHEN
-        for ( StoreType type : StoreType.values() )
+        try ( StreamToDisk writer = new StreamToDisk( directory.absolutePath(), fs, pageCache, monitors ) )
         {
-            if ( type.isRecordStore() )
+            ByteBuffer tempBuffer = ByteBuffer.allocate( 128 );
+
+            // WHEN
+            for ( StoreType type : StoreType.values() )
             {
-                String fileName = type.getStoreFile().fileName( STORE );
-                writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, fileName );
+                if ( type.isRecordStore() )
+                {
+                    String fileName = type.getStoreFile().fileName( STORE );
+                    writeAndVerifyWrittenThroughPageCache( pageCache, writer, tempBuffer, fileName );
+                }
             }
+            writeAndVerifyWrittenThroughPageCache( pageCache, writer, tempBuffer, NativeLabelScanStore.FILE_NAME );
         }
-        writeAndVerifyWrittenThroughPageCache( pageCache, writerProvider, NativeLabelScanStore.FILE_NAME );
     }
 
-    private void writeAndVerifyWrittenThroughPageCache( PageCache pageCache, StreamToDiskProvider writerProvider, String fileName ) throws Exception
+    private void writeAndVerifyWrittenThroughPageCache( PageCache pageCache, StreamToDisk writer,
+            ByteBuffer tempBuffer, String fileName )
+            throws IOException
     {
-        try ( StoreFileStream acquire = writerProvider.acquire( fileName, 16 ) )
-        {
-            acquire.write( DATA );
-        }
+        writer.write( fileName, 16, DATA );
         verify( pageCache ).map( eq( directory.file( fileName ) ), anyInt(), any() );
     }
 }

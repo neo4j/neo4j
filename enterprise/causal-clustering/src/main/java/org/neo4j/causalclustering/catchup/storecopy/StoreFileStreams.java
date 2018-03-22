@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
 
-public interface StoreFileStreamProvider
+public interface StoreFileStreams extends AutoCloseable
 {
-    StoreFileStream acquire( String destination, int requiredAlignment ) throws IOException;
+    void write( String destination, int requiredAlignment, byte[] data ) throws IOException;
 }
