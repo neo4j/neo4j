@@ -162,12 +162,6 @@ public class PointTest
     }
 
     @Test
-    public void shouldBeAbleToParsePointAndIgnoreUnknownFields()
-    {
-        assertEqual( pointValue( WGS84, 1.0, 2.0 ), PointValue.parse( "{latitude:2.0,longitude:1.0,unknown_field:\"hello\"}" ) );
-    }
-
-    @Test
     public void shouldNotBeAbleToParsePointsWithConflictingDuplicateFields()
     {
         assertThat( assertCannotParse( "{latitude: 2.0, longitude: 1.0, latitude: 3.0}" ).getMessage(), CoreMatchers.containsString( "Duplicate field" ) );

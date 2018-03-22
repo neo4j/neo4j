@@ -113,6 +113,11 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 4))))
   }
 
+  test("point function should throw on unrecognized map entry") {
+    val stillWithoutFix = Configs.Version3_1 + Configs.Version3_3 + Configs.AllRulePlanners
+    failWithError(pointConfig - stillWithoutFix, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+  }
+
   test("should fail properly if missing cartesian coordinates") {
     failWithError(pointConfig, "RETURN point({params}) as point",
       List("A cartesian point must contain 'x' and 'y'",
