@@ -53,6 +53,9 @@ public interface PageCache
     @Description( "Number of files that have been unmapped from the page cache." )
     long getFileUnmappings();
 
+    @Description( "Ratio of hits to the total number of lookups in the page cache" )
+    double getHitRatio();
+
     @Description( "Number of exceptions caught during page eviction. " +
                   "This number should be zero, or at least not growing, in a healthy database. " +
                   "Otherwise it could indicate drive failure, storage space, or permission problems." )
