@@ -217,12 +217,11 @@ public enum TemporalType
                     if ( dataValue instanceof LongArray )
                     {
                         LongArray numbers = (LongArray) dataValue;
-                        OffsetTime[] times = new OffsetTime[(int) (numbers.length() / 1.25)];
+                        OffsetTime[] times = new OffsetTime[(int) (numbers.length() / BLOCKS_TIME)];
                         for ( int i = 0; i < times.length; i++ )
                         {
-                            long nanoOfDay = numbers.longValue( i );
-                            int shift = (i % 4) * 16;
-                            short minuteOffset = (short) (numbers.longValue( times.length + i / 4 ) >>> shift);
+                            long nanoOfDay = numbers.longValue( i * BLOCKS_TIME );
+                            int minuteOffset = (int) numbers.longValue( i * BLOCKS_TIME + 1 );
                             times[i] = OffsetTime.of( LocalTime.ofNanoOfDay( nanoOfDay ), ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
                         }
                         return Values.timeArray( times );
@@ -584,24 +583,13 @@ public enum TemporalType
 
     public static byte[] encodeTimeArray( OffsetTime[] times )
     {
-        // This way of storing sucks in terms of cache locality
-        long[] data = new long[(int) (Math.ceil( times.length * 1.25 ))];
-        // First all nano of days (each is a long)
+        // We could store this in dateTimes.length * 1.25 if we wanted
+        long[] data = new long[(int) (Math.ceil( times.length * BLOCKS_TIME ))];
         int i;
         for ( i = 0; i < times.length; i++ )
         {
-            data[i] = times[i].toLocalTime().toNanoOfDay();
-        }
-        // Then all minuteOffsets (each fits in a short)
-        for ( int j = 0; j < times.length; j++ )
-        {
-            int shift = (j % 4) * 16;
-            short minuteOffset = (short) (times[j].getOffset().getTotalSeconds() / 60);
-            data[i] = (Short.toUnsignedLong( minuteOffset )) << shift | data[i];
-            if ( j % 4 == 3 )
-            {
-                i++;
-            }
+            data[i * BLOCKS_TIME] = times[i].toLocalTime().toNanoOfDay();
+            data[i * BLOCKS_TIME + 1] = times[i].getOffset().getTotalSeconds() / 60;
         }
 
         TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_TIME.temporalType );
