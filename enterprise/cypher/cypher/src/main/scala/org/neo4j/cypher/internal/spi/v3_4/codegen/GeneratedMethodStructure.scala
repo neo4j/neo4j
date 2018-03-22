@@ -284,9 +284,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression =
     toAnyValue(expression, codeGenType, materializeEntities = false)
 
+  // NOTE: This method assumes that code for converting from null to NoValue for nullable expressions has already been generated outside it
   private def toAnyValue(expression: Expression, codeGenType: CodeGenType, materializeEntities: Boolean): Expression = codeGenType match {
     case CypherCodeGenType(_, _: AnyValueType) =>
       expression // Already an AnyValue
+
+    // == Node ==
     case CodeGenType.primitiveNode =>
       if (materializeEntities)
         invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
@@ -294,42 +297,46 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       else
         createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
 
-//    case CypherCodeGenType(CTNode, _) =>
-//      // TODO: May already be a NodeValue
-//      invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
+    case CypherCodeGenType(CTNode, _) => // NOTE: This may already be a NodeValue
+      invoke(method[ValueUtils, NodeValue]("asNodeValue", typeRef[Object]), expression)
+
+    // == Relationship ==
     case CodeGenType.primitiveRel =>
       if (materializeEntities)
         invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
                invoke(nodeManager, newRelationshipProxyById, expression))
       else
         createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
-//    case CypherCodeGenType(CTRelationship, _) =>
-//      // TODO: May already be a RelationshipValue
-//      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
-//             cast(typeRef[Relationship], expression))
+
+    case CypherCodeGenType(CTRelationship, _) => // NOTE: This may already be a RelationshipValue
+      invoke(method[ValueUtils, RelationshipValue]("asRelationshipValue", typeRef[Object]), expression)
+
+    // == Integer ==
     case CodeGenType.primitiveInt =>
       invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)
-//    case CypherCodeGenType(CTInteger, _) =>
-//      // TODO: May already be a LongValue
-//      invoke(method[Values, LongValue]("longValue", typeRef[Long]), Expression.unbox(cast(typeRef[java.lang.Long],
-//                                                                                          expression)))
+
+    case CypherCodeGenType(CTInteger, _) => // NOTE: This may already be a LongValue
+      invoke(method[ValueUtils, LongValue]("asLongValue", typeRef[Object]), expression)
+
+    // == Float ==
     case CodeGenType.primitiveFloat =>
       invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), expression)
-//    case CypherCodeGenType(symbols.CTFloat, _) =>
-//      // TODO: May already be a DoubleValue
-//      invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), Expression.unbox(cast(typeRef[java.lang.Double],
-//                                                                                              expression)))
+
+    case CypherCodeGenType(symbols.CTFloat, _) => // NOTE: This may already be a DoubleValue
+      invoke(method[ValueUtils, DoubleValue]("asDoubleValue", typeRef[Object]), expression)
+
+    // == Boolean ==
     case CodeGenType.primitiveBool =>
       invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), expression)
-//    case CypherCodeGenType(symbols.CTBoolean, _) =>
-//      // TODO: May already be a BooleanValue
-//      invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), Expression.unbox(cast(typeRef[java.lang.Boolean],
-//                                                                                                expression)))
-//    case CypherCodeGenType(symbols.CTString, _) =>
-//      // TODO: May already be a TextValue
-//      invoke(method[Values, TextValue]("stringValue", typeRef[String]), cast(typeRef[String], expression))
 
-    // Primitive list values
+    case CypherCodeGenType(symbols.CTBoolean, _) => // NOTE: This may already be a BooleanValue
+      invoke(method[ValueUtils, BooleanValue]("asBooleanValue", typeRef[Object]), expression)
+
+    // == String ==
+    case CypherCodeGenType(symbols.CTString, _) => // NOTE: This may already be a StringValue
+      invoke(method[ValueUtils, TextValue]("asTextValue", typeRef[Object]), expression)
+
+    // TODO: Primitive list values
 // TODO: Remove. This is just cut-out from another method to show the different cases:
 //    case CypherCodeGenType(ListType(CTNode), ListReferenceType(LongType)) =>
 //      Expression.invoke(methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Object]), publicTypeList)

@@ -36,9 +36,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.RelationshipValue;
@@ -288,4 +291,90 @@ public final class ValueUtils
         }
         return of( value );
     }
+
+    public static NodeValue asNodeValue( Object object )
+    {
+        if ( object instanceof NodeValue )
+        {
+            return (NodeValue) object;
+        }
+        if ( object instanceof Node )
+        {
+            return fromNodeProxy( (Node) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a node from " + object.getClass().getName() );
+    }
+
+    public static RelationshipValue asRelationshipValue( Object object )
+    {
+        if ( object instanceof RelationshipValue )
+        {
+            return (RelationshipValue) object;
+        }
+        if ( object instanceof Relationship )
+        {
+            return fromRelationshipProxy( (Relationship) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a relationship from " + object.getClass().getName() );
+    }
+
+    public static LongValue asLongValue( Object object )
+    {
+        if ( object instanceof LongValue )
+        {
+            return (LongValue) object;
+        }
+        if ( object instanceof Long )
+        {
+            return Values.longValue( (long) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a long from " + object.getClass().getName() );
+    }
+
+    public static DoubleValue asDoubleValue( Object object )
+    {
+        if ( object instanceof DoubleValue )
+        {
+            return (DoubleValue) object;
+        }
+        if ( object instanceof Double )
+        {
+            return Values.doubleValue( (double) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a double from " + object.getClass().getName() );
+    }
+
+    public static BooleanValue asBooleanValue( Object object )
+    {
+        if ( object instanceof BooleanValue )
+        {
+            return (BooleanValue) object;
+        }
+        if ( object instanceof Boolean )
+        {
+            return Values.booleanValue( (boolean) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a boolean from " + object.getClass().getName() );
+    }
+
+    public static TextValue asTextValue( Object object )
+    {
+        if ( object instanceof TextValue )
+        {
+            return (TextValue) object;
+        }
+        if ( object instanceof String )
+        {
+            return Values.stringValue( (String) object );
+        }
+        throw new IllegalArgumentException(
+                "Cannot produce a string from " + object.getClass().getName() );
+    }
+
 }
+
