@@ -38,17 +38,17 @@ public class TimeConstants
     {
     }
 
-    public static long asValidLocalTime( long nanosPerDayUTC )
+    public static long asValidTime( long nanosPerDay )
     {
-        if ( nanosPerDayUTC < 0 )
+        if ( nanosPerDay < 0 )
         {
-            return nanosPerDayUTC + NANOS_PER_DAY;
+            return nanosPerDay + NANOS_PER_DAY;
         }
-        if ( nanosPerDayUTC >= NANOS_PER_DAY )
+        if ( nanosPerDay >= NANOS_PER_DAY )
         {
-            return nanosPerDayUTC - NANOS_PER_DAY;
+            return nanosPerDay - NANOS_PER_DAY;
         }
-        return nanosPerDayUTC;
+        return nanosPerDay;
     }
 
     public static OffsetTime truncateOffsetToMinutes( OffsetTime value )
