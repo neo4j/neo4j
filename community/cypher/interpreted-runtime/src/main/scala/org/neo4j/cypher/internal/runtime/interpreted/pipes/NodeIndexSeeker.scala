@@ -29,6 +29,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.NodeValue
 
+import collection.JavaConverters._
+
 /**
   * Mixin trait with functionality for executing logical index queries.
   *
@@ -122,12 +124,12 @@ trait NodeIndexSeeker {
             val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
             (valueRange.distance, valueRange.point) match {
               case (distance: NumberValue, point: PointValue) =>
-                val bbox = point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue())
-                List(List(IndexQuery.range(propertyIds.head,
-                                           bbox.first(),
-                                           range.inclusive,
-                                           bbox.other(),
-                                           range.inclusive
+                val bboxes = point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue()).asScala
+                bboxes.map( bbox => List(IndexQuery.range(propertyIds.head,
+                  bbox.first(),
+                  range.inclusive,
+                  bbox.other(),
+                  range.inclusive
                 )))
               case _ => Nil
             }
