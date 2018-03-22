@@ -292,8 +292,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     // == Node ==
     case CodeGenType.primitiveNode =>
       if (materializeEntities)
-        invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
-               invoke(nodeManager, newNodeProxyById, expression))
+        createNewNodeValueFromPrimitive(nodeManager, expression)
       else
         createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
 
@@ -303,8 +302,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     // == Relationship ==
     case CodeGenType.primitiveRel =>
       if (materializeEntities)
-        invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
-               invoke(nodeManager, newRelationshipProxyById, expression))
+        createNewRelationshipValueFromPrimitive(nodeManager, expression)
       else
         createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
 
@@ -337,27 +335,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(method[ValueUtils, TextValue]("asTextValue", typeRef[Object]), expression)
 
     // TODO: Primitive list values
-// TODO: Remove. This is just cut-out from another method to show the different cases:
-//    case CypherCodeGenType(ListType(CTNode), ListReferenceType(LongType)) =>
-//      Expression.invoke(methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Object]), publicTypeList)
-//    case CypherCodeGenType(ListType(CTRelationship), ListReferenceType(LongType)) =>
-//      Expression.invoke(methodReference(typeRef[PrimitiveRelationshipStream], typeRef[PrimitiveRelationshipStream], "of", typeRef[Object]), publicTypeList)
-//    case CypherCodeGenType(_, ListReferenceType(LongType)) =>
-//      // byte[]
-//      // short[]
-//      // int[]
-//      // long[]
-//      // Object[]
-//      Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
-//    case CypherCodeGenType(_, ListReferenceType(FloatType)) =>
-//      // float[]
-//      // double[]
-//      // Object[]
-//      Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[DoubleStream], "toDoubleStream", typeRef[Object]), publicTypeList)
-//    case CypherCodeGenType(_, ListReferenceType(BoolType)) =>
-//      // boolean[]
-//      // Object[]
-//      Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[IntStream], "toBooleanStream", typeRef[Object]), publicTypeList)
+    //    case CypherCodeGenType(ListType(CTNode), ListReferenceType(LongType)) =>
+    //    case CypherCodeGenType(ListType(CTRelationship), ListReferenceType(LongType)) =>
+    //    case CypherCodeGenType(_, ListReferenceType(LongType)) =>
+    //    case CypherCodeGenType(_, ListReferenceType(FloatType)) =>
+    //    case CypherCodeGenType(_, ListReferenceType(BoolType)) =>
 
     case _ =>
       // This also allows things that are already AnyValue (as opposed to ValueUtils.of). We do not always know this at compile time.
@@ -464,9 +446,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.ifStatement(not(invoke(params,  method[MapValue, Boolean]("containsKey", typeRef[String]), constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-    val invokeLoadParameter = invoke(loadParameter,
-                                     invoke(params, method[MapValue, AnyValue]("get", typeRef[String]), constantExpression(key)),
-                                     get(generator.self(), fields.entityAccessor))
+    val invokeLoadParameter = invoke(params, method[MapValue, AnyValue]("get", typeRef[String]), constantExpression(key))
+
     generator.assign(lowerType(codeGenType), variableName,
       // We assume the value in the parameter map will always be boxed, so if we are declaring
       // a primitive variable we need to force it to be unboxed
@@ -692,16 +673,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         // short[]
         // int[]
         // long[]
-        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
       case CypherCodeGenType(_, ListReferenceType(FloatType)) =>
         // float[]
         // double[]
-        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[DoubleStream], "toDoubleStream", typeRef[Object]), publicTypeList)
       case CypherCodeGenType(_, ListReferenceType(BoolType)) =>
         // boolean[]
-        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[IntStream], "toBooleanStream", typeRef[Object]), publicTypeList)
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
@@ -1184,18 +1162,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-
-  //override def castToCollection(value: Expression) = invoke(Methods.toCollection, value)
-
-  // This version is for when maps contains java types
-//  override def asMap(map: Map[String, Expression]) = {
-//    invoke(method[ValueUtils, MapValue]("asMapValue", typeRef[Map[String,Object]]),
-//      invoke(Methods.createMap,
-//             newArray(typeRef[Object], map.flatMap {
-//               case (key, value) => Seq(constant(key), value)
-//             }.toSeq: _*)))
-//  }
-
   // This version is for when maps contains AnyValues
   override def asMap(map: Map[String, Expression]) = {
     invoke(method[VirtualValues, MapValue]("map", typeRef[java.util.Map[String,AnyValue]]),
@@ -1487,7 +1453,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def localVariable(variable: String, e: Expression, codeGenType: CodeGenType): Unit = {
-//    val local = generator.declare(e.`type`(), variable)
     val local = generator.declare(lowerType(codeGenType), variable)
     generator.assign(local, e)
   }
@@ -1510,15 +1475,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
-//                  invoke(
-//                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "nodeGetProperty",
                                       typeRef[Read], typeRef[NodeCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType), propertyCursor, body.load(propIdVar))
-//                  )
       )
     } { fail =>
       fail.assign(local, constant(null))
@@ -1529,15 +1491,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
-//                  invoke(
-//                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "nodeGetProperty",
                                       typeRef[Read], typeRef[NodeCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType),  propertyCursor, constant(propId))
-//                  )
       )
     }{ fail =>
       fail.assign(local, constant(null))
@@ -1567,15 +1526,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
-//                  invoke(
-//                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "relationshipGetProperty",
                                       typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType), propertyCursor, body.load(propIdVar))
-//                  )
       )
     } { fail =>
       fail.assign(local, constant(null))
@@ -1586,15 +1542,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
-//                  invoke(
-//                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "relationshipGetProperty",
                                       typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType),  propertyCursor, constant(propId))
-//                  )
       )
     }{ fail =>
       fail.assign(local, constant(null))
