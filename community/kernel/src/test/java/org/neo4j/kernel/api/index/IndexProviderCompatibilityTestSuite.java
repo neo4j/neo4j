@@ -158,14 +158,14 @@ public abstract class IndexProviderCompatibilityTestSuite
                     populator.close( true );
                 }
                 catch ( Exception e )
-                {   // ignore
-                }
-                try
                 {
-                    populator.close( false );
-                }
-                catch ( Exception e )
-                {   // ignore
+                    try
+                    {
+                        populator.close( false );
+                    }
+                    catch ( Exception inner )
+                    {   // ignore
+                    }
                 }
             }
         }
