@@ -146,7 +146,7 @@ public class MultipleIndexPopulatorUpdatesTest
         {
             if ( nodeRecord.getId() == 7 )
             {
-                indexPopulator.queue( IndexEntryUpdate.change( 8L, index, Values.of( "a" ), Values.of( "b" ) ) );
+                indexPopulator.queueUpdate( IndexEntryUpdate.change( 8L, index, Values.of( "a" ), Values.of( "b" ) ) );
             }
         }
     }
