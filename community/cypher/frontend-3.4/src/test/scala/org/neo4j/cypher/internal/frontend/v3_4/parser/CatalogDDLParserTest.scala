@@ -34,9 +34,9 @@ class CatalogDDLParserTest
     yields(ast.CreateGraph(graphName, query))
   }
 
-  test("CREATE GRAPH foo.bar { USE GRAPH foo RETURN GRAPH UNION ALL USE GRAPH bar RETURN GRAPH }") {
-    val useGraph1 = ast.UseGraph(ast.QualifiedGraphName("foo"))(pos)
-    val useGraph2 = ast.UseGraph(ast.QualifiedGraphName("bar"))(pos)
+  test("CREATE GRAPH foo.bar { FROM GRAPH foo RETURN GRAPH UNION ALL FROM GRAPH bar RETURN GRAPH }") {
+    val useGraph1 = ast.FromGraph(ast.QualifiedGraphName("foo"))(pos)
+    val useGraph2 = ast.FromGraph(ast.QualifiedGraphName("bar"))(pos)
     val lhs = ast.SingleQuery(Seq(useGraph1, returnGraph))(pos)
     val rhs = ast.SingleQuery(Seq(useGraph2, returnGraph))(pos)
     val union = ast.UnionAll(lhs, rhs)(pos)
@@ -45,9 +45,9 @@ class CatalogDDLParserTest
     yields(ast.CreateGraph(graphName, union))
   }
 
-  test("CREATE GRAPH foo.bar { USE GRAPH foo RETURN GRAPH UNION USE GRAPH bar RETURN GRAPH }") {
-    val useGraph1 = ast.UseGraph(ast.QualifiedGraphName("foo"))(pos)
-    val useGraph2 = ast.UseGraph(ast.QualifiedGraphName("bar"))(pos)
+  test("CREATE GRAPH foo.bar { FROM GRAPH foo RETURN GRAPH UNION FROM GRAPH bar RETURN GRAPH }") {
+    val useGraph1 = ast.FromGraph(ast.QualifiedGraphName("foo"))(pos)
+    val useGraph2 = ast.FromGraph(ast.QualifiedGraphName("bar"))(pos)
     val lhs = ast.SingleQuery(Seq(useGraph1, returnGraph))(pos)
     val rhs = ast.SingleQuery(Seq(useGraph2, returnGraph))(pos)
     val union = ast.UnionDistinct(lhs, rhs)(pos)

@@ -34,8 +34,8 @@ class MultipleGraphClausesParsingTest
   val fooBarGraph = ast.QualifiedGraphName(List("foo", "bar"))
   val fooDiffGraph = ast.QualifiedGraphName(List("foo", "diff"))
 
-  test("USE GRAPH foo.bar") {
-    yields(ast.UseGraph(fooBarGraph))
+  test("FROM GRAPH foo.bar") {
+    yields(ast.FromGraph(fooBarGraph))
   }
 
   test("CONSTRUCT { CREATE () }") {

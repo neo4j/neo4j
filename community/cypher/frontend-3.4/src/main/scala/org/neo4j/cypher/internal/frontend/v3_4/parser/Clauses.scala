@@ -39,8 +39,8 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def UseGraph = rule("USE GRAPH") {
-    group(keyword("USE GRAPH") ~~ QualifiedGraphName ~~>> (ast.UseGraph(_)))
+  def fromGraph = rule("FROM GRAPH") {
+    group(keyword("FROM GRAPH") ~~ QualifiedGraphName ~~>> (ast.FromGraph(_)))
   }
 
   def ConstructGraph = rule("CONSTRUCT") {

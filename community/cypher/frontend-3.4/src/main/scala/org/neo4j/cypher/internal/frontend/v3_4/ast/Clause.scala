@@ -77,9 +77,9 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-final case class UseGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
+final case class FromGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
 
-    override def name = "USE GRAPH"
+    override def name = "FROM GRAPH"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
