@@ -263,17 +263,24 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     private final LocalDateTime value;
+    private final long epochSecondsInUTC;
 
     private LocalDateTimeValue( LocalDateTime value )
     {
         this.value = value;
+        this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    int unsafeCompareTo( Value other )
     {
-        LocalDateTimeValue other = (LocalDateTimeValue) otherValue;
-        return value.compareTo( other.value );
+        LocalDateTimeValue that = (LocalDateTimeValue) other;
+        int cmp = Long.compare( epochSecondsInUTC, that.epochSecondsInUTC );
+        if ( cmp == 0 )
+        {
+            cmp = value.getNano() - that.value.getNano();
+        }
+        return cmp;
     }
 
     @Override
