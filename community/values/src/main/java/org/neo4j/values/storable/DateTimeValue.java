@@ -478,7 +478,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
                     boolean thisIsOffset = thisZone instanceof ZoneOffset;
                     boolean thatIsOffset = thatZone instanceof ZoneOffset;
                     cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
-                    if ( cmp == 0 && (thisIsOffset || !areSameZone( thisZone, thatZone ) ) )
+                    if ( cmp == 0 && (thisIsOffset || !areSameZone( thisZone, thatZone, thisIsOffset, thatIsOffset ) ) )
                     {
                         cmp = thisZone.getId().compareTo( thatZone.getId() );
                     }
@@ -492,10 +492,8 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return cmp;
     }
 
-    private boolean areSameZone( ZoneId thisZone, ZoneId thatZone )
+    private boolean areSameZone( ZoneId thisZone, ZoneId thatZone, boolean thisIsOffset, boolean thatIsOffset )
     {
-        boolean thisIsOffset = thisZone instanceof ZoneOffset;
-        boolean thatIsOffset = thatZone instanceof ZoneOffset;
         if ( thisIsOffset && thatIsOffset )
         {
             return thisZone.equals( thatZone );
@@ -505,6 +503,13 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             return TimeZones.map( thisZone.getId() ) == TimeZones.map( thatZone.getId() );
         }
         return false;
+    }
+
+    private boolean areSameZone( ZoneId thisZone, ZoneId thatZone )
+    {
+        boolean thisIsOffset = thisZone instanceof ZoneOffset;
+        boolean thatIsOffset = thatZone instanceof ZoneOffset;
+        return areSameZone( thisZone, thatZone, thisIsOffset, thatIsOffset );
     }
 
     @Override

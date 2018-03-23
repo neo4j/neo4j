@@ -164,7 +164,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
         MatchResult(
           result,
           s"Different results with and without index. Without index: ${nonIndexedResult.toList} vs. with index: ${indexedResult.toList}",
-          s"Expected different results without without index but were the same: ${nonIndexedResult.toList}."
+          s"Expected different results with and without index but were the same: ${nonIndexedResult.toList}."
         )
       }
     }
