@@ -95,11 +95,33 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends LifecycleAdapter implements Comparable<IndexProvider<?>>
 {
-    public static final IndexProvider NO_INDEX_PROVIDER =
+    public interface Monitor
+    {
+        Monitor EMPTY = new Monitor.Adaptor();
+
+        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
+
+        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            {   // no-op
+            }
+        }
+    }
+
+    public static final IndexProvider EMPTY =
             new IndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
-                private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
-                private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
+                private final IndexAccessor singleWriter = IndexAccessor.EMPTY;
+                private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
                 public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
@@ -124,7 +146,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 @Override
                 public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
                 {
-                    return InternalIndexState.POPULATING;
+                    return InternalIndexState.ONLINE;
                 }
 
                 @Override
@@ -152,31 +174,9 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                     throw new IllegalStateException();
                 }
             };
-
     // Used by deserialization
+
     public abstract IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata );
-
-    public interface Monitor
-    {
-        Monitor EMPTY = new Monitor.Adaptor();
-
-        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
-
-        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
-
-        class Adaptor implements Monitor
-        {
-            @Override
-            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
-            {   // no-op
-            }
-        }
-    }
 
     /**
      * Indicate that {@link Descriptor} has not yet been decided.

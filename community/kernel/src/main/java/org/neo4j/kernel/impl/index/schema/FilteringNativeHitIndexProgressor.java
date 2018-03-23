@@ -39,7 +39,7 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE exten
     }
 
     @Override
-    boolean acceptValue( Value[] values )
+    protected boolean acceptValue( Value[] values )
     {
         for ( int i = 0; i < values.length; i++ )
         {

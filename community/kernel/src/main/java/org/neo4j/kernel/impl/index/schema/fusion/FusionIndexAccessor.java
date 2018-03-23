@@ -147,10 +147,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         List<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexAccessor accessor : instances )
-        {
-            snapshots.add( accessor.snapshotFiles() );
-        }
+        forAll( accessor -> snapshots.add( accessor.snapshotFiles() ), instances );
         return concatResourceIterators( snapshots.iterator() );
     }
 

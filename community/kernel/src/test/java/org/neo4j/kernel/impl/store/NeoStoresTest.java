@@ -503,7 +503,7 @@ public class NeoStoresTest
         initializeStores( storeDir, stringMap() );
         startTx();
         StorageProperty prop2 = nodeAddProperty( nodeId, prop.propertyKeyId(), 5 );
-        transaction.nodeDoRemoveProperty( nodeId, prop2.propertyKeyId(), prop2.value() );
+        transaction.nodeDoRemoveProperty( nodeId, prop2.propertyKeyId() );
         transaction.nodeDoDelete( nodeId );
         commitTx();
         ds.stop();
@@ -1328,7 +1328,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value().asObject() );
-                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), prop3.value() );
+                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
             }
             else
             {
@@ -1389,7 +1389,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value().asObject() );
-                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId(), prop3.value() );
+                transaction.relationshipDoRemoveProperty( rel, prop3.propertyKeyId() );
             }
             else
             {
@@ -1455,7 +1455,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( false, data.value().asObject() );
-                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), prop3.value() );
+                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
             }
             else
             {
@@ -1501,7 +1501,7 @@ public class NeoStoresTest
                 assertEquals( "prop3", MyPropertyKeyToken.getIndexFor(
                         keyId ).name() );
                 assertEquals( true, data.value().asObject() );
-                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId(), prop3.value() );
+                transaction.nodeDoRemoveProperty( node, prop3.propertyKeyId() );
             }
             else
             {

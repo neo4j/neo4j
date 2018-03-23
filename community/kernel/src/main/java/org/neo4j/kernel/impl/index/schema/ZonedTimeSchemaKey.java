@@ -40,8 +40,6 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
             Integer.BYTES + /* zoneOffsetSeconds */
             Long.BYTES;     /* entityId */
 
-    private static final long NANOS_PER_SECOND = 1_000_000_000L;
-
     long nanosOfDayUTC;
     int zoneOffsetSeconds;
 
@@ -51,8 +49,7 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
         // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
         if ( TimeZones.validZoneOffset( zoneOffsetSeconds ) )
         {
-            return TimeValue.time( nanosOfDayUTC + zoneOffsetSeconds * NANOS_PER_SECOND,
-                                   ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
+            return TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( zoneOffsetSeconds ) );
         }
         return NO_VALUE;
     }
@@ -90,9 +87,9 @@ class ZonedTimeSchemaKey extends NativeSchemaKey<ZonedTimeSchemaKey>
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
     {
-        this.nanosOfDayUTC = nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
+        this.nanosOfDayUTC = nanosOfDayUTC;
         this.zoneOffsetSeconds = offsetSeconds;
     }
 

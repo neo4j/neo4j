@@ -87,14 +87,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       getDependencyResolver.
       provideDependency(classOf[ThreadToStatementContextBridge]).
       get
-    transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val guard = new TerminationGuard
     val locker = new PropertyContainerLocker
     val query = transactionalContext.tc.executingQuery()
 
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = new Neo4jTransactionalContext(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
+    val neo4jTransactionalContext = context.copyFrom(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
 

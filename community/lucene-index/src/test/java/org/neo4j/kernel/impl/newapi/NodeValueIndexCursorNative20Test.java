@@ -17,23 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.function;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * Represents a function that accepts an int-valued argument and produces a result.
- * This is the int-consuming primitive specialization for {@link ThrowingFunction}.
- *
- * @param <R> the type of the result of the function
- * @param <E> the type of exception that may be thrown from the function
- */
-public interface ThrowingIntFunction<R, E extends Exception>
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+
+public class NodeValueIndexCursorNative20Test extends AbstractNodeValueIndexCursorTest
 {
-    /**
-     * Applies this function to the given argument.
-     *
-     * @param value the function argument
-     * @return the function result
-     * @throws E an exception if the function fails
-     */
-    R apply( int value ) throws E;
+    @Override
+    public ReadTestSupport newTestSupport()
+    {
+        ReadTestSupport readTestSupport = new ReadTestSupport();
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.param() );
+        return readTestSupport;
+    }
+
+    @Override
+    protected String providerKey()
+    {
+        return "lucene+native";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "2.0";
+    }
 }

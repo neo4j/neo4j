@@ -240,6 +240,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         life = new LifeSupport();
         this.storeDir = storeDir;
+        storeLocker = tryLockStore( fileSystem );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                 EmptyVersionContextSupplier.EMPTY );
@@ -251,7 +252,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
         msgLog = logService.getInternalLog( getClass() );
-        storeLocker = tryLockStore( fileSystem );
 
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );

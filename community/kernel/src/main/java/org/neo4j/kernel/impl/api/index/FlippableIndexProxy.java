@@ -436,7 +436,7 @@ public class FlippableIndexProxy implements IndexProxy
         }
     }
 
-    public void flip( Callable<Void> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
+    public void flip( Callable<Boolean> actionDuringFlip, FailedIndexProxyFactory failureDelegate )
             throws FlipFailedKernelException
     {
         lock.writeLock().lock();
@@ -445,11 +445,14 @@ public class FlippableIndexProxy implements IndexProxy
             assertOpen();
             try
             {
-                actionDuringFlip.call();
-                this.delegate = flipTarget.create();
-                if ( started )
+                if ( actionDuringFlip.call() )
                 {
-                    this.delegate.start();
+                    this.delegate = flipTarget.create();
+                    if ( started )
+                    {
+                        this.delegate.start();
+
+                    }
                 }
             }
             catch ( Exception e )

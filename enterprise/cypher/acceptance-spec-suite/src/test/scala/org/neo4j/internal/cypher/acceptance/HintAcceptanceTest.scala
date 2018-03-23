@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 import scala.collection.Map
 
@@ -67,5 +67,22 @@ class HintAcceptanceTest
       p should useOperators("NodeRightOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
     }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+  }
+
+  test("should solve join hint on 1 variable with join on more, if possible") {
+    val query =
+      """MATCH (pA:Person),(pB:Person) WITH pA, pB
+        |
+        |OPTIONAL MATCH
+        |  (pA)<-[:HAS_CREATOR]-(pB)
+        |USING JOIN ON pB
+        |RETURN *""".stripMargin
+
+    // TODO: Once 3.3 comes out with the same bugfix, we should change the following lines to not exclude 3.3
+    val cost3_3 = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query,
+      planComparisonStrategy = ComparePlansWithAssertion((p) => {
+        p should useOperators("NodeRightOuterHashJoin")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + cost3_3))
   }
 }

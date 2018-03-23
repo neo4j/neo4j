@@ -30,7 +30,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.StandardOpenOption;
@@ -38,8 +40,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
@@ -50,13 +50,11 @@ import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -131,7 +129,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void canPerformCatchup() throws StoreCopyFailedException
+    public void canPerformCatchup() throws StoreCopyFailedException, IOException
     {
         // given local client has a store
         InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
@@ -148,7 +146,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void failedFileCopyShouldRetry() throws StoreCopyFailedException
+    public void failedFileCopyShouldRetry() throws StoreCopyFailedException, IOException
     {
         // given a file will fail twice before succeeding
         fileB.setRemainingFailed( 2 );
@@ -177,7 +175,7 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void reconnectingWorks() throws StoreCopyFailedException
+    public void reconnectingWorks() throws StoreCopyFailedException, IOException
     {
         // given local client has a store
         InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
@@ -333,63 +331,30 @@ public class StoreCopyClientIT
         return testDirectory.file( filename );
     }
 
-    private String fileContent( File file )
+    private String fileContent( File file ) throws IOException
     {
         return fileContent( file, fsa );
     }
 
-    private static StringBuilder serverFileContentsStringBuilder( File file, FileSystemAbstraction fileSystemAbstraction )
+    static String fileContent( File file, FileSystemAbstraction fsa ) throws IOException
     {
-        try ( StoreChannel storeChannel = fileSystemAbstraction.open( file, OpenMode.READ ) )
+        int chunkSize = 128;
+        StringBuilder stringBuilder = new StringBuilder();
+        try ( Reader reader = fsa.openAsReader( file, Charsets.UTF_8 ) )
         {
-            final int MAX_BUFFER_SIZE = 100;
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[MAX_BUFFER_SIZE] );
-            StringBuilder stringBuilder = new StringBuilder();
-            Predicate<Integer> inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
-            Supplier<Integer> readNext = unchecked( () -> storeChannel.read( byteBuffer ) );
-            for ( int readBytes = readNext.get(); inRange.test( readBytes ); readBytes = readNext.get() )
+            CharBuffer charBuffer = CharBuffer.wrap( new char[chunkSize] );
+            while ( reader.read( charBuffer ) != -1 )
             {
-                for ( byte index = 0; index < readBytes; index++ )
-                {
-                    char actual = (char) byteBuffer.get( index );
-                    stringBuilder.append( actual );
-                }
+                charBuffer.flip();
+                stringBuilder.append( charBuffer );
+                charBuffer.clear();
             }
-            return stringBuilder;
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return stringBuilder.toString();
     }
 
-    static String fileContent( File file, FileSystemAbstraction fileSystemAbstraction )
+    private String clientFileContents( InMemoryStoreStreamProvider storeStreamProvider, String filename )
     {
-        return serverFileContentsStringBuilder( file, fileSystemAbstraction ).toString();
-    }
-
-    private static Supplier<Integer> unchecked( ThrowingSupplier<Integer,?> throwableSupplier )
-    {
-        return () ->
-        {
-            try
-            {
-                return throwableSupplier.get();
-            }
-            catch ( Throwable throwable )
-            {
-                throw new RuntimeException( throwable );
-            }
-        };
-    }
-
-    private static Predicate<Integer> betweenZeroAndRange( int range )
-    {
-        return bytes -> bytes > 0 && bytes <= range;
-    }
-
-    private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
-    {
-        return storeFileStreamsProvider.fileStreams().get( filename ).toString();
+        return storeStreamProvider.fileStreams().get( filename ).toString();
     }
 }

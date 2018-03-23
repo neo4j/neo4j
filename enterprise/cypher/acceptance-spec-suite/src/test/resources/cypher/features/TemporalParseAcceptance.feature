@@ -159,16 +159,18 @@ Feature: TemporalParseAcceptance
       UNWIND [datetime('2015-07-21T21:40:32.142+02:00[Europe/Stockholm]'),
               datetime('2015-07-21T21:40:32.142+0845[Australia/Eucla]'),
               datetime('2015-07-21T21:40:32.142-04[America/New_York]'),
-              datetime('2015-07-21T21:40:32.142[Europe/London]')
+              datetime('2015-07-21T21:40:32.142[Europe/London]'),
+              datetime('1818-07-21T21:40:32.142[Europe/Stockholm]')
              ] as d
       RETURN d
       """
     Then the result should be, in order:
       | d                                                 |
-      | '2015-07-21T21:40:32.142+02:00[Europe/Stockholm]' |
-      | '2015-07-21T21:40:32.142+08:45[Australia/Eucla]'  |
-      | '2015-07-21T21:40:32.142-04:00[America/New_York]' |
-      | '2015-07-21T21:40:32.142+01:00[Europe/London]'    |
+      | '2015-07-21T21:40:32.142+02:00[Europe/Stockholm]'    |
+      | '2015-07-21T21:40:32.142+08:45[Australia/Eucla]'     |
+      | '2015-07-21T21:40:32.142-04:00[America/New_York]'    |
+      | '2015-07-21T21:40:32.142+01:00[Europe/London]'       |
+      | '1818-07-21T21:40:32.142+01:12:12[Europe/Stockholm]' |
     And no side effects
 
   Scenario: Should parse duration from string

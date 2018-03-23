@@ -20,12 +20,14 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
@@ -110,14 +112,15 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
+        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ),
-                        equalTo( asList( "a", "a_squared" ) ) ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldMatcher, hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                msgSuccess( CoreMatchers.allOf( entryTypeMatcher,
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -134,13 +137,12 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
+        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(
-                        CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
-                                hasKey( "result_available_after" ) ) ),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
-                        hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher, hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
@@ -185,10 +187,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                         pullAll() ) );
 
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( ageMatcher, hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
 
@@ -198,8 +200,9 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                 pullAll() ) );
 
         // Then
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
         assertThat( connection, util.eventuallyReceives(
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
@@ -219,9 +222,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -250,9 +254,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -293,11 +298,11 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
                         pullAll() ) );
 
         // Then
+        Matcher<Map<? extends String,?>> typeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
-                        hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( CoreMatchers.allOf( typeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
@@ -343,10 +348,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // Then
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> fieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( fieldsMatcher, hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( NO_VALUE ) ) ),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
     }

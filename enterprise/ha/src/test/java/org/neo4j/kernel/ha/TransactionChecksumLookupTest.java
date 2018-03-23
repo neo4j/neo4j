@@ -53,20 +53,20 @@ public class TransactionChecksumLookupTest
     public void lookupChecksumUsingUpgradeTransaction() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
-        assertEquals(2, checksumLookup.applyAsLong( 2 ));
+        assertEquals(2, checksumLookup.lookup( 2 ));
     }
 
     @Test
     public void lookupChecksumUsingCommittedTransaction() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
-        assertEquals(1, checksumLookup.applyAsLong( 1 ));
+        assertEquals(1, checksumLookup.lookup( 1 ));
     }
 
     @Test
     public void lookupChecksumUsingTransactionStore() throws Exception
     {
         TransactionChecksumLookup checksumLookup = new TransactionChecksumLookup( transactionIdStore, transactionStore );
-        assertEquals(3, checksumLookup.applyAsLong( 3 ));
+        assertEquals(3, checksumLookup.lookup( 3 ));
     }
 }

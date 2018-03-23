@@ -53,7 +53,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -585,8 +585,8 @@ public class SchemaIndexHaIT
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
-            FusionIndexProvider fusionIndexProvider = NativeLuceneFusionIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+            FusionIndexProvider fusionIndexProvider = NativeLuceneFusionIndexProviderFactory20
+                    .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {

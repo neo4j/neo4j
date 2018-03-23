@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
@@ -35,6 +36,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -109,11 +111,16 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public synchronized void create() throws IOException
     {
+        create( new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+    }
+
+    protected synchronized void create( Consumer<PageCursor> headerWriter ) throws IOException
+    {
         assertNotDropped();
         assertNotClosed();
 
         gbpTreeFileUtil.deleteFileIfPresent( storeFile );
-        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
@@ -292,7 +299,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }
 
-    private void markTreeAsOnline() throws IOException
+    void markTreeAsOnline() throws IOException
     {
         tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
     }

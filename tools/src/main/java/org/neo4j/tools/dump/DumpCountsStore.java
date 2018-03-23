@@ -56,7 +56,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.Token;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
-import static org.neo4j.kernel.api.index.IndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 /**
  * Tool that will dump content of count store content into a simple string representation for further analysis.
@@ -90,7 +90,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 //TODO empty index provider map, investigate if we need a rel one.
-                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), new DefaultIndexProviderMap( NO_INDEX_PROVIDER ) );
+                SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), new DefaultIndexProviderMap( EMPTY ) );
                 neoStores.getCounts().accept( new DumpCountsStore( out, neoStores, schemaStorage ) );
             }
             else

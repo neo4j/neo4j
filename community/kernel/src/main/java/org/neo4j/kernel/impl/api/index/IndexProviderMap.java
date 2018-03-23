@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -33,19 +32,19 @@ public interface IndexProviderMap
         @Override
         public IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
         {
-            return IndexProvider.NO_INDEX_PROVIDER;
+            return IndexProvider.EMPTY;
         }
 
         @Override
         public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
         {
-            return IndexProvider.NO_INDEX_PROVIDER;
+            return IndexProvider.EMPTY;
         }
 
         @Override
         public IndexProvider getProviderFor( IndexDescriptor descriptor )
         {
-            return IndexProvider.NO_INDEX_PROVIDER;
+            return IndexProvider.EMPTY;
         }
 
         @Override

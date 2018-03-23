@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.{CRSCalculator, CoordinateReferenceSystem, PointValue, Values}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
+import collection.JavaConverters._
 
 import scala.language.implicitConversions
 
@@ -30,8 +31,14 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   implicit def javaToScalaPair(pair: org.neo4j.helpers.collection.Pair[PointValue, PointValue]): (PointValue, PointValue) = (pair.first(), pair.other())
 
-  def boundingBox(center: PointValue, distance: Double): (PointValue, PointValue) =
-    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance)
+  def boundingBox(center: PointValue, distance: Double): Seq[(PointValue, PointValue)] =
+    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance).asScala.map(pair => (pair.first(), pair.other()))
+
+  def boundingBoxLengthOne(center: PointValue, distance: Double): (PointValue, PointValue) = {
+    val boxes = boundingBox(center, distance)
+    boxes should have length 1
+    boxes.head
+  }
 
   def distance(p1: PointValue, p2: PointValue): Double =
     p1.getCoordinateReferenceSystem.getCalculator.distance(p1, p2)
@@ -57,7 +64,7 @@ class DistanceFunctionTest extends CypherFunSuite {
     for (point <- points; distance <- distances) {
       val calculator = point.getCoordinateReferenceSystem.getCalculator
       withClue(s"Calculating bounding box with distance $distance of $point\n") {
-        val (bottomLeft, topRight) = boundingBox(point, distance)
+        val boxes = boundingBox(point, distance)
         var minLat = Double.MaxValue
         var maxLat = Double.MinValue
         var minLong = Double.MaxValue
@@ -66,7 +73,7 @@ class DistanceFunctionTest extends CypherFunSuite {
         // Test that points on the circle lie inside the bounding box
         for (brng <- 0.0 to 2.0 * Math.PI by 0.01) {
           val dest = destinationPoint(point, distance, brng)
-          dest should beInsideBoundingBox(bottomLeft, topRight, tolerant = true)
+          dest should beInsideOneBoundingBox(boxes, tolerant = true)
           val destLat = dest.coordinate()(1)
           val destLong = dest.coordinate()(0)
 
@@ -82,22 +89,28 @@ class DistanceFunctionTest extends CypherFunSuite {
         val delta = 1.0
 
         if (!southPoleIncluded) {
-          makePoint(minLong, minLat - delta) shouldNot beInsideBoundingBox(bottomLeft, topRight)
+          makePoint(minLong, minLat - delta) shouldNot beInsideOneBoundingBox(boxes)
         }
         if (!northPoleIncluded) {
-          makePoint(maxLong, maxLat + delta) shouldNot beInsideBoundingBox(bottomLeft, topRight)
+          makePoint(maxLong, maxLat + delta) shouldNot beInsideOneBoundingBox(boxes)
         }
         if (!northPoleIncluded && !southPoleIncluded) {
-          makePoint(minLong - delta, minLat) shouldNot beInsideBoundingBox(bottomLeft, topRight)
-          makePoint(maxLong + delta, maxLat) shouldNot beInsideBoundingBox(bottomLeft, topRight)
+          makePoint(minLong - delta, minLat) shouldNot beInsideOneBoundingBox(boxes)
+          makePoint(maxLong + delta, maxLat) shouldNot beInsideOneBoundingBox(boxes)
         }
 
         // Special cases where poles are included
         if (northPoleIncluded) {
+          boxes should have length 1
+          val (bottomLeft, topRight) = boxes.head
+
           bottomLeft.coordinate()(0) should be(-180)
           topRight.coordinate()(0) should be(180)
           topRight.coordinate()(1) should be(90)
         } else if (southPoleIncluded) {
+          boxes should have length 1
+          val (bottomLeft, topRight) = boxes.head
+
           bottomLeft.coordinate()(0) should be(-180)
           bottomLeft.coordinate()(1) should be(-90)
           topRight.coordinate()(0) should be(180)
@@ -108,16 +121,37 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("distance zero bounding box returns same point in WGS84") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 0)
-    val (bottomLeft, topRight) = boundingBox(point, 0.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(point, 0.0)
     bottomLeft should equal(point)
     topRight should equal(point)
   }
 
-  test("bounding box touching the date line should extend to the whole longitude in WGS84") {
+  test("bounding box touching the date line from west") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)
-    val (bottomLeft, topRight) = boundingBox(point, 1000.0)
-    bottomLeft.coordinate()(0) should be(-180)
-    topRight.coordinate()(0) should be(180)
+    val boxes = boundingBox(point, 1000.0)
+    boxes should have length 2
+    val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
+    bottomLeft1.coordinate()(0) shouldBe >(0.0)
+    topRight1.coordinate()(0) should be(180)
+    bottomLeft2.coordinate()(0) should be(-180)
+    topRight2.coordinate()(0) shouldBe <(0.0)
+
+    bottomLeft1.coordinate()(1) should be(bottomLeft2.coordinate()(1))
+    topRight1.coordinate()(1) should be(topRight2.coordinate()(1))
+  }
+
+  test("bounding box touching the date line from east") {
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 0)
+    val boxes = boundingBox(point, 1000.0)
+    boxes should have length 2
+    val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
+    bottomLeft1.coordinate()(0) shouldBe >(0.0)
+    topRight1.coordinate()(0) should be(180)
+    bottomLeft2.coordinate()(0) should be(-180)
+    topRight2.coordinate()(0) shouldBe <(0.0)
+
+    bottomLeft1.coordinate()(1) should be(bottomLeft2.coordinate()(1))
+    topRight1.coordinate()(1) should be(topRight2.coordinate()(1))
   }
 
   test("distance should account for wraparound in longitude in WGS84") {
@@ -129,7 +163,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box including the north pole should be extended to all longitudes in WGS84") {
     val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 90.0)
-    val (bottomLeft, topRight) = boundingBox(farNorth, 100.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(farNorth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
     topRight.coordinate()(1) should be(90)
@@ -137,7 +171,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box including the south pole should be extended to all longitudes in WGS84") {
     val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90.0)
-    val (bottomLeft, topRight) = boundingBox(farSouth, 100.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(farSouth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     bottomLeft.coordinate()(1) should be(-90)
     topRight.coordinate()(0) should be(180)
@@ -153,16 +187,47 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("distance zero bounding box returns same point in WGS84-3D") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0)
-    val (bottomLeft, topRight) = boundingBox(point, 0.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(point, 0.0)
     bottomLeft should equal(point)
     topRight should equal(point)
   }
 
-  test("bounding box touching the date line should extend to the whole longitude in WGS84-3D") {
+  test("bounding box touching the date line from west in WGS84-3D") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -180, 0, 0)
-    val (bottomLeft, topRight) = boundingBox(point, 1000.0)
-    bottomLeft.coordinate()(0) should be(-180)
-    topRight.coordinate()(0) should be(180)
+    val boxes = boundingBox(point, 1000.0)
+    boxes should have length 2
+    val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
+    bottomLeft1.coordinate()(0) shouldBe >(0.0)
+    topRight1.coordinate()(0) should be(180)
+    bottomLeft2.coordinate()(0) should be(-180)
+    topRight2.coordinate()(0) shouldBe <(0.0)
+
+    bottomLeft1.coordinate()(1) should be(bottomLeft2.coordinate()(1))
+    topRight1.coordinate()(1) should be(topRight2.coordinate()(1))
+
+    bottomLeft1.coordinate()(2) should be(-1000)
+    bottomLeft2.coordinate()(2) should be(-1000)
+    topRight1.coordinate()(2) should be(1000)
+    topRight2.coordinate()(2) should be(1000)
+  }
+
+  test("bounding box touching the date line from east in WGS84-3D") {
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 180, 0, 0)
+    val boxes = boundingBox(point, 1000.0)
+    boxes should have length 2
+    val ((bottomLeft1, topRight1), (bottomLeft2, topRight2)) = (boxes.head, boxes(1))
+    bottomLeft1.coordinate()(0) shouldBe >(0.0)
+    topRight1.coordinate()(0) should be(180)
+    bottomLeft2.coordinate()(0) should be(-180)
+    topRight2.coordinate()(0) shouldBe <(0.0)
+
+    bottomLeft1.coordinate()(1) should be(bottomLeft2.coordinate()(1))
+    topRight1.coordinate()(1) should be(topRight2.coordinate()(1))
+
+    bottomLeft1.coordinate()(2) should be(-1000)
+    bottomLeft2.coordinate()(2) should be(-1000)
+    topRight1.coordinate()(2) should be(1000)
+    topRight2.coordinate()(2) should be(1000)
   }
 
   test("distance should account for wraparound in longitude in WGS84-3D") {
@@ -174,7 +239,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box including the north pole should be extended to all longitudes in WGS84-3D") {
     val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 90.0, 0)
-    val (bottomLeft, topRight) = boundingBox(farNorth, 100.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(farNorth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
     topRight.coordinate()(1) should be(90)
@@ -182,7 +247,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box including the south pole should be extended to all longitudes in WGS84-3D") {
     val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, -90.0, 0)
-    val (bottomLeft, topRight) = boundingBox(farSouth, 100.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(farSouth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     bottomLeft.coordinate()(1) should be(-90)
     topRight.coordinate()(0) should be(180)
@@ -199,7 +264,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   test("bounding box should gives reasonable results in WGS84") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
     val malmo = Values.pointValue(CoordinateReferenceSystem.WGS84, 13.0, 56.0)
-    val (bottomLeft, topRight) = boundingBox(malmo, 1000.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(malmo, 1000.0)
     bottomLeft.coordinate()(0) should equal(12.984)
     bottomLeft.coordinate()(1) should equal(55.991)
     topRight.coordinate()(0) should equal(13.016)
@@ -209,7 +274,7 @@ class DistanceFunctionTest extends CypherFunSuite {
   test("bounding box should consider height in WGS84-3D") {
     implicit val doubleEquality = TolerantNumerics.tolerantDoubleEquality(0.0001)
     val malmo = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.0, 56.0, 1000)
-    val (bottomLeft, topRight) = boundingBox(malmo, 1000.0)
+    val (bottomLeft, topRight) = boundingBoxLengthOne(malmo, 1000.0)
     bottomLeft.coordinate()(0) should equal(12.984)
     bottomLeft.coordinate()(1) should equal(55.991)
     bottomLeft.coordinate()(2) should equal(0.0)
@@ -250,6 +315,15 @@ class DistanceFunctionTest extends CypherFunSuite {
         matches = insideBoundingBox(point, bottomLeft, topRight, tolerant),
         rawFailureMessage = s"$point should be inside $bottomLeft -> $topRight, but was not.",
         rawNegatedFailureMessage = s"$point should not be inside $bottomLeft -> $topRight, but was.")
+    }
+  }
+
+  private def beInsideOneBoundingBox(boxes: Seq[(PointValue, PointValue)], tolerant: Boolean = false): Matcher[PointValue] = new Matcher[PointValue] {
+    override def apply(point: PointValue): MatchResult = {
+      MatchResult(
+        matches = boxes.exists { case (bottomLeft, topRight) => insideBoundingBox(point, bottomLeft, topRight, tolerant) },
+        rawFailureMessage = s"$point should be inside one of $boxes, but was not.",
+        rawNegatedFailureMessage = s"$point should not be inside one of $boxes, but was.")
     }
   }
 

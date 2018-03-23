@@ -114,8 +114,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
-    private PropertyChanges propertyChangesForNodes;
-
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
 
@@ -532,7 +530,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
         nodeState.addProperty( newPropertyKeyId, value );
-        nodePropertyChanges().addProperty( nodeId, newPropertyKeyId, value );
         dataChanged();
     }
 
@@ -540,7 +537,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue )
     {
         getOrCreateNodeState( nodeId ).changeProperty( propertyKeyId, newValue );
-        nodePropertyChanges().changeProperty( nodeId, propertyKeyId, replacedValue, newValue );
         dataChanged();
     }
 
@@ -574,24 +570,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
+    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId )
     {
-        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId, removedValue );
-        nodePropertyChanges().removeProperty( nodeId, propertyKeyId, removedValue );
+        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue )
+    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId )
     {
-        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId, removedValue );
+        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void graphDoRemoveProperty( int propertyKeyId, Value removedValue )
+    public void graphDoRemoveProperty( int propertyKeyId )
     {
-        getOrCreateGraphState().removeProperty( propertyKeyId, removedValue );
+        getOrCreateGraphState().removeProperty( propertyKeyId );
         dataChanged();
     }
 
@@ -1265,11 +1260,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap != null && nodeStatesMap.containsKey( nodeId );
     }
 
-    private PropertyChanges nodePropertyChanges()
-    {
-        return propertyChangesForNodes == null ? propertyChangesForNodes = new PropertyChanges( collectionsFactory ) : propertyChangesForNodes;
-    }
-
     @Override
     public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
@@ -1322,10 +1312,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( relationshipStatesMap != null )
         {
             relationshipStatesMap.close();
-        }
-        if ( propertyChangesForNodes != null )
-        {
-            propertyChangesForNodes.release();
         }
         if ( nodes != null && nodes.removedFromAdded != null )
         {

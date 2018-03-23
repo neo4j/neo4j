@@ -19,18 +19,33 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
 
-public class FusionSelector implements FusionIndexProvider.Selector
+
+/**
+ * Selector for "lucene+native-1.x".
+ * Separates numbers into native index.
+ */
+public class FusionSelector10 implements FusionIndexProvider.Selector
 {
+    @Override
+    public void validateSatisfied( Object[] instances )
+    {
+        FusionIndexBase.validateSelectorInstances( instances, NUMBER, LUCENE, SPATIAL, TEMPORAL );
+    }
+
     @Override
     public int selectSlot( Value... values )
     {
@@ -41,21 +56,14 @@ public class FusionSelector implements FusionIndexProvider.Selector
         }
 
         Value singleValue = values[0];
-        if ( singleValue.valueGroup() == ValueGroup.TEXT )
-        {
-            // It's a string, the native string index can handle this
-            return STRING;
-        }
 
         if ( singleValue.valueGroup() == ValueGroup.NUMBER )
         {
-            // It's a number, the native index can handle this
             return NUMBER;
         }
 
         if ( Values.isGeometryValue( singleValue ) )
         {
-            // It's a geometry, the spatial index can handle this
             return SPATIAL;
         }
 
@@ -65,5 +73,47 @@ public class FusionSelector implements FusionIndexProvider.Selector
         }
 
         return LUCENE;
+    }
+
+    @Override
+    public IndexReader select( IndexReader[] instances, IndexQuery... predicates )
+    {
+        if ( predicates.length > 1 )
+        {
+            return instances[LUCENE];
+        }
+        IndexQuery predicate = predicates[0];
+
+        if ( predicate instanceof ExactPredicate )
+        {
+            ExactPredicate exactPredicate = (ExactPredicate) predicate;
+            return select( instances, exactPredicate.value() );
+        }
+
+        if ( predicate instanceof RangePredicate )
+        {
+            switch ( predicate.valueGroup() )
+            {
+            case NUMBER:
+                return instances[NUMBER];
+            case GEOMETRY:
+                return instances[SPATIAL];
+            case DATE:
+            case LOCAL_DATE_TIME:
+            case ZONED_DATE_TIME:
+            case LOCAL_TIME:
+            case ZONED_TIME:
+            case DURATION:
+                return instances[TEMPORAL];
+            default: // fall through
+            }
+        }
+
+        if ( predicate instanceof ExistsPredicate )
+        {
+            return null;
+        }
+
+        return instances[LUCENE];
     }
 }

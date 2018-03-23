@@ -21,39 +21,39 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected LuceneSchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
-        DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), LUCENE10.param() ) );
         OperationalMode mode = OperationalMode.single;
-        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, monitor, config, mode );
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        return LuceneSchemaIndexProviderFactory.newInstance( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
     }
 
     @Override
     public boolean supportsSpatial()
     {
-        return false;
+        return true;
     }
 
     @Override
     public boolean supportsTemporal()
     {
-        return false;
+        return true;
     }
 }

@@ -69,7 +69,6 @@ public class StoreCopyClient
     private void copyFilesIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId, CatchupAddressProvider addressProvider,
             StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
     {
-        CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler = StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
@@ -82,7 +81,8 @@ public class StoreCopyClient
                     AdvertisedSocketAddress from = addressProvider.primary();
                     log.info( format( "Downloading file '%s' from '%s'", file, from ) );
                     StoreCopyFinishedResponse response =
-                            catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), copyHandler );
+                            catchUpClient.makeBlockingRequest( from, new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ),
+                                    StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log ) );
                     successful = successfulFileDownload( response );
                 }
                 catch ( CatchUpClientException | CatchupAddressResolutionException e )
@@ -103,7 +103,6 @@ public class StoreCopyClient
             CatchupAddressProvider addressProvider, StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions )
             throws StoreCopyFailedException
     {
-        CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler = StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
         while ( indexIds.hasNext() )
@@ -119,7 +118,7 @@ public class StoreCopyClient
                     log.info( format( "Downloading snapshot of index '%s' from '%s'", indexId, from ) );
                     StoreCopyFinishedResponse response =
                             catchUpClient.makeBlockingRequest( from, new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ),
-                                    copyHandler );
+                                    StoreCopyResponseAdaptors.filesCopyAdaptor( storeFileStream, log ) );
                     successful = successfulFileDownload( response );
                 }
                 catch ( CatchUpClientException | CatchupAddressResolutionException e )

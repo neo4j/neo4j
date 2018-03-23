@@ -149,7 +149,7 @@ public abstract class ThrowingValueWriter<E extends Exception> implements ValueW
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
     {
         throw exception( "writeTime" );
     }

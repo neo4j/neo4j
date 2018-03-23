@@ -20,11 +20,13 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -133,22 +135,22 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
             private void createAndRollback( TransportConnection client ) throws Exception
             {
                 client.send( createAndRollback );
+                Matcher<Map<? extends String,?>> entryMatcher = hasEntry( is( "fields" ), equalTo( emptyList() ) );
+                Matcher<Map<String,?>> messageMatcher =
+                        CoreMatchers.allOf( entryMatcher, hasKey( "result_available_after" ) );
                 assertThat( client, util.eventuallyReceives(
-                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result_available_after" ) ) ),
+                        msgSuccess( messageMatcher ),
                         msgSuccess(),
-                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result_available_after" ) ) ),
+                        msgSuccess( messageMatcher ),
                         msgSuccess(),
-                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
-                                hasKey( "result_available_after" ) ) ),
+                        msgSuccess( messageMatcher ),
                         msgSuccess() ) );
 
                 // Verify no visible data
                 client.send( matchAll );
+                Matcher<Map<? extends String,?>> fieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
                 assertThat( client, util.eventuallyReceives(
-                        msgSuccess(CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
-                                hasKey( "result_available_after" ) ) ),
+                        msgSuccess(CoreMatchers.allOf( fieldsMatcher, hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
             }

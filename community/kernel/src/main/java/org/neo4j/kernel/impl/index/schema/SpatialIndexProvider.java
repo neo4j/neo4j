@@ -41,6 +41,8 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
+import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
 public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
@@ -54,7 +56,7 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
     private final SpaceFillingCurveConfiguration configuration;
-    private final Integer maxBits;
+    private final SpaceFillingCurveSettingsFactory settingsFactory;
 
     public SpatialIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
@@ -67,14 +69,19 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
-        this.maxBits = config.get( GraphDatabaseSettings.space_filling_curve_max_bits );
+        this.settingsFactory = getConfiguredSpaceFillingCurveSettings( config );
+    }
+
+    private SpaceFillingCurveSettingsFactory getConfiguredSpaceFillingCurveSettings( Config config )
+    {
+        return new SpaceFillingCurveSettingsFactory( config );
     }
 
     private static SpaceFillingCurveConfiguration getConfiguredSpaceFillingCurveConfiguration( Config config )
     {
-        int extraLevels = config.get( GraphDatabaseSettings.space_filling_curve_extra_levels );
-        double topThreshold = config.get( GraphDatabaseSettings.space_filling_curve_top_threshold );
-        double bottomThreshold = config.get( GraphDatabaseSettings.space_filling_curve_bottom_threshold );
+        int extraLevels = config.get( SpatialIndexSettings.space_filling_curve_extra_levels );
+        double topThreshold = config.get( SpatialIndexSettings.space_filling_curve_top_threshold );
+        double bottomThreshold = config.get( SpatialIndexSettings.space_filling_curve_bottom_threshold );
 
         if ( topThreshold == 0.0 || bottomThreshold == 0.0 )
         {
@@ -100,7 +107,7 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
         return new SpatialIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
     }
 
@@ -108,14 +115,14 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
         return new SpatialIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
     public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
         try
         {
@@ -138,7 +145,7 @@ public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, maxBits );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( SpatialIndexFiles.SpatialFileLayout subIndex : spatialIndexFiles.existing() )

@@ -116,7 +116,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Expected number of Core machines in the cluster before startup" )
     @Deprecated
-    @ReplacedBy( "minimum_core_cluster_size_at_startup and minimum_core_cluster_size_at_runtime" )
+    @ReplacedBy( "causal_clustering.minimum_core_cluster_size_at_formation and causal_clustering.minimum_core_cluster_size_at_runtime" )
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "causal_clustering.expected_core_cluster_size", INTEGER, "3" );
 

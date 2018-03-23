@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time.{ZoneId, ZoneOffset}
 
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
@@ -68,6 +69,25 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
       TimeValue.time(10002, ZoneOffset.of("+01:00")),
       TimeValue.time(10004, ZoneOffset.of("+01:00")),
       TimeValue.time(10006, ZoneOffset.of("+01:00")))
+  }
+
+  test("should handle datetime with named zone and second offset") {
+    createIndex()
+    val node1 = createIndexedNode(DateTimeValue.datetime(1818, 7, 15, 14, 12, 12, 0, "+01:12"))
+    val node2 = createIndexedNode(DateTimeValue.datetime(1818, 7, 15, 14, 12, 12, 0, "Europe/Stockholm")) // corresponds to +01:12:12
+    val node3 = createIndexedNode(DateTimeValue.datetime(1818, 7, 15, 14, 12, 12, 0, "+01:13"))
+
+    val query =
+      """
+        | MATCH (n:Label)
+        | WHERE n.prop > datetime("1818-07-15T12:59:59Z") AND n.prop < datetime("1818-07-15T13:00:01Z")
+        | RETURN n
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeekByRange")))
+
+    result.toList should equal(List(Map("n" -> node2)))
   }
 
   def assertSeek(value: Value): Unit = {

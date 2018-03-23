@@ -164,6 +164,7 @@ public class BloomBackupIT
 
     private void verifyStandardData( GraphDatabaseService backedUpDb )
     {
+        backedUpDb.execute( AWAIT_POPULATION ).close();
         Result result = backedUpDb.execute( String.format( NODES, "\"integration\"" ) );
         assertTrue( result.hasNext() );
         assertEquals( 0L, result.next().get( ENTITYID ) );

@@ -79,7 +79,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
                 return indexProvider;
             }
         }
-        return IndexProvider.NO_INDEX_PROVIDER;
+        return IndexProvider.EMPTY;
     }
 
     @Override

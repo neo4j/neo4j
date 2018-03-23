@@ -77,12 +77,13 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(),
-                    NullLogProvider.getInstance() );
-            BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
-                    recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults() );
-            store.createNew();
-            fail( "Should fail on existing data" );
+            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
+            try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(), recordFormats,
+                    DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+            {
+                store.createNew();
+                fail( "Should fail on existing data" );
+            }
         }
         catch ( IllegalStateException e )
         {
@@ -121,37 +122,39 @@ public class BatchingNeoStoresTest
         for ( StoreType typeToTest : relevantRecordStores() )
         {
             // given all the stores with some records in them
-            PageCache pageCache = storage.pageCache();
-            storage.directory().cleanup();
-            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
-                    PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT,
-                    NullLogService.getInstance(), EMPTY, Config.defaults() ) )
+            try ( PageCache pageCache = storage.pageCache() )
             {
-                stores.createNew();
-                for ( StoreType type : relevantRecordStores() )
+                storage.directory().cleanup();
+                try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
+                        PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                        Config.defaults() ) )
                 {
-                    createRecordIn( stores.getNeoStores().getRecordStore( type ) );
-                }
-            }
-
-            // when opening and pruning all except the one we test
-            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
-                    PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT,
-                    NullLogService.getInstance(), EMPTY, Config.defaults() ) )
-            {
-                stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
-
-                // then only the one we kept should have data in it
-                for ( StoreType type : relevantRecordStores() )
-                {
-                    RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
-                    if ( type == typeToTest )
+                    stores.createNew();
+                    for ( StoreType type : relevantRecordStores() )
                     {
-                        assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
+                        createRecordIn( stores.getNeoStores().getRecordStore( type ) );
                     }
-                    else
+                }
+
+                // when opening and pruning all except the one we test
+                try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
+                        PageCacheTracer.NULL, storage.directory().absolutePath(), Standard.LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                        Config.defaults() ) )
+                {
+                    stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
+
+                    // then only the one we kept should have data in it
+                    for ( StoreType type : relevantRecordStores() )
                     {
-                        assertEquals( store.toString(), store.getNumberOfReservedLowIds(), store.getHighId() );
+                        RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
+                        if ( type == typeToTest )
+                        {
+                            assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
+                        }
+                        else
+                        {
+                            assertEquals( store.toString(), store.getNumberOfReservedLowIds(), store.getHighId() );
+                        }
                     }
                 }
             }
@@ -163,8 +166,9 @@ public class BatchingNeoStoresTest
     {
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( Standard.LATEST_RECORD_FORMATS );
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+        try ( PageCache pageCache = storage.pageCache();
+              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
+                pageCache, PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();

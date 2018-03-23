@@ -223,37 +223,31 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return crs;
     }
 
+    /**
+     * Checks if this point is greater than (or equal) to lower and smaller than (or equal) to upper.
+     *
+     * @param lower point this value should be greater than
+     * @param includeLower governs if the lower comparison should be inclusive
+     * @param upper point this value should be smaller than
+     * @param includeUpper governs if the upper comparison should be inclusive
+     * @return true if this value is within the described range
+     */
     public boolean withinRange( PointValue lower, boolean includeLower, PointValue upper, boolean includeUpper )
     {
-        boolean checkLower = lower != null;
-        boolean checkUpper = upper != null;
-
-        if ( checkLower && this.crs.getCode() != lower.crs.getCode() )
+        if ( lower != null )
         {
-            return false;
-        }
-        if ( checkUpper && this.crs.getCode() != upper.crs.getCode() )
-        {
-            return false;
-        }
-
-        for ( int i = 0; i < coordinate.length; i++ )
-        {
-            if ( checkLower )
+            Integer compareLower = this.unsafeTernaryCompareTo( lower );
+            if ( compareLower == null || compareLower < 0 || compareLower == 0 && !includeLower )
             {
-                int compareLower = Double.compare( this.coordinate[i], lower.coordinate[i] );
-                if ( compareLower < 0 || compareLower == 0 && !includeLower )
-                {
-                    return false;
-                }
+                return false;
             }
-            if ( checkUpper )
+        }
+        if ( upper != null )
+        {
+            Integer compareUpper = this.unsafeTernaryCompareTo( upper );
+            if ( compareUpper == null || compareUpper > 0 || compareUpper == 0 && !includeUpper )
             {
-                int compareUpper = Double.compare( this.coordinate[i], upper.coordinate[i] );
-                if ( compareUpper > 0 || compareUpper == 0 && !includeUpper )
-                {
-                    return false;
-                }
+                return false;
             }
         }
         return true;

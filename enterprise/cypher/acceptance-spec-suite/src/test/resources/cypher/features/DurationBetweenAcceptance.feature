@@ -117,6 +117,31 @@ Feature: DurationBetweenAcceptance
               ] as d
       RETURN d
       """
+    Then the result should be, in order:
+      | d        |
+      | 'P30Y8M' |
+      | 'P31Y9M' |
+      | 'P30Y9M' |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'P1Y'    |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'PT0S'   |
+      | 'P11M'   |
+      | 'P2Y'    |
+      | 'P1Y'    |
+      | 'PT0S'   |
+      | 'PT0S'   |
+
+    And no side effects
 
   Scenario: Should compute duration between two temporals in days
     Given an empty graph
@@ -150,6 +175,30 @@ Feature: DurationBetweenAcceptance
               ] as d
       RETURN d
       """
+    Then the result should be, in order:
+      | d |
+      | 'P11213D' |
+      | 'P11606D' |
+      | 'P11240D' |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'P-27D'   |
+      | 'P366D'   |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'PT0S'    |
+      | 'P337D'   |
+      | 'P731D'   |
+      | 'P365D'   |
+      | 'PT0S'    |
+      | 'PT0S'    |
+    And no side effects
 
   Scenario: Should compute duration between two temporals in seconds
     Given an empty graph
