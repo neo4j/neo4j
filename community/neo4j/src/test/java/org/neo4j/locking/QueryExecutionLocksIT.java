@@ -1407,5 +1407,11 @@ public class QueryExecutionLocksIT
         {
             return internal.propertyCursor();
         }
+
+        @Override
+        public void assertOpen()
+        {
+            internal.assertOpen();
+        }
     }
 }

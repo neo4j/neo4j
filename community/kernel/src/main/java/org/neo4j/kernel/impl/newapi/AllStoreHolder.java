@@ -26,8 +26,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.function.Suppliers;
-import org.neo4j.function.Suppliers.Lazy;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -116,7 +113,6 @@ public class AllStoreHolder extends Read
     private final StorageStatement statement;
     private final StoreReadLayer storeReadLayer;
     private final ExplicitIndexStore explicitIndexStore;
-    private final Lazy<ExplicitIndexTransactionState> explicitIndexes;
     private final Procedures procedures;
     private final SchemaState schemaState;
 
@@ -131,8 +127,6 @@ public class AllStoreHolder extends Read
         super( cursors, ktx );
         this.storeReadLayer = engine.storeReadLayer();
         this.statement = statement; // use provided statement, to assert no leakage
-        this.explicitIndexes = Suppliers.lazySingleton( ktx::explicitIndexTxState );
-
         this.nodes = statement.nodes();
         this.relationships = statement.relationships();
         this.groups = statement.groups();
@@ -270,14 +264,14 @@ public class AllStoreHolder extends Read
     ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return explicitIndexes.get().nodeChanges( indexName );
+        return explicitIndexTxState().nodeChanges( indexName );
     }
 
     @Override
     ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        return explicitIndexes.get().relationshipChanges( indexName );
+        return explicitIndexTxState().relationshipChanges( indexName );
     }
 
     @Override
@@ -291,7 +285,7 @@ public class AllStoreHolder extends Read
     public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         ktx.assertOpen();
-        return explicitIndexes.get().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration  );
+        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration  );
     }
 
     @Override
@@ -305,7 +299,7 @@ public class AllStoreHolder extends Read
     public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         ktx.assertOpen();
-        return explicitIndexes.get().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
+        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
     }
 
     @Override

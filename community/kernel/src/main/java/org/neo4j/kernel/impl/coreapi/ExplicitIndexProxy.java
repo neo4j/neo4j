@@ -67,7 +67,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
             ktx.indexRead().nodeExplicitIndexLookup( cursor, name, key, Values.of( value ) );
-            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -77,7 +77,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
             ktx.indexRead().nodeExplicitIndexQuery( cursor, name, key, queryOrQueryObject );
-            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -87,7 +87,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
             ktx.indexRead().nodeExplicitIndexQuery( cursor, name, queryOrQueryObject );
-            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -152,7 +152,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
             ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, Values.of( value ), -1, -1 );
-            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -162,7 +162,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, key, queryOrQueryObject,-1, -1 );
-            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -172,7 +172,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, queryOrQueryObject, -1 , -1 );
-            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
         @Override
@@ -186,34 +186,34 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         public void remove( ExplicitIndexWrite operations, String name, long id, String key, Object value )
                 throws ExplicitIndexNotFoundKernelException
         {
-            operations.nodeRemoveFromExplicitIndex( name, id, key, value );
+            operations.relationshipRemoveFromExplicitIndex( name, id, key, value );
         }
 
         @Override
         public void remove( ExplicitIndexWrite operations, String name, long id, String key )
                 throws ExplicitIndexNotFoundKernelException
         {
-            operations.nodeRemoveFromExplicitIndex( name, id, key );
+            operations.relationshipRemoveFromExplicitIndex( name, id, key );
         }
 
         @Override
         public void remove( ExplicitIndexWrite operations, String name, long id )
                 throws ExplicitIndexNotFoundKernelException
         {
-            operations.nodeRemoveFromExplicitIndex( name, id );
+            operations.relationshipRemoveFromExplicitIndex( name, id );
         }
 
         @Override
         public void drop( ExplicitIndexWrite operations, String name )
                 throws ExplicitIndexNotFoundKernelException
         {
-            operations.nodeExplicitIndexDrop( name );
+            operations.relationshipExplicitIndexDrop( name );
         }
 
         @Override
         public long id( PropertyContainer entity )
         {
-            return ((Node) entity).getId();
+            return ((Relationship) entity).getId();
         }
     };
 
@@ -498,12 +498,33 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         private static final long NOT_INITIALIZED = -2L;
         static final long NO_ID = -1L;
         private long next = NOT_INITIALIZED;
+        private final int size;
+        private final float score;
+
+        protected AbstractCursorWrappingIndexHits( int size, float score )
+        {
+            this.size = size;
+            this.score = score;
+        }
 
         @Override
         public ResourceIterator<T> iterator()
         {
             return this;
         }
+
+        @Override
+        public int size()
+        {
+            return size;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return score;
+        }
+
 
         @Override
         public T getSingle()
@@ -554,18 +575,17 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         private final NodeExplicitIndexCursor cursor;
         private final GraphDatabaseService graphDatabaseService;
+        private final KernelTransaction ktx;
+        private final String name;
 
         private CursorWrappingNodeIndexHits( NodeExplicitIndexCursor cursor,
-                GraphDatabaseService graphDatabaseService )
+                GraphDatabaseService graphDatabaseService, KernelTransaction ktx, String name )
         {
+            super( cursor.expectedTotalNumberOfResults(), cursor.score() );
             this.cursor = cursor;
             this.graphDatabaseService = graphDatabaseService;
-        }
-
-        @Override
-        public int size()
-        {
-            return cursor.expectedTotalNumberOfResults();
+            this.ktx = ktx;
+            this.name = name;
         }
 
         @Override
@@ -574,23 +594,31 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
             cursor.close();
         }
 
-        @Override
-        public float currentScore()
-        {
-            return cursor.score();
-        }
-
         protected long fetchNext()
         {
-            if ( cursor.next() )
+            ktx.assertOpen();
+            while ( cursor.next() )
             {
-                return cursor.nodeReference();
+                long reference = cursor.nodeReference();
+                if ( ktx.dataRead().nodeExists( reference ) )
+                {
+                    return reference;
+                }
+                else
+                {
+                    //remove it from index so it doesn't happen again
+                    try
+                    {
+                        NODE.remove( ktx.indexWrite(), name, reference );
+                    }
+                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException e )
+                    {
+                        //ignore
+                    }
+                }
             }
-            else
-            {
-                close();
-                return NO_ID;
-            }
+            close();
+            return NO_ID;
         }
 
         @Override
@@ -604,18 +632,17 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         private final RelationshipExplicitIndexCursor cursor;
         private final GraphDatabaseService graphDatabaseService;
+        private final KernelTransaction ktx;
+        private final String name;
 
         CursorWrappingRelationshipIndexHits( RelationshipExplicitIndexCursor cursor,
-                GraphDatabaseService graphDatabaseService )
+                GraphDatabaseService graphDatabaseService, KernelTransaction ktx, String name )
         {
+            super( cursor.expectedTotalNumberOfResults(), cursor.score() );
             this.cursor = cursor;
             this.graphDatabaseService = graphDatabaseService;
-        }
-
-        @Override
-        public int size()
-        {
-            return cursor.expectedTotalNumberOfResults();
+            this.ktx = ktx;
+            this.name = name;
         }
 
         @Override
@@ -624,23 +651,31 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
             cursor.close();
         }
 
-        @Override
-        public float currentScore()
-        {
-            return cursor.score();
-        }
-
         protected long fetchNext()
         {
-            if ( cursor.next() )
+            ktx.assertOpen();
+            while ( cursor.next() )
             {
-                return cursor.relationshipReference();
+                long reference = cursor.relationshipReference();
+                if ( ktx.dataRead().relationshipExists( reference ) )
+                {
+                    return reference;
+                }
+                else
+                {
+                    //remove it from index so it doesn't happen again
+                    try
+                    {
+                        RELATIONSHIP.remove( ktx.indexWrite(), name, reference );
+                    }
+                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException e )
+                    {
+                        //ignore
+                    }
+                }
             }
-            else
-            {
-                close();
-                return NO_ID;
-            }
+            close();
+            return NO_ID;
         }
 
         @Override

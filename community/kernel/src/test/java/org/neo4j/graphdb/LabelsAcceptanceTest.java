@@ -596,6 +596,7 @@ public class LabelsAcceptanceTest
             try ( NodeCursor nodes = ktx.cursors().allocateNodeCursor();
                   PropertyCursor propertyCursor = ktx.cursors().allocatePropertyCursor() )
             {
+                ktx.dataRead().singleNode( node.getId(), nodes );
                 while ( nodes.next() )
                 {
                     nodes.properties( propertyCursor );

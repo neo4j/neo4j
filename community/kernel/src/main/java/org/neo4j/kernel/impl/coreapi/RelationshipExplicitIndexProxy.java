@@ -51,7 +51,7 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
             long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
             long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, Values.of( valueOrNull ), source, target );
-            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase() );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -70,7 +70,7 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
             long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
             long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, key, queryOrQueryObjectOrNull, source, target );
-            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase() );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -88,7 +88,7 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
             long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
             long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, queryOrQueryObjectOrNull, source, target );
-            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase() );
+            return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
