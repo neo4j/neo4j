@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Transaction;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertFoundRelationships;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
-import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G>
@@ -56,13 +55,13 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
               PrimitiveLongSet nodes = Primitive.longSet() )
         {
             // when
-            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "this is it" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", "this is it" );
 
             // then
             assertNodeCount( cursor, 1, nodes );
 
             // when
-            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", stringValue( "not that" ) );
+            indexRead.nodeExplicitIndexLookup( cursor, "foo", "bar", "not that" );
 
             // then
             assertNodeCount( cursor, 0, nodes );
@@ -115,7 +114,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
                     cursor,
                     "rels",
                     "alpha",
-                    stringValue( "betting on the wrong string" ),
+                    "betting on the wrong string" ,
                     -1,
                     -1 );
 
@@ -123,7 +122,7 @@ public abstract class ExplicitIndexCursorTestBase<G extends KernelAPIReadTestSup
             assertFoundRelationships( cursor, 1, edges );
 
             // when
-            indexRead.relationshipExplicitIndexLookup( cursor, "rels", "bar", stringValue( "not that" ), -1, -1 );
+            indexRead.relationshipExplicitIndexLookup( cursor, "rels", "bar", "not that", -1, -1 );
 
             // then
             assertFoundRelationships( cursor, 0, edges );

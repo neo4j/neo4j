@@ -432,13 +432,13 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value )
+            NodeExplicitIndexCursor cursor, String index, String key, Object value )
             throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (DefaultNodeExplicitIndexCursor) cursor,
-                explicitNodeIndex( index ).get( key, value.asObject() ) );
+                explicitNodeIndex( index ).get( key, value ) );
     }
 
     @Override
@@ -468,7 +468,7 @@ abstract class Read implements TxStateHolder,
             RelationshipExplicitIndexCursor cursor,
             String index,
             String key,
-            Value value,
+            Object value,
             long source,
             long target ) throws ExplicitIndexNotFoundKernelException
     {
@@ -476,7 +476,7 @@ abstract class Read implements TxStateHolder,
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
+                explicitRelationshipIndex( index ).get( key, value, source, target ) );
     }
 
     @Override

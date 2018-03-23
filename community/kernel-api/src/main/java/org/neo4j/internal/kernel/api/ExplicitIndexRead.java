@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.values.storable.Value;
 
 /**
  * Operations for querying and seeking in explicit indexes.
@@ -38,7 +37,7 @@ public interface ExplicitIndexRead
      * @param value the value corresponding to the value
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
-    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Value value )
+    void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Object value )
             throws ExplicitIndexNotFoundKernelException;
 
     /**
@@ -83,7 +82,7 @@ public interface ExplicitIndexRead
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
     void relationshipExplicitIndexLookup(
-            RelationshipExplicitIndexCursor cursor, String index, String key, Value value, long source, long target )
+            RelationshipExplicitIndexCursor cursor, String index, String key, Object value, long source, long target )
             throws ExplicitIndexNotFoundKernelException;
 
     /**

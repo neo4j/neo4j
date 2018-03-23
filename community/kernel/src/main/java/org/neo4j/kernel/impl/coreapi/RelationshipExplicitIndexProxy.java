@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.values.storable.Values;
 
 public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relationship> implements RelationshipIndex
 {
@@ -50,7 +49,7 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
             long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
             long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
-            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, Values.of( valueOrNull ), source, target );
+            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, valueOrNull, source, target );
             return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
         catch ( ExplicitIndexNotFoundKernelException e )

@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.explicitIndexResourceId;
@@ -66,7 +65,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 GraphDatabaseService graphDatabaseService ) throws ExplicitIndexNotFoundKernelException
         {
             NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
-            ktx.indexRead().nodeExplicitIndexLookup( cursor, name, key, Values.of( value ) );
+            ktx.indexRead().nodeExplicitIndexLookup( cursor, name, key, value );
             return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
@@ -151,7 +150,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
             GraphDatabaseService graphDatabaseService ) throws ExplicitIndexNotFoundKernelException
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
-            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, Values.of( value ), -1, -1 );
+            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, value, -1, -1 );
             return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
         }
 
