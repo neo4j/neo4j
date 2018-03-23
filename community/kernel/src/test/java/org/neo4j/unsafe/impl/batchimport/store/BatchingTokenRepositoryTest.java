@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
@@ -108,8 +109,10 @@ public class BatchingTokenRepositoryTest
     public void shouldFlushNewTokens()
     {
         // given
-        try ( NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(),
+
+        try ( PageCache pageCache = storage.pageCache();
+              NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
+                new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(),
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {

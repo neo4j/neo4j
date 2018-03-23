@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -188,7 +189,10 @@ public class StoreInfoCommandTest
     {
         File neoStoreFile = createNeoStoreFile();
         long value = MetaDataStore.versionStringToLong( storeVersion );
-        MetaDataStore.setRecord( pageCacheRule.getPageCache( fsRule.get() ), neoStoreFile, STORE_VERSION, value );
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() ) )
+        {
+            MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
+        }
     }
 
     private File createNeoStoreFile() throws IOException

@@ -4114,10 +4114,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
-        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         File file = file( "a" );
-        try ( PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
+        try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                EmptyVersionContextSupplier.EMPTY );
+              PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
               WritableByteChannel channel = pf.openWritableByteChannel() )
         {
             generateFileWithRecords( channel, recordCount, recordSize );
@@ -4131,10 +4131,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
-        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         File file = file( "a" );
-        try ( PagedFile pf = cache.map( file, filePageSize );
+        try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                EmptyVersionContextSupplier.EMPTY );
+              PagedFile pf = cache.map( file, filePageSize );
               WritableByteChannel channel = pf.openWritableByteChannel() )
         {
             generateFileWithRecords( channel, recordCount, recordSize );
