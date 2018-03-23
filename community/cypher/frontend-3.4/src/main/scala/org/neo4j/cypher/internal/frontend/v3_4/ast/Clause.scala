@@ -122,8 +122,7 @@ trait SingleRelTypeCheck {
 
 final case class ConstructGraph(
   clones: List[Clone] = List.empty,
-  creates: List[New] = List.empty,
-  sets: List[SetClause] = List.empty,
+  news: List[New] = List.empty,
   on: List[QualifiedGraphName] = List.empty
 )(val position: InputPosition) extends MultipleGraphClause {
 
@@ -133,8 +132,7 @@ final case class ConstructGraph(
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this) chain
       clones.semanticCheck chain
-      creates.semanticCheck chain
-      sets.semanticCheck
+      news.semanticCheck
 
 }
 

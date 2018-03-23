@@ -46,9 +46,8 @@ trait Clauses extends Parser
   def ConstructGraph = rule("CONSTRUCT") {
     group(keyword("CONSTRUCT") ~~ optional(keyword("ON") ~~ oneOrMore(QualifiedGraphName, CommaSep)) ~~
       zeroOrMore(WS ~ Clone) ~~
-      zeroOrMore(WS ~ New) ~~
-      zeroOrMore(WS ~ SetClause) ~~>> { (on, clones, news, set) =>
-        ast.ConstructGraph(clones, news, set, on.getOrElse(List.empty))
+      zeroOrMore(WS ~ New) ~~>> { (on, clones, news) =>
+        ast.ConstructGraph(clones, news, on.getOrElse(List.empty))
     })
   }
 

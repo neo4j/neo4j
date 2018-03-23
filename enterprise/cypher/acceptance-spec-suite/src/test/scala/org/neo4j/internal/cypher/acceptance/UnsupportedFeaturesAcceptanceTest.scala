@@ -38,7 +38,7 @@ class UnsupportedFeaturesAcceptanceTest extends ExecutionEngineFunSuite with Cyp
   }
 
   test("construct graph") {
-    val query = "MATCH (a) CONSTRUCT ON foo.bar CLONE a NEW (a)-[:T]->(:X) RETURN 1 AS a"
+    val query = "MATCH (a) CONSTRUCT ON foo.bar CLONE a NEW (a)-[:T {prop: a.prop}]->(:X) RETURN 1 AS a"
     failWithError(configs, query, List("The `CONSTRUCT` clause is not available in this implementation of Cypher due to lack of support for multiple graphs."))
   }
 
