@@ -4114,14 +4114,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
+        File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                EmptyVersionContextSupplier.EMPTY ) )
+                EmptyVersionContextSupplier.EMPTY );
+              PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
+              WritableByteChannel channel = pf.openWritableByteChannel() )
         {
-            File file = file( "a" );
-            try ( PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE ); WritableByteChannel channel = pf.openWritableByteChannel() )
-            {
-                generateFileWithRecords( channel, recordCount, recordSize );
-            }
+            generateFileWithRecords( channel, recordCount, recordSize );
         }
         assertThat( flushCounter.get(), lessThan( recordCount / recordsPerFilePage ) );
     }
@@ -4132,14 +4131,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
+        File file = file( "a" );
         try ( PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                EmptyVersionContextSupplier.EMPTY ) )
+                EmptyVersionContextSupplier.EMPTY );
+              PagedFile pf = cache.map( file, filePageSize );
+              WritableByteChannel channel = pf.openWritableByteChannel() )
         {
-            File file = file( "a" );
-            try ( PagedFile pf = cache.map( file, filePageSize ); WritableByteChannel channel = pf.openWritableByteChannel() )
-            {
-                generateFileWithRecords( channel, recordCount, recordSize );
-            }
+            generateFileWithRecords( channel, recordCount, recordSize );
         }
         assertThat( flushCounter.get(), is( recordCount / recordsPerFilePage ) );
     }
