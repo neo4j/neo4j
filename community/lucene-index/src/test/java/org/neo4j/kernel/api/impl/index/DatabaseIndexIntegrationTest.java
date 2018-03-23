@@ -48,6 +48,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.zip.ZipOutputStream;
 
@@ -58,6 +59,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -75,6 +77,11 @@ public class DatabaseIndexIntegrationTest
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( repeatRule )
             .around( fileSystemRule );
+
+    @Rule
+    public final VerboseTimeout timeout = VerboseTimeout.builder()
+            .withTimeout( 60, TimeUnit.SECONDS )
+            .build();
 
     private final CountDownLatch raceSignal = new CountDownLatch( 1 );
     private SyncNotifierDirectoryFactory directoryFactory;
@@ -105,7 +112,7 @@ public class DatabaseIndexIntegrationTest
         directoryFactory.close();
     }
 
-    @Test( timeout = 10000 )
+    @Test
     @RepeatRule.Repeat( times = 2 )
     public void testSaveCallCommitAndCloseFromMultipleThreads() throws Exception
     {
@@ -121,7 +128,7 @@ public class DatabaseIndexIntegrationTest
         assertFalse( luceneIndex.isOpen() );
     }
 
-    @Test( timeout = 10000 )
+    @Test
     @RepeatRule.Repeat( times = 2 )
     public void saveCallCloseAndDropFromMultipleThreads() throws Exception
     {
