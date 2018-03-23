@@ -116,8 +116,8 @@ public class FlippableIndexProxyTest
         final CountDownLatch triggerFinishFlip = new CountDownLatch( 1 );
         final CountDownLatch triggerExternalAccess = new CountDownLatch( 1 );
 
-        OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<Void>( "Flipping thread", null ) );
-        OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<Void>( "Drop index thread", null ) );
+        OtherThreadExecutor<Void> flippingThread = cleanup.add( new OtherThreadExecutor<>( "Flipping thread", null ) );
+        OtherThreadExecutor<Void> dropIndexThread = cleanup.add( new OtherThreadExecutor<>( "Drop index thread", null ) );
 
         // WHEN one thread starts flipping to another context
         Future<Void> flipContextFuture = flippingThread.executeDontWait( startFlipAndWaitForLatchBeforeFinishing(
@@ -152,7 +152,7 @@ public class FlippableIndexProxyTest
         // given the proxy structure
         FakePopulatingIndexProxy delegate = new FakePopulatingIndexProxy();
         FlippableIndexProxy flipper = new FlippableIndexProxy( delegate );
-        OtherThreadExecutor<Void> waiter = cleanup.add( new OtherThreadExecutor<Void>( "Waiter", null ) );
+        OtherThreadExecutor<Void> waiter = cleanup.add( new OtherThreadExecutor<>( "Waiter", null ) );
 
         // and a thread stuck in the awaitStoreScanCompletion loop
         Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted() );
@@ -188,15 +188,15 @@ public class FlippableIndexProxyTest
             {
                 triggerExternalAccess.countDown();
                 assertTrue( awaitLatch( triggerFinishFlip ) );
-                return null;
+                return Boolean.TRUE;
             }, null );
             return null;
         };
     }
 
-    private Callable<Void> noOp()
+    private Callable<Boolean> noOp()
     {
-        return () -> null;
+        return () -> Boolean.TRUE;
     }
 
     public static IndexProxyFactory singleProxy( final IndexProxy proxy )

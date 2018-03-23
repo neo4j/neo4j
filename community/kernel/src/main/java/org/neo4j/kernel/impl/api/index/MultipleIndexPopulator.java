@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -561,40 +563,38 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void flip() throws FlipFailedKernelException
         {
-            populatorLock.lock();
-            try
+            MutableBoolean indexFlipped = new MutableBoolean();
+            flipper.flip( () ->
             {
-                if ( populationOngoing )
+                populatorLock.lock();
+                try
                 {
-                    try
+                    if ( populationOngoing )
                     {
-                        flipper.flip( () ->
+                        populator.add( takeCurrentBatch() );
+                        populateFromQueueIfAvailable( Long.MAX_VALUE );
+                        IndexSample sample = populator.sampleResult();
+                        storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
+                        if ( populations.contains( IndexPopulation.this ) )
                         {
-                            populator.add( takeCurrentBatch() );
-                            populateFromQueueIfAvailable( Long.MAX_VALUE );
-                            IndexSample sample = populator.sampleResult();
-                            storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
-                            if ( populations.contains( IndexPopulation.this ) )
-                            {
-                                populator.close( true );
-                            }
-                            // else it has failed when applying the last updates from queue. This is done because a multi-populator
-                            // may have multiple populators running and they should not affect each other
-                            return null;
-                        }, failedIndexProxyFactory );
-                        log.info( "Index population completed. Index is now online: [%s]", indexUserDescription );
-                        removeFromOngoingPopulations( this );
-                    }
-                    finally
-                    {
+                            populator.close( true );
+                        }
+
                         populationOngoing = false;
+                        indexFlipped.setTrue();
                     }
                 }
-            }
-            finally
+                finally
+                {
+                    populatorLock.unlock();
+                }
+                return indexFlipped.booleanValue();
+            }, failedIndexProxyFactory );
+            if ( indexFlipped.isTrue() )
             {
-                populatorLock.unlock();
+                removeFromOngoingPopulations( this );
             }
+            log.info( "Index population completed. Index [%s] is %s.", indexUserDescription, flipper.getState().name() );
         }
 
         @Override
