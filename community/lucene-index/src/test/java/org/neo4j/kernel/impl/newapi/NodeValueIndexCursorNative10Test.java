@@ -21,22 +21,20 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
-
-public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursorTest
+public class NodeValueIndexCursorNative10Test extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.param() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.param() );
         return readTestSupport;
     }
 
     @Override
     protected String providerKey()
     {
-        return "lucene";
+        return "lucene+native";
     }
 
     @Override

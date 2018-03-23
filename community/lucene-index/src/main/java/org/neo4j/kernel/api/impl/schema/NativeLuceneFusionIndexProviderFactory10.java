@@ -32,87 +32,72 @@ import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector00;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSelector10;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class LuceneIndexProviderFactory extends
-        KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
+public class NativeLuceneFusionIndexProviderFactory10 extends
+        NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
 {
-    public static final String KEY = "lucene";
+    public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
+    static final int PRIORITY = LuceneIndexProvider.PRIORITY + 1;
 
-    public static final IndexProvider.Descriptor PROVIDER_DESCRIPTOR =
-            new IndexProvider.Descriptor( KEY, "1.0" );
-
-    public interface Dependencies
+    public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
     {
-        PageCache pageCache();
-
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
-
-        Config getConfig();
-
-        Monitors monitors();
-
-        LogService getLogService();
-
-        FileSystemAbstraction fileSystem();
-    }
-
-    public LuceneIndexProviderFactory()
-    {
-        super( KEY );
     }
 
     @Override
-    public IndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    public FusionIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File storeDir = context.storeDir();
         FileSystemAbstraction fs = dependencies.fileSystem();
+        Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionIndexProvider.class );
         Monitors monitors = dependencies.monitors();
-        Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneIndexProvider.class );
         monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
         IndexProvider.Monitor monitor = monitors.newMonitor( IndexProvider.Monitor.class, KEY );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        return create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
-    public static FusionIndexProvider newInstance( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    public static FusionIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+                                                   IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
+                                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
+        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
-        IndexDirectoryStructure.Factory baseDirStructure = directoriesByProviderKey( storeDir );
-        IndexDirectoryStructure.Factory childDirectoryStructure = directoriesBySubProvider( baseDirStructure.forProvider( PROVIDER_DESCRIPTOR ) );
 
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, baseDirStructure, monitor, config, operationalMode );
-        TemporalIndexProvider temporal =
-                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        NumberIndexProvider number =
+                IndexProviderFactoryUtil.numberProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         SpatialIndexProvider spatial =
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
+        TemporalIndexProvider temporal =
+                IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-        int priority = LuceneIndexProvider.PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.param().equals( defaultSchemaProvider ) )
+        int priority = PRIORITY;
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE10.param().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }
-        return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
-                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+        return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSelector10(),
+                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    {
+        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, DESCRIPTOR );
+    }
 }

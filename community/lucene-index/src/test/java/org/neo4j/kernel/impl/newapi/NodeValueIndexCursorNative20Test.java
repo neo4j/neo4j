@@ -20,15 +20,14 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
 
-public class NodeValueIndexCursorNativeTest extends AbstractNodeValueIndexCursorTest
+public class NodeValueIndexCursorNative20Test extends AbstractNodeValueIndexCursorTest
 {
     @Override
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.param() );
         return readTestSupport;
     }
 
@@ -41,6 +40,6 @@ public class NodeValueIndexCursorNativeTest extends AbstractNodeValueIndexCursor
     @Override
     protected String providerVersion()
     {
-        return "1.0";
+        return "2.0";
     }
 }

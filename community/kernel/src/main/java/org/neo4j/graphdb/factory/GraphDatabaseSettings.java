@@ -504,9 +504,36 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
+    @Deprecated
+    @ReplacedBy( "dbms.index.default_schema_provider" )
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
+
+    public enum SchemaIndex
+    {
+        NATIVE20( "lucene+native-2.0" ),
+        NATIVE10( "lucene+native-1.0" ),
+        LUCENE10( "lucene-1.0" );
+
+        private final String param;
+
+        SchemaIndex( String param )
+        {
+            this.param = param;
+        }
+
+        public String param()
+        {
+            return param;
+        }
+    }
+
+    @Description( "Index provider to use when creating new indexes." )
+    public static final Setting<String> default_schema_provider =
+            setting( "dbms.index.default_schema_provider",
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.param(), SchemaIndex.NATIVE10.param(), SchemaIndex.LUCENE10.param() ),
+                    null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location =

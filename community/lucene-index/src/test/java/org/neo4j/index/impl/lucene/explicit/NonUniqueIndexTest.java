@@ -37,7 +37,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -62,6 +63,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 
 public class NonUniqueIndexTest
 {
@@ -155,22 +158,12 @@ public class NonUniqueIndexTest
 
     private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
     {
-        FileSystemAbstraction fs = resources.fileSystem();
+        PageCache pageCache = resources.pageCache();
         File storeDir = resources.directory().graphDbDir();
+        FileSystemAbstraction fs = resources.fileSystem();
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;
-        PageCache pageCache = resources.pageCache();
-        Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
-        IndexProvider indexProvider;
-        if ( useFusionIndex )
-        {
-            indexProvider = NativeLuceneFusionIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
-        }
-        else
-        {
-            indexProvider = LuceneIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
-        }
+        IndexProvider indexProvider = selectIndexProvider( pageCache, storeDir, fs, monitor, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
                 SchemaIndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
@@ -178,5 +171,24 @@ public class NonUniqueIndexTest
         {
             return PrimitiveLongCollections.asList( reader.query( IndexQuery.exact( 1, value ) ) );
         }
+    }
+
+    private IndexProvider selectIndexProvider( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
+            OperationalMode operationalMode )
+    {
+        String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        if ( LUCENE10.param().equals( defaultSchemaProvider ) )
+        {
+            return LuceneIndexProviderFactory
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        }
+        else if ( NATIVE10.param().equals( defaultSchemaProvider ) )
+        {
+            return NativeLuceneFusionIndexProviderFactory10
+                    .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
+        }
+        return NativeLuceneFusionIndexProviderFactory20
+                .create( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 }

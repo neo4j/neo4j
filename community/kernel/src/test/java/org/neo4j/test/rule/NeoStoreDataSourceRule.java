@@ -180,7 +180,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
             {
                 if ( IndexProvider.class.isAssignableFrom( type ) )
                 {
-                    return type.cast( IndexProvider.NO_INDEX_PROVIDER );
+                    return type.cast( IndexProvider.EMPTY );
                 }
                 throw new IllegalArgumentException( type.toString() );
             }

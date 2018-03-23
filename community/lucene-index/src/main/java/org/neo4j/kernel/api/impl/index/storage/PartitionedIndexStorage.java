@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -241,7 +242,7 @@ public class PartitionedIndexStorage
         File[] files = fileSystem.listFiles( rootFolder );
         return files == null ? Collections.emptyList()
                              : Stream.of( files )
-                               .filter( fileSystem::isDirectory )
+                               .filter( f -> fileSystem.isDirectory( f ) && StringUtils.isNumeric( f.getName() ) )
                                .sorted( FILE_COMPARATOR )
                                .collect( toList() );
 
