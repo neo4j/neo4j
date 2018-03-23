@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.neo4j.values.storable.LocalTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeConstants.asValidTime;
+import static org.neo4j.values.storable.TimeUtil.asValidTime;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;

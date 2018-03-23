@@ -47,6 +47,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeUtil;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -54,7 +55,6 @@ import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
-import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
 
 /**
  * Used for turning parameters into appropriate types in the compiled runtime
@@ -379,7 +379,9 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeTime( long nanosOfDayUTC, int offsetSeconds )
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( OffsetTime.of(
+                LocalTime.ofNanoOfDay( TimeUtil.nanosOfDayToLocal( nanosOfDayUTC, offsetSeconds ) ),
+                ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override

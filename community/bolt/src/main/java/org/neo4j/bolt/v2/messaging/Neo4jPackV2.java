@@ -36,6 +36,7 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.TimeUtil;
 import org.neo4j.values.storable.TimeValue;
 
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -43,7 +44,6 @@ import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -140,7 +140,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
         public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
         {
             packStructHeader( 2, TIME );
-            pack( nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND );
+            pack( TimeUtil.nanosOfDayToLocal( nanosOfDayUTC, offsetSeconds ) );
             pack( offsetSeconds );
         }
 
@@ -245,9 +245,9 @@ public class Neo4jPackV2 extends Neo4jPackV1
 
         private TimeValue unpackTime() throws IOException
         {
-            long nanosOfDayUTC = unpackLong();
+            long nanosOfDayLocal = unpackLong();
             int offsetSeconds = unpackInteger();
-            return time( nanosOfDayUTC - offsetSeconds * NANOS_PER_SECOND, ZoneOffset.ofTotalSeconds( offsetSeconds ) );
+            return time( TimeUtil.nanosOfDayToUTC( nanosOfDayLocal, offsetSeconds ), ZoneOffset.ofTotalSeconds( offsetSeconds ) );
         }
 
         private LocalDateTimeValue unpackLocalDateTime() throws IOException

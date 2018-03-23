@@ -44,13 +44,12 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
-import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
-import static org.neo4j.values.storable.TimeConstants.NANOS_PER_SECOND;
+import static org.neo4j.values.storable.TimeUtil.NANOS_PER_SECOND;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
@@ -255,7 +254,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private TimeValue( OffsetTime value )
     {
         // truncate the offset to whole minutes
-        this.value = TimeConstants.truncateOffsetToMinutes( value );
+        this.value = TimeUtil.truncateOffsetToMinutes( value );
         this.nanosOfDayUTC = getNanosOfDayUTC( this.value );
     }
 
@@ -268,7 +267,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value, long nanosOfDayUTC )
     {
-        this.value = TimeConstants.truncateOffsetToMinutes( value );
+        this.value = TimeUtil.truncateOffsetToMinutes( value );
         this.nanosOfDayUTC = nanosOfDayUTC;
     }
 

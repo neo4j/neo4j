@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
 import static java.time.temporal.ChronoUnit.DAYS;
 
 @SuppressWarnings( "WeakerAccess" )
-public class TimeConstants
+public class TimeUtil
 {
     public static final long NANOS_PER_SECOND = 1_000_000_000L;
     public static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
@@ -34,7 +34,7 @@ public class TimeConstants
     public static final double AVG_DAYS_PER_MONTH = 365.2425 / 12;
     public static final long AVG_SECONDS_PER_MONTH = 2_629_746;
 
-    private TimeConstants()
+    private TimeUtil()
     {
     }
 
@@ -56,5 +56,15 @@ public class TimeConstants
         int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
         ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
         return value.withOffsetSameInstant( truncatedOffset );
+    }
+
+    public static long nanosOfDayToLocal( long nanosOfDayUTC, int offsetSeconds )
+    {
+        return nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND;
+    }
+
+    public static long nanosOfDayToUTC( long nanosOfDayLocal, int offsetSeconds )
+    {
+        return nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
     }
 }
