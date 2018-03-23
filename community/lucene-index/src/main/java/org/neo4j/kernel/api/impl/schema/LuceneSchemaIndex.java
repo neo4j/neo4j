@@ -108,7 +108,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<IndexReader>
         {
             throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
-        drop();
+        super.drop();
     }
 
     private UniquenessVerifier createUniquenessVerifier() throws IOException
