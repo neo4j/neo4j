@@ -497,10 +497,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         private static final long NOT_INITIALIZED = -2L;
         static final long NO_ID = -1L;
         private long next = NOT_INITIALIZED;
-        private final int size;
-        private final float score;
+        protected int size;
+        protected float score;
 
-        protected AbstractCursorWrappingIndexHits( int size, float score )
+        public AbstractCursorWrappingIndexHits( int size, float score )
         {
             this.size = size;
             this.score = score;
@@ -623,6 +623,8 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         @Override
         protected Node materialize( long id )
         {
+            this.score = cursor.score();
+            this.size = cursor.expectedTotalNumberOfResults();
             return graphDatabaseService.getNodeById( id );
         }
     }
@@ -680,6 +682,8 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         @Override
         protected Relationship materialize( long id )
         {
+            this.score = cursor.score();
+            this.size = cursor.expectedTotalNumberOfResults();
             return graphDatabaseService.getRelationshipById( id );
         }
     }
