@@ -89,7 +89,13 @@ public interface ValueWriter<E extends Exception>
 
     void writeLocalTime( long nanoOfDay ) throws E;
 
-    void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E;
+    /**
+     * Write time value
+     *
+     * @param nanosOfDayUTC nanoseconds of day in UTC. will be between -18h and +42h
+     * @param offsetSeconds time zone offset in seconds
+     */
+    void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E;
 
     void writeLocalDateTime( long epochSecond, int nano ) throws E;
 
@@ -185,7 +191,7 @@ public interface ValueWriter<E extends Exception>
         }
 
         @Override
-        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
         {   // no-op
         }
 

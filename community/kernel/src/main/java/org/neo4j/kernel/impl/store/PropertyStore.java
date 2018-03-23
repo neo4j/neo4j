@@ -585,11 +585,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
 
         @Override
-        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws IllegalArgumentException
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
         {
             if ( allowStorePointsAndTemporal )
             {
-                block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayLocal, offsetSeconds ) );
+                block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
             }
             else
             {

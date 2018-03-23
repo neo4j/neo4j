@@ -47,6 +47,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeUtil;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -376,27 +377,29 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( OffsetTime.of(
+                LocalTime.ofNanoOfDay( TimeUtil.nanosOfDayToLocal( nanosOfDayUTC, offsetSeconds ) ),
+                ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
     public void writeLocalDateTime( long epochSecond, int nano )
     {
-        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond(epochSecond, nano), UTC ) );
+        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nano ), UTC ) );
     }
 
     @Override
     public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecondUTC, nano ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
     public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
+        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecondUTC, nano ), ZoneId.of( zoneId ) ) );
     }
 
     private interface Writer

@@ -510,7 +510,7 @@ public enum TemporalType
         return data;
     }
 
-    public static long[] encodeTime( int keyId, long nanoOfDayLocal, int secondOffset )
+    public static long[] encodeTime( int keyId, long nanoOfDayUTC, int secondOffset )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
         int minuteOffset = secondOffset / 60;
@@ -521,7 +521,7 @@ public enum TemporalType
         long[] data = new long[BLOCKS_TIME];
         // Offset are always in the range +-18:00, so minuteOffset will never require more than 12 bits
         data[0] = keyAndType | temporalTypeBits | ((long) minuteOffset << 32);
-        data[1] = nanoOfDayLocal;
+        data[1] = nanoOfDayUTC;
 
         return data;
     }

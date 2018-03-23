@@ -196,9 +196,9 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
     {
-        buffer.add( TimeValue.time( nanosOfDayLocal, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        buffer.add( TimeValue.time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
