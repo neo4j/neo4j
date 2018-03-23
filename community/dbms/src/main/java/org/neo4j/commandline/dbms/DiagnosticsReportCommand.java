@@ -25,6 +25,8 @@ import org.jutils.jprocesses.model.ProcessInfo;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -117,8 +119,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
         try
         {
-            SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
-            Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
+            Path reportFile = destinationDir.resolve( getDefaultFilename() );
             out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
             reporter.dump( classifiers.get(), reportFile, progress, force );
         }
@@ -126,6 +127,14 @@ public class DiagnosticsReportCommand implements AdminCommand
         {
             throw new CommandFailed( "Creating archive failed", e );
         }
+    }
+
+    private String getDefaultFilename() throws UnknownHostException
+    {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        String safeFilename = hostName.replaceAll( "[^a-zA-Z0-9._]+", "_" );
+        SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
+        return safeFilename + "-" + dumpFormat.format( new Date() ) + ".zip";
     }
 
     private DiagnosticsReporterProgress buildProgress()
