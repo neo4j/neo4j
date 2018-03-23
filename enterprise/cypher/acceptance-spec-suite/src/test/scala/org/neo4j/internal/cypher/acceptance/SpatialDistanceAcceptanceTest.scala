@@ -301,6 +301,46 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     }
   }
 
+  test("indexed points at date line") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 0, longitude: -180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 0, longitude: 180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 0, longitude: -170})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 0, longitude: 170})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 10, longitude: -180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 10, longitude: 180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 10, longitude: -170})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 10, longitude: 170})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: -180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: 180})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: -170})")
+    graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: 170})")
+
+    // Create enough points so that an index seek gets planned
+    Range(0, 50).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i})"))
+
+    val query =
+      s"""WITH distance(point({latitude: 0, longitude: 180, crs: 'WGS-84'}), point({latitude: 0, longitude: 170, crs: 'WGS-84'})) as d
+         |MATCH (p:Place)
+         |WHERE distance(p.location, point({latitude: 0, longitude: 180, crs: 'WGS-84'})) <= d
+         |RETURN p.location as point
+        """.stripMargin
+
+    // Then
+    val expected = Set(
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -170, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 170, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 10)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, 10)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -180, -10)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 180, -10))
+    )
+    expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+  }
+
   test("indexed 3D points with distance query and points within bbox") {
     // Given
     graph.createIndex("Place", "location")
