@@ -34,11 +34,6 @@ class MultipleGraphClausesParsingTest
   val fooBarGraph = ast.QualifiedGraphName(List("foo", "bar"))
   val fooDiffGraph = ast.QualifiedGraphName(List("foo", "diff"))
 
-  test("WITH * WHERE a ~ b") {
-    val where = ast.Where(exp.Equivalent(varFor("a"), varFor("b"))(pos))(pos)
-    yields(ast.With(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None, None, None, Some(where)))
-  }
-
   test("USE GRAPH foo.bar") {
     yields(ast.UseGraph(fooBarGraph))
   }

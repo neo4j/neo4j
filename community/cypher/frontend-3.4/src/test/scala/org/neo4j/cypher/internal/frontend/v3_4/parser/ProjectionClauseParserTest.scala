@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
+import org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause}
 import org.parboiled.scala.Rule1
@@ -44,8 +45,9 @@ class ProjectionClauseParserTest
     failsToParse
   }
 
-  test("WITH GRAPH *") {
-    failsToParse
+  test("WITH * WHERE a ~ b") {
+    val where = ast.Where(expressions.Equivalent(varFor("a"), varFor("b"))(pos))(pos)
+    yields(ast.With(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None, None, None, Some(where)))
   }
 
   test("RETURN *") {
