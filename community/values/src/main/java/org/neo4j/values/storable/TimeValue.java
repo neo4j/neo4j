@@ -253,7 +253,10 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value )
     {
-        this.value = value;
+        // truncate the offset to whole minutes
+        int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
+        ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
+        this.value = value.withOffsetSameInstant( truncatedOffset );
     }
 
     @Override
