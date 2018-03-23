@@ -25,7 +25,10 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.*;
+import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.StringPredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;

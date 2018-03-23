@@ -25,7 +25,8 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.*;
+import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import static org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
