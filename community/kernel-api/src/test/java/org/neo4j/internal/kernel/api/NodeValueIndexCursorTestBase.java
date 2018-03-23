@@ -40,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -128,6 +129,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     protected abstract void createCompositeIndex( GraphDatabaseService graphDb, String label, String... properties ) throws Exception;
     protected abstract String providerKey();
     protected abstract String providerVersion();
+    protected abstract boolean spatialRangeSupport();
 
     @Test
     public void shouldPerformExactLookup() throws Exception
@@ -140,7 +142,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
               PrimitiveLongSet uniqueIds = Primitive.longSet() )
         {
             // when
-            IndexValueCapability valueCapability = index.valueCapability( ValueCategory.TEXT );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "zero" ) );
 
             // then
@@ -165,7 +166,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             assertFoundNodesAndNoValue( node, uniqueIds, strThree1, strThree2, strThree3 );
 
             // when
-            valueCapability = index.valueCapability( ValueCategory.NUMBER );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 1 ) );
 
             // then
@@ -196,14 +196,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             assertFoundNodesAndNoValue( node, uniqueIds, num12a, num12b );
 
             // when
-            valueCapability = index.valueCapability( ValueCategory.REST );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, true ) );
 
             // then
             assertFoundNodesAndNoValue( node, uniqueIds, boolTrue );
 
             // when
-            valueCapability = index.valueCapability( ValueCategory.GEOMETRY );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, Values.pointValue( Cartesian, 0, 0 ) ) );
 
             // then
@@ -228,7 +226,6 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             // when
-            valueCapability = index.valueCapability( ValueCategory.TEMPORAL );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, DateValue.date( 1989, 3, 24 ) ) );
 
             // then
@@ -451,6 +448,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Test
     public void shouldPerformSpatialRangeSearch() throws KernelException
     {
+        assumeTrue( spatialRangeSupport() );
+
         // given
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
@@ -572,6 +571,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Test
     public void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
     {
+        assumeTrue( spatialRangeSupport() );
+
         // given
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );

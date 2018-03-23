@@ -42,4 +42,10 @@ public class NodeValueIndexCursorNative10Test extends AbstractNodeValueIndexCurs
     {
         return "1.0";
     }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return true;
+    }
 }
