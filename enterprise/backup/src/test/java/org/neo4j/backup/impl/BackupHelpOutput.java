@@ -64,8 +64,7 @@ public class BackupHelpOutput
         lines.add( "  --name=<graph.db-backup>                 Name of backup. If a backup with this" );
         lines.add( "                                           name already exists an incremental" );
         lines.add( "                                           backup will be attempted." );
-        lines.add( "  --from=<address>                         Host and port of Neo4j." );
-        lines.add( "                                           [default:localhost:6362]" );
+        lines.add( "  --from=<address>                         Host and port of Neo4j. [default:]" );
         lines.add( "  --fallback-to-full=<true|false>          If an incremental backup fails backup" );
         lines.add( "                                           will move the old backup to" );
         lines.add( "                                           <name>.err.<N> and fallback to a full" );
