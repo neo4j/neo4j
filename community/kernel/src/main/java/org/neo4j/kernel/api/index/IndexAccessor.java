@@ -40,6 +40,8 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
  */
 public interface IndexAccessor extends Closeable
 {
+    IndexAccessor EMPTY = new Adapter();
+
     /**
      * Deletes this index as well as closes all used external resources.
      * There will not be any interactions after this call.
@@ -117,8 +119,6 @@ public interface IndexAccessor extends Closeable
      * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
      */
     boolean isDirty();
-
-    IndexAccessor EMPTY = new Adapter();
 
     class Adapter implements IndexAccessor
     {

@@ -43,12 +43,11 @@ import org.neo4j.values.storable.Value;
 abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         implements IndexReader
 {
-    private final GBPTree<KEY,VALUE> tree;
-    final Layout<KEY,VALUE> layout;
-    private final IndexSamplingConfig samplingConfig;
-
-    final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
     protected final SchemaIndexDescriptor descriptor;
+    final Layout<KEY,VALUE> layout;
+    final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
+    private final GBPTree<KEY,VALUE> tree;
+    private final IndexSamplingConfig samplingConfig;
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig,

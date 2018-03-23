@@ -25,6 +25,7 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.index.IndexProvider;
 
 /**
@@ -125,17 +126,9 @@ public abstract class FusionIndexBase<T>
             {
                 consumer.accept( subject );
             }
-            catch ( Exception caught )
+            catch ( Exception e )
             {
-                E castedException = (E) caught;
-                if ( exception == null )
-                {
-                    exception = castedException;
-                }
-                else
-                {
-                    exception.addSuppressed( castedException );
-                }
+                exception = Exceptions.chain( exception, (E) e );
             }
         }
         if ( exception != null )

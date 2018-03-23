@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.kernel.api.IndexQuery.*;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
@@ -73,13 +75,13 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
         }
         IndexQuery predicate = predicates[0];
 
-        if ( predicate instanceof IndexQuery.ExactPredicate )
+        if ( predicate instanceof ExactPredicate )
         {
-            IndexQuery.ExactPredicate exactPredicate = (IndexQuery.ExactPredicate) predicate;
+            ExactPredicate exactPredicate = (ExactPredicate) predicate;
             return select( instances, exactPredicate.value() );
         }
 
-        if ( predicate instanceof IndexQuery.RangePredicate )
+        if ( predicate instanceof RangePredicate )
         {
             switch ( predicate.valueGroup() )
             {
@@ -95,7 +97,7 @@ public class FusionSelector00 implements FusionIndexProvider.Selector
             default: // fall through
             }
         }
-        if ( predicate instanceof IndexQuery.ExistsPredicate )
+        if ( predicate instanceof ExistsPredicate )
         {
             return null;
         }

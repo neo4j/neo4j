@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
@@ -113,8 +114,10 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
         IndexReader instance = selector.select( instances, predicates );
         if ( instance == null )
         {
-            assert predicates.length == 1 && predicates[0] instanceof IndexQuery.ExistsPredicate :
-                    "Unexpected selector result for predicates " + Arrays.toString( predicates );
+            if ( !(predicates.length == 1 && predicates[0] instanceof ExistsPredicate) )
+            {
+                throw new IllegalStateException( "Selected IndexReader null for predicates " + Arrays.toString( predicates ) );
+            }
             // null means ExistsPredicate and we don't care about
             // full value precision for that, therefor true.
             return true;

@@ -26,6 +26,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.internal.kernel.api.IndexQuery.*;
 import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
@@ -89,7 +90,7 @@ public class FusionSelector10 implements FusionIndexProvider.Selector
             return select( instances, exactPredicate.value() );
         }
 
-        if ( predicate instanceof IndexQuery.RangePredicate )
+        if ( predicate instanceof RangePredicate )
         {
             switch ( predicate.valueGroup() )
             {
