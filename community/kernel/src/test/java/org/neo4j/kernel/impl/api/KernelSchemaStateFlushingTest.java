@@ -135,10 +135,9 @@ public class KernelSchemaStateFlushingTest
     private ConstraintDescriptor createConstraint() throws KernelException
     {
 
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
-            ConstraintDescriptor descriptor = statement.schemaWriteOperations().uniquePropertyConstraintCreate(
+            ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
             transaction.success();
             return descriptor;
@@ -147,10 +146,9 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
-            statement.schemaWriteOperations().constraintDrop( descriptor );
+            transaction.schemaWrite().constraintDrop( descriptor );
             transaction.success();
         }
     }
