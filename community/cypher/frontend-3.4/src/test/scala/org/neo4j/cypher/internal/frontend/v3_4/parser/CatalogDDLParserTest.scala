@@ -56,6 +56,12 @@ class CatalogDDLParserTest
     yields(ast.CreateGraph(graphName, union))
   }
 
+  test("CREATE GRAPH foo.bar { CONSTRUCT }") {
+    val graphName = ast.QualifiedGraphName("foo", List("bar"))
+
+    yields(ast.CreateGraph(graphName, ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)))
+  }
+
   // missing graph name
   test("CREATE GRAPH { RETURN GRAPH }") {
     failsToParse

@@ -38,19 +38,19 @@ class MultipleGraphClausesParsingTest
     yields(ast.FromGraph(fooBarGraph))
   }
 
-  test("CONSTRUCT { CREATE () }") {
+  test("CONSTRUCT CREATE ()") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
     yields(ast.ConstructGraph(creates = List(ast.Create(exp.Pattern(patternParts)(pos))(pos))))
   }
 
-  test("CONSTRUCT { CLONE a }") {
+  test("CONSTRUCT CLONE a") {
     val item = ast.UnaliasedReturnItem(varFor("a"), "a")(pos)
     val clone = ast.Clone(List(item))(pos)
 
     yields(ast.ConstructGraph(clones = List(clone)))
   }
 
-  test("CONSTRUCT { CLONE a, b }") {
+  test("CONSTRUCT CLONE a, b") {
     val item1 = ast.UnaliasedReturnItem(varFor("a"), "a")(pos)
     val item2 = ast.UnaliasedReturnItem(varFor("b"), "b")(pos)
     val clone = ast.Clone(List(item1, item2))(pos)
@@ -58,7 +58,7 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(clones = List(clone)))
   }
 
-  test("CONSTRUCT { CLONE a AS x, b }") {
+  test("CONSTRUCT CLONE a AS x, b") {
     val item1 = ast.AliasedReturnItem(varFor("a"), varFor("x"))(pos)
     val item2 = ast.UnaliasedReturnItem(varFor("b"), "b")(pos)
     val clone = ast.Clone(List(item1, item2))(pos)
@@ -66,14 +66,14 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(clones = List(clone)))
   }
 
-  test("CONSTRUCT { CLONE a CLONE b AS b }") {
+  test("CONSTRUCT CLONE a CLONE b AS b") {
     val aClone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos)
     val bClone: ast.Clone = ast.Clone(List(ast.AliasedReturnItem(varFor("b"), varFor("b"))(pos)))(pos)
 
     yields(ast.ConstructGraph(clones = List(aClone, bClone)))
   }
 
-  test("CONSTRUCT { CLONE x CREATE () SET a.prop = 1 }") {
+  test("CONSTRUCT CLONE x CREATE () SET a.prop = 1") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
     val clone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("x"), "x")(pos)))(pos)
     val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
@@ -86,7 +86,7 @@ class MultipleGraphClausesParsingTest
     )
   }
 
-  test("CONSTRUCT { CREATE (a) SET a:A }") {
+  test("CONSTRUCT CREATE (a) SET a:A") {
     val a = exp.Variable("a")(pos)
     val patternParts = List(exp.EveryPath(exp.NodePattern(Some(a),List(),None)(pos)))
     val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
@@ -98,22 +98,22 @@ class MultipleGraphClausesParsingTest
     )
   }
 
-  test("CONSTRUCT {}") {
+  test("CONSTRUCT") {
     yields(ast.ConstructGraph())
   }
 
-  test("CONSTRUCT ON foo.bar {}") {
+  test("CONSTRUCT ON foo.bar") {
     yields(ast.ConstructGraph(on = List(ast.QualifiedGraphName("foo", List("bar")))))
   }
 
-  test("CONSTRUCT ON foo.bar, baz.boz {}") {
+  test("CONSTRUCT ON foo.bar, baz.boz") {
     yields(ast.ConstructGraph(on = List(
       ast.QualifiedGraphName("foo", List("bar")),
       ast.QualifiedGraphName("baz", List("boz"))
     )))
   }
 
-  test("CONSTRUCT { SET a:A CREATE (b) }") {
+  test("CONSTRUCT SET a:A CREATE (b)") {
     failsToParse
   }
 
