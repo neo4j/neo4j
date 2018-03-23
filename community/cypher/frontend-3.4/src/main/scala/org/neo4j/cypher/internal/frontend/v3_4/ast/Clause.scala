@@ -95,9 +95,34 @@ final case class Clone(items: List[ReturnItem])(val position: InputPosition) ext
       items.semanticCheck
 }
 
+case class New(pattern: Pattern)(val position: InputPosition) extends MultipleGraphClause with SingleRelTypeCheck {
+  override def name = "NEW"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
+      checkRelTypes(pattern)
+
+}
+
+trait SingleRelTypeCheck {
+  self: Clause =>
+
+  protected def checkRelTypes(pattern: Pattern): SemanticCheck =
+    pattern.patternParts.foldSemanticCheck {
+      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+        if (rel.types.size > 1) {
+          SemanticError(s"A single relationship type must be specified for ${self.name}", rel.position)
+        } else {
+          SemanticError(s"Exactly one relationship type must be specified for ${self.name}. Did you forget to prefix your relationship type with a ':'?", rel.position)
+        }
+      case _ => success
+    }
+}
+
 final case class ConstructGraph(
   clones: List[Clone] = List.empty,
-  creates: List[Create] = List.empty,
+  creates: List[New] = List.empty,
   sets: List[SetClause] = List.empty,
   on: List[QualifiedGraphName] = List.empty
 )(val position: InputPosition) extends MultipleGraphClause {
@@ -306,45 +331,23 @@ case class Match(
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)
+  extends UpdateClause with SingleRelTypeCheck {
+
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
       actions.semanticCheck chain
-      checkRelTypes
-
-  // Copied code from CREATE below
-  private def checkRelTypes: SemanticCheck  =
-    pattern.patternParts.foldSemanticCheck {
-      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
-      if (rel.types.size > 1) {
-        SemanticError("A single relationship type must be specified for MERGE", rel.position)
-      } else {
-        SemanticError("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?", rel.position)
-      }
-      case _ => success
-    }
+      checkRelTypes(pattern)
 }
 
-case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
+case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause with SingleRelTypeCheck {
   override def name = "CREATE"
 
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
-    checkRelTypes
-
-  //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
-  private def checkRelTypes: SemanticCheck  =
-    pattern.patternParts.foldSemanticCheck {
-      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
-      if (rel.types.size > 1) {
-        SemanticError("A single relationship type must be specified for CREATE", rel.position)
-      } else {
-        SemanticError("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?", rel.position)
-      }
-      case _ => success
-    }
+    checkRelTypes(pattern)
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {

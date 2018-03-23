@@ -39,21 +39,25 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def fromGraph = rule("FROM GRAPH") {
+  def FromGraph = rule("FROM GRAPH") {
     group(keyword("FROM GRAPH") ~~ QualifiedGraphName ~~>> (ast.FromGraph(_)))
   }
 
   def ConstructGraph = rule("CONSTRUCT") {
     group(keyword("CONSTRUCT") ~~ optional(keyword("ON") ~~ oneOrMore(QualifiedGraphName, CommaSep)) ~~
       zeroOrMore(WS ~ Clone) ~~
-      zeroOrMore(WS ~ Create) ~~
-      zeroOrMore(WS ~ SetClause) ~~>> { (on, clones, create, set) =>
-        ast.ConstructGraph(clones, create, set, on.getOrElse(List.empty))
+      zeroOrMore(WS ~ New) ~~
+      zeroOrMore(WS ~ SetClause) ~~>> { (on, clones, news, set) =>
+        ast.ConstructGraph(clones, news, set, on.getOrElse(List.empty))
     })
   }
 
-  def Clone: Rule1[ast.Clone] = rule("CLONE") {
+  def Clone: Rule1[ast.Clone] = rule("CLONE (construct subclause)") {
     group(keyword("CLONE") ~~ oneOrMore(ReturnItem, CommaSep)) ~~>> (ast.Clone(_))
+  }
+
+  def New: Rule1[ast.New] = rule("NEW (construct subclause)") {
+    group(keyword("NEW") ~~ Pattern) ~~>> (ast.New(_))
   }
 
   def QualifiedGraphName = rule("qualified graph name foo.bar.baz") {

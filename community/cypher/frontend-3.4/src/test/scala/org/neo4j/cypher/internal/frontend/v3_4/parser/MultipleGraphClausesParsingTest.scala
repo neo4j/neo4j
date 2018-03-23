@@ -38,9 +38,9 @@ class MultipleGraphClausesParsingTest
     yields(ast.FromGraph(fooBarGraph))
   }
 
-  test("CONSTRUCT CREATE ()") {
+  test("CONSTRUCT NEW ()") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    yields(ast.ConstructGraph(creates = List(ast.Create(exp.Pattern(patternParts)(pos))(pos))))
+    yields(ast.ConstructGraph(creates = List(ast.New(exp.Pattern(patternParts)(pos))(pos))))
   }
 
   test("CONSTRUCT CLONE a") {
@@ -73,27 +73,27 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(clones = List(aClone, bClone)))
   }
 
-  test("CONSTRUCT CLONE x CREATE () SET a.prop = 1") {
+  test("CONSTRUCT CLONE x NEW () SET a.prop = 1") {
     val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
     val clone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("x"), "x")(pos)))(pos)
-    val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
+    val newClause: ast.New = ast.New(exp.Pattern(patternParts)(pos))(pos)
     val set: ast.SetClause = ast.SetClause(Seq(ast.SetPropertyItem(exp.Property(exp.Variable("a")(pos), exp.PropertyKeyName("prop")(pos))(pos), exp.SignedDecimalIntegerLiteral("1")(pos))(pos)))(pos)
 
     yields(ast.ConstructGraph(
       clones = List(clone),
-      creates = List(create),
+      creates = List(newClause),
       sets = List(set))
     )
   }
 
-  test("CONSTRUCT CREATE (a) SET a:A") {
+  test("CONSTRUCT NEW (a) SET a:A") {
     val a = exp.Variable("a")(pos)
     val patternParts = List(exp.EveryPath(exp.NodePattern(Some(a),List(),None)(pos)))
-    val create: ast.Create = ast.Create(exp.Pattern(patternParts)(pos))(pos)
+    val newClause: ast.New = ast.New(exp.Pattern(patternParts)(pos))(pos)
     val set: ast.SetClause = ast.SetClause(Seq(ast.SetLabelItem(a, Seq(exp.LabelName("A")(pos)))(pos)))(pos)
 
     yields(ast.ConstructGraph(
-      creates = List(create),
+      creates = List(newClause),
       sets = List(set))
     )
   }
