@@ -88,6 +88,7 @@
     <licensesVersion>7</licensesVersion>
     <license-text.header>AGPL-3-header.txt</license-text.header>
 
+    <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>6.0</asm.version>
@@ -516,7 +517,7 @@
         <plugin>
           <groupId>net.alchim31.maven</groupId>
           <artifactId>scala-maven-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>${scala-maven-plugin.version}</version>
 
           <configuration>
             <scalaVersion>${scala.version}</scalaVersion>
@@ -923,6 +924,25 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <scala.java9.arg>-nobootcp</scala.java9.arg>
       </properties>
+    </profile>
+
+    <profile>
+      <id>zinc</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>net.alchim31.maven</groupId>
+              <artifactId>scala-maven-plugin</artifactId>
+              <version>${scala-maven-plugin.version}</version>
+              <configuration>
+                <recompileMode>incremental</recompileMode>
+                <useZincServer>true</useZincServer>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
     </profile>
   </profiles>
 
