@@ -500,7 +500,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         protected int size;
         protected float score;
 
-        public AbstractCursorWrappingIndexHits( int size, float score )
+        AbstractCursorWrappingIndexHits( int size, float score )
         {
             this.size = size;
             this.score = score;
@@ -523,7 +523,6 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             return score;
         }
-
 
         @Override
         public T getSingle()
