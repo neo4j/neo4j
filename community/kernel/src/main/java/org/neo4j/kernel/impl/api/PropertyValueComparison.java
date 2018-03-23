@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.LocalDate;
+import org.neo4j.values.storable.Values;
 
-import org.neo4j.helpers.MathUtil;
-import org.neo4j.helpers.Strings;
-import org.neo4j.values.storable.PointValue;
-
-import static java.lang.String.format;
-
+/**
+ * This class is only needed because of a missed dependency in Cypher 2.3 and 3.1.
+ * It can be removed in 4.0.
+ */
+@SuppressWarnings( "unused" )
+@Deprecated
 public class PropertyValueComparison
 {
     private PropertyValueComparison()
@@ -34,262 +34,30 @@ public class PropertyValueComparison
         throw new AssertionError( "no instance" );
     }
 
-    // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!
-
-    // This compares two values that have the same super type according to that super type's comparator
-    // Any values that fall under OTHER, are compared by Strings.prettyPrint
-    // NULL is not supported
-    public static final PropertyValueComparator<Object> COMPARE_VALUES = new AnyPropertyValueComparator();
-
-    public static final PropertyValueComparator<Number> COMPARE_NUMBERS = new NumberPropertyValueComparator();
-
-    public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
-
-    public static final PropertyValueComparator<PointValue> COMPARE_POINTS = new PointPropertyValueComparator();
-
-    public static final PropertyValueComparator<LocalDate> COMPARE_DATES = new DatePropertyValueComparator();
-
-    public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
-
-    public enum SuperType
-    {
-        OTHER( 0 ),
-        STRING( 1 ),
-        BOOLEAN( 2 ),
-        GEOMETRY( 3 ),
-
-        // Keep this last so that Double.NaN is the largest value
-        NUMBER( 4 );
-
-        public final int typeId;
-
-        SuperType( int typeId )
-        {
-            this.typeId = typeId;
-        }
-
-        public boolean isSuperTypeOf( Object value )
-        {
-            return this == ofValue( value );
-        }
-
-        public static SuperType ofValue( Object value )
-        {
-            if ( null == value )
-            {
-                throw new NullPointerException( "null is not a valid property value and hence has no " +
-                        "PropertyValueComparison.SuperType" );
-            }
-
-            if ( value instanceof String )
-            {
-                return STRING;
-            }
-            else if ( value instanceof Number )
-            {
-                return NUMBER;
-            }
-            else if ( value instanceof Boolean )
-            {
-                return BOOLEAN;
-            }
-            else if ( value instanceof Character )
-            {
-                return STRING;
-            }
-            else if ( value instanceof PointValue )
-            {
-                return GEOMETRY;
-            }
-
-            return OTHER;
-        }
-    }
-
-    private static class AnyPropertyValueComparator extends PropertyValueComparator<Object>
+    public static final PropertyValueComparator<Object> COMPARE_VALUES = new PropertyValueComparator<Object>()
     {
         @Override
-        public int compare( Object left, Object right )
+        public int compare( Object o1, Object o2 )
         {
-            SuperType leftType = SuperType.ofValue( left );
-            SuperType rightType = SuperType.ofValue( right );
-            int cmp = COMPARE_SUPER_TYPE.compare( leftType, rightType );
-
-            if ( cmp == 0 )
-            {
-                switch ( leftType )
-                {
-                    case NUMBER:
-                        return COMPARE_NUMBERS.compare( (Number) left, (Number) right );
-
-                    case STRING:
-                        return left.toString().compareTo( right.toString() );
-
-                    case BOOLEAN:
-                        return Boolean.compare( (Boolean) left, (Boolean) right );
-
-                    case GEOMETRY:
-                        return COMPARE_POINTS.compare( (PointValue) left, (PointValue) right );
-
-                    // case OTHER:
-                    default:
-                        String leftString = Strings.prettyPrint( left );
-                        String rightString = Strings.prettyPrint( right );
-                        return leftString.compareTo( rightString );
-                }
-            }
-            else
-            {
-                return cmp;
-            }
+            return Values.COMPARATOR.compare( Values.of(o1), Values.of(o2) );
         }
-    }
+    };
 
-    private static class PropertyValueSuperTypeComparator extends PropertyValueComparator<SuperType>
+    public static final PropertyValueComparator<Number> COMPARE_NUMBERS = new PropertyValueComparator<Number>()
     {
         @Override
-        public int compare( SuperType left, SuperType right )
+        public int compare( Number n1, Number n2 )
         {
-            return Integer.compare( left.typeId, right.typeId );
+            return Values.COMPARATOR.compare( Values.numberValue(n1), Values.numberValue(n2) );
         }
-    }
+    };
 
-    private static class NumberPropertyValueComparator extends PropertyValueComparator<Number>
-    {
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public int compare( Number left, Number right )
-        {
-            Class<? extends Number> leftClazz = left.getClass();
-            Class<? extends Number> rightClazz = right.getClass();
-            if ( leftClazz == rightClazz )
-            {
-                return ((Comparable<Number>) left).compareTo( right );
-            }
-            else
-            {
-                if ( (left instanceof Double) || (left instanceof Float) )
-                {
-                    double lhs = left.doubleValue();
-                    if ( right instanceof Long )
-                    {
-                        long rhs = right.longValue();
-                        return MathUtil.compareDoubleAgainstLong( lhs, rhs );
-                    }
-                    return Double.compare( lhs, right.doubleValue() );
-                }
-
-                if ( (right instanceof Double) || (right instanceof Float) )
-                {
-                    double rhs = right.doubleValue();
-                    if ( left instanceof Long )
-                    {
-                        long lhs = left.longValue();
-                        return MathUtil.compareLongAgainstDouble( lhs, rhs );
-                    }
-                    return Double.compare( left.doubleValue(), rhs );
-                }
-
-                // Compare supported mixed integral types by least upper bound compare
-
-                if ( leftClazz.equals( Long.class ) )
-                {
-                    if ( rightClazz.equals( Integer.class ) || rightClazz.equals( Short.class ) || rightClazz.equals(
-                            Byte.class ) )
-                    {
-                        return Long.compare( left.longValue(), right.longValue() );
-                    }
-                }
-                else if ( leftClazz.equals( Integer.class ) )
-                {
-                    if ( rightClazz.equals( Long.class ) )
-                    {
-                        return Long.compare( left.longValue(), right.longValue() );
-                    }
-                    else if ( rightClazz.equals( Short.class ) || rightClazz.equals( Byte.class ) )
-                    {
-                        return Integer.compare( left.intValue(), right.intValue() );
-                    }
-                }
-                else if ( leftClazz.equals( Short.class ) )
-                {
-                    if ( rightClazz.equals( Long.class ) )
-                    {
-                        return Long.compare( left.longValue(), right.longValue() );
-                    }
-                    else if ( rightClazz.equals( Integer.class ) )
-                    {
-                        return Integer.compare( left.intValue(), right.intValue() );
-                    }
-                    else if ( rightClazz.equals( Byte.class ) )
-                    {
-                        return Short.compare( left.shortValue(), right.shortValue() );
-                    }
-                }
-                else if ( leftClazz.equals( Byte.class ) )
-                {
-                    if ( rightClazz.equals( Long.class ) )
-                    {
-                        return Long.compare( left.longValue(), right.longValue() );
-                    }
-                    else if ( rightClazz.equals( Integer.class ) )
-                    {
-                        return Integer.compare( left.intValue(), right.intValue() );
-                    }
-                    else if ( rightClazz.equals( Short.class ) )
-                    {
-                        return Short.compare( left.shortValue(), right.shortValue() );
-                    }
-                }
-
-                throw new IllegalArgumentException( format(
-                        "Comparing numbers %s and %s (with type %s and %s) is not supported",
-                        left, right,
-                        leftClazz, rightClazz
-                ) );
-            }
-        }
-    }
-
-    private static class PointPropertyValueComparator extends PropertyValueComparator<PointValue>
-    {
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public int compare( PointValue left, PointValue right )
-        {
-            return left.compareTo( right );
-        }
-    }
-
-    private static class DatePropertyValueComparator extends PropertyValueComparator<LocalDate>
-    {
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public int compare( LocalDate left, LocalDate right )
-        {
-            return left.compareTo( right );
-        }
-    }
-
-    private static class StringPropertyValueComparator extends PropertyValueComparator<Object>
+    public static final PropertyValueComparator<Object> COMPARE_STRINGS = new PropertyValueComparator<Object>()
     {
         @Override
-        public int compare( Object left, Object right )
+        public int compare( Object o1, Object o2 )
         {
-            return convert( left ).compareTo( convert( right ) );
+            return Values.COMPARATOR.compare( Values.of(o1), Values.of(o2) );
         }
-
-        private String convert( Object value )
-        {
-            Class<?> clazz = value.getClass();
-            if ( clazz.equals( String.class ) || clazz.equals( Character.class ) )
-            {
-                return value.toString();
-            }
-            else
-            {
-                throw new IllegalArgumentException( format( "Cannot compare %s as a string", value ) );
-            }
-        }
-    }
+    };
 }

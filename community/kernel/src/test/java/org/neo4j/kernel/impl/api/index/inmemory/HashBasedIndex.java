@@ -35,15 +35,13 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -90,19 +88,15 @@ class HashBasedIndex extends InMemoryIndexImplementation
 
     private synchronized PrimitiveLongResourceIterator rangeSeekByNumberInclusive( Number lower, Number upper )
     {
+        IndexQuery query = IndexQuery.range( -1, lower, true, upper, true );
+
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey().get( 0 );
-            if ( NUMBER.isSuperTypeOf( key ) )
+            Value key = Values.of( entry.getKey().get( 0 ) );
+            if ( query.acceptsValue( key ) )
             {
-                boolean lowerFilter = lower == null || COMPARE_VALUES.compare( key, lower ) >= 0;
-                boolean upperFilter = upper == null || COMPARE_VALUES.compare( key, upper ) <= 0;
-
-                if ( lowerFilter && upperFilter )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
+                nodeIds.addAll( entry.getValue() );
             }
         }
         return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
@@ -111,39 +105,14 @@ class HashBasedIndex extends InMemoryIndexImplementation
     private synchronized PrimitiveLongResourceIterator rangeSeekByString( String lower, boolean includeLower, String upper,
             boolean includeUpper )
     {
+        IndexQuery query = IndexQuery.range( -1, lower, includeLower, upper, includeUpper );
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey().get( 0 );
-            if ( STRING.isSuperTypeOf( key ) )
+            Value key = Values.of( entry.getKey().get( 0 ) );
+            if ( query.acceptsValue( key ) )
             {
-                boolean lowerFilter;
-                boolean upperFilter;
-
-                if ( lower == null )
-                {
-                    lowerFilter = true;
-                }
-                else
-                {
-                    int cmp = COMPARE_VALUES.compare( key, lower );
-                    lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
-                }
-
-                if ( upper == null )
-                {
-                    upperFilter = true;
-                }
-                else
-                {
-                    int cmp = COMPARE_VALUES.compare( key, upper );
-                    upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
-                }
-
-                if ( lowerFilter && upperFilter )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
+                nodeIds.addAll( entry.getValue() );
             }
         }
         return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
