@@ -29,6 +29,9 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  private val failConf1 = Configs.Interpreted + Configs.Procs - Configs.OldAndRule
+  private val failConf2 = Configs.Interpreted + Configs.Procs - Configs.Version2_3
+
   // Getting current value of a temporal
 
   test("should return something for current time/date/etc") {
@@ -127,301 +130,301 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
-    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Procs, query, Seq(errorMsg))
+    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Procs, query, Seq(errorMsg), Seq("IllegalArgumentException"))
   }
 
   // Failing when selecting a wrong group
 
   test("should not select time from date") {
-    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg("date({year:1984, month: 2, day:11})",
       Seq("localtime", "time", "localdatetime", "datetime"), Seq("{time:x}", "x"))
   }
 
   test("should not select date from time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date", "localdatetime", "datetime"), Seq("{date:x}", "x"))
   }
 
   test("should not select date from local time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("localtime({hour: 12, minute: 30, second: 40})",
+    shouldNotSelectWithArg("localtime({hour: 12, minute: 30, second: 40})",
       Seq("date", "localdatetime", "datetime"), Seq("{date:x}", "x"))
   }
 
   test("should not select datetime from date") {
-    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg("date({year:1984, month: 2, day:11})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
   test("should not select datetime from time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
   test("should not select datetime from local time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("localtime({hour: 12, minute: 30, second: 40})",
+    shouldNotSelectWithArg("localtime({hour: 12, minute: 30, second: 40})",
       Seq("localdatetime", "datetime"), Seq("{datetime:x}", "x"))
   }
 
   test("should not select time into date") {
-    shouldNotSelectWithArg[IllegalArgumentException]("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date"), Seq("{time:x}", "{hour: 12}", "{minute: 30}", "{second: 40}", "{year:1984, month: 2, day:11, timezone: '+1:00'}"))
   }
 
   test("should not select date into time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg("date({year:1984, month: 2, day:11})",
       Seq("time"), Seq("{date:x}", "{year: 1984}", "{month: 2}", "{day: 11}"))
   }
 
   test("should not select date into local time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("date({year:1984, month: 2, day:11})",
+    shouldNotSelectWithArg("date({year:1984, month: 2, day:11})",
       Seq("localtime"), Seq("{date:x}", "{year: 1984}", "{month: 2}", "{day: 11}"))
   }
 
   test("should not select datetime into date") {
-    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("date"), Seq("{datetime:x}"))
   }
 
   test("should not select datetime into time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("time"), Seq("{datetime:x}"))
   }
 
   test("should not select datetime into local time") {
-    shouldNotSelectWithArg[IllegalArgumentException]("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
+    shouldNotSelectWithArg("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
       Seq("localtime"), Seq("{datetime:x}"))
   }
 
   // Truncating with wrong receiver or argument
 
   test("should not truncate to millennium with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "millennium",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "millennium",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to millennium with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "millennium",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "millennium",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to century with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "century",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "century",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to century with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "century",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "century",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to decade with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "decade",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "decade",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to decade with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "decade",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "decade",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to year with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "year",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "year",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to year with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "year",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "year",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to weekYear with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "weekYear",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "weekYear",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to weekYear with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "weekYear",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "weekYear",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to quarter with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "quarter",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "quarter",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to quarter with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "quarter",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "quarter",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to month with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "month",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "month",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to month with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "month",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "month",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to week with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("time", "localtime"), "week",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("time", "localtime"), "week",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate to week with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "week",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "week",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to day with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime", "localdatetime", "date"), "day",
-      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"))
+    shouldNotTruncate(Seq("datetime", "localdatetime", "date"), "day",
+      Seq("time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})", "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate to hour with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("date"), "hour",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("date"), "hour",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate datetime to hour with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime"), "hour",
+    shouldNotTruncate(Seq("datetime"), "hour",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate localdatetime to hour with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localdatetime"), "hour",
+    shouldNotTruncate(Seq("localdatetime"), "hour",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate time to hour with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("time"), "hour",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("time"), "hour",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate localtime to hour with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localtime"), "hour",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("localtime"), "hour",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate to minute with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("date"), "minute",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("date"), "minute",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate datetime to minute with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime"), "minute",
+    shouldNotTruncate(Seq("datetime"), "minute",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate localdatetime to minute with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localdatetime"), "minute",
+    shouldNotTruncate(Seq("localdatetime"), "minute",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate time to minute with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("time"), "minute",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("time"), "minute",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate localtime to minute with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localtime"), "minute",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("localtime"), "minute",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate to second with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("date"), "second",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("date"), "second",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate datetime to second with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime"), "second",
+    shouldNotTruncate(Seq("datetime"), "second",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate localdatetime to second with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localdatetime"), "second",
+    shouldNotTruncate(Seq("localdatetime"), "second",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate time to second with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("time"), "second",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("time"), "second",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate localtime to second with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localtime"), "second",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("localtime"), "second",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate to millisecond with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("date"), "millisecond",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("date"), "millisecond",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate datetime to millisecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime"), "millisecond",
+    shouldNotTruncate(Seq("datetime"), "millisecond",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate localdatetime to millisecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localdatetime"), "millisecond",
+    shouldNotTruncate(Seq("localdatetime"), "millisecond",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate time to millisecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("time"), "millisecond",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("time"), "millisecond",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate localtime to millisecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localtime"), "millisecond",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("localtime"), "millisecond",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate to microsecond with wrong receiver") {
-    shouldNotTruncate[UnsupportedTemporalTypeException](Seq("date"), "microsecond",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"))
+    shouldNotTruncate(Seq("date"), "microsecond",
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
   }
 
   test("should not truncate datetime to microsecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("datetime"), "microsecond",
+    shouldNotTruncate(Seq("datetime"), "microsecond",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate localdatetime to microsecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localdatetime"), "microsecond",
+    shouldNotTruncate(Seq("localdatetime"), "microsecond",
       Seq("date({year:1984, month: 2, day:11})",
         "time({hour: 12, minute: 30, second: 40, timezone:'+01:00'})",
-        "localtime({hour: 12, minute: 30, second: 40})"))
+        "localtime({hour: 12, minute: 30, second: 40})"), "IllegalArgumentException")
   }
 
   test("should not truncate time to microsecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("time"), "microsecond",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("time"), "microsecond",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   test("should not truncate localtime to microsecond with wrong argument") {
-    shouldNotTruncate[IllegalArgumentException](Seq("localtime"), "microsecond",
-      Seq("date({year:1984, month: 2, day:11})"))
+    shouldNotTruncate(Seq("localtime"), "microsecond",
+      Seq("date({year:1984, month: 2, day:11})"), "IllegalArgumentException")
   }
 
   // Arithmetic
@@ -490,9 +493,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (func <- Seq("inMonths", "inDays"); arg1 <- args; arg2 <- args) {
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
-        an[UnsupportedTemporalTypeException] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(failConf2, query, Seq.empty, Seq("UnsupportedTemporalTypeException"))
       }
     }
   }
@@ -503,9 +504,11 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (op <- Seq("<", "<=", ">", ">=")) {
       val query = s"RETURN duration('P1Y1M') $op duration('P1Y30D')"
       withClue(s"Executing $query") {
-        an[QueryExecutionException] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        /**
+          *  Version 3.3 returns null instead due to running with 3.4 runtime
+          *  SyntaxException come from the 3.4 planner and IncomparableValuesException from earlier runtimes
+          */
+        failWithError(Configs.Version3_4 + Configs.OldAndRule + Configs.Procs, query, Seq.empty, Seq("SyntaxException", "IncomparableValuesException"))
       }
     }
   }
@@ -514,6 +517,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (op <- Seq("<", "<=", ">", ">=")) {
       val query = "RETURN $d1 " + op + " $d2 as x"
       withClue(s"Executing $query") {
+        // TODO: change to using executeWith when compiled supports temporal parameters
         val res = innerExecuteDeprecated(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
         res should be(List(Map("x" -> null)))
       }
@@ -526,31 +530,26 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (func <- Seq("time", "localtime", "date", "datetime", "localdatetime", "duration")) {
       val query = s"RETURN $func('', '', '', '')"
       withClue(s"Executing $query") {
-        an[QueryExecutionException] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(Configs.AbsolutelyAll - Configs.Version2_3, query,
+          Seq("Function call does not provide the required number of arguments"), Seq("SyntaxException"))
       }
     }
   }
 
-  private def shouldNotTruncate[E : Manifest](receivers: Seq[String], truncationUnit: String, args: Seq[String]): Unit = {
+  private def shouldNotTruncate(receivers: Seq[String], truncationUnit: String, args: Seq[String], errorType: String): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"
       withClue(s"Executing $query") {
-        an[E] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(failConf2, query, Seq.empty, Seq(errorType))
       }
     }
   }
 
-  private def shouldNotSelectWithArg[E : Manifest](withX: String, returnFuncs: Seq[String], args: Seq[String]): Unit = {
+  private def shouldNotSelectWithArg(withX: String, returnFuncs: Seq[String], args: Seq[String]): Unit = {
     for (func <- returnFuncs; arg <- args) {
       val query = s"WITH $withX as x RETURN $func($arg)"
       withClue(s"Executing $query") {
-        an[E] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(failConf2, query, Seq.empty, Seq("IllegalArgumentException"))
       }
     }
   }
@@ -559,9 +558,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (acc <- accessors) {
       val query = s"RETURN $typ($args).$acc"
       withClue(s"Executing $query") {
-        an[UnsupportedTemporalTypeException] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(failConf1, query, Seq.empty, Seq("UnsupportedTemporalTypeException"))
       }
     }
   }
@@ -570,9 +567,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (arg <- args) {
       val query = s"RETURN $func($arg)"
       withClue(s"Executing $query") {
-        an[IllegalArgumentException] shouldBe thrownBy {
-          println(graph.execute(query).next())
-        }
+        failWithError(failConf2, query, Seq.empty, Seq("IllegalArgumentException"))
       }
     }
   }
