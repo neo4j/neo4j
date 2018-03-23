@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, SlotConfiguration, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, RefSlot, SlotConfiguration}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues._
 
 
 class ProduceResultOperator(slots: SlotConfiguration, fieldNames: Array[String]) extends MiddleOperator {
@@ -50,9 +49,9 @@ class MorselResultRow(var morsel: Morsel,
     case Some(RefSlot(offset, _, _)) => () =>
        morsel.refs(currentPos * slots.numberOfReferences + offset)
     case Some(LongSlot(offset, _, symbols.CTNode)) => () =>
-      node(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      queryContext.nodeOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case Some(LongSlot(offset, _, symbols.CTRelationship)) => () =>
-      relationship(morsel.longs(currentPos * slots.numberOfLongs + offset))
+      queryContext.relationshipOps.getById(morsel.longs(currentPos * slots.numberOfLongs + offset))
     case _ => throw new IllegalStateException
   })
 
