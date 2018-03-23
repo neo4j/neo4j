@@ -487,8 +487,7 @@ public class AllStoreHolder extends Read
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.assertOpen();
-        return storeReadLayer.indexUpdatesAndSize(
+        return storeReadLayer.indexSample(
                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() ), target );
     }
 
