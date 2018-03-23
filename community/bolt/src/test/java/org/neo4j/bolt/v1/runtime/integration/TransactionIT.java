@@ -41,6 +41,7 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -50,11 +51,16 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
+import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithRecord;
+import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
@@ -374,6 +380,54 @@ public class TransactionIT
         // Then
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
+    }
+
+    @Test
+    public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenRunFails() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "INVALID QUERY", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+        machine.ackFailure( recorder );
+        machine.run( "RETURN 2", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
+    }
+
+    @Test
+    public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenStreamingFails() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "UNWIND [1, 0] AS x RETURN 1 / x", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+        machine.ackFailure( recorder );
+        machine.run( "RETURN 2", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), allOf( containsRecord( 1L ), failedWithStatus( Status.Statement.ArithmeticError ) ) );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
     }
 
     public static Server createHttpServer(

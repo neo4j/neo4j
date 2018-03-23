@@ -422,7 +422,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldCloseResultHandlesWhenExecutionFails() throws Exception
+    public void shouldCloseResultAndTransactionHandlesWhenExecutionFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachine.BoltResultHandle resultHandle = newResultHandle( new RuntimeException( "some error" ) );
@@ -442,10 +442,11 @@ public class TransactionStateMachineTest
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
+        assertNull( stateMachine.ctx.currentTransaction );
     }
 
     @Test
-    public void shouldCloseResultHandlesWhenConsumeFails() throws Exception
+    public void shouldCloseResultAndTransactionHandlesWhenConsumeFails() throws Exception
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -472,6 +473,7 @@ public class TransactionStateMachineTest
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
+        assertNull( stateMachine.ctx.currentTransaction );
     }
 
     @Test
@@ -500,6 +502,7 @@ public class TransactionStateMachineTest
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
+        assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
     @Test
@@ -535,6 +538,7 @@ public class TransactionStateMachineTest
 
         assertNull( stateMachine.ctx.currentResultHandle );
         assertNull( stateMachine.ctx.currentResult );
+        assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
     private static KernelTransaction newTransaction()
@@ -571,8 +575,8 @@ public class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
         when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( mock( KernelTransaction.class ) );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any() ) ).thenReturn( resultHandle );
-        when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any(), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), any(), eq( "FAIL" ), any() ) ).thenThrow( new TransactionTerminatedException( failureStatus ) );
 
         return stateMachineSPI;
     }
@@ -583,7 +587,7 @@ public class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
         when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
@@ -594,7 +598,7 @@ public class TransactionStateMachineTest
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
 
         when( stateMachineSPI.beginTransaction( any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
