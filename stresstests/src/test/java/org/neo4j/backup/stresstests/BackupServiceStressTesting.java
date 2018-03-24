@@ -29,10 +29,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 
+import org.neo4j.causalclustering.stresstests.Config;
+import org.neo4j.causalclustering.stresstests.Control;
 import org.neo4j.concurrent.Futures;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -48,7 +48,6 @@ import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
-import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.DatabaseConfiguration.configureBackup;
 import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
@@ -91,10 +90,7 @@ public class BackupServiceStressTesting
                 new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDirectory.getAbsoluteFile() )
                         .setConfig( config );
 
-        final AtomicBoolean stopTheWorld = new AtomicBoolean();
-        BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );
-        Runnable onFailure = () -> stopTheWorld.set( true );
-        BooleanSupplier keepGoingSupplier = () -> !stopTheWorld.get() && notExpired.getAsBoolean();
+        Control control = new Control( new Config() );
 
         AtomicReference<GraphDatabaseService> dbRef = new AtomicReference<>();
         ExecutorService service = Executors.newFixedThreadPool( 3 );
@@ -103,13 +99,11 @@ public class BackupServiceStressTesting
             dbRef.set( graphDatabaseBuilder.newGraphDatabase() );
             if ( enableIndexes )
             {
-                WorkLoad.setupIndexes( dbRef.get() );
+                TransactionalWorkload.setupIndexes( dbRef.get() );
             }
-            Future<?> workload = service.submit( new WorkLoad( keepGoingSupplier, onFailure, dbRef::get ) );
-            Future<?> backupWorker = service.submit(
-                    new BackupLoad( keepGoingSupplier, onFailure, backupHostname, backupPort, workDirectory ) );
-            Future<?> startStopWorker = service.submit(
-                    new StartStop( keepGoingSupplier, onFailure, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
+            Future<?> workload = service.submit( new TransactionalWorkload( control, dbRef::get ) );
+            Future<?> backupWorker = service.submit( new BackupLoad( control, backupHostname, backupPort, workDirectory ) );
+            Future<?> startStopWorker = service.submit( new StartStop( control, graphDatabaseBuilder::newGraphDatabase, dbRef ) );
 
             Futures.combine( workload, backupWorker, startStopWorker ).get(durationInMinutes + 5, MINUTES );
 

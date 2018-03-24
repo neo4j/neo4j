@@ -19,30 +19,52 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.helper.RepeatUntilCallable;
+import org.neo4j.helper.Workload;
+import org.neo4j.kernel.impl.util.CappedLogger;
+import org.neo4j.logging.Log;
 
-class Workload extends RepeatUntilCallable
+class CreateNodesWithProperties extends Workload
 {
-    private Cluster cluster;
     private static final Label label = Label.label( "Label" );
 
-    Workload( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster )
+    private final Cluster cluster;
+    private final CappedLogger txLogger;
+    private final boolean enableIndexes;
+
+    private long txSuccessCount;
+    private long txFailCount;
+
+    CreateNodesWithProperties( Control control, Resources resources, Config config )
     {
-        super( keepGoing, onFailure );
-        this.cluster = cluster;
+        super( control );
+        this.enableIndexes = config.enableIndexes();
+        this.cluster = resources.cluster();
+        Log log = resources.logProvider().getLog( getClass() );
+        this.txLogger = new CappedLogger( log ).setTimeLimit( 5, TimeUnit.SECONDS, resources.clock() );
+    }
+
+    @Override
+    public void prepare()
+    {
+        if ( enableIndexes )
+        {
+            setupIndexes( cluster );
+        }
     }
 
     @Override
     protected void doWork()
     {
+        txLogger.info( "SuccessCount: " + txSuccessCount + " FailCount: " + txFailCount );
+
         try
         {
             cluster.coreTx( ( db, tx ) ->
@@ -50,14 +72,15 @@ class Workload extends RepeatUntilCallable
                 Node node = db.createNode( label );
                 for ( int i = 1; i <= 8; i++ )
                 {
-                    node.setProperty( prop( i ),
-                            "let's add some data here so the transaction logs rotate more often..." );
+                    node.setProperty( prop( i ), "let's add some data here so the transaction logs rotate more often..." );
                 }
                 tx.success();
             } );
         }
         catch ( Throwable e )
         {
+            txFailCount++;
+
             if ( isInterrupted( e ) || isTransient( e ) )
             {
                 // whatever let's go on with the workload
@@ -66,34 +89,11 @@ class Workload extends RepeatUntilCallable
 
             throw new RuntimeException( e );
         }
+
+        txSuccessCount++;
     }
 
-    private boolean isTransient( Throwable e )
-    {
-        return e != null &&
-               ( e instanceof TimeoutException ||
-                 e instanceof DatabaseShutdownException ||
-                 e instanceof TransactionFailureException ||
-                 isInterrupted( e.getCause() ) );
-    }
-
-    private boolean isInterrupted( Throwable e )
-    {
-        if ( e == null )
-        {
-            return false;
-        }
-
-        if ( e instanceof InterruptedException )
-        {
-            Thread.interrupted();
-            return true;
-        }
-
-        return isInterrupted( e.getCause() );
-    }
-
-    static void setupIndexes( Cluster cluster )
+    private static void setupIndexes( Cluster cluster )
     {
         try
         {
@@ -115,5 +115,28 @@ class Workload extends RepeatUntilCallable
     private static String prop( int i )
     {
         return "prop" + i;
+    }
+
+    private boolean isTransient( Throwable e )
+    {
+        return e != null &&
+                (e instanceof TimeoutException || e instanceof DatabaseShutdownException || e instanceof TransactionFailureException || isInterrupted(
+                        e.getCause() ));
+    }
+
+    private boolean isInterrupted( Throwable e )
+    {
+        if ( e == null )
+        {
+            return false;
+        }
+
+        if ( e instanceof InterruptedException )
+        {
+            Thread.interrupted();
+            return true;
+        }
+
+        return isInterrupted( e.getCause() );
     }
 }

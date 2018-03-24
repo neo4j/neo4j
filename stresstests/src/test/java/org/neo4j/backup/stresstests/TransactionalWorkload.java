@@ -19,9 +19,9 @@
  */
 package org.neo4j.backup.stresstests;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.stresstests.Control;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -29,16 +29,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientFailureException;
-import org.neo4j.helper.RepeatUntilCallable;
+import org.neo4j.helper.Workload;
 
-class WorkLoad extends RepeatUntilCallable
+class TransactionalWorkload extends Workload
 {
     private static final Label label = Label.label( "Label" );
     private final Supplier<GraphDatabaseService> dbRef;
 
-    WorkLoad( BooleanSupplier keepGoing, Runnable onFailure, Supplier<GraphDatabaseService> dbRef )
+    TransactionalWorkload( Control control, Supplier<GraphDatabaseService> dbRef )
     {
-        super( keepGoing, onFailure );
+        super( control );
         this.dbRef = dbRef;
     }
 

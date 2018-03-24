@@ -20,39 +20,35 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import org.neo4j.causalclustering.BackupUtil;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
-import org.neo4j.helper.IsConnectionRestByPeer;
+import org.neo4j.helper.IsConnectionResetByPeer;
 import org.neo4j.helper.IsStoreClosed;
-import org.neo4j.causalclustering.discovery.Cluster;
 
-class BackupLoad extends RepeatUntilOnSelectedMemberCallable
+// TODO: Add validation for backup count? Must have at least 1 and X % successful or something? Depending on scenario?
+class BackupRandomMember extends RepeatOnRandomMember
 {
-    private final Predicate<Throwable> isTransientError =
-            new IsConnectionException().or( new IsConnectionRestByPeer() ).or( new IsChannelClosedException() )
-                    .or( new IsStoreClosed() );
+    private final Predicate<Throwable> isTransientError = new IsConnectionException()
+            .or( new IsConnectionResetByPeer() )
+            .or( new IsChannelClosedException() )
+            .or( new IsStoreClosed() );
 
     private final File baseBackupDir;
     private long backupNumber;
 
-    BackupLoad( BooleanSupplier keepGoing, Runnable onFailure, Cluster cluster, int numberOfCores, int numberOfEdges,
-            File baseBackupDir )
+    BackupRandomMember( Control control, Resources resources )
     {
-        super( keepGoing, onFailure, cluster, numberOfCores, numberOfEdges );
-        this.baseBackupDir = baseBackupDir;
+        super( control, resources );
+        this.baseBackupDir = resources.backupDir();
     }
 
     @Override
-    protected void doWorkOnMember( boolean isCore, int id ) throws Exception
+    protected void doWorkOnMember( ClusterMember member ) throws Exception
     {
-        ClusterMember<?> member = isCore ? cluster.getCoreMemberById( id ) : cluster.getReadReplicaById( id );
-
         try
         {
             String backupName = "backup-" + backupNumber++;
@@ -60,13 +56,10 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         }
         catch ( RuntimeException e )
         {
-            if ( isTransientError.test( e ) )
+            if ( !isTransientError.test( e ) )
             {
-                // if we could not connect, wait a bit and try again...
-                LockSupport.parkNanos( 10_000_000 );
-                return;
+                throw e;
             }
-            throw e;
         }
     }
 }

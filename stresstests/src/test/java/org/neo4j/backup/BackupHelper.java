@@ -32,7 +32,7 @@ import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
-import org.neo4j.helper.IsConnectionRestByPeer;
+import org.neo4j.helper.IsConnectionResetByPeer;
 import org.neo4j.helper.IsStoreClosed;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +42,7 @@ public class BackupHelper
 
     private static final Predicate<Throwable> isTransientError = Predicates.any(
                     new IsConnectionException(),
-                    new IsConnectionRestByPeer(),
+                    new IsConnectionResetByPeer(),
                     new IsChannelClosedException(),
                     new IsStoreClosed() );
 
