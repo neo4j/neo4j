@@ -74,6 +74,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({longitude: 12.78, latitude: 56.7, height: 100}) as p1, point({latitude: 56.71, longitude: 12.79, height: 100}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
+      expectedDifferentResults = Configs.Cost3_1 + Configs.AllRulePlanners, // older versions give slightly different answers due to recent bugfix
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -98,10 +99,11 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         |WITH point({latitude: 56.7, longitude: 12.78, height: 100}) as p1, point({longitude: -51.9, latitude: -16.7, height: 100}) as p2
         |RETURN distance(p1,p2) as dist
       """.stripMargin,
+      expectedDifferentResults = Configs.Cost3_1 + Configs.AllRulePlanners, // older versions give slightly different answers due to recent bugfix
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116373)
   }
 
   test("distance function should work on 3D cartesian points") {
@@ -398,8 +400,8 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, -10, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, -10, 0)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -10)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 10))
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -1000000)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 1000000))
       )
       expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
     }
@@ -415,8 +417,8 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       // Then
       val expected = Set(
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 0)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -10)),
-        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 10))
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, -1000000)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 0, 0, 1000000))
       )
       expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
     }
@@ -683,7 +685,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     resultNoIndex.toList shouldBe empty
   }
 
-  private def setupPointsBothCRS(zText: String = ""): Unit = {
+  private def setupPointsCartesian(zText: String = ""): Unit = {
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: -10, x: -10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: -10, x: 10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: 10, x: -10$zText})")
@@ -695,6 +697,11 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: 0, x: 0$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({y: 9.99, x: 0$zText})")
 
+    // Create enough points so that an index seek gets planned
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i$zText})"))
+  }
+
+  private def setupPointsWGS84(zText: String = ""): Unit = {
     graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: -10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: -10, longitude: 10$zText})")
     graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 10, longitude: -10$zText})")
@@ -706,13 +713,18 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: 0, longitude: 0$zText})")
 
     // Create enough points so that an index seek gets planned
-    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i$zText})"))
     Range(11, 89).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i$zText})"))
+  }
+
+  private def setupPointsBothCRS(): Unit = {
+    setupPointsCartesian()
+    setupPointsWGS84()
   }
 
   private def setupPointsBothCRS(zSet: Seq[Int]): Unit = {
     zSet.foreach { z =>
-      setupPointsBothCRS(s", z: $z")
+      setupPointsCartesian(s", z: $z")
+      setupPointsWGS84(s", z: ${z}00000")
     }
   }
 
