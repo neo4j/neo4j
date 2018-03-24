@@ -28,6 +28,7 @@ import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
 import org.neo4j.helper.IsConnectionResetByPeer;
 import org.neo4j.helper.IsStoreClosed;
+import org.neo4j.logging.Log;
 
 // TODO: Add validation for backup count? Must have at least 1 and X % successful or something? Depending on scenario?
 class BackupRandomMember extends RepeatOnRandomMember
@@ -38,12 +39,14 @@ class BackupRandomMember extends RepeatOnRandomMember
             .or( new IsStoreClosed() );
 
     private final File baseBackupDir;
+    private final Log log;
     private long backupNumber;
 
     BackupRandomMember( Control control, Resources resources )
     {
         super( control, resources );
         this.baseBackupDir = resources.backupDir();
+        this.log = resources.logProvider().getLog( getClass() );
     }
 
     @Override
@@ -53,6 +56,8 @@ class BackupRandomMember extends RepeatOnRandomMember
         {
             String backupName = "backup-" + backupNumber++;
             BackupUtil.createBackupInProcess( member, baseBackupDir, backupName );
+            log.info( "Created backup: " + backupName );
+
         }
         catch ( RuntimeException e )
         {

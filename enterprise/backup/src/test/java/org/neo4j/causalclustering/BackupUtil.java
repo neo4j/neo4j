@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
+import org.neo4j.backup.impl.SelectedBackupProtocol;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.restore.RestoreDatabaseCommand;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
 import static org.neo4j.causalclustering.BackupCoreIT.backupArguments;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
@@ -64,6 +66,7 @@ public class BackupUtil
 
         new OnlineBackupCommandBuilder()
                 .withOutput( outputStream )
+                .withSelectedBackupStrategy( CATCHUP )
                 .withHost( address.getHostname() )
                 .withPort( address.getPort() )
                 .backup( targetDir );
