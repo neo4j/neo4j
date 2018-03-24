@@ -62,7 +62,7 @@ public class ClusterStressScenarioSmokeIT
     @Test
     public void stressCatchupNewReadReplica() throws Exception
     {
-        config.workloads( Workloads.CreateNodesWithProperties, Workloads.CatchupNewReadReplica, Workloads.StartStopRandomMember );
+        config.workloads( Workloads.CreateNodesWithProperties, Workloads.CatchupNewReadReplica, Workloads.StartStopRandomCore );
         stressTest( config, fileSystem, pageCache );
     }
 

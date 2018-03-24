@@ -729,13 +729,29 @@ public class Cluster
         }
 
         List<ClusterMember> eligible = members.collect( Collectors.toList() );
+        return random( eligible );
+    }
 
-        if ( eligible.size() == 0 )
+    public Optional<CoreClusterMember> randomCoreMember( boolean mustBeStarted )
+    {
+        Stream<CoreClusterMember> members = coreMembers().stream();
+
+        if ( mustBeStarted )
+        {
+            members = members.filter( m -> !m.isShutdown() );
+        }
+
+        List<CoreClusterMember> eligible = members.collect( Collectors.toList() );
+        return random( eligible );
+    }
+
+    private static <T> Optional<T> random( List<T> list )
+    {
+        if ( list.size() == 0 )
         {
             return Optional.empty();
         }
-
-        int ordinal = ThreadLocalRandom.current().nextInt( eligible.size() );
-        return Optional.of( eligible.get( ordinal ) );
+        int ordinal = ThreadLocalRandom.current().nextInt( list.size() );
+        return Optional.of( list.get( ordinal ) );
     }
 }

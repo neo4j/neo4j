@@ -39,6 +39,14 @@ enum Workloads
                     return new StartStopRandomMember( control, resources );
                 }
             },
+    StartStopRandomCore
+            {
+                @Override
+                Workload create( Control control, Resources resources, Config config )
+                {
+                    return new StartStopRandomCore( control, resources );
+                }
+            },
     BackupRandomMember
             {
                 @Override
