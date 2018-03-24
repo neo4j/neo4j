@@ -188,7 +188,6 @@ public class OnlineBackupCommandHaIT
     }
 
     @Test
-    @Ignore( "This takes a long time due to the timeout lasting 20 minutes (see BackupClient)" )
     public void backupFailsWithCatchupProtoOverride() throws Exception
     {
         String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
