@@ -20,15 +20,22 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.causalclustering.BackupUtil.createBackupInProcess;
+import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
 import static org.neo4j.causalclustering.BackupUtil.restoreFromBackup;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class ReplaceRandomMember extends RepeatOnRandomMember
 {
@@ -49,7 +56,7 @@ class ReplaceRandomMember extends RepeatOnRandomMember
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember oldMember ) throws Exception
+    protected void doWorkOnMember( ClusterMember oldMember ) throws CommandFailed, IncorrectUsage, IOException
     {
         File backupDir = null;
 
@@ -59,7 +66,18 @@ class ReplaceRandomMember extends RepeatOnRandomMember
         if ( replaceFromBackup )
         {
             backupName = "backup-" + backupNumber++;
-            backupDir = createBackupInProcess( oldMember, baseBackupDir, backupName );
+
+            AdvertisedSocketAddress address = oldMember.config().get( CausalClusteringSettings.transaction_advertised_address );
+            backupDir = new File( baseBackupDir, backupName );
+
+            new OnlineBackupCommandBuilder()
+                    .withOutput( NULL_OUTPUT_STREAM )
+                    .withSelectedBackupStrategy( CATCHUP )
+                    .withConsistencyCheck( false )
+                    .withHost( address.getHostname() )
+                    .withPort( address.getPort() )
+                    .backup( backupDir );
+
             log.info( "Created backup: " + backupName + " from: " + oldMember );
         }
 

@@ -20,27 +20,24 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
-import java.util.function.Predicate;
 
-import org.neo4j.causalclustering.BackupUtil;
+import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.ClusterMember;
-import org.neo4j.helper.IsChannelClosedException;
-import org.neo4j.helper.IsConnectionException;
-import org.neo4j.helper.IsConnectionResetByPeer;
-import org.neo4j.helper.IsStoreClosed;
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 
-// TODO: Add validation for backup count? Must have at least 1 and X % successful or something? Depending on scenario?
+import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
+
 class BackupRandomMember extends RepeatOnRandomMember
 {
-    private final Predicate<Throwable> isTransientError = new IsConnectionException()
-            .or( new IsConnectionResetByPeer() )
-            .or( new IsChannelClosedException() )
-            .or( new IsStoreClosed() );
-
     private final File baseBackupDir;
     private final Log log;
     private long backupNumber;
+    private long successfulBackups;
 
     BackupRandomMember( Control control, Resources resources )
     {
@@ -50,21 +47,40 @@ class BackupRandomMember extends RepeatOnRandomMember
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws Exception
+    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage
     {
         try
         {
-            String backupName = "backup-" + backupNumber++;
-            BackupUtil.createBackupInProcess( member, baseBackupDir, backupName );
-            log.info( "Created backup: " + backupName );
+            AdvertisedSocketAddress address = member.config().get( CausalClusteringSettings.transaction_advertised_address );
 
+            String backupName = "backup-" + backupNumber++;
+            File targetDir = new File( baseBackupDir, backupName );
+
+            new OnlineBackupCommandBuilder()
+                    .withOutput( NULL_OUTPUT_STREAM )
+                    .withSelectedBackupStrategy( CATCHUP )
+                    .withConsistencyCheck( true )
+                    .withHost( address.getHostname() )
+                    .withPort( address.getPort() )
+                    .backup( targetDir );
+
+            log.info( String.format( "Created backup %s from %s", backupName, member ) );
+            successfulBackups++;
         }
-        catch ( RuntimeException e )
+        catch ( CommandFailed e )
         {
-            if ( !isTransientError.test( e ) )
-            {
-                throw e;
-            }
+            log.info( "Backup command failed" );
         }
+    }
+
+    @Override
+    public void validate()
+    {
+        if ( successfulBackups == 0 )
+        {
+            throw new IllegalStateException( "Failed to perform any backups" );
+        }
+
+        log.info( String.format( "Performed %d/%d successful backups.", successfulBackups, backupNumber ) );
     }
 }

@@ -68,4 +68,9 @@ public abstract class Workload implements Runnable
     public void prepare() throws Exception
     {
     }
+
+    @SuppressWarnings( "RedundantThrows" )
+    public void validate() throws Exception
+    {
+    }
 }

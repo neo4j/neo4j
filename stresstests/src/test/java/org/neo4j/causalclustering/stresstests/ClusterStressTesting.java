@@ -115,6 +115,11 @@ public class ClusterStressTesting
             }
 
             control.awaitEnd( completions );
+
+            for ( Workload workload : workloads )
+            {
+                workload.validate();
+            }
         }
         catch ( Throwable cause )
         {
