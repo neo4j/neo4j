@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.stresstests;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -31,7 +30,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.neo4j.causalclustering.stresstests.ClusterStressTesting.stressTest;
 
-public class ClusterStressScenarioSmokeIT
+public class ClusterStressScenarioSmoke
 {
     private final DefaultFileSystemRule fileSystem = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -51,7 +50,6 @@ public class ClusterStressScenarioSmokeIT
         config.workDurationMinutes( 1 );
     }
 
-    @Ignore // backup not mature a.t.m.
     @Test
     public void stressBackupRandomMemberAndStartStop() throws Exception
     {
@@ -66,7 +64,6 @@ public class ClusterStressScenarioSmokeIT
         stressTest( config, fileSystem, pageCache );
     }
 
-    @Ignore // backup not mature a.t.m.
     @Test
     public void stressReplaceRandomMember() throws Exception
     {
