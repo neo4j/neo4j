@@ -35,6 +35,7 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
+    private volatile boolean started;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -55,17 +56,28 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     public void add( CleanupJob job )
     {
         jobs.add( job );
+        if ( started )
+        {
+            scheduleJobs();
+        }
     }
 
     @Override
     public void start()
+    {
+        scheduleJobs();
+        started = true;
+    }
+
+    private void scheduleJobs()
     {
         jobScheduler.schedule( recoveryCleanup, allJobs() );
     }
 
     @Override
     public void stop()
-    {   // no-op
+    {
+        started = false;
     }
 
     @Override
@@ -78,16 +90,32 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
         return () ->
         {
             CleanupJob job;
+            Exception jobsException = null;
             while ( (job = jobs.poll()) != null )
             {
                 try
                 {
                     job.run();
                 }
+                catch ( Exception e )
+                {
+                    if ( jobsException == null )
+                    {
+                        jobsException = e;
+                    }
+                    else
+                    {
+                        jobsException.addSuppressed( e );
+                    }
+                }
                 finally
                 {
                     job.close();
                 }
+            }
+            if ( jobsException != null )
+            {
+                throw new RuntimeException( jobsException );
             }
         };
     }
