@@ -58,7 +58,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
 /**
  * This tests network fragmentation of messages. Given a set of messages, it will serialize and chunk the message up
@@ -194,7 +193,7 @@ public class FragmentedMessageDeliveryTest
             RecordingByteChannel channel = new RecordingByteChannel();
 
             BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                    new Neo4jPackV1().newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                    new Neo4jPackV1().newPacker( new BufferedChannelOutput( channel ) ) );
             writer.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }

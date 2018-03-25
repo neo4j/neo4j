@@ -86,7 +86,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     protected static class PackerV1 extends PackStream.Packer implements AnyValueWriter<IOException>, Neo4jPack.Packer
     {
-        private Error error;
         private static final int INITIAL_PATH_CAPACITY = 500;
         private static final int NO_SUCH_ID = -1;
         private final PrimitiveLongIntKeyValueArray nodeIndexes =
@@ -103,18 +102,6 @@ public class Neo4jPackV1 implements Neo4jPack
         public void pack( AnyValue value ) throws IOException
         {
             value.writeTo( this );
-        }
-
-        @Override
-        public IOException consumeError()
-        {
-            if ( error != null )
-            {
-                IOException exception = new BoltIOException( error.status(), error.msg() );
-                error = null;
-                return exception;
-            }
-            return null;
         }
 
         @Override
@@ -302,65 +289,49 @@ public class Neo4jPackV1 implements Neo4jPack
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Point is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Duration is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Duration is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeDate( long epochDay ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Date is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Date is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeLocalTime( long nanoOfDay ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "LocalTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "LocalTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "Time is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "Time is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "LocalDateTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "LocalDateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "DateTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "DateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
         {
-            error = new Error( Status.Request.Invalid,
-                    "DateTime is not yet supported as a return type in Bolt" );
-            packNull();
+            throw new BoltIOException( Status.Request.Invalid, "DateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
@@ -656,28 +627,6 @@ public class Neo4jPackV1 implements Neo4jPack
             Neo4jError error = Neo4jError.combine( errors );
             errors.clear();
             return error;
-        }
-    }
-
-    private static class Error
-    {
-        private final Status status;
-        private final String msg;
-
-        private Error( Status status, String msg )
-        {
-            this.status = status;
-            this.msg = msg;
-        }
-
-        Status status()
-        {
-            return status;
-        }
-
-        String msg()
-        {
-            return msg;
         }
     }
 }

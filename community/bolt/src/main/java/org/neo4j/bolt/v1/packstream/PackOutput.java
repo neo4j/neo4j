@@ -27,6 +27,26 @@ import java.nio.ByteBuffer;
  */
 public interface PackOutput
 {
+    /**
+     * Prepare this output to write a message. Later successful message should be signaled by {@link #messageSucceeded()}
+     * and failed message by {@link #messageFailed()};
+     */
+    void beginMessage();
+
+    /**
+     * Finalize previously started message.
+     *
+     * @throws IOException when message can't be written to the network channel.
+     */
+    void messageSucceeded() throws IOException;
+
+    /**
+     * Discard previously started message.
+     *
+     * @throws IOException when message can't be written to the network channel.
+     */
+    void messageFailed() throws IOException;
+
     /** If implementation has been buffering data, it should flush those buffers now. */
     PackOutput flush() throws IOException;
 

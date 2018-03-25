@@ -61,8 +61,7 @@ public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHa
     {
         this.neo4jPack = neo4jPack;
         this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
-        this.packer = new BoltResponseMessageWriter(
-                neo4jPack.newPacker( chunkedOutput ), chunkedOutput, boltChannel.log() );
+        this.packer = new BoltResponseMessageWriter( neo4jPack, chunkedOutput, logging, boltChannel.log() );
         this.connection = connection;
         this.internalLog = logging.getInternalLog( getClass() );
         this.dechunker = new BoltV1Dechunker(

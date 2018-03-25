@@ -89,7 +89,7 @@ public class BoltMessagingProtocolHandlerImplTest
         ByteBufAllocator allocator = mock( ByteBufAllocator.class );
         ByteBuf buffer = mock( ByteBuf.class );
         when( outputChannel.alloc() ).thenReturn( allocator );
-        when( allocator.buffer( anyInt(), anyInt() ) ).thenReturn( buffer );
+        when( allocator.buffer( anyInt() ) ).thenReturn( buffer );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
 
