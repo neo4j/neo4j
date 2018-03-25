@@ -123,9 +123,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 
     @Override
     public BoltResultHandle executeQuery( BoltQuerySource querySource,
-            LoginContext loginContext,
-            String statement,
-            MapValue params, ThrowingAction<KernelException> onFail )
+            LoginContext loginContext, String statement, MapValue params )
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, loginContext );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
@@ -151,13 +149,11 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                 catch ( KernelException e )
                 {
                     close( false );
-                    onFail.apply();
                     throw new QueryExecutionKernelException( e );
                 }
                 catch ( Throwable e )
                 {
                     close( false );
-                    onFail.apply();
                     throw e;
                 }
             }
