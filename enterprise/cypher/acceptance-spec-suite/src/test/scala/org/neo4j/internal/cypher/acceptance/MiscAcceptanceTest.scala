@@ -58,4 +58,15 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     result.toList should equal(List(Map("n" -> n)))
   }
+
+  test("should unwind relationships") {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b, "prop" -> 42)
+
+    val query = "UNWIND $relationships AS r WITH r WHERE r.prop = 42 RETURN r"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("relationships" -> List(r)))
+
+    result.toList should equal(List(Map("r" -> r)))
+  }
 }
