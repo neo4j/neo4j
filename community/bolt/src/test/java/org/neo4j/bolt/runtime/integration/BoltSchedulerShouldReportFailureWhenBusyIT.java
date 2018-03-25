@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.emptyMap;
@@ -49,6 +47,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -70,10 +69,6 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
-    @Rule
-    public OtherThreadRule<Integer> spawnedUpdate1 = new OtherThreadRule<>();
-    @Rule
-    public OtherThreadRule<Integer> spawnedUpdate2 = new OtherThreadRule<>();
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
@@ -109,9 +104,9 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     @After
     public void cleanup() throws Exception
     {
-        reset( connection1 );
-        reset( connection2 );
-        reset( connection3 );
+        connection1.disconnect();
+        connection2.disconnect();
+        connection3.disconnect();
     }
 
     @Test
@@ -123,15 +118,23 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         enterStreaming( connection1 );
         enterStreaming( connection2 );
 
-        connection3.send( util.chunk( run( "RETURN 1" ), pullAll() ) );
-        assertThat( connection3,
-                util.eventuallyReceives( msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ),
-                        msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
+        try
+        {
+            connection3.send( util.chunk( run( "RETURN 1" ), pullAll() ) );
+            assertThat( connection3, util.eventuallyReceives(
+                    msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ),
+                    msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
-        userLogProvider.assertContainsMessageContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
-        internalLogProvider.assertAtLeastOnce( AssertableLogProvider.inLog( startsWith( BoltConnection.class.getPackage().getName() ) ).error(
-                containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
-                isA( RejectedExecutionException.class ) ) );
+            userLogProvider.assertContainsMessageContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
+            internalLogProvider.assertAtLeastOnce( AssertableLogProvider.inLog( startsWith( BoltConnection.class.getPackage().getName() ) ).error(
+                    containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
+                    isA( RejectedExecutionException.class ) ) );
+        }
+        finally
+        {
+            exitStreaming( connection1 );
+            exitStreaming( connection2 );
+        }
     }
 
     private TransportConnection performHandshake( TransportConnection connection ) throws Exception
@@ -151,13 +154,10 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private void reset( TransportConnection connection ) throws Exception
+    private void exitStreaming( TransportConnection connection ) throws Exception
     {
-        if ( connection != null )
-        {
-            connection.send( util.chunk( ResetMessage.reset() ) );
+        connection.send( util.chunk( discardAll() ) );
 
-            assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
-        }
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 }
