@@ -34,7 +34,7 @@ public interface ExplicitIndexRead
      * @param cursor the cursor to use for consuming the result
      * @param index the name of the explicit index
      * @param key the key to find
-     * @param value the value corresponding to the value
+     * @param value the value corresponding to the key
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
     void nodeExplicitIndexLookup( NodeExplicitIndexCursor cursor, String index, String key, Object value )
@@ -78,7 +78,7 @@ public interface ExplicitIndexRead
      * @param cursor the cursor to use for consuming the result
      * @param index the name of the explicit index
      * @param key the key to find
-     * @param value the value corresponding to the value
+     * @param value the value corresponding to the key
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
     void relationshipExplicitIndexLookup(
@@ -91,7 +91,8 @@ public interface ExplicitIndexRead
      * @param cursor the cursor to use for consuming the result
      * @param index the name of the explicit index
      * @param query the query object
-     * @param source the source node or <code>-1</code> if
+     * @param source the source node or <code>-1</code> if any
+     * @param target the source node or <code>-1</code> if any
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
     void relationshipExplicitIndexQuery(
@@ -105,6 +106,8 @@ public interface ExplicitIndexRead
      * @param index the name of the explicit index
      * @param key the key to find
      * @param query the query object
+     * @param source the source node or <code>-1</code> if any
+     * @param target the source node or <code>-1</code> if any
      * @throws ExplicitIndexNotFoundKernelException if index is not there
      */
     void relationshipExplicitIndexQuery(

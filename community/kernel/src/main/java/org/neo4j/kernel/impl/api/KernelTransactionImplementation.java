@@ -486,7 +486,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         if ( closed )
         {
-            throw new NotInTransactionException( "The statement has been closed." );
+            throw new NotInTransactionException( "The transaction has been closed." );
         }
     }
 
