@@ -27,20 +27,8 @@ import org.junit.rules.TestName;
 
 import java.util.Map;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -59,8 +47,6 @@ import static org.neo4j.graphdb.SpatialMocks.mockWGS84_3D;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
-import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyIds;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -506,183 +492,6 @@ public class IndexingAcceptanceTest
             }
             tx.success();
         }
-    }
-
-    @Test
-    public void shouldSupportIndexSeekByPrefix() throws KernelException
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias", "Mats", "Carla" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl", "Karlsson" );
-
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
-            CapableIndexReference reference = indexReference( ktx, index );
-            int propertyKeyId = reference.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
-            {
-                ktx.dataRead()
-                        .nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Karl" ) );
-                while ( cursor.next() )
-                {
-                    found.add( cursor.nodeReference() );
-                }
-            }
-        }
-
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldIncludeNodesCreatedInSameTxInIndexSeekByPrefix() throws KernelException
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias", "Mats" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Carl", "Carlsson" );
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
-            createNode( db, map( "name", "Karla" ), LABEL1 );
-            KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
-
-            CapableIndexReference reference = indexReference( ktx, index );
-            int propertyKeyId = reference.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
-            {
-                ktx.dataRead()
-                        .nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Carl" ) );
-                while ( cursor.next() )
-                {
-                    found.add( cursor.nodeReference() );
-                }
-            }
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldNotIncludeNodesDeletedInSameTxInIndexSeekByPrefix()
-            throws KernelException
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias" );
-        PrimitiveLongSet toDelete = createNodes( db, LABEL1, "name", "Karlsson", "Mats" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            PrimitiveLongIterator deleting = toDelete.iterator();
-            while ( deleting.hasNext() )
-            {
-                long id = deleting.next();
-                db.getNodeById( id ).delete();
-                expected.remove( id );
-            }
-            KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
-
-            CapableIndexReference reference = indexReference( ktx, index );
-            int propertyKeyId = reference.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
-            {
-                ktx.dataRead()
-                        .nodeIndexSeek( reference, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, "Karl" ) );
-                while ( cursor.next() )
-                {
-                    found.add( cursor.nodeReference() );
-                }
-            }
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    @Test
-    public void shouldConsiderNodesChangedInSameTxInIndexPrefixSearch()
-            throws KernelException
-    {
-        // GIVEN
-        GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
-        IndexDefinition index = Neo4jMatchers.createIndex( db, LABEL1, "name" );
-        createNodes( db, LABEL1, "name", "Mattias" );
-        PrimitiveLongSet toChangeToMatch = createNodes( db, LABEL1, "name", "Mats" );
-        PrimitiveLongSet toChangeToNotMatch = createNodes( db, LABEL1, "name", "Karlsson" );
-        PrimitiveLongSet expected = createNodes( db, LABEL1, "name", "Karl" );
-        String prefix = "Karl";
-        // WHEN
-        PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            PrimitiveLongIterator toMatching = toChangeToMatch.iterator();
-            while ( toMatching.hasNext() )
-            {
-                long id = toMatching.next();
-                db.getNodeById( id ).setProperty( "name", prefix + "X" + id );
-                expected.add( id );
-            }
-            PrimitiveLongIterator toNotMatching = toChangeToNotMatch.iterator();
-            while ( toNotMatching.hasNext() )
-            {
-                long id = toNotMatching.next();
-                db.getNodeById( id ).setProperty( "name", "X" + id );
-                expected.remove( id );
-            }
-            KernelTransaction ktx = getKernelTransaction( (GraphDatabaseAPI) db );
-            CapableIndexReference descriptor = indexReference( ktx, index );
-            int propertyKeyId = descriptor.properties()[0];
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
-            {
-                ktx.dataRead().nodeIndexSeek( descriptor, cursor, IndexOrder.NONE, stringPrefix( propertyKeyId, prefix ) );
-                while ( cursor.next() )
-                {
-                    found.add( cursor.nodeReference() );
-                }
-            }
-        }
-        // THEN
-        assertThat( found, equalTo( expected ) );
-    }
-
-    private PrimitiveLongSet createNodes( GraphDatabaseService db, Label label, String propertyKey, String... propertyValues )
-    {
-        PrimitiveLongSet expected = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( String value : propertyValues )
-            {
-                expected.add( createNode( db, map( propertyKey, value ), label ).getId() );
-            }
-            tx.success();
-        }
-        return expected;
-    }
-
-    private CapableIndexReference indexReference( KernelTransaction transaction, IndexDefinition index )
-            throws SchemaRuleNotFoundException
-    {
-        int labelId = transaction.tokenRead().nodeLabel( index.getLabel().name() );
-        int[] propertyKeyIds = getPropertyIds( transaction.tokenRead(), index.getPropertyKeys() );
-
-        return transaction.schemaRead().index( labelId, propertyKeyIds );
-    }
-
-    private KernelTransaction getKernelTransaction( GraphDatabaseAPI db )
-    {
-        return db.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     private void assertCanCreateAndFind( GraphDatabaseService db, Label label, String propertyKey, Object value )
