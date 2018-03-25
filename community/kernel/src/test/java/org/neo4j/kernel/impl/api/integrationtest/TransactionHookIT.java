@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -91,7 +92,7 @@ public class TransactionHookIT extends KernelIntegrationTest
             commit();
             fail("Expected this to fail.");
         }
-        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
+        catch ( TransactionFailureException e )
         {
             assertThat( e.status(), equalTo( Status.Transaction.TransactionHookFailed ) );
             assertThat( e.getCause().getMessage(), equalTo( message ) );

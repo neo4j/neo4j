@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -29,7 +28,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;

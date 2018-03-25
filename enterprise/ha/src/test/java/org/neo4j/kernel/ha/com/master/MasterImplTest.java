@@ -36,6 +36,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -97,7 +98,7 @@ public class MasterImplTest
             instance.newLockSession( new RequestContext( 0, 1, 2, 0, 0 ) );
             fail();
         }
-        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
+        catch ( TransactionFailureException e )
         {
             // Ok
         }
