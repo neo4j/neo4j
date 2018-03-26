@@ -25,9 +25,12 @@ import org.jutils.jprocesses.model.ProcessInfo;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -80,6 +83,8 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final PrintStream out;
     private final FileSystemAbstraction fs;
     private final PrintStream err;
+    private static final DateTimeFormatter filenameDateTimeFormatter =
+            new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -117,8 +122,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         Path destinationDir = new File( destinationArgument.parse( args ) ).toPath();
         try
         {
-            SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
-            Path reportFile = destinationDir.resolve( dumpFormat.format( new Date() ) + ".zip" );
+            Path reportFile = destinationDir.resolve( getDefaultFilename() );
             out.println( "Writing report to " + reportFile.toAbsolutePath().toString() );
             reporter.dump( classifiers.get(), reportFile, progress, force );
         }
@@ -126,6 +130,13 @@ public class DiagnosticsReportCommand implements AdminCommand
         {
             throw new CommandFailed( "Creating archive failed", e );
         }
+    }
+
+    private String getDefaultFilename() throws UnknownHostException
+    {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        String safeFilename = hostName.replaceAll( "[^a-zA-Z0-9._]+", "_" );
+        return safeFilename + "-" + LocalDateTime.now().format( filenameDateTimeFormatter ) + ".zip";
     }
 
     private DiagnosticsReporterProgress buildProgress()
