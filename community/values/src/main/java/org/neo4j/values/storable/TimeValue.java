@@ -74,7 +74,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ), nanosOfDayUTC );
+        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
@@ -269,12 +269,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         long secondsOfDayLocal = value.getLong( ChronoField.SECOND_OF_DAY );
         long secondsOffset = value.getOffset().getTotalSeconds();
         return ( secondsOfDayLocal - secondsOffset ) * NANOS_PER_SECOND + value.getNano();
-    }
-
-    private TimeValue( OffsetTime value, long nanosOfDayUTC )
-    {
-        this.value = TimeUtil.truncateOffsetToMinutes( value );
-        this.nanosOfDayUTC = nanosOfDayUTC;
     }
 
     @Override

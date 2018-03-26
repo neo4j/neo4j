@@ -210,6 +210,28 @@ public class TimeValueTest
         assertNotEquals( unexpected, actual );
     }
 
+    @Test
+    public void shouldWriteDerivedValueThatIsEqual()
+    {
+        TimeValue value1 = time( 42, ZoneOffset.of( "-18:00" ) );
+        TimeValue value2 = time( value1.temporal() );
+
+        NanoOfDayAndOffset nanoAndOffset1 = write( value1 );
+        NanoOfDayAndOffset nanoAndOffset2 = write( value2 );
+
+        assertEquals( nanoAndOffset1.nanosOfDay, nanoAndOffset2.nanosOfDay );
+        assertEquals( nanoAndOffset1.offsetSeconds, nanoAndOffset2.offsetSeconds );
+    }
+
+    @Test
+    public void shouldCompareDerivedValue()
+    {
+        TimeValue value1 = time( 4242, ZoneOffset.of( "-12:00" ) );
+        TimeValue value2 = time( value1.temporal() );
+
+        assertEquals( 0, value1.unsafeCompareTo( value2 ) );
+    }
+
     @SuppressWarnings( "UnusedReturnValue" )
     private DateTimeException assertCannotParse( String text )
     {
@@ -222,5 +244,26 @@ public class TimeValueTest
             return e;
         }
         throw new AssertionError( text );
+    }
+
+    private static NanoOfDayAndOffset write( TimeValue value )
+    {
+        NanoOfDayAndOffset result = new NanoOfDayAndOffset();
+        value.writeTo( new ThrowingValueWriter.AssertOnly()
+        {
+            @Override
+            public void writeTime( long nanosOfDayUTC, int offsetSeconds )
+            {
+                result.nanosOfDay = nanosOfDayUTC;
+                result.offsetSeconds = offsetSeconds;
+            }
+        } );
+        return result;
+    }
+
+    private static class NanoOfDayAndOffset
+    {
+        long nanosOfDay;
+        long offsetSeconds;
     }
 }
