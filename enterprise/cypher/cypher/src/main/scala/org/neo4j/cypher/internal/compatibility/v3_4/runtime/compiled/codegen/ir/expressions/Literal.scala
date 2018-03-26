@@ -28,10 +28,6 @@ case class Literal(value: Object) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
-//    if (value == null)
-//      structure.constantExpression(value)
-////      structure.noValue()
-//    else {
       val convertedValue = value match {
         case n: java.lang.Byte => n.longValue()
         case n: java.lang.Short => n.longValue()
@@ -41,13 +37,6 @@ case class Literal(value: Object) extends CodeGenExpression {
         case _ => value
       }
       structure.constantExpression(convertedValue.asInstanceOf[AnyRef])
-//      val convertedType = LiteralTypeSupport.deriveCodeGenType(convertedValue)
-//      structure.constantValueExpression(convertedValue.asInstanceOf[AnyRef], convertedType)
-      // TODO: Also allow primitives here if not overly complicated, to avoid sillyness like this declareCounter:
-      //long v11;
-      //v11 = org.neo4j.cypher.internal.codegen.CompiledMathHelper.transformToLong( org.neo4j.values.storable.Values.of( 1L ) );
-      // TODO: FIXME Cypher "id(node) = 0" => { long v1; if ( v1 == org.neo4j.values.storable.Values.of( 0L ) ) }
-//    }
   }
 
   override def nullable(implicit context: CodeGenContext) = value == null

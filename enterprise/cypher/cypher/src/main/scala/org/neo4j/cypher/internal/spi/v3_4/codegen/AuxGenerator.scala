@@ -72,10 +72,17 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
         body.assign(body.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), body.load("other")))
 
         body.returns(tupleDescriptor.structure.map {
+          case (fieldName, fieldType @ CypherCodeGenType(_, _: AnyValueType)) =>
+            val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
+            Expression.and(
+              Expression.notEqual(Templates.noValue, Expression.get(body.self(), fieldReference)),
+              Expression.invoke(Expression.get(body.self(), fieldReference),
+                method[AnyValue, Boolean]("equals", typeRef[Object]), Expression.get(body.load(otherName), fieldReference))
+            )
+
           case (fieldName, fieldType) =>
             val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
             Expression.invoke(method[CompiledEquivalenceUtils, Boolean]("equals", typeRef[Object], typeRef[Object]),
-
                               Expression.box(
                                 Expression.get(body.self(), fieldReference)),
                               Expression.box(
