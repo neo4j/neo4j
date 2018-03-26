@@ -322,8 +322,9 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // Create enough points so that an index seek gets planned
     Range(0, 50).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i})"))
 
+    // Have a slightly bigger circle, and expect points on both sides of the date line, except the "corners" of the square.
     val query =
-      s"""WITH distance(point({latitude: 0, longitude: 180, crs: 'WGS-84'}), point({latitude: 0, longitude: 170, crs: 'WGS-84'})) as d
+      s"""WITH distance(point({latitude: 0, longitude: 180, crs: 'WGS-84'}), point({latitude: 0, longitude: 169, crs: 'WGS-84'})) as d
          |MATCH (p:Place)
          |WHERE distance(p.location, point({latitude: 0, longitude: 180, crs: 'WGS-84'})) <= d
          |RETURN p.location as point
