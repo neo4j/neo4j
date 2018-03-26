@@ -157,7 +157,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN n""".stripMargin
 
     // WHEN
-    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = "foo" -> 42)
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = Map("foo" -> 42))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {

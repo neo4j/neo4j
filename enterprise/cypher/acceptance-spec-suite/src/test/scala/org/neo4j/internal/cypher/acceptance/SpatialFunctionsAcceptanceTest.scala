@@ -74,34 +74,37 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should not work with literal map and incorrect cartesian CRS") {
-    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points",
+    failWithError(pointConfig + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: cart"))
   }
 
   test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
-    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
       "'cartesian-3D' is not a supported coordinate reference system for points",
       "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
-    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point", List(
-      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point",
+      List("Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
-    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points",
-      "Unknown coordinate reference system: WGS84"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point",
+      List("'WGS84' is not a supported coordinate reference system for points", "Unknown coordinate reference system: WGS84"))
   }
 
   test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
-    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
       "'WGS-84-3D' is not a supported coordinate reference system for points",
       "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
-    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
       "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
@@ -114,35 +117,35 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should throw on unrecognized map entry") {
-    val stillWithoutFix = Configs.Version3_1 + Configs.Version3_3 + Configs.AllRulePlanners
-    failWithError(pointConfig - stillWithoutFix, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+    val stillWithoutFix = Configs.Version3_1 + Configs.AllRulePlanners
+    failWithError(pointConfig - stillWithoutFix + Configs.Procs, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    failWithError(pointConfig, "RETURN point({params}) as point",
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
       List("A cartesian point must contain 'x' and 'y'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
+      params = Map("params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
   }
 
   test("should fail properly if missing geographic longitude") {
-    failWithError(pointConfig, "RETURN point({params}) as point",
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
       List("A wgs-84 point must contain 'latitude' and 'longitude'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
+      params = Map("params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if missing geographic latitude") {
-    failWithError(pointConfig, "RETURN point({params}) as point",
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
       List("A wgs-84 point must contain 'latitude' and 'longitude'",
            "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
-      params = "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
+      params = Map("params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if unknown coordinate system") {
-    failWithError(pointConfig, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points",
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: WGS-1337"),
-      params = "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+      params = Map("params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337")))
   }
 
   test("should default to Cartesian if missing cartesian CRS") {
@@ -170,7 +173,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should not allow Cartesian CRS with latitude/longitude coordinates") {
-    failWithError(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
+    failWithError(pointConfig + Configs.Procs, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
       List("'cartesian' is not a supported coordinate reference system for geographic points",
         "Geographic points does not support coordinate reference system: cartesian"))
   }
