@@ -34,6 +34,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -51,7 +52,7 @@ import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
-import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -670,7 +671,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
          * from within an existing transaction. It smells, and we should look over alternatives when time permits.
          */
-        Supplier<InwardKernel> kernelProvider = () -> kernelModule.kernelAPI();
+        Supplier<Kernel> kernelProvider = () -> kernelModule.kernelAPI();
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
                 propertyAccessor );
@@ -695,7 +696,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
+        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
                 config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );

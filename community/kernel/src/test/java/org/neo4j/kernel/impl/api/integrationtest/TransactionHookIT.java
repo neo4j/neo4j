@@ -46,7 +46,7 @@ public class TransactionHookIT extends KernelIntegrationTest
     {
         // Given
         TransactionHook hook = mock( TransactionHook.class );
-        kernel.registerTransactionHook( hook );
+        internalKernel().registerTransactionHook( hook );
 
         // When
         Write ops = dataWriteInNewTransaction();
@@ -81,7 +81,7 @@ public class TransactionHookIT extends KernelIntegrationTest
                 return new Throwable( message );
             }
         } );
-        kernel.registerTransactionHook( hook );
+        internalKernel().registerTransactionHook( hook );
 
         // When
         Write ops = dataWriteInNewTransaction();

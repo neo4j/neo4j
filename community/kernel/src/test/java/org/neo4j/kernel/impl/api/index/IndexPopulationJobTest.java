@@ -35,17 +35,17 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -113,7 +112,8 @@ public class IndexPopulationJobTest
     private final String name = "name";
     private final String age = "age";
 
-    private InwardKernel kernel;
+    private Kernel kernel;
+    private Session session;
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
     private int labelId;
@@ -123,11 +123,12 @@ public class IndexPopulationJobTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
+        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        session = kernel.beginSession( AUTH_DISABLED );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
             tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
@@ -138,6 +139,7 @@ public class IndexPopulationJobTest
     @After
     public void after()
     {
+        session.close();
         db.shutdown();
     }
 
@@ -624,7 +626,7 @@ public class IndexPopulationJobTest
     private SchemaIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
@@ -638,7 +640,7 @@ public class IndexPopulationJobTest
 
     private long createNode( Map<String, Object> properties, Label... labels )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( labels );
             for ( Map.Entry<String, Object> property : properties.entrySet() )
@@ -652,8 +654,8 @@ public class IndexPopulationJobTest
 
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement ignore = tx.acquireStatement() )
+        try ( Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
+//                Statement ignore = tx.acquireStatement() )
         {
             int result = tx.tokenRead().propertyKey( name );
             tx.success();

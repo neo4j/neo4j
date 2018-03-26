@@ -66,7 +66,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
  * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
  */
-public class Kernel extends LifecycleAdapter implements InwardKernel
+public class KernelImpl extends LifecycleAdapter implements InwardKernel
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
@@ -77,7 +77,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
 
     private final NewKernel newKernel;
 
-    public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
+    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
             TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
     {
         this.transactions = transactionFactory;

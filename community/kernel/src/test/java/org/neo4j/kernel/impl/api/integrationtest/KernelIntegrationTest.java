@@ -32,20 +32,23 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -71,45 +74,52 @@ public abstract class KernelIntegrationTest
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
-    protected InwardKernel kernel;
+    protected Kernel kernel;
+    protected Session session;
     protected IndexingService indexingService;
 
-    private KernelTransaction transaction;
+    private Transaction transaction;
     private DbmsOperations dbmsOperations;
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.writeToken() );
+        session = kernel.beginSession( AnonymousContext.writeToken() );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction.tokenWrite();
     }
 
     protected Write dataWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.write() );
+        session = kernel.beginSession( AnonymousContext.write() );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction.dataWrite();
     }
 
     protected SchemaWrite schemaWriteInNewTransaction() throws KernelException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        session = kernel.beginSession( AUTH_DISABLED );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction.schemaWrite();
     }
 
     protected Procedures procs() throws TransactionFailureException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        session = kernel.beginSession( AnonymousContext.read() );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction.procedures();
     }
 
-    protected KernelTransaction newTransaction() throws TransactionFailureException
+    protected Transaction newTransaction() throws TransactionFailureException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
+        session = kernel.beginSession( AnonymousContext.read() );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction;
     }
 
-    protected KernelTransaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
+    protected Transaction newTransaction( LoginContext loginContext ) throws TransactionFailureException
     {
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, loginContext );
+        session = kernel.beginSession( loginContext );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
         return transaction;
     }
 
@@ -159,7 +169,7 @@ public abstract class KernelIntegrationTest
     protected void startDb()
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
-        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
+        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         statementContextSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = db.getDependencyResolver().resolveDependency( DbmsOperations.class );
@@ -198,7 +208,7 @@ public abstract class KernelIntegrationTest
         startDb();
     }
 
-    boolean nodeHasLabel( KernelTransaction transaction, long node, int label )
+    boolean nodeHasLabel( Transaction transaction, long node, int label )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
@@ -207,7 +217,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    boolean nodeHasProperty( KernelTransaction transaction, long node, int property )
+    boolean nodeHasProperty( Transaction transaction, long node, int property )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -232,7 +242,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    Value nodeGetProperty( KernelTransaction transaction, long node, int property )
+    Value nodeGetProperty( Transaction transaction, long node, int property )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -257,7 +267,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    PrimitiveIntIterator nodeGetPropertyKeys( KernelTransaction transaction, long node )
+    PrimitiveIntIterator nodeGetPropertyKeys( Transaction transaction, long node )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -276,7 +286,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    Value relationshipGetProperty( KernelTransaction transaction, long relationship, int property )
+    Value relationshipGetProperty( Transaction transaction, long relationship, int property )
     {
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -301,12 +311,12 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction )
+    Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction )
     {
         return nodeGetRelationships( transaction, node, direction, null );
     }
 
-    Iterator<Long> nodeGetRelationships( KernelTransaction transaction, long node, Direction direction, int[] types )
+    Iterator<Long> nodeGetRelationships( Transaction transaction, long node, Direction direction, int[] types )
     {
         NodeCursor cursor = transaction.cursors().allocateNodeCursor();
         transaction.dataRead().singleNode( node, cursor );
@@ -331,7 +341,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    protected int countNodes( KernelTransaction transaction )
+    protected int countNodes( Transaction transaction )
     {
         int result = 0;
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
@@ -345,7 +355,7 @@ public abstract class KernelIntegrationTest
         return result;
     }
 
-    int countRelationships( KernelTransaction transaction )
+    int countRelationships( Transaction transaction )
     {
         int result = 0;
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )
@@ -357,5 +367,10 @@ public abstract class KernelIntegrationTest
             }
         }
         return result;
+    }
+
+    KernelImpl internalKernel()
+    {
+        return (KernelImpl)kernel;
     }
 }

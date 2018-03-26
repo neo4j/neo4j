@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
@@ -39,7 +39,7 @@ public class LabelIT extends KernelIntegrationTest
     public void shouldListAllLabels() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int label1Id = transaction.tokenWrite().labelGetOrCreateForName( "label1" );
         int label2Id = transaction.tokenWrite().labelGetOrCreateForName( "label2" );
 
@@ -66,7 +66,7 @@ public class LabelIT extends KernelIntegrationTest
     public void addingAndRemovingLabelInSameTxShouldHaveNoEffect() throws Exception
     {
         // Given a node with a label
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int label = transaction.tokenWrite().labelGetOrCreateForName( "Label 1" );
         long node = transaction.dataWrite().nodeCreate();
         transaction.dataWrite().nodeAddLabel( node, label );
