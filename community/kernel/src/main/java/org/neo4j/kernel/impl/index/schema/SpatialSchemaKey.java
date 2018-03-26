@@ -81,8 +81,7 @@ class SpatialSchemaKey extends NativeSchemaKey<SpatialSchemaKey>
     public void fromDerivedValue( long entityId, long derivedValue )
     {
         rawValueBits = derivedValue;
-        setEntityId( entityId );
-        setCompareId( DEFAULT_COMPARE_ID );
+        initialize( entityId );
     }
 
     /**

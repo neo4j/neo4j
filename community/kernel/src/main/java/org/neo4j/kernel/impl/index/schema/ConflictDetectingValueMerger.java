@@ -30,7 +30,7 @@ import org.neo4j.values.storable.ValueTuple;
  * {@link ValueMerger} which will merely detect conflict, not change any value if conflict, i.e. if the
  * key already exists. After this merge has been used in a call to {@link Writer#merge(Object, Object, ValueMerger)}
  * {@link #checkConflict(Value[])} can be called to check whether or not that call conflicted with
- * an existing key. A call to {@link #checkConflict(Value[])} will also clear the conflict flag.
+ * an existing key. A call to {@link #checkConflict(Value[])} will also initialize the conflict flag.
  *
  * @param <VALUE> type of values being merged.
  */

@@ -27,7 +27,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link String},
@@ -39,8 +38,6 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
 
     private boolean ignoreLength;
 
-    // TODO something better or?
-    // TODO this is UTF-8 bytes for now
     byte[] bytes;
 
     int size()
@@ -57,6 +54,13 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
                     "Key layout does only support strings, tried to create key from " + value );
         }
         return value;
+    }
+
+    @Override
+    void initialize( long entityId )
+    {
+        super.initialize( entityId );
+        ignoreLength = false;
     }
 
     @Override
@@ -80,15 +84,15 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
     void initAsPrefixLow( String prefix )
     {
         writeString( prefix );
-        setEntityId( Long.MIN_VALUE );
-        setCompareId( DEFAULT_COMPARE_ID );
+        initialize( Long.MIN_VALUE );
+        // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
+        // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
 
     void initAsPrefixHigh( String prefix )
     {
         writeString( prefix );
-        setEntityId( Long.MAX_VALUE );
-        setCompareId( DEFAULT_COMPARE_ID );
+        initialize( Long.MAX_VALUE );
         ignoreLength = true;
     }
 
@@ -107,7 +111,6 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
     @Override
     int compareValueTo( StringSchemaKey other )
     {
-        // TODO cover all cases of bytes == null and special tie breaker and document
         if ( bytes != other.bytes )
         {
             if ( bytes == null )
@@ -124,20 +127,10 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
             return 0;
         }
 
-        try
-        {
-            // TODO change to not throw
-            return codePointByteArrayCompare( bytes, other.bytes, ignoreLength || other.ignoreLength );
-        }
-        catch ( Exception e )
-        {
-            // We can not throw here because we will visit this method inside a pageCursor.shouldRetry() block.
-            // Just return a comparison that at least will be commutative.
-            return byteArrayCompare( bytes, other.bytes );
-        }
+        return byteArrayCompare( bytes, other.bytes, ignoreLength | other.ignoreLength );
     }
 
-    private static int byteArrayCompare( byte[] a, byte[] b )
+    private static int byteArrayCompare( byte[] a, byte[] b, boolean ignoreLength )
     {
         assert a != null && b != null : "Null arrays not supported.";
 
@@ -149,14 +142,14 @@ class StringSchemaKey extends NativeSchemaKey<StringSchemaKey>
         int length = Math.min( a.length, b.length );
         for ( int i = 0; i < length; i++ )
         {
-            int compare = Byte.compare( a[i], b[i] );
+            int compare = Short.compare( (short) (a[i] & 0xFF), (short) (b[i] & 0xFF) );
             if ( compare != 0 )
             {
                 return compare;
             }
         }
 
-        return Integer.compare( a.length, b.length );
+        return ignoreLength ? 0 : Integer.compare( a.length, b.length );
     }
 
     @Override
