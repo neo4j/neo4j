@@ -282,22 +282,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN paths""".stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted, query,
-      //      expectedDifferentPlans = Configs.AbsolutelyAll,
       params = Map("0" -> node1.getId, "1" -> node2.getId))
     graph.inTx(
       result.toSet should equal(
         Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
     )
-  }
-
-  // -- End of shortest path
-
-  // Not TCK material -- filter()
-  test("length on filter") {
-    val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
-
-    executeWith(Configs.CommunityInterpreted, q)
-      .toList should equal(List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
