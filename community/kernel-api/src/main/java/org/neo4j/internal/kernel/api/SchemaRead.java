@@ -95,7 +95,8 @@ public interface SchemaRead
     String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
-     * Computes the selectivity of the unique values
+     * Computes the selectivity of the unique values.
+     *
      * @param index The index of interest
      * @return The selectivity of the given index
      * @throws IndexNotFoundKernelException if the index is not there
@@ -103,7 +104,8 @@ public interface SchemaRead
     double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
-     * Returns the size of the index
+     * Returns the size of the index.
+     *
      * @param index The index of interest
      * @return The size of the current index
      * @throws IndexNotFoundKernelException if the index is not there
@@ -111,6 +113,8 @@ public interface SchemaRead
     long indexSize( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
+     * Count the number of index entries for the given nodeId and value.
+     *
      * @param index The index of interest
      * @param nodeId node id to match.
      * @param value the property value
@@ -118,9 +122,31 @@ public interface SchemaRead
      */
     long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException;
 
+    /**
+     * Returns the number of unique entries and the total number of entries in an index.
+     *
+     * Results are written to a {@link Register.DoubleLongRegister}, writing the number of unique entries into
+     * the first long, and the total number of entries into the second.
+     *
+     * @param index The index of interest
+     * @param target A {@link Register.DoubleLongRegister} to which to write the entry counts.
+     * @return {@code target}
+     * @throws IndexNotFoundKernelException if the index does not exist.
+     */
     Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
+    /**
+     * Returns the last recorded size of an index, and how many updates that have been applied to the index since then.
+     *
+     * Results are written to a {@link Register.DoubleLongRegister}, writing the update count into the first long, and
+     * the size into the second.
+     *
+     * @param index The index of interest
+     * @param target A {@link Register.DoubleLongRegister} to which to write the update count and size.
+     * @return {@code target}
+     * @throws IndexNotFoundKernelException if the index does not exist.
+     */
     Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException;
     /**

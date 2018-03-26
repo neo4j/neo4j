@@ -64,11 +64,13 @@ public interface ExplicitIndexRead
             throws ExplicitIndexNotFoundKernelException;
 
     /**
+     * Check whether a node index with the given name exists.
+     *
      * @param indexName name of node index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
      * @return whether or not node explicit index with name {@code indexName} exists.
-     * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
+     * @throws IllegalArgumentException on index existence with provided name, but mismatching {@code customConfiguration}.
      */
     boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
@@ -115,11 +117,13 @@ public interface ExplicitIndexRead
             throws ExplicitIndexNotFoundKernelException;
 
     /**
+     * Check whether a relationship index with the given name exists.
+     *
      * @param indexName name of relationship index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
      * @return whether or not relationship explicit index with name {@code indexName} exists.
-     * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
+     * @throws IllegalArgumentException on index existence with provided name, but mismatching {@code customConfiguration}.
      */
     boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 

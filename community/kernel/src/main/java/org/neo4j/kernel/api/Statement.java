@@ -26,10 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.
  * There are accessors for different types of operations. The operations are divided into
  * read and write operations. In both cases {@link #tokenWriteOperations()} are allowed though,
- * which is why it can be accessed separately. The transaction, if still "undecided" about its
- * type of write operations, will be decided when calling either data operations
- * or schema operations, otherwise if already decided, verified so that it's
- * of the same type.
+ * which is why it can be accessed separately.
  */
 public interface Statement extends Resource, ResourceManager
 {

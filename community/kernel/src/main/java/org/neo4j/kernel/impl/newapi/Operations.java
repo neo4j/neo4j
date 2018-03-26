@@ -79,6 +79,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -635,8 +636,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        allStoreHolder.explicitIndexTxState().nodeChanges( indexName ).drop();
-        allStoreHolder.explicitIndexTxState().deleteIndex( IndexEntityType.Node, indexName );
+        ExplicitIndexTransactionState txState = allStoreHolder.explicitIndexTxState();
+        txState.nodeChanges( indexName ).drop();
+        txState.deleteIndex( IndexEntityType.Node, indexName );
     }
 
     @Override
@@ -699,8 +701,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        allStoreHolder.explicitIndexTxState().relationshipChanges( indexName ).drop();
-        allStoreHolder.explicitIndexTxState().deleteIndex( IndexEntityType.Relationship, indexName );
+        ExplicitIndexTransactionState txState = allStoreHolder.explicitIndexTxState();
+        txState.relationshipChanges( indexName ).drop();
+        txState.deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     private Value readNodeProperty( int propertyKey )

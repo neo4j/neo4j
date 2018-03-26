@@ -500,32 +500,28 @@ public class BuiltInProceduresTest
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
         when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-    when( schemaRead.index( anyInt(), anyInt() )).thenAnswer( new Answer<CapableIndexReference>()
-    {
-        @Override
-        public CapableIndexReference answer( InvocationOnMock invocationOnMock ) throws Throwable
-        {
-            int label = invocationOnMock.getArgument( 0 );
-            int prop = invocationOnMock.getArgument( 1 );
-            for ( IndexReference index : indexes )
-            {
-                if ( index.label() == label && prop == index.properties()[0] )
-                {
-                    return new DefaultCapableIndexReference( index.isUnique(), null,
-                            InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
-                }
-            }
-            for ( IndexReference index : uniqueIndexes )
-            {
-                if ( index.label() == label && prop == index.properties()[0] )
-                {
-                    return new DefaultCapableIndexReference( index.isUnique(), null,
-                            InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
-                }
-            }
-            throw new AssertionError(  );
-        }
-    } );
+        when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
+                (Answer<CapableIndexReference>) invocationOnMock -> {
+                    int label = invocationOnMock.getArgument( 0 );
+                    int prop = invocationOnMock.getArgument( 1 );
+                    for ( IndexReference index : indexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return new DefaultCapableIndexReference( index.isUnique(), null,
+                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                        }
+                    }
+                    for ( IndexReference index : uniqueIndexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return new DefaultCapableIndexReference( index.isUnique(), null,
+                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                        }
+                    }
+                    throw new AssertionError(  );
+                } );
         when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
 
         when( tokens.propertyKeyName( anyInt() ) )

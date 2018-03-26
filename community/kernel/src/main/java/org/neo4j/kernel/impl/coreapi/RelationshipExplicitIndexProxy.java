@@ -32,6 +32,8 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+
 public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relationship> implements RelationshipIndex
 {
     public RelationshipExplicitIndexProxy( String name, GraphDatabaseService gds,
@@ -47,8 +49,8 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
         try ( Statement ignore = ktx.acquireStatement() )
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
-            long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
-            long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, valueOrNull, source, target );
             return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
@@ -66,8 +68,8 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
         try ( Statement ignore = ktx.acquireStatement() )
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
-            long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
-            long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, key, queryOrQueryObjectOrNull, source, target );
             return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
@@ -84,8 +86,8 @@ public class RelationshipExplicitIndexProxy extends ExplicitIndexProxy<Relations
         try ( Statement ignore = ktx.acquireStatement() )
         {
             RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
-            long source = startNodeOrNull == null ? -1L : startNodeOrNull.getId();
-            long target = endNodeOrNull == null ? -1L : endNodeOrNull.getId();
+            long source = startNodeOrNull == null ? NO_SUCH_NODE : startNodeOrNull.getId();
+            long target = endNodeOrNull == null ? NO_SUCH_NODE : endNodeOrNull.getId();
             ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, queryOrQueryObjectOrNull, source, target );
             return new CursorWrappingRelationshipIndexHits( cursor, getGraphDatabase(), ktx, name );
         }
