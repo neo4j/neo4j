@@ -47,7 +47,7 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
     val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
     val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
-    assert(description1.equals(description2))
+    description1 should equal(description2)
   }
 
   test("without PROFILE it shouldn't be needed to iterate over the results before calling getExecutionPlanDescription in interpreted runtime") {
@@ -56,7 +56,7 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
     val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
     val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
-    assert(description1.equals(description2))
+    description1 should equal(description2)
   }
 
   test("without PROFILE it shouldn't be needed to iterate over the results before calling getExecutionPlanDescription in slotted runtime") {
@@ -65,14 +65,14 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
     val description1 = executeQueryAndGetExecutionPlanDescription(query, runtime, false)
     val description2 = executeQueryAndGetExecutionPlanDescription(query, runtime, true)
-    assert(description1.equals(description2))
+    description1 should equal(description2)
   }
 
   private def executeQueryAndGetExecutionPlanDescription(query: String, runtime: String, iterateOverResult: Boolean) = {
     val executedQuery = "CYPHER runtime = " + runtime + " " + query
     val result: Result = graph.execute(executedQuery)
     if (iterateOverResult)
-      assert("empty iterator".equals(result.toString)) // don't really care for the assertion, just consume the results
+      result.hasNext should be (false) // don't really care for the assertion, just consume the results
     result.getExecutionPlanDescription
   }
 
