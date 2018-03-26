@@ -26,6 +26,6 @@ import java.util.concurrent.ThreadFactory;
 public interface ExecutorFactory
 {
 
-    ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, ThreadFactory threadFactory );
+    ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, boolean startCoreThreads, ThreadFactory threadFactory );
 
 }
