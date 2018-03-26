@@ -30,6 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
@@ -38,7 +39,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.impl.query.QueryLogger.NO_LOG;
 
-class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
+class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements QueryExecutionMonitor
 {
     private final Config config;
     private final FileSystemAbstraction fileSystem;
@@ -70,7 +71,8 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
         this.debugLog = debugLog;
     }
 
-    synchronized void init()
+    @Override
+    public synchronized void init()
     {
         // This set of settings are currently not dynamic:
         currentLogTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
@@ -194,10 +196,10 @@ class DynamicLoggingQueryExecutionMonitor implements QueryExecutionMonitor
         closable = logOutputStream;
     }
 
-    synchronized void close()
+    @Override
+    public synchronized void shutdown()
     {
-        // Disabling log_queries will implicitly close and release all associated resources.
-        config.updateDynamicSetting( GraphDatabaseSettings.log_queries.name(), "false", "lifecycle" );
+        closeCurrentLogIfAny();
     }
 
     @Override
