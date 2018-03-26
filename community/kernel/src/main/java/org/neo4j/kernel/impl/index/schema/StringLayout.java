@@ -44,10 +44,7 @@ class StringLayout extends SchemaLayout<StringSchemaKey>
     @Override
     public StringSchemaKey copyKey( StringSchemaKey key, StringSchemaKey into )
     {
-        // TODO when we have reuse of byte[] take that into consideration here too
-        into.bytes = key.bytes.clone();
-        into.setEntityId( key.getEntityId() );
-        into.setCompareId( key.getCompareId() );
+        into.copyFrom( key );
         return into;
     }
 
@@ -61,21 +58,22 @@ class StringLayout extends SchemaLayout<StringSchemaKey>
     public void writeKey( PageCursor cursor, StringSchemaKey key )
     {
         cursor.putLong( key.getEntityId() );
-        cursor.putBytes( key.bytes );
+        cursor.putBytes( key.bytes, 0, key.bytesLength );
     }
 
     @Override
     public void readKey( PageCursor cursor, StringSchemaKey into, int keySize )
     {
-        // TODO consider reusing byte[] instances somehow
         if ( keySize < ENTITY_ID_SIZE )
         {
-            into.bytes = null;
+            into.setEntityId( Long.MIN_VALUE );
+            into.setBytesLength( 0 );
             return;
         }
         into.setEntityId( cursor.getLong() );
-        into.bytes = new byte[keySize - ENTITY_ID_SIZE];
-        cursor.getBytes( into.bytes );
+        int bytesLength = keySize - ENTITY_ID_SIZE;
+        into.setBytesLength( bytesLength );
+        cursor.getBytes( into.bytes, 0, bytesLength );
     }
 
     @Override

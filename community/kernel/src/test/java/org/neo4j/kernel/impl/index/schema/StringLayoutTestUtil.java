@@ -33,7 +33,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-
+import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.UTF8StringValue.codePointByteArrayCompare;
 
@@ -53,7 +53,9 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     @Override
     int compareIndexedPropertyValue( StringSchemaKey key1, StringSchemaKey key2 )
     {
-        return codePointByteArrayCompare( key1.bytes, key2.bytes );
+        return codePointByteArrayCompare(
+                copyOf( key1.bytes, key1.bytesLength ),
+                copyOf( key2.bytes, key2.bytesLength ) );
     }
 
     @Override
