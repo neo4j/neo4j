@@ -19,6 +19,7 @@
  */
 package org.neo4j.csv.reader;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -30,6 +31,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -42,6 +44,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
+import static org.neo4j.helpers.collection.Iterators.array;
 
 @RunWith( Parameterized.class )
 public class BufferedCharSeekerTest
@@ -272,10 +275,7 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "dos" );
         assertNextValue( seeker, mark, COMMA, "tres" );
         assertNextValueNotExtracted( seeker, mark, COMMA );
-        assertTrue( mark.isEndOfLine() );
-
-        // THEN
-        assertFalse( seeker.seek( mark, COMMA ) );
+        assertEnd( seeker, mark, COMMA );
     }
 
     @Test
@@ -436,8 +436,7 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "four" );
         assertNextValue( seeker, mark, COMMA, "five" );
         assertNextValue( seeker, mark, COMMA, "s\"ix" );
-        assertTrue( mark.isEndOfLine() );
-        assertFalse( seeker.seek( mark, COMMA ) );
+        assertEnd( seeker, mark, COMMA );
     }
 
     @Test
@@ -457,8 +456,7 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "abc" );
         assertNextValue( seeker, mark, COMMA, "def" );
         assertNextValue( seeker, mark, COMMA, "ghi" );
-        assertTrue( mark.isEndOfLine() );
-        assertFalse( seeker.seek( mark, COMMA ) );
+        assertEnd( seeker, mark, COMMA );
     }
 
     @Test
@@ -526,8 +524,7 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "4" );
         assertNextValue( seeker, mark, COMMA, "The Cardigans" );
         assertNextValue( seeker, mark, COMMA, "1992" );
-        assertTrue( mark.isEndOfLine() );
-        assertFalse( seeker.seek( mark, COMMA ) );
+        assertEnd( seeker, mark, COMMA );
     }
 
     @Test
@@ -663,6 +660,141 @@ public class BufferedCharSeekerTest
         assertNextValue( seeker, mark, COMMA, "Waaaa" );
     }
 
+    @Test
+    public void shouldTrimStringsWithFirstLineCharacterSpace() throws IOException
+    {
+        // given
+        String line = " ,a, ,b, ";
+        seeker = seeker( line, withTrimStrings( config(), true ) );
+
+        // when/then
+        assertNextValueNotExtracted( seeker, mark, COMMA );
+        assertNextValue( seeker, mark, COMMA, "a" );
+        assertNextValueNotExtracted( seeker, mark, COMMA );
+        assertNextValue( seeker, mark, COMMA, "b" );
+        assertNextValueNotExtracted( seeker, mark, COMMA );
+        assertEnd( seeker, mark, COMMA );
+    }
+
+    @Test
+    public void shouldParseAndTrimRandomStrings() throws IOException
+    {
+        // given
+        StringBuilder builder = new StringBuilder();
+        int columns = random.nextInt( 10 ) + 5;
+        int lines = 100;
+        List<String> expected = new ArrayList<>();
+        for ( int i = 0; i < lines; i++ )
+        {
+            for ( int j = 0; j < columns; j++ )
+            {
+                if ( j > 0 )
+                {
+                    if ( random.nextBoolean() )
+                    {
+                        // Space before delimiter
+                        builder.append( " " );
+                    }
+                    builder.append( "," );
+                    if ( random.nextBoolean() )
+                    {
+                        // Space before delimiter
+                        builder.append( " " );
+                    }
+                }
+                boolean quote = random.nextBoolean();
+                if ( random.nextBoolean() )
+                {
+                    String value = "";
+                    if ( quote )
+                    {
+                        // Quote
+                        if ( random.nextBoolean() )
+                        {
+                            // Space after quote start
+                            value += " ";
+                        }
+                    }
+                    // Actual value
+                    value += String.valueOf( random.nextInt() );
+                    if ( quote )
+                    {
+                        if ( random.nextBoolean() )
+                        {
+                            // Space before quote end
+                            value += " ";
+                        }
+                    }
+                    expected.add( value );
+                    builder.append( quote ? "\"" + value + "\"" : value );
+                }
+                else
+                {
+                    expected.add( null );
+                }
+            }
+            builder.append( format( "%n" ) );
+        }
+        String data = builder.toString();
+        seeker = seeker( data, withTrimStrings( config(), true ) );
+
+        // when
+        Iterator<String> next = expected.iterator();
+        for ( int i = 0; i < lines; i++ )
+        {
+            for ( int j = 0; j < columns; j++ )
+            {
+                // then
+                String nextExpected = next.next();
+                if ( nextExpected == null )
+                {
+                    assertNextValueNotExtracted( seeker, mark, COMMA );
+                }
+                else
+                {
+                    assertNextValue( seeker, mark, COMMA, nextExpected );
+                }
+            }
+        }
+        assertEnd( seeker, mark, COMMA );
+    }
+
+    @Test
+    public void shouldParseNonLatinCharacters() throws IOException
+    {
+        // given
+        List<String[]> expected = asList(
+                array( "普通�?/普通話", "\uD83D\uDE21" ),
+                array( "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B", "ⲹ楡�?톜ഷۢ⼈�?�늉�?�₭샺ጚ砧攡跿家䯶�?⬖�?�犽ۼ" ),
+                array( " 㺂�?鋦毠", ";먵�?裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩�?� " )
+        );
+        String data = lines( format( "%n" ), expected );
+
+        // when
+        seeker = seeker( data );
+
+        // then
+        for ( String[] line : expected )
+        {
+            for ( String cell : line )
+            {
+                assertNextValue( seeker, mark, COMMA, cell );
+            }
+        }
+        assertEnd( seeker, mark, COMMA );
+    }
+
+    private String lines( String newline, List<String[]> cells )
+    {
+        String[] lines = new String[cells.size()];
+        int i = 0;
+        for ( String[] columns : cells )
+        {
+            lines[i++] = StringUtils.join( columns, "," );
+        }
+        return lines( newline, lines );
+    }
+
     private String lines( String newline, String... lines )
     {
         StringBuilder builder = new StringBuilder();
@@ -751,6 +883,12 @@ public class BufferedCharSeekerTest
     {
         assertTrue( seeker.seek( mark, delimiter ) );
         assertFalse( seeker.tryExtract( mark, extractors.string() ) );
+    }
+
+    private void assertEnd( CharSeeker seeker, Mark mark, int delimiter ) throws IOException
+    {
+        assertTrue( mark.isEndOfLine() );
+        assertFalse( seeker.seek( mark, delimiter ) );
     }
 
     private String[] nextLineOfAllStrings( CharSeeker seeker, Mark mark ) throws IOException

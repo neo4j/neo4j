@@ -194,15 +194,21 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean setMark( Mark mark, int endOffset, int skippedChars, int ch, boolean isQuoted )
     {
-        int pos = (trim ? rtrim( bufferPos ) : bufferPos) - endOffset - skippedChars;
+        int pos = (trim ? rtrim() : bufferPos) - endOffset - skippedChars;
         mark.set( seekStartPos, pos, ch, isQuoted );
         return true;
     }
 
-    private int rtrim( int start )
+    /**
+     * Starting from the current position, {@link #bufferPos}, scan backwards as long as whitespace is found.
+     * Although it cannot scan further back than the start of this field is, i.e. {@link #seekStartPos}.
+     *
+     * @return the right index of the value to pass into {@link Mark}. This is only called if {@link Configuration#trimStrings()} is {@code true}.
+     */
+    private int rtrim()
     {
-        int index = start;
-        while ( isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
+        int index = bufferPos;
+        while ( index - 1 > seekStartPos && isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
         {
             index--;
         }
