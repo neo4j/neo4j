@@ -411,7 +411,7 @@ Feature: TemporalTruncateAcceptance
               localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
       RETURN time.truncate('hour', d) as d1,
              time.truncate('hour', d, {nanosecond:2}) as d2,
-             time.truncate('hour', d, {timezone: 'Europe/Stockholm'}) as d3
+             time.truncate('hour', d, {timezone: '+01:00'}) as d3
       """
     Then the result should be, in order:
       | d1            | d2                         | d3            |
