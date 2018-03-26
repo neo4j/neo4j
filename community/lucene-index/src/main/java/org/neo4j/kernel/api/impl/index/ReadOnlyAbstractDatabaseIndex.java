@@ -25,17 +25,20 @@ import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
  * Read only lucene index representation that wraps provided index implementation and
  * allow read only operations only on top of it.
- * @param <T> - particular index implementation
+ * @param <INDEX> - particular index implementation
  */
-public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneIndex> implements DatabaseIndex
+public abstract class ReadOnlyAbstractDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, READER extends IndexReader> implements DatabaseIndex<READER>
 {
-    protected T luceneIndex;
+    protected INDEX luceneIndex;
 
-    public ReadOnlyAbstractDatabaseIndex( T luceneIndex )
+    public ReadOnlyAbstractDatabaseIndex( INDEX luceneIndex )
     {
         this.luceneIndex = luceneIndex;
     }
@@ -157,4 +160,48 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
         return luceneIndex.getPartitions();
     }
 
+    @Override
+    public LuceneIndexWriter getIndexWriter()
+    {
+        throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
+    }
+
+    @Override
+    public READER getIndexReader() throws IOException
+    {
+        return luceneIndex.getIndexReader();
+    }
+
+    @Override
+    public IndexDescriptor getDescriptor()
+    {
+        return luceneIndex.getDescriptor();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isOnline() throws IOException
+    {
+        return luceneIndex.isOnline();
+    }
+
+    /**
+     * Unsupported operation in read only index.
+     */
+    @Override
+    public void markAsOnline()
+    {
+        throw new UnsupportedOperationException( "Can't mark read only index." );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void markAsFailed( String failure ) throws IOException
+    {
+        luceneIndex.markAsFailed( failure );
+    }
 }

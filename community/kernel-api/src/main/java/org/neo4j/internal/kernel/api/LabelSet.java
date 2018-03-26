@@ -64,5 +64,13 @@ public interface LabelSet
         {
             return EMPTY;
         }
+
+        @Override
+        public boolean containsAny( int[] labelTokens )
+        {
+            return false;
+        }
     };
+
+    boolean containsAny( int[] labelTokens );
 }

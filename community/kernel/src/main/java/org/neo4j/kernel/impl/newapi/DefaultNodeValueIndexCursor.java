@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertO
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeValueIndexCursor, NodeValueClient
+        implements NodeValueIndexCursor, NodeValueClient<SchemaIndexDescriptor>
 {
     private Read read;
     private long node;

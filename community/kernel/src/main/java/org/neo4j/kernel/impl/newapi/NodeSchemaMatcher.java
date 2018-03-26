@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -71,7 +70,7 @@ public class NodeSchemaMatcher
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
             SchemaDescriptor schema = schemaSupplier.schema();
-            if ( node.labels().contains( schema.keyId() ) )
+            if ( node.labels().containsAny( schema.getEntityTokenIds() ) )
             {
                 if ( nodePropertyIds == null )
                 {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
@@ -34,15 +35,15 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
     // All supported readers. Key/index is LogEntryVersion byte code.
     private final CommandReader[] readers;
 
-    public RecordStorageCommandReaderFactory()
+    public RecordStorageCommandReaderFactory( IndexProviderMap indexProviderMap )
     {
         readers = new CommandReader[11]; // pessimistic size
-        readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
-        readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
-        readers[-LogEntryVersion.V2_3_5.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
-        readers[-LogEntryVersion.V3_0_2.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
+        readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4( indexProviderMap );
+        readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0( indexProviderMap );
+        readers[-LogEntryVersion.V2_3_5.byteCode()] = new PhysicalLogCommandReaderV2_2_10( indexProviderMap );
+        readers[-LogEntryVersion.V3_0_2.byteCode()] = new PhysicalLogCommandReaderV3_0_2( indexProviderMap );
         // The 3_0_10 version bump is only to prevent mixed-version clusters; format is otherwise backwards compatible.
-        readers[-LogEntryVersion.V3_0_10.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
+        readers[-LogEntryVersion.V3_0_10.byteCode()] = new PhysicalLogCommandReaderV3_0_2( indexProviderMap );
 
         // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();

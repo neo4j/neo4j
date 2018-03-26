@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.spi.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor
 import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, SchemaIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor, SchemaIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
-  implicit def toKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
+  implicit def toKernel(index: SchemaTypes.IndexDescriptor): SchemaIndexDescriptor =
     SchemaIndexDescriptorFactory.forLabel(index.labelId, index.propertyId)
 
   implicit def toCypher(index: KernelIndexDescriptor): SchemaTypes.IndexDescriptor = {
     assertSingleProperty(index.schema())
-    SchemaTypes.IndexDescriptor(index.schema().keyId, index.schema().getPropertyId())
+    //TODO we use a zero index here as to not bleed multi-token descriptors into cypher. At least for now.
+    SchemaTypes.IndexDescriptor(index.schema().getEntityTokenIds.head, index.schema().getPropertyIds().head)
   }
 
   implicit def toKernel(constraint: SchemaTypes.UniquenessConstraint): KernelUniquenessConstraint =

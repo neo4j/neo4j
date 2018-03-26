@@ -27,19 +27,19 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class IndexPopulationFailedKernelException extends KernelException
 {
-    private static final String FORMAT_MESSAGE = "Failed to populate index for %s [labelId: %d, properties %s]";
+    private static final String FORMAT_MESSAGE = "Failed to populate index for %s [labelId: %s, properties %s]";
 
     public IndexPopulationFailedKernelException( SchemaDescriptor descriptor, String indexUserDescription,
             Throwable cause )
     {
-        super( Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription,
-                descriptor.keyId(), Arrays.toString( descriptor.getPropertyIds() ) );
+        super( Status.Schema.IndexCreationFailed, cause, FORMAT_MESSAGE, indexUserDescription, Arrays.toString( descriptor.getEntityTokenIds() ),
+                Arrays.toString( descriptor.getPropertyIds() ) );
     }
 
     public IndexPopulationFailedKernelException( SchemaDescriptor descriptor, String indexUserDescription,
             String message )
     {
-        super( Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message,
-                indexUserDescription, descriptor.keyId(), Arrays.toString( descriptor.getPropertyIds() ) );
+        super( Status.Schema.IndexCreationFailed, FORMAT_MESSAGE + ", due to " + message, indexUserDescription,
+                Arrays.toString( descriptor.getEntityTokenIds() ), Arrays.toString( descriptor.getPropertyIds() ) );
     }
 }

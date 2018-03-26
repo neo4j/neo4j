@@ -34,7 +34,7 @@ import static java.lang.String.format;
  * update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
  *
- * @param <INDEX_KEY> {@link LabelSchemaSupplier} specifying the schema
+ * @param <INDEX_KEY> {@link SchemaDescriptorSupplier} specifying the schema
  */
 public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
 {

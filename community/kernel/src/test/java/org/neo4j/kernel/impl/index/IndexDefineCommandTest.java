@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
@@ -87,7 +88,7 @@ public class IndexDefineCommandTest
         command.serialize( channel );
 
         // THEN
-        CommandReader commandReader = new RecordStorageCommandReaderFactory().byVersion(
+        CommandReader commandReader = new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ).byVersion(
                 LogEntryVersion.CURRENT.byteCode() );
         IndexDefineCommand read = (IndexDefineCommand) commandReader.read( channel );
         assertEquals( command.getIndexNameIdRange(), read.getIndexNameIdRange() );

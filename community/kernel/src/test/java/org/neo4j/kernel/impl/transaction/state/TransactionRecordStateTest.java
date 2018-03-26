@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.NodePropertyCommandsExtractor;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;
@@ -223,12 +224,12 @@ public class TransactionRecordStateTest
 
         // WHEN
         PhysicalTransactionRepresentation transaction = transactionRepresentationOf( recordState );
-        NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
+        PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
         transaction.accept( extractor );
 
         // THEN
         // -- later recovering that tx, there should be only one update
-        assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
+        assertTrue( extractor.containsAnyEntityOrPropertyUpdate() );
         PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
         recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
         recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
@@ -311,10 +312,10 @@ public class TransactionRecordStateTest
         // WHEN
         recordState = newTransactionRecordState( neoStores );
         addLabelsToNode( recordState, nodeId, oneLabelId );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( nodeId, noLabels, oneLabelId ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( nodeId, noLabels, oneLabelId ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -334,11 +335,11 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, secondLabelId );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId, oneLabelId, bothLabelIds )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId, oneLabelId, bothLabelIds )
                         .added( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -360,10 +361,10 @@ public class TransactionRecordStateTest
         // WHEN
         recordState = newTransactionRecordState( neoStores );
         removeLabelsFromNode( recordState, nodeId, oneLabelId );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( nodeId, oneLabelId, noLabels ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( nodeId, oneLabelId, noLabels ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -383,11 +384,11 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId, bothLabelIds, oneLabelId )
                         .removed( propertyId1, value1 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -409,11 +410,11 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         removeLabelsFromNode( recordState, nodeId, secondLabelId );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId, bothLabelIds, oneLabelId )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId, bothLabelIds, oneLabelId )
                         .added( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -437,11 +438,11 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeChangeProperty( nodeId, propertyId1, newValue1 );
         recordState.nodeChangeProperty( nodeId, propertyId2, newValue2 );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId )
                         .changed( propertyId1, value1, newValue1 )
                         .changed( propertyId2, value2, newValue2 )
                         .build();
@@ -465,11 +466,11 @@ public class TransactionRecordStateTest
         recordState = newTransactionRecordState( neoStores );
         recordState.nodeRemoveProperty( nodeId, propertyId1 );
         recordState.nodeRemoveProperty( nodeId, propertyId2 );
-        Iterable<NodeUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId, oneLabelId )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId, oneLabelId )
                         .removed( propertyId1, value1 )
                         .removed( propertyId2, value2 )
                         .build();
@@ -737,11 +738,11 @@ public class TransactionRecordStateTest
         addLabelsToNode( recordState, nodeId, oneLabelId );
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
-        Iterable<NodeUpdates> updates = indexUpdatesOf( neoStores, recordState );
+        Iterable<EntityUpdates> updates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        NodeUpdates expected =
-                NodeUpdates.forNode( nodeId, noLabels, oneLabelId )
+        EntityUpdates expected =
+                EntityUpdates.forEntity( nodeId, noLabels, oneLabelId )
                         .added( propertyId1, value1 )
                         .added( propertyId2, value2 ).build();
         assertEquals( expected, Iterables.single( updates ) );
@@ -1239,24 +1240,24 @@ public class TransactionRecordStateTest
         assertEquals( "Not enough relationship group records found in chain for " + node, types.length, cursor );
     }
 
-    private Iterable<NodeUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
+    private Iterable<EntityUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRecordState state )
             throws IOException, TransactionFailureException
     {
         return indexUpdatesOf( neoStores, transactionRepresentationOf( state ) );
     }
 
-    private Iterable<NodeUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRepresentation transaction )
+    private Iterable<EntityUpdates> indexUpdatesOf( NeoStores neoStores, TransactionRepresentation transaction )
             throws IOException
     {
-        NodePropertyCommandsExtractor extractor = new NodePropertyCommandsExtractor();
+        PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
         transaction.accept( extractor );
 
         CollectingIndexingUpdateService indexingUpdateService = new CollectingIndexingUpdateService();
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(),
-                indexingUpdateService,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), neoStores.getRelationshipStore(), indexingUpdateService,
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
-        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.nodeCommandsById() );
-        return indexingUpdateService.nodeUpdatesList;
+        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById(),
+                extractor.relationshipCommandsById() );
+        return indexingUpdateService.entityUpdatesList;
     }
 
     private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState writeTransaction )
@@ -1401,7 +1402,7 @@ public class TransactionRecordStateTest
 
     private class CollectingIndexingUpdateService implements IndexingUpdateService
     {
-        final List<NodeUpdates> nodeUpdatesList = new ArrayList<>();
+        final List<EntityUpdates> entityUpdatesList = new ArrayList<>();
 
         @Override
         public void apply( IndexUpdates updates )
@@ -1409,9 +1410,9 @@ public class TransactionRecordStateTest
         }
 
         @Override
-        public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+        public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, EntityType relationship )
         {
-            nodeUpdatesList.add( nodeUpdates );
+            entityUpdatesList.add( entityUpdates );
             return Iterables.empty();
         }
     }

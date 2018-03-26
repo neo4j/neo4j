@@ -52,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 
 public class LuceneIndexRecoveryIT
 {
@@ -306,15 +306,15 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
+    private KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
-        return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
+                LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+            public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
@@ -328,16 +328,16 @@ public class LuceneIndexRecoveryIT
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
+    private KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
-        return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+        return new KernelExtensionFactory<LuceneSchemaIndexProviderFactory.Dependencies>(
+                LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
 
             @Override
-            public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+            public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
                         IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override

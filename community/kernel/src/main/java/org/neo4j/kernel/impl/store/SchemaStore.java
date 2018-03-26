@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -42,7 +43,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 import static java.util.Collections.singleton;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
-public class SchemaStore extends AbstractDynamicStore implements Iterable<SchemaRule>
+public class SchemaStore extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
@@ -77,21 +78,10 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
         return records;
     }
 
-    public Iterator<SchemaRule> loadAllSchemaRules()
-    {
-        return new SchemaStorage( this ).loadAllSchemaRules();
-    }
-
-    @Override
-    public Iterator<SchemaRule> iterator()
-    {
-        return loadAllSchemaRules();
-    }
-
-    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
+    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer, IndexProviderMap indexProviderMap )
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        return SchemaRuleSerialization.deserialize( id, scratchBuffer );
+        return SchemaRuleSerialization.deserialize( id, scratchBuffer, indexProviderMap );
     }
 }

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -52,6 +53,7 @@ import org.neo4j.storageengine.api.Token;
 import static java.lang.Long.parseLong;
 
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
@@ -252,7 +254,8 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     {
         try ( SchemaStore store = neoStores.getSchemaStore() )
         {
-            final SchemaStorage storage = new SchemaStorage( store );
+            //TODO empty index provider map, investigate if we need a rel one.
+            final SchemaStorage storage = new SchemaStorage( store, new DefaultIndexProviderMap( EMPTY ) );
             new DumpStore<DynamicRecord,SchemaStore>( System.out )
             {
                 @Override

@@ -69,7 +69,7 @@ public class DefaultSchemaIndexConfigTest
         createIndex( db );
 
         // then
-        assertIndexProvider( db, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        assertIndexProvider( db, LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR );
     }
 
     @Test

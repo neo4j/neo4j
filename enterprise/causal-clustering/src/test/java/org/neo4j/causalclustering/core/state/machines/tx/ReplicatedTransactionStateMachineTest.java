@@ -33,7 +33,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -70,7 +72,7 @@ public class ReplicatedTransactionStateMachineTest
 
         ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
                 commandIndexTracker, lockState( lockSessionId ), batchSize, logProvider, () -> cursorTracer,
-                EmptyVersionContextSupplier.EMPTY );
+                EmptyVersionContextSupplier.EMPTY, new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
@@ -98,7 +100,8 @@ public class ReplicatedTransactionStateMachineTest
         final ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ),
                         batchSize, logProvider,
-                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY,
+                        new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -141,7 +144,8 @@ public class ReplicatedTransactionStateMachineTest
 
         ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ), batchSize, logProvider,
-                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY,
+                        new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();

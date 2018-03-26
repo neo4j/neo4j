@@ -97,6 +97,19 @@ public class Labels implements LabelSet
     }
 
     @Override
+    public boolean containsAny( int[] labelTokens )
+    {
+        for ( int labelToken : labelTokens )
+        {
+            if ( contains( labelToken ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public String toString()
     {
         return "Labels" + Arrays.toString( labels );

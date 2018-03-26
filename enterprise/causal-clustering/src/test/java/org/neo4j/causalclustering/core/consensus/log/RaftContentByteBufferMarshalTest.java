@@ -38,7 +38,9 @@ import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransaction;
 import org.neo4j.causalclustering.core.state.machines.tx.ReplicatedTransactionFactory;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.IndexCommand;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -93,7 +95,7 @@ public class RaftContentByteBufferMarshalTest
                 (ReplicatedTransaction) serializer.unmarshal( new NetworkReadableClosableChannelNetty4( buf ) );
 
         TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out,
-                extraHeader );
+                extraHeader, new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
 
         // then
         assertEquals( in, out );

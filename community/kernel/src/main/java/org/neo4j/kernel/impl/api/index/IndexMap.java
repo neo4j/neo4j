@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -35,6 +37,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.EntityType;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -48,7 +51,11 @@ public final class IndexMap implements Cloneable
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
     private final Map<SchemaDescriptor,Long> indexIdsByDescriptor;
     private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
+    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByReltype;
     private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
+    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> relationshiptDescriptorsByProperty;
+    private final Set<SchemaDescriptor> descriptorsForAllLabels;
+    private final Set<SchemaDescriptor> descriptorsForAllReltypes;
 
     public IndexMap()
     {
@@ -69,7 +76,11 @@ public final class IndexMap implements Cloneable
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
         this.descriptorsByLabel = Primitive.intObjectMap();
+        this.descriptorsByReltype = Primitive.intObjectMap();
         this.descriptorsByProperty = Primitive.intObjectMap();
+        this.relationshiptDescriptorsByProperty = Primitive.intObjectMap();
+        this.descriptorsForAllLabels = new HashSet<>();
+        this.descriptorsForAllReltypes = new HashSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
@@ -108,13 +119,37 @@ public final class IndexMap implements Cloneable
             return null;
         }
 
-        SchemaDescriptor schema = removedProxy.getDescriptor().schema();
+        SchemaDescriptor schema = removedProxy.schema();
         indexesByDescriptor.remove( schema );
-
-        removeFromLookup( schema.keyId(), schema, descriptorsByLabel );
-        for ( int propertyId : schema.getPropertyIds() )
+        if ( schema.entityType() == EntityType.NODE )
         {
-            removeFromLookup( propertyId, schema, descriptorsByProperty );
+            if ( schema.getEntityTokenIds().length == 0 )
+            {
+                descriptorsForAllLabels.remove( schema );
+            }
+            for ( int entityTokenId : schema.getEntityTokenIds() )
+            {
+                removeFromLookup( entityTokenId, schema, descriptorsByLabel );
+            }
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                removeFromLookup( propertyId, schema, descriptorsByProperty );
+            }
+        }
+        else if ( schema.entityType() == EntityType.RELATIONSHIP )
+        {
+            if ( schema.getEntityTokenIds().length == 0 )
+            {
+                descriptorsForAllReltypes.remove( schema );
+            }
+            for ( int entityTokenId : schema.getEntityTokenIds() )
+            {
+                removeFromLookup( entityTokenId, schema, descriptorsByReltype );
+            }
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                removeFromLookup( propertyId, schema, relationshiptDescriptorsByProperty );
+            }
         }
 
         return removedProxy;
@@ -139,27 +174,41 @@ public final class IndexMap implements Cloneable
      * indexes are guaranteed to contain all affected indexes, but might also contain unaffected indexes as
      * we cannot provide matching without checking unaffected properties for composite indexes.
      *
-     * @param changedLabels set of labels that have changed
-     * @param unchangedLabels set of labels that are unchanged
+     * @param changedEntityTokens set of labels that have changed
+     * @param unchangedEntityTokens set of labels that are unchanged
      * @param properties set of properties
+     * @param entityType
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    public Set<SchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntSet properties,
+            EntityType entityType )
     {
-        if ( changedLabels.length == 1 && properties.isEmpty() )
+        Function<long[],Set<SchemaDescriptor>> byEnitiyIds;
+        BiFunction<long[],PrimitiveIntSet,Set<SchemaDescriptor>> byProperties;
+        if ( entityType == EntityType.NODE )
         {
-            Set<SchemaDescriptor> descriptors = descriptorsByLabel.get( (int)changedLabels[0] );
+            byEnitiyIds = labels -> extractIndexesByEntityTokens( labels, descriptorsByLabel, descriptorsForAllLabels );
+            byProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties, descriptorsByLabel,
+                    descriptorsForAllLabels, descriptorsByProperty );
+        }
+        else
+        {
+            byEnitiyIds = reltypes -> extractIndexesByEntityTokens( reltypes, descriptorsByReltype, descriptorsForAllReltypes );
+            byProperties = ( unchangedLabels, changedProperties ) -> getDescriptorsByProperties( unchangedLabels, changedProperties, descriptorsByReltype,
+                    descriptorsForAllReltypes, relationshiptDescriptorsByProperty );
+        }
+
+        if ( properties.isEmpty() )
+        {
+            Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
             return descriptors == null ? Collections.emptySet() : descriptors;
         }
-
-        if ( changedLabels.length == 0 && properties.size() == 1 )
+        if ( changedEntityTokens.length == 0 )
         {
-            return getDescriptorsByProperties( unchangedLabels, properties );
+            return byProperties.apply( unchangedEntityTokens, properties );
         }
-
-        Set<SchemaDescriptor> descriptors = extractIndexesByLabels( changedLabels );
-        descriptors.addAll( getDescriptorsByProperties( unchangedLabels, properties ) );
+        Set<SchemaDescriptor> descriptors = byEnitiyIds.apply( changedEntityTokens );
+        descriptors.addAll( byProperties.apply( unchangedEntityTokens, properties ) );
 
         return descriptors;
     }
@@ -202,11 +251,35 @@ public final class IndexMap implements Cloneable
 
     private void addDescriptorToLookups( SchemaDescriptor schema )
     {
-        addToLookup( schema.keyId(), schema, descriptorsByLabel );
-
-        for ( int propertyId : schema.getPropertyIds() )
+        if ( schema.entityType() == EntityType.NODE )
         {
-            addToLookup( propertyId, schema, descriptorsByProperty );
+            if ( schema.getEntityTokenIds().length == 0 )
+            {
+                descriptorsForAllLabels.add( schema );
+            }
+            for ( int entityTokenId : schema.getEntityTokenIds() )
+            {
+                addToLookup( entityTokenId, schema, descriptorsByLabel );
+            }
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                addToLookup( propertyId, schema, descriptorsByProperty );
+            }
+        }
+        else if ( schema.entityType() == EntityType.RELATIONSHIP )
+        {
+            if ( schema.getEntityTokenIds().length == 0 )
+            {
+                descriptorsForAllReltypes.add( schema );
+            }
+            for ( int entityTokenId : schema.getEntityTokenIds() )
+            {
+                addToLookup( entityTokenId, schema, descriptorsByReltype );
+            }
+            for ( int propertyId : schema.getPropertyIds() )
+            {
+                addToLookup( propertyId, schema, relationshiptDescriptorsByProperty );
+            }
         }
     }
 
@@ -265,58 +338,74 @@ public final class IndexMap implements Cloneable
      *
      * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties that have changed
+     * @param descriptorsByEntityToken
+     * @param descriptorsForAllEntityTokens
+     * @param descriptorsByProperty
      * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    private Set<SchemaDescriptor> getDescriptorsByProperties(
-            long[] unchangedLabels,
-            PrimitiveIntSet properties )
+    private Set<SchemaDescriptor> getDescriptorsByProperties( long[] unchangedLabels, PrimitiveIntSet properties,
+            PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByEntityToken, Set<SchemaDescriptor> descriptorsForAllEntityTokens,
+            PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
     {
-        int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
-        int nIndexesForProperties = countIndexesByProperties( properties );
+        int nIndexesForLabels = countIndexesByEntityTokens( unchangedLabels, descriptorsByEntityToken, descriptorsForAllEntityTokens );
+        int nIndexesForProperties = countIndexesByProperties( properties, descriptorsByProperty );
 
         if ( nIndexesForLabels == 0 || nIndexesForProperties == 0 )
         {
             return Collections.emptySet();
         }
+        if ( unchangedLabels.length == 0 )
+        {
+            Set<SchemaDescriptor> descriptors = extractIndexesByProperties( properties, descriptorsByProperty );
+            descriptors.retainAll( descriptorsForAllEntityTokens );
+            return descriptors;
+        }
         if ( nIndexesForLabels < nIndexesForProperties )
         {
-            return extractIndexesByLabels( unchangedLabels );
+            return extractIndexesByEntityTokens( unchangedLabels, descriptorsByEntityToken, descriptorsForAllEntityTokens );
         }
         else
         {
-            return extractIndexesByProperties( properties );
+            return extractIndexesByProperties( properties, descriptorsByProperty );
         }
     }
 
-    private Set<SchemaDescriptor> extractIndexesByLabels( long[] labels )
+    private Set<SchemaDescriptor> extractIndexesByEntityTokens( long[] entityTokenIds, PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptors,
+            Set<SchemaDescriptor> descriptorsForAllEntityTokens )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
-        for ( long label : labels )
+        for ( long label : entityTokenIds )
         {
-            Set<SchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            Set<SchemaDescriptor> forLabel = descriptors.get( (int) label );
             if ( forLabel != null )
             {
                 set.addAll( forLabel );
             }
         }
+        if ( entityTokenIds.length != 0 )
+        {
+            set.addAll( descriptorsForAllEntityTokens );
+        }
         return set;
     }
 
-    private int countIndexesByLabels( long[] labels )
+    private int countIndexesByEntityTokens( long[] entityTokenIds, PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptors,
+            Set<SchemaDescriptor> descriptorsForAllEntityIds )
     {
         int count = 0;
-        for ( long label : labels )
+        for ( long label : entityTokenIds )
         {
-            Set<SchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            Set<SchemaDescriptor> forLabel = descriptors.get( (int) label );
             if ( forLabel != null )
             {
                 count += forLabel.size();
             }
         }
+        count += descriptorsForAllEntityIds.size();
         return count;
     }
 
-    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
+    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties, PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
@@ -330,7 +419,7 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private int countIndexesByProperties( PrimitiveIntSet properties )
+    private int countIndexesByProperties( PrimitiveIntSet properties, PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty )
     {
         int count = 0;
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )

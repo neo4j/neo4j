@@ -48,6 +48,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -59,7 +60,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -494,6 +495,12 @@ public class SchemaIndexHaIT
         private final IndexProvider delegate;
         private final DoubleLatch latch = new DoubleLatch();
 
+        @Override
+        public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+        {
+            return delegate.indexDescriptorFor( schema, name, metadata );
+        }
+
         ControlledIndexProvider( IndexProvider delegate )
         {
             super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/, given( delegate.directoryStructure() ) );
@@ -501,7 +508,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
+        public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor,
                                             IndexSamplingConfig samplingConfig )
         {
             IndexPopulator populator = delegate.getPopulator( indexId, descriptor, samplingConfig );
@@ -509,22 +516,28 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
+        public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
                                                 IndexSamplingConfig samplingConfig  ) throws IOException
         {
             return delegate.getOnlineAccessor(indexId, descriptor, samplingConfig );
         }
 
         @Override
-        public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+        public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
         {
             return delegate.getInitialState( indexId, descriptor );
         }
 
         @Override
-        public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+        public IndexCapability getCapability( IndexDescriptor indexDescriptor )
         {
-            return delegate.getCapability( schemaIndexDescriptor );
+            return delegate.getCapability( indexDescriptor );
+        }
+
+        @Override
+        public boolean compatible( IndexDescriptor indexDescriptor )
+        {
+            return delegate.compatible( indexDescriptor );
         }
 
         @Override
@@ -534,7 +547,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
         {
             return delegate.getPopulationFailure( indexId, descriptor );
         }

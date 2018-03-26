@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -110,7 +111,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
-    private DiffSets<SchemaIndexDescriptor> indexChanges;
+    private DiffSets<IndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
@@ -300,18 +301,18 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return new ConstraintDiffSetsVisitor( visitor );
     }
 
-    private static DiffSetsVisitor<SchemaIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
+    private static DiffSetsVisitor<IndexDescriptor> indexVisitor( final TxStateVisitor visitor )
     {
-        return new DiffSetsVisitor<SchemaIndexDescriptor>()
+        return new DiffSetsVisitor<IndexDescriptor>()
         {
             @Override
-            public void visitAdded( SchemaIndexDescriptor index )
+            public void visitAdded( IndexDescriptor index )
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( SchemaIndexDescriptor index )
+            public void visitRemoved( IndexDescriptor index )
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -780,18 +781,19 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexRuleDoAdd( SchemaIndexDescriptor descriptor )
+    public IndexDescriptor indexRuleDoAdd( IndexDescriptor descriptor )
     {
-        DiffSets<SchemaIndexDescriptor> diff = indexChangesDiffSets();
+        DiffSets<IndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
         }
         changed();
+        return descriptor;
     }
 
     @Override
-    public void indexDoDrop( SchemaIndexDescriptor descriptor )
+    public void indexDoDrop( IndexDescriptor descriptor )
     {
         indexChangesDiffSets().remove( descriptor );
         changed();
@@ -804,18 +806,24 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId )
+    public ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId )
     {
         return indexChangesDiffSets().filterAdded( SchemaDescriptorPredicates.hasLabel( labelId ) );
     }
 
     @Override
-    public ReadableDiffSets<SchemaIndexDescriptor> indexChanges()
+    public ReadableDiffSets<IndexDescriptor> indexDiffSetsBySchema( SchemaDescriptor schema )
+    {
+        return indexChangesDiffSets().filterAdded( indexDescriptor -> indexDescriptor.schema().equals( schema ) );
+    }
+
+    @Override
+    public ReadableDiffSets<IndexDescriptor> indexChanges()
     {
         return ReadableDiffSets.Empty.ifNull( indexChanges );
     }
 
-    private DiffSets<SchemaIndexDescriptor> indexChangesDiffSets()
+    private DiffSets<IndexDescriptor> indexChangesDiffSets()
     {
         if ( indexChanges == null )
         {
@@ -988,7 +996,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor descriptor )
+    public PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor descriptor )
     {
         if ( indexUpdates == null )
         {
@@ -1037,14 +1045,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor descriptor, ValueTuple values )
+    public PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
     {
         PrimitiveLongDiffSets indexUpdatesForSeek = getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false );
         return indexUpdatesForSeek == null ? PrimitiveLongReadableDiffSets.EMPTY : indexUpdatesForSeek;
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor descriptor, ValueGroup valueGroup,
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( IndexDescriptor descriptor, ValueGroup valueGroup,
                                                                    Value lower, boolean includeLower,
                                                                    Value upper, boolean includeUpper )
     {
@@ -1102,7 +1110,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor descriptor, String prefix )
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor descriptor, String prefix )
     {
         TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
         if ( sortedUpdates == null )

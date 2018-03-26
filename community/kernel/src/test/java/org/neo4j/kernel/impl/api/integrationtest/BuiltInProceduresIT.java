@@ -130,7 +130,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database.", "READ"} ),
                 equalTo( new Object[]{"db.indexes",
-                        "db.indexes() :: (description :: STRING?, label :: STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
+                        "db.indexes() :: (description :: STRING?, labels :: LIST? OF STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
                                 "type :: STRING?, provider :: MAP?)",
                         "List all indexes in the database.", "READ"} ),
                 equalTo( new Object[]{"db.awaitIndex",
@@ -318,7 +318,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         //let indexes come online
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline(20, SECONDS );
             tx.success();
         }
 
@@ -338,9 +338,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 "key", InMemoryIndexProviderFactory.KEY,
                 "version", InMemoryIndexProviderFactory.VERSION );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "Age", singletonList("foo" ), "ONLINE", "node_unique_property", providerDescriptionMap},
-                new Object[]{"INDEX ON :Person(foo)", "Person", singletonList( "foo" ), "ONLINE", "node_label_property", providerDescriptionMap},
-                new Object[]{"INDEX ON :Person(foo, bar)", "Person", Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", providerDescriptionMap}
+                new Object[]{"INDEX ON :Age(foo)", singletonList( "Age" ), singletonList("foo" ), "ONLINE",
+                        "node_unique_property", providerDescriptionMap},
+                new Object[]{"INDEX ON :Person(foo)", singletonList( "Person" ), singletonList( "foo" ), "ONLINE",
+                        "node_label_property", providerDescriptionMap},
+                new Object[]{"INDEX ON :Person(foo, bar)", singletonList( "Person" ), Arrays.asList( "foo", "bar" ),
+                        "ONLINE", "node_label_property", providerDescriptionMap}
         ) );
         commit();
     }

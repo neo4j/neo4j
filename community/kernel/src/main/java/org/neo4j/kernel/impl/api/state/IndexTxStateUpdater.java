@@ -26,7 +26,7 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
@@ -69,11 +69,11 @@ public class IndexTxStateUpdater
         PrimitiveIntSet nodePropertyIds = Primitive.intSet();
         nodePropertyIds.addAll( readOps.nodeGetPropertyKeys( state, node ).iterator() );
 
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
 
         while ( indexes.hasNext() )
         {
-            SchemaIndexDescriptor index = indexes.next();
+            IndexDescriptor index = indexes.next();
             int[] indexPropertyIds = index.schema().getPropertyIds();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
@@ -104,7 +104,7 @@ public class IndexTxStateUpdater
     public void onPropertyAdd( KernelStatement state, NodeItem node, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx( state );
-        Iterator<SchemaIndexDescriptor> indexes =
+        Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
@@ -119,7 +119,7 @@ public class IndexTxStateUpdater
     public void onPropertyRemove( KernelStatement state, NodeItem node, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx( state );
-        Iterator<SchemaIndexDescriptor> indexes =
+        Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
@@ -133,7 +133,7 @@ public class IndexTxStateUpdater
     public void onPropertyChange( KernelStatement state, NodeItem node, int propertyKeyId, Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx( state );
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {

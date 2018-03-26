@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -124,7 +125,7 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         return result;
     }
 
-    public static CapableIndexReference fromDescriptor( SchemaIndexDescriptor descriptor )
+    public static CapableIndexReference fromDescriptor( IndexDescriptor descriptor )
     {
         boolean unique =  descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         final SchemaDescriptor schema = descriptor.schema();

@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -63,7 +63,7 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
@@ -74,7 +74,7 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
 
         IndexRule rule1 = newIndexRule( 10, 11, 12 );
         IndexRule rule2 = newIndexRule( 13, 14, 15 );
@@ -201,7 +201,7 @@ public class SchemaCacheTest
 
         // When
         LabelSchemaDescriptor schema = forLabel( 1, 3 );
-        SchemaIndexDescriptor descriptor = cache.indexDescriptor( schema );
+        IndexDescriptor descriptor = cache.indexDescriptor( schema );
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
@@ -214,10 +214,10 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        SchemaIndexDescriptor schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        IndexDescriptor indexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
-        assertNull( schemaIndexDescriptor );
+        assertNull( indexDescriptor );
     }
 
     @Test
@@ -360,7 +360,7 @@ public class SchemaCacheTest
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
         return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
+                                                           ? Collections.emptyIterator() : Arrays.asList( rules ).iterator() );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

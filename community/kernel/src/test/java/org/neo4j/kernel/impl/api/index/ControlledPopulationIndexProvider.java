@@ -25,13 +25,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -89,14 +91,20 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+    }
+
+    @Override
+    public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor indexConfig,
+    public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor indexConfig,
                                             IndexSamplingConfig samplingConfig )
     {
         writerCallCount.incrementAndGet();
@@ -105,15 +113,21 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         return initialIndexState;
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return true;
     }
 
     public void setInitialIndexState( InternalIndexState initialIndexState )
@@ -122,7 +136,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         throw new IllegalStateException();
     }

@@ -32,8 +32,12 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -47,7 +51,7 @@ public class SchemaIndexExtensionLoader
 {
     public static IndexProviderMap loadIndexProviders( KernelExtensions extensions )
     {
-        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider =
                 extensions.resolveDependency( IndexProvider.class, indexProviderSelection );
         return new DefaultIndexProviderMap( defaultIndexProvider,
@@ -55,12 +59,14 @@ public class SchemaIndexExtensionLoader
     }
 
     @SuppressWarnings( "unchecked" )
-    public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem,
-            Config config, LogService logService, PageCache pageCache,
-            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
+    public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem, Config config, LogService logService,
+            PageCache pageCache, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors,
+            PropertyKeyTokenHolder propkeyTokenHolder, LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors );
+        //TODO figure out a way to not depend on procedures here, it is caused by the fulltext index.
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, propkeyTokenHolder, labelTokenHolder,
+                relationshipTypeTokenHolder, new Procedures() );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );

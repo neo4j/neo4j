@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -425,11 +426,11 @@ public class StoreUpgradeIT
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Iterator<SchemaIndexDescriptor> indexes = SchemaIndexDescriptor.sortByType( getAllIndexes( statement ) );
+            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( statement ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
-                SchemaIndexDescriptor descriptor = indexes.next();
+                IndexDescriptor descriptor = indexes.next();
 
                 // wait index to be online since sometimes we need to rebuild the indexes on migration
                 awaitOnline( statement.readOperations(), descriptor );
@@ -444,7 +445,7 @@ public class StoreUpgradeIT
         }
     }
 
-    private static Iterator<SchemaIndexDescriptor> getAllIndexes( Statement statement )
+    private static Iterator<IndexDescriptor> getAllIndexes( Statement statement )
     {
         return statement.readOperations().indexesGetAll();
     }
@@ -549,7 +550,7 @@ public class StoreUpgradeIT
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static SchemaIndexDescriptor awaitOnline( ReadOperations readOperations, SchemaIndexDescriptor index )
+    private static IndexDescriptor awaitOnline( ReadOperations readOperations, IndexDescriptor index )
             throws KernelException
     {
         long start = System.currentTimeMillis();

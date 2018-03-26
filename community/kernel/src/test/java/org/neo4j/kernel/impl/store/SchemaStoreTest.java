@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -62,6 +63,7 @@ public class SchemaStoreTest
     private SchemaStore store;
     private NeoStores neoStores;
     private StoreFactory storeFactory;
+    private static IndexProviderMap indexProviderMap = IndexProviderMap.EMPTY;
 
     @Before
     public void before()
@@ -90,8 +92,7 @@ public class SchemaStoreTest
                 SchemaIndexDescriptorFactory.forLabel( 1, 4 ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( indexRule.serialize() ), indexProviderMap );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -109,8 +110,7 @@ public class SchemaStoreTest
                 SchemaIndexDescriptorFactory.forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( indexRule.serialize() ), indexProviderMap );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -127,8 +127,7 @@ public class SchemaStoreTest
                 SchemaIndexDescriptorFactory.forLabel( 2, IntStream.range(1, 200).toArray() ), PROVIDER_DESCRIPTOR );
 
         // WHEN
-        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( indexRule.serialize() ) );
+        IndexRule readIndexRule = (IndexRule) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( indexRule.serialize() ), indexProviderMap );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -157,7 +156,7 @@ public class SchemaStoreTest
         }
 
         // WHEN
-        Collection<SchemaRule> readRules = asCollection( store.loadAllSchemaRules() );
+        Collection<SchemaRule> readRules = asCollection( new SchemaStorage( store, indexProviderMap ).loadAllSchemaRules() );
 
         // THEN
         assertEquals( rules, readRules );

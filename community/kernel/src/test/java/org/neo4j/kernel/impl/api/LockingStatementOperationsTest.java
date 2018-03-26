@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -239,11 +240,11 @@ public class LockingStatementOperationsTest
         int labelId = 1;
         SchemaIndexDescriptor labelDescriptor = SchemaIndexDescriptorFactory.forLabel( labelId, 2, 3 );
 
-        Iterator<SchemaIndexDescriptor> rules = Iterators.iterator( labelDescriptor );
+        Iterator<IndexDescriptor> rules = Iterators.iterator( labelDescriptor );
         when( schemaReadOps.indexesGetAll( state ) ).thenReturn( rules );
 
         // when
-        Iterator<SchemaIndexDescriptor> result = lockingOps.indexesGetAll( state );
+        Iterator<IndexDescriptor> result = lockingOps.indexesGetAll( state );
         Iterators.count( result );
 
         // then

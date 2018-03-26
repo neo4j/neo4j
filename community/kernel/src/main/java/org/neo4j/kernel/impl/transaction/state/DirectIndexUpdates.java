@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 
@@ -47,8 +48,9 @@ public class DirectIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-            PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+    public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
+            PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+            PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
     {
         throw new UnsupportedOperationException();
     }

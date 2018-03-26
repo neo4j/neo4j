@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -167,7 +167,7 @@ public class LabelTransactionStateTest
                 labels( 2, 1, 3 ) );
 
         // WHEN
-        List<SchemaIndexDescriptor> indexes = Collections.singletonList( SchemaIndexDescriptorFactory.forLabel( 2, 2 ) );
+        List<IndexDescriptor> indexes = Collections.singletonList( SchemaIndexDescriptorFactory.forLabel( 2, 2 ) );
         when( store.indexesGetForLabel( 2 ) ).thenReturn( indexes.iterator() );
         txContext.nodeAddLabel( state, 2, 2 );
 

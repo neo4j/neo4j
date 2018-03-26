@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
@@ -31,20 +32,25 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final RecordStore<DynamicRecord> schemaStore;
+    private IndexProviderMap indexProviderMap;
 
-    public SchemaStorage( RecordStore<DynamicRecord> schemaStore )
+    public SchemaStorage( RecordStore<DynamicRecord> schemaStore, IndexProviderMap indexProviderMap )
     {
         this.schemaStore = schemaStore;
+
+        this.indexProviderMap = indexProviderMap;
     }
 
     /**
@@ -54,7 +60,7 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws  IllegalStateException if more than one matching rule.
      * @param descriptor the target IndexDescriptor
      */
-    public IndexRule indexGetForSchema( final SchemaIndexDescriptor descriptor )
+    public IndexRule indexGetForSchema( final IndexDescriptor descriptor )
     {
         Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
 
@@ -149,7 +155,7 @@ public class SchemaStorage implements SchemaRuleAccess
         {
             throw new MalformedSchemaRuleException( e.getMessage(), e );
         }
-        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer() );
+        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer(), indexProviderMap );
     }
 
     /**
@@ -197,7 +203,7 @@ public class SchemaStorage implements SchemaRuleAccess
                                 continue;
                             }
 
-                            SchemaRule schemaRule = SchemaStore.readSchemaRule( id, records, scratchData );
+                            SchemaRule schemaRule = SchemaStore.readSchemaRule( id, records, scratchData, indexProviderMap );
                             if ( returnType.isInstance( schemaRule ) )
                             {
                                 ReturnType returnRule = returnType.cast( schemaRule );

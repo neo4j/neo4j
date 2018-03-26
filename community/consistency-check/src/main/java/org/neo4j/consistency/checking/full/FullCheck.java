@@ -147,7 +147,7 @@ public class FullCheck
                     nativeStores, statistics, cacheAccess, directStoreAccess.labelScanStore(), indexes,
                     multiPass, reporter, threads );
             List<ConsistencyCheckerTask> tasks =
-                    taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph );
+                    taskCreator.createTasksForFullCheck( checkLabelScanStore, checkIndexes, checkGraph, directStoreAccess.indexes() );
             TaskExecutor.execute( tasks, decorator::prepare );
         }
         catch ( Exception e )

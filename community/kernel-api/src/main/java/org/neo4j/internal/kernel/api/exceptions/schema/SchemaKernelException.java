@@ -66,7 +66,7 @@ public abstract class SchemaKernelException extends KernelException
                                             .mapToObj( i -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
                                             .collect( Collectors.joining( " and " ));
             return String.format( formatString,
-                    tokenNameLookup.labelGetName( descriptor.keyId() ), propertyString);
+                    String.join( ", ", tokenNameLookup.entityTokensGetNames( descriptor.entityType(), descriptor.getEntityTokenIds() ) ), propertyString );
         }
         else
         {
@@ -75,7 +75,7 @@ public abstract class SchemaKernelException extends KernelException
                                        .mapToObj( Integer::toString )
                                        .collect( Collectors.joining( ", " )) + "]";
             return String.format( formatString,
-                    "label[" + descriptor.keyId() + "]", keyString );
+                    "label[" + Arrays.toString( descriptor.getEntityTokenIds() ) + "]", keyString );
         }
     }
 }

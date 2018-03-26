@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static java.lang.String.format;
 

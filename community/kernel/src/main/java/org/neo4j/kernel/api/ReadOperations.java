@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -67,6 +68,7 @@ import org.neo4j.values.storable.Value;
  */
 public interface ReadOperations
 {
+    long UNLABELLED = Integer.MAX_VALUE + 1L;
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
 
@@ -126,7 +128,7 @@ public interface ReadOperations
      * @return ids of the matching nodes
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongResourceIterator indexQuery( SchemaIndexDescriptor index, IndexQuery... predicates )
+    PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
@@ -156,7 +158,7 @@ public interface ReadOperations
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index found.
      */
-    long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
+    long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException, IndexNotApplicableKernelException;
 
     long nodesCountIndexed( SchemaIndexDescriptor index, long nodeId, Value value )
@@ -225,35 +227,42 @@ public interface ReadOperations
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /**
-     * Returns the index rule for the given SchemaDescriptor.
-     */
-    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
-            throws SchemaRuleNotFoundException;
+    /** Returns the index rule for the given SchemaDescriptor.
+     * @param descriptor*/
+    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor ) throws SchemaRuleNotFoundException;
+
+    /** Returns the index rule for the given index name.
+     * @param name*/
+    IndexDescriptor indexGetForName( String name ) throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
-    Iterator<SchemaIndexDescriptor> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /** Retrieve the state of an index. */
-    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve provider descriptor for an index. */
-    IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve provider descriptor for an index.
+     * @param descriptor*/
+    IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve the population progress of an index. */
-    PopulationProgress indexGetPopulationProgress( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the population progress of an index.
+     * @param descriptor*/
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the index size. */
-    long indexSize( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Get the index size.
+     * @param descriptor*/
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
-    double indexUniqueValuesSelectivity( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive).
+     * @param descriptor*/
+    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Returns the failure description of a failed index. */
-    String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Returns the failure description of a failed index.
+     * @param descriptor*/
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey.
@@ -486,10 +495,10 @@ public interface ReadOperations
      */
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
-    DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( SchemaIndexDescriptor index, DoubleLongRegister target )
+    DoubleLongRegister indexSample( IndexDescriptor index, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     //===========================================

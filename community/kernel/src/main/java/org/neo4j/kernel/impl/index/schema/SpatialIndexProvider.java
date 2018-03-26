@@ -29,20 +29,23 @@ import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
-public class SpatialIndexProvider extends IndexProvider
+public class SpatialIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     public static final String KEY = "spatial";
     private static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
@@ -91,7 +94,14 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+    }
+
+    @Override
+    public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor,
+                                        IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
@@ -102,14 +112,15 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( long indexId, SchemaIndexDescriptor descriptor,
+                                            IndexSamplingConfig samplingConfig ) throws IOException
     {
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
         return new SpatialIndexAccessor( indexId, descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
@@ -160,9 +171,15 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return indexDescriptor instanceof SchemaIndexDescriptor;
     }
 
     @Override

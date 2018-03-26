@@ -23,20 +23,23 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
-public class InMemoryIndexProvider extends IndexProvider
+public class InMemoryIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     private final Map<Long, InMemoryIndex> indexes;
 
@@ -64,15 +67,27 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         return IndexCapability.NO_CAPABILITY;
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return indexDescriptor instanceof SchemaIndexDescriptor;
     }
 
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    @Override
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
     }
 
     @Override
@@ -103,7 +118,7 @@ public class InMemoryIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String failure = indexes.get( indexId ).failure;
         if ( failure == null )

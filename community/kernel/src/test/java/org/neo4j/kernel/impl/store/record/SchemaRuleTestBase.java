@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.index.IndexProvider;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 

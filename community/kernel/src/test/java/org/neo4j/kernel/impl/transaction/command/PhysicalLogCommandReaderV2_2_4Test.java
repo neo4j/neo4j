@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.command;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -50,7 +51,7 @@ public class PhysicalLogCommandReaderV2_2_4Test
         removeCommand.serialize( channel );
 
         // WHEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
+        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY );
         assertTrue( reader.read( channel ) instanceof IndexDefineCommand );
         RemoveCommand readRemoveCommand = (RemoveCommand) reader.read( channel );
 

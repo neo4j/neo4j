@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -64,7 +65,7 @@ public class NodeCommandTest
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NeoStores neoStores;

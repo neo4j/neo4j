@@ -65,6 +65,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -75,6 +76,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -289,7 +291,7 @@ public class IndexingServiceTest
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
 
-        // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
+        // invoked from indexAllEntities(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
         // (We don't get an update for value2 here because we mock a fake store that doesn't contain it
         //  just for the purpose of testing this behavior)
@@ -728,8 +730,9 @@ public class IndexingServiceTest
             }
 
             @Override
-            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
+                    PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, PrimitiveLongObjectMap<NodeCommand> nodeCommands,
+                    PrimitiveLongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
             {
                 throw new UnsupportedOperationException();
             }
@@ -752,7 +755,7 @@ public class IndexingServiceTest
         long nodeId = 0;
         long indexId = 1;
         long otherIndexId = 2;
-        NodeUpdates update = addNodeUpdate( nodeId, "value" );
+        EntityUpdates update = addNodeUpdate( nodeId, "value" );
         when( storeView.nodeAsUpdates( eq( nodeId ) ) ).thenReturn( update );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
@@ -795,7 +798,7 @@ public class IndexingServiceTest
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
         {
             @Override
-            public void awaitingPopulationOfRecoveredIndex( long index, SchemaIndexDescriptor descriptor )
+            public void awaitingPopulationOfRecoveredIndex( long index, IndexDescriptor descriptor )
             {
                 // When we see that we start to await the index to populate, notify the slow-as-heck
                 // populator that it can actually go and complete its job.
@@ -1173,14 +1176,14 @@ public class IndexingServiceTest
         return invocationOnMock -> asResourceIterator(iterator( theFile ));
     }
 
-    private NodeUpdates addNodeUpdate( long nodeId, Object propertyValue )
+    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue )
     {
         return addNodeUpdate( nodeId, propertyValue, labelId );
     }
 
-    private NodeUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
+    private EntityUpdates addNodeUpdate( long nodeId, Object propertyValue, int labelId )
     {
-        return NodeUpdates.forNode( nodeId, new long[]{labelId} )
+        return EntityUpdates.forEntity( nodeId, new long[]{labelId} )
                 .added( index.schema().getPropertyId(), Values.of( propertyValue ) ).build();
     }
 
@@ -1236,21 +1239,21 @@ public class IndexingServiceTest
         );
     }
 
-    private DataUpdates withData( NodeUpdates... updates )
+    private DataUpdates withData( EntityUpdates... updates )
     {
         return new DataUpdates( updates );
     }
 
     private static class DataUpdates implements Answer<StoreScan<IndexPopulationFailedKernelException>>
     {
-        private final NodeUpdates[] updates;
+        private final EntityUpdates[] updates;
 
         DataUpdates()
         {
-            this.updates = new NodeUpdates[0];
+            this.updates = new EntityUpdates[0];
         }
 
-        DataUpdates( NodeUpdates[] updates )
+        DataUpdates( EntityUpdates[] updates )
         {
             this.updates = updates;
         }
@@ -1265,7 +1268,7 @@ public class IndexingServiceTest
         @Override
         public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
         {
-            final Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
+            final Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
             return new StoreScan<IndexPopulationFailedKernelException>()
             {
@@ -1274,7 +1277,7 @@ public class IndexingServiceTest
                 @Override
                 public void run() throws IndexPopulationFailedKernelException
                 {
-                    for ( NodeUpdates update : updates )
+                    for ( EntityUpdates update : updates )
                     {
                         if ( stop )
                         {
@@ -1307,7 +1310,7 @@ public class IndexingServiceTest
         }
 
         @SuppressWarnings( {"unchecked", "rawtypes"} )
-        private static Visitor<NodeUpdates, IndexPopulationFailedKernelException> visitor( Object v )
+        private static Visitor<EntityUpdates, IndexPopulationFailedKernelException> visitor( Object v )
         {
             return (Visitor) v;
         }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.txstate;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
@@ -77,9 +78,9 @@ public interface TransactionState extends ReadableTransactionState
 
     // SCHEMA RELATED
 
-    void indexRuleDoAdd( SchemaIndexDescriptor descriptor );
+    IndexDescriptor indexRuleDoAdd( IndexDescriptor descriptor );
 
-    void indexDoDrop( SchemaIndexDescriptor descriptor );
+    void indexDoDrop( IndexDescriptor descriptor );
 
     boolean indexDoUnRemove( SchemaIndexDescriptor constraint );
 

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.stream.IntStream;
 
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -32,8 +33,11 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,6 +49,24 @@ import static org.neo4j.test.assertion.Assert.assertException;
 
 public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 {
+    private static final InMemoryIndexProvider inMemoryIndexProvider = new InMemoryIndexProvider()
+    {
+        @Override
+        public Descriptor getProviderDescriptor()
+        {
+            return PROVIDER_DESCRIPTOR;
+        }
+    };
+    private static final IndexProvider SOME_INDEX_PROVIDER = new InMemoryIndexProvider()
+    {
+        @Override
+        public Descriptor getProviderDescriptor()
+        {
+            return new Descriptor( "index-provider", "25.0" );
+        }
+    };
+    private static final IndexProviderMap indexProviderMap =
+            new DefaultIndexProviderMap( inMemoryIndexProvider, Collections.singletonList( SOME_INDEX_PROVIDER ) );
     IndexRule indexRegular = IndexRule.indexRule( RULE_ID,
             forLabel( LABEL_ID, PROPERTY_ID_1 ), PROVIDER_DESCRIPTOR );
 
@@ -465,18 +487,17 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     {
         // GIVEN
         long ruleId = 24;
-        SchemaIndexDescriptor index = forLabel( 512, 4 );
-        IndexProvider.Descriptor indexProvider = new IndexProvider.Descriptor( "index-provider", "25.0" );
+        IndexDescriptor index = forLabel( 512, 4 );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( SOME_INDEX_PROVIDER.getProviderDescriptor() ) );
         assertThat( deserialized.getName(), is( name ) );
         assertException( deserialized::getOwningConstraint, IllegalStateException.class );
     }
@@ -486,18 +507,17 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         // GIVEN
         long ruleId = 33;
         long constraintId = 11;
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 61, 988 );
-        IndexProvider.Descriptor indexProvider = new IndexProvider.Descriptor( "index-provider", "25.0" );
+        IndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 61, 988 );
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        IndexRule deserialized = assertIndexRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getIndexDescriptor(), equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
-        assertThat( deserialized.getProviderDescriptor(), equalTo( indexProvider ) );
+        assertThat( deserialized.getProviderDescriptor(), equalTo( SOME_INDEX_PROVIDER.getProviderDescriptor() ) );
         assertThat( deserialized.getOwningConstraint(), equalTo( constraintId ) );
         assertThat( deserialized.getName(), is( name ) );
     }
@@ -513,7 +533,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -534,7 +554,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -554,7 +574,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -574,7 +594,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         byte[] bytes = decodeBase64( serialized );
 
         // WHEN
-        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ) ) );
+        ConstraintRule deserialized = assertConstraintRule( SchemaRuleSerialization.deserialize( ruleId, ByteBuffer.wrap( bytes ), indexProviderMap ) );
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
@@ -619,13 +639,13 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     private SchemaRule serialiseAndDeserialise( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
     {
         ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );
-        return SchemaRuleSerialization.deserialize( constraintRule.getId(), buffer );
+        return SchemaRuleSerialization.deserialize( constraintRule.getId(), buffer, indexProviderMap );
     }
 
     private SchemaRule serialiseAndDeserialise( IndexRule indexRule ) throws MalformedSchemaRuleException
     {
         ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
-        return SchemaRuleSerialization.deserialize( indexRule.getId(), buffer );
+        return SchemaRuleSerialization.deserialize( indexRule.getId(), buffer, indexProviderMap );
     }
 
     private ConstraintRule assertConstraintRule( SchemaRule schemaRule )

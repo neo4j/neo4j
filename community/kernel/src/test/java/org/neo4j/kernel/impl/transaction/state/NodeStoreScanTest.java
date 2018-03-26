@@ -28,9 +28,10 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.junit.Assert.assertEquals;
@@ -45,6 +46,7 @@ public class NodeStoreScanTest
 {
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final NodeStore nodeStore = mock( NodeStore.class );
+    private final PropertyStore propertyStore = mock( PropertyStore.class );
 
     @Test
     public void shouldGiveBackCompletionPercentage()
@@ -62,8 +64,9 @@ public class NodeStoreScanTest
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks, total )
-        {
+        final PropertyAwareEntityStoreScan<NodeRecord,RuntimeException> scan =
+                new PropertyAwareEntityStoreScan<NodeRecord,RuntimeException>( nodeStore, locks, propertyStore )
+            {
             private int read;
 
             @Override

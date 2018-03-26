@@ -41,7 +41,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -82,7 +82,7 @@ public class IndexingServiceIntegrationTest
     public static Collection<Object[]> parameters()
     {
         return asList(
-                new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{new LuceneSchemaIndexProviderFactory(), LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
                 new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
                 new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR},
                 new Object[]{new InMemoryIndexProviderFactory(), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );

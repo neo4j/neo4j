@@ -32,8 +32,8 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
@@ -167,7 +167,7 @@ public class FusionIndexProviderTest
         IllegalStateException failure = new IllegalStateException( "not failed" );
         for ( IndexProvider provider : aliveProviders )
         {
-            when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( failure );
+            when( provider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( failure );
         }
 
         // then
@@ -193,11 +193,11 @@ public class FusionIndexProviderTest
             {
                 if ( provider == failingProvider )
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failure );
+                    when( provider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( failure );
                 }
                 else
                 {
-                    when( provider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenThrow( exception );
+                    when( provider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( exception );
                 }
             }
 
@@ -215,7 +215,7 @@ public class FusionIndexProviderTest
         {
             String failureMessage = "FAILURE[" + aliveProvider + "]";
             failureMessages.add( failureMessage );
-            when( aliveProvider.getPopulationFailure( anyLong(), any( SchemaIndexDescriptor.class ) ) ).thenReturn( failureMessage );
+            when( aliveProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( failureMessage );
         }
 
         // then
@@ -231,7 +231,7 @@ public class FusionIndexProviderTest
     {
         // given
         IndexProvider provider = fusionIndexProvider;
-        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor schemaIndexDescriptor = forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
         {
@@ -254,7 +254,7 @@ public class FusionIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
-        SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor schemaIndexDescriptor = forLabel( 1, 1 );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {

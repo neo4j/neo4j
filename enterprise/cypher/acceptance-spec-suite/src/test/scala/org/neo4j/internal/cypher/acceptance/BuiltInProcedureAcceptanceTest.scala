@@ -273,7 +273,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     // Then
     result.toList should equal(
       List(Map("description" -> "INDEX ON :A(prop)",
-        "label" -> "A",
+        "labels" -> List("A"),
         "properties" -> List("prop"),
         "state" -> "ONLINE",
         "type" -> "node_label_property",

@@ -36,9 +36,10 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -49,7 +50,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.PartAccessor<?>, IOException> implements IndexAccessor
 {
-    private final SchemaIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
 
     TemporalIndexAccessor( long indexId,
                            SchemaIndexDescriptor descriptor,
@@ -60,7 +61,8 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                            IndexProvider.Monitor monitor,
                            TemporalIndexFiles temporalIndexFiles ) throws IOException
     {
-        super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig, temporalIndexFiles ) );
+        super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, indexId,
+                samplingConfig, temporalIndexFiles ) );
         this.descriptor = descriptor;
 
         temporalIndexFiles.loadExistingIndexes( this );
@@ -184,7 +186,8 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
                       long indexId,
                       IndexSamplingConfig samplingConfig ) throws IOException
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, recoveryCleanupWorkCollector, monitor,
+                    descriptor, indexId, samplingConfig );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.samplingConfig = samplingConfig;

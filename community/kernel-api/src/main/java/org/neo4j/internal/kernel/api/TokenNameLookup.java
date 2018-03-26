@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.function.IntFunction;
+
+import org.neo4j.storageengine.api.EntityType;
+
 /**
  * Lookup of names from token ids. Tokens are mostly referred to by ids throughout several abstractions.
  * Sometimes token names are required, this is a way to lookup names in those cases.
@@ -42,4 +46,26 @@ public interface TokenNameLookup
      * @return name of property key token with given id.
      */
     String propertyKeyGetName( int propertyKeyId );
+
+    default String[] entityTokensGetNames( EntityType type, int[] entityTokenIds )
+    {
+        IntFunction<String> mapper;
+        if ( type == EntityType.NODE )
+        {
+            mapper = this::labelGetName;
+        }
+        else if ( type == EntityType.RELATIONSHIP )
+        {
+            mapper = this::relationshipTypeGetName;
+        }
+        else
+        {
+            return new String[0];
+        }
+        String[] tokenNames = new String[entityTokenIds.length];
+        for ( int i = 0; i < entityTokenIds.length; i++ )
+        {
+            tokenNames[i] = mapper.apply( entityTokenIds[i] );
+        }
+        return tokenNames;    }
 }

@@ -49,9 +49,9 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
         NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
 {
     public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
-    static final int PRIORITY = LuceneIndexProvider.PRIORITY + 1;
+    static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
-    public interface Dependencies extends LuceneIndexProviderFactory.Dependencies
+    public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
     {
     }
 
@@ -84,7 +84,7 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
                 IndexProviderFactoryUtil.spatialProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly, config );
         TemporalIndexProvider temporal =
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
+        LuceneSchemaIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;

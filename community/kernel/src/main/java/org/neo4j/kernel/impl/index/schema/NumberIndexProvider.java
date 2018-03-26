@@ -32,7 +32,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.ValueGroup;
@@ -43,12 +45,12 @@ import org.neo4j.values.storable.ValueGroup;
 public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,NativeSchemaValue>
 {
     public static final String KEY = "native";
-    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    public static final IndexProvider.Descriptor NATIVE_PROVIDER_DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
     static final IndexCapability CAPABILITY = new NumberIndexCapability();
 
     public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-                                IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                boolean readOnly )
+            IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
@@ -77,15 +79,16 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberSchemaKey,Nat
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, SchemaIndexDescriptor descriptor,
-            long indexId, IndexSamplingConfig samplingConfig ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout,
+                                              SchemaIndexDescriptor descriptor, long indexId,
+                                              IndexSamplingConfig samplingConfig ) throws IOException
     {
         return new NumberSchemaIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 indexId, samplingConfig );
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         return CAPABILITY;
     }

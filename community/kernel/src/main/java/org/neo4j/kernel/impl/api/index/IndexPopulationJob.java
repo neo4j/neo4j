@@ -130,7 +130,7 @@ public class IndexPopulationJob implements Runnable
 
     private void indexAllNodes() throws IndexPopulationFailedKernelException
     {
-        storeScan = multiPopulator.indexAllNodes();
+        storeScan = multiPopulator.indexAllEntities();
         storeScan.run();
     }
 

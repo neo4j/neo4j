@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
@@ -303,11 +302,6 @@ public class NeoStoreFileListing
 
             return resourceIterator( files.iterator(), new MultiResource( resources ) );
         }
-    }
-
-    public static List<StoreFileMetadata> getSnapshotFilesMetadata( ResourceIterator<File> snapshot )
-    {
-        return snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toList() );
     }
 
     private void gatherNeoStoreFiles( final Collection<StoreFileMetadata> targetFiles )

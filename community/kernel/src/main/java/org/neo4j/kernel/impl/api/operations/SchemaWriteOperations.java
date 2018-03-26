@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
@@ -42,11 +43,11 @@ public interface SchemaWriteOperations
      * Creates an index, indexing properties with the given {@code propertyKeyId} for nodes with the given
      * {@code labelId}.
      */
-    SchemaIndexDescriptor indexCreate( KernelStatement state, SchemaDescriptor descriptor )
+    SchemaIndexDescriptor indexCreate( KernelStatement state, LabelSchemaDescriptor descriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
-    /** Drops a {@link SchemaIndexDescriptor} from the database */
-    void indexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException;
+    /** Drops a {@link IndexDescriptor} from the database */
+    void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     /**
      * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
@@ -72,4 +73,7 @@ public interface SchemaWriteOperations
             RepeatedPropertyInCompositeSchemaException;
 
     void constraintDrop( KernelStatement state, ConstraintDescriptor constraint ) throws DropConstraintFailureException;
+
+    IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+            throws RepeatedPropertyInCompositeSchemaException, AlreadyIndexedException, AlreadyConstrainedException;
 }

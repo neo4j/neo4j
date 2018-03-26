@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.IndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -146,7 +146,7 @@ public class StoreUpgraderInterruptionTestIT
 
         progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        SchemaIndexMigrator indexMigrator = createIndexMigrator();
+        IndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader(upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded(
                 workingDirectory );
 
@@ -165,9 +165,9 @@ public class StoreUpgraderInterruptionTestIT
         return new UpgradableDatabase( check, Standard.LATEST_RECORD_FORMATS, tailScanner );
     }
 
-    private SchemaIndexMigrator createIndexMigrator()
+    private IndexMigrator createIndexMigrator()
     {
-        return new SchemaIndexMigrator( fs, indexProvider );
+        return new IndexMigrator( fs, indexProvider );
     }
 
     @Test
@@ -221,7 +221,7 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
-            MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
+            MigrationProgressMonitor progressMonitor, IndexMigrator indexMigrator, StoreMigrator migrator )
     {
         Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 

@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -41,7 +42,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
      *
      * @param labelIds array of label ids to generate updates for. Empty array means all.
      * @param propertyKeyIdFilter property key ids to generate updates for.
-     * @param propertyUpdateVisitor visitor which will see all generated {@link NodeUpdates}.
+     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}.
      * @param labelUpdateVisitor visitor which will see all generated {@link NodeLabelUpdate}.
      * @param forceStoreScan overrides decision about which source to scan from. If {@code true}
      * then store scan will be used, otherwise if {@code false} then the best suited will be used.
@@ -49,18 +50,31 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             int[] labelIds, IntPredicate propertyKeyIdFilter,
-            Visitor<NodeUpdates, FAILURE> propertyUpdateVisitor,
+            Visitor<EntityUpdates, FAILURE> propertyUpdateVisitor,
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan );
 
     /**
-     * Produces {@link NodeUpdates} objects from reading node {@code nodeId}, its labels and properties
+     * Retrieve all relationships in the database which has any of the the given relationship types AND
+     * one or more of the given property key ids.
+     *
+     * @param relationshipTypeIds array of relationsip type ids to generate updates for. Empty array means all.
+     * @param propertyKeyIdFilter property key ids to generate updates for.
+     * @param propertyUpdateVisitor visitor which will see all generated {@link EntityUpdates}
+     * @return a {@link StoreScan} to start and to stop the scan.
+     */
+    <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
+
+    /**
+     * Produces {@link EntityUpdates} objects from reading node {@code nodeId}, its labels and properties
      * and puts those updates into node updates container.
      *
      * @param nodeId id of node to load.
      * @return node updates container
      */
-    NodeUpdates nodeAsUpdates( long nodeId );
+    //TODO This seems to only be used in tests
+    EntityUpdates nodeAsUpdates( long nodeId );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
@@ -99,7 +113,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
     IndexStoreView EMPTY = new IndexStoreView()
     {
         @Override
-        public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
+        public void loadProperties( long nodeId, EntityType type, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
         {
         }
 
@@ -112,8 +126,16 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         @SuppressWarnings( "unchecked" )
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
-                IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdateVisitor,
+                IntPredicate propertyKeyIdFilter, Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor,
                 Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+        {
+            return EMPTY_SCAN;
+        }
+
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+                Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
         {
             return EMPTY_SCAN;
         }
@@ -125,7 +147,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public NodeUpdates nodeAsUpdates( long nodeId )
+        public EntityUpdates nodeAsUpdates( long nodeId )
         {
             return null;
         }

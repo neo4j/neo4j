@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertFalse;
 public class LogEntryParserDispatcherV6Test
 {
     private final LogEntryVersion version = LogEntryVersion.CURRENT;
-    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
+    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY );
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 

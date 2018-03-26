@@ -21,19 +21,27 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
+import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
+import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -55,7 +63,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instance
  * This {@link IndexProvider index provider} act as one logical index but is backed by four physical
  * indexes, the number, spatial, temporal native indexes, and the general purpose lucene index.
  */
-public class FusionIndexProvider extends IndexProvider
+public class FusionIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
     interface Selector
     {
@@ -79,7 +87,6 @@ public class FusionIndexProvider extends IndexProvider
     private final DropAction dropAction;
 
     public FusionIndexProvider(
-            // good to be strict with specific providers here since this is dev facing
             IndexProvider stringProvider,
             IndexProvider numberProvider,
             IndexProvider spatialProvider,
@@ -109,6 +116,12 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+    }
+
+    @Override
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator( instancesAs( providers, IndexPopulator.class,
@@ -125,7 +138,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ), providers );
@@ -137,7 +150,7 @@ public class FusionIndexProvider extends IndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, SchemaIndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, long indexId, IndexDescriptor descriptor )
     {
         try
         {
@@ -171,7 +184,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor schemaIndexDescriptor )
     {
         IndexCapability[] capabilities = new IndexCapability[providers.length];
         for ( int i = 0; i < providers.length; i++ )
@@ -192,6 +205,12 @@ public class FusionIndexProvider extends IndexProvider
                 return super.orderCapability( valueGroups );
             }
         };
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return Stream.of( providers ).allMatch( p -> p.compatible( indexDescriptor ) );
     }
 
     @Override

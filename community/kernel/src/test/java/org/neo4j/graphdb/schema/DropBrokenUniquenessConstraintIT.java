@@ -24,7 +24,9 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -33,7 +35,6 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.single;
 
@@ -58,7 +59,8 @@ public class DropBrokenUniquenessConstraintIT
         // when intentionally breaking the schema by setting the backing index rule to unused
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaStore schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        SchemaRule indexRule = single( filter( rule -> rule instanceof IndexRule, schemaStore.loadAllSchemaRules() ) );
+        SchemaRule indexRule = single( filter( rule -> rule instanceof IndexRule,
+                new SchemaStorage( schemaStore, db.getDependencyResolver().resolveDependency( IndexProviderMap.class ) ).loadAllSchemaRules() ) );
         setSchemaRecordNotInUse( schemaStore, indexRule.getId() );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();

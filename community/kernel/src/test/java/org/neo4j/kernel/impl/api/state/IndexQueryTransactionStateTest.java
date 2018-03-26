@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -73,7 +74,7 @@ public class IndexQueryTransactionStateTest
     private int propertyKeyId = 3;
     private Value value = Values.of( "My Value" );
     private SchemaIndexDescriptor schemaIndexDescriptor = SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId  );
-    private List<SchemaIndexDescriptor> indexes = Collections.singletonList( schemaIndexDescriptor );
+    private List<IndexDescriptor> indexes = Collections.singletonList( schemaIndexDescriptor );
     private IndexQuery.ExactPredicate withValue = IndexQuery.exact( propertyKeyId, value );
 
     private StoreReadLayer store;

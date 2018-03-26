@@ -32,7 +32,8 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -55,7 +56,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+    getOnlineIndex(tc.schemaRead.index(descriptor.keyId, descriptor.getPropertyIds:_*))
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
@@ -79,7 +80,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(tc.schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+    getOnlineIndex(tc.schemaRead.index(descriptor.keyId, descriptor.getPropertyIds:_*))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =

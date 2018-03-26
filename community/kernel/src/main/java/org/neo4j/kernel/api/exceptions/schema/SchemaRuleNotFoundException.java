@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class SchemaRuleNotFoundException extends SchemaRuleException
@@ -30,5 +31,10 @@ public class SchemaRuleNotFoundException extends SchemaRuleException
     public SchemaRuleNotFoundException( SchemaRule.Kind kind, SchemaDescriptor descriptor )
     {
         super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, kind, descriptor );
+    }
+
+    public SchemaRuleNotFoundException( SchemaRule.Kind kind, String name )
+    {
+        super( Status.Schema.SchemaRuleAccessFailed, NOT_FOUND_MESSAGE_TEMPLATE, kind, name );
     }
 }

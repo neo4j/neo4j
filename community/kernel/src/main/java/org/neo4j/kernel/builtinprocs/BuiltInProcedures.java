@@ -20,6 +20,7 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -55,7 +56,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -66,7 +67,7 @@ import org.neo4j.procedure.Procedure;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -117,15 +118,16 @@ public class BuiltInProcedures
             ReadOperations operations = statement.readOperations();
             TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
-            List<SchemaIndexDescriptor> indexes = asList( operations.indexesGetAll() );
+            List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( SchemaIndexDescriptor index : indexes )
+            for ( IndexDescriptor index : indexes )
             {
                 try
                 {
                     String type;
+                    List<String> propertyNames = propertyNames( tokens, index );
                     if ( index.type() == UNIQUE )
                     {
                         type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
@@ -135,9 +137,8 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String label = index.schema().keyName( tokens );
-                    List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), label,
+                    List<String> entityTokens = Arrays.asList( tokens.entityTokensGetNames( index.schema().entityType(), index.schema().getEntityTokenIds() ) );
+                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), entityTokens,
                             propertyNames,
                             operations.indexGetState( index ).toString(), type,
                             indexProviderDescriptorMap( operations.indexGetProviderDescriptor( index ) ) ) );
@@ -591,7 +592,7 @@ public class BuiltInProcedures
                 "version", providerDescriptor.getVersion() );
     }
 
-    private List<String> propertyNames( TokenNameLookup tokens, SchemaIndexDescriptor index )
+    private List<String> propertyNames( TokenNameLookup tokens, IndexDescriptor index )
     {
         int[] propertyIds = index.schema().getPropertyIds();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );
@@ -801,17 +802,17 @@ public class BuiltInProcedures
     public static class IndexResult
     {
         public final String description;
-        public final String label;
+        public final List<String> labels;
         public final List<String> properties;
         public final String state;
         public final String type;
         public final Map<String,String> provider;
 
-        private IndexResult( String description, String label, List<String> properties, String state, String type,
+        private IndexResult( String description, List<String> entityTokens, List<String> properties, String state, String type,
                 Map<String,String> provider )
         {
             this.description = description;
-            this.label = label;
+            this.labels = entityTokens;
             this.properties = properties;
             this.state = state;
             this.type = type;
@@ -892,7 +893,8 @@ public class BuiltInProcedures
     private enum IndexType
     {
         NODE_LABEL_PROPERTY( "node_label_property" ),
-        NODE_UNIQUE_PROPERTY( "node_unique_property" );
+        NODE_UNIQUE_PROPERTY( "node_unique_property" ),
+        NON_SCHEMA( "non_schema" );
 
         private final String typeName;
 

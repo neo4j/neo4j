@@ -20,16 +20,45 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
-public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
+public interface IndexProviderMap
 {
-    @Override
-    IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
+    IndexProviderMap EMPTY = new IndexProviderMap()
+    {
+        @Override
+        public IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException
+        {
+            return IndexProvider.EMPTY;
+        }
 
-    IndexProvider getDefaultProvider();
+        @Override
+        public IndexProvider<SchemaIndexDescriptor> getDefaultProvider()
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public IndexProvider getProviderFor( IndexDescriptor descriptor )
+        {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
+        public void accept( Consumer<IndexProvider> visitor )
+        {
+            //Sure
+        }
+    };
+
+    IndexProvider get( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
+
+    IndexProvider<SchemaIndexDescriptor> getDefaultProvider();
+
+    IndexProvider getProviderFor( IndexDescriptor descriptor );
 
     void accept( Consumer<IndexProvider> visitor );
 }

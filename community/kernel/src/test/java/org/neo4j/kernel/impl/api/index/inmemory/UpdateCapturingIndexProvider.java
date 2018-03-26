@@ -27,19 +27,21 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
-public class UpdateCapturingIndexProvider extends IndexProvider
+public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
-    private final IndexProvider actual;
+    private final IndexProvider<SchemaIndexDescriptor> actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
     private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
@@ -48,6 +50,12 @@ public class UpdateCapturingIndexProvider extends IndexProvider
         super( actual );
         this.actual = actual;
         this.initialUpdates = initialUpdates;
+    }
+
+    @Override
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return actual.indexDescriptorFor( schema, name, "" );
     }
 
     @Override
@@ -65,7 +73,7 @@ public class UpdateCapturingIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         return actual.getPopulationFailure( indexId, descriptor );
     }
@@ -77,9 +85,15 @@ public class UpdateCapturingIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
+    public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
-        return actual.getCapability( schemaIndexDescriptor );
+        return actual.getCapability( indexDescriptor );
+    }
+
+    @Override
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return indexDescriptor instanceof SchemaIndexDescriptor;
     }
 
     @Override

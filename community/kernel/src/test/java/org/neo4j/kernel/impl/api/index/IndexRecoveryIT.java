@@ -23,6 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -39,6 +41,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.Statement;
@@ -48,7 +51,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
@@ -138,10 +143,9 @@ public class IndexRecoveryIT
         latch.countDown();
         killFuture.get();
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider
-                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+        when( mockedIndexProvider.getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) )
+        when( mockedIndexProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.POPULATING );
 
         // When
@@ -150,10 +154,8 @@ public class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-        verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, never() ).getOnlineAccessor(
-                anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, never() ).getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }
@@ -247,6 +249,16 @@ public class IndexRecoveryIT
     {
         when( mockedIndexProvider.getProviderDescriptor() )
                 .thenReturn( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+        when( mockedIndexProvider.compatible( any( IndexDescriptor.class ) ) ).thenReturn( true );
+        when( mockedIndexProvider.indexDescriptorFor( any( SchemaDescriptor.class ), any( String.class ), any( String.class ) ) ).then(
+                new Answer<IndexDescriptor>()
+                {
+                    @Override
+                    public IndexDescriptor answer( InvocationOnMock invocationOnMock ) throws Throwable
+                    {
+                        return SchemaIndexDescriptorFactory.forSchema( invocationOnMock.getArgument( 0 ) );
+                    }
+                } );
         when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ),

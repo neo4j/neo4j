@@ -92,6 +92,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.ClockContext;
@@ -646,7 +647,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator indexQuery( SchemaIndexDescriptor index, IndexQuery... predicates )
+        public PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return readOperations.indexQuery( index, predicates );
@@ -679,7 +680,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public long nodeGetFromUniqueIndexSeek( SchemaIndexDescriptor index, IndexQuery.ExactPredicate... predicates )
+        public long nodeGetFromUniqueIndexSeek( IndexDescriptor index, IndexQuery.ExactPredicate... predicates )
                 throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
         {
             return readOperations.nodeGetFromUniqueIndexSeek( index, predicates );
@@ -832,56 +833,62 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
+        public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
         {
             return readOperations.indexGetForSchema( descriptor );
         }
 
         @Override
-        public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
+        public IndexDescriptor indexGetForName( String name ) throws SchemaRuleNotFoundException
+        {
+            return readOperations.indexGetForName( name );
+        }
+
+        @Override
+        public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
         {
             return readOperations.indexesGetForLabel( labelId );
         }
 
         @Override
-        public Iterator<SchemaIndexDescriptor> indexesGetAll()
+        public Iterator<IndexDescriptor> indexesGetAll()
         {
             return readOperations.indexesGetAll();
         }
 
         @Override
-        public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetState( descriptor );
         }
 
         @Override
-        public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetProviderDescriptor( descriptor );
         }
 
         @Override
-        public PopulationProgress indexGetPopulationProgress( SchemaIndexDescriptor descriptor )
+        public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexGetPopulationProgress( descriptor );
         }
 
         @Override
-        public long indexSize( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexSize( descriptor );
         }
 
         @Override
-        public double indexUniqueValuesSelectivity( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUniqueValuesSelectivity( descriptor );
         }
 
         @Override
-        public String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetFailure( descriptor );
         }
@@ -1076,14 +1083,14 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public Register.DoubleLongRegister indexUpdatesAndSize( SchemaIndexDescriptor index,
+        public Register.DoubleLongRegister indexUpdatesAndSize( IndexDescriptor index,
                 Register.DoubleLongRegister target ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUpdatesAndSize( index, target );
         }
 
         @Override
-        public Register.DoubleLongRegister indexSample( SchemaIndexDescriptor index, Register.DoubleLongRegister target )
+        public Register.DoubleLongRegister indexSample( IndexDescriptor index, Register.DoubleLongRegister target )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexSample( index, target );

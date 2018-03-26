@@ -31,7 +31,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 
 abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES> extends KernelExtensionFactory<DEPENDENCIES>
 {
-    public static final String KEY = LuceneIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
+    public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NumberIndexProvider.KEY;
 
     NativeLuceneFusionIndexProviderFactory()
     {

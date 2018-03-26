@@ -27,13 +27,16 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
@@ -43,7 +46,8 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
  * @param <KEY> type of {@link NativeSchemaKey}
  * @param <VALUE> type of {@link NativeSchemaValue}
  */
-abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue> extends IndexProvider
+abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+        extends IndexProvider<SchemaIndexDescriptor>
 {
     protected final PageCache pageCache;
     protected final FileSystemAbstraction fs;
@@ -76,7 +80,8 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         return newIndexPopulator( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout, SchemaIndexDescriptor descriptor, long indexId,
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, Layout<KEY, VALUE> layout,
+                                                         SchemaIndexDescriptor descriptor, long indexId,
                                                          IndexSamplingConfig samplingConfig );
 
     @Override
@@ -87,11 +92,24 @@ abstract class NativeIndexProvider<KEY extends NativeSchemaKey,VALUE extends Nat
         return newIndexAccessor( storeFile, layout( descriptor ), descriptor, indexId, samplingConfig );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout, SchemaIndexDescriptor descriptor,
-            long indexId, IndexSamplingConfig samplingConfig ) throws IOException;
+    @Override
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
+    {
+        return SchemaIndexDescriptorFactory.forLabelBySchema( schema );
+    }
 
     @Override
-    public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
+    public boolean compatible( IndexDescriptor indexDescriptor )
+    {
+        return indexDescriptor instanceof SchemaIndexDescriptor;
+    }
+
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, Layout<KEY,VALUE> layout,
+                                                       SchemaIndexDescriptor descriptor, long indexId,
+                                                       IndexSamplingConfig samplingConfig ) throws IOException;
+
+    @Override
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {

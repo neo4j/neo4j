@@ -31,7 +31,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
 public abstract class NativeNonUniqueSchemaIndexPopulatorTest<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -96,10 +96,10 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
 
         // then
         expected.expect( UnsupportedOperationException.class );
-        expected.expectMessage( CoreMatchers.allOf(
-                CoreMatchers.containsString( "unsupported order" ),
-                CoreMatchers.containsString( unsupportedOrder.toString() ),
-                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
+        expected.expectMessage( Matchers.allOf(
+                Matchers.containsString( "unsupported order" ),
+                Matchers.containsString( unsupportedOrder.toString() ),
+                Matchers.containsString( unsupportedQuery.toString() ) ) );
 
         // when
         reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );

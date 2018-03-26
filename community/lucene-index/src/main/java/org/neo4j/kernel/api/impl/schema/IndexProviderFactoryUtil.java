@@ -67,11 +67,11 @@ class IndexProviderFactoryUtil
         return new TemporalIndexProvider( pageCache, fs, directoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
-    static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, IndexProvider.Monitor monitor,
-            Config config, OperationalMode operationalMode )
+    static LuceneSchemaIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fs );
-        return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
+        return new LuceneSchemaIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
     }
 }

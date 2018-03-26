@@ -62,13 +62,15 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -90,6 +92,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -113,7 +116,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -297,6 +302,27 @@ public class BatchInsertTest
         assertEquals( rel.getStartNode(), node1 );
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
+    }
+
+    @Test
+    public void shouldIndexNodeWhenAddingProperty() throws Exception
+    {
+        BatchInserter graphDb = newBatchInserter();
+        long node1 = graphDb.createNode( null, TestLabels.LABEL_ONE );
+        graphDb.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "prop" ).create();
+        graphDb.shutdown();
+        graphDb = newBatchInserter();
+        graphDb.setNodeProperties( node1, Collections.singletonMap( "prop", "hej" ) );
+        GraphDatabaseService db = switchToEmbeddedGraphDatabaseService( graphDb );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node = db.findNode( TestLabels.LABEL_ONE, "prop", "hej" );
+            assertEquals( node1, node.getId() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -782,7 +808,7 @@ public class BatchInsertTest
             NeoStores neoStores = graphdb.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
-            SchemaStorage storage = new SchemaStorage( store );
+            SchemaStorage storage = new SchemaStorage( store, IndexProviderMap.EMPTY );
             List<Long> inUse = new ArrayList<>();
             DynamicRecord record = store.nextRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
@@ -979,11 +1005,10 @@ public class BatchInsertTest
         long jakewins = dbWithIndexAndSingleIndexedNode();
 
         IndexPopulator populator = mock( IndexPopulator.class );
-        IndexProvider provider = mock( IndexProvider.class );
+        IndexProvider provider = spy( new InMemoryIndexProvider(  ));
 
         when( provider.getProviderDescriptor() ).thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
-        when( provider.getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( populator );
+        doReturn( populator ).when( provider ).getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
                 singleInstanceIndexProviderFactory( InMemoryIndexProviderFactory.KEY, provider ) );

@@ -19,7 +19,11 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import java.util.function.IntConsumer;
+
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.storageengine.api.EntityType;
 
 public class SchemaDescriptorFactory
 {
@@ -68,5 +72,24 @@ public class SchemaDescriptorFactory
         {
             throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
         }
+    }
+
+    public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
+    {
+        validatePropertyIds( propertyIds );
+        IntConsumer validator;
+        if ( entityType == EntityType.NODE )
+        {
+            validator = SchemaDescriptorFactory::validateLabelId;
+        }
+        else
+        {
+            validator = SchemaDescriptorFactory::validateRelationshipTypeLabelId;
+        }
+        for ( int entityToken : entityTokens )
+        {
+            validator.accept( entityToken );
+        }
+        return new MultiTokenSchemaDescriptor( entityTokens, entityType, propertyIds );
     }
 }

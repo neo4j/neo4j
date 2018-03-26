@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
+import org.neo4j.causalclustering.core.state.LateBoundCommandReaderFactory;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
@@ -181,7 +182,8 @@ public class CoreStateMachinesModule
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
                         config.get( state_machine_apply_max_batch_size ), logProvider, cursorTracerSupplier,
-                        versionContextSupplier );
+                        versionContextSupplier,
+                        new LateBoundCommandReaderFactory( dependencies ) );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 

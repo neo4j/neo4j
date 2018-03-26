@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
+import java.util.stream.Collectors;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -72,6 +73,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -79,8 +81,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -116,6 +118,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -158,6 +161,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
@@ -171,6 +175,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.ANY_ENTITY_TOKEN;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -192,7 +197,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
     private final PageCache pageCache;
-    private boolean labelsTouched;
     private boolean isShutdown;
 
     private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<Label>()
@@ -285,7 +289,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<RelationshipTypeToken> types = relationshipTypeTokenStore.getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
         indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
-        schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaStore );
 
         indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
 
@@ -301,6 +304,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         IndexProvider provider = extensions.resolveDependency( IndexProvider.class,
                 HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultIndexProviderMap( provider );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), new SchemaStorage( schemaStore, schemaIndexProviders ).loadAllSchemaRules() );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
         life.add( labelScanStore );
@@ -477,17 +481,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( schemaRule );
-        labelsTouched = true;
         flushStrategy.forceFlush();
     }
 
     private void repopulateAllIndexes() throws IOException, IndexEntryConflictException
     {
-        if ( !labelsTouched )
-        {
-            return;
-        }
-
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final List<IndexPopulatorWithSchema> populators = new ArrayList<>( rules.length );
 
@@ -496,18 +494,18 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         for ( int i = 0; i < rules.length; i++ )
         {
             IndexRule rule = rules[i];
-            SchemaIndexDescriptor index = rule.getIndexDescriptor();
+            IndexDescriptor index = rule.getIndexDescriptor();
             descriptors[i] = index.schema();
-            IndexPopulator populator = schemaIndexProviders.apply( rule.getProviderDescriptor() )
-                                                .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
+            IndexPopulator populator =
+                    schemaIndexProviders.get( rule.getProviderDescriptor() ).getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
             populator.create();
             populators.add( new IndexPopulatorWithSchema( populator, index ) );
         }
 
-        Visitor<NodeUpdates, IOException> propertyUpdateVisitor = updates ->
+        Visitor<EntityUpdates,IOException> propertyUpdateVisitor = updates ->
         {
             // Do a lookup from which property has changed to a list of indexes worried about that property.
-            // We do not need to load additional properties as the NodeUpdates for a full node store scan already
+            // We do not need to load additional properties as the EntityUpdates for a full node store scan already
             // include all properties for the node.
             for ( IndexEntryUpdate<IndexPopulatorWithSchema> indexUpdate : updates.forIndexKeys( populators ) )
             {
@@ -522,29 +520,56 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             }
             return true;
         };
-
-        List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
-        int[] labelIds = descriptorList.stream()
-                .mapToInt( SchemaDescriptor::keyId )
-                .toArray();
-
-        int[] propertyKeyIds = descriptorList.stream()
-                .flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) )
-                .toArray();
-
-        try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
+        // Nodes. Note that this always needs to run because of the label scan store.
         {
-            StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                    propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
-                    propertyUpdateVisitor, labelUpdateVisitor, true );
-            storeScan.run();
-
-            for ( IndexPopulatorWithSchema populator : populators )
+            List<SchemaDescriptor> nodeDescriptors =
+                    Arrays.stream( descriptors ).filter( schemaDescriptor -> schemaDescriptor.entityType() == EntityType.NODE ).collect( Collectors.toList() );
+            int[] labelIds = entityTokenIds( nodeDescriptors );
+            int[] propertyKeyIds = nodeDescriptors.stream().flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) ).toArray();
+            try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
             {
-                populator.verifyDeferredConstraints( indexStoreView );
-                populator.close( true );
+                StoreScan<IOException> storeScan =
+                        indexStoreView.visitNodes( labelIds, propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                                propertyUpdateVisitor, labelUpdateVisitor, true );
+                storeScan.run();
+
+                for ( IndexPopulatorWithSchema populator : populators )
+                {
+                    populator.verifyDeferredConstraints( indexStoreView );
+                    populator.close( true );
+                }
             }
         }
+        // Relationships
+        {
+            List<SchemaDescriptor> relationshipDescriptors =
+                    Arrays.stream( descriptors ).filter( schemaDescriptor -> schemaDescriptor.entityType() == EntityType.RELATIONSHIP ).collect(
+                            Collectors.toList() );
+            if ( !relationshipDescriptors.isEmpty() )
+            {
+                int[] reltypeIds = entityTokenIds( relationshipDescriptors );
+                int[] propertyKeyIds = relationshipDescriptors.stream().flatMapToInt( d -> Arrays.stream( d.getPropertyIds() ) ).toArray();
+                StoreScan<IOException> storeScan =
+                        indexStoreView.visitRelationships( reltypeIds, propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                                propertyUpdateVisitor );
+                storeScan.run();
+
+                for ( IndexPopulatorWithSchema populator : populators )
+                {
+                    populator.verifyDeferredConstraints( indexStoreView );
+                    populator.close( true );
+                }
+            }
+        }
+    }
+
+    private int[] entityTokenIds( List<SchemaDescriptor> nodeDescriptors )
+    {
+        if ( nodeDescriptors.stream().anyMatch( descriptor -> Arrays.equals( descriptor.schema().getEntityTokenIds(), ANY_ENTITY_TOKEN ) ) )
+        {
+            return ANY_ENTITY_TOKEN;
+        }
+        return nodeDescriptors.stream().flatMapToInt( descriptor -> Arrays.stream( descriptor.schema().getEntityTokenIds() ) ).toArray();
     }
 
     private void rebuildCounts()
@@ -585,7 +610,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         List<IndexRule> indexesNeedingPopulation = new ArrayList<>();
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            IndexProvider provider = schemaIndexProviders.apply( rule.getProviderDescriptor() );
+            IndexProvider provider = schemaIndexProviders.get( rule.getProviderDescriptor() );
             if ( provider.getInitialState( rule.getId(), rule.getIndexDescriptor() ) != InternalIndexState.FAILED )
             {
                 indexesNeedingPopulation.add( rule );
@@ -632,7 +657,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( indexRule );
-        labelsTouched = true;
         flushStrategy.forceFlush();
     }
 
@@ -660,7 +684,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             schemaStore.updateRecord( record );
         }
         schemaCache.addSchemaRule( rule );
-        labelsTouched = true;
         flushStrategy.forceFlush();
     }
 
@@ -783,7 +806,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         NodeLabels nodeLabels = parseLabelsField( nodeRecord );
         nodeLabels.put( getOrCreateLabelIds( labels ), nodeStore, nodeStore.getDynamicLabelStore() );
-        labelsTouched = true;
     }
 
     private long[] getOrCreateLabelIds( Label[] labels )
@@ -1306,10 +1328,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         private static final int batchSize = 1_000;
         private final IndexPopulator populator;
-        private final SchemaIndexDescriptor index;
+        private final IndexDescriptor index;
         private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
 
-        IndexPopulatorWithSchema( IndexPopulator populator, SchemaIndexDescriptor index )
+        IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
         {
             this.populator = populator;
             this.index = index;
@@ -1321,7 +1343,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return index.schema();
         }
 
-        public SchemaIndexDescriptor index()
+        public IndexDescriptor index()
         {
             return index;
         }
