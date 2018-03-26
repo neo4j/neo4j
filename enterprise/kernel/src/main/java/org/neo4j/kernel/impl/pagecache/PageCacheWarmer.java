@@ -75,7 +75,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private final PageCache pageCache;
     private final ExecutorService executor;
     private final PageLoaderFactory pageLoaderFactory;
-    private volatile boolean stopped;
+    private boolean stopped;
 
     PageCacheWarmer( FileSystemAbstraction fs, PageCache pageCache, JobScheduler scheduler )
     {
@@ -114,15 +114,9 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         return Resource.EMPTY;
     }
 
-    public void stop()
+    public synchronized void stop()
     {
         stopped = true;
-        synchronized ( this )
-        {
-            // This synchronised block means we'll wait for any reheat() or profile() to notice our raised stopped flag,
-            // before we return to the caller. This helps avoid races, e.g. if the page cache is closed while this page
-            // cache warmer is still holding on to some mapped pages.
-        }
         executor.shutdown();
     }
 
@@ -133,7 +127,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      * reheating was stopped early via {@link #stop()}.
      * @throws IOException if anything goes wrong while reading the profiled data back in.
      */
-    public synchronized OptionalLong reheat() throws IOException
+    synchronized OptionalLong reheat() throws IOException
     {
         long pagesLoaded = 0;
         List<PagedFile> files = pageCache.listExistingMappings();

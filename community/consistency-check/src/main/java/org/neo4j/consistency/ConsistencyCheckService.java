@@ -66,7 +66,7 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
@@ -219,7 +219,7 @@ public class ConsistencyCheckService
         {
             try
             {
-                return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
             }
             catch ( IOException e )
             {

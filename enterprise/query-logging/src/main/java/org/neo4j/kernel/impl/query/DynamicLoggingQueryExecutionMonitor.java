@@ -36,7 +36,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.impl.query.QueryLogger.NO_LOG;
 
 class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements QueryExecutionMonitor
@@ -191,7 +191,7 @@ class DynamicLoggingQueryExecutionMonitor extends LifecycleAdapter implements Qu
 
     private void buildNonRotatingLog() throws IOException
     {
-        OutputStream logOutputStream = createOrOpenAsOuputStream( fileSystem, currentQueryLogFile, true );
+        OutputStream logOutputStream = createOrOpenAsOutputStream( fileSystem, currentQueryLogFile, true );
         log = logBuilder.toOutputStream( logOutputStream );
         closable = logOutputStream;
     }
