@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
@@ -42,7 +43,7 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Group( "dbms.ssl.policy" )
-public class SslPolicyConfig
+public class SslPolicyConfig implements LoadableConfig
 {
     private static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2", "TLSv1.1", "TLSv1"} );
 
@@ -82,6 +83,11 @@ public class SslPolicyConfig
 
     @Description( "Restrict allowed ciphers." )
     public final Setting<List<String>> ciphers;
+
+    public SslPolicyConfig()
+    {
+        this( "<policyname>" );
+    }
 
     public SslPolicyConfig( String policyName )
     {
