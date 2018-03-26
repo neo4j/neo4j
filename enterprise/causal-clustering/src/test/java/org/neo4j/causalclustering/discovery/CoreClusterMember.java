@@ -171,6 +171,10 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     @Override
     public void start()
     {
+        if ( database != null )
+        {
+            throw new IllegalStateException( "Cannot start database. Database is either still running or has not been properly shutdown" );
+        }
         database = new CoreGraphDatabase( storeDir, memberConfig,
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }

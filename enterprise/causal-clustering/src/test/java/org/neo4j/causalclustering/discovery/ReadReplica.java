@@ -125,6 +125,10 @@ public class ReadReplica implements ClusterMember
     @Override
     public void start()
     {
+        if ( database != null )
+        {
+            throw new IllegalStateException( "Cannot start database. Database is either still running or has not been properly shutdown" );
+        }
         database = new ReadReplicaGraphDatabase( storeDir, Config.defaults( config ),
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
                 memberId() );
