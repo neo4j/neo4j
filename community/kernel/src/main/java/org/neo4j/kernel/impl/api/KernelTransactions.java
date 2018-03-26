@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -100,6 +101,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Supplier<DefaultCursors> cursorsSupplier;
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
+    private final IndexingService indexingService;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
 
@@ -147,7 +149,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics,
-            SchemaState schemaState )
+            SchemaState schemaState,
+            IndexingService indexingService )
     {
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -167,6 +170,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.accessCapability = accessCapability;
         this.autoIndexing = autoIndexing;
         this.explicitIndexStore = explicitIndexStore;
+        this.indexingService = indexingService;
         this.explicitIndexTxStateSupplier = () ->
                 new CachingExplicitIndexTransactionState(
                         new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
@@ -370,7 +374,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             cursorsSupplier.get(), autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState );
+                            schemaState, indexingService );
             this.transactions.add( tx );
             return tx;
         }

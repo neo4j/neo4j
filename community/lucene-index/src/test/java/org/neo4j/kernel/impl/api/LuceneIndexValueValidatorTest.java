@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -27,13 +28,32 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.api.IndexSimpleValueValidator.INSTANCE;
+import static org.hamcrest.Matchers.containsString;
+import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.INSTANCE;
+import static org.neo4j.kernel.impl.api.LuceneIndexValueValidator.MAX_TERM_LENGTH;
 
-public class IndexSimpleValueValidatorTest
+public class LuceneIndexValueValidatorTest
 {
-
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void tooLongArrayIsNotAllowed()
+    {
+        int length = MAX_TERM_LENGTH + 1;
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage( containsString( "is longer than " + MAX_TERM_LENGTH ) );
+        getValidator().validate( RandomUtils.nextBytes( length ) );
+    }
+
+    @Test
+    public void stringOverExceedLimitNotAllowed()
+    {
+        int length = MAX_TERM_LENGTH * 2;
+        expectedException.expect( IllegalArgumentException.class );
+        expectedException.expectMessage( containsString( length + " is longer than " + MAX_TERM_LENGTH ) );
+        getValidator().validate( RandomStringUtils.randomAlphabetic( length ) );
+    }
 
     @Test
     public void nullIsNotAllowed()
@@ -41,26 +61,6 @@ public class IndexSimpleValueValidatorTest
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Null value" );
         getValidator().validate( null );
-    }
-
-    @Test
-    public void tooLongStringIsNotAllowed()
-    {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage(
-                "Property value bytes length: 35000 is longer than 32766, " +
-                        "which is maximum supported length of indexed property value." );
-        getValidator().validate( RandomStringUtils.randomAlphabetic( 35000 ) );
-    }
-
-    @Test
-    public void stringOverExceedLimitNotAllowed()
-    {
-        expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage(
-                "Property value bytes length: 32767 is longer than 32766, " +
-                        "which is maximum supported length of indexed property value." );
-        getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH + 1 ) );
     }
 
     @Test
@@ -73,15 +73,23 @@ public class IndexSimpleValueValidatorTest
     }
 
     @Test
+    public void shortArrayIsValidValue()
+    {
+        getValidator().validate( new long[] {1, 2, 3} );
+        getValidator().validate( RandomUtils.nextBytes( 200 ) );
+    }
+
+    @Test
     public void shortStringIsValidValue()
     {
         getValidator().validate( RandomStringUtils.randomAlphabetic( 5 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 10 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 250 ) );
         getValidator().validate( RandomStringUtils.randomAlphabetic( 450 ) );
-        getValidator().validate( RandomStringUtils.randomAlphabetic( IndexValueLengthValidator.MAX_TERM_LENGTH ) );
+        getValidator().validate( RandomStringUtils.randomAlphabetic( MAX_TERM_LENGTH ) );
     }
 
+    // Meant to be overridden for tests that want to verify the same things, but for a different validator
     protected Validator<Object> getValidator()
     {
         return object -> INSTANCE.validate( Values.of( object ) );

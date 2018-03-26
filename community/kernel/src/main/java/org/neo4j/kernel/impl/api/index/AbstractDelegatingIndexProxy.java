@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -131,6 +132,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException
     {
         getDelegate().validate();
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        getDelegate().validateBeforeCommit( tuple );
     }
 
     @Override

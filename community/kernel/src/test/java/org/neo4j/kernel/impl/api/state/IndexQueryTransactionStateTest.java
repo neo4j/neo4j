@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -42,6 +43,8 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
@@ -102,11 +105,15 @@ public class IndexQueryTransactionStateTest
         when( statement.getIndexReader( schemaIndexDescriptor ) ).thenReturn( indexReader );
         when( statement.getFreshIndexReader( schemaIndexDescriptor ) ).thenReturn( indexReader );
 
+        IndexingService indexingService = mock( IndexingService.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( mock( IndexProxy.class ) );
+
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
                 new InternalAutoIndexing( Config.defaults(), null ),
                 mock( ConstraintIndexCreator.class ),
-                mock( ExplicitIndexStore.class ) );
+                mock( ExplicitIndexStore.class ),
+                indexingService );
         txContext = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), stateHandlingOperations,
                 stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }

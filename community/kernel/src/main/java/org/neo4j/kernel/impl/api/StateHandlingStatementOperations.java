@@ -70,6 +70,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
@@ -136,13 +137,14 @@ public class StateHandlingStatementOperations implements
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
             ConstraintIndexCreator constraintIndexCreator,
-            ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore,
+            IndexingService indexingService )
     {
         this.storeLayer = storeLayer;
         this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.explicitIndexStore = explicitIndexStore;
-        this.indexTxStateUpdater = new IndexTxStateUpdater( storeLayer, this );
+        this.indexTxStateUpdater = new IndexTxStateUpdater( storeLayer, this, indexingService );
     }
 
     // <Cursors>

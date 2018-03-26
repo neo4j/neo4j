@@ -29,13 +29,14 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -197,6 +198,12 @@ public class OnlineIndexProxy implements IndexProxy
     public void validate()
     {
         // ok, it's online so it's valid
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        accessor.validateBeforeCommit( tuple );
     }
 
     @Override

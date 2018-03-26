@@ -93,7 +93,23 @@ public abstract class FusionIndexBase<T>
     @SafeVarargs
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
     {
-        forAll( consumer, Arrays.asList( subjects ) );
+        // Duplicate this method for array to avoid creating a purely internal list to shove that in to the other method.
+        E exception = null;
+        for ( T subject : subjects )
+        {
+            try
+            {
+                consumer.accept( subject );
+            }
+            catch ( Exception e )
+            {
+                exception = Exceptions.chain( exception, (E) e );
+            }
+        }
+        if ( exception != null )
+        {
+            throw exception;
+        }
     }
 
     /**
