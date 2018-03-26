@@ -31,6 +31,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Guava: Google Core Libraries for Java
+  Java Native Access
+  Java Native Access Platform
   javax.inject
   jPowerShell
   jProcesses
@@ -47,4 +49,19 @@ Apache Software License, Version 2.0
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 

@@ -31,6 +31,8 @@ Apache Software License, Version 2.0
   dom-storage.js
   ecdsa-sig-formatter.js
   firebase.js
+  Java Native Access
+  Java Native Access Platform
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -64,6 +66,10 @@ BSD License 2-clause
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
 
 ISC
   css-color-keywords.js
@@ -249,4 +255,15 @@ SIL OFL 1.1
   Font Awesome
   Inconsolata Font
   Open Sans Font
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 

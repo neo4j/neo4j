@@ -19,6 +19,13 @@
  */
 package org.neo4j.io.mem;
 
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
+import org.apache.commons.lang3.SystemUtils;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -31,6 +38,8 @@ import static org.neo4j.util.FeatureToggles.getInteger;
  */
 public final class GrabAllocator implements MemoryAllocator
 {
+    public static final AtomicLong leakedBytesCounter = new AtomicLong();
+
     /**
      * The amount of memory, in bytes, to grab in each Grab.
      */
@@ -89,6 +98,7 @@ public final class GrabAllocator implements MemoryAllocator
         {
             throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
         }
+        leakedBytesCounter.addAndGet( bytes );
         long grabSize = Math.min( GRAB_SIZE, memoryReserve );
         try
         {
@@ -139,6 +149,18 @@ public final class GrabAllocator implements MemoryAllocator
         }
     }
 
+    @Override
+    public void freeMemory()
+    {
+        Grab current = grabs;
+        while ( current != null )
+        {
+            current.free();
+            current = current.next;
+        }
+        grabs = null;
+    }
+
     private void initCause( NativeMemoryAllocationRefusedError error, OutOfMemoryError cause )
     {
         try
@@ -159,19 +181,6 @@ public final class GrabAllocator implements MemoryAllocator
             {
                 // Okay, we tried.
             }
-        }
-    }
-
-    @Override
-    protected synchronized void finalize() throws Throwable
-    {
-        super.finalize();
-        Grab current = grabs;
-
-        while ( current != null )
-        {
-            current.free();
-            current = current.next;
         }
     }
 
@@ -220,7 +229,9 @@ public final class GrabAllocator implements MemoryAllocator
 
         void free()
         {
-            UnsafeUtil.free( address, limit - address, memoryTracker );
+            long bytes = limit - address;
+            UnsafeUtil.free( address, bytes, memoryTracker );
+            leakedBytesCounter.addAndGet( -bytes );
         }
 
         boolean canAllocate( long bytes )
