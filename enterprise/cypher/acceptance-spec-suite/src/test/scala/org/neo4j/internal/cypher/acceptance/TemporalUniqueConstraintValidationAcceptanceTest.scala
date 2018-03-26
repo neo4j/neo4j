@@ -28,6 +28,7 @@ class TemporalUniqueConstraintValidationAcceptanceTest
   case class TemporalOperator(operator: String, funcString: String, resultString: String)
 
   List(
+    TemporalOperator("Duration", "duration('P2018Y3M30DT10H10M10S')", "P2018Y3M30DT10H10M10S"),
     TemporalOperator("DateTime", "datetime('2018-03-30T10:10:10+01:00')", "2018-03-30T10:10:10+01:00"),
     TemporalOperator("LocalDateTime", "localdatetime('2018-03-30T10:10:10')", "2018-03-30T10:10:10"),
     TemporalOperator("Date", "date('2018-03-30')", "2018-03-30"),
