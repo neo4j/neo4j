@@ -28,8 +28,9 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -82,6 +83,8 @@ public class DiagnosticsReportCommand implements AdminCommand
     private final PrintStream out;
     private final FileSystemAbstraction fs;
     private final PrintStream err;
+    private static final DateTimeFormatter filenameDateTimeFormatter =
+            new DateTimeFormatterBuilder().appendPattern( "yyyy-MM-dd_HHmmss" ).toFormatter();
 
     DiagnosticsReportCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
@@ -133,8 +136,7 @@ public class DiagnosticsReportCommand implements AdminCommand
     {
         String hostName = InetAddress.getLocalHost().getHostName();
         String safeFilename = hostName.replaceAll( "[^a-zA-Z0-9._]+", "_" );
-        SimpleDateFormat dumpFormat = new SimpleDateFormat( "yyyy-MM-dd_HHmmss" );
-        return safeFilename + "-" + dumpFormat.format( new Date() ) + ".zip";
+        return safeFilename + "-" + LocalDateTime.now().format( filenameDateTimeFormatter ) + ".zip";
     }
 
     private DiagnosticsReporterProgress buildProgress()
