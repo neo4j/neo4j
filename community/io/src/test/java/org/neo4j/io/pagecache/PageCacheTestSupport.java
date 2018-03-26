@@ -350,7 +350,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         }
     }
 
-    protected Runnable $close( final PagedFile file )
+    Runnable closePageFile( final PagedFile file )
     {
         return () ->
         {

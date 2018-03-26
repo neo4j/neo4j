@@ -31,6 +31,8 @@ Apache Software License, Version 2.0
   ConcurrentLinkedHashMap
   FindBugs-jsr305
   Guava: Google Core Libraries for Java
+  Java Native Access
+  Java Native Access Platform
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
@@ -60,9 +62,24 @@ Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
 
+GNU Lesser General Public License, Version 2.1
+  Java Native Access
+  Java Native Access Platform
+
 MIT License
   scallop
 
 Mozilla Public License, Version 2.0
   kiama
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Java Native Access
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
+
+Java Native Access Platform
+  Apache Software License, Version 2.0
+  GNU Lesser General Public License, Version 2.1
 
