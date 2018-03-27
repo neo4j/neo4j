@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.messaging.EventHandler;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -36,6 +39,9 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasSameStoreId;
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.isTransactionWithinReach;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Begin;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.End;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
 public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<GetIndexFilesRequest>
@@ -46,9 +52,10 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
     private final StoreFileStreamingProtocol storeFileStreamingProtocol;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
+    private final EventHandlerProvider eventHandlerProvider;
 
-    public GetIndexSnapshotRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
-            Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs )
+    public GetIndexSnapshotRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
+            StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, EventHandlerProvider eventHandlerProvider )
     {
         this.protocol = protocol;
         this.dataSource = dataSource;
@@ -56,30 +63,32 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
         this.storeFileStreamingProtocol = storeFileStreamingProtocol;
         this.pageCache = pageCache;
         this.fs = fs;
+        this.eventHandlerProvider = eventHandlerProvider;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetIndexFilesRequest snapshotRequest ) throws IOException
     {
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        eventHandler.on( Begin, param( "Request", snapshotRequest ) );
         CloseablesListener closeablesListener = new CloseablesListener();
-        NeoStoreDataSource neoStoreDataSource = dataSource.get();
-        if ( !hasSameStoreId( snapshotRequest.expectedStoreId(), neoStoreDataSource ) )
+        StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;
+        try
         {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH );
-            protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
-        }
-        else if ( !isTransactionWithinReach( snapshotRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
-        {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND );
-        }
-        else
-        {
-            StoreCopyFinishedResponse.Status status = StoreCopyFinishedResponse.Status.E_UNKNOWN;
-            File storeDir = neoStoreDataSource.getStoreDir();
-            ResourceIterator<StoreFileMetadata> resourceIterator =
-                    neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.indexId() );
-            try
+            NeoStoreDataSource neoStoreDataSource = dataSource.get();
+            if ( !hasSameStoreId( snapshotRequest.expectedStoreId(), neoStoreDataSource ) )
             {
+                responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
+            }
+            else if ( !isTransactionWithinReach( snapshotRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
+            {
+                responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
+            }
+            else
+            {
+                File storeDir = neoStoreDataSource.getStoreDir();
+                ResourceIterator<StoreFileMetadata> resourceIterator =
+                        neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.indexId() );
                 closeablesListener.add( resourceIterator );
                 while ( resourceIterator.hasNext() )
                 {
@@ -89,13 +98,14 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
                     int recordSize = storeFileMetadata.recordSize();
                     storeFileStreamingProtocol.stream( ctx, new StoreResource( file, relativePath, recordSize, pageCache, fs ) );
                 }
-                status = StoreCopyFinishedResponse.Status.SUCCESS;
+                responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;
             }
-            finally
-            {
-                storeFileStreamingProtocol.end( ctx, status ).addListener( closeablesListener );
-                protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
-            }
+        }
+        finally
+        {
+            eventHandler.on( End, param( "Status", responseStatus ) );
+            storeFileStreamingProtocol.end( ctx, responseStatus ).addListener( closeablesListener );
+            protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
         }
     }
 }

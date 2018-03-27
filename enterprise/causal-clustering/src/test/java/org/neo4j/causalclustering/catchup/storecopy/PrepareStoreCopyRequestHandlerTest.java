@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -75,7 +76,7 @@ public class PrepareStoreCopyRequestHandlerTest
         when( prepareStoreCopyFilesProvider.prepareStoreCopyFiles( any() ) ).thenReturn( prepareStoreCopyFiles );
 
         return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
-                prepareStoreCopyFilesProvider );
+                prepareStoreCopyFilesProvider, EventHandlerProvider.EmptyEventHandlerProvider );
     }
 
     @Test
