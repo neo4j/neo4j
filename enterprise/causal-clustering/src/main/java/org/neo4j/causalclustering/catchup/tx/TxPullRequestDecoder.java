@@ -29,6 +29,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
@@ -39,6 +40,7 @@ public class TxPullRequestDecoder extends ByteToMessageDecoder
     {
         long txId = msg.readLong();
         StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( msg ) );
-        out.add( new TxPullRequest( txId, storeId ) );
+        String messageId = CatchUpRequest.decodeMessage( msg );
+        out.add( new TxPullRequest( txId, storeId, messageId ) );
     }
 }

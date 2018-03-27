@@ -67,6 +67,7 @@ import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.CompositeSuspendable;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.causalclustering.net.InstalledProtocolHandler;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
@@ -285,8 +286,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, platformModule.monitors, logProvider, storeCopyBackoffStrategy ),
-                new TxPullClient( catchUpClient, platformModule.monitors ),
+                new StoreCopyClient( catchUpClient, platformModule.monitors, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
+                        storeCopyBackoffStrategy ),
+                new TxPullClient( catchUpClient, platformModule.monitors, new LoggingEventHandlerProvider( logProvider.getLog( TxPullClient.class ) ) ),
                 new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );

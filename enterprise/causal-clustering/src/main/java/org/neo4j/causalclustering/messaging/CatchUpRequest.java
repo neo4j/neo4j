@@ -22,9 +22,57 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import org.neo4j.causalclustering.catchup.RequestMessageType;
+import io.netty.buffer.ByteBuf;
 
-public interface CatchUpRequest extends Message
+import java.io.IOException;
+
+import org.neo4j.causalclustering.catchup.RequestMessageType;
+import org.neo4j.storageengine.api.ReadableChannel;
+import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.string.UTF8;
+
+public abstract class CatchUpRequest implements Message
 {
-    RequestMessageType messageType();
+    private final String id;
+
+    public CatchUpRequest( String id )
+    {
+        this.id = id;
+    }
+
+    public static String decodeMessage( ReadableChannel readableChannel ) throws IOException
+    {
+        int length = readableChannel.getInt();
+        byte[] bytes = new byte[length];
+        readableChannel.get( bytes, length );
+        return UTF8.decode( bytes );
+    }
+
+    public static String decodeMessage( ByteBuf byteBuf )
+    {
+        int length = byteBuf.readInt();
+        byte[] bytes = new byte[length];
+        byteBuf.readBytes( bytes );
+        return UTF8.decode( bytes );
+    }
+
+    public void encodeMessage( WritableChannel channel ) throws IOException
+    {
+        int length = id.length();
+        channel.putInt( length );
+        channel.put( UTF8.encode( id ), length );
+    }
+
+    public abstract RequestMessageType messageType();
+
+    public String messageId()
+    {
+        return id;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "CatchUpRequest{" + "id='" + id + '\'' + '}';
+    }
 }

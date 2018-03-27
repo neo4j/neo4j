@@ -36,19 +36,16 @@ public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
 {
     private final CatchupClientProtocol protocol;
     private final CatchUpResponseHandler handler;
-    private final Log log;
 
-    public FileHeaderHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler, LogProvider logProvider )
+    public FileHeaderHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
         this.protocol = protocol;
         this.handler = handler;
-        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, FileHeader fileHeader )
     {
-        log.info( "Receiving file: %s", fileHeader.fileName() );
         handler.onFileHeader( fileHeader );
         protocol.expect( State.FILE_CONTENTS );
     }

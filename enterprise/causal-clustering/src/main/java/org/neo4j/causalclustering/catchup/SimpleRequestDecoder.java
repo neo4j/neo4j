@@ -27,9 +27,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
+import java.util.function.Function;
 
+import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.Message;
-import org.neo4j.function.Factory;
 
 /**
  * This class extends {@link MessageToMessageDecoder} because if it extended
@@ -38,9 +39,9 @@ import org.neo4j.function.Factory;
  */
 public class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
 {
-    private Factory<? extends Message> factory;
+    private Function<String,? extends Message> factory;
 
-    public SimpleRequestDecoder( Factory<? extends Message> factory )
+    public SimpleRequestDecoder( Function<String,? extends CatchUpRequest> factory )
     {
         this.factory = factory;
     }
@@ -48,6 +49,6 @@ public class SimpleRequestDecoder extends MessageToMessageDecoder<ByteBuf>
     @Override
     protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out )
     {
-        out.add( factory.newInstance() );
+        out.add( factory.apply( CatchUpRequest.decodeMessage( msg ) ) );
     }
 }

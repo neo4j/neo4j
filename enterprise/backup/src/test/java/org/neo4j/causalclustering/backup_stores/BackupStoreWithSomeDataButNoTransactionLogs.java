@@ -43,6 +43,7 @@ public class BackupStoreWithSomeDataButNoTransactionLogs extends AbstractStoreGe
     {
         for ( File transaction : backup.listFiles( ( dir, name ) -> name.contains( "transaction" ) ) )
         {
+            System.out.println( "Deleted " + transaction );
             assertTrue( transaction.delete() );
         }
     }

@@ -29,6 +29,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import java.util.List;
 
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 
@@ -38,6 +39,7 @@ public class PrepareStoreCopyRequestDecoder extends ByteToMessageDecoder
     protected void decode( ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list ) throws Exception
     {
         StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( new NetworkReadableClosableChannelNetty4( byteBuf ) );
-        list.add( new PrepareStoreCopyRequest( storeId ) );
+        String messageId = CatchUpRequest.decodeMessage( byteBuf );
+        list.add( new PrepareStoreCopyRequest( storeId, messageId ) );
     }
 }

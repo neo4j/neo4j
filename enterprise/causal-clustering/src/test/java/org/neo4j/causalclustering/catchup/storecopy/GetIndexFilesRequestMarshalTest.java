@@ -49,7 +49,7 @@ public class GetIndexFilesRequestMarshalTest
     public void getsTransmitted()
     {
         // given
-        GetIndexFilesRequest expectedIndexSnapshotRequest = new GetIndexFilesRequest( expectedStore, exepctedIndexId, expectedLastTransaction );
+        GetIndexFilesRequest expectedIndexSnapshotRequest = new GetIndexFilesRequest( expectedStore, exepctedIndexId, expectedLastTransaction, "" );
 
         // when
         sendToChannel( expectedIndexSnapshotRequest, embeddedChannel );

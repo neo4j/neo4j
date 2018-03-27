@@ -51,6 +51,7 @@ import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -119,7 +120,8 @@ public class StoreCopyClientIT
         ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
 
         Monitors monitors = new Monitors();
-        subject = new StoreCopyClient( catchUpClient, monitors, logProvider, storeCopyBackoffStrategy );
+        subject = new StoreCopyClient( catchUpClient, monitors, new LoggingEventHandlerProvider( logProvider.getLog( StoreCopyClient.class ) ),
+                                       storeCopyBackoffStrategy );
     }
 
     @After

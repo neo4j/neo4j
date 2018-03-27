@@ -26,30 +26,31 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.logging.Log;
+import org.neo4j.causalclustering.messaging.EventHandler;
 
-import static java.lang.String.format;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 
 public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdaptor<T>
 {
-    static StoreCopyResponseAdaptors<StoreCopyFinishedResponse> filesCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider, Log log )
+    static StoreCopyResponseAdaptors<StoreCopyFinishedResponse> filesCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider, EventHandler eventHandler )
     {
-        return new StoreFilesCopyResponseAdaptors( storeFileStreamProvider, log );
+        return new StoreFilesCopyResponseAdaptors( storeFileStreamProvider, eventHandler );
     }
 
-    static StoreCopyResponseAdaptors<PrepareStoreCopyResponse> prepareStoreCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider, Log log )
+    static StoreCopyResponseAdaptors<PrepareStoreCopyResponse> prepareStoreCopyAdaptor( StoreFileStreamProvider storeFileStreamProvider,
+            EventHandler eventHandler )
     {
-        return new PrepareStoreCopyResponseAdaptors( storeFileStreamProvider, log );
+        return new PrepareStoreCopyResponseAdaptors( storeFileStreamProvider, eventHandler );
     }
 
     private final StoreFileStreamProvider storeFileStreamProvider;
-    private final Log log;
+    private final EventHandler eventHandler;
     private StoreFileStream storeFileStream;
 
-    private StoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
+    private StoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, EventHandler eventHandler )
     {
         this.storeFileStreamProvider = storeFileStreamProvider;
-        this.log = log;
+        this.eventHandler = eventHandler;
     }
 
     /**
@@ -67,6 +68,7 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
             // Make sure that each stream closes on complete but only the latest is written to
             requestOutcomeSignal.whenComplete( new CloseFileStreamOnComplete<>( fileStream, fileHeader.fileName() ) );
             this.storeFileStream = fileStream;
+            eventHandler.on( EventHandler.EventState.Info, "Receiving file", param( "File", fileHeader.fileName() ) );
         }
         catch ( Exception e )
         {
@@ -90,9 +92,9 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
 
     private static class PrepareStoreCopyResponseAdaptors extends StoreCopyResponseAdaptors<PrepareStoreCopyResponse>
     {
-        PrepareStoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
+        PrepareStoreCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, EventHandler eventHandler )
         {
-            super( storeFileStreamProvider, log );
+            super( storeFileStreamProvider, eventHandler );
         }
 
         @Override
@@ -104,9 +106,9 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
 
     private static class StoreFilesCopyResponseAdaptors extends StoreCopyResponseAdaptors<StoreCopyFinishedResponse>
     {
-        StoreFilesCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, Log log )
+        StoreFilesCopyResponseAdaptors( StoreFileStreamProvider storeFileStreamProvider, EventHandler eventHandler )
         {
-            super( storeFileStreamProvider, log );
+            super( storeFileStreamProvider, eventHandler );
         }
 
         @Override
@@ -136,7 +138,7 @@ public abstract class StoreCopyResponseAdaptors<T> extends CatchUpResponseAdapto
             }
             catch ( Exception e )
             {
-                log.error( format( "Unable to close store file stream for file '%s'", fileName ), e );
+                eventHandler.on( EventHandler.EventState.Error, "Unable to close store file stream.", e, param( "File", fileName ) );
             }
         }
     }
