@@ -94,9 +94,9 @@ public class SpatialIndexSettings implements LoadableConfig
         ArrayList<ConfigOptions> crsSettings = (ArrayList) LoadableConfig.super.getConfigOptions();
         double defaultCartesianExtent = 1000000;
         double[] defaultGeographicExtents = new double[]{180, 90, defaultCartesianExtent};
-        for( CoordinateReferenceSystem crs: CoordinateReferenceSystem.all())
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            char[] coords = ((crs.getDimension()==2) ? "xy" : "xyz").toCharArray();
+            char[] coords = ((crs.getDimension() == 2) ? "xy" : "xyz").toCharArray();
             for ( int dim = 0; dim < coords.length; dim++ )
             {
                 for ( String rangeName : new String[]{"minimum", "maximum"} )

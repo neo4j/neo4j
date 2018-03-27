@@ -27,9 +27,10 @@ import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.nullValue;
 
 public class SpaceFillingCurveSettingsFactoryTest
 {
@@ -152,7 +153,7 @@ public class SpaceFillingCurveSettingsFactoryTest
     {
         SpaceFillingCurveSettingsFactory factory = new SpaceFillingCurveSettingsFactory( config );
         SpaceFillingCurveSettings settings = factory.settingsFor( crs );
-        assertNull( "Should not get error when getting valid settings", settings.getFailureMessage() );
+        assertThat( "Should not get error when getting valid settings", settings.getFailureMessage(), is( nullValue() ) );
         assertThat( "Expected " + dimensions + "D for " + crs.getName(), settings.getDimensions(), equalTo( dimensions ) );
         int maxLevels = maxBits / dimensions;
         assertThat( "Expected maxLevels=" + maxLevels + " for " + crs.getName(), settings.getMaxLevels(), equalTo( maxLevels ) );
