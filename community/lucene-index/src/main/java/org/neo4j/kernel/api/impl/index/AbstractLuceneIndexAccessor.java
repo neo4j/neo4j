@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.document.Document;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.function.ToLongFunction;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -106,10 +109,9 @@ public abstract class AbstractLuceneIndexAccessor<READER extends IndexReader, IN
         }
     }
 
-    @Override
-    public BoundedIterable<Long> newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader( ToLongFunction<Document> entityIdReader)
     {
-        return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader() );
+        return new LuceneAllEntriesIndexAccessorReader( luceneIndex.allDocumentsReader(), entityIdReader );
     }
 
     @Override

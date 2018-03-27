@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -42,6 +43,12 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
     protected IndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
         return new LuceneSchemaIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+    }
+
+    @Override
+    public BoundedIterable<Long> newAllEntriesReader()
+    {
+        return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId );
     }
 
     @Override

@@ -66,6 +66,11 @@ public class LuceneFulltextDocumentStructure
         return field;
     }
 
+    public static long getNodeId( Document from )
+    {
+        return Long.parseLong( from.get( FulltextAdapter.FIELD_ENTITY_ID ) );
+    }
+
     public static Term newTermForChangeOrRemove( long id )
     {
         return new Term( FulltextAdapter.FIELD_ENTITY_ID, "" + id );
@@ -92,15 +97,6 @@ public class LuceneFulltextDocumentStructure
             removeAllValueFields();
             idField.setStringValue( Long.toString( id ) );
             idValueField.setLongValue( id );
-        }
-
-        private void setValues( Map<String,Value> values )
-        {
-            for ( Map.Entry<String,Value> entry : values.entrySet() )
-            {
-                Field field = encodeValueField( entry.getKey(), entry.getValue() );
-                document.add( field );
-            }
         }
 
         private void setValues( Collection<String> names, Value[] values )

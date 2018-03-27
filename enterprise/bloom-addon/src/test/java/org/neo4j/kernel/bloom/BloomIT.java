@@ -482,11 +482,17 @@ public class BloomIT
             db.createNode().setProperty( "prop", "Langelinie Pavillinen" );
             tx.success();
         }
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "\"Langelinie\"" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+        }
         db.shutdown();
-
         Config config = Config.defaults();
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
-        ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( true, true, true, true );
+        ConsistencyFlags checkConsistencyConfig = new ConsistencyFlags( config );
         ConsistencyCheckService.Result result =
                 consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(),
                         true, checkConsistencyConfig );

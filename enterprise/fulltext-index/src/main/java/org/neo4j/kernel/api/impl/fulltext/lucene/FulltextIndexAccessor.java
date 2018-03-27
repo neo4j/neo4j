@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -41,6 +42,12 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public FulltextIndexUpdater getIndexUpdater( IndexUpdateMode mode )
     {
         return new FulltextIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+    }
+
+    @Override
+    public BoundedIterable<Long> newAllEntriesReader()
+    {
+        return super.newAllEntriesReader( LuceneFulltextDocumentStructure::getNodeId );
     }
 
     @Override
