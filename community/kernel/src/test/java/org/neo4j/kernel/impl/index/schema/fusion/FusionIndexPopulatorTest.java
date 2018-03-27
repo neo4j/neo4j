@@ -119,7 +119,7 @@ public class FusionIndexPopulatorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction );
+        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction, false );
     }
 
     private void resetMocks()
@@ -150,7 +150,7 @@ public class FusionIndexPopulatorTest
     {
         fusionIndexPopulator.create();
 
-        verify( dropAction ).drop( indexId );
+        verify( dropAction ).drop( indexId, false );
     }
 
     @Test

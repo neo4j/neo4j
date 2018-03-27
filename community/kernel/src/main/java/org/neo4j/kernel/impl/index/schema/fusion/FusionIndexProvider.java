@@ -19,14 +19,26 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -40,6 +52,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
@@ -74,6 +87,7 @@ public class FusionIndexProvider extends IndexProvider
         IndexReader select( IndexReader[] instances, IndexQuery... predicates );
     }
 
+    private final boolean archiveFailedIndex;
     private final IndexProvider[] providers = new IndexProvider[INSTANCE_COUNT];
     private final Selector selector;
     private final DropAction dropAction;
@@ -89,11 +103,13 @@ public class FusionIndexProvider extends IndexProvider
             Descriptor descriptor,
             int priority,
             IndexDirectoryStructure.Factory directoryStructure,
-            FileSystemAbstraction fs )
+            FileSystemAbstraction fs,
+            boolean archiveFailedIndex )
     {
         super( descriptor, priority, directoryStructure );
         fillProvidersArray( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
         selector.validateSatisfied( providers );
+        this.archiveFailedIndex = archiveFailedIndex;
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
     }
@@ -112,7 +128,7 @@ public class FusionIndexProvider extends IndexProvider
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         return new FusionIndexPopulator( instancesAs( providers, IndexPopulator.class,
-                provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) ), selector, indexId, dropAction );
+                provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) ), selector, indexId, dropAction, archiveFailedIndex );
     }
 
     @Override
@@ -197,26 +213,33 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
-        // TODO implementation of this depends on decisions around defaults and migration. Coming soon.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    /**
-     * As an interface because this is actually dependent on whether or not an index lives on a {@link FileSystemAbstraction}
-     * or a page cache. At the time of writing this there's only the possibility to put these on the file system,
-     * but there will be a possibility to put these in the page cache file management instead and having this abstracted
-     * will help when making that switch/decision.
-     */
     @FunctionalInterface
     interface DropAction
     {
+        /**
+         * Deletes the index directory and everything in it, as last part of dropping an index.
+         * Can be configured to create archive with content of index directories for future analysis.
+         *
+         * @param indexId the index id, for which directory to drop.
+         * @param archiveExistentIndex create archive with content of dropped directories
+         * @throws IOException on I/O error.
+         * @see GraphDatabaseSettings#archive_failed_index
+         */
+        void drop( long indexId, boolean archiveExistentIndex ) throws IOException;
+
         /**
          * Deletes the index directory and everything in it, as last part of dropping an index.
          *
          * @param indexId the index id, for which directory to drop.
          * @throws IOException on I/O error.
          */
-        void drop( long indexId ) throws IOException;
+        default void drop( long indexId ) throws IOException
+        {
+            drop( indexId, false );
+        }
     }
 
     private static class FileSystemDropAction implements DropAction
@@ -231,9 +254,36 @@ public class FusionIndexProvider extends IndexProvider
         }
 
         @Override
-        public void drop( long indexId ) throws IOException
+        public void drop( long indexId, boolean archiveExistentIndex ) throws IOException
         {
-            fs.deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+            File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
+            if ( archiveExistentIndex && !FileUtils.isEmptyDirectory( rootIndexDirectory ) )
+            {
+                Map<String,String> env = MapUtil.stringMap( "create", "true" );
+                Path rootPath = rootIndexDirectory.toPath();
+                URI archiveAbsoluteURI = URI.create( "jar:file:" + archiveFile( rootIndexDirectory ).toPath() );
+
+                try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
+                {
+                    List<FileHandle> fileHandles = fs.streamFilesRecursive( rootIndexDirectory ).collect( toList() );
+                    for ( FileHandle fileHandle : fileHandles )
+                    {
+                        Path sourcePath = fileHandle.getFile().toPath();
+                        Path zipFsPath = zipFs.getPath( rootPath.relativize( sourcePath ).toString() );
+                        if ( zipFsPath.getParent() != null )
+                        {
+                            Files.createDirectories( zipFsPath.getParent() );
+                        }
+                        Files.copy( sourcePath, zipFsPath );
+                    }
+                }
+            }
+            fs.deleteRecursively( rootIndexDirectory );
+        }
+
+        private File archiveFile( File folder )
+        {
+            return new File( folder.getParent(), "archive-" + folder.getName() + "-" + System.currentTimeMillis() + ".zip" );
         }
     }
 }

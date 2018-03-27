@@ -35,6 +35,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -127,9 +128,8 @@ public class IndexFailureOnStartupTest
     {
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File indexDir = soleIndexDir( db.getStoreDir() );
-            File[] files = indexDir.getParentFile()
-                    .listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
+            File indexDir = indexRootDirectory( db.getStoreDir() );
+            File[] files = indexDir.listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
             if ( files == null || files.length == 0 )
             {
                 return null;
@@ -197,8 +197,18 @@ public class IndexFailureOnStartupTest
         }
     }
 
+    private static File indexRootDirectory( File base )
+    {
+        return providerDirectoryStructure( base ).rootDirectory();
+    }
+
     private static File soleIndexDir( File base )
     {
-        return subProviderDirectoryStructure( base ).forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
+        return providerDirectoryStructure( base ).directoryForIndex( 1 );
+    }
+
+    private static IndexDirectoryStructure providerDirectoryStructure( File base )
+    {
+        return subProviderDirectoryStructure( base ).forProvider( PROVIDER_DESCRIPTOR );
     }
 }
