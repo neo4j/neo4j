@@ -536,6 +536,58 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  // Time with named timezone
+
+  test("parse time with named time zone should not be supported") {
+    val query =
+      """
+        | WITH time("12:34:56[Europe/Stockholm]") as t
+        | RETURN t
+      """.stripMargin
+
+    failWithError(failConf2, query, Seq("Text cannot be parsed to a Time"), Seq("DateTimeParseException"))
+  }
+
+  test("create time with named time zone should be supported") {
+    // Will take the current offset of Europe/Stockholm so the actual value can not be asserted on due to daylight saving
+    val query =
+      """
+        | WITH time({timezone: 'Europe/Stockholm'}).offset as currentOffset
+        | WITH time({hour: 12, minute: 34, second: 56, timezone: currentOffset})  as currentCorrectTime
+        | RETURN time({hour: 12, minute: 34, second: 56, timezone:'Europe/Stockholm'}) = currentCorrectTime as comparison
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+    result.toList should equal(List(Map("comparison" -> true)))
+  }
+
+  test("select and truncate time from datetime with named time zone should be supported") {
+    val query =
+      """
+        | WITH datetime({year: 1984, month: 5, day: 5, hour:12, minute:31, second:14, timezone:'Europe/Stockholm'}) as dt
+        | RETURN toString(time({time:dt})) as t1, toString(time.truncate('second', dt)) as t2
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+    result.toList should equal(List(Map("t1" -> "12:31:14+02:00", "t2" -> "12:31:14+02:00")))
+  }
+
+  test("select and truncate time with overwritten named time zone should be supported") {
+    // Will take the current offset of Europe/Stockholm so the actual value can not be asserted on due to daylight saving
+    val query =
+      """
+        | WITH localtime({hour:12, minute:31, second:14}) as ld, time({timezone: 'Europe/Stockholm'}).offset as currentOffset
+        | WITH ld, time({time: ld, timezone: currentOffset})  as currentCorrectTime
+        | RETURN time({time:ld, timezone:'Europe/Stockholm'}) = currentCorrectTime as comp1,
+        |        time.truncate('second', ld, {timezone: 'Europe/Stockholm'}) = currentCorrectTime as comp2
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+    result.toList should equal(List(Map("comp1" -> true, "comp2" -> true)))
+  }
+
+  // Help methods
+
   private def shouldNotTruncate(receivers: Seq[String], truncationUnit: String, args: Seq[String], errorType: String): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"

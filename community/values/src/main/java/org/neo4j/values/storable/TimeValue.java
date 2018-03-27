@@ -203,7 +203,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 }
                 else
                 {
-                    result = defaultTime( timezone() );
+                    ZoneId timezone = timezone();
+                    if ( !(timezone instanceof ZoneOffset) )
+                    {
+                        timezone = ZonedDateTime.ofInstant( Instant.now(), timezone ).getOffset();
+                    }
+
+                    result = defaultTime( timezone );
                     selectingTimeZone = false;
                 }
 
