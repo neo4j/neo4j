@@ -146,6 +146,14 @@ public class FusionIndexPopulatorTest
     }
 
     @Test
+    public void createRemoveAnyLeftOversThatWasThereInIndexDirectoryBeforePopulation() throws IOException
+    {
+        fusionIndexPopulator.create();
+
+        verify( dropAction ).drop( indexId );
+    }
+
+    @Test
     public void createMustThrowIfAnyThrow() throws Exception
     {
         for ( IndexPopulator alivePopulator : alivePopulators )

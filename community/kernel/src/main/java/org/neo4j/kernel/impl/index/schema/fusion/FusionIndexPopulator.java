@@ -49,6 +49,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void create() throws IOException
     {
+        dropAction.drop( indexId );
         forAll( IndexPopulator::create, instances );
     }
 
