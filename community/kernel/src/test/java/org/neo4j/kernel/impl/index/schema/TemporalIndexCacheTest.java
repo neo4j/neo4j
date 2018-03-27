@@ -97,7 +97,7 @@ public class TemporalIndexCacheTest
         }
     }
 
-    static private final ValueGroup[] valueGroups = {
+    private static final ValueGroup[] valueGroups = {
             ZONED_DATE_TIME,
             LOCAL_DATE_TIME,
             DATE,
@@ -109,7 +109,7 @@ public class TemporalIndexCacheTest
     {
         TemporalIndexCache<String,Exception> cache;
         Random r = new Random();
-        Exception failed = null;
+        Exception failed;
 
         CacheStresser( TemporalIndexCache<String,Exception> cache )
         {

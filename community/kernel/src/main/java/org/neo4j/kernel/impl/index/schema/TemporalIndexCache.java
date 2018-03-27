@@ -26,7 +26,12 @@ import java.util.function.Function;
 
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.*;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.date;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.duration;
 
 /**
  * Cache for lazily creating parts of the temporal index. Each part is created using the factory

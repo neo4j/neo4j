@@ -62,14 +62,14 @@ public class SpatialIndexCacheTest
         }
     }
 
-    static private final CoordinateReferenceSystem[] coordinateReferenceSystems =
+    private static final CoordinateReferenceSystem[] coordinateReferenceSystems =
             Iterators.stream( CoordinateReferenceSystem.all() ).toArray( CoordinateReferenceSystem[]::new );
 
     static class CacheStresser extends Thread
     {
         SpatialIndexCache<String,Exception> cache;
         Random r = new Random();
-        Exception failed = null;
+        Exception failed;
 
         CacheStresser( SpatialIndexCache<String,Exception> cache )
         {
@@ -128,7 +128,7 @@ public class SpatialIndexCacheTest
         {
             for ( int i = 0; i < coordinateReferenceSystems.length; i++ )
             {
-                if (coordinateReferenceSystems[i].equals( crs ))
+                if ( coordinateReferenceSystems[i].equals( crs ) )
                 {
                     int count = counters[i].incrementAndGet();
                     if ( count > 1 )
