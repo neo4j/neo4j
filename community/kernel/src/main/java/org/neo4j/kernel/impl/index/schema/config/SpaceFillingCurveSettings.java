@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.config;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
@@ -30,16 +31,41 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
+
 /**
+ * <p>
  * These settings affect the creation of the 2D (or 3D) to 1D mapper.
  * Changing these will change the values of the 1D mapping, and require re-indexing, so
  * once data has been indexed, do not change these without recreating the index.
+ * </p>
+ * <p>
+ * Key data maintained by this class include:
+ * <dl>
+ *     <dt>dimensions</dt>
+ *         <dd>either 2 or 3 for 2D or 3D</dd>
+ *     <dt>maxLevels<dt>
+ *         <dd>the number of levels in the tree that models the 2D to 1D mapper calculated as maxBits / dimensions</dd>
+ *     <dt>extents</dt>
+ *         <dd>The space filling curve is configured up front to cover a specific region of 2D (or 3D) space.
+ * Any points outside this space will be mapped as if on the edges. This means that if these extents
+ * do not match the real extents of the data being indexed, the index will be less efficient. Making
+ * the extents too big means than only a small area is used causing more points to map to fewer 1D
+ * values and requiring more post filtering. If the extents are too small, many points will lie on
+ * the edges, and also cause additional post-index filtering costs.</dd>
+ *     <dt>failureMessage</dt>
+ *         <dd>The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings, but instead an error message
+ * describing the failure. If that happens, code that triggered the read should check this field and react accordingly. If the the value is null, there
+ * was no failure.</dd>
+ * </dl>
+ * </p>
  */
 public class SpaceFillingCurveSettings
 {
     private int dimensions;
     private int maxLevels;
     private Envelope extents;
+    private String failureMessage;
 
     public SpaceFillingCurveSettings( int dimensions, int maxBits, Envelope extents )
     {
@@ -61,7 +87,7 @@ public class SpaceFillingCurveSettings
     /**
      * @return The number of levels in the 2D (or 3D) to 1D mapping tree.
      */
-    public int maxLevels()
+    public int getMaxLevels()
     {
         return maxLevels;
     }
@@ -79,6 +105,16 @@ public class SpaceFillingCurveSettings
     public Envelope indexExtents()
     {
         return extents;
+    }
+
+    /**
+     * The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings, but instead an error message
+     * describing the failure. If that happens, code that triggered the read should check this field and react accordingly. If the the value is null, there
+     * was no failure.
+     */
+    public String getFailureMessage()
+    {
+        return failureMessage;
     }
 
     /**
@@ -176,19 +212,26 @@ public class SpaceFillingCurveSettings
         };
     }
 
-    public Header.Reader headerReader()
+    public Header.Reader headerReader( Function<ByteBuffer,String> onError )
     {
         return headerBytes ->
         {
-            headerBytes.get();  // ignore state
-            int typeId = headerBytes.getInt();
-            SpatialIndexType indexType = SpatialIndexType.get( typeId );
-            if ( indexType == null )
+            byte state = headerBytes.get();
+            if ( state == BYTE_FAILED )
             {
-                // TODO store this somewhere else and report later
-                throw new IllegalArgumentException( "Unknown spatial index type: " + typeId );
+                this.failureMessage = "Unexpectedly trying to read the header of a failed index: " + onError.apply( headerBytes );
             }
-            indexType.readHeader( SpaceFillingCurveSettings.this, headerBytes );
+            else
+            {
+                this.failureMessage = null;
+                int typeId = headerBytes.getInt();
+                SpatialIndexType indexType = SpatialIndexType.get( typeId );
+                if ( indexType == null )
+                {
+                    this.failureMessage = "Unknown spatial index type in index header: " + typeId;
+                }
+                indexType.readHeader( SpaceFillingCurveSettings.this, headerBytes );
+            }
         };
     }
 }

@@ -61,10 +61,10 @@ import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQU
  * @param <KEY> type of {@link NativeSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
-    static final byte BYTE_FAILED = 0;
+    public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
     static final byte BYTE_POPULATING = 2;
 

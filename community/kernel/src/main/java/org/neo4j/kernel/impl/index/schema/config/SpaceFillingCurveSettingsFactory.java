@@ -77,23 +77,31 @@ public class SpaceFillingCurveSettingsFactory
             if ( key.startsWith( SPATIAL_SETTING_PREFIX ) )
             {
                 String[] fields = key.replace( SPATIAL_SETTING_PREFIX, "" ).split( "\\." );
-                CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( fields[0] );
-                EnvelopeSettings envelopeSettings = env.computeIfAbsent( crs, EnvelopeSettings::new );
-                int index = "xyz".indexOf( fields[1].toLowerCase() );
-                if ( index < 0 )
+                if ( fields.length < 3 )
                 {
-                    throw new IllegalArgumentException( "Invalid spatial coordinate key: " + fields[1] );
+                    throw new IllegalArgumentException(
+                            "Invalid spatial config settings, expected three fields after '" + SPATIAL_SETTING_PREFIX + "': " + key );
                 }
-                switch ( fields[2].toLowerCase() )
+                else
                 {
-                case "min":
-                    envelopeSettings.min[index] = Double.parseDouble( value );
-                    break;
-                case "max":
-                    envelopeSettings.max[index] = Double.parseDouble( value );
-                    break;
-                default:
-                    throw new IllegalArgumentException( "Invalid spatial coordinate key: " + fields[2] );
+                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName( fields[0] );
+                    EnvelopeSettings envelopeSettings = env.computeIfAbsent( crs, EnvelopeSettings::new );
+                    int index = "xyz".indexOf( fields[1].toLowerCase() );
+                    if ( index < 0 )
+                    {
+                        throw new IllegalArgumentException( "Invalid spatial coordinate key (should be one of 'x', 'y' or 'z'): " + fields[1] );
+                    }
+                    switch ( fields[2].toLowerCase() )
+                    {
+                    case "min":
+                        envelopeSettings.min[index] = Double.parseDouble( value );
+                        break;
+                    case "max":
+                        envelopeSettings.max[index] = Double.parseDouble( value );
+                        break;
+                    default:
+                        throw new IllegalArgumentException( "Invalid spatial coordinate range key (should be one of 'max' or 'min'): " + fields[2] );
+                    }
                 }
             }
         }

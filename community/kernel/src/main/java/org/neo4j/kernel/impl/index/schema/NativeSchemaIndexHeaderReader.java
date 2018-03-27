@@ -37,10 +37,19 @@ class NativeSchemaIndexHeaderReader implements Header.Reader
         state = headerData.get();
         if ( state == BYTE_FAILED )
         {
-            short messageLength = headerData.getShort();
-            byte[] failureMessageBytes = new byte[messageLength];
-            headerData.get( failureMessageBytes );
-            failureMessage = new String( failureMessageBytes, StandardCharsets.UTF_8 );
+            failureMessage = readFailureMessage( headerData );
         }
+    }
+
+    /**
+     * Alternative header readers should react to FAILED indexes by using this, because their specific headers will have been
+     * overwritten by the FailedHeaderWriter.
+     */
+    public static String readFailureMessage( ByteBuffer headerData )
+    {
+        short messageLength = headerData.getShort();
+        byte[] failureMessageBytes = new byte[messageLength];
+        headerData.get( failureMessageBytes );
+        return new String( failureMessageBytes, StandardCharsets.UTF_8 );
     }
 }

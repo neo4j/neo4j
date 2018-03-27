@@ -151,6 +151,31 @@ public class Envelope
         }
     }
 
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj instanceof Envelope )
+        {
+            Envelope other = (Envelope) obj;
+            if ( this.getDimension() != other.getDimension() )
+            {
+                return false;
+            }
+            for ( int i = 0; i < getDimension(); i++ )
+            {
+                if ( this.min[i] != other.getMin( i ) || this.max[i] != other.getMax( i ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     /**
      * Return the distance between the two envelopes on one dimension. This can return negative values if the envelopes intersect on this dimension.
      * @return distance between envelopes
