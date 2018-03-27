@@ -20,6 +20,11 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 
 /**
  * Writer of values.
@@ -85,23 +90,15 @@ public interface ValueWriter<E extends Exception>
 
     void writeDuration( long months, long days, long seconds, int nanos ) throws E;
 
-    void writeDate( long epochDay ) throws E;
+    void writeDate( LocalDate localDate ) throws E;
 
-    void writeLocalTime( long nanoOfDay ) throws E;
+    void writeLocalTime( LocalTime localTime ) throws E;
 
-    /**
-     * Write time value
-     *
-     * @param nanosOfDayUTC nanoseconds of day in UTC. will be between -18h and +42h
-     * @param offsetSeconds time zone offset in seconds
-     */
-    void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E;
+    void writeTime( OffsetTime offsetTime ) throws E;
 
-    void writeLocalDateTime( long epochSecond, int nano ) throws E;
+    void writeLocalDateTime( LocalDateTime localDateTime ) throws E;
 
-    void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E;
-
-    void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E;
+    void writeDateTime( ZonedDateTime zonedDateTime ) throws E;
 
     class Adapter<E extends Exception> implements ValueWriter<E>
     {
@@ -181,32 +178,27 @@ public interface ValueWriter<E extends Exception>
         }
 
         @Override
-        public void writeDate( long epochDay ) throws E
+        public void writeDate( LocalDate localDate ) throws E
         {   // no-op
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws E
+        public void writeLocalTime( LocalTime localTime ) throws E
         {   // no-op
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws E
+        public void writeTime( OffsetTime offsetTime ) throws E
         {   // no-op
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws E
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws E
         {   // no-op
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E
-        {   // no-op
-        }
-
-        @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
         {   // no-op
         }
     }

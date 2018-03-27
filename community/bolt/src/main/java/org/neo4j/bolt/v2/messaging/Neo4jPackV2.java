@@ -20,8 +20,13 @@
 package org.neo4j.bolt.v2.messaging;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
@@ -36,9 +41,10 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.TimeUtil;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.utils.TemporalUtil;
 
+import static java.time.ZoneOffset.UTC;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -123,51 +129,70 @@ public class Neo4jPackV2 extends Neo4jPackV1
         }
 
         @Override
-        public void writeDate( long epochDay ) throws IOException
+        public void writeDate( LocalDate localDate ) throws IOException
         {
+            long epochDay = localDate.toEpochDay();
+
             packStructHeader( 1, DATE );
             pack( epochDay );
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws IOException
+        public void writeLocalTime( LocalTime localTime ) throws IOException
         {
+            long nanoOfDay = localTime.toNanoOfDay();
+
             packStructHeader( 1, LOCAL_TIME );
             pack( nanoOfDay );
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( OffsetTime offsetTime ) throws IOException
         {
+            long nanosOfDayLocal = offsetTime.toLocalTime().toNanoOfDay();
+            int offsetSeconds = offsetTime.getOffset().getTotalSeconds();
+
             packStructHeader( 2, TIME );
-            pack( TimeUtil.nanosOfDayToLocal( nanosOfDayUTC, offsetSeconds ) );
+            pack( nanosOfDayLocal );
             pack( offsetSeconds );
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
         {
+            long epochSecond = localDateTime.toEpochSecond( UTC );
+            int nano = localDateTime.getNano();
+
             packStructHeader( 2, LOCAL_DATE_TIME );
             pack( epochSecond );
             pack( nano );
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
         {
-            packStructHeader( 3, DATE_TIME_WITH_ZONE_OFFSET );
-            pack( epochSecondUTC );
-            pack( nano );
-            pack( offsetSeconds );
-        }
+            long epochSecondUTC = zonedDateTime.toEpochSecond();
+            int nano = zonedDateTime.getNano();
 
-        @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
-        {
-            packStructHeader( 3, DATE_TIME_WITH_ZONE_NAME );
-            pack( epochSecondUTC );
-            pack( nano );
-            pack( zoneId );
+            ZoneId zone = zonedDateTime.getZone();
+            if ( zone instanceof ZoneOffset )
+            {
+                int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
+
+                packStructHeader( 3, DATE_TIME_WITH_ZONE_OFFSET );
+                pack( epochSecondUTC );
+                pack( nano );
+                pack( offsetSeconds );
+            }
+            else
+            {
+                String zoneId = zone.getId();
+
+                packStructHeader( 3, DATE_TIME_WITH_ZONE_NAME );
+                pack( epochSecondUTC );
+                pack( nano );
+                pack( zoneId );
+            }
         }
     }
 
@@ -247,7 +272,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
         {
             long nanosOfDayLocal = unpackLong();
             int offsetSeconds = unpackInteger();
-            return time( TimeUtil.nanosOfDayToUTC( nanosOfDayLocal, offsetSeconds ), ZoneOffset.ofTotalSeconds( offsetSeconds ) );
+            return time( TemporalUtil.nanosOfDayToUTC( nanosOfDayLocal, offsetSeconds ), ZoneOffset.ofTotalSeconds( offsetSeconds ) );
         }
 
         private LocalDateTimeValue unpackLocalDateTime() throws IOException

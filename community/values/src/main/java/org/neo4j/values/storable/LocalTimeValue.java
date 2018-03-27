@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Map;
@@ -255,7 +254,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeLocalTime( value.getLong( ChronoField.NANO_OF_DAY ) );
+        writer.writeLocalTime( value );
     }
 
     @Override

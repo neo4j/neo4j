@@ -241,23 +241,20 @@ object CastSupport {
     override def writeDuration(months: Long, days: Long, seconds: Long, nanos: Int): Unit =
       write(DurationValue.duration(months, days, seconds, nanos))
 
-    override def writeDate(epochDay: Long): Unit =
-      write(DateValue.epochDate(epochDay).asObject())
+    override def writeDate(localDate: LocalDate): Unit =
+      write(localDate)
 
-    override def writeLocalTime(nanoOfDay: Long): Unit =
-      write(LocalTimeValue.localTime(nanoOfDay).asObject())
+    override def writeLocalTime(localTime: LocalTime): Unit =
+      write(localTime)
 
-    override def writeTime(nanosOfDayUTC: Long, offsetSeconds: Int): Unit =
-      write(TimeValue.time(nanosOfDayUTC, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
+    override def writeTime(offsetTime: OffsetTime): Unit =
+      write(offsetTime)
 
-    override def writeLocalDateTime(epochSecond: Long, nano: Int): Unit =
-      write(LocalDateTimeValue.localDateTime(epochSecond,nano).asObject())
+    override def writeLocalDateTime(localDateTime: LocalDateTime): Unit =
+      write(localDateTime)
 
-    override def writeDateTime(epochSecondUTC: Long, nano: Int, offsetSeconds: Int): Unit =
-      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneOffset.ofTotalSeconds(offsetSeconds)).asObject())
-
-    override def writeDateTime(epochSecondUTC: Long, nano: Int, zoneId: String): Unit =
-      write(DateTimeValue.datetime(epochSecondUTC, nano, ZoneId.of(zoneId)).asObject())
+    override def writeDateTime(zonedDateTime: ZonedDateTime): Unit =
+      write(zonedDateTime)
   }
 
 }
