@@ -57,4 +57,10 @@ public interface PageCache
                   "This number should be zero, or at least not growing, in a healthy database. " +
                   "Otherwise it could indicate drive failure, storage space, or permission problems." )
     long getEvictionExceptions();
+
+    @Description( "Ratio of hits to the total number of lookups in the page cache" )
+    default double getHitRatio()
+    {
+       return Double.NaN;
+    }
 }
