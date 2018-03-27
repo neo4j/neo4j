@@ -38,7 +38,9 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DurationValue.duration;
@@ -93,14 +95,28 @@ public class ValueComparisonTest
             new byte[]{3, -99, -99},
 
             // POINTS
+            pointValue( WGS84, -1000.0, -1000.0 ),
             pointValue( WGS84, -1.0, -1.0 ),
+            pointValue( WGS84, 0.0, 0.0 ),
+            pointValue( WGS84, 0.0, 1.0 ),
+            pointValue( WGS84, 1.0, 0.0 ),
             pointValue( WGS84, 1.0, 1.0 ),
             pointValue( WGS84, 1.0, 2.0 ),
             pointValue( WGS84, 2.0, 1.0 ),
+            pointValue( WGS84, 1000.0, 1000.0 ),
+            pointValue( WGS84_3D, -1000.0, -1000.0, -1000.0 ),
+            pointValue( WGS84_3D, 0.0, 0.0, 0.0 ),
+            pointValue( WGS84_3D, 1000.0, 1000.0, 1000.0 ),
+            pointValue( Cartesian, -1000.0, -1000.0 ),
             pointValue( Cartesian, -1.0, -1.0 ),
+            pointValue( Cartesian, 0.0, 0.0 ),
             pointValue( Cartesian, 1.0, 1.0 ),
             pointValue( Cartesian, 1.0, 2.0 ),
             pointValue( Cartesian, 2.0, 1.0 ),
+            pointValue( Cartesian, 1000.0, 1000.0 ),
+            pointValue( Cartesian_3D, -1000.0, -1000.0, -1000.0 ),
+            pointValue( Cartesian_3D, 0.0, 0.0, 0.0 ),
+            pointValue( Cartesian_3D, 1000.0, 1000.0, 1000.0 ),
 
             // DateTime and the likes
             datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),
