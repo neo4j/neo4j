@@ -104,31 +104,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void scheduleJobsThatWhereAddedAfterStart()
-    {
-        List<CleanupJob> allRuns = new ArrayList<>();
-        List<CleanupJob> expectedJobs = new ArrayList<>();
-
-        collector.init();
-        collector.start();
-
-        assertSame( expectedJobs, allRuns );
-
-        DummyJob firstJob = new DummyJob( "first", allRuns );
-        expectedJobs.add( firstJob );
-        collector.add( firstJob );
-
-        assertSame( expectedJobs, allRuns );
-
-        DummyJob secondJob = new DummyJob( "second", allRuns );
-        expectedJobs.add( secondJob );
-        collector.add( secondJob );
-
-        assertSame( expectedJobs, allRuns );
-    }
-
-    @Test
-    public void mustNotScheduleOldJobsOnStartStopStart()
+    public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();

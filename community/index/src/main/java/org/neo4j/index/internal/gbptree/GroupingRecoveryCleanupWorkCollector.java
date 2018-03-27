@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
@@ -31,11 +32,10 @@ import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
  * <p>
  * Also see {@link RecoveryCleanupWorkCollector}
  */
-public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
+public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
-    private volatile boolean started;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -56,33 +56,18 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     public void add( CleanupJob job )
     {
         jobs.add( job );
-        if ( started )
-        {
-            scheduleJobs();
-        }
+
     }
 
     @Override
     public void start()
     {
         scheduleJobs();
-        started = true;
     }
 
     private void scheduleJobs()
     {
         jobScheduler.schedule( recoveryCleanup, allJobs() );
-    }
-
-    @Override
-    public void stop()
-    {
-        started = false;
-    }
-
-    @Override
-    public void shutdown()
-    {   // no-op
     }
 
     private Runnable allJobs()
