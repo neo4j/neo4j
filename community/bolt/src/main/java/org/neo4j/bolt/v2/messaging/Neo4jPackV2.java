@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v2.messaging;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -171,7 +172,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
         @Override
         public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
         {
-            long epochSecondUTC = zonedDateTime.toEpochSecond();
+            long epochSecondLocal = zonedDateTime.toLocalDateTime().toEpochSecond( UTC );
             int nano = zonedDateTime.getNano();
 
             ZoneId zone = zonedDateTime.getZone();
@@ -180,7 +181,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
                 int offsetSeconds = ((ZoneOffset) zone).getTotalSeconds();
 
                 packStructHeader( 3, DATE_TIME_WITH_ZONE_OFFSET );
-                pack( epochSecondUTC );
+                pack( epochSecondLocal );
                 pack( nano );
                 pack( offsetSeconds );
             }
@@ -189,7 +190,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
                 String zoneId = zone.getId();
 
                 packStructHeader( 3, DATE_TIME_WITH_ZONE_NAME );
-                pack( epochSecondUTC );
+                pack( epochSecondLocal );
                 pack( nano );
                 pack( zoneId );
             }
@@ -284,18 +285,25 @@ public class Neo4jPackV2 extends Neo4jPackV1
 
         private DateTimeValue unpackDateTimeWithZoneOffset() throws IOException
         {
-            long epochSecondUTC = unpackLong();
+            long epochSecondLocal = unpackLong();
             long nano = unpackLong();
             int offsetSeconds = unpackInteger();
-            return datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) );
+            return datetime( newZonedDateTime( epochSecondLocal, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
         }
 
         private DateTimeValue unpackDateTimeWithZoneName() throws IOException
         {
-            long epochSecondUTC = unpackLong();
+            long epochSecondLocal = unpackLong();
             long nano = unpackLong();
             String zoneId = unpackString();
-            return datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) );
+            return datetime( newZonedDateTime( epochSecondLocal, nano, ZoneId.of( zoneId ) ) );
+        }
+
+        private static ZonedDateTime newZonedDateTime( long epochSecondLocal, long nano, ZoneId zoneId )
+        {
+            Instant instant = Instant.ofEpochSecond( epochSecondLocal, nano );
+            LocalDateTime localDateTime = LocalDateTime.ofInstant( instant, UTC );
+            return ZonedDateTime.of( localDateTime, zoneId );
         }
     }
 }
