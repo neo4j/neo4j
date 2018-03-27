@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -61,15 +62,16 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     {
         this.snapshotHandler = (snapshotService != null) ? new CoreSnapshotRequestHandler( protocol, snapshotService ) : null;
         this.txPullRequestHandler = new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier, transactionIdStoreSupplier,
-                logicalTransactionStoreSupplier, monitors, logProvider );
+                logicalTransactionStoreSupplier, monitors, new LoggingEventHandlerProvider( logProvider.getLog( TxPullRequestHandler.class ) ) );
         this.storeIdRequestHandler = new GetStoreIdRequestHandler( protocol, storeIdSupplier );
         PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider = new PrepareStoreCopyFilesProvider( pageCache, fs );
         this.storeListingRequestHandler = new PrepareStoreCopyRequestHandler( protocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
-                prepareStoreCopyFilesProvider );
+                prepareStoreCopyFilesProvider, new LoggingEventHandlerProvider( logProvider.getLog( PrepareStoreCopyRequestHandler.class ) ) );
         this.storeFileRequestHandler = new GetStoreFileRequestHandler( protocol, dataSourceSupplier, checkPointerSupplier, new StoreFileStreamingProtocol(),
-                pageCache, fs, logProvider );
-        this.indexSnapshotRequestHandler = new GetIndexSnapshotRequestHandler( protocol, dataSourceSupplier, checkPointerSupplier,
-                new StoreFileStreamingProtocol(), pageCache, fs );
+                pageCache, fs, new LoggingEventHandlerProvider( logProvider.getLog( GetStoreFileRequestHandler.class ) ) );
+        this.indexSnapshotRequestHandler =
+                new GetIndexSnapshotRequestHandler( protocol, dataSourceSupplier, checkPointerSupplier, new StoreFileStreamingProtocol(), pageCache, fs,
+                        new LoggingEventHandlerProvider( logProvider.getLog( GetIndexSnapshotRequestHandler.class ) ) );
     }
 
     @Override

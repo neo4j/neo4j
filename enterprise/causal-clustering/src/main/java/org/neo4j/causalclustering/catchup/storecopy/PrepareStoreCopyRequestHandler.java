@@ -28,6 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.causalclustering.messaging.EventHandler;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -36,6 +39,10 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasSameStoreId;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Begin;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.End;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Error;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 
 public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<PrepareStoreCopyRequest>
 {
@@ -44,22 +51,26 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
+    private EventHandlerProvider eventHandlerProvider;
     private final StoreFileStreamingProtocol streamingProtocol = new StoreFileStreamingProtocol();
 
     public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<CheckPointer> checkPointerSupplier,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex, Supplier<NeoStoreDataSource> dataSourceSupplier,
-            PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider )
+            PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider, EventHandlerProvider eventHandlerProvider )
     {
         this.protocol = catchupServerProtocol;
         this.checkPointerSupplier = checkPointerSupplier;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.prepareStoreCopyFilesProvider = prepareStoreCopyFilesProvider;
         this.dataSourceSupplier = dataSourceSupplier;
+        this.eventHandlerProvider = eventHandlerProvider;
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext channelHandlerContext, PrepareStoreCopyRequest prepareStoreCopyRequest ) throws IOException
     {
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        eventHandler.on( Begin, param( "Request", prepareStoreCopyRequest ) );
         CloseablesListener closeablesListener = new CloseablesListener();
         PrepareStoreCopyResponse response = PrepareStoreCopyResponse.error( PrepareStoreCopyResponse.Status.E_LISTING_STORE );
         try
@@ -68,6 +79,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
             if ( !hasSameStoreId( prepareStoreCopyRequest.getStoreId(), neoStoreDataSource ) )
             {
                 channelHandlerContext.write( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE );
+                eventHandler.on( Error, "Store Ids does not match" );
                 response = PrepareStoreCopyResponse.error( PrepareStoreCopyResponse.Status.E_STORE_ID_MISMATCH );
             }
             else
@@ -88,6 +100,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
         }
         finally
         {
+            eventHandler.on( End, param( "Response", response ) );
             channelHandlerContext.writeAndFlush( response ).addListener( closeablesListener );
             protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
         }
