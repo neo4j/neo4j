@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 /**
@@ -46,6 +46,11 @@ public interface CatchupAddressProvider
      * @throws CatchupAddressResolutionException if the provider was unable to find an address to this location.
      */
     AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException;
+
+    static CatchupAddressProvider fromSingleAddress( AdvertisedSocketAddress advertisedSocketAddress )
+    {
+        return new SingleAddressProvider( advertisedSocketAddress );
+    }
 
     class SingleAddressProvider implements CatchupAddressProvider
     {
@@ -69,15 +74,46 @@ public interface CatchupAddressProvider
         }
     }
 
-    class TopologyBasedAddressProvider implements CatchupAddressProvider
+    /**
+     * Uses given strategy for both primary and secondary address.
+     */
+    class UpstreamStrategyBoundAddressProvider implements CatchupAddressProvider
     {
-        private final RaftMachine raftMachine;
-        private final TopologyService topologyService;
+        private final UpstreamStrategyAddressSupplier upstreamStrategyAddressSupplier;
 
-        public TopologyBasedAddressProvider( RaftMachine raftMachine, TopologyService topologyService )
+        public UpstreamStrategyBoundAddressProvider( TopologyService topologyService, UpstreamDatabaseStrategySelector strategySelector )
         {
-            this.raftMachine = raftMachine;
+            upstreamStrategyAddressSupplier = new UpstreamStrategyAddressSupplier( strategySelector, topologyService );
+        }
+
+        @Override
+        public AdvertisedSocketAddress primary() throws CatchupAddressResolutionException
+        {
+            return upstreamStrategyAddressSupplier.get();
+        }
+
+        @Override
+        public AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException
+        {
+            return upstreamStrategyAddressSupplier.get();
+        }
+    }
+
+    /**
+     * Uses leader address as primary and given upstream strategy as secondary address.
+     */
+    class PrioritisingUpstreamStrategyBasedAddressProvider implements CatchupAddressProvider
+    {
+        private final LeaderLocator leaderLocator;
+        private final TopologyService topologyService;
+        private UpstreamStrategyAddressSupplier secondaryUpstreamStrategyAddressSupplier;
+
+        public PrioritisingUpstreamStrategyBasedAddressProvider( LeaderLocator leaderLocator, TopologyService topologyService,
+                UpstreamDatabaseStrategySelector strategySelector )
+        {
+            this.leaderLocator = leaderLocator;
             this.topologyService = topologyService;
+            this.secondaryUpstreamStrategyAddressSupplier = new UpstreamStrategyAddressSupplier( strategySelector, topologyService );
         }
 
         @Override
@@ -85,7 +121,7 @@ public interface CatchupAddressProvider
         {
             try
             {
-                MemberId leadMember = raftMachine.getLeader();
+                MemberId leadMember = leaderLocator.getLeader();
                 return topologyService.findCatchupAddress( leadMember ).orElseThrow( () -> new CatchupAddressResolutionException( leadMember ) );
             }
             catch ( NoLeaderFoundException e )
@@ -97,18 +133,33 @@ public interface CatchupAddressProvider
         @Override
         public AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException
         {
-            List<MemberId> potentialCoresAndReplicas = new ArrayList<>( raftMachine.votingMembers() );
-            potentialCoresAndReplicas.addAll( raftMachine.replicationMembers() );
-            int accountForRoundingDown = 1;
-            MemberId randomlySelectedCatchupServer =
-                    potentialCoresAndReplicas.get( (int) (Math.random() * potentialCoresAndReplicas.size() + accountForRoundingDown) );
-            return topologyService.findCatchupAddress( randomlySelectedCatchupServer ).orElseThrow(
-                    () -> new CatchupAddressResolutionException( randomlySelectedCatchupServer ) );
+            return secondaryUpstreamStrategyAddressSupplier.get();
         }
     }
 
-    static CatchupAddressProvider fromSingleAddress( AdvertisedSocketAddress advertisedSocketAddress )
+    class UpstreamStrategyAddressSupplier implements ThrowingSupplier<AdvertisedSocketAddress,CatchupAddressResolutionException>
     {
-        return new SingleAddressProvider( advertisedSocketAddress );
+        private final UpstreamDatabaseStrategySelector strategySelector;
+        private final TopologyService topologyService;
+
+        private UpstreamStrategyAddressSupplier( UpstreamDatabaseStrategySelector strategySelector, TopologyService topologyService )
+        {
+            this.strategySelector = strategySelector;
+            this.topologyService = topologyService;
+        }
+
+        @Override
+        public AdvertisedSocketAddress get() throws CatchupAddressResolutionException
+        {
+            try
+            {
+                MemberId upstreamMember = strategySelector.bestUpstreamDatabase();
+                return topologyService.findCatchupAddress( upstreamMember ).orElseThrow( () -> new CatchupAddressResolutionException( upstreamMember ) );
+            }
+            catch ( UpstreamDatabaseSelectionException e )
+            {
+                throw new CatchupAddressResolutionException( e );
+            }
+        }
     }
 }

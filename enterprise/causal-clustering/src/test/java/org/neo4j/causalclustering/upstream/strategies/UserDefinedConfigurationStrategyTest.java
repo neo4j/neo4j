@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
 import org.junit.Test;
 
@@ -54,7 +54,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
-import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
+import static org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class UserDefinedConfigurationStrategyTest
@@ -68,7 +68,7 @@ public class UserDefinedConfigurationStrategyTest
                 fakeTopologyService( fakeCoreTopology( theCoreMemberId ), fakeReadReplicaTopology( memberIDs( 100 ), this::noEastGroupGenerator ) );
 
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
-        Config config = Config.defaults( CausalClusteringSettings.user_defined_upstream_selection_strategy,"groups(east); groups(core); halt()" );
+        Config config = Config.defaults( CausalClusteringSettings.user_defined_upstream_selection_strategy, "groups(east); groups(core); halt()" );
 
         strategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
@@ -183,15 +183,14 @@ public class UserDefinedConfigurationStrategyTest
 
         final AtomicInteger offset = new AtomicInteger( 10_000 );
 
-        Function<MemberId, ReadReplicaInfo> toReadReplicaInfo = memberId -> readReplicaInfo( memberId, offset, groupGenerator );
+        Function<MemberId,ReadReplicaInfo> toReadReplicaInfo = memberId -> readReplicaInfo( memberId, offset, groupGenerator );
 
-        Map<MemberId, ReadReplicaInfo> readReplicas = Stream.of( readReplicaIds )
-                .collect( Collectors.toMap( Function.identity(), toReadReplicaInfo ) );
+        Map<MemberId,ReadReplicaInfo> readReplicas = Stream.of( readReplicaIds ).collect( Collectors.toMap( Function.identity(), toReadReplicaInfo ) );
 
         return new ReadReplicaTopology( readReplicas );
     }
 
-    private static ReadReplicaInfo readReplicaInfo( MemberId memberId, AtomicInteger offset, Function<MemberId, Set<String>> groupGenerator )
+    private static ReadReplicaInfo readReplicaInfo( MemberId memberId, AtomicInteger offset, Function<MemberId,Set<String>> groupGenerator )
     {
         return new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                 new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
@@ -263,9 +262,7 @@ public class UserDefinedConfigurationStrategyTest
 
     static MemberId[] memberIDs( int howMany )
     {
-        return Stream.generate( () -> new MemberId( UUID.randomUUID() ) )
-                .limit( howMany )
-                .toArray( MemberId[]::new );
+        return Stream.generate( () -> new MemberId( UUID.randomUUID() ) ).limit( howMany ).toArray( MemberId[]::new );
     }
 
     private final String northGroup = "north";

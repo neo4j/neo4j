@@ -39,8 +39,8 @@ import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -303,22 +303,11 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private void copyStore()
     {
-        MemberId upstream;
-        try
-        {
-            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
-        }
-        catch ( UpstreamDatabaseSelectionException e )
-        {
-            log.warn( "Could not find upstream database from which to copy store", e );
-            return;
-        }
-
         StoreId localStoreId = localDatabase.storeId();
-        downloadDatabase( upstream, localStoreId );
+        downloadDatabase( localStoreId );
     }
 
-    private void downloadDatabase( MemberId upstream, StoreId localStoreId )
+    private void downloadDatabase( StoreId localStoreId )
     {
         try
         {
@@ -332,12 +321,13 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), localStoreId );
+            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider upstreamStrategyBoundAddressProvider =
+                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
+            storeCopyProcess.replaceWithStoreFrom( upstreamStrategyBoundAddressProvider, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException | TopologyLookupException e )
+        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {
-            log.warn( format( "Error copying store from: %s. Will retry shortly.", upstream ) );
+            log.warn( "Error copying store. Will retry shortly.", e );
             return;
         }
 

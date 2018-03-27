@@ -293,6 +293,15 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "20s" );
 
+    @Description( "Maximum retry time per request during store copy. Regular store files and indexes are downloaded in separate requests during store copy." +
+            " This configures the maximum time failed requests are allowed to resend. " )
+    public static final Setting<Duration> store_copy_max_retry_time_per_request =
+            setting( "causal_clustering.store_copy_max_retry_time_per_request", DURATION, "20m" );
+
+    @Description( "Maximum backoff timeout for store copy requests" )
+    @Internal
+    public static final Setting<Duration> store_copy_backoff_max_wait = setting( "causal_clustering.store_copy_backoff_max_wait", DURATION, "5s" );
+
     @Description( "Throttle limit for logging unknown cluster member address" )
     public static final Setting<Duration> unknown_address_logging_throttle =
             setting( "causal_clustering.unknown_address_logging_throttle", DURATION, "10000ms" );

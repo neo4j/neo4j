@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream;
 
 public class UpstreamDatabaseSelectionException extends Exception
 {
-    UpstreamDatabaseSelectionException( String message )
+    public UpstreamDatabaseSelectionException( String message )
     {
         super( message );
     }

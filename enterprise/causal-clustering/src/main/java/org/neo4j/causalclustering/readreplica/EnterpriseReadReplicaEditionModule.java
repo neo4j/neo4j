@@ -27,9 +27,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -83,6 +81,10 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.causalclustering.upstream.strategies.ConnectToRandomCoreServerStrategy;
+import org.neo4j.causalclustering.upstream.NoOpUpstreamDatabaseStrategiesLoader;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategiesLoader;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -137,7 +139,6 @@ import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -276,8 +277,11 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         databaseHealthSupplier,
                         watcherService, platformModule.availabilityGuard, logProvider );
 
+        ExponentialBackoffStrategy storeCopyBackoffStrategy =
+                new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
+
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider ),
+                new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
@@ -293,19 +297,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.inject( topologyService, config, logProvider, myself );
 
-        UpstreamDatabaseStrategiesLoader loader;
-        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
-        {
-            loader = new UpstreamDatabaseStrategiesLoader( topologyService, config, myself, logProvider );
-            logProvider.getLog( getClass() ).info( "Multi-Data Center option enabled." );
-        }
-        else
-        {
-            loader = new NoOpUpstreamDatabaseStrategiesLoader();
-        }
-
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
-                new UpstreamDatabaseStrategySelector( defaultStrategy, loader, myself, logProvider );
+                createUpstreamDatabaseStrategySelector( myself, config, logProvider, topologyService, defaultStrategy );
 
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient, upstreamDatabaseStrategySelector,
@@ -351,6 +344,23 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
         backupCatchupServer.ifPresent( life::add );
+    }
+
+    private UpstreamDatabaseStrategySelector createUpstreamDatabaseStrategySelector( MemberId myself, Config config, LogProvider logProvider,
+            TopologyService topologyService, ConnectToRandomCoreServerStrategy defaultStrategy )
+    {
+        UpstreamDatabaseStrategiesLoader loader;
+        if ( config.get( CausalClusteringSettings.multi_dc_license ) )
+        {
+            loader = new UpstreamDatabaseStrategiesLoader( topologyService, config, myself, logProvider );
+            logProvider.getLog( getClass() ).info( "Multi-Data Center option enabled." );
+        }
+        else
+        {
+            loader = new NoOpUpstreamDatabaseStrategiesLoader();
+        }
+
+        return new UpstreamDatabaseStrategySelector( defaultStrategy, loader, logProvider );
     }
 
     protected void configureDiscoveryService( DiscoveryServiceFactory discoveryServiceFactory, Dependencies dependencies,
@@ -405,33 +415,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     public void setupSecurityModule( PlatformModule platformModule, Procedures procedures )
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
-    }
-
-    private class NoOpUpstreamDatabaseStrategiesLoader extends UpstreamDatabaseStrategiesLoader
-    {
-        NoOpUpstreamDatabaseStrategiesLoader()
-        {
-            super( null, null, null, NullLogProvider.getInstance() );
-        }
-
-        @Override
-        public Iterator<UpstreamDatabaseSelectionStrategy> iterator()
-        {
-            return new Iterator<UpstreamDatabaseSelectionStrategy>()
-            {
-                @Override
-                public boolean hasNext()
-                {
-                    return false;
-                }
-
-                @Override
-                public UpstreamDatabaseSelectionStrategy next()
-                {
-                    throw new NoSuchElementException();
-                }
-            };
-        }
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

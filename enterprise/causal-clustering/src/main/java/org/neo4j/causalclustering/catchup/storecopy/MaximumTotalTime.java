@@ -20,45 +20,38 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.time.Clock;
+import java.util.concurrent.TimeUnit;
 
-public class MaximumTotalRetries implements TerminationCondition
+import org.neo4j.time.Clocks;
+
+import static java.lang.String.format;
+
+public class MaximumTotalTime implements TerminationCondition
 {
-    private final int maxRetries;
-    private final long allowedInBetweenTimeMillis;
+    private final long endTime;
     private final Clock clock;
-    private int tries;
-    private long previousCheck;
+    private long time;
+    private TimeUnit timeUnit;
 
-    MaximumTotalRetries( int maxRetries, long allowedInBetweenTimeMillis )
+    public MaximumTotalTime( long time, TimeUnit timeUnit )
     {
-        this( maxRetries, allowedInBetweenTimeMillis, Clock.systemUTC() );
+        this( time, timeUnit, Clocks.systemClock() );
     }
 
-    MaximumTotalRetries( int maxRetries, long allowedInBetweenTimeMillis, Clock clock )
+    MaximumTotalTime( long time, TimeUnit timeUnit, Clock clock )
     {
+        this.endTime = clock.millis() + timeUnit.toMillis( time );
         this.clock = clock;
-        this.maxRetries = maxRetries;
-        this.allowedInBetweenTimeMillis = allowedInBetweenTimeMillis;
-        this.previousCheck = 0;
+        this.time = time;
+        this.timeUnit = timeUnit;
     }
 
     @Override
     public void assertContinue() throws StoreCopyFailedException
     {
-        long currentTime = clock.millis();
-        if ( timeHasExpired( previousCheck, currentTime ) )
+        if ( clock.millis() > endTime )
         {
-            tries++;
-            previousCheck = currentTime;
+            throw new StoreCopyFailedException( format( "Maximum time passed %d %s. Not allowed to continue", time, timeUnit ) );
         }
-        if ( tries >= maxRetries )
-        {
-            throw new StoreCopyFailedException( "Maximum allowed retries exceeded: " + maxRetries );
-        }
-    }
-
-    private boolean timeHasExpired( long previousCheck, long currentTime )
-    {
-        return (currentTime - previousCheck) > allowedInBetweenTimeMillis;
     }
 }

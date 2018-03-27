@@ -17,8 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
-
+package org.neo4j.causalclustering.upstream;
 
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
@@ -33,19 +32,16 @@ import static org.neo4j.helpers.collection.Iterables.empty;
 public class UpstreamDatabaseStrategySelector
 {
     private LinkedHashSet<UpstreamDatabaseSelectionStrategy> strategies = new LinkedHashSet<>();
-    private MemberId myself;
     private Log log;
 
-    UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
+    public UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy )
     {
-        this( defaultStrategy, empty(), null, NullLogProvider.getInstance() );
+        this( defaultStrategy, empty(), NullLogProvider.getInstance() );
     }
 
-    UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy,
-                                      Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies, MemberId myself,
-                                      LogProvider logProvider )
+    public UpstreamDatabaseStrategySelector( UpstreamDatabaseSelectionStrategy defaultStrategy, Iterable<UpstreamDatabaseSelectionStrategy> otherStrategies,
+            LogProvider logProvider )
     {
-        this.myself = myself;
         this.log = logProvider.getLog( getClass() );
 
         if ( otherStrategies != null )
@@ -80,8 +76,7 @@ public class UpstreamDatabaseStrategySelector
 
         if ( result == null )
         {
-            throw new UpstreamDatabaseSelectionException(
-                    "Could not find an upstream database with which to connect." );
+            throw new UpstreamDatabaseSelectionException( "Could not find an upstream database with which to connect." );
         }
 
         log.debug( "Selected upstream database [%s]", result );

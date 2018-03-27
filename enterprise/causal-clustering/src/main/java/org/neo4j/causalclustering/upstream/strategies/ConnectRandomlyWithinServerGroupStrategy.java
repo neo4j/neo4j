@@ -17,52 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
-public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabaseSelectionStrategy
+public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
-    private final ModuloCounter counter = new ModuloCounter( 10 );
+    public static final String IDENTITY = "connect-randomly-within-server-group";
+    private ConnectRandomlyToServerGroupImpl strategyImpl;
 
-    public TypicallyConnectToRandomReadReplicaStrategy()
+    public ConnectRandomlyWithinServerGroupStrategy()
     {
-        super( "typically-connect-to-random-read-replica" );
+        super( IDENTITY );
+    }
+
+    @Override
+    public void init()
+    {
+        List<String> groups = config.get( CausalClusteringSettings.server_groups );
+        strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService, myself );
+        log.warn( "Upstream selection strategy " + readableName + " is deprecated. Consider using " + IDENTITY + " instead." );
     }
 
     @Override
     public Optional<MemberId> upstreamDatabase()
     {
-        if ( counter.shouldReturnCoreMemberId() )
-        {
-            return topologyService.localCoreServers().anyCoreMemberId();
-        }
-        else
-        {
-            return topologyService.localReadReplicas().anyReadReplicaMemberId();
-        }
-    }
-
-    private static class ModuloCounter
-    {
-        private final int modulo;
-        private int counter;
-
-        ModuloCounter( int modulo )
-        {
-            // e.g. every 10th means 0-9
-            this.modulo = modulo - 1;
-        }
-
-        boolean shouldReturnCoreMemberId()
-        {
-            counter = (counter + 1) % modulo;
-            return counter == 0;
-        }
+        return strategyImpl.upstreamDatabase();
     }
 }

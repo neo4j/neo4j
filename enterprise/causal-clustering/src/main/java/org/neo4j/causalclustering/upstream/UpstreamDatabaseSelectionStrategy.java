@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -46,7 +46,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     }
 
     // Service loader can't inject via the constructor
-    void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
+    public void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
     {
         this.topologyService = topologyService;
         this.config = config;
@@ -59,7 +59,9 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         init();
     }
 
-    void init() {}
+    public void init()
+    {
+    }
 
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 
@@ -71,7 +73,6 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
 
     private static String nicelyCommaSeparatedList( Iterable<String> keys )
     {
-        return StreamSupport.stream( keys.spliterator(), false )
-                .collect( Collectors.joining( ", " ) );
+        return StreamSupport.stream( keys.spliterator(), false ).collect( Collectors.joining( ", " ) );
     }
 }

@@ -39,10 +39,6 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.SuppressOutput;
@@ -76,14 +72,14 @@ public class ClusterSeedingIT
     private File baseBackupDir;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Object[][] data() throws Exception
+    public static Object[][] data()
     {
         return new Object[][]{{new NoStore(), true}, {new EmptyBackupStore(), false}, {new BackupStoreWithSomeData(), false},
                 {new BackupStoreWithSomeDataButNoTransactionLogs(), false}};
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         this.fileCopyDetector = new FileCopyDetector();
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,

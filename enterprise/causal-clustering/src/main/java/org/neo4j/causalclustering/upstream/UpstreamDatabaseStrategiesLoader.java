@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -44,7 +44,7 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
     private final Log log;
     private final LogProvider logProvider;
 
-    UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config, MemberId myself, LogProvider logProvider )
+    public UpstreamDatabaseStrategiesLoader( TopologyService topologyService, Config config, MemberId myself, LogProvider logProvider )
     {
         this.topologyService = topologyService;
         this.config = config;
@@ -56,11 +56,9 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
     @Override
     public Iterator<UpstreamDatabaseSelectionStrategy> iterator()
     {
-        Iterable<UpstreamDatabaseSelectionStrategy> allImplementationsOnClasspath =
-                Service.load( UpstreamDatabaseSelectionStrategy.class );
+        Iterable<UpstreamDatabaseSelectionStrategy> allImplementationsOnClasspath = Service.load( UpstreamDatabaseSelectionStrategy.class );
 
         LinkedHashSet<UpstreamDatabaseSelectionStrategy> candidates = new LinkedHashSet<>();
-
         for ( String key : config.get( CausalClusteringSettings.upstream_selection_strategy ) )
         {
             for ( UpstreamDatabaseSelectionStrategy candidate : allImplementationsOnClasspath )
@@ -80,14 +78,11 @@ public class UpstreamDatabaseStrategiesLoader implements Iterable<UpstreamDataba
 
     private void log( LinkedHashSet<UpstreamDatabaseSelectionStrategy> candidates )
     {
-        log.debug( "Upstream database strategies loaded in order of precedence: " +
-                nicelyCommaSeparatedList( candidates ) );
+        log.debug( "Upstream database strategies loaded in order of precedence: " + nicelyCommaSeparatedList( candidates ) );
     }
 
     private static String nicelyCommaSeparatedList( Collection<UpstreamDatabaseSelectionStrategy> items )
     {
-        return items.stream()
-                .map( UpstreamDatabaseSelectionStrategy::toString )
-                .collect( Collectors.joining( ", " ) );
+        return items.stream().map( UpstreamDatabaseSelectionStrategy::toString ).collect( Collectors.joining( ", " ) );
     }
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.causalclustering.upstream.strategies;
 
 import java.util.List;
 import java.util.Map;
@@ -30,30 +30,27 @@ import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 
-class ConnectRandomlyToServerGroupImpl
+public class ConnectRandomlyToServerGroupImpl
 {
     private final List<String> groups;
     private final TopologyService topologyService;
     private final MemberId myself;
-    private final String dbName;
     private final Random random = new Random();
 
-    ConnectRandomlyToServerGroupImpl( List<String> groups, TopologyService topologyService, MemberId myself, String dbName )
+    ConnectRandomlyToServerGroupImpl( List<String> groups, TopologyService topologyService, MemberId myself )
     {
         this.groups = groups;
         this.topologyService = topologyService;
         this.myself = myself;
-        this.dbName = dbName;
     }
 
     public Optional<MemberId> upstreamDatabase()
     {
-        Map<MemberId, ReadReplicaInfo> replicas = topologyService.localReadReplicas().members();
+        Map<MemberId,ReadReplicaInfo> replicas = topologyService.localReadReplicas().members();
 
-        List<MemberId> choices = groups.stream()
-                .flatMap( group -> replicas.entrySet().stream().filter( isMyGroupAndNotMe( group ) ) )
-                .map( Map.Entry::getKey )
-                .collect( Collectors.toList() );
+        List<MemberId> choices =
+                groups.stream().flatMap( group -> replicas.entrySet().stream().filter( isMyGroupAndNotMe( group ) ) ).map( Map.Entry::getKey ).collect(
+                        Collectors.toList() );
 
         if ( choices.isEmpty() )
         {
