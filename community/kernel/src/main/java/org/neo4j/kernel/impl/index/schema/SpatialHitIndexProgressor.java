@@ -26,16 +26,16 @@ import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.values.storable.Value;
 
-class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
+class SpatialHitIndexProgressor<VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<SpatialSchemaKey, VALUE>
 {
-    SpatialHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
+    SpatialHitIndexProgressor( RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException> seeker, NodeValueClient client,
+            Collection<RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException>> toRemoveFromOnClose )
     {
         super( seeker, client, toRemoveFromOnClose );
     }
 
     @Override
-    Value[] extractValues( KEY key )
+    Value[] extractValues( SpatialSchemaKey key )
     {
         return null;
     }

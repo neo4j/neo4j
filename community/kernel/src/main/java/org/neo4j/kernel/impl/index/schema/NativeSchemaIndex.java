@@ -38,7 +38,7 @@ import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-class NativeSchemaIndex<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeSchemaIndex<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
 {
     final PageCache pageCache;
     final File storeFile;

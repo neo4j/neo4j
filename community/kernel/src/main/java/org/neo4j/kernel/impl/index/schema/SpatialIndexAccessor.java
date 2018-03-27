@@ -204,7 +204,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         }
 
         @Override
-        public SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue> newReader()
+        public SpatialIndexPartReader<NativeSchemaValue> newReader()
         {
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
         }

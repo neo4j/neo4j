@@ -28,7 +28,7 @@ import org.neo4j.values.storable.ValueWriter;
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
-abstract class NativeSchemaKey<SELF extends NativeSchemaKey> extends ValueWriter.Adapter<RuntimeException>
+abstract class NativeSchemaKey<SELF extends NativeSchemaKey<SELF>> extends ValueWriter.Adapter<RuntimeException>
 {
     private static final boolean DEFAULT_COMPARE_ID = true;
 

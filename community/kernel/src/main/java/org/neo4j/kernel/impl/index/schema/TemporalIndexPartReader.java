@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
+class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexReader<KEY,NativeSchemaValue>
 {
     TemporalIndexPartReader( GBPTree<KEY,NativeSchemaValue> tree,
                              Layout<KEY,NativeSchemaValue> layout,
@@ -68,7 +68,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
             break;
 
         case range:
-            IndexQuery.RangePredicate rangePredicate = (IndexQuery.RangePredicate) predicate;
+            IndexQuery.RangePredicate<?> rangePredicate = (IndexQuery.RangePredicate<?>) predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -79,7 +79,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
         return false; // no filtering
     }
 
-    private void initFromForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( IndexQuery.RangePredicate<?> rangePredicate, KEY treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromValue();
         if ( fromValue == Values.NO_VALUE )
@@ -93,7 +93,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey> extends NativeSchemaI
         }
     }
 
-    private void initToForRange( IndexQuery.RangePredicate rangePredicate, KEY treeKeyTo )
+    private void initToForRange( IndexQuery.RangePredicate<?> rangePredicate, KEY treeKeyTo )
     {
         Value toValue = rangePredicate.toValue();
         if ( toValue == Values.NO_VALUE )

@@ -283,7 +283,7 @@ public class FusionIndexReaderTest
     public void mustSelectStringForRangeStringPredicate() throws Exception
     {
         // given
-        RangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
+        RangePredicate<?> stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
 
         // then
         verifyQueryWithCorrectReader( expectedForStrings(), stringRange );
@@ -293,7 +293,7 @@ public class FusionIndexReaderTest
     public void mustSelectNumberForRangeNumericPredicate() throws Exception
     {
         // given
-        RangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+        RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
 
         // then
         verifyQueryWithCorrectReader( expectedForNumbers(), numberRange );
@@ -306,7 +306,7 @@ public class FusionIndexReaderTest
         assumeTrue( hasSpatialSupport() );
         PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0);
         PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0);
-        RangePredicate geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+        RangePredicate<?> geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
 
         // then
         verifyQueryWithCorrectReader( readers[SPATIAL], geometryRange );
