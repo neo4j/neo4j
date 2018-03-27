@@ -67,6 +67,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 {
     public static final String SUFFIX_CACHEPROF = ".cacheprof";
+    private static final String PROFILE_FOLDER = "profile";
 
     private static final int IO_PARALLELISM = Runtime.getRuntime().availableProcessors();
 
@@ -290,6 +291,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     private OutputStream compressedOutputStream( File output ) throws IOException
     {
+        fs.mkdirs( output.getParentFile() );
         StoreChannel channel = fs.open( output, OpenMode.READ_WRITE );
         ByteBuffer buf = ByteBuffer.allocate( 1 );
         OutputStream sink = new OutputStream()
@@ -326,8 +328,8 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private File profileOutputFileName( PagedFile file )
     {
         File mappedFile = file.file();
-        String profileOutputName = "." + mappedFile.getName() + SUFFIX_CACHEPROF;
-        File parent = mappedFile.getParentFile();
-        return new File( parent, profileOutputName );
+        String profileOutputName = mappedFile.getName() + SUFFIX_CACHEPROF;
+        File profileFolder = new File( mappedFile.getParentFile(), PROFILE_FOLDER );
+        return new File( profileFolder, profileOutputName );
     }
 }
