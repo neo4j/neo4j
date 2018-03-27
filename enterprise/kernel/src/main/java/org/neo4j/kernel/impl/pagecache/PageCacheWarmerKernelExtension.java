@@ -69,6 +69,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     {
         if ( config.get( GraphDatabaseSettings.pagecache_warmup_enabled ) )
         {
+            pageCacheWarmer.start();
             scheduleTryReheat();
             fileListing.get().registerStoreFileProvider( pageCacheWarmer );
         }

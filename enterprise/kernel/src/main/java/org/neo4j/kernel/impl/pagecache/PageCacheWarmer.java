@@ -48,6 +48,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -64,7 +65,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * These cacheprof files are compressed bitmaps where each raised bit indicates that the page identified by the
  * bit-index was in memory.
  */
-public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
+public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileListing.StoreFileProvider
 {
     public static final String SUFFIX_CACHEPROF = ".cacheprof";
     private static final String PROFILE_FOLDER = "profile";
@@ -73,26 +74,16 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final ExecutorService executor;
-    private final PageLoaderFactory pageLoaderFactory;
-    private boolean stopped;
+    private final JobScheduler scheduler;
+    private volatile boolean stopped;
+    private ExecutorService executor;
+    private PageLoaderFactory pageLoaderFactory;
 
     PageCacheWarmer( FileSystemAbstraction fs, PageCache pageCache, JobScheduler scheduler )
     {
         this.fs = fs;
         this.pageCache = pageCache;
-        this.executor = buildExecutorService( scheduler );
-        this.pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
-    }
-
-    private ExecutorService buildExecutorService( JobScheduler scheduler )
-    {
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( IO_PARALLELISM * 4 );
-        RejectedExecutionHandler rejectionPolicy = new ThreadPoolExecutor.CallerRunsPolicy();
-        ThreadFactory threadFactory = scheduler.threadFactory( JobScheduler.Groups.pageCacheIOHelper );
-        return new ThreadPoolExecutor(
-                0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
-                threadFactory, rejectionPolicy );
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -114,10 +105,22 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         return Resource.EMPTY;
     }
 
-    public synchronized void stop()
+    @Override
+    public synchronized void start()
+    {
+        stopped = false;
+        executor = buildExecutorService( scheduler );
+        pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
+    }
+
+    @Override
+    public void stop()
     {
         stopped = true;
-        executor.shutdown();
+        synchronized ( this )
+        {
+            executor.shutdown();
+        }
     }
 
     /**
@@ -129,6 +132,10 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      */
     synchronized OptionalLong reheat() throws IOException
     {
+        if ( stopped )
+        {
+            return OptionalLong.empty();
+        }
         long pagesLoaded = 0;
         List<PagedFile> files = pageCache.listExistingMappings();
         for ( PagedFile file : files )
@@ -143,6 +150,39 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             }
         }
         return stopped ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
+    }
+
+    /**
+     * Profile the in-memory data in the page cache, and write it to "cacheprof" file siblings of the mapped files.
+     *
+     * @return An {@link OptionalLong} of the number of pages that were found to be in memory, or
+     * {@link OptionalLong#empty()} if the profiling was stopped early via {@link #stop()}.
+     * @throws IOException If anything goes wrong while accessing the page cache or writing out the profile data.
+     */
+    public synchronized OptionalLong profile() throws IOException
+    {
+        if ( stopped )
+        {
+            return OptionalLong.empty();
+        }
+        // Note that we could in principle profile the files in parallel. However, producing a profile is usually so
+        // fast, that it rivals the overhead of starting and stopping threads. Because of this, the complexity of
+        // profiling in parallel is just not worth it.
+        long pagesInMemory = 0;
+        List<PagedFile> files = pageCache.listExistingMappings();
+        for ( PagedFile file : files )
+        {
+            try
+            {
+                pagesInMemory += profile( file );
+            }
+            catch ( FileIsNotMappedException ignore )
+            {
+                // The database is allowed to map and unmap files while we are profiling the page cache.
+            }
+        }
+        pageCache.reportEvents();
+        return stopped ? OptionalLong.empty() : OptionalLong.of( pagesInMemory );
     }
 
     private long reheat( PagedFile file ) throws IOException
@@ -174,7 +214,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
         // The file contents checks out. Let's load it in.
         try ( InputStream inputStream = compressedInputStream( savedProfile );
-              PageLoader loader = pageLoaderFactory.getLoader( file ) )
+                PageLoader loader = pageLoaderFactory.getLoader( file ) )
         {
             long pageId = 0;
             int b;
@@ -198,35 +238,6 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         }
         pageCache.reportEvents();
         return pagesLoaded;
-    }
-
-    /**
-     * Profile the in-memory data in the page cache, and write it to "cacheprof" file siblings of the mapped files.
-     *
-     * @return An {@link OptionalLong} of the number of pages that were found to be in memory, or
-     * {@link OptionalLong#empty()} if the profiling was stopped early via {@link #stop()}.
-     * @throws IOException If anything goes wrong while accessing the page cache or writing out the profile data.
-     */
-    public synchronized OptionalLong profile() throws IOException
-    {
-        // Note that we could in principle profile the files in parallel. However, producing a profile is usually so
-        // fast, that it rivals the overhead of starting and stopping threads. Because of this, the complexity of
-        // profiling in parallel is just not worth it.
-        long pagesInMemory = 0;
-        List<PagedFile> files = pageCache.listExistingMappings();
-        for ( PagedFile file : files )
-        {
-            try
-            {
-                pagesInMemory += profile( file );
-            }
-            catch ( FileIsNotMappedException ignore )
-            {
-                // The database is allowed to map and unmap files while we are profiling the page cache.
-            }
-        }
-        pageCache.reportEvents();
-        return stopped ? OptionalLong.empty() : OptionalLong.of( pagesInMemory );
     }
 
     private long profile( PagedFile file ) throws IOException
@@ -267,6 +278,16 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         }
 
         return pagesInMemory;
+    }
+
+    private ExecutorService buildExecutorService( JobScheduler scheduler )
+    {
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( IO_PARALLELISM * 4 );
+        RejectedExecutionHandler rejectionPolicy = new ThreadPoolExecutor.CallerRunsPolicy();
+        ThreadFactory threadFactory = scheduler.threadFactory( JobScheduler.Groups.pageCacheIOHelper );
+        return new ThreadPoolExecutor(
+                0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
+                threadFactory, rejectionPolicy );
     }
 
     private InputStream compressedInputStream( File input ) throws IOException

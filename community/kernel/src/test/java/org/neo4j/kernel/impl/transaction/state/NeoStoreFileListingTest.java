@@ -28,12 +28,14 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -211,6 +213,17 @@ public class NeoStoreFileListingTest
         assertEquals( Arrays.asList(values), listedStoreFiles );
     }
 
+    @Test
+    public void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
+    {
+        NeoStoreFileListing neoStoreFileListing = neoStoreDataSource.getNeoStoreFileListing();
+        MarkerFileProvider provider = new MarkerFileProvider();
+        neoStoreFileListing.registerStoreFileProvider( provider );
+        neoStoreFileListing.registerStoreFileProvider( provider );
+        ResourceIterator<StoreFileMetadata> metadataResourceIterator = neoStoreFileListing.builder().build();
+        assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.file().getName() ) ).count() );
+    }
+
     private void verifyLogFilesWithCustomPathListing( String path ) throws IOException
     {
         GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
@@ -276,6 +289,16 @@ public class NeoStoreFileListingTest
             when( file.exists() ).thenReturn( true );
             when( file.getPath() ).thenReturn( filename );
             files.add( file );
+        }
+    }
+
+    private static class MarkerFileProvider implements NeoStoreFileListing.StoreFileProvider
+    {
+        @Override
+        public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException
+        {
+            fileMetadataCollection.add( new StoreFileMetadata( new File( "marker" ), 0 ) );
+            return Resource.EMPTY;
         }
     }
 }

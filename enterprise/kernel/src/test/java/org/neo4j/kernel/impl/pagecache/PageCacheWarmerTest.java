@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.OptionalLong;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -50,6 +51,8 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -96,6 +99,52 @@ public class PageCacheWarmerTest
     }
 
     @Test
+    public void doNotReheatAfterStop() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+                PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            assertSame( OptionalLong.empty(), warmer.reheat() );
+        }
+    }
+
+    @Test
+    public void doNoProfileAfterStop() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+                PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            assertSame( OptionalLong.empty(), warmer.profile() );
+        }
+    }
+
+    @Test
+    public void profileAndReheatAfterRestart() throws IOException
+    {
+        try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
+                PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+        {
+            PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
+            warmer.stop();
+            warmer.start();
+            try ( PageCursor writer = pf.io( 0, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( writer.next( 1 ) );
+                assertTrue( writer.next( 3 ) );
+            }
+            warmer.profile();
+            assertNotSame( OptionalLong.empty(), warmer.reheat() );
+        }
+    }
+
+    @Test
     public void mustDoNothingWhenReheatingUnprofiledPageCache() throws Exception
     {
 
@@ -131,6 +180,7 @@ public class PageCacheWarmerTest
               PagedFile pf = pageCache.map( file, pageCache.pageSize() ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.reheat();
 
             pageCache.reportEvents();
@@ -176,6 +226,7 @@ public class PageCacheWarmerTest
               PagedFile pf = pageCache.map( file, pageCache.pageSize() ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.reheat();
 
             pageCache.reportEvents();
