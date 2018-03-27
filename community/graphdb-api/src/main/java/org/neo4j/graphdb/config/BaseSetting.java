@@ -31,6 +31,7 @@ public abstract class BaseSetting<T> implements Setting<T>
     private boolean deprecated;
     private String replacement;
     private boolean internal;
+    private boolean isSecret;
     private boolean dynamic;
     private String documentedDefaultValue;
     private String description;
@@ -66,6 +67,17 @@ public abstract class BaseSetting<T> implements Setting<T>
     public void setInternal( final boolean val )
     {
         this.internal = val;
+    }
+
+    @Override
+    public boolean isSecret()
+    {
+        return this.isSecret;
+    }
+
+    public void makeSecret( final boolean val )
+    {
+        this.isSecret = val;
     }
 
     @Override
