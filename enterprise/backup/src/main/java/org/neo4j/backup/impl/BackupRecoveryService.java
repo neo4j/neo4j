@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.neo4j.backup.impl.BackupProtocolService.startTemporaryDb;
@@ -35,6 +36,7 @@ class BackupRecoveryService
     {
         Map<String,String> configParams = config.getRaw();
         configParams.put( GraphDatabaseSettings.logical_logs_location.name(), targetDirectory.toString() );
+        configParams.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
         GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
         targetDb.shutdown();
     }

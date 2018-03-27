@@ -602,9 +602,17 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
-                  "warmup after a restart, reducing the mean time to performance." )
+                  "warmup after a restart, reducing the mean time to performance. " +
+                  "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
             setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
+    @Internal
+    @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
+            "According to that profile pages can be reloaded on the restart, replication, etc. " +
+            "This setting allows disabling that behavior. " +
+            "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
     /**
      * Block size properties values depends from selected record format.
