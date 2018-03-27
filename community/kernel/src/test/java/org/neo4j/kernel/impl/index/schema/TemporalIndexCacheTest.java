@@ -21,24 +21,38 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.Iterables;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.values.storable.ValueGroup;
+
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.values.storable.ValueGroup.DATE;
+import static org.neo4j.values.storable.ValueGroup.DURATION;
+import static org.neo4j.values.storable.ValueGroup.LOCAL_DATE_TIME;
+import static org.neo4j.values.storable.ValueGroup.LOCAL_TIME;
+import static org.neo4j.values.storable.ValueGroup.ZONED_DATE_TIME;
+import static org.neo4j.values.storable.ValueGroup.ZONED_TIME;
 
 public class TemporalIndexCacheTest
 {
     @Test
     public void shouldIterateOverCreatedParts() throws Exception
     {
-        TemporalIndexCache<String, Exception> cache = new TemporalIndexCache<>( new StringFactory() );
+        StringFactory factory = new StringFactory();
+        TemporalIndexCache<String,Exception> cache = new TemporalIndexCache<>( factory );
 
         assertEquals( Iterables.count( cache ), 0 );
 
         cache.localDateTime();
         cache.zonedTime();
 
+        assertThat( factory.localDateTimeCounter.get(), equalTo( 1 ) );
         assertThat( cache, containsInAnyOrder( "LocalDateTime", "ZonedTime" ) );
 
         cache.date();
@@ -48,45 +62,153 @@ public class TemporalIndexCacheTest
         cache.zonedDateTime();
         cache.duration();
 
+        assertThat( factory.localDateTimeCounter.get(), equalTo( 1 ) );
         assertThat( cache, containsInAnyOrder( "Date", "LocalDateTime", "ZonedDateTime", "LocalTime", "ZonedTime", "Duration" ) );
+    }
+
+    @Test
+    public void stressCache() throws Exception
+    {
+        StringFactory factory = new StringFactory();
+        TemporalIndexCache<String,Exception> cache = new TemporalIndexCache<>( factory );
+
+        CacheStresser[] stressers = new CacheStresser[100];
+        for ( int i = 0; i < stressers.length; i++ )
+        {
+            stressers[i] = new CacheStresser( cache );
+            stressers[i].start();
+        }
+
+        Thread.sleep( 5_000 );
+
+        for ( CacheStresser stresser : stressers )
+        {
+            stresser.interrupt();
+        }
+
+        for ( CacheStresser stresser : stressers )
+        {
+            stresser.join();
+        }
+
+        for ( CacheStresser stresser : stressers )
+        {
+            assertNull( stresser.failed );
+        }
+    }
+
+    static private final ValueGroup[] valueGroups = {
+            ZONED_DATE_TIME,
+            LOCAL_DATE_TIME,
+            DATE,
+            ZONED_TIME,
+            LOCAL_TIME,
+            DURATION};
+
+    static class CacheStresser extends Thread
+    {
+        TemporalIndexCache<String,Exception> cache;
+        Random r = new Random();
+        Exception failed = null;
+
+        CacheStresser( TemporalIndexCache<String,Exception> cache )
+        {
+            this.cache = cache;
+        }
+
+        @Override
+        public void run()
+        {
+            while ( !Thread.interrupted() && failed == null )
+            {
+                try
+                {
+                    stress();
+                }
+                catch ( InterruptedException e )
+                {
+                    return;
+                }
+                catch ( Exception e )
+                {
+                    failed = e;
+                }
+            }
+        }
+
+        private void stress() throws Exception
+        {
+            // select
+            cache.select( valueGroups[r.nextInt( valueGroups.length )] );
+            // iterate
+            for ( String s : cache )
+            {
+                if ( s == null )
+                {
+                    throw new IllegalStateException( "iterated over null" );
+                }
+            }
+        }
     }
 
     static class StringFactory implements TemporalIndexCache.Factory<String, Exception>
     {
+        AtomicInteger dateCounter = new AtomicInteger( 0 );
+        AtomicInteger localDateTimeCounter = new AtomicInteger( 0 );
+        AtomicInteger zonedDateTimeCounter = new AtomicInteger( 0 );
+        AtomicInteger localTimeCounter = new AtomicInteger( 0 );
+        AtomicInteger zonedTimeCounter = new AtomicInteger( 0 );
+        AtomicInteger durationCounter = new AtomicInteger( 0 );
+
         @Override
         public String newDate()
         {
+            updateCounterAndAssertSingleUpdate( dateCounter );
             return "Date";
         }
 
         @Override
         public String newLocalDateTime()
         {
+            updateCounterAndAssertSingleUpdate( localDateTimeCounter );
             return "LocalDateTime";
         }
 
         @Override
         public String newZonedDateTime()
         {
+            updateCounterAndAssertSingleUpdate( zonedDateTimeCounter );
             return "ZonedDateTime";
         }
 
         @Override
         public String newLocalTime()
         {
+            updateCounterAndAssertSingleUpdate( localTimeCounter );
             return "LocalTime";
         }
 
         @Override
         public String newZonedTime()
         {
+            updateCounterAndAssertSingleUpdate( zonedTimeCounter );
             return "ZonedTime";
         }
 
         @Override
         public String newDuration()
         {
+            updateCounterAndAssertSingleUpdate( durationCounter );
             return "Duration";
+        }
+
+        private void updateCounterAndAssertSingleUpdate( AtomicInteger counter )
+        {
+            int count = counter.incrementAndGet();
+            if ( count > 1 )
+            {
+                throw new IllegalStateException( "called new on same factory method multiple times" );
+            }
         }
     }
 }
