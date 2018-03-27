@@ -51,6 +51,7 @@ import java.util.regex.Pattern;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -198,8 +199,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             from = attachTimeZone( from, to.getZoneId( to::getZoneOffset ) );
         }
-
-        return from.temporal().until( to, unit );
+        long until;
+        try
+        {
+            until = from.temporal().until( to, unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage() );
+        }
+        return until;
     }
 
     private TemporalValue attachTime( TemporalValue temporal )
@@ -264,7 +273,16 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     @Override
     public final int get( TemporalField field )
     {
-        return temporal().get( field );
+        int accessor;
+        try
+        {
+         accessor = temporal().get( field );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage() );
+        }
+        return accessor;
     }
 
     public final AnyValue get( String fieldName )
@@ -287,7 +305,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             else
             {
-                throw new UnsupportedTemporalTypeException( "Epoch not supported." );
+                throw new UnsupportedTemporalUnitException( "Epoch not supported." );
             }
         }
         if ( field == Field.timezone )
@@ -304,7 +322,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         if ( field == null || field.field == null )
         {
-            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
         return Values.intValue( get( field.field ) );
     }

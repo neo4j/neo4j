@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.utils.TemporalUtil;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -133,7 +134,15 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             Supplier<ZoneId> defaultZone )
     {
         OffsetTime time = input.getTimePart( defaultZone );
-        OffsetTime truncatedOT = time.truncatedTo( unit );
+        OffsetTime truncatedOT;
+        try
+        {
+            truncatedOT = time.truncatedTo( unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage() );
+        }
 
         if ( fields.size() == 0 )
         {

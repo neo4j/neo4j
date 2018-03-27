@@ -38,6 +38,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -108,7 +109,16 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             Supplier<ZoneId> defaultZone )
     {
         LocalTime localTime = input.getLocalTimePart();
-        LocalTime truncatedLT = localTime.truncatedTo( unit );
+        LocalTime truncatedLT;
+        try
+        {
+            truncatedLT = localTime.truncatedTo( unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage() );
+        }
+
         if ( fields.size() == 0 )
         {
             return localTime( truncatedLT );
@@ -224,13 +234,13 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+        throw new UnsupportedTemporalUnitException( "Cannot get the timezone of: %s" + this );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+        throw new UnsupportedTemporalUnitException( "Cannot get the offset of: %s" + this );
     }
 
     @Override
