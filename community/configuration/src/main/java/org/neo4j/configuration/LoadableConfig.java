@@ -77,6 +77,9 @@ public interface LoadableConfig
                     final Internal internalAnnotation = f.getAnnotation( Internal.class );
                     setting.setInternal( internalAnnotation != null );
 
+                    final Secret secretAnnotation = f.getAnnotation( Secret.class );
+                    setting.makeSecret( secretAnnotation != null );
+
                     final Dynamic dynamicAnnotation = f.getAnnotation( Dynamic.class );
                     setting.setDynamic( dynamicAnnotation != null );
                 }

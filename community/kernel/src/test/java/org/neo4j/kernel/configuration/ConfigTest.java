@@ -39,6 +39,7 @@ import org.neo4j.configuration.Dynamic;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.configuration.Secret;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -103,6 +104,9 @@ public class ConfigTest
 
         @Deprecated
         public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" );
+
+        @Secret
+        public static final Setting<String> password = setting( "password", STRING, "This text should not appear in logs or toString" );
     }
 
     private static class HelloHasToBeNeo4jConfigurationValidator implements ConfigurationValidator
@@ -250,14 +254,33 @@ public class ConfigTest
     {
         // Given
         Config config = Config.builder()
-                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
-                              .build();
+                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+                .build();
 
         // Then
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
         assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+    }
+
+    @Test
+    public void shouldSetSecretParameter()
+    {
+        // Given
+        Config config = Config.builder()
+                .withSetting( MySettingsWithDefaults.password, "this should not be visible" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+                .build();
+
+        // Then
+        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).isSecret() );
+        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).isSecret() );
+        String configText = config.toString();
+        assertTrue( configText.contains( Secret.OBSFUCATED ) );
+        assertFalse( configText.contains( "this should not be visible" ) );
+        assertFalse( configText.contains( config.get( MySettingsWithDefaults.password ) ) );
     }
 
     @Test

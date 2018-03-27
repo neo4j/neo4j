@@ -63,6 +63,11 @@ public interface SettingGroup<T> extends SettingValidator
     boolean internal();
 
     /**
+     * @return {@code true} if secret setting (should be hidden), false otherwise.
+     */
+    boolean isSecret();
+
+    /**
      * @return the documented default value if it needs special documentation, empty if default value is good as is.
      */
     Optional<String> documentedDefaultValue();

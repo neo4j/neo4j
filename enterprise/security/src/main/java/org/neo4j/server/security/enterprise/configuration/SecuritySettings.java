@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Secret;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Level;
@@ -228,6 +229,7 @@ public class SecuritySettings implements LoadableConfig
     public static final Setting<String> ldap_authorization_system_username =
             setting( "dbms.security.ldap.authorization.system_username", STRING, NO_DEFAULT );
 
+    @Secret
     @Description(
             "An LDAP system account password to use for authorization searches when " +
             "`dbms.security.ldap.authorization.use_system_account` is `true`." )

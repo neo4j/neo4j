@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,10 +45,12 @@ import javax.annotation.Nullable;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Secret;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.config.SettingGroup;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -82,6 +85,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
+    private final Set<String> secrets = new HashSet<>();
     private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
@@ -389,6 +393,14 @@ public class Config implements DiagnosticsProvider, Configuration
                 .filter( BaseSetting.class::isInstance )
                 .map( BaseSetting.class::cast )
                 .forEach( setting -> settingsMap.put( setting.name(), setting ) );
+
+        // Find secret settings
+        configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .filter( SettingGroup::isSecret )
+                .filter( BaseSetting.class::isInstance )
+                .map( BaseSetting.class::cast )
+                .forEach( setting -> secrets.add( setting.name() ) );
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
@@ -742,9 +754,14 @@ public class Config implements DiagnosticsProvider, Configuration
             logger.log( "Neo4j Kernel properties:" );
             for ( Map.Entry<String,String> param : params.entrySet() )
             {
-                logger.log( "%s=%s", param.getKey(), param.getValue() );
+                logger.log( "%s=%s", param.getKey(), obsfucateIfSecret( param ) );
             }
         }
+    }
+
+    private String obsfucateIfSecret( Map.Entry<String,String> param )
+    {
+        return secrets.contains( param.getKey() ) ? Secret.OBSFUCATED : param.getValue();
     }
 
     /**
@@ -943,7 +960,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         return params.entrySet().stream()
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
-                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .map( entry -> entry.getKey() + "=" + obsfucateIfSecret( entry ) )
                 .collect( Collectors.joining( ", ") );
     }
 }

@@ -34,6 +34,7 @@ public class ConfigValue
     private final Optional<Object> value;
     private final String valueDescription;
     private final boolean internal;
+    private final boolean isSecret;
     private final boolean dynamic;
     private final boolean deprecated;
     private final Optional<String> replacement;
@@ -41,7 +42,7 @@ public class ConfigValue
     public ConfigValue( @Nonnull String name, @Nonnull Optional<String> description,
             @Nonnull Optional<String> documentedDefaultValue, @Nonnull Optional<Object> value,
             @Nonnull String valueDescription, boolean internal, boolean dynamic, boolean deprecated,
-            @Nonnull Optional<String> replacement )
+            @Nonnull Optional<String> replacement, boolean isSecret )
     {
         this.name = name;
         this.description = description;
@@ -49,6 +50,7 @@ public class ConfigValue
         this.value = value;
         this.valueDescription = valueDescription;
         this.internal = internal;
+        this.isSecret = isSecret;
         this.dynamic = dynamic;
         this.deprecated = deprecated;
         this.replacement = replacement;
@@ -98,6 +100,11 @@ public class ConfigValue
     public boolean internal()
     {
         return internal;
+    }
+
+    public boolean isSecret()
+    {
+        return isSecret;
     }
 
     public boolean dynamic()
