@@ -73,7 +73,7 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      * @return selected part
      * @throws E exception potentially thrown during creation
      */
-    T select( CoordinateReferenceSystem crs ) throws E
+    synchronized T select( CoordinateReferenceSystem crs ) throws E
     {
         T part = spatials.get( crs );
         if ( part == null )

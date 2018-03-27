@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.*;
 
 /**
  * Cache for lazily creating parts of the temporal index. Each part is created using the factory
@@ -40,19 +42,30 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
 {
     private final Factory<T, E> factory;
 
-    private volatile T date;
-    private volatile T localDateTime;
-    private volatile T zonedDateTime;
-    private volatile T localTime;
-    private volatile T zonedTime;
-    private volatile T duration;
+    enum Offset
+    {
+        date,
+        localDateTime,
+        zonedDateTime,
+        localTime,
+        zonedTime,
+        duration
+    }
 
-    private List<T> parts;
+    private final Object dateLock = new Object();
+    private final Object localDateTimeLock = new Object();
+    private final Object zonedDateTimeLock = new Object();
+    private final Object localTimeLock = new Object();
+    private final Object zonedTimeLock = new Object();
+    private final Object durationLock = new Object();
+
+    private T[] parts;
 
     TemporalIndexCache( Factory<T, E> factory )
     {
         this.factory = factory;
-        this.parts = new ArrayList<>();
+        //noinspection unchecked
+        this.parts = (T[]) new Object[Offset.values().length];
     }
 
     /**
@@ -124,22 +137,22 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
         switch ( valueGroup )
         {
         case DATE:
-            return date != null ? function.apply( date ) : orElse;
+            return parts[date.ordinal()] != null ? function.apply( parts[date.ordinal()] ) : orElse;
 
         case LOCAL_DATE_TIME:
-            return localDateTime != null ? function.apply( localDateTime ) : orElse;
+            return parts[localDateTime.ordinal()] != null ? function.apply( parts[localDateTime.ordinal()] ) : orElse;
 
         case ZONED_DATE_TIME:
-            return zonedDateTime != null ? function.apply( zonedDateTime ) : orElse;
+            return parts[zonedDateTime.ordinal()] != null ? function.apply( parts[zonedDateTime.ordinal()] ) : orElse;
 
         case LOCAL_TIME:
-            return localTime != null ? function.apply( localTime ) : orElse;
+            return parts[localTime.ordinal()] != null ? function.apply( parts[localTime.ordinal()] ) : orElse;
 
         case ZONED_TIME:
-            return zonedTime != null ? function.apply( zonedTime ) : orElse;
+            return parts[zonedTime.ordinal()] != null ? function.apply( parts[zonedTime.ordinal()] ) : orElse;
 
         case DURATION:
-            return duration != null ? function.apply( duration ) : orElse;
+            return parts[duration.ordinal()] != null ? function.apply( parts[duration.ordinal()] ) : orElse;
 
         default:
             throw new IllegalStateException( "Unsupported value group " + valueGroup );
@@ -148,70 +161,74 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
 
     T date() throws E
     {
-        if ( date == null )
+        synchronized ( dateLock )
         {
-            date = factory.newDate();
-            addPartToList( date );
+            if ( parts[date.ordinal()] == null )
+            {
+                parts[date.ordinal()] = factory.newDate();
+            }
         }
-        return date;
+        return parts[date.ordinal()];
     }
 
     T localDateTime() throws E
     {
-        if ( localDateTime == null )
+        synchronized ( localDateTimeLock )
         {
-            localDateTime = factory.newLocalDateTime();
-            addPartToList( localDateTime );
+            if ( parts[localDateTime.ordinal()] == null )
+            {
+                parts[localDateTime.ordinal()] = factory.newLocalDateTime();
+            }
         }
-        return localDateTime;
+        return parts[localDateTime.ordinal()];
     }
 
     T zonedDateTime() throws E
     {
-        if ( zonedDateTime == null )
+        synchronized ( zonedDateTimeLock )
         {
-            zonedDateTime = factory.newZonedDateTime();
-            addPartToList( zonedDateTime );
+            if ( parts[zonedDateTime.ordinal()] == null )
+            {
+                parts[zonedDateTime.ordinal()] = factory.newZonedDateTime();
+            }
         }
-        return zonedDateTime;
+        return parts[zonedDateTime.ordinal()];
     }
 
     T localTime() throws E
     {
-        if ( localTime == null )
+        synchronized ( localTimeLock )
         {
-            localTime = factory.newLocalTime();
-            addPartToList( localTime );
+            if ( parts[localTime.ordinal()] == null )
+            {
+                parts[localTime.ordinal()] = factory.newLocalTime();
+            }
         }
-        return localTime;
+        return parts[localTime.ordinal()];
     }
 
     T zonedTime() throws E
     {
-        if ( zonedTime == null )
+        synchronized ( zonedTimeLock )
         {
-            zonedTime = factory.newZonedTime();
-            addPartToList( zonedTime );
+            if ( parts[zonedTime.ordinal()] == null )
+            {
+                parts[zonedTime.ordinal()] = factory.newZonedTime();
+            }
         }
-        return zonedTime;
+        return parts[zonedTime.ordinal()];
     }
 
     T duration() throws E
     {
-        if ( duration == null )
+        synchronized ( durationLock )
         {
-            duration = factory.newDuration();
-            addPartToList( duration );
+            if ( parts[duration.ordinal()] == null )
+            {
+                parts[duration.ordinal()] = factory.newDuration();
+            }
         }
-        return duration;
-    }
-
-    private void addPartToList( T t )
-    {
-        if ( t != null )
-        {
-            parts.add( t );
-        }
+        return parts[duration.ordinal()];
     }
 
     void loadAll()
@@ -234,7 +251,7 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return parts.iterator();
+        return Arrays.stream( parts ).filter( Objects::nonNull ).iterator();
     }
 
     /**
