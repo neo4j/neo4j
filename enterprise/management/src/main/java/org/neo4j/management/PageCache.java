@@ -63,7 +63,7 @@ public interface PageCache
     {
         return Double.NaN;
     }
-    
+
     @Description( "Ratio of hits to the total number of lookups in the page cache" )
     default double getHitRatio()
     {
