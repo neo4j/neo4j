@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Test;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -60,9 +61,9 @@ public class LocalDateTimeValueTest
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+                public void writeLocalDateTime( LocalDateTime localDateTime )
                 {
-                    values.add( localDateTime( epochSecond, nano ) );
+                    values.add( localDateTime( localDateTime ) );
                 }
             };
 

@@ -20,6 +20,11 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -299,37 +304,31 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeDate( long epochDay ) throws IOException
+        public void writeDate( LocalDate localDate ) throws IOException
         {
             throw new BoltIOException( Status.Request.Invalid, "Date is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws IOException
+        public void writeLocalTime( LocalTime localTime ) throws IOException
         {
             throw new BoltIOException( Status.Request.Invalid, "LocalTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( OffsetTime offsetTime ) throws IOException
         {
             throw new BoltIOException( Status.Request.Invalid, "Time is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
         {
             throw new BoltIOException( Status.Request.Invalid, "LocalDateTime is not yet supported as a return type in Bolt" );
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
-        {
-            throw new BoltIOException( Status.Request.Invalid, "DateTime is not yet supported as a return type in Bolt" );
-        }
-
-        @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
         {
             throw new BoltIOException( Status.Request.Invalid, "DateTime is not yet supported as a return type in Bolt" );
         }

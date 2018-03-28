@@ -17,38 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.values.utils;
 
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 
-@SuppressWarnings( "WeakerAccess" )
-public class TimeUtil
+public final class TemporalUtil
 {
     public static final long NANOS_PER_SECOND = 1_000_000_000L;
     public static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
-    public static final long NANOS_PER_DAY = NANOS_PER_SECOND * SECONDS_PER_DAY;
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
     public static final double AVG_DAYS_PER_MONTH = 365.2425 / 12;
     public static final long AVG_SECONDS_PER_MONTH = 2_629_746;
 
-    private TimeUtil()
+    private TemporalUtil()
     {
-    }
-
-    public static long asValidTime( long nanosPerDay )
-    {
-        if ( nanosPerDay < 0 )
-        {
-            return nanosPerDay + NANOS_PER_DAY;
-        }
-        if ( nanosPerDay >= NANOS_PER_DAY )
-        {
-            return nanosPerDay - NANOS_PER_DAY;
-        }
-        return nanosPerDay;
     }
 
     public static OffsetTime truncateOffsetToMinutes( OffsetTime value )
@@ -58,13 +43,15 @@ public class TimeUtil
         return value.withOffsetSameInstant( truncatedOffset );
     }
 
-    public static long nanosOfDayToLocal( long nanosOfDayUTC, int offsetSeconds )
-    {
-        return nanosOfDayUTC + offsetSeconds * NANOS_PER_SECOND;
-    }
-
     public static long nanosOfDayToUTC( long nanosOfDayLocal, int offsetSeconds )
     {
         return nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
+    }
+
+    public static long getNanosOfDayUTC( OffsetTime value )
+    {
+        long secondsOfDayLocal = value.toLocalTime().toSecondOfDay();
+        long secondsOffset = value.getOffset().getTotalSeconds();
+        return (secondsOfDayLocal - secondsOffset) * NANOS_PER_SECOND + value.getNano();
     }
 }

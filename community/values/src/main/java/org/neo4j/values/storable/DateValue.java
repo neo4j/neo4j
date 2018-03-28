@@ -260,7 +260,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeDate( value.toEpochDay() );
+        writer.writeDate( value );
     }
 
     @Override

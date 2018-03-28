@@ -20,15 +20,15 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.kernel.impl.store.TemporalValueWriterAdapter;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
  * This is the abstraction of what NativeSchemaIndex with friends need from a schema key.
  * Note that it says nothing about how keys are compared, serialized, read, written, etc. That is the job of Layout.
  */
-abstract class NativeSchemaKey<SELF extends NativeSchemaKey<SELF>> extends ValueWriter.Adapter<RuntimeException>
+abstract class NativeSchemaKey<SELF extends NativeSchemaKey<SELF>> extends TemporalValueWriterAdapter<RuntimeException>
 {
     private static final boolean DEFAULT_COMPARE_ID = true;
 

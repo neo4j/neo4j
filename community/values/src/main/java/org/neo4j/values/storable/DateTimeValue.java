@@ -459,17 +459,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        Instant instant = value.toInstant();
-        ZoneId zone = value.getZone();
-        if ( zone instanceof ZoneOffset )
-        {
-            ZoneOffset offset = (ZoneOffset) zone;
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), offset.getTotalSeconds() );
-        }
-        else
-        {
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), zone.getId() );
-        }
+        writer.writeDateTime( value );
     }
 
     @Override

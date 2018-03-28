@@ -347,7 +347,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeLocalDateTime( value.toEpochSecond( UTC ), value.getNano() );
+        writer.writeLocalDateTime( value );
     }
 
     @Override
