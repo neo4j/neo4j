@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.semantics
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTGraphRef, CypherType, TypeSpec}
 import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InputPosition, InternalException, Ref}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, QualifiedGraphName}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState.ScopeLocation
@@ -313,13 +313,19 @@ object SemanticState {
   }
 
   def recordCurrentScope(node:ASTNode): SemanticCheck =
+    recordCurrentScopeOnly(node) chain recordCurrentContextGraphsOnly(node)
+
+  def recordCurrentScopeOnly(node:ASTNode): SemanticCheck =
     s => SemanticCheckResult.success(s.recordCurrentScope(node))
 
+  def recordCurrentContextGraphsOnly(node:ASTNode): SemanticCheck =
+    s => SemanticCheckResult.success(s.recordCurrentContextGraphs(node))
 }
 
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[Expression, ExpressionTypeInfo],
                          recordedScopes: ASTAnnotationMap[ASTNode, Scope],
+                         recordedContextGraphs: ASTAnnotationMap[ASTNode, ContextGraphs] = ASTAnnotationMap.empty,
                          notifications: Set[InternalNotification] = Set.empty,
                          features: Set[SemanticFeature] = Set.empty,
                          initialWith: Boolean = false
@@ -487,8 +493,19 @@ case class SemanticState(currentScope: ScopeLocation,
   def recordCurrentScope(astNode: ASTNode): SemanticState =
     copy(recordedScopes = recordedScopes.updated(astNode, currentScope.scope))
 
+  def recordCurrentContextGraphs(astNode: ASTNode): SemanticState = {
+    val optCurrentContextGraphs = currentScope.contextGraphs
+    optCurrentContextGraphs.map(recordedContextGraphs.updated(astNode, _)) match {
+      case Some(newRecordedContextGraphs) => copy(recordedContextGraphs = newRecordedContextGraphs)
+      case None => this
+    }
+  }
+
   def scope(astNode: ASTNode): Option[Scope] =
     recordedScopes.get(astNode)
+
+  def contextGraphs(astNode: ASTNode): Option[ContextGraphs] =
+    recordedContextGraphs.get(astNode)
 
   def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
 }

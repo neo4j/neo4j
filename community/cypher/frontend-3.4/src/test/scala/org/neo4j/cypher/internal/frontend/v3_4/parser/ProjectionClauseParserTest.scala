@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.v3_4.expressions
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause, GraphReturnItems, PassAllGraphReturnItems}
 import org.parboiled.scala.Rule1
 
 class ProjectionClauseParserTest
@@ -30,36 +29,100 @@ class ProjectionClauseParserTest
   implicit val parser: Rule1[Clause] = Clause
 
   test("WITH *") {
-    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), PassAllGraphReturnItems(pos)))
   }
 
   test("WITH 1 AS a") {
-    yields(ast.With(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
+    yields(ast.With(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), PassAllGraphReturnItems(pos)))
   }
 
   test("WITH *, 1 AS a") {
-    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), PassAllGraphReturnItems(pos)))
   }
 
   test("WITH ") {
     failsToParse
   }
 
-  test("WITH * WHERE a ~ b") {
-    val where = ast.Where(expressions.Equivalent(varFor("a"), varFor("b"))(pos))(pos)
-    yields(ast.With(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None, None, None, Some(where)))
+  test("WITH GRAPH *") {
+    failsToParse
+  }
+
+  test("WITH * GRAPH AT 'url' AS foo >>") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = true, Seq.empty)(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"))(pos)))(pos))
+    )
+  }
+
+  test("WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
+    ))
+  }
+
+  test("WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos), ast.ReturnedGraph(graphAt("bar", "url2"))(pos)))(pos)
+    ))
+  }
+
+  ignore("WITH GRAPHS") {
+    failsToParse
+  }
+
+  ignore("WITH GRAPH") {
+    failsToParse
+  }
+
+  test("WITH GRAPHS a, b") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(
+      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
+      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
+    ))(pos)
+    yields(ast.With(graphs))
+  }
+
+  test("WITH GRAPHS *, a, b") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(
+      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
+      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
+    ))(pos)
+    yields(ast.With(graphs))
+  }
+
+  test("WITH 1 AS a GRAPHS *") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), graphs))
+  }
+
+  test("WITH * GRAPHS *") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
+  }
+
+  test("WITH * GRAPH foo AT 'url'") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos)))(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
+  }
+
+  test("WITH * GRAPH foo AT 'url' ORDER BY 2 LIMIT 1") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos)))(pos)
+    yields(ast.With(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs, Some(ast.OrderBy(Seq(ast.AscSortItem(literalInt(2))(pos)))(pos)), None, Some(ast.Limit(literalInt(1))(pos)), None))
   }
 
   test("RETURN *") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), None))
   }
 
   test("RETURN 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
+    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None))
   }
 
   test("RETURN *, 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos)))
+    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None))
   }
 
   test("RETURN ") {
@@ -68,6 +131,55 @@ class ProjectionClauseParserTest
 
   test("RETURN GRAPH *") {
     failsToParse
+  }
+
+  ignore("RETURN GRAPHS") {
+    failsToParse
+  }
+
+  ignore("RETURN GRAPH") {
+    failsToParse
+  }
+
+  test("RETURN GRAPHS a, b") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(
+      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
+      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
+    ))(pos)
+    yields(ast.Return(graphs))
+  }
+
+  test("RETURN GRAPHS *, a, b") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(
+      ast.ReturnedGraph(ast.GraphAs(varFor("a"), None)(pos))(pos),
+      ast.ReturnedGraph(ast.GraphAs(varFor("b"), None)(pos))(pos)
+    ))(pos)
+    yields(ast.Return(graphs))
+  }
+
+  test("RETURN 1 AS a GRAPHS *") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
+    yields(ast.Return(ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), Some(graphs)))
+  }
+
+  test("RETURN * GRAPHS *") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq.empty)(pos)
+    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), Some(graphs)))
+  }
+
+  test("RETURN * GRAPH foo AT 'url' ORDER BY 2 LIMIT 1") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos)))(pos)
+    yields(ast.Return(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), Some(graphs), Some(ast.OrderBy(Seq(ast.AscSortItem(literalInt(2))(pos)))(pos)), None, Some(ast.Limit(literalInt(1))(pos))))
+  }
+
+  test("FROM GRAPH foo AT 'url'") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(ast.NewContextGraphs(graphAt("foo", "url"), None)(pos)))(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
+  }
+
+  test("INTO GRAPH foo AT 'url'") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(ast.NewTargetGraph(graphAt("foo", "url"))(pos)))(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
   }
 
 }

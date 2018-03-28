@@ -14,27 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.parser
+package org.neo4j.cypher.internal.frontend.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_4.{expressions => exp}
-import org.parboiled.scala.Rule1
+import org.neo4j.cypher.internal.frontend.v3_4.ast.SingleGraphAs
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.Condition
 
-import scala.language.implicitConversions
-
-class ExpressionParserTest
-  extends ParserAstTest[exp.Expression]
-    with Expressions
-    with AstConstructionTestSupport {
-
-  implicit val parser: Rule1[exp.Expression] = Expression
-
-  test("a ~ b") {
-    yields(exp.Equivalent(varFor("a"), varFor("b")))
+case object noUnnamedGraphs extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val graphs = collectNodesOfType[SingleGraphAs].apply(that)
+    val unnamed = graphs.filter(_.as.isEmpty)
+    unnamed.map { graphDef => s"GraphDef at ${graphDef.position} is unnamed" }
   }
 
-  test("[] ~ []") {
-    yields(exp.Equivalent(exp.ListLiteral(Seq.empty)(pos), exp.ListLiteral(Seq.empty)(pos)))
-  }
-
+  override def name: String = productPrefix
 }

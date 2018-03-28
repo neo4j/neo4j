@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.CatalogDDL
 import org.parboiled.scala._
 
 trait Statement extends Parser
@@ -25,24 +24,8 @@ trait Statement extends Parser
   with Command
   with Base {
 
-  def Statement: Rule1[ast.Statement] = rule(
-    CatalogCommand
-      | Command
-      | Query
+  def Statement: Rule1[ast.Statement] = rule (
+       Command
+     | Query
   )
-
-  def CatalogCommand: Rule1[CatalogDDL] = rule("Catalog DDL statement") {
-    CreateGraph | DeleteGraph
-  }
-
-  def CreateGraph = rule("CREATE GRAPH") {
-    group(keyword("CREATE GRAPH") ~~ QualifiedGraphName ~~ "{" ~~
-      RegularQuery ~~
-      "}") ~~>> (ast.CreateGraph(_, _))
-  }
-
-  def DeleteGraph = rule("DELETE GRAPH") {
-    group(keyword("DELETE GRAPH") ~~ QualifiedGraphName) ~~>> (ast.DeleteGraph(_))
-  }
-
 }
