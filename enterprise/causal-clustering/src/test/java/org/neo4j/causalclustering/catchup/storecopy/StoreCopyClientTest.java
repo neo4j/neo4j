@@ -44,6 +44,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -60,6 +61,8 @@ public class StoreCopyClientTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
 

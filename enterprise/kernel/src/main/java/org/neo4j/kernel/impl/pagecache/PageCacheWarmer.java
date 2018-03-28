@@ -125,7 +125,10 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
      */
     private synchronized void stopWarmer()
     {
-        executor.shutdown();
+        if ( executor != null )
+        {
+            executor.shutdown();
+        }
     }
 
     /**
