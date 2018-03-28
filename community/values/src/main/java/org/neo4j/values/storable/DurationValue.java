@@ -57,15 +57,13 @@ import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
-import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
-import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
 
 /**
  * We use our own implementation because neither {@link java.time.Duration} nor {@link java.time.Period} fits our needs.
  * {@link java.time.Duration} only works with seconds, assumes 24H days, and is unable to handle larger units than days.
  * {@link java.time.Period} only works with units from days or larger, and does not deal with time.
  */
-public final class DurationValue extends ScalarValue implements TemporalAmount, Comparable<DurationValue>
+public final class DurationValue extends ScalarValue implements org.neo4j.graphdb.temporal.Duration, Comparable<DurationValue>
 {
     public static DurationValue duration( Duration value )
     {
@@ -185,7 +183,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
-    private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =
             Comparator.comparingLong( DurationValue::averageLengthInSeconds )
@@ -199,6 +196,30 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private final long days;
     private final long seconds;
     private final int nanos;
+
+    @Override
+    public long getMonths()
+    {
+        return months;
+    }
+
+    @Override
+    public long getDays()
+    {
+        return days;
+    }
+
+    @Override
+    public long getSeconds()
+    {
+        return seconds;
+    }
+
+    @Override
+    public int getNanos()
+    {
+        return nanos;
+    }
 
     private static DurationValue newDuration( long months, long days, long seconds, int nanos )
     {
@@ -670,28 +691,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return mapper.mapDuration( this );
     }
 
-    @Override
-    public long get( TemporalUnit unit )
-    {
-        if ( unit instanceof ChronoUnit )
-        {
-            switch ( (ChronoUnit) unit )
-            {
-            case MONTHS:
-                return months;
-            case DAYS:
-                return days;
-            case SECONDS:
-                return seconds;
-            case NANOS:
-                return nanos;
-            default:
-                break;
-            }
-        }
-        throw new UnsupportedTemporalTypeException( "Unsupported unit: " + unit );
-    }
-
     /**
      * In contrast to {@link #get(TemporalUnit)}, this method supports more units, namely:
      *
@@ -755,12 +754,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return Values.longValue( val );
     }
 
-    @Override
-    public List<TemporalUnit> getUnits()
-    {
-        return UNITS;
-    }
-
     public DurationValue plus( long amount, TemporalUnit unit )
     {
         if ( unit instanceof ChronoUnit )
@@ -800,72 +793,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             }
         }
         throw new UnsupportedOperationException( "Unsupported unit: " + unit );
-    }
-
-    @Override
-    public Temporal addTo( Temporal temporal )
-    {
-        if ( months != 0 && temporal.isSupported( MONTHS ) )
-        {
-            temporal = temporal.plus( months, MONTHS );
-        }
-        if ( days != 0 && temporal.isSupported( DAYS ) )
-        {
-            temporal = temporal.plus( days, DAYS );
-        }
-        if ( seconds != 0 )
-        {
-            if ( temporal.isSupported( SECONDS ) )
-            {
-                temporal = temporal.plus( seconds, SECONDS );
-            }
-            else
-            {
-                long asDays = seconds / SECONDS_PER_DAY;
-                if ( asDays != 0 )
-                {
-                    temporal = temporal.plus( asDays, DAYS );
-                }
-            }
-        }
-        if ( nanos != 0 && temporal.isSupported( NANOS ) )
-        {
-            temporal = temporal.plus( nanos, NANOS );
-        }
-        return temporal;
-    }
-
-    @Override
-    public Temporal subtractFrom( Temporal temporal )
-    {
-        if ( months != 0 && temporal.isSupported( MONTHS ) )
-        {
-            temporal = temporal.minus( months, MONTHS );
-        }
-        if ( days != 0 && temporal.isSupported( DAYS ) )
-        {
-            temporal = temporal.minus( days, DAYS );
-        }
-        if ( seconds != 0 )
-        {
-            if ( temporal.isSupported( SECONDS ) )
-            {
-                temporal = temporal.minus( seconds, SECONDS );
-            }
-            else if ( temporal.isSupported( DAYS ) )
-            {
-                long asDays = seconds / SECONDS_PER_DAY;
-                if ( asDays != 0 )
-                {
-                    temporal = temporal.minus( asDays, DAYS );
-                }
-            }
-        }
-        if ( nanos != 0 && temporal.isSupported( NANOS ) )
-        {
-            temporal = temporal.minus( nanos, NANOS );
-        }
-        return temporal;
     }
 
     public DurationValue add( DurationValue that )
