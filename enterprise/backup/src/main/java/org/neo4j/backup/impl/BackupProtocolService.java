@@ -258,6 +258,7 @@ public class BackupProtocolService
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        tempDbConfig.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
         return tempDbConfig;
     }
 
