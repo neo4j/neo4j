@@ -156,13 +156,13 @@ public class LuceneRecoveryIT
         }
     }
 
-    private class NodeCreator implements Runnable
+    private static class NodeCreator implements Runnable
     {
         private final GraphDatabaseService db;
 
-        NodeCreator( GraphDatabaseService databaseService )
+        NodeCreator( GraphDatabaseService db )
         {
-            this.db = databaseService;
+            this.db = db;
         }
 
         @Override
