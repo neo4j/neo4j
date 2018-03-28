@@ -70,7 +70,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     public void setUp()
     {
         File folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder, false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder );
 
         SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forSchema( labelSchemaDescriptor );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )

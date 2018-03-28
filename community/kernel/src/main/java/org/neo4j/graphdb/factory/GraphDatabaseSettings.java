@@ -516,23 +516,23 @@ public class GraphDatabaseSettings implements LoadableConfig
         NATIVE10( "lucene+native-1.0" ),
         LUCENE10( "lucene-1.0" );
 
-        private final String param;
+        private final String providerName;
 
-        SchemaIndex( String param )
+        SchemaIndex( String providerName )
         {
-            this.param = param;
+            this.providerName = providerName;
         }
 
-        public String param()
+        public String providerName()
         {
-            return param;
+            return providerName;
         }
     }
 
     @Description( "Index provider to use when creating new indexes." )
     public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( SchemaIndex.NATIVE20.param(), SchemaIndex.NATIVE10.param(), SchemaIndex.LUCENE10.param() ),
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
