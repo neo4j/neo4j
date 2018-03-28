@@ -60,10 +60,12 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
             Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier, FileSystemAbstraction fs, PageCache pageCache,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex, CoreSnapshotService snapshotService, Supplier<CheckPointer> checkPointerSupplier )
     {
-        this.snapshotHandler = (snapshotService != null) ? new CoreSnapshotRequestHandler( protocol, snapshotService ) : null;
+        this.snapshotHandler = (snapshotService != null) ? new CoreSnapshotRequestHandler( protocol, snapshotService,
+                new LoggingEventHandlerProvider( logProvider.getLog( CoreSnapshotRequestHandler.class ) ) ) : null;
         this.txPullRequestHandler = new TxPullRequestHandler( protocol, storeIdSupplier, dataSourceAvailabilitySupplier, transactionIdStoreSupplier,
                 logicalTransactionStoreSupplier, monitors, new LoggingEventHandlerProvider( logProvider.getLog( TxPullRequestHandler.class ) ) );
-        this.storeIdRequestHandler = new GetStoreIdRequestHandler( protocol, storeIdSupplier );
+        this.storeIdRequestHandler = new GetStoreIdRequestHandler( protocol, storeIdSupplier,
+                new LoggingEventHandlerProvider( logProvider.getLog( GetStoreIdRequestHandler.class ) ) );
         PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider = new PrepareStoreCopyFilesProvider( pageCache, fs );
         this.storeListingRequestHandler = new PrepareStoreCopyRequestHandler( protocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
                 prepareStoreCopyFilesProvider, new LoggingEventHandlerProvider( logProvider.getLog( PrepareStoreCopyRequestHandler.class ) ) );

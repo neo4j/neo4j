@@ -81,7 +81,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     protected void channelRead0( ChannelHandlerContext ctx, final TxPullRequest msg ) throws Exception
     {
         monitor.increment();
-        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.from( msg.messageId() ) );
         eventHandler.on( Begin, param( "Request", msg ) );
         CatchupResult responseStatus = E_INVALID_REQUEST;
         long lastCommittedTransactionId = -1;

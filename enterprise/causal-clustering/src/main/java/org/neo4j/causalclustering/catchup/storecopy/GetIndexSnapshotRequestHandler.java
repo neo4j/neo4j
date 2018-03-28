@@ -69,7 +69,7 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetIndexFilesRequest snapshotRequest ) throws IOException
     {
-        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.from( snapshotRequest.messageId() ) );
         eventHandler.on( Begin, param( "Request", snapshotRequest ) );
         CloseablesListener closeablesListener = new CloseablesListener();
         StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;

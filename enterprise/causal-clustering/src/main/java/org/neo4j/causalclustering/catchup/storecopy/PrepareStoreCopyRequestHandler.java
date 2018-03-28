@@ -69,7 +69,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
     @Override
     protected void channelRead0( ChannelHandlerContext channelHandlerContext, PrepareStoreCopyRequest prepareStoreCopyRequest ) throws IOException
     {
-        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.from( prepareStoreCopyRequest.messageId() ) );
         eventHandler.on( Begin, param( "Request", prepareStoreCopyRequest ) );
         CloseablesListener closeablesListener = new CloseablesListener();
         PrepareStoreCopyResponse response = PrepareStoreCopyResponse.error( PrepareStoreCopyResponse.Status.E_LISTING_STORE );

@@ -73,7 +73,7 @@ public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetS
     @Override
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreFileRequest fileRequest ) throws Exception
     {
-        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.from( fileRequest.messageId() ) );
         eventHandler.on( Begin, param( "Request", fileRequest ) );
         StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;
         try

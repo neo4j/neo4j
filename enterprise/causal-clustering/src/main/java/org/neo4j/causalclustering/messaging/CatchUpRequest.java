@@ -63,7 +63,7 @@ public abstract class CatchUpRequest implements Message
 
     public abstract RequestMessageType messageType();
 
-    String messageId()
+    public String messageId()
     {
         return id;
     }
