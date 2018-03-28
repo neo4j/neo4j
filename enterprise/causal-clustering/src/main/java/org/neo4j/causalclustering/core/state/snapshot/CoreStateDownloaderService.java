@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
+import java.util.Optional;
+
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -26,6 +28,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;
 
@@ -37,6 +40,7 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private final Log log;
     private final TimeoutStrategy.Timeout downloaderPauseStrategy;
     private PersistentSnapshotDownloader currentJob;
+    private JobHandle jobHandle;
     private boolean stopped;
 
     public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
@@ -51,19 +55,21 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         this.downloaderPauseStrategy = downloaderPauseStrategy;
     }
 
-    public synchronized void scheduleDownload( CatchupAddressProvider addressProvider )
+    public synchronized Optional<JobHandle> scheduleDownload( CatchupAddressProvider addressProvider )
     {
         if ( stopped )
         {
-            return;
+            return Optional.empty();
         }
 
         if ( currentJob == null || currentJob.hasCompleted() )
         {
             currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
                     downloaderPauseStrategy );
-            jobScheduler.schedule( downloadSnapshot, currentJob );
+            jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
+            return Optional.of( jobHandle );
         }
+        return Optional.of( jobHandle );
     }
 
     @Override
