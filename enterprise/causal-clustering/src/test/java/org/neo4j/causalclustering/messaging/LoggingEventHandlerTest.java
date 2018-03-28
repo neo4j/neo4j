@@ -56,15 +56,15 @@ public class LoggingEventHandlerTest
 
         String[] split = output.split( System.lineSeparator() );
         assertEquals( 5, split.length );
-        assertThat( split[0], endsWith( "[logName] id - Info - Message [one: 1]" ) );
+        assertThat( split[0], endsWith( "[logName] id - Info  - Message [one: 1]" ) );
         assertThat( split[0], containsString( "INFO" ) );
         assertThat( split[1], endsWith( "[logName] id - Begin - Message [one: 1]. " + exception ) );
         assertThat( split[1], containsString( "INFO" ) );
-        assertThat( split[2], endsWith( "[logName] id - End - Message [one: 1]" ) );
+        assertThat( split[2], endsWith( "[logName] id - End   - Message [one: 1]" ) );
         assertThat( split[2], containsString( "INFO" ) );
-        assertThat( split[3], endsWith( "[logName] id - Warn -  [one: 3]" ) );
+        assertThat( split[3], endsWith( "[logName] id - Warn  -  [one: 3]" ) );
         assertThat( split[3], containsString( "WARN" ) );
-        assertThat( split[4], endsWith( "[logName] id - Error - Message []" ) );
+        assertThat( split[4], endsWith( "[logName] id - Error - Message" ) );
         assertThat( split[4], containsString( "ERROR" ) );
     }
 

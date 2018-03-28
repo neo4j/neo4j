@@ -19,32 +19,24 @@
  */
 package org.neo4j.causalclustering.messaging;
 
+import java.util.Objects;
+
 public interface EventHandler
 {
-    EventHandler EmptyEventHandler = new EventHandler()
+    EventHandler EmptyEventHandler = ( eventState, message, throwable, params ) ->
     {
-        @Override
-        public void on( EventState eventState, Param... params )
-        {
-            // do nothing
-        }
-
-        @Override
-        public void on( EventState eventState, String message, Param... params )
-        {
-            // do nothing
-        }
-
-        @Override
-        public void on( EventState eventState, String message, Throwable throwable, Param... params )
-        {
-            // do nothing
-        }
+        // do nothing
     };
 
-    void on( EventState eventState, Param... params );
+    default void on( EventState eventState, Param... params )
+    {
+        on( eventState, "", params );
+    }
 
-    void on( EventState eventState, String message, Param... params );
+    default void on( EventState eventState, String message, Param... params )
+    {
+        on( eventState, message, null, params );
+    }
 
     void on( EventState eventState, String message, Throwable throwable, Param... params );
 
@@ -71,6 +63,28 @@ public interface EventHandler
         {
             this.description = description;
             this.param = param;
+        }
+
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( this == o )
+            {
+                return true;
+            }
+            if ( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+            Param param1 = (Param) o;
+            return Objects.equals( description, param1.description ) && Objects.equals( param, param1.param );
+        }
+
+        @Override
+        public int hashCode()
+        {
+
+            return Objects.hash( description, param );
         }
 
         @Override

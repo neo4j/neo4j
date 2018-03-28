@@ -39,6 +39,8 @@ import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventId;
+import org.neo4j.causalclustering.messaging.LoggingEventHandler;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -249,9 +251,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private boolean pullAndApplyBatchOfTransactions( MemberId upstream, StoreId localStoreId, int batchCount )
     {
+        EventId eventId = EventId.create();
         long lastQueuedTxId = applier.lastQueuedTxId();
         pullRequestMonitor.txPullRequest( lastQueuedTxId );
-        TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
+        TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId, eventId.toString() );
         log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
         TxStreamFinishedResponse response;

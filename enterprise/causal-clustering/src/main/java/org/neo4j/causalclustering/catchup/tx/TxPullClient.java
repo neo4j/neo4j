@@ -54,9 +54,11 @@ public class TxPullClient
             throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
-        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        EventId eventId = EventId.create();
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( eventId );
         eventHandler.on( Begin, param( "Previous txId", previousTxId ), param( "Address", fromAddress ) );
-        return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
+        return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId, eventId.toString() ),
+                new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
             private long lastTxIdReceived = previousTxId;
 

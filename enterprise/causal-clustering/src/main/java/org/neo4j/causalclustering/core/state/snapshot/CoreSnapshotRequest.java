@@ -22,8 +22,13 @@ package org.neo4j.causalclustering.core.state.snapshot;
 import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 
-public class CoreSnapshotRequest implements CatchUpRequest
+public class CoreSnapshotRequest extends CatchUpRequest
 {
+    public CoreSnapshotRequest( String id )
+    {
+        super( id );
+    }
+
     @Override
     public RequestMessageType messageType()
     {

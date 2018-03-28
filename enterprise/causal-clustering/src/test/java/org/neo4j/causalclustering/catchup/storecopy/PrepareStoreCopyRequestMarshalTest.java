@@ -43,7 +43,7 @@ public class PrepareStoreCopyRequestMarshalTest
     {
         // given store id requests transmit store id
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
-        PrepareStoreCopyRequest prepareStoreCopyRequest = new PrepareStoreCopyRequest( storeId );
+        PrepareStoreCopyRequest prepareStoreCopyRequest = new PrepareStoreCopyRequest( storeId, "" );
 
         // when transmitted
         sendToChannel( prepareStoreCopyRequest, embeddedChannel );

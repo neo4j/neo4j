@@ -57,6 +57,7 @@ public class PrepareStoreCopyRequestHandlerTest
     private static final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
     private final CatchupServerProtocol catchupServerProtocol = new CatchupServerProtocol();
     private final PrepareStoreCopyFiles prepareStoreCopyFiles = mock( PrepareStoreCopyFiles.class );
+    private final String messageId = "";
 
     @Before
     public void setup()
@@ -85,7 +86,7 @@ public class PrepareStoreCopyRequestHandlerTest
         // given store id doesn't match
 
         // when PrepareStoreCopyRequest is written to channel
-        embeddedChannel.writeInbound( new PrepareStoreCopyRequest( STORE_ID_MISMATCHING ) );
+        embeddedChannel.writeInbound( new PrepareStoreCopyRequest( STORE_ID_MISMATCHING, messageId ) );
 
         // then there is a store id mismatch message
         assertEquals( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE, embeddedChannel.readOutbound() );
@@ -108,7 +109,7 @@ public class PrepareStoreCopyRequestHandlerTest
         configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
 
         // when store listing is requested
-        embeddedChannel.writeInbound( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING ) );
+        embeddedChannel.writeInbound( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING, messageId ) );
 
         // and the contents of the store listing response is sent
         assertEquals( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE, embeddedChannel.readOutbound() );
@@ -138,7 +139,7 @@ public class PrepareStoreCopyRequestHandlerTest
         configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
 
         // when
-        subjectHandler.channelRead0( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING ) );
+        subjectHandler.channelRead0( channelHandlerContext, new PrepareStoreCopyRequest( STORE_ID_MATCHING, messageId ) );
 
         // then
         assertEquals( 1, lock.getReadLockCount() );

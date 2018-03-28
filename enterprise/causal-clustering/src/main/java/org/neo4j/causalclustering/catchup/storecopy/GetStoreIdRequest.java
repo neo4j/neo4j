@@ -22,8 +22,13 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 
-public class GetStoreIdRequest implements CatchUpRequest
+public class GetStoreIdRequest extends CatchUpRequest
 {
+    public GetStoreIdRequest( String id )
+    {
+        super( id );
+    }
+
     @Override
     public RequestMessageType messageType()
     {

@@ -25,13 +25,14 @@ import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 
-public class TxPullRequest implements CatchUpRequest
+public class TxPullRequest extends CatchUpRequest
 {
     private long previousTxId;
     private final StoreId expectedStoreId;
 
-    public TxPullRequest( long previousTxId, StoreId expectedStoreId )
+    public TxPullRequest( long previousTxId, StoreId expectedStoreId, String messageId )
     {
+        super( messageId );
         this.previousTxId = previousTxId;
         this.expectedStoreId = expectedStoreId;
     }

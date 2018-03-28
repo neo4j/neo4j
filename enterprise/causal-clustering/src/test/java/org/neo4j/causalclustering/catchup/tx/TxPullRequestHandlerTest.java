@@ -21,12 +21,17 @@ package org.neo4j.causalclustering.catchup.tx;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Objects;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.EventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventHandler;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
@@ -38,8 +43,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.AssertableLogProvider;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
@@ -50,21 +55,29 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMAT
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 import static org.neo4j.kernel.impl.api.state.StubCursors.cursor;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TxPullRequestHandlerTest
 {
     private final ChannelHandlerContext context = mock( ChannelHandlerContext.class );
-    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     private StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+    private AssertableEventHandler eventHandler = new AssertableEventHandler();
 
     private TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
+            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), id -> eventHandler );
+
+    private final String messageId = "id";
+
+    @Before
+    public void resetEventHandler()
+    {
+        eventHandler = new AssertableEventHandler();
+    }
 
     @Test
     public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
@@ -75,7 +88,7 @@ public class TxPullRequestHandlerTest
         when( context.writeAndFlush( any() ) ).thenReturn( mock( ChannelFuture.class ) );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId, messageId ) );
 
         // then
         verify( context ).writeAndFlush( isA( ChunkedTransactionStream.class ) );
@@ -88,7 +101,7 @@ public class TxPullRequestHandlerTest
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 14L );
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 14, storeId ) );
+        txPullRequestHandler.channelRead0( context, new TxPullRequest( 14, storeId, messageId ) );
 
         // then
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
@@ -101,9 +114,17 @@ public class TxPullRequestHandlerTest
         // given
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
         when( logicalTransactionStore.getTransactions( 14L ) ).thenThrow( new NoSuchTransactionException( 14 ) );
+        TxPullRequest request = new TxPullRequest( 13, storeId, messageId );
+
+        // and
+        eventHandler.setAssertMode();
+        eventHandler.on( EventHandler.EventState.Begin, param( "Request", request ) );
+        eventHandler.on( EventHandler.EventState.Info, "Transaction does not exits. Consider a less aggressive log pruning strategy" );
+        eventHandler.on( EventHandler.EventState.End, param( "Response status", E_TRANSACTION_PRUNED ) );
+        eventHandler.setVerifyingMode();
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 13, storeId ) );
+        txPullRequestHandler.channelRead0( context, request );
 
         // then
         verify( context, never() ).write( isA( ChunkedTransactionStream.class ) );
@@ -111,8 +132,7 @@ public class TxPullRequestHandlerTest
 
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
         verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_TRANSACTION_PRUNED, 15L ) );
-        logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
-                .info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", 14L ) );
+        eventHandler.assertAllFound();
     }
 
     @Test
@@ -128,17 +148,24 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true, () -> transactionIdStore, () -> logicalTransactionStore,
-                        new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
+                        new Monitors(), id -> eventHandler );
+        TxPullRequest request = new TxPullRequest( 1, clientStoreId, messageId );
+
+        // and
+        eventHandler.setAssertMode();
+        eventHandler.on( EventHandler.EventState.Begin, param( "Request", request ) );
+        eventHandler.on( EventHandler.EventState.Error, "Store id mismatch", param( "Local storeId", serverStoreId ),
+                param( "Requested storeId", clientStoreId ) );
+        eventHandler.on( EventHandler.EventState.End, param( "Response status", E_STORE_ID_MISMATCH ) );
+        eventHandler.setVerifyingMode();
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
+        txPullRequestHandler.channelRead0( context, request );
 
         // then
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
         verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_STORE_ID_MISMATCH, 15L ) );
-        logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
-                .info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
-                        "from this machine with %s", 2L, clientStoreId, serverStoreId ) );
+        eventHandler.assertAllFound();
     }
 
     @Test
@@ -149,16 +176,24 @@ public class TxPullRequestHandlerTest
 
         TxPullRequestHandler txPullRequestHandler =
                 new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false, () -> transactionIdStore, () -> logicalTransactionStore,
-                        new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
+                        new Monitors(), id -> eventHandler );
+        TxPullRequest request = new TxPullRequest( 1, storeId, messageId );
+
+        // and
+        eventHandler.setAssertMode();
+        eventHandler.on( EventHandler.EventState.Begin, param( "Request", request ) );
+        eventHandler.on( EventHandler.EventState.Error, "The local database is unavailable" );
+        eventHandler.on( EventHandler.EventState.End, param( "Response status", E_STORE_UNAVAILABLE ) );
+        eventHandler.setVerifyingMode();
+
 
         // when
-        txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, storeId ) );
+        txPullRequestHandler.channelRead0( context, request );
 
         // then
         verify( context ).write( ResponseMessageType.TX_STREAM_FINISHED );
         verify( context ).writeAndFlush( new TxStreamFinishedResponse( E_STORE_UNAVAILABLE, 15L ) );
-        logProvider.assertAtLeastOnce( inLog( TxPullRequestHandler.class )
-                .info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", 2L ) );
+        eventHandler.assertAllFound();
     }
 
     private static CommittedTransactionRepresentation tx( int id )
@@ -197,5 +232,97 @@ public class TxPullRequestHandlerTest
                 return cursor.get();
             }
         };
+    }
+
+    class AssertableEventHandler implements EventHandler
+    {
+        private final LinkedList<EventContext> exectedEventContext = new LinkedList<>();
+        private final LinkedList<EventContext> givenNonMatchingEventContext = new LinkedList<>();
+        private boolean assertMode = true;
+
+        void setAssertMode()
+        {
+            assertMode = true;
+        }
+
+        void setVerifyingMode()
+        {
+            assertMode = false;
+        }
+
+        @Override
+        public void on( EventState eventState, String message, Throwable throwable, Param... params )
+        {
+            EventContext eventContext = new EventContext( eventState, message, throwable, params );
+            if ( assertMode )
+            {
+                exectedEventContext.add( eventContext );
+            }
+            else
+            {
+                if ( !exectedEventContext.remove( eventContext ) )
+                {
+                    givenNonMatchingEventContext.add( eventContext );
+                }
+            }
+        }
+
+        void assertAllFound()
+        {
+            assertTrue( "Still contains asserted event: " + Arrays.toString( exectedEventContext.toArray( new EventContext[0] ) ) + ". Got: " +
+                    Arrays.toString( givenNonMatchingEventContext.toArray( new EventContext[0] ) ), exectedEventContext.isEmpty() );
+        }
+
+        class EventContext
+        {
+            private final EventState eventState;
+            private final String message;
+            private final Throwable throwable;
+            private final Param[] params;
+
+            public EventContext( EventState eventState, String message, Throwable throwable, Param[] params )
+            {
+
+                this.eventState = eventState;
+                this.message = message;
+                this.throwable = throwable;
+                this.params = params;
+            }
+
+            @Override
+            public boolean equals( Object o )
+            {
+                if ( this == o )
+                {
+                    return true;
+                }
+                if ( o == null || getClass() != o.getClass() )
+                {
+                    return false;
+                }
+                EventContext that = (EventContext) o;
+                boolean arrayqual = Arrays.equals( params, that.params );
+                boolean stateEqual = eventState == that.eventState;
+                boolean messageEqual = Objects.equals( message, that.message );
+                boolean throwableEquals = Objects.equals( throwable, that.throwable );
+                return stateEqual && messageEqual && throwableEquals && arrayqual;
+            }
+
+            @Override
+            public int hashCode()
+            {
+
+                int result = Objects.hash( eventState, message, throwable );
+                result = 31 * result + Arrays.hashCode( params );
+                return result;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "EventContext{" + "eventState=" + eventState + ", message='" + message + '\'' + ", throwable=" + throwable + ", params=" +
+                        Arrays.toString( params ) + '}';
+            }
+        }
     }
 }

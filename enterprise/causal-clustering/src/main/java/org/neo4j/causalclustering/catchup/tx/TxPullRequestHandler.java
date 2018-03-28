@@ -106,7 +106,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
                 }
                 else if ( !databaseAvailable.getAsBoolean() )
                 {
-                    eventHandler.on( Error, "The local database is unavailable." );
+                    eventHandler.on( Error, "The local database is unavailable" );
                     responseStatus = E_STORE_UNAVAILABLE;
                 }
                 else if ( lastCommittedTransactionId < firstTxId )
@@ -127,14 +127,14 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
                         // chunked transaction stream ends the interaction internally and closes the cursor
                         ctx.writeAndFlush( txStream ).addListener( f ->
                         {
-                            String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
+                            String message = format( "streaming transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
                             if ( f.isSuccess() )
                             {
-                                eventHandler.on( Info, message );
+                                eventHandler.on( Info, "Success " + message );
                             }
                             else
                             {
-                                eventHandler.on( Warn, message, f.cause() );
+                                eventHandler.on( Warn, "Failed " + message, f.cause() );
                             }
                         } );
                         responseStatus = SUCCESS_END_OF_STREAM;

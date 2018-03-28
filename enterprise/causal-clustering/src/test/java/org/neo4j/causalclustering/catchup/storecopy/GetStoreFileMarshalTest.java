@@ -48,7 +48,7 @@ public class GetStoreFileMarshalTest
     public void getsTransmitted()
     {
         // given
-        GetStoreFileRequest expectedStoreRequest = new GetStoreFileRequest( expectedStore, expectedFile, expectedLastTransaction );
+        GetStoreFileRequest expectedStoreRequest = new GetStoreFileRequest( expectedStore, expectedFile, expectedLastTransaction, "" );
 
         // when
         sendToChannel( expectedStoreRequest, embeddedChannel );

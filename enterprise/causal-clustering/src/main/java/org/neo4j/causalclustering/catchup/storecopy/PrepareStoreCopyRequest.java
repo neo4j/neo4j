@@ -23,12 +23,13 @@ import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 
-public class PrepareStoreCopyRequest implements CatchUpRequest
+public class PrepareStoreCopyRequest extends CatchUpRequest
 {
     private final StoreId storeId;
 
-    public PrepareStoreCopyRequest( StoreId expectedStoreId )
+    public PrepareStoreCopyRequest( StoreId expectedStoreId, String messageId )
     {
+        super( messageId );
         this.storeId = expectedStoreId;
     }
 

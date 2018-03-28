@@ -40,14 +40,15 @@ import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
 
-public class GetStoreFileRequest implements CatchUpRequest
+public class GetStoreFileRequest extends CatchUpRequest
 {
     private final StoreId expectedStoreId;
     private final File file;
     private final long requiredTransactionId;
 
-    public GetStoreFileRequest( StoreId expectedStoreId, File file, long requiredTransactionId )
+    public GetStoreFileRequest( StoreId expectedStoreId, File file, long requiredTransactionId, String id )
     {
+        super( id );
         this.expectedStoreId = expectedStoreId;
         this.file = file;
         this.requiredTransactionId = requiredTransactionId;
@@ -84,7 +85,8 @@ public class GetStoreFileRequest implements CatchUpRequest
             int fileNameLength = channel.getInt();
             byte[] fileNameBytes = new byte[fileNameLength];
             channel.get( fileNameBytes, fileNameLength );
-            return new GetStoreFileRequest( storeId, new File( UTF8.decode( fileNameBytes ) ), requiredTransactionId );
+            String id = CatchUpRequest.decodeMessage( channel );
+            return new GetStoreFileRequest( storeId, new File( UTF8.decode( fileNameBytes ) ), requiredTransactionId, id );
         }
 
         @Override
@@ -95,6 +97,7 @@ public class GetStoreFileRequest implements CatchUpRequest
             String name = getStoreFileRequest.file().getName();
             channel.putInt( name.length() );
             channel.put( UTF8.encode( name ), name.length() );
+            getStoreFileRequest.encodeMessage( channel );
         }
     }
 

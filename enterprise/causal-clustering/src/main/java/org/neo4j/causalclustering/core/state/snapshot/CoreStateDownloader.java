@@ -23,8 +23,8 @@ import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -32,8 +32,8 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -112,7 +112,8 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( primary, new CoreSnapshotRequest(), new CatchUpResponseAdaptor<CoreSnapshot>()
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( primary, new CoreSnapshotRequest( EventId.create().toString() ),
+                    new CatchUpResponseAdaptor<CoreSnapshot>()
             {
                 @Override
                 public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )

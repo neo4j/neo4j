@@ -47,18 +47,6 @@ public class LoggingEventHandler implements EventHandler
     }
 
     @Override
-    public void on( EventState eventState, Param... params )
-    {
-        on( eventState, "", params );
-    }
-
-    @Override
-    public void on( EventState eventState, String message, Param... params )
-    {
-        on( eventState, message, null, params );
-    }
-
-    @Override
     public void on( EventState eventState, String message, Throwable throwable, Param... params )
     {
         checkForNull( eventState, "eventState", EventState.class );
@@ -101,18 +89,31 @@ public class LoggingEventHandler implements EventHandler
 
     private String asString( EventState eventState, String message, Throwable throwable, Param[] params )
     {
-        return format( "%s - %s - %s %s%s", id, padLeft( eventState.name(), 5 ), message, Arrays.toString( params ), maybeFormatExcpetion( throwable ) );
+        return format( "%s - %s - %s%s%s", id, padRight( eventState.name(), 5 ), message, printArray( params ), maybeFormatExcpetion( throwable ) );
     }
 
-    private StringBuilder padLeft( String name, int size )
+    private String printArray( Object[] objects )
     {
-        int pad = Integer.max( name.length() - size, 0 );
+        if ( objects != null && objects.length != 0 )
+        {
+            return " " + Arrays.toString( objects );
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    private StringBuilder padRight( String name, int size )
+    {
+        int pad = Integer.max( size - name.length(), 0 );
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append( name );
         for ( int i = 0; i < pad; i++ )
         {
             stringBuilder.append( " " );
         }
-        return stringBuilder.append( name );
+        return stringBuilder;
     }
 
     private String maybeFormatExcpetion( Throwable throwable )

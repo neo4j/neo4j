@@ -76,8 +76,9 @@ class SimpleCatchupClient implements AutoCloseable
 
     PrepareStoreCopyResponse requestListOfFilesFromServer( StoreId expectedStoreId ) throws CatchUpClientException
     {
-        return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
-                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( EventId.create() ) ) );
+        EventId id = EventId.create();
+        return catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId, id.toString() ),
+                StoreCopyResponseAdaptors.prepareStoreCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     StoreCopyFinishedResponse requestIndividualFile( File file ) throws CatchUpClientException
@@ -88,9 +89,10 @@ class SimpleCatchupClient implements AutoCloseable
     StoreCopyFinishedResponse requestIndividualFile( File file, StoreId expectedStoreId ) throws CatchUpClientException
     {
         long lastTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
-        GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId );
+        EventId id = EventId.create();
+        GetStoreFileRequest storeFileRequest = new GetStoreFileRequest( expectedStoreId, file, lastTransactionId, id.toString() );
         return catchUpClient.makeBlockingRequest( from, storeFileRequest,
-                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( EventId.create() ) ) );
+                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     private StoreId getStoreIdFromKernelStoreId( GraphDatabaseAPI graphDb )
@@ -108,9 +110,10 @@ class SimpleCatchupClient implements AutoCloseable
     {
         long lastCheckPointedTransactionId = getCheckPointer( graphDb ).lastCheckPointedTransactionId();
         StoreId storeId = getStoreIdFromKernelStoreId( graphDb );
-        GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId );
+        EventId id = EventId.create();
+        GetIndexFilesRequest request = new GetIndexFilesRequest( storeId, indexId, lastCheckPointedTransactionId, id.toString() );
         return catchUpClient.makeBlockingRequest( from, request,
-                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( EventId.create() ) ) );
+                StoreCopyResponseAdaptors.filesCopyAdaptor( streamToDiskProvider, eventHandler.eventHandler( id ) ) );
     }
 
     @Override
