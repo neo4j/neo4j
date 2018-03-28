@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
+package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.GraphOfAs
-import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v3_4.expressions.Expression
+object QualifiedGraphName {
 
-case object nameGraphOfPatternElements extends Rewriter {
-
-  def apply(that: AnyRef): AnyRef = instance(that)
-
-  private val rewriter = Rewriter.lift {
-    case g: GraphOfAs =>
-      val rewrittenPattern = g.of.endoRewrite(nameAllPatternElements.namingRewriter)
-      g.copy(of = rewrittenPattern)(g.position)
+  def apply(head: String, tail: List[String]): QualifiedGraphName = {
+    QualifiedGraphName(head :: tail)
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
+  def apply(parts: String*): QualifiedGraphName = {
+    QualifiedGraphName(parts.head, parts.tail.toList)
+  }
 }
+
+/**
+  * A qualified graph name is used in a Cypher query to address a specific graph in the catalog.
+  */
+case class QualifiedGraphName(parts: List[String])
