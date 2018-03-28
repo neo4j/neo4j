@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -38,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -109,6 +112,19 @@ public class IndexFailureOnStartupTest
     {
         // given
         db.setConfig( GraphDatabaseSettings.archive_failed_index, "true" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( PERSON );
+            node.setProperty( "name", "Fry" );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( PERSON );
+            node.setProperty( "name", Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2 ) );
+            tx.success();
+        }
+
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().constraintFor( PERSON ).assertPropertyIsUnique( "name" ).create();

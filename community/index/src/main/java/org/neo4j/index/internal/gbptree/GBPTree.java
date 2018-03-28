@@ -345,7 +345,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * in the header. At the very least {@link Layout#identifier()} will be matched.
      * <p>
      * On start, tree can be in a clean or dirty state. If dirty, it will
-     * {@link #createCleanupJob(boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
+     * {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)} and clean crashed pointers as part of constructor. Tree is only clean if
      * since last time it was opened it was {@link #close() closed} without any non-checkpointed changes present.
      * Correct usage pattern of the GBPTree is:
      *
@@ -450,8 +450,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             clean = false;
             bumpUnstableGeneration();
             forceState();
-            cleaning = createCleanupJob( dirtyOnStartup );
-            recoveryCleanupWorkCollector.add( cleaning );
+            cleaning = createCleanupJob( recoveryCleanupWorkCollector, dirtyOnStartup );
             success = true;
         }
         catch ( Throwable t )
@@ -976,7 +975,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Bump unstable generation, increasing the gap between stable and unstable generation. All pointers and tree nodes
      * with generation in this gap are considered to be 'crashed' and will be cleaned up by {@link CleanupJob}
-     * created in {@link #createCleanupJob(boolean)}.
+     * created in {@link #createCleanupJob(RecoveryCleanupWorkCollector, boolean)}.
      */
     private void bumpUnstableGeneration()
     {
@@ -999,7 +998,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Called on start if tree was not clean.
      */
-    private CleanupJob createCleanupJob( boolean needsCleaning )
+    private CleanupJob createCleanupJob( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean needsCleaning )
     {
         if ( !needsCleaning )
         {
@@ -1017,7 +1016,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
             CrashGenerationCleaner crashGenerationCleaner =
                     new CrashGenerationCleaner( pagedFile, bTreeNode, IdSpace.MIN_TREE_NODE_ID, highTreeNodeId,
                             stableGeneration, unstableGeneration, monitor );
-            return new GBPTreeCleanupJob( crashGenerationCleaner, lock );
+            GBPTreeCleanupJob cleanupJob = new GBPTreeCleanupJob( crashGenerationCleaner, lock );
+            recoveryCleanupWorkCollector.add( cleanupJob );
+            return cleanupJob;
         }
     }
 

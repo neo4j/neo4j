@@ -318,7 +318,7 @@ public class FusionIndexProviderTest
                 providers[SPATIAL],
                 providers[TEMPORAL],
                 providers[LUCENE],
-                fusionVersion.selector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), true );
+                fusionVersion.selector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
     }
 
     private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )

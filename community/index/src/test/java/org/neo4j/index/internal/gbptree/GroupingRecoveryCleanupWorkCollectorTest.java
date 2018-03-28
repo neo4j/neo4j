@@ -150,6 +150,23 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         assertSame( expectedJobs, allRuns );
     }
 
+    @Test
+    public void throwOnAddingJobsAfterStart()
+    {
+        collector.init();
+        collector.start();
+
+        try
+        {
+            collector.add( new DummyJob( "first", new ArrayList<>() ) );
+            fail( "Collector should not acccept new jobs after start." );
+        }
+        catch ( IllegalStateException ise )
+        {
+            // expected
+        }
+    }
+
     private void addAll( Collection<CleanupJob> jobs )
     {
         jobs.forEach( collector::add );

@@ -36,6 +36,7 @@ public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter imple
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
+    private volatile boolean started;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -49,20 +50,25 @@ public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter imple
     @Override
     public void init()
     {
+        started = false;
         jobs.clear();
     }
 
     @Override
     public void add( CleanupJob job )
     {
+        if ( started )
+        {
+            throw new IllegalStateException( "Index clean jobs can't be added after collector start." );
+        }
         jobs.add( job );
-
     }
 
     @Override
     public void start()
     {
         scheduleJobs();
+        started = true;
     }
 
     private void scheduleJobs()
