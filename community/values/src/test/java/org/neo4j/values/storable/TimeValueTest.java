@@ -254,10 +254,4 @@ public class TimeValueTest
         } );
         return result.get();
     }
-
-    private static class NanoOfDayAndOffset
-    {
-        long nanosOfDay;
-        long offsetSeconds;
-    }
 }
