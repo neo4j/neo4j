@@ -47,7 +47,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         into.epochSecondUTC = key.epochSecondUTC;
         into.nanoOfSecond = key.nanoOfSecond;
         into.zoneId = key.zoneId;
-        into.zoneOffsetMinutes = key.zoneOffsetMinutes;
+        into.zoneOffsetSeconds = key.zoneOffsetSeconds;
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
         return into;
@@ -70,7 +70,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         }
         else
         {
-            cursor.putInt( key.zoneOffsetMinutes & ZONE_ID_MASK );
+            cursor.putInt( key.zoneOffsetSeconds & ZONE_ID_MASK );
         }
         cursor.putLong( key.getEntityId() );
     }
@@ -84,12 +84,12 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         if ( isZoneId( encodedZone ) )
         {
             into.zoneId = asZoneId( encodedZone );
-            into.zoneOffsetMinutes = 0;
+            into.zoneOffsetSeconds = 0;
         }
         else
         {
             into.zoneId = -1;
-            into.zoneOffsetMinutes = asZoneOffset( encodedZone );
+            into.zoneOffsetSeconds = asZoneOffset( encodedZone );
         }
         into.setEntityId( cursor.getLong() );
     }

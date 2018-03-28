@@ -200,9 +200,9 @@ public enum TemporalType
                 @Override
                 public Value decodeForTemporal( long[] valueBlocks, int offset )
                 {
-                    int minuteOffset = (int) (valueBlocks[offset] >>> 32);
+                    int secondOffset = (int) (valueBlocks[offset] >>> 32);
                     long nanoOfDay = valueBlocks[1 + offset];
-                    return TimeValue.time( nanoOfDay, ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                    return TimeValue.time( nanoOfDay, ZoneOffset.ofTotalSeconds( secondOffset ) );
                 }
 
                 @Override
@@ -221,8 +221,8 @@ public enum TemporalType
                         for ( int i = 0; i < times.length; i++ )
                         {
                             long nanoOfDay = numbers.longValue( i * BLOCKS_TIME );
-                            int minuteOffset = (int) numbers.longValue( i * BLOCKS_TIME + 1 );
-                            times[i] = OffsetTime.of( LocalTime.ofNanoOfDay( nanoOfDay ), ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                            int secondOffset = (int) numbers.longValue( i * BLOCKS_TIME + 1 );
+                            times[i] = OffsetTime.of( LocalTime.ofNanoOfDay( nanoOfDay ), ZoneOffset.ofTotalSeconds( secondOffset ) );
                         }
                         return Values.timeArray( times );
                     }
@@ -242,8 +242,8 @@ public enum TemporalType
                     {
                         int nanoOfSecond = (int) (valueBlocks[offset] >>> 33);
                         long epochSecond = valueBlocks[1 + offset];
-                        int minuteOffset = (int) valueBlocks[2 + offset];
-                        return DateTimeValue.datetime( epochSecond, nanoOfSecond, ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                        int secondOffset = (int) valueBlocks[2 + offset];
+                        return DateTimeValue.datetime( epochSecond, nanoOfSecond, ZoneOffset.ofTotalSeconds( secondOffset ) );
                     }
                     else
                     {
@@ -275,9 +275,9 @@ public enum TemporalType
                             long zoneValue = numbers.longValue( i * BLOCKS_DATETIME + 2 );
                             if ( (zoneValue & 1) == 1 )
                             {
-                                short minuteOffset = (short) (zoneValue >>> 1);
+                                int secondOffset = (int) (zoneValue >>> 1);
                                 dateTimes[i] =
-                                        ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ), ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                                        ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ), ZoneOffset.ofTotalSeconds( secondOffset ) );
                             }
                             else
                             {
@@ -495,7 +495,6 @@ public enum TemporalType
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, int secondOffset )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
-        int minuteOffset = secondOffset / 60;
 
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
@@ -504,7 +503,7 @@ public enum TemporalType
         // nanoOfSecond will never require more than 30 bits
         data[0] = keyAndType | temporalTypeBits | (1L << 32) | (nanoOfSecond << 33);
         data[1] = epochSecond;
-        data[2] = minuteOffset;
+        data[2] = secondOffset;
 
         return data;
     }
@@ -512,14 +511,13 @@ public enum TemporalType
     public static long[] encodeTime( int keyId, long nanoOfDayUTC, int secondOffset )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
-        int minuteOffset = secondOffset / 60;
 
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_TIME.temporalType << (idBits + 4);
 
         long[] data = new long[BLOCKS_TIME];
-        // Offset are always in the range +-18:00, so minuteOffset will never require more than 12 bits
-        data[0] = keyAndType | temporalTypeBits | ((long) minuteOffset << 32);
+        // Offset are always in the range +-18:00, so secondOffset will never require more than 17 bits
+        data[0] = keyAndType | temporalTypeBits | ((long) secondOffset << 32);
         data[1] = nanoOfDayUTC;
 
         return data;
@@ -583,13 +581,13 @@ public enum TemporalType
 
     public static byte[] encodeTimeArray( OffsetTime[] times )
     {
-        // We could store this in dateTimes.length * 1.25 if we wanted
+        // We could store this in dateTimes.length * 1.5 if we wanted
         long[] data = new long[(int) (Math.ceil( times.length * BLOCKS_TIME ))];
         int i;
         for ( i = 0; i < times.length; i++ )
         {
             data[i * BLOCKS_TIME] = times[i].toLocalTime().toNanoOfDay();
-            data[i * BLOCKS_TIME + 1] = times[i].getOffset().getTotalSeconds() / 60;
+            data[i * BLOCKS_TIME + 1] = times[i].getOffset().getTotalSeconds();
         }
 
         TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_TIME.temporalType );
@@ -600,7 +598,7 @@ public enum TemporalType
 
     public static byte[] encodeDateTimeArray( ZonedDateTime[] dateTimes )
     {
-        // We could store this in dateTimes.length * 2.25 if we wanted
+        // We could store this in dateTimes.length * 2.5 if we wanted
         long[] data = new long[dateTimes.length * BLOCKS_DATETIME];
 
         int i;
@@ -611,9 +609,9 @@ public enum TemporalType
             if ( dateTimes[i].getZone() instanceof ZoneOffset )
             {
                 ZoneOffset offset = (ZoneOffset) dateTimes[i].getZone();
-                int minuteOffset = offset.getTotalSeconds() / 60;
+                int secondOffset = offset.getTotalSeconds();
                 // Set lowest bit to 1 means offset
-                data[i * BLOCKS_DATETIME + 2] = minuteOffset << 1 | 1L;
+                data[i * BLOCKS_DATETIME + 2] = secondOffset << 1 | 1L;
             }
             else
             {
