@@ -402,7 +402,7 @@ Feature: TemporalCreateAcceptance
       | 'PT1M31S' |
     And no side effects
 
-  Scenario: Should construct temporal with time offset with minute precision
+  Scenario: Should construct temporal with time offset with second precision
     Given an empty graph
     When executing query:
       """
@@ -414,11 +414,11 @@ Feature: TemporalCreateAcceptance
       RETURN d
       """
     Then the result should be, in order:
-      | d                           |
-      | '12:34:56+02:05'            |
-      | '12:33:57+02:05'            |
-      | '12:35:03-02:05'            |
-      | '1984-10-11T12:33:57+02:05' |
+      | d                              |
+      | '12:34:56+02:05'               |
+      | '12:34:56+02:05:59'            |
+      | '12:34:56-02:05:07'            |
+      | '1984-10-11T12:34:56+02:05:59' |
 
     And no side effects
 
