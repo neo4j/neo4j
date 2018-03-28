@@ -285,7 +285,7 @@ public class CoreServerModule
     {
         return new CoreLife( consensusModule.raftMachine(),
                 localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess, coreStateMachinesModule.coreStateMachines,
-                handler, snapshotService );
+                handler, snapshotService, downloadService );
     }
 
     public CommandApplicationProcess commandApplicationProcess()

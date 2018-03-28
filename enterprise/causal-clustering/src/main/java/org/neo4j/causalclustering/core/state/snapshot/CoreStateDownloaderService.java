@@ -82,4 +82,9 @@ public class CoreStateDownloaderService extends LifecycleAdapter
             currentJob.stop();
         }
     }
+
+    public synchronized Optional<JobHandle> downloadJob()
+    {
+        return Optional.ofNullable( jobHandle );
+    }
 }

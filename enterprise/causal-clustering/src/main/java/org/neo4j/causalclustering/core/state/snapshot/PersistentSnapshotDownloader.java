@@ -86,6 +86,7 @@ class PersistentSnapshotDownloader implements Runnable
         }
         catch ( InterruptedException e )
         {
+            Thread.currentThread().interrupt();
             log.error( "Persistent snapshot downloader was interrupted" );
         }
         finally
