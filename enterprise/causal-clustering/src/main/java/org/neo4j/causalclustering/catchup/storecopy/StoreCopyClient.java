@@ -31,25 +31,29 @@ import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.causalclustering.messaging.EventHandler;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyResponseAdaptors.filesCopyAdaptor;
 import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyResponseAdaptors.prepareStoreCopyAdaptor;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Begin;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Info;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Warn;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 
 public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
-    private final Log log;
+    private final EventHandlerProvider eventHandlerProvider;
     private TimeoutStrategy backOffStrategy;
 
-    public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider, TimeoutStrategy backOffStrategy )
+    public StoreCopyClient( CatchUpClient catchUpClient, EventHandlerProvider eventHandlerProvider, TimeoutStrategy backOffStrategy )
     {
         this.catchUpClient = catchUpClient;
-        log = logProvider.getLog( getClass() );
+        this.eventHandlerProvider = eventHandlerProvider;
         this.backOffStrategy = backOffStrategy;
     }
 
@@ -57,13 +61,16 @@ public class StoreCopyClient
             Supplier<TerminationCondition> requestWiseTerminationCondition )
             throws StoreCopyFailedException
     {
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        eventHandler.on( Begin );
         try
         {
-            PrepareStoreCopyResponse prepareStoreCopyResponse = prepareStoreCopy( catchupAddressProvider.primary(), expectedStoreId, storeFileStreamProvider );
-            copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
-                    requestWiseTerminationCondition );
+            PrepareStoreCopyResponse prepareStoreCopyResponse =
+                    prepareStoreCopy( catchupAddressProvider.primary(), expectedStoreId, storeFileStreamProvider, eventHandler );
+            copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider, requestWiseTerminationCondition,
+                    eventHandler );
             copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
-                    requestWiseTerminationCondition );
+                    requestWiseTerminationCondition, eventHandler );
             return prepareStoreCopyResponse.lastTransactionId();
         }
         catch ( CatchupAddressResolutionException | CatchUpClientException e )
@@ -73,32 +80,33 @@ public class StoreCopyClient
     }
 
     private void copyFilesIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId, CatchupAddressProvider addressProvider,
-            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions, EventHandler eventHandler )
+            throws StoreCopyFailedException
     {
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
-            persistentCall( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ), addressProvider,
-                    terminationConditions.get() );
+            persistentCall( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), filesCopyAdaptor( storeFileStream, eventHandler ),
+                    addressProvider, terminationConditions.get(), eventHandler );
         }
     }
 
     private void copyIndexSnapshotIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId,
-            CatchupAddressProvider addressProvider,
-            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            CatchupAddressProvider addressProvider, StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions,
+            EventHandler eventHandler ) throws StoreCopyFailedException
     {
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
         while ( indexIds.hasNext() )
         {
             long indexId = indexIds.next();
-            persistentCall( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ), addressProvider,
-                    terminationConditions.get() );
+            persistentCall( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ), filesCopyAdaptor( storeFileStream, eventHandler ),
+                    addressProvider, terminationConditions.get(), eventHandler );
         }
     }
 
     private void persistentCall( CatchUpRequest request, CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler, CatchupAddressProvider addressProvider,
-            TerminationCondition terminationCondition ) throws StoreCopyFailedException
+            TerminationCondition terminationCondition, EventHandler eventHandler ) throws StoreCopyFailedException
     {
         TimeoutStrategy.Timeout timeout = backOffStrategy.newTimeout();
         boolean successful;
@@ -107,22 +115,26 @@ public class StoreCopyClient
             try
             {
                 AdvertisedSocketAddress from = addressProvider.secondary();
-                log.info( format( "Sending request '%s' to '%s'", request, from ) );
+                eventHandler.on( Info, "Sending request", param( "Request", request ), param( "Address", from ) );
                 StoreCopyFinishedResponse response = catchUpClient.makeBlockingRequest( from, request, copyHandler );
                 successful = successfulFileDownload( response );
+                if ( !successful )
+                {
+                    eventHandler.on( Warn, "Request failed", param( "Status", response.status() ) );
+                }
+                else
+                {
+                    eventHandler.on( Info, "Request succeeded" );
+                }
             }
             catch ( CatchUpClientException | CatchupAddressResolutionException e )
             {
+                eventHandler.on( Warn, "Request failed", e );
                 successful = false;
             }
             if ( !successful )
             {
-                log.error( format( "Request failed '%s'", request ) );
                 terminationCondition.assertContinue();
-            }
-            else
-            {
-                log.info( format( "Request was successful '%s'", request ) );
             }
             awaitAndIncrementTimeout( timeout );
         }
@@ -142,12 +154,13 @@ public class StoreCopyClient
         }
     }
 
-    private PrepareStoreCopyResponse prepareStoreCopy( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreamProvider storeFileStream )
+    private PrepareStoreCopyResponse prepareStoreCopy( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreamProvider storeFileStream,
+            EventHandler eventHandler )
             throws CatchUpClientException, StoreCopyFailedException
     {
-        log.info( "Requesting store listing from: " + from );
-        PrepareStoreCopyResponse prepareStoreCopyResponse =
-                catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ), prepareStoreCopyAdaptor( storeFileStream, log ) );
+        eventHandler.on( Info, "Requesting store listing", param( "Address", from ) );
+        PrepareStoreCopyResponse prepareStoreCopyResponse = catchUpClient.makeBlockingRequest( from, new PrepareStoreCopyRequest( expectedStoreId ),
+                prepareStoreCopyAdaptor( storeFileStream, eventHandler ) );
         if ( prepareStoreCopyResponse.status() != PrepareStoreCopyResponse.Status.SUCCESS )
         {
             throw new StoreCopyFailedException( "Preparing store failed due to: " + prepareStoreCopyResponse.status() );
@@ -178,7 +191,6 @@ public class StoreCopyClient
     private boolean successfulFileDownload( StoreCopyFinishedResponse response ) throws StoreCopyFailedException
     {
         StoreCopyFinishedResponse.Status responseStatus = response.status();
-        log.debug( "Request for individual file resulted in response type: %s", response.status() );
         if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
         {
             return true;

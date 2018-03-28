@@ -101,7 +101,18 @@ public class LoggingEventHandler implements EventHandler
 
     private String asString( EventState eventState, String message, Throwable throwable, Param[] params )
     {
-        return format( "%s - %s - %s %s%s", id, eventState.name(), message, Arrays.toString( params ), maybeFormatExcpetion( throwable ) );
+        return format( "%s - %s - %s %s%s", id, padLeft( eventState.name(), 5 ), message, Arrays.toString( params ), maybeFormatExcpetion( throwable ) );
+    }
+
+    private StringBuilder padLeft( String name, int size )
+    {
+        int pad = Integer.max( name.length() - size, 0 );
+        StringBuilder stringBuilder = new StringBuilder();
+        for ( int i = 0; i < pad; i++ )
+        {
+            stringBuilder.append( " " );
+        }
+        return stringBuilder.append( name );
     }
 
     private String maybeFormatExcpetion( Throwable throwable )

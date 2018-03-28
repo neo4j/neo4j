@@ -26,18 +26,27 @@ import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventHandler;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
+import org.neo4j.causalclustering.messaging.EventId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.Begin;
+import static org.neo4j.causalclustering.messaging.EventHandler.EventState.End;
+import static org.neo4j.causalclustering.messaging.EventHandler.Param.param;
 
 public class TxPullClient
 {
     private final CatchUpClient catchUpClient;
     private PullRequestMonitor pullRequestMonitor;
+    private final EventHandlerProvider eventHandlerProvider;
 
-    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors )
+    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors, EventHandlerProvider eventHandlerProvider )
     {
         this.catchUpClient = catchUpClient;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
+        this.eventHandlerProvider = eventHandlerProvider;
     }
 
     public TxPullRequestResult pullTransactions( AdvertisedSocketAddress fromAddress, StoreId storeId, long previousTxId,
@@ -45,6 +54,8 @@ public class TxPullClient
             throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
+        EventHandler eventHandler = eventHandlerProvider.eventHandler( EventId.create() );
+        eventHandler.on( Begin, param( "Previous txId", previousTxId ), param( "Address", fromAddress ) );
         return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
             private long lastTxIdReceived = previousTxId;
@@ -60,6 +71,7 @@ public class TxPullClient
             public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal, TxStreamFinishedResponse response )
             {
                 signal.complete( new TxPullRequestResult( response.status(), lastTxIdReceived ) );
+                eventHandler.on( End, param( "Response status", response.status() ), param( "Last TxId", response.latestTxId() ) );
             }
         } );
     }

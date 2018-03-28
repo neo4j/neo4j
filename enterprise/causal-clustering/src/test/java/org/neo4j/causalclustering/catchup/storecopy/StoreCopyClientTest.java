@@ -38,12 +38,12 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
+import org.neo4j.causalclustering.messaging.LoggingEventHandlerProvider;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
-import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -64,7 +64,8 @@ public class StoreCopyClientTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
 
     private StoreCopyClient subject;
-    private final LogProvider logProvider = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
+    private final LoggingEventHandlerProvider eventHandler = new LoggingEventHandlerProvider(
+            FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ).getLog( StoreCopyClient.class ) );
 
     // params
     private final AdvertisedSocketAddress expectedAdvertisedAddress = new AdvertisedSocketAddress( "host", 1234 );
@@ -82,7 +83,7 @@ public class StoreCopyClientTest
     {
         indexIds.add( 13 );
         backOffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
-        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, eventHandler, backOffStrategy );
     }
 
     @Test
@@ -136,7 +137,7 @@ public class StoreCopyClientTest
     public void shouldFailIfTerminationConditionFails() throws CatchUpClientException
     {
         // given a file will fail an expected number of times
-        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, eventHandler, backOffStrategy );
 
         // and requesting the individual file will fail
         when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn(
