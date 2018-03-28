@@ -120,8 +120,10 @@ public class ValueComparisonTest
 
             // DateTime and the likes
             datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00"),
-            datetime(2018, 2, 2, 1, 30, 0, 0, "+01:00"),
-            datetime(2018, 2, 2, 1, 30, 0, 0, "Europe/Stockholm"), // same offset as +01:00, but name zones come after offsets
+            datetime(2018, 2, 1, 22, 30, 0, 0, "-02:00"),
+            datetime(2018, 2, 2, 1, 30, 0, 0, "+01:00"), // offsets by offsetSecond
+            datetime(2018, 2, 2, 1, 30, 0, 0, "Europe/Berlin"), // same offset as +01:00, but name zones come after offsets ...
+            datetime(2018, 2, 2, 1, 30, 0, 0, "Europe/Stockholm"), // ... alphabetically
             datetime(2018, 2, 2, 1, 0, 0, 0, "+00:00"),
             datetime(2018, 3, 2, 1, 0, 0, 0, "Europe/Berlin"),
             datetime(2018, 3, 2, 1, 0, 0, 0, "Europe/Stockholm"), // same offset as Europe/Berlin, so compared by zone name

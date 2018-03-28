@@ -439,8 +439,27 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         if ( other instanceof DateTimeValue )
         {
             ZonedDateTime that = ((DateTimeValue) other).value;
-            return value.toLocalDateTime().equals( that.toLocalDateTime() ) &&
-                    areSameZone( value.getZone(), that.getZone() );
+            boolean res = value.toLocalDateTime().equals( that.toLocalDateTime() );
+            if ( res )
+            {
+                ZoneId thisZone = value.getZone();
+                ZoneId thatZone = that.getZone();
+                boolean thisIsOffset = thisZone instanceof ZoneOffset;
+                boolean thatIsOffset = thatZone instanceof ZoneOffset;
+                if ( thisIsOffset && thatIsOffset )
+                {
+                    res = thisZone.equals( thatZone );
+                }
+                else if ( !thisIsOffset && !thatIsOffset )
+                {
+                    res = TimeZones.map( thisZone.getId() ) == TimeZones.map( thatZone.getId() );
+                }
+                else
+                {
+                    res = false;
+                }
+            }
+            return res;
 
         }
         return false;
@@ -462,17 +481,24 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
             cmp = value.toLocalTime().getNano() - that.value.toLocalTime().getNano();
             if ( cmp == 0 )
             {
-                cmp = value.toLocalDateTime().compareTo( that.value.toLocalDateTime() );
+                ZoneOffset thisOffset = value.getOffset();
+                ZoneOffset thatOffset = that.value.getOffset();
+
+                cmp = Integer.compare( thisOffset.getTotalSeconds(), thatOffset.getTotalSeconds() );
                 if ( cmp == 0 )
                 {
                     ZoneId thisZone = value.getZone();
                     ZoneId thatZone = that.value.getZone();
                     boolean thisIsOffset = thisZone instanceof ZoneOffset;
                     boolean thatIsOffset = thatZone instanceof ZoneOffset;
-                    cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
-                    if ( cmp == 0 && (thisIsOffset || !areSameZone( thisZone, thatZone, thisIsOffset, thatIsOffset ) ) )
+                    // non-named timezone (just offset) before named-time zones, alphabetically
+                    cmp = Boolean.compare( thatIsOffset, thisIsOffset );
+                    if ( cmp == 0 )
                     {
-                        cmp = thisZone.getId().compareTo( thatZone.getId() );
+                        if ( !thisIsOffset ) // => also means !thatIsOffset
+                        {
+                            cmp = compareNamedZonesWithMapping( thisZone, thatZone );
+                        }
                     }
                     if ( cmp == 0 )
                     {
@@ -484,24 +510,17 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return cmp;
     }
 
-    private boolean areSameZone( ZoneId thisZone, ZoneId thatZone, boolean thisIsOffset, boolean thatIsOffset )
+    private int compareNamedZonesWithMapping( ZoneId thisZone, ZoneId thatZone )
     {
-        if ( thisIsOffset && thatIsOffset )
+        short indexThisZone = TimeZones.map( thisZone.getId() );
+        short indexThatZone = TimeZones.map( thatZone.getId() );
+        int cmp = Short.compare( indexThisZone, indexThatZone );
+        if ( cmp == 0 )
         {
-            return thisZone.equals( thatZone );
+            cmp = thisZone.getId().compareTo( thatZone.getId() );
         }
-        else if ( !thisIsOffset && !thatIsOffset )
-        {
-            return TimeZones.map( thisZone.getId() ) == TimeZones.map( thatZone.getId() );
-        }
-        return false;
-    }
 
-    private boolean areSameZone( ZoneId thisZone, ZoneId thatZone )
-    {
-        boolean thisIsOffset = thisZone instanceof ZoneOffset;
-        boolean thatIsOffset = thatZone instanceof ZoneOffset;
-        return areSameZone( thisZone, thatZone, thisIsOffset, thatIsOffset );
+        return cmp;
     }
 
     @Override

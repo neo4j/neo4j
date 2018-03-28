@@ -82,7 +82,9 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-            if ( compare == 0 && hasValidTimeZone() && other.hasValidTimeZone() )
+            if ( compare == 0 &&
+                    TimeZones.validZoneOffset( zoneOffsetMinutes * 60 ) &&
+                    TimeZones.validZoneOffset( other.zoneOffsetMinutes * 60 ) )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
