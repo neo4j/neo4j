@@ -96,6 +96,15 @@ public class ValuesTest
         assertThrowsIllegalArgument( CoordinateReferenceSystem.WGS84_3D, 1, 2 );
     }
 
+    @Test
+    public void shouldCreatePointFromPublicType()
+    {
+        org.neo4j.graphdb.spatial.impl.Point p = new org.neo4j.graphdb.spatial.impl.Point( org.neo4j.graphdb.spatial.impl.CRS.Cartesian, 1.0, 2.0);
+        PointValue pv = Values.point( p );
+
+        assertEqual( pv, new PointValue( CoordinateReferenceSystem.Cartesian, 1.0, 2.0) );
+    }
+
     private void assertThrowsIllegalArgument( CoordinateReferenceSystem crs, double... coordinates )
     {
         try
