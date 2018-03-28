@@ -75,7 +75,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final JobScheduler scheduler;
-    private volatile boolean stopped;
+    private volatile boolean stopOngoingWarming;
     private ExecutorService executor;
     private PageLoaderFactory pageLoaderFactory;
 
@@ -89,7 +89,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
     @Override
     public synchronized Resource addFilesTo( Collection<StoreFileMetadata> coll ) throws IOException
     {
-        if ( stopped )
+        if ( stopOngoingWarming )
         {
             return Resource.EMPTY;
         }
@@ -108,7 +108,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
     @Override
     public synchronized void start()
     {
-        stopped = false;
+        stopOngoingWarming = false;
         executor = buildExecutorService( scheduler );
         pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
     }
@@ -116,11 +116,16 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
     @Override
     public void stop()
     {
-        stopped = true;
-        synchronized ( this )
-        {
-            executor.shutdown();
-        }
+        stopOngoingWarming = true;
+        stopWarmer();
+    }
+
+    /**
+     * Stopping warmer process, needs to be synchronised to prevent racing with profiling and heating
+     */
+    private synchronized void stopWarmer()
+    {
+        executor.shutdown();
     }
 
     /**
@@ -132,7 +137,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
      */
     synchronized OptionalLong reheat() throws IOException
     {
-        if ( stopped )
+        if ( stopOngoingWarming )
         {
             return OptionalLong.empty();
         }
@@ -149,7 +154,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
                 // The database is allowed to map and unmap files while we are trying to heat it up.
             }
         }
-        return stopped ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
+        return OptionalLong.of( pagesLoaded );
     }
 
     /**
@@ -161,7 +166,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
      */
     public synchronized OptionalLong profile() throws IOException
     {
-        if ( stopped )
+        if ( stopOngoingWarming )
         {
             return OptionalLong.empty();
         }
@@ -182,7 +187,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
             }
         }
         pageCache.reportEvents();
-        return stopped ? OptionalLong.empty() : OptionalLong.of( pagesInMemory );
+        return OptionalLong.of( pagesInMemory );
     }
 
     private long reheat( PagedFile file ) throws IOException
@@ -222,7 +227,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
             {
                 for ( int i = 0; i < 8; i++ )
                 {
-                    if ( stopped )
+                    if ( stopOngoingWarming )
                     {
                         return pagesLoaded;
                     }
@@ -252,7 +257,7 @@ public class PageCacheWarmer extends LifecycleAdapter implements NeoStoreFileLis
             int b = 0;
             for ( ; ; )
             {
-                if ( stopped )
+                if ( stopOngoingWarming )
                 {
                     return pagesInMemory;
                 }
