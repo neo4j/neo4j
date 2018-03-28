@@ -19,25 +19,34 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.util.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 
-// Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
-case object expandCallWhere extends Rewriter {
+case object createGraphIntroducesHorizon extends Rewriter {
+
+  def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance = bottomUp(Rewriter.lift {
     case query@SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
-        case unresolved@UnresolvedCall(_, _, _, Some(result@ProcedureResult(_, optWhere@Some(where)))) =>
-          val newResult = result.copy(where = None)(result.position)
-          val newUnresolved = unresolved.copy(declaredResult = Some(newResult))(unresolved.position)
-          val newItems = ReturnItems(includeExisting = true, Seq.empty)(where.position)
-          val newWith = With(distinct = false, newItems, PassAllGraphReturnItems(where.position), None, None, None, optWhere)(where.position)
-          Seq(newUnresolved, newWith)
+        case clause@CreateNewSourceGraph(snapshot, graph, of, at) =>
+          val createGraph = CreateRegularGraph(snapshot, graph, of, at)(clause.position)
+          val p = clause.position
+          val newWith = With(
+            ReturnItems(includeExisting = true, Seq.empty)(p),
+            GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(GraphAs(graph, None)(p))(p)))(p)
+          )(p)
+          Seq(createGraph, newWith)
+
+        case clause@CreateNewTargetGraph(snapshot, graph, of, at) =>
+          val createGraph = CreateRegularGraph(snapshot, graph, of, at)(clause.position)
+          val p = clause.position
+          val newWith = With(
+            ReturnItems(includeExisting = true, Seq.empty)(p),
+            GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(GraphAs(graph, None)(p))(p)))(p)
+          )(p)
+          Seq(createGraph, newWith)
 
         case clause =>
           Some(clause)
       }
       query.copy(clauses = newClauses)(query.position)
   })
-
-  override def apply(v: AnyRef): AnyRef =
-    instance(v)
 }

@@ -45,22 +45,26 @@ trait Query extends Parser
   }
 
   def Clause: Rule1[ast.Clause] = (
-      FromGraph
-    | ConstructGraph
-    | LoadCSV
+      LoadCSV
+    | From
+    | Into
     | Start
     | Match
     | Unwind
     | Merge
-    | CreateUnique
+    | CreateGraph
     | Create
     | SetClause
+    | DeleteGraphs
     | Delete
     | Remove
     | Foreach
     | With
     | Call
+    | Persist
+    | Relocate
     | Return
+    | Snapshot
     | Pragma
   )
 

@@ -92,11 +92,6 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.arguments) chain
           checkTypes(x, x.signatures)
 
-      case x:Equivalent =>
-        requireCypher10Support("`~` (equivalence)", x.position) chain
-        check(ctx, x.arguments) chain
-          checkTypes(x, x.signatures)
-
       case x:NotEquals =>
         check(ctx, x.arguments) chain
           checkTypes(x, x.signatures)

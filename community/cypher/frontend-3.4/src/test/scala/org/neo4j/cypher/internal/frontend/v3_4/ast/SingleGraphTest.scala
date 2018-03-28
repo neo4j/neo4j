@@ -14,11 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.semantics
+package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-sealed trait SemanticFeature
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticFeature, SemanticState}
 
-object SemanticFeature {
-  case object MultipleGraphs extends SemanticFeature
-  case object WithInitialQuerySignature extends SemanticFeature
+class SingleGraphTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  test("Self alias does not produce a semantic error") {
+
+    val Right(state) = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs).declareGraph(varFor("foo"))
+
+    val result = graphAs("foo", "foo").semanticCheck(state)
+    val errors = result.errors.toSet
+
+    errors.isEmpty should be(true)
+  }
 }

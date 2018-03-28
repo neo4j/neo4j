@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.QualifiedGraphName
 import org.neo4j.cypher.internal.util.v3_4.InputPosition
 import org.neo4j.cypher.internal.util.v3_4.symbols.{TypeSpec, _}
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator}
@@ -184,6 +183,9 @@ trait SemanticAnalysisTooling {
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
 
+  def declareGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).declareGraph(v)
+
   def declareGraphMarkedAsGenerated(v:Variable): SemanticCheck = {
     val declare = (_: SemanticState).declareGraph(v)
     val mark = (_: SemanticState).localMarkAsGenerated(v)
@@ -204,15 +206,6 @@ trait SemanticAnalysisTooling {
         SemanticCheckResult(s,
           List(FeatureError(s"$msg is not available in this implementation of Cypher " +
                               "due to lack of support for multiple graphs.", position)))
-      else
-        SemanticCheckResult.success(s)
-  }
-
-  def requireCypher10Support(msg: String, position: InputPosition): SemanticCheck =
-    s => {
-      if(!s.features(SemanticFeature.Cypher10Support))
-        SemanticCheckResult(s,
-          List(FeatureError(s"$msg is a Cypher 10 feature and is not available in this implementation of Cypher.", position)))
       else
         SemanticCheckResult.success(s)
   }

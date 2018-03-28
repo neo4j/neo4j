@@ -62,7 +62,7 @@ object DebugPrinter extends Phase[CompilerContext, LogicalPlanState, LogicalPlan
 
     val variable = Variable("col")(pos)
     val returnItem = AliasedReturnItem(variable, variable)(pos)
-    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, Set.empty)(pos)
+    val returnClause = Return(distinct = false, ReturnItems(includeExisting = false, Seq(returnItem))(pos), None, None, None, None, Set.empty)(pos)
     val newStatement = Query(None, SingleQuery(Seq(returnClause))(pos))(pos)
 
     (logicalPlan, newStatement)

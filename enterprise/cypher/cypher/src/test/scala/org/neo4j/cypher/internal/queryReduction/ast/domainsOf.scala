@@ -63,8 +63,9 @@ object domainsOf {
 
       case Variable(_) => Seq()
 
-      case Return(_, returnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
+      case Return(_, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
         ofSingle(returnItems, classOf[ReturnItemsDef]) ++
+          ofOption(maybeGraphReturnItems, classOf[GraphReturnItems]) ++
           ofOption(maybeOrderBy, classOf[OrderBy]) ++
           ofOption(maybeSkip, classOf[Skip]) ++
           ofOption(maybeLimit, classOf[Limit])
@@ -117,8 +118,9 @@ object domainsOf {
 
       case Namespace(_) => Seq()
 
-      case With(_, returnItems, orderBy, skip, limit, where) =>
+      case With(_, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
         ofSingle(returnItems, classOf[ReturnItemsDef]) ++
+        ofSingle(mandatoryGraphReturnItems, classOf[GraphReturnItems]) ++
         ofOption(orderBy, classOf[OrderBy]) ++
         ofOption(skip, classOf[Skip]) ++
         ofOption(limit, classOf[Limit]) ++
@@ -126,6 +128,9 @@ object domainsOf {
 
       case MapExpression(items) =>
         ofTupledSeq(items, classOf[PropertyKeyName], classOf[Expression])
+
+      case GraphReturnItems(_, items) =>
+        ofSeq(items, classOf[GraphReturnItem])
 
       case FilterExpression(scope, expression) =>
         ofSingle(scope, classOf[FilterScope]) ++
