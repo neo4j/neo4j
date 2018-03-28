@@ -137,7 +137,7 @@ public class StoreCopyClient
             }
             catch ( CatchUpClientException | CatchupAddressResolutionException e )
             {
-                eventHandler.on( Warn, "Request failed", e );
+                eventHandler.on( Warn, "Request failed", param( "Cause", e ) );
                 successful = false;
             }
             if ( !successful )

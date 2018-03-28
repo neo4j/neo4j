@@ -24,10 +24,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Objects;
-
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -186,7 +182,6 @@ public class TxPullRequestHandlerTest
         eventHandler.on( EventHandler.EventState.End, param( "Response status", E_STORE_UNAVAILABLE ) );
         eventHandler.setVerifyingMode();
 
-
         // when
         txPullRequestHandler.channelRead0( context, request );
 
@@ -232,97 +227,5 @@ public class TxPullRequestHandlerTest
                 return cursor.get();
             }
         };
-    }
-
-    class AssertableEventHandler implements EventHandler
-    {
-        private final LinkedList<EventContext> exectedEventContext = new LinkedList<>();
-        private final LinkedList<EventContext> givenNonMatchingEventContext = new LinkedList<>();
-        private boolean assertMode = true;
-
-        void setAssertMode()
-        {
-            assertMode = true;
-        }
-
-        void setVerifyingMode()
-        {
-            assertMode = false;
-        }
-
-        @Override
-        public void on( EventState eventState, String message, Throwable throwable, Param... params )
-        {
-            EventContext eventContext = new EventContext( eventState, message, throwable, params );
-            if ( assertMode )
-            {
-                exectedEventContext.add( eventContext );
-            }
-            else
-            {
-                if ( !exectedEventContext.remove( eventContext ) )
-                {
-                    givenNonMatchingEventContext.add( eventContext );
-                }
-            }
-        }
-
-        void assertAllFound()
-        {
-            assertTrue( "Still contains asserted event: " + Arrays.toString( exectedEventContext.toArray( new EventContext[0] ) ) + ". Got: " +
-                    Arrays.toString( givenNonMatchingEventContext.toArray( new EventContext[0] ) ), exectedEventContext.isEmpty() );
-        }
-
-        class EventContext
-        {
-            private final EventState eventState;
-            private final String message;
-            private final Throwable throwable;
-            private final Param[] params;
-
-            public EventContext( EventState eventState, String message, Throwable throwable, Param[] params )
-            {
-
-                this.eventState = eventState;
-                this.message = message;
-                this.throwable = throwable;
-                this.params = params;
-            }
-
-            @Override
-            public boolean equals( Object o )
-            {
-                if ( this == o )
-                {
-                    return true;
-                }
-                if ( o == null || getClass() != o.getClass() )
-                {
-                    return false;
-                }
-                EventContext that = (EventContext) o;
-                boolean arrayqual = Arrays.equals( params, that.params );
-                boolean stateEqual = eventState == that.eventState;
-                boolean messageEqual = Objects.equals( message, that.message );
-                boolean throwableEquals = Objects.equals( throwable, that.throwable );
-                return stateEqual && messageEqual && throwableEquals && arrayqual;
-            }
-
-            @Override
-            public int hashCode()
-            {
-
-                int result = Objects.hash( eventState, message, throwable );
-                result = 31 * result + Arrays.hashCode( params );
-                return result;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "EventContext{" + "eventState=" + eventState + ", message='" + message + '\'' + ", throwable=" + throwable + ", params=" +
-                        Arrays.toString( params ) + '}';
-            }
-        }
     }
 }
