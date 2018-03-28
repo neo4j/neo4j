@@ -924,11 +924,15 @@ public class ProcedureIT
             threads[i].join();
         }
 
-        Result result = db.execute( "MATCH () RETURN count(*) as n" );
-        assertThat( result.hasNext(), equalTo( true ) );
-        while ( result.hasNext() )
+        Result result;
+        try
         {
-            assertThat( result.next().get( "n" ), equalTo( (long) numThreads ) );
+            result = getAndAssertNodeCountResult( numThreads );
+        }
+        catch ( AssertionError error )
+        {
+            // try again, once more - just to be sure its not some weird timing problem with the transactions
+            result = getAndAssertNodeCountResult( numThreads );
         }
         result.close();
         assertThat( "Should be no exceptions in procedures", exceptionsInProcedure.isEmpty(), equalTo( true ) );
@@ -1050,6 +1054,17 @@ public class ProcedureIT
         assertFalse( res.hasNext() );
 
         assertTrue( onCloseCalled[1] );
+    }
+
+    private Result getAndAssertNodeCountResult( int expectedCount )
+    {
+        Result result = db.execute( "MATCH () RETURN count(*) as n" );
+        assertThat( result.hasNext(), equalTo( true ) );
+        while ( result.hasNext() )
+        {
+            assertThat( result.next().get( "n" ), equalTo( (long) expectedCount ) );
+        }
+        return result;
     }
 
     private String createCsvFile( String... lines ) throws IOException
