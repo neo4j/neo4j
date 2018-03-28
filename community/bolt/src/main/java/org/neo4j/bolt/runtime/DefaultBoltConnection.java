@@ -140,45 +140,62 @@ public class DefaultBoltConnection implements BoltConnection
             boolean loop = false;
             do
             {
-                if ( !shouldClose.get() )
+                // exit loop if we'll close the connection
+                if ( willClose() )
                 {
-                    if ( waitForMessage || !queue.isEmpty() )
-                    {
-                        queue.drainTo( batch, batchCount );
-                        if ( batch.size() == 0 )
-                        {
-                            while ( true )
-                            {
-                                Job nextJob = queue.poll( 10, SECONDS );
-                                if ( nextJob != null )
-                                {
-                                    batch.add( nextJob );
+                    break;
+                }
 
-                                    break;
-                                }
-                                else
-                                {
-                                    machine.validateTransaction();
-                                }
+                // do we have pending jobs or shall we wait for new jobs to
+                // arrive, which is required only for releasing stickiness
+                // condition to this thread
+                if ( waitForMessage || !queue.isEmpty() )
+                {
+                    queue.drainTo( batch, batchCount );
+                    if ( batch.size() == 0 )
+                    {
+                        // loop until we get a new job, if we cannot then validate
+                        // transaction to check for termination condition. We'll
+                        // break loop if we'll close the connection
+                        while ( !willClose() )
+                        {
+                            Job nextJob = queue.poll( 10, SECONDS );
+                            if ( nextJob != null )
+                            {
+                                batch.add( nextJob );
+
+                                break;
+                            }
+                            else
+                            {
+                                machine.validateTransaction();
                             }
                         }
-                        notifyDrained( batch );
-
-                        while ( batch.size() > 0 )
-                        {
-                            Job current = batch.remove( 0 );
-
-                            current.perform( machine );
-                        }
-
-                        loop = machine.shouldStickOnThread();
-                        waitForMessage = loop;
                     }
+                    notifyDrained( batch );
+
+                    // execute each job that's in the batch
+                    while ( batch.size() > 0 )
+                    {
+                        Job current = batch.remove( 0 );
+
+                        current.perform( machine );
+                    }
+
+                    // do we have any condition that require this connection to
+                    // stick to the current thread (i.e. is there an open statement
+                    // or an open transaction)?
+                    loop = machine.shouldStickOnThread();
+                    waitForMessage = loop;
                 }
             }
             while ( loop );
 
-            assert !machine.hasOpenStatement();
+            // assert only if we'll stay alive
+            if ( !willClose() )
+            {
+                assert !machine.hasOpenStatement();
+            }
         }
         catch ( BoltConnectionAuthFatality ex )
         {
@@ -202,7 +219,7 @@ public class DefaultBoltConnection implements BoltConnection
         }
         finally
         {
-            if ( shouldClose.get() )
+            if ( willClose() )
             {
                 close();
             }
@@ -253,6 +270,11 @@ public class DefaultBoltConnection implements BoltConnection
 
             } );
         }
+    }
+
+    private boolean willClose()
+    {
+        return shouldClose.get();
     }
 
     private void close()
@@ -306,7 +328,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private void notifyDrained( List<Job> jobs )
     {
-        if ( queueMonitor != null )
+        if ( queueMonitor != null && jobs.size() > 0 )
         {
             queueMonitor.drained( this, jobs );
         }
