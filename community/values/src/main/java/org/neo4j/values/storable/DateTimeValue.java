@@ -512,15 +512,9 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private int compareNamedZonesWithMapping( ZoneId thisZone, ZoneId thatZone )
     {
-        short indexThisZone = TimeZones.map( thisZone.getId() );
-        short indexThatZone = TimeZones.map( thatZone.getId() );
-        int cmp = Short.compare( indexThisZone, indexThatZone );
-        if ( cmp == 0 )
-        {
-            cmp = thisZone.getId().compareTo( thatZone.getId() );
-        }
-
-        return cmp;
+        String thisZoneNormalized = TimeZones.map( TimeZones.map( thisZone.getId() ) );
+        String thatZoneNormalized = TimeZones.map( TimeZones.map( thatZone.getId() ) );
+        return thisZoneNormalized.compareTo( thatZoneNormalized );
     }
 
     @Override
