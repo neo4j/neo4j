@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.EventHandlerProvider;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
@@ -63,7 +64,7 @@ public class TxPullRequestHandlerTest
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
     private TxPullRequestHandler txPullRequestHandler = new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> true,
-            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+            () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
 
     @Test
     public void shouldRespondWithCompleteStreamOfTransactions() throws Exception
@@ -126,8 +127,8 @@ public class TxPullRequestHandlerTest
         LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
 
         TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                new TxPullRequestHandler( new CatchupServerProtocol(), () -> serverStoreId, () -> true, () -> transactionIdStore, () -> logicalTransactionStore,
+                        new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, clientStoreId ) );
@@ -147,8 +148,8 @@ public class TxPullRequestHandlerTest
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );
 
         TxPullRequestHandler txPullRequestHandler =
-                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false,
-                        () -> transactionIdStore, () -> logicalTransactionStore, new Monitors(), logProvider );
+                new TxPullRequestHandler( new CatchupServerProtocol(), () -> storeId, () -> false, () -> transactionIdStore, () -> logicalTransactionStore,
+                        new Monitors(), EventHandlerProvider.EmptyEventHandlerProvider );
 
         // when
         txPullRequestHandler.channelRead0( context, new TxPullRequest( 1, storeId ) );
