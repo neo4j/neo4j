@@ -30,6 +30,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.server.web.HttpMethod;
+
 /**
  * This filter adds the header "Access-Control-Allow-Origin : *" to all
  * responses that goes through it. This allows modern browsers to do cross-site
@@ -42,6 +46,13 @@ public class CorsFilter implements Filter
     public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
     public static final String ACCESS_CONTROL_REQUEST_METHOD = "Access-Control-Request-Method";
     public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
+
+    private final Log log;
+
+    public CorsFilter( LogProvider logProvider )
+    {
+        this.log = logProvider.getLog( getClass() );
+    }
 
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException
@@ -63,7 +74,7 @@ public class CorsFilter implements Filter
             while ( requestMethodEnumeration.hasMoreElements() )
             {
                 String requestMethod = requestMethodEnumeration.nextElement();
-                response.addHeader( ACCESS_CONTROL_ALLOW_METHODS, requestMethod );
+                addAllowedMethodIfValid( requestMethod, response );
             }
         }
 
@@ -83,5 +94,19 @@ public class CorsFilter implements Filter
     @Override
     public void destroy()
     {
+    }
+
+    private void addAllowedMethodIfValid( String methodName, HttpServletResponse response )
+    {
+        HttpMethod method = HttpMethod.valueOfOrNull( methodName );
+        if ( method == null )
+        {
+            log.warn( "Unknown HTTP method specified in " + ACCESS_CONTROL_REQUEST_METHOD + " '" + methodName + "'. " +
+                      "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_METHODS + " response header" );
+        }
+        else
+        {
+            response.addHeader( ACCESS_CONTROL_ALLOW_METHODS, methodName );
+        }
     }
 }
