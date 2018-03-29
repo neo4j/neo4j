@@ -34,7 +34,6 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.TransactionWork;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.util.Pair;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -106,7 +105,7 @@ public class BoltSnapshotQueryExecutionIT
     {
         try ( Session session = driver.session() )
         {
-            session.readTransaction( (TransactionWork<Void>) tx ->
+            session.readTransaction( tx ->
             {
                 StatementResult statementResult = tx.run( "MATCH (n) RETURN n.name, n.profession, n.planet, n.city ORDER BY n.name" );
                 List<String> fields = Arrays.asList( "n.name", "n.profession", "n.planet", "n.city" );
