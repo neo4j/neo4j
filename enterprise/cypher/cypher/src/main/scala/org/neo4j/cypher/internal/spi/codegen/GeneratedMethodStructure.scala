@@ -808,7 +808,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                        (block: MethodStructure[Expression] => Unit) = {
     if (structure.size == 1 && structure.head._2._1.repr == LongType) {
       val (_, (_, value)) = structure.head
-      // todo ak
       using(generator.ifStatement(not(invoke(generator.load(name),
         method[LongHashSet, Boolean]("contains", typeRef[Long]), value)))) { body =>
         body.expression(pop(invoke(generator.load(name), method[LongHashSet, Boolean]("add", typeRef[Long]), value)))
@@ -1040,7 +1039,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                      generator.load(keyVar))))
         using(generator.ifStatement(Expression.isNull(generator.load(setVar)))) { inner =>
 
-          inner.assign(localVariable, invoke(method[Primitive, LongHashSet]("LongHashSet")))
+          inner.assign(localVariable, createNewInstance(typeRef[LongHashSet]))
           inner.expression(pop(invoke(generator.load(name),
             method[JHashMap[Object, LongHashSet], Object]("put", typeRef[Object],
                                                                                              typeRef[Object]),

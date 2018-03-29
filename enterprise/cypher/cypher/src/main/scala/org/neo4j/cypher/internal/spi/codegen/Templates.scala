@@ -24,7 +24,7 @@ import java.util.Comparator
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.eclipse.collections.impl.map.mutable.primitive.{LongIntHashMap, LongObjectHashMap}
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._

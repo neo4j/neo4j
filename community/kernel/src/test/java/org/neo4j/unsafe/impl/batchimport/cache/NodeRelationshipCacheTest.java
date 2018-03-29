@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.After;
 import org.junit.Rule;
@@ -35,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.rule.RandomRule;
@@ -209,7 +209,7 @@ public class NodeRelationshipCacheTest
         // GIVEN
         int typeId = 10;
         int nodes = 10_000;
-        MutableLongObjectMap<long[]> key = Primitive.longObjectMap( nodes );
+        MutableLongObjectMap<long[]> key = new LongObjectHashMap<>( nodes );
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 1000, base );
 
         // mark random nodes as dense (dense node threshold is 1 so enough with one increment

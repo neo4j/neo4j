@@ -24,11 +24,11 @@ import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
@@ -247,7 +246,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         // do it at one point after recovery... i.e. here
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", IndexProxy::refresh ) );
 
-        final MutableLongObjectMap<RebuildingIndexDescriptor> rebuildingDescriptors = Primitive.longObjectMap();
+        final MutableLongObjectMap<RebuildingIndexDescriptor> rebuildingDescriptors = new LongObjectHashMap<>();
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );

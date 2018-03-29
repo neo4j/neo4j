@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
-import static org.neo4j.collection.primitive.Primitive.longObjectMap;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;
 
 /**
@@ -42,8 +42,8 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
-    private final MutableLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
-    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
+    private final MutableLongObjectMap<NodeCommand> nodeCommandsById = new LongObjectHashMap<>();
+    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = new LongObjectHashMap<>();
     private boolean hasUpdates;
 
     @Override

@@ -27,17 +27,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.collection.primitive.Primitive.VALUE_MARKER;
 
 @RunWith( Parameterized.class )
 public class BasicTableTest
 {
+    private static final Object VALUE_MARKER = new Object();
+    private static final int DEFAULT_HEAP_CAPACITY = 1 << 4;
+
     private final TableFactory factory;
 
     private static final long seed = currentTimeMillis();
@@ -218,7 +219,7 @@ public class BasicTableTest
     @Test
     public void shouldSetAndGetSmallKey()
     {
-        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             long nullKey = table.nullKey();
@@ -242,7 +243,7 @@ public class BasicTableTest
     public void shouldSetAndGetBigKey()
     {
         assumeTrue( factory.supportsLongs() );
-        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             long nullKey = table.nullKey();
@@ -262,7 +263,7 @@ public class BasicTableTest
     public void shouldRemoveBigKey()
     {
         assumeTrue( factory.supportsLongs() );
-        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             long nullKey = table.nullKey();
@@ -282,7 +283,7 @@ public class BasicTableTest
     @Test
     public void shouldSetHopBits()
     {
-        try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table<?> table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             int index = 10;
@@ -301,7 +302,7 @@ public class BasicTableTest
     @Test
     public void shouldMoveHopBit()
     {
-        try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table<?> table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             int index = 10;
@@ -319,7 +320,7 @@ public class BasicTableTest
     @Test
     public void shouldClearTable()
     {
-        try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
+        try ( Table table = factory.newTable( DEFAULT_HEAP_CAPACITY ) )
         {
             // GIVEN
             int index = 3;

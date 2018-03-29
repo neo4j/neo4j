@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
-import org.neo4j.collection.primitive.Primitive
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
@@ -84,7 +83,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val queryState: QueryState,
                    val row: ExecutionContext,
-                   val expandMap: MutableLongObjectMap[NodeState],
+                   val expandMap: LongObjectHashMap[NodeState],
                    val prevLocalRelIndex: Int,
                    val prevNodeState: NodeState ) {
 
@@ -271,7 +270,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
             case node: VirtualNodeValue =>
               push( node = node,
                 pathLength = 0,
-                expandMap = Primitive.longObjectMap[NodeState](),
+                expandMap = new LongObjectHashMap[NodeState](),
                 prevLocalRelIndex = -1,
                 prevNodeState = NodeState.NOOP )
 
@@ -298,7 +297,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
     def push(node: VirtualNodeValue,
              pathLength: Int,
-             expandMap: MutableLongObjectMap[NodeState],
+             expandMap: LongObjectHashMap[NodeState],
              prevLocalRelIndex: Int,
              prevNodeState: NodeState): VirtualNodeValue = {
       depth += 1

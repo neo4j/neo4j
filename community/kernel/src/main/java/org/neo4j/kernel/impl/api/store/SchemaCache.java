@@ -35,7 +35,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
@@ -188,8 +187,8 @@ public class SchemaCache
         {
             this.constraintSemantics = constraintSemantics;
             this.constraints = new HashSet<>();
-            this.indexRuleById = Primitive.longObjectMap();
-            this.constraintRuleById = Primitive.longObjectMap();
+            this.indexRuleById = new LongObjectHashMap<>();
+            this.constraintRuleById = new LongObjectHashMap<>();
 
             this.indexDescriptors = new HashMap<>();
             this.indexDescriptorsByLabel = new IntObjectHashMap<>();
