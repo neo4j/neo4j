@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherException}
-import org.neo4j.values.utils.{UnsupportedTemporalUnitException, ValuesException}
+import org.neo4j.values.utils.{InvalidTemporalArgumentException, TemporalParseException, UnsupportedTemporalUnitException, ValuesException}
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -110,6 +110,15 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
     exception match {
       case e: UnsupportedTemporalUnitException =>
         exceptionHandler.cypherTypeException(e.getMessage, e)
+      case e: InvalidTemporalArgumentException =>
+        exceptionHandler.invalidArgumentException(e.getMessage, e)
+      case e: TemporalParseException =>
+        if (e.getParsedData == null) {
+          exceptionHandler.syntaxException(e.getMessage, "", null, e)
+        }
+        else {
+          exceptionHandler.syntaxException(e.getMessage, e.getParsedData, Option(e.getErrorIndex), e)
+        }
     }
   }
 }

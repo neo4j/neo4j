@@ -28,6 +28,9 @@ import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.TemporalParseException;
+
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -144,7 +147,7 @@ public class DateValueTest
                     value.temporal().get( IsoFields.WEEK_OF_WEEK_BASED_YEAR ),
                     value.temporal().get( IsoFields.WEEK_BASED_YEAR ) ) );
         }
-        catch ( DateTimeException expected )
+        catch ( InvalidTemporalArgumentException expected )
         {
             assertEquals( "Year 2017 does not contain 53 weeks.", expected.getMessage() );
         }
@@ -155,24 +158,24 @@ public class DateValueTest
     public void shouldEnforceStrictQuarterRanges()
     {
         assertEquals( date( 2017, 3, 31 ), quarterDate( 2017, 1, 90 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 1, 0 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 2, 0 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 3, 0 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 4, 0 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 4, 93 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 3, 93 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 2, 92 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 1, 92 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2017, 1, 91 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 1, 0 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 2, 0 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 3, 0 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 4, 0 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 4, 93 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 3, 93 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 2, 92 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 1, 92 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2017, 1, 91 ) );
         assertEquals( date( 2016, 3, 31 ), quarterDate( 2016, 1, 91 ) );
-        assertThrows( DateTimeException.class, () -> quarterDate( 2016, 1, 92 ) );
+        assertThrows( InvalidTemporalArgumentException.class, () -> quarterDate( 2016, 1, 92 ) );
     }
 
     @Test
     public void shouldNotParseInvalidDates()
     {
         assertCannotParse( "2015W54" ); // no year should have more than 53 weeks (2015 had 53 weeks)
-        assertCannotParse( "2017W53" ); // 2017 only has 52 weeks
+        assertThrows( InvalidTemporalArgumentException.class, () -> parse( "2017W53" ) ); // 2017 only has 52 weeks
     }
 
     @Test
@@ -237,14 +240,14 @@ public class DateValueTest
     }
 
     @SuppressWarnings( "UnusedReturnValue" )
-    private DateTimeException assertCannotParse( String text )
+    private TemporalParseException assertCannotParse( String text )
     {
         DateValue value;
         try
         {
             value = parse( text );
         }
-        catch ( DateTimeException e )
+        catch ( TemporalParseException e )
         {
             return e;
         }

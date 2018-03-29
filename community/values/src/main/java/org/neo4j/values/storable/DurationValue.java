@@ -27,7 +27,6 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +36,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidTemporalArgumentException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -139,12 +139,12 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             case SECONDS:
                 return durationInSecondsAndNanos( from, to );
             default:
-                throw new IllegalArgumentException( "Unsupported unit: " + unit );
+                throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
             }
         }
         else
         {
-            throw new IllegalArgumentException( "Unsupported unit: " + unit );
+            throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
         }
     }
 
@@ -373,13 +373,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             months = parseLong( month );
             if ( months > 12 )
             {
-                throw new IllegalArgumentException( "months is out of range: " + month );
+                throw new InvalidTemporalArgumentException( "months is out of range: " + month );
             }
             months += parseLong( year ) * 12;
             days = parseLong( day );
             if ( days > 31 )
             {
-                throw new IllegalArgumentException( "days is out of range: " + day );
+                throw new InvalidTemporalArgumentException( "days is out of range: " + day );
             }
         }
         if ( time )
@@ -436,15 +436,15 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             if ( hours > 24 )
             {
-                throw new IllegalArgumentException( "hours out of range: " + hours );
+                throw new InvalidTemporalArgumentException( "hours out of range: " + hours );
             }
             if ( minutes > 60 )
             {
-                throw new IllegalArgumentException( "minutes out of range: " + minutes );
+                throw new InvalidTemporalArgumentException( "minutes out of range: " + minutes );
             }
             if ( seconds > 60 )
             {
-                throw new IllegalArgumentException( "seconds out of range: " + seconds );
+                throw new InvalidTemporalArgumentException( "seconds out of range: " + seconds );
             }
         }
         seconds += hours * 3600 + minutes * 60;
@@ -690,7 +690,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 break;
             }
         }
-        throw new UnsupportedTemporalTypeException( "Unsupported unit: " + unit );
+        throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
     }
 
     /**
@@ -899,7 +899,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             double factor = number.doubleValue();
             return approximate( months * factor, days * factor, seconds * factor, nanos * factor );
         }
-        throw new IllegalArgumentException( "Factor must be either integer of floating point number." );
+        throw new InvalidTemporalArgumentException( "Factor must be either integer of floating point number." );
     }
 
     public DurationValue div( NumberValue number )

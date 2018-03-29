@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.time.Clock;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -38,6 +39,8 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -59,12 +62,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     public static LocalTimeValue localTime( int hour, int minute, int second, int nanosOfSecond )
     {
-        return new LocalTimeValue( LocalTime.of( hour, minute, second, nanosOfSecond ) );
+        return new LocalTimeValue( assertValidArgument( () -> LocalTime.of( hour, minute, second, nanosOfSecond ) ) );
     }
 
     public static LocalTimeValue localTime( long nanoOfDay )
     {
-        return new LocalTimeValue( LocalTime.ofNanoOfDay( nanoOfDay ) );
+        return new LocalTimeValue( assertValidArgument( () -> LocalTime.ofNanoOfDay( nanoOfDay ) ) );
     }
 
     public static LocalTimeValue inUTC( TimeValue time )
@@ -109,16 +112,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             Supplier<ZoneId> defaultZone )
     {
         LocalTime localTime = input.getLocalTimePart();
-        LocalTime truncatedLT;
-        try
-        {
-            truncatedLT = localTime.truncatedTo( unit );
-        }
-        catch ( UnsupportedTemporalTypeException e )
-        {
-            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
-        }
-
+        LocalTime truncatedLT = assertValidUnit( () -> localTime.truncatedTo( unit ) );
         if ( fields.size() == 0 )
         {
             return localTime( truncatedLT );
@@ -157,7 +151,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue time = fields.get( Field.time );
                     if ( !(time instanceof TemporalValue) )
                     {
-                        throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                        throw new InvalidTemporalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                     }
                     result = ((TemporalValue) time).getLocalTimePart();
                 }
@@ -177,7 +171,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
                 if ( !(time instanceof TemporalValue) )
                 {
-                    throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                    throw new InvalidTemporalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                 }
                 TemporalValue v = (TemporalValue) time;
                 LocalTime lt = v.getLocalTimePart();
@@ -209,7 +203,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     LocalDate getDatePart()
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the date of: %s", this ) );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the date of: %s", this ) );
     }
 
     @Override
@@ -221,7 +215,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
     {
-        ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ).getOffset();
+        ZoneOffset currentOffset = assertValidArgument( () ->  ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ) ).getOffset();
         return OffsetTime.of( value, currentOffset );
     }
 
@@ -342,7 +336,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             second = optInt( matcher.group( "shortSecond" ) );
             fraction = parseNanos( matcher.group( "shortFraction" ) );
         }
-        return LocalTime.of( hour, minute, second, fraction );
+        return assertParsable( () -> LocalTime.of( hour, minute, second, fraction ) );
     }
 
     private static int parseNanos( String value )
