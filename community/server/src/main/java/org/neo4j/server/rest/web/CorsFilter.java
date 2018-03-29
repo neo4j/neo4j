@@ -34,6 +34,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.web.HttpMethod;
 
+import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
+
 /**
  * This filter adds the header "Access-Control-Allow-Origin : *" to all
  * responses that goes through it. This allows modern browsers to do cross-site
@@ -84,7 +86,7 @@ public class CorsFilter implements Filter
             while ( requestHeaderEnumeration.hasMoreElements() )
             {
                 String requestHeader = requestHeaderEnumeration.nextElement();
-                response.addHeader( ACCESS_CONTROL_ALLOW_HEADERS, requestHeader );
+                addAllowedHeaderIfValid( requestHeader, response );
             }
         }
 
@@ -99,14 +101,27 @@ public class CorsFilter implements Filter
     private void addAllowedMethodIfValid( String methodName, HttpServletResponse response )
     {
         HttpMethod method = HttpMethod.valueOfOrNull( methodName );
-        if ( method == null )
+        if ( method != null )
+        {
+            response.addHeader( ACCESS_CONTROL_ALLOW_METHODS, methodName );
+        }
+        else
         {
             log.warn( "Unknown HTTP method specified in " + ACCESS_CONTROL_REQUEST_METHOD + " '" + methodName + "'. " +
                       "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_METHODS + " response header" );
         }
+    }
+
+    private void addAllowedHeaderIfValid( String headerName, HttpServletResponse response )
+    {
+        if ( isValidHttpHeaderName( headerName ) )
+        {
+            response.addHeader( ACCESS_CONTROL_ALLOW_HEADERS, headerName );
+        }
         else
         {
-            response.addHeader( ACCESS_CONTROL_ALLOW_METHODS, methodName );
+            log.warn( "Invalid HTTP header specified in " + ACCESS_CONTROL_REQUEST_HEADERS + " '" + headerName + "'. " +
+                      "It will be ignored and not attached to the " + ACCESS_CONTROL_ALLOW_HEADERS + " response header" );
         }
     }
 }

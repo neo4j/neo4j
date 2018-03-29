@@ -122,16 +122,22 @@ public class CorsFilterTest
     }
 
     @Test
-    public void shouldAttachRequestHeadersToAccessControlAllowHeaders() throws Exception
+    public void shouldAttachValidRequestHeadersToAccessControlAllowHeaders() throws Exception
     {
-        List<String> accessControlRequestHeaders = asList( "Accept", "Content-Length", "Content-Type" );
+        List<String> accessControlRequestHeaders = asList( "Accept", "X-Wrong\nHeader", "Content-Type", "Accept\r", "Illegal\r\nHeader", "", null, "   " );
         HttpServletRequest request = requestMock( emptyList(), accessControlRequestHeaders );
 
         filter.doFilter( request, response, chain );
 
         verify( response ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "Accept" );
-        verify( response ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "Content-Length" );
         verify( response ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type" );
+
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, null );
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "" );
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "   " );
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "X-Wrong\nHeader" );
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "Accept\r" );
+        verify( response, never() ).addHeader( ACCESS_CONTROL_ALLOW_HEADERS, "Illegal\r\nHeader" );
     }
 
     private static HttpServletRequest requestMock()

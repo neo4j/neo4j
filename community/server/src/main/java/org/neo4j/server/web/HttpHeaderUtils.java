@@ -87,4 +87,33 @@ public class HttpHeaderUtils
         }
         return GraphDatabaseSettings.UNSPECIFIED_TIMEOUT;
     }
+
+    /**
+     * Validates given HTTP header name. Does not allow blank names and names with control characters, like '\n' (LF) and '\r' (CR).
+     * Can be used to detect and neutralize CRLF in HTTP headers.
+     *
+     * @param name the HTTP header name, like 'Accept' or 'Content-Type'.
+     * @return {@code true} when given name represents a valid HTTP header, {@code false} otherwise.
+     */
+    public static boolean isValidHttpHeaderName( String name )
+    {
+        if ( name == null || name.length() == 0 )
+        {
+            return false;
+        }
+        boolean isBlank = true;
+        for ( int i = 0; i < name.length(); i++ )
+        {
+            char c = name.charAt( i );
+            if ( Character.isISOControl( c ) )
+            {
+                return false;
+            }
+            if ( !Character.isWhitespace( c ) )
+            {
+                isBlank = false;
+            }
+        }
+        return !isBlank;
+    }
 }
