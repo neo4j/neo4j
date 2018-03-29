@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Random;
 
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +50,25 @@ import static org.neo4j.helpers.collection.Iterators.array;
 @RunWith( Parameterized.class )
 public class BufferedCharSeekerTest
 {
+    private static final char[] WHITESPACE_CHARS = {
+            Character.SPACE_SEPARATOR,
+            Character.PARAGRAPH_SEPARATOR,
+            '\u00A0',
+            '\u2007',
+            '\u202F',
+            '\t',
+            '\f',
+            '\u001C',
+            '\u001D',
+            '\u001E',
+            '\u001F'
+    };
+
+    private static final char[] DELIMITER_CHARS = {
+            ',',
+            '\t'
+    };
+
     private static final String TEST_SOURCE = "TestSource";
     private final boolean useThreadAhead;
 
@@ -684,6 +704,7 @@ public class BufferedCharSeekerTest
         int columns = random.nextInt( 10 ) + 5;
         int lines = 100;
         List<String> expected = new ArrayList<>();
+        char delimiter = randomDelimiter();
         for ( int i = 0; i < lines; i++ )
         {
             for ( int j = 0; j < columns; j++ )
@@ -693,13 +714,13 @@ public class BufferedCharSeekerTest
                     if ( random.nextBoolean() )
                     {
                         // Space before delimiter
-                        builder.append( " " );
+                        builder.append( randomWhitespace( delimiter ) );
                     }
-                    builder.append( "," );
+                    builder.append( delimiter );
                     if ( random.nextBoolean() )
                     {
                         // Space before delimiter
-                        builder.append( " " );
+                        builder.append( randomWhitespace( delimiter ) );
                     }
                 }
                 boolean quote = random.nextBoolean();
@@ -712,7 +733,7 @@ public class BufferedCharSeekerTest
                         if ( random.nextBoolean() )
                         {
                             // Space after quote start
-                            value += " ";
+                            value += randomWhitespace( delimiter );
                         }
                     }
                     // Actual value
@@ -722,7 +743,7 @@ public class BufferedCharSeekerTest
                         if ( random.nextBoolean() )
                         {
                             // Space before quote end
-                            value += " ";
+                            value += randomWhitespace( delimiter );
                         }
                     }
                     expected.add( value );
@@ -748,15 +769,31 @@ public class BufferedCharSeekerTest
                 String nextExpected = next.next();
                 if ( nextExpected == null )
                 {
-                    assertNextValueNotExtracted( seeker, mark, COMMA );
+                    assertNextValueNotExtracted( seeker, mark, delimiter );
                 }
                 else
                 {
-                    assertNextValue( seeker, mark, COMMA, nextExpected );
+                    assertNextValue( seeker, mark, delimiter, nextExpected );
                 }
             }
         }
-        assertEnd( seeker, mark, COMMA );
+        assertEnd( seeker, mark, delimiter );
+    }
+
+    private char randomDelimiter()
+    {
+        return DELIMITER_CHARS[random.nextInt( DELIMITER_CHARS.length )];
+    }
+
+    private char randomWhitespace( char except )
+    {
+        char ch;
+        do
+        {
+            ch = WHITESPACE_CHARS[random.nextInt( WHITESPACE_CHARS.length )];
+        }
+        while ( ch == except );
+        return ch;
     }
 
     @Test
