@@ -27,8 +27,15 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
 {
+    // A 1 signals a named time zone is stored, a 0 that an offset is stored
     private static final int ZONE_ID_FLAG = 0x0100_0000;
-    private static final int ZONE_ID_MASK = 0x0000_FFFF;
+    // Mask for offsets to remove to not collide with the flag for negative numbers
+    // It is 24 bits which allows to store all possible minute offsets
+    private static final int ZONE_ID_MASK = 0x00FF_FFFF;
+    // This is used to determine if the value is negative (after applying the bitmask)
+    private static final int ZONE_ID_HIGH = 0x0080_0000;
+    // This is ised to restore masked negative offsets to their real value
+    private static final int ZONE_ID_EXT =  0xFF00_0000;
 
     ZonedDateTimeLayout()
     {
@@ -96,12 +103,19 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
 
     private int asZoneOffset( int encodedZone )
     {
-        return encodedZone;
+        if ( (ZONE_ID_HIGH & encodedZone) == ZONE_ID_HIGH )
+        {
+            return ZONE_ID_EXT | encodedZone;
+        }
+        else
+        {
+            return encodedZone;
+        }
     }
 
     private short asZoneId( int encodedZone )
     {
-        return (short) ( encodedZone & ZONE_ID_MASK);
+        return (short) ( encodedZone & ZONE_ID_MASK );
     }
 
     private boolean isZoneId( int encodedZone )
