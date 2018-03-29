@@ -54,13 +54,13 @@ public class TestResourceProcedure
 
     public static class Counters
     {
-        public int closeCountTestResourceProcedure = 0;
-        public int closeCountTestFailingResourceProcedure = 0;
-        public int closeCountTestOnCloseFailingResourceProcedure = 0;
+        public int closeCountTestResourceProcedure;
+        public int closeCountTestFailingResourceProcedure;
+        public int closeCountTestOnCloseFailingResourceProcedure;
 
-        public int openCountTestResourceProcedure = 0;
-        public int openCountTestFailingResourceProcedure = 0;
-        public int openCountTestOnCloseFailingResourceProcedure = 0;
+        public int openCountTestResourceProcedure;
+        public int openCountTestFailingResourceProcedure;
+        public int openCountTestOnCloseFailingResourceProcedure;
 
         public int liveCountTestResourceProcedure()
         {
@@ -107,7 +107,7 @@ public class TestResourceProcedure
     @Description( "Returns a stream of integers from 1 to the given argument" )
     public Stream<Output> testResourceProcedure( @Name( value = "resultCount", defaultValue = "4" ) long resultCount ) throws Exception
     {
-        Stream<Output> stream = Stream.iterate( 1L, (i) -> i + 1 ).limit( resultCount ).map( Output::new );
+        Stream<Output> stream = Stream.iterate( 1L, i -> i + 1 ).limit( resultCount ).map( Output::new );
         stream.onClose( () ->
         {
             counters.closeCountTestResourceProcedure++;
@@ -137,11 +137,11 @@ public class TestResourceProcedure
                 {
                     throw new SimulateFailureException();
                 }
-                return new Output(step++);
+                return new Output( step++ );
             }
         };
         Iterable<Output> failingIterable = () -> failingIterator;
-        Stream<Output> stream = StreamSupport.stream(failingIterable.spliterator(), false);
+        Stream<Output> stream = StreamSupport.stream( failingIterable.spliterator(), false );
         stream.onClose( () ->
         {
             counters.closeCountTestFailingResourceProcedure++;
@@ -154,7 +154,7 @@ public class TestResourceProcedure
     @Description( "Returns a stream of integers from 1 to the given argument. Throws an exception on close." )
     public Stream<Output> testOnCloseFailingResourceProcedure( @Name( value = "resultCount", defaultValue = "4" ) long resultCount ) throws Exception
     {
-        Stream<Output> stream = Stream.iterate( 1L, (i) -> i + 1 ).limit( resultCount ).map( Output::new );
+        Stream<Output> stream = Stream.iterate( 1L, i -> i + 1 ).limit( resultCount ).map( Output::new );
         stream.onClose( () ->
         {
             counters.closeCountTestOnCloseFailingResourceProcedure++;
