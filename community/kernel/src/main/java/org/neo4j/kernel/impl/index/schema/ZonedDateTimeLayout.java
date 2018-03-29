@@ -96,7 +96,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
 
     private int asZoneOffset( int encodedZone )
     {
-        return (short) encodedZone;
+        return encodedZone;
     }
 
     private short asZoneId( int encodedZone )
