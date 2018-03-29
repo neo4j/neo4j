@@ -44,7 +44,7 @@ public class ProcessStreamHandler
      * Convenience constructor assuming the local output streams are
      * {@link System#out} and {@link System#err} for the process's OutputStream
      * and ErrorStream respectively.
-     *
+     * <p>
      * Set quiet to true if you just want to consume the output to avoid locking up the process.
      *
      * @param process The process whose output to consume.
@@ -83,6 +83,10 @@ public class ProcessStreamHandler
      */
     public void done()
     {
+        if ( process.isAlive() )
+        {
+            process.destroyForcibly();
+        }
         try
         {
             out.join();
@@ -115,15 +119,12 @@ public class ProcessStreamHandler
         launch();
         try
         {
-            try
-            {
-                return process.waitFor();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                return 0;
-            }
+            return process.waitFor();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            return 0;
         }
         finally
         {
