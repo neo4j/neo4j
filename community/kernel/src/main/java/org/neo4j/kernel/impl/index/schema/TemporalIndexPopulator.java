@@ -46,7 +46,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>, IOException> implements IndexPopulator
+class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
 {
     private final IndexSamplerWrapper sampler;
 
@@ -207,7 +207,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>, IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;

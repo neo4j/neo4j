@@ -45,24 +45,22 @@ public class TemporalIndexCacheTest
     public void shouldIterateOverCreatedParts() throws Exception
     {
         StringFactory factory = new StringFactory();
-        TemporalIndexCache<String,Exception> cache = new TemporalIndexCache<>( factory );
+        TemporalIndexCache<String> cache = new TemporalIndexCache<>( factory );
 
         assertEquals( Iterables.count( cache ), 0 );
 
-        cache.localDateTime();
-        cache.zonedTime();
+        cache.select( LOCAL_DATE_TIME );
+        cache.select( ZONED_TIME );
 
-        assertThat( factory.localDateTimeCounter.get(), equalTo( 1 ) );
         assertThat( cache, containsInAnyOrder( "LocalDateTime", "ZonedTime" ) );
 
-        cache.date();
-        cache.localTime();
-        cache.localDateTime();
-        cache.zonedTime();
-        cache.zonedDateTime();
-        cache.duration();
+        cache.select( DATE );
+        cache.select( LOCAL_TIME );
+        cache.select( LOCAL_DATE_TIME );
+        cache.select( ZONED_TIME );
+        cache.select( ZONED_DATE_TIME );
+        cache.select( DURATION );
 
-        assertThat( factory.localDateTimeCounter.get(), equalTo( 1 ) );
         assertThat( cache, containsInAnyOrder( "Date", "LocalDateTime", "ZonedDateTime", "LocalTime", "ZonedTime", "Duration" ) );
     }
 
@@ -70,7 +68,7 @@ public class TemporalIndexCacheTest
     public void stressCache() throws Exception
     {
         StringFactory factory = new StringFactory();
-        TemporalIndexCache<String,Exception> cache = new TemporalIndexCache<>( factory );
+        TemporalIndexCache<String> cache = new TemporalIndexCache<>( factory );
 
         CacheStresser[] stressers = new CacheStresser[100];
         for ( int i = 0; i < stressers.length; i++ )
@@ -107,11 +105,11 @@ public class TemporalIndexCacheTest
 
     static class CacheStresser extends Thread
     {
-        TemporalIndexCache<String,Exception> cache;
+        TemporalIndexCache<String> cache;
         Random r = new Random();
         Exception failed;
 
-        CacheStresser( TemporalIndexCache<String,Exception> cache )
+        CacheStresser( TemporalIndexCache<String> cache )
         {
             this.cache = cache;
         }
@@ -151,7 +149,7 @@ public class TemporalIndexCacheTest
         }
     }
 
-    static class StringFactory implements TemporalIndexCache.Factory<String, Exception>
+    static class StringFactory implements TemporalIndexCache.Factory<String>
     {
         AtomicInteger dateCounter = new AtomicInteger( 0 );
         AtomicInteger localDateTimeCounter = new AtomicInteger( 0 );

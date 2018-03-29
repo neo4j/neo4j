@@ -40,7 +40,7 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,IOException> implements IndexReader
+class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
 {
     private final SchemaIndexDescriptor descriptor;
 
@@ -131,7 +131,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>,
      * To create TemporalIndexPartReaders on demand, the PartFactory maintains a reference to the parent TemporalIndexAccessor.
      * The creation of a part reader can then be delegated to the correct PartAccessor.
      */
-    static class PartFactory implements TemporalIndexCache.Factory<TemporalIndexPartReader<?>, IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<TemporalIndexPartReader<?>>
     {
         private final TemporalIndexAccessor accessor;
 
