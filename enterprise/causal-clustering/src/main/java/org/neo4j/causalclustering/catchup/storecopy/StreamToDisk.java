@@ -48,7 +48,7 @@ public class StreamToDisk implements StoreFileStream
         return new StreamToDisk( fsa.open( file, OpenMode.READ_WRITE ) );
     }
 
-    private StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
+    StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
     {
         this.writableByteChannel = writableByteChannel;
         this.closeables = new ArrayList<>();

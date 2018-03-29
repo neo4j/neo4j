@@ -20,24 +20,19 @@
 package org.neo4j.causalclustering.catchup;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 
 import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
 
-public class StoreListingResponseHandler extends SimpleChannelInboundHandler<PrepareStoreCopyResponse>
+public class StoreListingResponseHandler extends AbstractCatchupInboundHandler<PrepareStoreCopyResponse>
 {
-    private final CatchupClientProtocol protocol;
-    private final CatchUpResponseHandler handler;
-
     public StoreListingResponseHandler( CatchupClientProtocol protocol,
             CatchUpResponseHandler handler )
     {
-        this.protocol = protocol;
-        this.handler = handler;
+        super( handler, protocol );
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final PrepareStoreCopyResponse msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final PrepareStoreCopyResponse msg )
     {
         handler.onStoreListingResponse( msg );
         protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );

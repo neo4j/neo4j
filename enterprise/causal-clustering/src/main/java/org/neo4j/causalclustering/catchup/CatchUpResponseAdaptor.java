@@ -19,14 +19,14 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.io.IOException;
+import java.net.ConnectException;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponse;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponse;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -80,6 +80,13 @@ public class CatchUpResponseAdaptor<T> implements CatchUpResponseCallback<T>
     public void onStoreListingResponse( CompletableFuture<T> signal, PrepareStoreCopyResponse response )
     {
         unimplementedMethod( signal, response );
+    }
+
+    @Override
+    public void onChannelInactive( CompletableFuture<?> requestOutcomeSignal )
+    {
+        // Default behaviour
+        requestOutcomeSignal.completeExceptionally( new ConnectException( "Lost connection to channel" ) );
     }
 
     private <U> void unimplementedMethod( CompletableFuture<T> signal, U response )

@@ -136,6 +136,16 @@ class TrackingResponseHandler implements CatchUpResponseHandler
         }
     }
 
+    @Override
+    public void onChannelInactive()
+    {
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onChannelInactive( requestOutcomeSignal );
+        }
+    }
+
     Optional<Long> lastResponseTime()
     {
         return Optional.ofNullable( lastResponseTime );
