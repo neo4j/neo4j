@@ -123,11 +123,11 @@ public interface IndexAccessor extends Closeable
     boolean isDirty();
 
     /**
-     * @return a {@link Validator} capable of validating {@link Value values} before transaction determines that it can commit.
+     * Validates the {@link Value value tuple} before transaction determines that it can commit.
      */
     default void validateBeforeCommit( Value[] tuple )
     {
-        // For most types values there are no specific validations to be made.
+        // For most value types there are no specific validations to be made.
     }
 
     class Adapter implements IndexAccessor
