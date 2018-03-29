@@ -57,11 +57,11 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         shutdown = true;
     }
 
-    public synchronized void recoverCopiedStore( File tempStore ) throws StoreCopyFailedException
+    public synchronized void recoverCopiedStore( File tempStore ) throws DatabaseShutdownException
     {
         if ( shutdown )
         {
-            throw new StoreCopyFailedException( "Abort store-copied store recovery due to database shutdown" );
+            throw new DatabaseShutdownException( "Abort store-copied store recovery due to database shutdown" );
         }
 
         try

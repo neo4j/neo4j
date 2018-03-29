@@ -22,12 +22,12 @@ package org.neo4j.causalclustering.readreplica;
 import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -85,7 +85,7 @@ class ReadReplicaStartupProcess implements Lifecycle
     }
 
     @Override
-    public void start() throws IOException
+    public void start() throws IOException, DatabaseShutdownException
     {
         boolean syncedWithUpstream = false;
         TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
@@ -108,11 +108,6 @@ class ReadReplicaStartupProcess implements Lifecycle
             catch ( StoreCopyFailedException e )
             {
                 lastIssue = issueOf( format( "copying store files from %s", source ), attempt );
-                debugLog.warn( lastIssue );
-            }
-            catch ( StreamingTransactionsFailedException e )
-            {
-                lastIssue = issueOf( format( "streaming transactions from %s", source ), attempt );
                 debugLog.warn( lastIssue );
             }
             catch ( StoreIdDownloadFailedException e )
@@ -157,8 +152,8 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void syncStoreWithUpstream( MemberId source )
-            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException, StreamingTransactionsFailedException, TopologyLookupException
+    private void syncStoreWithUpstream( MemberId source ) throws IOException, StoreIdDownloadFailedException,
+            StoreCopyFailedException, TopologyLookupException, DatabaseShutdownException
     {
         if ( localDatabase.isEmpty() )
         {

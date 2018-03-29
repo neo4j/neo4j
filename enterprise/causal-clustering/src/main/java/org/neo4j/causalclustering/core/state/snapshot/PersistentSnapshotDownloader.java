@@ -19,13 +19,14 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
-
-import static java.lang.String.format;
 
 class PersistentSnapshotDownloader implements Runnable
 {
@@ -36,17 +37,19 @@ class PersistentSnapshotDownloader implements Runnable
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
+    private final Supplier<DatabaseHealth> dbHealth;
     private volatile State state;
     private volatile boolean keepRunning;
 
-    PersistentSnapshotDownloader( CatchupAddressProvider addressProvider, CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
-            TimeoutStrategy.Timeout pauseStrategy )
+    PersistentSnapshotDownloader( CatchupAddressProvider addressProvider, CommandApplicationProcess applicationProcess,
+            CoreStateDownloader downloader, Log log, TimeoutStrategy.Timeout pauseStrategy, Supplier<DatabaseHealth> dbHealth )
     {
         this.applicationProcess = applicationProcess;
         this.addressProvider = addressProvider;
         this.downloader = downloader;
         this.log = log;
         this.timeout = pauseStrategy;
+        this.dbHealth = dbHealth;
         this.state = State.INITIATED;
         this.keepRunning = true;
     }
@@ -69,17 +72,8 @@ class PersistentSnapshotDownloader implements Runnable
         try
         {
             applicationProcess.pauseApplier( OPERATION_NAME );
-            while ( keepRunning )
+            while ( keepRunning && !downloader.downloadSnapshot( addressProvider ) )
             {
-                try
-                {
-                    downloader.downloadSnapshot( addressProvider );
-                    break;
-                }
-                catch ( StoreCopyFailedException e )
-                {
-                    log.error( format( "Failed to download snapshot. Retrying in %s ms.", timeout.getMillis() ), e );
-                }
                 Thread.sleep( timeout.getMillis() );
                 timeout.increment();
             }
@@ -87,7 +81,16 @@ class PersistentSnapshotDownloader implements Runnable
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
-            log.error( "Persistent snapshot downloader was interrupted" );
+            log.warn( "Persistent snapshot downloader was interrupted" );
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            log.warn( "Store copy aborted due to shut down", e );
+        }
+        catch ( Throwable e )
+        {
+            log.error( "Unrecoverable error during store copy", e );
+            dbHealth.get().panic( e );
         }
         finally
         {

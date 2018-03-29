@@ -119,7 +119,7 @@ public class RemoteStore
     }
 
     public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
-            throws StoreCopyFailedException, StreamingTransactionsFailedException
+            throws StoreCopyFailedException
     {
         try
         {
@@ -133,12 +133,11 @@ public class RemoteStore
 
             // Even for cluster store copy, we still write the transaction logs into the store directory itself
             // because the destination directory is temporary. We will copy them to the correct place later.
-            boolean keepTxLogsInStoreDir = true;
-            CatchupResult catchupResult =
-                    pullTransactions( addressProvider.primary(), expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
+            CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
+                    lastFlushedTxId, true, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
-                throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
+                throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
         catch ( CatchupAddressResolutionException | IOException e )
