@@ -89,7 +89,7 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
         {
             //noinspection ConstantConditions
             // Do not turn this into ?-operator
-            if(isValue1)
+            if ( isValue1 )
             {
                 // This return Integer (null possible!)
                 return compareValues.apply( (Value) v1, (Value) v2 );
