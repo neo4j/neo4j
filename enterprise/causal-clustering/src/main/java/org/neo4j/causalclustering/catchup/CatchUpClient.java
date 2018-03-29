@@ -28,13 +28,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import java.io.IOException;
 import java.net.ConnectException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -172,11 +172,25 @@ public class CatchUpClient extends LifecycleAdapter
         }
 
         @Override
-        public void close()
+        public CompletableFuture<Void> close()
         {
             if ( nettyChannel != null )
             {
-                nettyChannel.close();
+                return CompletableFuture.runAsync( () ->
+                {
+                    try
+                    {
+                        nettyChannel.close().sync();
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        log.warn( "Interrupted when closing channel" );
+                    }
+                } );
+            }
+            else
+            {
+                return CompletableFuture.completedFuture( null );
             }
         }
     }
@@ -194,6 +208,17 @@ public class CatchUpClient extends LifecycleAdapter
         try
         {
             pool.close();
+        }
+        catch ( ExecutionException e )
+        {
+            log.warn( "Issues while closing catchup channel pool", e );
+        }
+        catch ( InterruptedException e )
+        {
+            log.warn( "Interrupted while closing channel pool" );
+        }
+        try
+        {
             eventLoopGroup.shutdownGracefully( 0, 0, MICROSECONDS ).sync();
         }
         catch ( InterruptedException e )
