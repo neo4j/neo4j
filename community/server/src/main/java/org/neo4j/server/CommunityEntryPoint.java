@@ -21,6 +21,8 @@ package org.neo4j.server;
 
 public class CommunityEntryPoint
 {
+    private static Bootstrapper bootstrapper;
+
     private CommunityEntryPoint()
     {
     }
@@ -31,6 +33,20 @@ public class CommunityEntryPoint
         if ( status != 0 )
         {
             System.exit( status );
+        }
+    }
+
+    public static void start( String[] args )
+    {
+        bootstrapper = new BlockingBootstrapper( new CommunityBootstrapper() );
+        System.exit( ServerBootstrapper.start( bootstrapper, args ) );
+    }
+
+    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
         }
     }
 }

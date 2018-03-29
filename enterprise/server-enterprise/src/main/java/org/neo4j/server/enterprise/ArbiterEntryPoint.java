@@ -19,14 +19,20 @@
  */
 package org.neo4j.server.enterprise;
 
+import java.io.IOException;
 import java.util.Collections;
 
+import org.neo4j.server.BlockingBootstrapper;
+import org.neo4j.server.Bootstrapper;
+import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerCommandLineArgs;
 
 import static org.neo4j.commandline.Util.neo4jVersion;
 
 public class ArbiterEntryPoint
 {
+    private static Bootstrapper bootstrapper;
+
     private ArbiterEntryPoint()
     {
     }
@@ -45,6 +51,20 @@ public class ArbiterEntryPoint
             {
                 System.exit( status );
             }
+        }
+    }
+
+    public static void start( String[] args )
+    {
+        bootstrapper = new BlockingBootstrapper( new ArbiterBootstrapper() );
+        System.exit( ServerBootstrapper.start( bootstrapper, args ) );
+    }
+
+    public static void stop( @SuppressWarnings( "UnusedParameters" ) String[] args )
+    {
+        if ( bootstrapper != null )
+        {
+            bootstrapper.stop();
         }
     }
 }
