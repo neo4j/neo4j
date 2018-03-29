@@ -37,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -207,7 +208,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             @Override
             protected ChannelContext create()
             {
-                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination,
+                String from = Optional.ofNullable( origin ).map( SocketAddress::toString ).orElse( "0.0.0.0" );
+                msgLog.info( threadInfo() + "Trying to open a new channel from " + from + " to " + destination,
                         true );
                 // We must specify the origin address in case the server has multiple IPs per interface
                 ChannelFuture channelFuture = bootstrap.connect( destination, origin );
@@ -223,7 +225,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 }
 
                 Throwable cause = channelFuture.getCause();
-                String msg = Client.this.getClass().getSimpleName() + " could not connect from " + origin + " to " +
+                String msg = Client.this.getClass().getSimpleName() + " could not connect from " + from + " to " +
                         destination;
                 msgLog.debug( msg, true );
                 throw traceComException( new ComException( msg, cause ), "Client.start" );
