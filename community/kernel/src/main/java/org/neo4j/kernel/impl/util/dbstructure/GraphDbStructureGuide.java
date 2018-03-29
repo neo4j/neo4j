@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -164,6 +165,11 @@ public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
             {
                 RelExistenceConstraintDescriptor existenceConstraint = (RelExistenceConstraintDescriptor) constraint;
                 visitor.visitRelationshipPropertyExistenceConstraint( existenceConstraint, userDescription );
+            }
+            else if ( constraint instanceof NodeKeyConstraintDescriptor )
+            {
+                NodeKeyConstraintDescriptor nodeKeyConstraint = (NodeKeyConstraintDescriptor) constraint;
+                visitor.visitNodeKeyConstraint( nodeKeyConstraint, userDescription );
             }
             else
             {
