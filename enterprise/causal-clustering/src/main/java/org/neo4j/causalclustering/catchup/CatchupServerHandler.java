@@ -25,15 +25,15 @@ import java.util.Optional;
 
 public interface CatchupServerHandler
 {
-    ChannelHandler txPullRequestHandler();
+    ChannelHandler txPullRequestHandler( CatchupServerProtocol catchupServerProtocol );
 
-    ChannelHandler getStoreIdRequestHandler();
+    ChannelHandler getStoreIdRequestHandler( CatchupServerProtocol catchupServerProtocol );
 
-    ChannelHandler storeListingRequestHandler();
+    ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol );
 
-    ChannelHandler getStoreFileRequestHandler();
+    ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol );
 
-    ChannelHandler getIndexSnapshotRequestHandler();
+    ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol );
 
-    Optional<ChannelHandler> snapshotHandler();
+    Optional<ChannelHandler> snapshotHandler( CatchupServerProtocol catchupServerProtocol );
 }

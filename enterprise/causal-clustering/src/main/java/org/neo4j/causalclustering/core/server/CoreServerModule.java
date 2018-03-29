@@ -188,14 +188,14 @@ public class CoreServerModule
         ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
         ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
 
-        Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory = state -> new RegularCatchupServerHandler( state, platformModule.monitors,
+        CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, snapshotService,
                 new CheckpointerSupplier( platformModule.dependencies ) );
 
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( serverPipelineBuilderFactory,
-                logProvider, handlerFactory );
+                logProvider, catchupServerHandler );
 
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository = new ProtocolInstallerRepository<>(
                 singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
@@ -203,7 +203,7 @@ public class CoreServerModule
         HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( catchupProtocolRepository, modifierProtocolRepository,
                 protocolInstallerRepository, serverPipelineBuilderFactory, logProvider );
 
-        catchupServer = new CatchupServerBuilder( handlerFactory )
+        catchupServer = new CatchupServerBuilder( catchupServerHandler )
                 .serverHandler( installedProtocolsHandler )
                 .catchupProtocols( supportedCatchupProtocols )
                 .modifierProtocols( supportedModifierProtocols )
