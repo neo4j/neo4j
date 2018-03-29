@@ -28,10 +28,10 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
@@ -325,9 +325,14 @@ public class CatchupPollingProcess extends LifecycleAdapter
                     new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
             storeCopyProcess.replaceWithStoreFrom( upstreamStrategyBoundAddressProvider, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
+        catch ( IOException | StoreCopyFailedException e )
         {
             log.warn( "Error copying store. Will retry shortly.", e );
+            return;
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            log.warn( "Store copy aborted due to shutdown.", e );
             return;
         }
 

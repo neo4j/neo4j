@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-public class StreamingTransactionsFailedException extends Exception
+public class DatabaseShutdownException extends Exception
 {
-    StreamingTransactionsFailedException( String message )
+    DatabaseShutdownException( String message )
     {
         super( message );
     }

@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,7 +47,7 @@ public class CopiedStoreRecoveryTest
             copiedStoreRecovery.recoverCopiedStore( new File( "nowhere" ) );
             fail( "should have thrown" );
         }
-        catch ( StoreCopyFailedException ex )
+        catch ( DatabaseShutdownException ex )
         {
             // then
             assertEquals( "Abort store-copied store recovery due to database shutdown", ex.getMessage() );

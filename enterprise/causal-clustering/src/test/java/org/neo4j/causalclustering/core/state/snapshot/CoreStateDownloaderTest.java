@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
@@ -42,7 +41,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
@@ -125,15 +124,7 @@ public class CoreStateDownloaderTest
         when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( remoteStoreId );
 
         // when
-        try
-        {
-            downloader.downloadSnapshot( catchupAddressProvider );
-            fail();
-        }
-        catch ( StoreCopyFailedException e )
-        {
-            // expected
-        }
+        assertFalse( downloader.downloadSnapshot( catchupAddressProvider ) );
 
         // then
         verify( remoteStore, never() ).copy( any(), any(), any() );
