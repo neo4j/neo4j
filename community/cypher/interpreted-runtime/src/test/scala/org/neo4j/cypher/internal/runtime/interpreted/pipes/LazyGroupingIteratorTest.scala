@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.api.LongIterable
-import org.eclipse.collections.api.set.primitive.LongSet
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
 class LazyGroupingIteratorTest extends CypherFunSuite {
@@ -89,9 +89,9 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
   }
 
   class LazyGroupingRowIterator(rows: Row*) extends LazyGroupingIterator[Row](rows.iterator) {
-    var state: LongSet = null
+    var state: LongHashSet = null
 
-    override def setState(state: LongSet) = {
+    override def setState(state: LongHashSet) = {
       this.state = state
     }
 

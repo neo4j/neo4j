@@ -44,7 +44,6 @@ import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
  * Basic and common primitive int collection utils and manipulations.
  *
  * @see PrimitiveIntCollections
- * @see Primitive
  */
 public class PrimitiveLongCollections
 {

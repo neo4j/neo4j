@@ -39,7 +39,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
 /**
@@ -58,7 +57,7 @@ public final class IndexMap implements Cloneable
 
     public IndexMap()
     {
-        this( Primitive.longObjectMap(), new HashMap<>(), new ObjectLongHashMap<>() );
+        this( new LongObjectHashMap<>(), new HashMap<>(), new ObjectLongHashMap<>() );
     }
 
     IndexMap( MutableLongObjectMap<IndexProxy> indexesById )

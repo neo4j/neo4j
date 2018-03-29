@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -48,8 +48,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
     @Override
     public FulltextTransactionContext beforeCommit( TransactionData data )
     {
-        final MutableLongObjectMap<Map<String, Object>> nodeMap = Primitive.longObjectMap();
-        final MutableLongObjectMap<Map<String, Object>> relationshipMap = Primitive.longObjectMap();
+        final MutableLongObjectMap<Map<String, Object>> nodeMap = new LongObjectHashMap<>();
+        final MutableLongObjectMap<Map<String, Object>> relationshipMap = new LongObjectHashMap<>();
         Lock lock = fulltextProvider.readLockIndexConfiguration();
         FulltextTransactionContext fulltextTransactionContext = new FulltextTransactionContext( nodeMap, relationshipMap, lock );
 

@@ -42,7 +42,6 @@ import java.util.function.LongToIntFunction;
  * Basic and common primitive int collection utils and manipulations.
  *
  * @see PrimitiveLongCollections
- * @see Primitive
  */
 public class PrimitiveIntCollections
 {

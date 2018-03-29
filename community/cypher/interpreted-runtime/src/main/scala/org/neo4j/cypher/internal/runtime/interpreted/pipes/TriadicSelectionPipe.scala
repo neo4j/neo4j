@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.api.set.primitive.{LongSet, MutableLongSet}
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
-import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_5.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -35,7 +34,7 @@ case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: 
 extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    var triadicState: LongSet = null
+    var triadicState: LongHashSet = null
     // 1. Build
     new LazyGroupingIterator[ExecutionContext](input) {
       override def getKey(row: ExecutionContext) = row(source)
@@ -46,7 +45,7 @@ extends PipeWithSource(left) {
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
-      override def setState(triadicSet: LongSet) = triadicState = triadicSet
+      override def setState(triadicSet: LongHashSet) = triadicState = triadicSet
 
     // 2. pass through 'right'
     }.flatMap { (outerContext) =>
@@ -66,7 +65,7 @@ extends PipeWithSource(left) {
 }
 
 abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[ROW]) extends AbstractIterator[ROW] {
-  def setState(state: LongSet)
+  def setState(state: LongHashSet)
   def getKey(row: ROW): Any
   def getValue(row: ROW): Option[Long]
 
@@ -115,7 +114,7 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
     }
   }
 
-  def update(triadicSet: MutableLongSet, row: ROW): AnyVal = {
+  def update(triadicSet: LongHashSet, row: ROW): AnyVal = {
     for (value <- getValue(row))
       triadicSet.add(value)
   }

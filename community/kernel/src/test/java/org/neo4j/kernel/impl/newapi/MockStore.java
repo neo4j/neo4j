@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -31,7 +32,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -527,8 +527,8 @@ public class MockStore extends Read implements TestRule
             public void evaluate() throws Throwable
             {
 
-                MutableLongObjectMap<Node> nodes = Primitive.longObjectMap();
-                MutableLongObjectMap<Property> properties = Primitive.longObjectMap();
+                MutableLongObjectMap<Node> nodes = new LongObjectHashMap<>();
+                MutableLongObjectMap<Property> properties = new LongObjectHashMap<>();
 
                 MockStore.this.nodes = nodes;
                 MockStore.this.properties = properties;

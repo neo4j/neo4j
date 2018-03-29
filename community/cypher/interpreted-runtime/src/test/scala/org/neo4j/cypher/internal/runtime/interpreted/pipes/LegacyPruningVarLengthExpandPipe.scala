@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
-import org.neo4j.collection.primitive.Primitive
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
@@ -89,7 +88,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                       val pathLength: Int,
                       val state: QueryState,
                       row: ExecutionContext,
-                      expandMap: MutableLongObjectMap[FullExpandDepths]
+                      expandMap: LongObjectHashMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
     private var rels: Iterator[RelationshipValue] = _
@@ -184,7 +183,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val state: QueryState,
                    row: ExecutionContext,
-                   expandMap: MutableLongObjectMap[FullExpandDepths],
+                   expandMap: LongObjectHashMap[FullExpandDepths],
                    updateMinFullExpandDepth: Int => Unit) extends State with Expandable with CheckPath {
 
     import FullExpandDepths.UNINITIALIZED
@@ -268,7 +267,7 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
           pathLength = 0,
           state = state,
           row = row,
-          expandMap = Primitive.longObjectMap[FullExpandDepths]())
+          expandMap = new LongObjectHashMap[FullExpandDepths]())
         nextState.next()
       }
 
