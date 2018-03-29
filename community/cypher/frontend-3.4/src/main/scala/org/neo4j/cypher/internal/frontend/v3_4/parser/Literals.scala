@@ -55,6 +55,8 @@ trait Literals extends Parser
     keyword("UNION") |
     keyword("USING") |
     keyword("UNWIND") |
+    keyword("USE") |
+    keyword("CONSTRUCT") |
     keyword("WITH")
 
   def ProcedureName: Rule1[ast.ProcedureName] =

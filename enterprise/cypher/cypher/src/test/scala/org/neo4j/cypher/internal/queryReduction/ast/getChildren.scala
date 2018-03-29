@@ -55,8 +55,8 @@ object getChildren {
       case Variable(_) =>
         Seq()
 
-      case Return(_, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
-        Seq(returnItems) ++ ofOption(maybeGraphReturnItems) ++ ofOption(maybeOrderBy) ++
+      case Return(_, returnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
+        Seq(returnItems) ++ ofOption(maybeOrderBy) ++
           ofOption(maybeSkip) ++ ofOption(maybeLimit)
 
       case ReturnItems(_, items) =>
@@ -101,15 +101,12 @@ object getChildren {
       case Namespace(_) =>
         Seq()
 
-      case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
-        Seq(returnItems, mandatoryGraphReturnItems) ++
+      case With(distinct, returnItems, orderBy, skip, limit, where) =>
+        Seq(returnItems) ++
         ofOption(orderBy) ++ ofOption(skip) ++ ofOption(limit) ++ ofOption(where)
 
       case MapExpression(items) =>
         items.flatMap { case (pkn, exp) => Seq(pkn, exp) }
-
-      case GraphReturnItems(_, items) =>
-        items
 
       case FilterExpression(scope, expression) =>
         Seq(scope, expression)

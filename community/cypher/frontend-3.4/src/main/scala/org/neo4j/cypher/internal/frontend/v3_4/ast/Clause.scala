@@ -57,7 +57,7 @@ case class LoadCSV(
     fieldTerminator match {
       case Some(literal) if literal.value.length != 1 =>
         error("CSV field terminator can only be one character wide", literal.position)
-      case _ => SemanticCheckResult.success
+      case _ => success
     }
   }
 
@@ -77,82 +77,71 @@ sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
-  def snapshot: Boolean
-  def graph: Variable
-  def at: GraphUrl
-  def of: Option[Pattern]
+final case class FromGraph(graphName: QualifiedGraphName)(val position: InputPosition) extends MultipleGraphClause {
 
-  override def name = "CREATE GRAPH"
+    override def name = "FROM GRAPH"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    declareGraph(graph) chain
-    of.fold(SemanticCheckResult.success)(SemanticPatternCheck.check(Pattern.SemanticContext.Create, _))
-}
-
-final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    SemanticState.recordCurrentScope(this)
-}
-
-final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
-
-}
-
-final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause {
-
-  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
-}
-
-final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause{
-
-  override def name = "DELETE GRAPHS"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    SemanticExpressionCheck.semanticCheckFold(graphs)(SemanticExpressionCheck.ensureGraphDefined) chain
-    SemanticState.recordCurrentScope(this)
-}
-
-final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "PERSIST"
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      graph.semanticCheck chain
       SemanticState.recordCurrentScope(this)
+
 }
 
-final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "SNAPSHOT"
+final case class Clone(items: List[ReturnItem])(val position: InputPosition) extends MultipleGraphClause {
+  override def name: String = "CLONE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      graph.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+      items.semanticCheck
 }
 
-final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultipleGraphClause with UpdateClause {
-
-  override def name = "RELOCATE"
+case class New(pattern: Pattern)(val position: InputPosition) extends MultipleGraphClause with SingleRelTypeCheck {
+  override def name = "NEW"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      graph.semanticCheck chain
+      SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
+      checkRelTypes(pattern)
+
+}
+
+trait SingleRelTypeCheck {
+  self: Clause =>
+
+  protected def checkRelTypes(pattern: Pattern): SemanticCheck =
+    pattern.patternParts.foldSemanticCheck {
+      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
+        if (rel.types.size > 1) {
+          SemanticError(s"A single relationship type must be specified for ${self.name}", rel.position)
+        } else {
+          SemanticError(s"Exactly one relationship type must be specified for ${self.name}. Did you forget to prefix your relationship type with a ':'?", rel.position)
+        }
+      case _ => success
+    }
+}
+
+final case class ConstructGraph(
+  clones: List[Clone] = List.empty,
+  news: List[New] = List.empty,
+  on: List[QualifiedGraphName] = List.empty
+)(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "CONSTRUCT"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this) chain
+      clones.semanticCheck chain
+      news.semanticCheck
+
+}
+
+final case class ReturnGraph(graphName: Option[QualifiedGraphName])(val position: InputPosition) extends MultipleGraphClause {
+
+  override def name = "RETURN GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
       SemanticState.recordCurrentScope(this)
 }
 
@@ -261,7 +250,7 @@ case class Match(
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
-    error.getOrElse(SemanticCheckResult.success)
+    error.getOrElse(success)
   }
 
   private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
@@ -340,45 +329,23 @@ case class Match(
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)
+  extends UpdateClause with SingleRelTypeCheck {
+
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
       actions.semanticCheck chain
-      checkRelTypes
-
-  // Copied code from CREATE below
-  private def checkRelTypes: SemanticCheck  =
-    pattern.patternParts.foldSemanticCheck {
-      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
-      if (rel.types.size > 1) {
-        SemanticError("A single relationship type must be specified for MERGE", rel.position)
-      } else {
-        SemanticError("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?", rel.position)
-      }
-      case _ => SemanticCheckResult.success
-    }
+      checkRelTypes(pattern)
 }
 
-case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
+case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause with SingleRelTypeCheck {
   override def name = "CREATE"
 
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
-    checkRelTypes
-
-  //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
-  private def checkRelTypes: SemanticCheck  =
-    pattern.patternParts.foldSemanticCheck {
-      case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
-      if (rel.types.size > 1) {
-        SemanticError("A single relationship type must be specified for CREATE", rel.position)
-      } else {
-        SemanticError("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?", rel.position)
-      }
-      case _ => SemanticCheckResult.success
-    }
+    checkRelTypes(pattern)
 }
 
 case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
@@ -493,7 +460,6 @@ sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
 sealed trait ProjectionClause extends HorizonClause {
   def distinct: Boolean
   def returnItems: ReturnItemsDef
-  def graphReturnItems: Option[GraphReturnItems]
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
   def limit: Option[Limit]
@@ -503,8 +469,7 @@ sealed trait ProjectionClause extends HorizonClause {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    returnItems.semanticCheck chain
-    graphReturnItems.semanticCheck
+    returnItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
     val declareAllTheThings = (s: SemanticState) => {
@@ -524,12 +489,8 @@ sealed trait ProjectionClause extends HorizonClause {
         case _ =>
           orderByResult
       }
-      val tabularState = fixedOrderByResult.state
-      val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
-      graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
+      fixedOrderByResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors)
     }
-    val variableStar = returnItems.isStarOnly
-    val graphsStar = graphReturnItems.forall(_.isGraphsStarOnly)
     declareAllTheThings
   }
 
@@ -553,7 +514,7 @@ sealed trait ProjectionClause extends HorizonClause {
     s => limit.semanticCheck(SemanticState.clean).errors
 
   private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
-    s => SemanticCheckResult.success(inner.apply(s).state)
+    s => success(inner.apply(s).state)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
@@ -563,29 +524,13 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 }
 
-object From {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph)(position)))(position))(position)
-  }
-}
-
-object Into {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
-  }
-}
-
 object With {
-  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, DiscardCardinality()(pos), graphReturnItems, None, None, None, None)(pos)
-
-  def apply(returnItems: ReturnItemsDef, graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
+  def apply(returnItems: ReturnItemsDef)(pos: InputPosition): With =
+    With(distinct = false, returnItems, None, None, None, None)(pos)
 }
 
 case class With(distinct: Boolean,
                 returnItems: ReturnItemsDef,
-                mandatoryGraphReturnItems: GraphReturnItems,
                 orderBy: Option[OrderBy],
                 skip: Option[Skip],
                 limit: Option[Limit],
@@ -593,8 +538,6 @@ case class With(distinct: Boolean,
 )(val position: InputPosition) extends ProjectionClause {
 
   override def name = "WITH"
-
-  override def graphReturnItems = Some(mandatoryGraphReturnItems)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
@@ -611,16 +554,13 @@ case class With(distinct: Boolean,
 }
 
 object Return {
-  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): Return =
-    Return(distinct = false, DiscardCardinality()(pos), Some(graphReturnItems), None, None, None)(pos)
 
-  def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): Return =
-    Return(distinct = false, returnItems, graphReturnItems, None, None, None)(pos)
+  def apply(returnItems: ReturnItemsDef)(pos: InputPosition): Return =
+    Return(distinct = false, returnItems, None, None, None)(pos)
 }
 
 case class Return(distinct: Boolean,
                   returnItems: ReturnItemsDef,
-                  graphReturnItems: Option[GraphReturnItems],
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],
@@ -648,5 +588,5 @@ case class PragmaWithout(excluded: Seq[LogicalVariable])(val position: InputPosi
   val excludedNames: Set[String] = excluded.map(_.name).toSet
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
-    SemanticCheckResult.success(s.importValuesFromScope(previousScope, excludedNames))
+    success(s.importValuesFromScope(previousScope, excludedNames))
 }

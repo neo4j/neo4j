@@ -74,6 +74,14 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
   def switchSides: Equals = copy(rhs, lhs)(position)
 }
 
+case class Equivalent(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
+  )
+
+  override def canonicalOperatorSymbol = "~"
+}
+
 case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
