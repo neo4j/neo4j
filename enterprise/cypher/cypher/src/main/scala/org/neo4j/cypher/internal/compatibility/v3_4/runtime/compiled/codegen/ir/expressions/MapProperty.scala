@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{Variable, CodeGenContext}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 
-case class MapProperty(mapVariable: Variable, propertyKeyName: String) extends CodeGenExpression {
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
+case class MapProperty(mapExpression: CodeGenExpression, propertyKeyName: String) extends CodeGenExpression {
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+    mapExpression.init(generator)
+  }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext): E =
-    structure.mapGetExpression(mapVariable.name, propertyKeyName)
+    structure.mapGetExpression(mapExpression.generateExpression(structure), propertyKeyName)
 
   override def nullable(implicit context: CodeGenContext) = true
 

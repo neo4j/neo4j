@@ -139,7 +139,7 @@ trait MethodStructure[E] {
   def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
-  def mapGetExpression(mapName: String, key: String): E
+  def mapGetExpression(map: E, key: String): E
 
   // tracing
   def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[E] => V): V

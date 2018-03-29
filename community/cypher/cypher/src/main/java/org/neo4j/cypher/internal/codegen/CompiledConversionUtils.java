@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
@@ -639,46 +640,16 @@ public abstract class CompiledConversionUtils
 
     private static boolean hasSafeType( Object value )
     {
-        if ( value instanceof String )
-        {
-            return true;
-        }
-        else if ( value instanceof Long )
-        {
-            return true;
-        }
-        else if ( value instanceof Integer )
-        {
-            return true;
-        }
-        else if ( value instanceof Boolean )
-        {
-            return true;
-        }
-        else if ( value instanceof Double )
-        {
-            return true;
-        }
-        else if ( value instanceof Float )
-        {
-            return true;
-        }
-        else if ( value instanceof Short )
-        {
-            return true;
-        }
-        else if ( value instanceof Byte )
-        {
-            return true;
-        }
-        else if ( value.getClass().isArray() && value.getClass().getComponentType().isPrimitive() )
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return value instanceof Value ||
+                value instanceof String ||
+                value instanceof Long ||
+                value instanceof Integer ||
+                value instanceof Boolean ||
+                value instanceof Double ||
+                value instanceof Float ||
+                value instanceof Short ||
+                value instanceof Byte ||
+                (value.getClass().isArray() && value.getClass().getComponentType().isPrimitive());
     }
 
     static Class<?> mergeType( Class<?> type1, Class<?> type2 )

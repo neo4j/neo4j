@@ -19,13 +19,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalTime}
 import java.time.format.DateTimeParseException
 import java.time.temporal.UnsupportedTemporalTypeException
+import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.values.storable.{DateValue, DurationValue}
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -47,6 +50,100 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
     shouldReturnSomething("datetime({epochMillis:timestamp()})")
     shouldReturnSomething("datetime({epochSeconds:timestamp() / 1000})")
+  }
+
+  // Should handle temporal and duration as parameters, also with compiled
+  test("should handle temporal parameter") {
+
+    val dateValue = DateValue.date(2018, 5, 5).asObject()
+    createNode(Map("prop" -> dateValue))
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) WHERE n.prop = $param RETURN n.prop as prop"
+    val result = executeWith(config, query, params = Map("param" -> dateValue))
+
+    result.toList should equal(List(Map("prop" -> dateValue)))
+  }
+
+  test("should handle temporal array parameter") {
+
+    val javaDateArray = new Array[LocalDate](2)
+    javaDateArray(0) = LocalDate.of(2018, 5, 5)
+    javaDateArray(1) = LocalDate.of(2018, 3, 3)
+
+    createNode(Map("prop" -> javaDateArray))
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) WHERE n.prop = $param RETURN n.prop as prop"
+    val result = executeWith(config, query, params = Map("param" -> javaDateArray))
+
+    val dateList = result.columnAs("prop").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(javaDateArray.toList)
+  }
+
+  test("should handle temporal list parameter") {
+
+    import scala.collection.JavaConverters._
+
+    val javaDateList = new util.ArrayList[LocalDate](2)
+    javaDateList.add( LocalDate.of(2018, 5, 5) )
+    javaDateList.add( LocalDate.of(2018, 3, 3) )
+
+    val dateArray = new Array[LocalDate](javaDateList.size)
+    createNode(Map("prop" -> javaDateList.toArray(dateArray)))
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) WHERE n.prop = $param RETURN n.prop as prop"
+    val result = executeWith(config, query, params = Map("param" -> javaDateList))
+
+    val dateList = result.columnAs("prop").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(javaDateList.asScala)
+  }
+
+  test("should handle temporal map parameter") {
+
+    import scala.collection.JavaConverters._
+
+    val dateMap = new util.HashMap[String,Any]
+    dateMap.put("a", LocalDate.of(2018, 5, 5))
+    dateMap.put("b", LocalTime.of(10, 3, 5))
+
+    graph.execute("CREATE ($param)", Map[String,Object]("param" -> dateMap).asJava)
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) WHERE n.a = $param.a RETURN n.a as a, n.b as b"
+    val result = executeWith(config, query, params = Map("param" -> dateMap))
+
+    result.toList should equal(List(Map("a" -> dateMap.get("a"), "b" -> dateMap.get("b"))))
+  }
+
+  test("should return temporal map parameter") {
+
+    import scala.collection.JavaConverters._
+
+    val dateMap = new util.HashMap[String,Any]
+    dateMap.put("a", LocalDate.of(2018, 5, 5))
+    dateMap.put("b", LocalTime.of(10, 3, 5))
+
+    graph.execute("CREATE ($param)", Map[String,Object]("param" -> dateMap).asJava)
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) RETURN $param, n.a as a, n.b as b"
+    val result = executeWith(config, query, params = Map("param" -> dateMap))
+
+    result.toList should equal(List(Map("$param" -> dateMap.asScala, "a" -> dateMap.get("a"), "b" -> dateMap.get("b"))))
+  }
+
+  test("should handle duration parameter") {
+
+    val duration = DurationValue.duration(11, 12, 13, 14).asObject()
+    createNode(Map("prop" -> duration))
+
+    val config = Configs.All - Configs.OldAndRule
+    val query = "MATCH (n) WHERE n.prop = $param RETURN n.prop as prop"
+    val result = executeWith(config, query, params = Map("param" -> duration))
+
+    result.toList should equal(List(Map("prop" -> duration)))
   }
 
   // Failing when skipping certain values in create or specifying conflicting values
