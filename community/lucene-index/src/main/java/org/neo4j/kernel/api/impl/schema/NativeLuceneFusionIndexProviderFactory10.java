@@ -77,6 +77,7 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
+        boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
 
         NumberIndexProvider number =
                 IndexProviderFactoryUtil.numberProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
@@ -88,12 +89,12 @@ public class NativeLuceneFusionIndexProviderFactory10 extends
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.NATIVE10.param().equals( defaultSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }
         return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSelector10(),
-                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+                DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
     }
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

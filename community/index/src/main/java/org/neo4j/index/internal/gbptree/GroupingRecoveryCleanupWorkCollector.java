@@ -22,6 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
@@ -31,10 +32,11 @@ import static org.neo4j.scheduler.JobScheduler.Groups.recoveryCleanup;
  * <p>
  * Also see {@link RecoveryCleanupWorkCollector}
  */
-public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWorkCollector
+public class GroupingRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
 {
     private final Queue<CleanupJob> jobs;
     private final JobScheduler jobScheduler;
+    private volatile boolean started;
 
     /**
      * @param jobScheduler {@link JobScheduler} to queue {@link CleanupJob} into.
@@ -48,29 +50,30 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
     @Override
     public void init()
     {
+        started = false;
         jobs.clear();
     }
 
     @Override
     public void add( CleanupJob job )
     {
+        if ( started )
+        {
+            throw new IllegalStateException( "Index clean jobs can't be added after collector start." );
+        }
         jobs.add( job );
     }
 
     @Override
     public void start()
     {
+        scheduleJobs();
+        started = true;
+    }
+
+    private void scheduleJobs()
+    {
         jobScheduler.schedule( recoveryCleanup, allJobs() );
-    }
-
-    @Override
-    public void stop()
-    {   // no-op
-    }
-
-    @Override
-    public void shutdown()
-    {   // no-op
     }
 
     private Runnable allJobs()
@@ -78,16 +81,32 @@ public class GroupingRecoveryCleanupWorkCollector implements RecoveryCleanupWork
         return () ->
         {
             CleanupJob job;
+            Exception jobsException = null;
             while ( (job = jobs.poll()) != null )
             {
                 try
                 {
                     job.run();
                 }
+                catch ( Exception e )
+                {
+                    if ( jobsException == null )
+                    {
+                        jobsException = e;
+                    }
+                    else
+                    {
+                        jobsException.addSuppressed( e );
+                    }
+                }
                 finally
                 {
                     job.close();
                 }
+            }
+            if ( jobsException != null )
+            {
+                throw new RuntimeException( jobsException );
             }
         };
     }

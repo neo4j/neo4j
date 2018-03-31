@@ -68,7 +68,7 @@ public class PartitionedIndexStorageTest
     public void createIndexStorage()
     {
         fs = fsRule.get();
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), false );
+        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir() );
     }
 
     @Test
@@ -182,7 +182,7 @@ public class PartitionedIndexStorageTest
                 } )
         {
             PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
-                    scramblingFs, testDir.graphDbDir(), false );
+                    scramblingFs, testDir.graphDbDir() );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )

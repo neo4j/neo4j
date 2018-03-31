@@ -119,7 +119,7 @@ public class FusionIndexPopulatorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction );
+        fusionIndexPopulator = new FusionIndexPopulator( populators, fusionVersion.selector(), indexId, dropAction, false );
     }
 
     private void resetMocks()
@@ -143,6 +143,14 @@ public class FusionIndexPopulatorTest
         {
             verify( alivePopulator, times( 1 ) ).create();
         }
+    }
+
+    @Test
+    public void createRemoveAnyLeftOversThatWasThereInIndexDirectoryBeforePopulation() throws IOException
+    {
+        fusionIndexPopulator.create();
+
+        verify( dropAction ).drop( indexId, false );
     }
 
     @Test

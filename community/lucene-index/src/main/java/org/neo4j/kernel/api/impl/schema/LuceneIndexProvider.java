@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -168,7 +167,7 @@ public class LuceneIndexProvider extends IndexProvider
 
     private PartitionedIndexStorage getIndexStorage( long indexId )
     {
-        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
+        return indexStorageFactory.indexStorageOf( indexId );
     }
 
     private boolean indexIsOnline( PartitionedIndexStorage indexStorage, SchemaIndexDescriptor descriptor ) throws IOException
