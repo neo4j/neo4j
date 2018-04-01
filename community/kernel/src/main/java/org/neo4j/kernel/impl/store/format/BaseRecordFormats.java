@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -123,19 +124,37 @@ public abstract class BaseRecordFormats implements RecordFormats
         return contains( capabilities(), capability );
     }
 
-    public static boolean hasSameCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
+    public static boolean hasCompatibleCapabilities( RecordFormats one, RecordFormats other, CapabilityType type )
     {
         Set<Capability> myFormatCapabilities = Stream.of( one.capabilities() )
                 .filter( capability -> capability.isType( type ) ).collect( toSet() );
         Set<Capability> otherFormatCapabilities = Stream.of( other.capabilities() )
                 .filter( capability -> capability.isType( type ) ).collect( toSet() );
 
-        return myFormatCapabilities.equals( otherFormatCapabilities );
+        if ( myFormatCapabilities.equals( otherFormatCapabilities ) )
+        {
+            // If they have the same capabilities then of course they are compatible
+            return true;
+        }
+
+        Set<Capability> removedCapabilities =
+                new HashSet<>( myFormatCapabilities ).stream().filter( capability -> !otherFormatCapabilities.contains( capability ) ).collect( toSet() );
+        Set<Capability> addedCapabilities =
+                new HashSet<>( otherFormatCapabilities ).stream().filter( capability -> !myFormatCapabilities.contains( capability ) ).collect( toSet() );
+        boolean allAddedAreAdditive = addedCapabilities.stream().allMatch( Capability::isAdditive );
+        if ( removedCapabilities.isEmpty() && allAddedAreAdditive )
+        {
+            // Even if capabilities of the two aren't the same then there's a special case where if the additional
+            // capabilities of the other format are all additive then they are also compatible because no data
+            // in the existing store needs to be migrated.
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
-        return hasSameCapabilities( this, other, type );
+        return hasCompatibleCapabilities( this, other, type );
     }
 }

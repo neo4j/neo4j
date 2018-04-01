@@ -30,52 +30,65 @@ public enum Capability
     /**
      * Store has schema support
      */
-    SCHEMA( CapabilityType.STORE ),
+    SCHEMA( false, CapabilityType.STORE ),
 
     /**
      * Store has dense node support
      */
-    DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),
+    DENSE_NODES( false, CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
      * 3 bytes relationship type support
      */
-    RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
+    RELATIONSHIP_TYPE_3BYTES( false, CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
      * Lucene version 3.x
      */
-    LUCENE_3( CapabilityType.INDEX ),
+    LUCENE_3( false, CapabilityType.INDEX ),
 
     /**
      * Lucene version 5.x
      */
-    LUCENE_5( CapabilityType.INDEX ),
+    LUCENE_5( false, CapabilityType.INDEX ),
 
     /**
      * Point Geometries are an addition to the format, not a change
      */
-    POINT_PROPERTIES( CapabilityType.STORE ),
+    POINT_PROPERTIES( true, CapabilityType.STORE ),
 
     /**
      * Temporal types are an addition to the format, not a change
      */
-    TEMPORAL_PROPERTIES( CapabilityType.STORE ),
+    TEMPORAL_PROPERTIES( true, CapabilityType.STORE ),
 
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
+    SECONDARY_RECORD_UNITS( false, CapabilityType.FORMAT );
 
     private final CapabilityType[] types;
+    private boolean additive;
 
-    Capability( CapabilityType... types )
+    Capability( boolean additive, CapabilityType... types )
     {
+        this.additive = additive;
         this.types = types;
     }
 
     public boolean isType( CapabilityType type )
     {
         return contains( types, type );
+    }
+
+    /**
+     * Whether or not this capability is additive. A capability is additive if data regarding this capability will not change
+     * any existing store and therefore not require migration of existing data.
+     *
+     * @return whether or not this capability is additive.
+     */
+    public boolean isAdditive()
+    {
+        return additive;
     }
 }

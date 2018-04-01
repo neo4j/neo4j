@@ -115,7 +115,7 @@ public interface RecordFormats
      * @param type {@link CapabilityType type} of capability to compare.
      * @return true if both formats have the same set of capabilities of the given {@code type}.
      */
-    boolean hasSameCapabilities( RecordFormats other, CapabilityType type );
+    boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type );
 
     /**
      * Record format name
