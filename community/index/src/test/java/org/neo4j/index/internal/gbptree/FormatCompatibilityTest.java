@@ -30,7 +30,6 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -39,9 +38,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
@@ -267,25 +266,12 @@ public class FormatCompatibilityTest
             }
             tree.checkpoint( IOLimiter.unlimited() );
         }
-        zip( storeFile );
+        ZipUtils.zip( fsRule.get(), storeFile, directory.file( zipName ) );
     }
 
     private static long value( long key )
     {
         return key * 2;
-    }
-
-    private File zip( File toZip ) throws IOException
-    {
-        File targetFile = directory.file( zipName );
-        try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( targetFile ) ) )
-        {
-            ZipEntry entry = new ZipEntry( toZip.getName() );
-            entry.setSize( toZip.length() );
-            out.putNextEntry( entry );
-            Files.copy( toZip.toPath(), out );
-        }
-        return targetFile;
     }
 
     private List<Long> initialKeys()
