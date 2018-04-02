@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.runtime;
 
-import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,7 +50,7 @@ public class BoltConnectionReadLimiterTest
 {
     private static final Job job = s -> s.run( "INIT", null, null );
     private BoltConnection connection;
-    private Channel channel;
+    private EmbeddedChannel channel;
     private Log log;
 
     @Before
@@ -62,6 +62,12 @@ public class BoltConnectionReadLimiterTest
         connection = mock( BoltConnection.class );
         when( connection.id() ).thenReturn( channel.id().asLongText() );
         when( connection.channel() ).thenReturn( channel );
+    }
+
+    @After
+    public void cleanup()
+    {
+        channel.finishAndReleaseAll();
     }
 
     @Test

@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.v1.packstream;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * This is what {@link PackStream} uses to ingest data, implement this on top of any data source of your choice to
  * deserialize the stream with {@link PackStream}.
  */
-public interface PackInput
+public interface PackInput extends Closeable
 {
     /** Consume one byte */
     byte readByte() throws IOException;

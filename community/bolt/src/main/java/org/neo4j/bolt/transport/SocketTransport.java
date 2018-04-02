@@ -40,12 +40,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
     private final TransportThrottleGroup throttleGroup;
-    private final BoltProtocolHandlerFactory handlerFactory;
+    private final BoltProtocolPipelineInstallerFactory handlerFactory;
 
     public SocketTransport( String connector, ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
                             LogProvider logging, BoltMessageLogging boltLogging,
                             TransportThrottleGroup throttleGroup,
-                            BoltProtocolHandlerFactory handlerFactory )
+                            BoltProtocolPipelineInstallerFactory handlerFactory )
     {
         this.connector = connector;
         this.address = address;

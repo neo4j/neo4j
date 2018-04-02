@@ -19,72 +19,81 @@
  */
 package org.neo4j.bolt.v1.packstream;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 
-public class PackedInputArray implements PackInput
+import static java.util.Objects.requireNonNull;
+
+public class ByteBufInput implements PackInput
 {
-    private final ByteArrayInputStream bytes;
-    private final DataInputStream data;
+    private ByteBuf buf;
 
-    public PackedInputArray( byte[] bytes )
+    public void start( ByteBuf newBuf )
     {
-        this.bytes = new ByteArrayInputStream( bytes );
-        this.data = new DataInputStream( this.bytes );
+        assertNotStarted();
+        buf = requireNonNull( newBuf );
+    }
+
+    public void stop()
+    {
+        buf = null;
     }
 
     @Override
-    public byte readByte() throws IOException
+    public byte readByte()
     {
-        return data.readByte();
+        return buf.readByte();
     }
 
     @Override
-    public short readShort() throws IOException
+    public short readShort()
     {
-        return data.readShort();
+        return buf.readShort();
     }
 
     @Override
-    public int readInt() throws IOException
+    public int readInt()
     {
-        return data.readInt();
+        return buf.readInt();
     }
 
     @Override
-    public long readLong() throws IOException
+    public long readLong()
     {
-        return data.readLong();
+        return buf.readLong();
     }
 
     @Override
-    public double readDouble() throws IOException
+    public double readDouble()
     {
-        return data.readDouble();
+        return buf.readDouble();
     }
 
     @Override
     public PackInput readBytes( byte[] into, int offset, int toRead ) throws IOException
     {
-        // TODO: fix the interface and all implementations - we should probably
-        // TODO: return the no of bytes read instead of the instance
-        data.read( into, offset, toRead );
+        buf.readBytes( into, offset, toRead );
         return this;
     }
 
     @Override
-    public byte peekByte() throws IOException
+    public byte peekByte()
     {
-        data.mark(1);
-        byte value = data.readByte();
-        data.reset();
-        return value;
+        return buf.getByte( buf.readerIndex() );
     }
 
     @Override
     public void close() throws IOException
     {
-        data.close();
+        stop();
+    }
+
+    private void assertNotStarted()
+    {
+        if ( buf != null )
+        {
+            throw new IllegalStateException( "Already started" );
+        }
     }
 }

@@ -58,7 +58,7 @@ import static org.neo4j.values.storable.Values.byteArray;
  */
 public class Neo4jPackV1 implements Neo4jPack
 {
-    public static final int VERSION = 1;
+    public static final long VERSION = 1;
 
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
@@ -78,7 +78,7 @@ public class Neo4jPackV1 implements Neo4jPack
     }
 
     @Override
-    public int version()
+    public long version()
     {
         return VERSION;
     }

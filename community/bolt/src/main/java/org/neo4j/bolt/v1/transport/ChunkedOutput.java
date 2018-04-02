@@ -40,6 +40,8 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class ChunkedOutput implements PackOutput
 {
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
     public static final int CHUNK_HEADER_SIZE = 2;
     public static final int MESSAGE_BOUNDARY = 0;
 
@@ -58,6 +60,11 @@ public class ChunkedOutput implements PackOutput
     /** Are currently in the middle of writing a chunk? */
     private boolean chunkOpen;
     private int currentMessageStartIndex = NO_MESSAGE;
+
+    public ChunkedOutput( Channel ch, TransportThrottleGroup throttleGroup )
+    {
+        this( ch, DEFAULT_BUFFER_SIZE, throttleGroup );
+    }
 
     public ChunkedOutput( Channel ch, int bufferSize, TransportThrottleGroup throttleGroup )
     {

@@ -69,5 +69,5 @@ public interface Neo4jPack
 
     Unpacker newUnpacker( PackInput input );
 
-    int version();
+    long version();
 }

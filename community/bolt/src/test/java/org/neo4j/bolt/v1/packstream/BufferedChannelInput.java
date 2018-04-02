@@ -137,6 +137,17 @@ public class BufferedChannelInput implements PackInput
         return buffer.get( buffer.position() );
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        buffer.clear();
+
+        if ( channel != null )
+        {
+            channel.close();
+        }
+    }
+
     private void ensure( int numBytes ) throws IOException
     {
         if ( !attempt( numBytes ) )

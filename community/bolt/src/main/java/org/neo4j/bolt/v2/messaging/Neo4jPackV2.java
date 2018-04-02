@@ -56,7 +56,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class Neo4jPackV2 extends Neo4jPackV1
 {
-    public static final int VERSION = 2;
+    public static final long VERSION = 2;
 
     public static final byte POINT_2D = 'X';
     public static final byte POINT_3D = 'Y';
@@ -82,7 +82,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
     }
 
     @Override
-    public int version()
+    public long version()
     {
         return VERSION;
     }
