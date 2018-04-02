@@ -20,9 +20,7 @@
 package org.neo4j.metrics.source.db;
 
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.UniformReservoir;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -77,12 +75,6 @@ public class BoltMetrics extends LifecycleAdapter
     @Documented( "The accumulated time worker threads have spent processing messages." )
     public static final String TOTAL_PROCESSING_TIME = name( NAME_PREFIX, "accumulated_processing_time" );
 
-    @Documented( "The time messages have spent waiting for a worker thread." )
-    public static final String QUEUE_TIME = name( NAME_PREFIX, "queue_time_distribution" );
-
-    @Documented( "The time worker threads have spent processing messages." )
-    public static final String PROCESSING_TIME = name( NAME_PREFIX, "processing_time_distribution" );
-
     private final MetricRegistry registry;
     private final Monitors monitors;
     private final BoltMetricsMonitor boltMonitor = new BoltMetricsMonitor();
@@ -108,8 +100,6 @@ public class BoltMetrics extends LifecycleAdapter
         registry.register( MESSAGES_FAILED, (Gauge<Long>) boltMonitor.messagesFailed::get );
         registry.register( TOTAL_QUEUE_TIME, (Gauge<Long>) boltMonitor.queueTime::get );
         registry.register( TOTAL_PROCESSING_TIME, (Gauge<Long>) boltMonitor.processingTime::get );
-        registry.register( QUEUE_TIME, boltMonitor.queueTimeHistogram );
-        registry.register( PROCESSING_TIME, boltMonitor.processingTimeHistogram );
     }
 
     @Override
@@ -126,8 +116,6 @@ public class BoltMetrics extends LifecycleAdapter
         registry.remove( MESSAGES_FAILED );
         registry.remove( TOTAL_QUEUE_TIME );
         registry.remove( TOTAL_PROCESSING_TIME );
-        registry.remove( QUEUE_TIME );
-        registry.remove( PROCESSING_TIME );
         monitors.removeMonitorListener( boltMonitor );
     }
 
@@ -149,9 +137,6 @@ public class BoltMetrics extends LifecycleAdapter
         // run uninterrupted for three hundred years before the monitoring had a hiccup.
         final AtomicLong queueTime = new AtomicLong();
         final AtomicLong processingTime = new AtomicLong();
-
-        final Histogram queueTimeHistogram = new Histogram( new UniformReservoir() );
-        final Histogram processingTimeHistogram = new Histogram( new UniformReservoir() );
 
         @Override
         public void connectionOpened()
@@ -184,7 +169,6 @@ public class BoltMetrics extends LifecycleAdapter
         public void messageProcessingStarted( long queueTime )
         {
             this.queueTime.addAndGet( queueTime );
-            queueTimeHistogram.update( queueTime );
             messagesStarted.incrementAndGet();
         }
 
@@ -192,7 +176,6 @@ public class BoltMetrics extends LifecycleAdapter
         public void messageProcessingCompleted( long processingTime )
         {
             this.processingTime.addAndGet( processingTime );
-            processingTimeHistogram.update( processingTime );
             messagesDone.incrementAndGet();
         }
 
@@ -208,6 +191,5 @@ public class BoltMetrics extends LifecycleAdapter
             connectionsClosed.incrementAndGet();
             connectionsIdle.decrementAndGet();
         }
-
     }
 }
