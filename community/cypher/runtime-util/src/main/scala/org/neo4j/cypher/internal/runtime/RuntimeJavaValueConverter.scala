@@ -57,6 +57,17 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     }
   }
 
+  case class feedQueryResultRecordIteratorToVisitable[EX <: Exception](recordIterator: Iterator[Record]) {
+    def accept(visitor: QueryResultVisitor[EX]) = {
+      var continue = true
+      while (continue && recordIterator.hasNext) {
+        val row = recordIterator.next()
+        continue = visitor.visit(row)
+        row.release()
+      }
+    }
+  }
+
   private class ResultRecord extends Record {
     var _fields: Array[AnyValue] = Array.empty
     override def fields(): Array[AnyValue] = _fields

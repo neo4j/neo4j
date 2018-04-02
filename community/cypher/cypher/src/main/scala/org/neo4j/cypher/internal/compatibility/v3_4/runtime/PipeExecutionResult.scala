@@ -109,7 +109,11 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     try {
-      javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
+      val maybeRecordIterator = result.recordIterator
+      if (maybeRecordIterator.isDefined)
+        javaValues.feedQueryResultRecordIteratorToVisitable(maybeRecordIterator.get).accept(visitor)
+      else
+        javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
     } finally {
       self.close()
     }

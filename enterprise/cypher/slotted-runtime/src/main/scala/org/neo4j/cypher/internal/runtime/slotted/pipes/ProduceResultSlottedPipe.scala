@@ -21,23 +21,22 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.slotted.ArrayResultExecutionContextFactory
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
 case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expression)])
                                    (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
+  val resultFactory = ArrayResultExecutionContextFactory(columns)
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
 
     input.map {
       original =>
-        val m = MutableMaps.create(columns.size)
-        columns.foreach {
-          case (name, exp) => m.put(name, exp(original, state))
-        }
-
-        ExecutionContext(m)
+        val result = resultFactory.newResult(original, state)
+        result
     }
   }
 }
