@@ -43,4 +43,9 @@ public class BoltIOException extends IOException implements Status.HasStatus
     {
         return status;
     }
+
+    public boolean causesFailure()
+    {
+        return status != Status.Request.InvalidFormat;
+    }
 }

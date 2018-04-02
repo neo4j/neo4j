@@ -24,10 +24,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 
+import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.ByteBufInput;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
 
 import static io.netty.buffer.ByteBufUtil.hexDump;
 
@@ -45,12 +47,23 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf )
+    protected void channelRead0( ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf ) throws Exception
     {
         input.start( byteBuf );
         try
         {
             reader.read( messageHandler );
+        }
+        catch ( BoltIOException ex )
+        {
+            if ( ex.causesFailure() )
+            {
+                messageHandler.onExternalError( Neo4jError.from( ex ) );
+            }
+            else
+            {
+                throw ex;
+            }
         }
         catch ( Throwable error )
         {

@@ -30,11 +30,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.messaging.KnownType;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -428,8 +428,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     protected static class UnpackerV1 extends PackStream.Unpacker implements Neo4jPack.Unpacker
     {
-        private final List<Neo4jError> errors = new ArrayList<>( 2 );
-
         protected UnpackerV1( PackInput input )
         {
             super( input );
@@ -475,8 +473,7 @@ public class Neo4jPackV1 implements Neo4jPack
                 return null;
             }
             default:
-                throw new BoltIOException( Status.Request.InvalidFormat,
-                        "Unknown value type: " + valType );
+                throw new BoltIOException( Status.Request.InvalidFormat, "Unknown value type: " + valType );
             }
         }
 
@@ -519,28 +516,15 @@ public class Neo4jPackV1 implements Neo4jPack
 
         protected AnyValue unpackStruct( char signature ) throws IOException
         {
-            switch ( signature )
+            KnownType knownType = KnownType.valueOf( signature );
+            if ( knownType == null )
             {
-            case NODE:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Nodes cannot be unpacked." );
-            }
-            case RELATIONSHIP:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-            }
-            case UNBOUND_RELATIONSHIP:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Relationships cannot be unpacked." );
-            }
-            case PATH:
-            {
-                throw new BoltIOException( Status.Request.Invalid, "Paths cannot be unpacked." );
-            }
-            default:
                 throw new BoltIOException( Status.Request.InvalidFormat,
-                        "Unknown struct type: " + Integer.toHexString( signature ) );
+                        String.format( "Struct types of 0x%s are not recognized.", Integer.toHexString( signature ) ) );
             }
+
+            throw new BoltIOException( Status.Statement.TypeError,
+                    String.format( "%s values cannot be unpacked with this version of bolt.", knownType.description() ) );
         }
 
         @Override
@@ -572,19 +556,13 @@ public class Neo4jPackV1 implements Neo4jPack
                         val = unpack();
                         if ( map.put( key, val ) != null )
                         {
-                            errors.add(
-                                    Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
+                            throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                         }
                         break;
                     case NULL:
-                        errors.add( Neo4jError.from( Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
-                        unpackNull();
-                        val = unpack();
-                        map.put( null, val );
-                        break;
+                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
                     default:
-                        throw new PackStream.PackStreamException( "Bad key type" );
+                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
                     }
                 }
             }
@@ -593,39 +571,27 @@ public class Neo4jPackV1 implements Neo4jPack
                 map = new HashMap<>( size, 1 );
                 for ( int i = 0; i < size; i++ )
                 {
-                    PackType type = peekNextType();
+                    PackType keyType = peekNextType();
                     String key;
-                    switch ( type )
+                    switch ( keyType )
                     {
                     case NULL:
-                        errors.add( Neo4jError.from( Status.Request.Invalid,
-                                "Value `null` is not supported as key in maps, must be a non-nullable string." ) );
-                        unpackNull();
-                        key = null;
-                        break;
+                        throw new BoltIOException( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." );
                     case STRING:
                         key = unpackString();
                         break;
                     default:
-                        throw new PackStream.PackStreamException( "Bad key type: " + type );
+                        throw new BoltIOException( Status.Request.InvalidFormat, "Bad key type: " + keyType );
                     }
 
                     AnyValue val = unpack();
                     if ( map.put( key, val ) != null )
                     {
-                        errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
+                        throw new BoltIOException( Status.Request.Invalid, "Duplicate map key `" + key + "`." );
                     }
                 }
             }
             return VirtualValues.map( map );
-        }
-
-        @Override
-        public Neo4jError consumeError()
-        {
-            Neo4jError error = Neo4jError.combine( errors );
-            errors.clear();
-            return error;
         }
     }
 }

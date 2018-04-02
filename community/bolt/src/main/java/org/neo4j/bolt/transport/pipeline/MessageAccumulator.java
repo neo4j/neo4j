@@ -73,10 +73,9 @@ public class MessageAccumulator extends ByteToMessageDecoder
 
     private void assertNonEmptyMessage()
     {
-        // if we had already set message boundary previously
-        if ( readMessageBoundary )
+        if ( actualReadableBytes() == 0 )
         {
-            throw new DecoderException( "Consecutive message boundaries (empty messages) are not expected." );
+            throw new DecoderException( "Message boundary received when there's nothing to decode." );
         }
     }
 }
