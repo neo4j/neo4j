@@ -23,7 +23,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Clock;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -62,7 +61,7 @@ import static org.neo4j.values.storable.Values.stringArray;
  */
 public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 {
-    private final String id = UUID.randomUUID().toString();
+    private final String id;
     private final BoltChannel boltChannel;
     private final Clock clock;
     private final Log log;
@@ -74,6 +73,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     public BoltStateMachine( SPI spi, BoltChannel boltChannel, Clock clock, LogService logService )
     {
+        this.id = boltChannel.id();
         this.spi = spi;
         this.ctx = new MutableConnectionState( spi, clock );
         this.boltChannel = boltChannel;
@@ -273,6 +273,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     public void markFailed( Neo4jError error )
     {
         fail( this, error );
+        state = State.FAILED;
     }
 
     private boolean hasPendingError()
