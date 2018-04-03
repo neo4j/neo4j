@@ -38,6 +38,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -109,7 +110,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, ExecutionStatistics
 {
     /*
      * IMPORTANT:
@@ -386,6 +387,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertTransactionOpen();
         currentStatement.acquire();
         return currentStatement;
+    }
+
+    @Override
+    public long pageHits()
+    {
+        return cursorTracerSupplier.get().hits();
+    }
+
+    @Override
+    public long pageFaults()
+    {
+        return cursorTracerSupplier.get().faults();
     }
 
     ExecutingQueryList executingQueries()
@@ -830,6 +843,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public org.neo4j.internal.kernel.api.Procedures procedures()
     {
         return operations.procedures();
+    }
+
+    @Override
+    public ExecutionStatistics executionStatistics()
+    {
+        return this;
     }
 
     public LockTracer lockTracer()

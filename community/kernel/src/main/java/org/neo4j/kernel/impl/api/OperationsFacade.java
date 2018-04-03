@@ -56,9 +56,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ProcedureCallOperations;
@@ -112,7 +110,7 @@ import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, TokenWriteOperations,
-        QueryRegistryOperations, ProcedureCallOperations, ExecutionStatisticsOperations
+        QueryRegistryOperations, ProcedureCallOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -162,11 +160,6 @@ public class OperationsFacade
     final SchemaReadOperations schemaRead()
     {
         return operations.schemaReadOperations();
-    }
-
-    final org.neo4j.kernel.impl.api.operations.SchemaWriteOperations schemaWrite()
-    {
-        return operations.schemaWriteOperations();
     }
 
     final QueryRegistrationOperations queryRegistrationOperations()
@@ -1461,12 +1454,6 @@ public class OperationsFacade
             ctx.put( Context.THREAD, Thread.currentThread() );
             return procedures.createAggregationFunction( ctx, name );
         }
-    }
-
-    @Override
-    public PageCursorTracer getPageCursorTracer()
-    {
-        return statement.getPageCursorTracer();
     }
     // </Procedures>
 }

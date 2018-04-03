@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
@@ -59,6 +58,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
      * Field can be read from a different thread in {@link #terminate()}.
      */
     private volatile InternalTransaction transaction;
+    private Transaction apiTransaction;
     private Statement statement;
     private boolean isOpen = true;
 
@@ -86,7 +86,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         this.transaction = initialTransaction;
         this.statement = initialStatement;
-
         this.kernel = kernel;
     }
 
@@ -320,21 +319,24 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public StatisticProvider kernelStatisticProvider()
     {
-        return new TransactionalContextStatisticProvider( statement.executionStatisticsOperations().getPageCursorTracer() );
+        return new TransactionalContextStatisticProvider( kernelTransaction().executionStatistics() );
     }
 
     private void collectTransactionExecutionStatistic()
     {
-        PageCursorTracer pageCursorTracer = statement.executionStatisticsOperations().getPageCursorTracer();
-        pageHits += pageCursorTracer.hits();
-        pageMisses += pageCursorTracer.faults();
+        ExecutionStatistics stats = kernelTransaction().executionStatistics();
+        pageHits += stats.pageHits();
+        pageMisses += stats.pageFaults();
     }
 
-    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph, Supplier<Statement> statementSupplier, Guard guard,
-            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker, InternalTransaction initialTransaction, Statement initialStatement,
+    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph,
+            Guard guard,
+            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
+            InternalTransaction initialTransaction, Statement initialStatement,
             ExecutingQuery executingQuery )
     {
-        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, initialTransaction, initialStatement, executingQuery, kernel );
+        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, initialTransaction, initialStatement,
+                executingQuery, kernel );
     }
 
     interface Creator
@@ -348,23 +350,23 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
     private class TransactionalContextStatisticProvider implements StatisticProvider
     {
-        private final PageCursorTracer pageCursorTracer;
+        private final ExecutionStatistics executionStatistics;
 
-        private TransactionalContextStatisticProvider( PageCursorTracer pageCursorTracer )
+        private TransactionalContextStatisticProvider( ExecutionStatistics executionStatistics )
         {
-            this.pageCursorTracer = pageCursorTracer;
+            this.executionStatistics = executionStatistics;
         }
 
         @Override
         public long getPageCacheHits()
         {
-            return pageCursorTracer.hits() + pageHits;
+            return executionStatistics.pageHits() + pageHits;
         }
 
         @Override
         public long getPageCacheMisses()
         {
-            return pageCursorTracer.faults() + pageMisses;
+            return executionStatistics.pageFaults() + pageMisses;
         }
     }
 }

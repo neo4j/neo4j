@@ -127,4 +127,9 @@ public interface Transaction extends AutoCloseable
      * @return Returns procedure operations
      */
     Procedures procedures();
+
+    /**
+     * @return statistics about the execution
+     */
+    ExecutionStatistics executionStatistics();
 }

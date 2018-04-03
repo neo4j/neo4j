@@ -57,5 +57,4 @@ public interface Statement extends Resource, ResourceManager
      */
     ProcedureCallOperations procedureCallOperations();
 
-    ExecutionStatisticsOperations executionStatisticsOperations();
 }

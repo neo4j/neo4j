@@ -17,17 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
-
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+package org.neo4j.internal.kernel.api;
 
 /**
- * Defines methods that expose various statistical information from kernel
+ * Expose statistical information about the current transaction.
  */
-public interface ExecutionStatisticsOperations
+public interface ExecutionStatistics
 {
     /**
-     * @return provide current page cursor tracer that expose current transaction page cache statistic
+     * Returns the number of page hits in the current transaction
+     * @return the number of page hits in the current transaction
      */
-    PageCursorTracer getPageCursorTracer();
+    long pageHits();
+
+    /**
+     * Returns the number of page faults in the current transaction
+     * @return the number of page faults in the current transaction
+     */
+    long pageFaults();
 }

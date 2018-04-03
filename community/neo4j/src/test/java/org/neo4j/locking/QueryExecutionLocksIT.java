@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -1269,6 +1270,12 @@ public class QueryExecutionLocksIT
         public Procedures procedures()
         {
             return internal.procedures();
+        }
+
+        @Override
+        public ExecutionStatistics executionStatistics()
+        {
+            return internal.executionStatistics();
         }
 
         @Override
