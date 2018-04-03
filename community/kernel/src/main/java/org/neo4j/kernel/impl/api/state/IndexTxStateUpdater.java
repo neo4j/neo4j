@@ -28,9 +28,9 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
-import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -45,14 +45,16 @@ public class IndexTxStateUpdater
     private final StoreReadLayer storeReadLayer;
     private final EntityReadOperations readOps;
     private final NodeSchemaMatcher nodeIndexMatcher;
+    private final IndexingService indexingService;
 
     // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, EntityReadOperations readOps )
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, EntityReadOperations readOps, IndexingService indexingService )
     {
         this.storeReadLayer = storeReadLayer;
         this.readOps = readOps;
         this.nodeIndexMatcher = new NodeSchemaMatcher( readOps );
+        this.indexingService = indexingService;
     }
 
     // LABEL CHANGES
@@ -77,18 +79,15 @@ public class IndexTxStateUpdater
             int[] indexPropertyIds = index.schema().getPropertyIds();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
-                ValueTuple values = getValueTuple( state, node, indexPropertyIds );
+                Value[] values = getValueTuple( state, node, indexPropertyIds );
                 if ( changeType == LabelChangeType.ADDED_LABEL )
                 {
-                    for ( int i = 0; i < values.size(); i++ )
-                    {
-                        Validators.INDEX_VALUE_VALIDATOR.validate( values.valueAt(i) );
-                    }
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+                    indexingService.validateBeforeCommit( index.schema(), values );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, ValueTuple.of( values ) );
                 }
                 else
                 {
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), ValueTuple.of( values ), null );
                 }
             }
         }
@@ -109,10 +108,9 @@ public class IndexTxStateUpdater
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
-                    Validators.INDEX_VALUE_VALIDATOR.validate( value );
-                    ValueTuple values =
-                            getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, values );
+                    Value[] values = getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
+                    indexingService.validateBeforeCommit( index.schema(), values );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), null, ValueTuple.of( values ) );
                 } );
     }
 
@@ -124,9 +122,8 @@ public class IndexTxStateUpdater
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
-                    ValueTuple values =
-                            getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
-                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), values, null );
+                    Value[] values = getValueTuple( state, node, propertyKeyId, value, index.schema().getPropertyIds() );
+                    state.txState().indexDoUpdateEntry( index.schema(), node.id(), ValueTuple.of( values ), null );
                 });
     }
 
@@ -137,7 +134,6 @@ public class IndexTxStateUpdater
         nodeIndexMatcher.onMatchingSchema( state, indexes, node, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
-                    Validators.INDEX_VALUE_VALIDATOR.validate( afterValue );
                     int[] indexPropertyIds = index.schema().getPropertyIds();
 
                     Value[] valuesBefore = new Value[indexPropertyIds.length];
@@ -157,6 +153,7 @@ public class IndexTxStateUpdater
                             valuesAfter[i] = value;
                         }
                     }
+                    indexingService.validateBeforeCommit( index.schema(), valuesAfter );
                     state.txState().indexDoUpdateEntry( index.schema(), node.id(),
                             ValueTuple.of( valuesBefore ), ValueTuple.of( valuesAfter ) );
                 });
@@ -164,13 +161,13 @@ public class IndexTxStateUpdater
 
     // HELPERS
 
-    private ValueTuple getValueTuple( KernelStatement state, NodeItem node,
+    private Value[] getValueTuple( KernelStatement state, NodeItem node,
             int[] indexPropertyIds )
     {
         return getValueTuple( state, node, NO_SUCH_PROPERTY_KEY, Values.NO_VALUE, indexPropertyIds );
     }
 
-    private ValueTuple getValueTuple( KernelStatement state, NodeItem node,
+    private Value[] getValueTuple( KernelStatement state, NodeItem node,
             int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];
@@ -195,7 +192,7 @@ public class IndexTxStateUpdater
             }
         }
 
-        return ValueTuple.of( values );
+        return values;
     }
 
     private static boolean nodeHasIndexProperties( PrimitiveIntSet nodeProperties, int[] indexPropertyIds )

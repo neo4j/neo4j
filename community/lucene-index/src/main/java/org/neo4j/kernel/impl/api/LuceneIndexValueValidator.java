@@ -24,21 +24,39 @@ import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class IndexValueValidator implements Validator<Value>
+/**
+ * Validates {@link Value values} that are about to get indexed into a Lucene index.
+ * Values passing this validation are OK to commit and apply to a Lucene index.
+ */
+public class LuceneIndexValueValidator implements Validator<Value>
 {
-    public static final IndexValueValidator INSTANCE = new IndexValueValidator();
+    public static final LuceneIndexValueValidator INSTANCE = new LuceneIndexValueValidator();
 
-    private IndexValueValidator()
+    // Maximum bytes value length that supported by indexes.
+    // Absolute hard maximum length for a term, in bytes once
+    // encoded as UTF8.  If a term arrives from the analyzer
+    // longer than this length, an IllegalArgumentException
+    // when lucene writer trying to add or update document
+    static final int MAX_TERM_LENGTH = (1 << 15) - 2;
+
+    private final IndexTextValueLengthValidator textValueValidator = new IndexTextValueLengthValidator( MAX_TERM_LENGTH );
+
+    private LuceneIndexValueValidator()
     {
     }
 
     @Override
     public void validate( Value value )
     {
-        IndexSimpleValueValidator.INSTANCE.validate( value );
+        textValueValidator.validate( value );
         if ( Values.isArrayValue( value ) )
         {
-            IndexValueLengthValidator.INSTANCE.validate( ArrayEncoder.encode( value ).getBytes() );
+            textValueValidator.validate( ArrayEncoder.encode( value ).getBytes() );
         }
+    }
+
+    public void validate( byte[] encodedValue )
+    {
+        textValueValidator.validate( encodedValue );
     }
 }

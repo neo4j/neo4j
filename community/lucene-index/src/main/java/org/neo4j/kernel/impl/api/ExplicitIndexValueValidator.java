@@ -19,29 +19,34 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
-public class IndexSimpleValueValidator implements Validator<Value>
+/**
+ * Validates values added to an {@link ExplicitIndex} before commit.
+ */
+public class ExplicitIndexValueValidator implements Validator<Object>
 {
-    public static final IndexSimpleValueValidator INSTANCE = new IndexSimpleValueValidator();
+    public static final ExplicitIndexValueValidator INSTANCE = new ExplicitIndexValueValidator();
 
-    private IndexSimpleValueValidator()
+    private ExplicitIndexValueValidator()
     {
     }
 
     @Override
-    public void validate( Value value )
+    public void validate( Object value )
     {
-        if ( value == null || value == Values.NO_VALUE )
+        if ( value == null )
         {
             throw new IllegalArgumentException( "Null value" );
         }
-        if ( Values.isTextValue( value ) )
+        if ( value instanceof String )
         {
-            IndexValueLengthValidator.INSTANCE.validate( ((TextValue)value).stringValue().getBytes() );
+            LuceneIndexValueValidator.INSTANCE.validate( ((String)value).getBytes() );
+        }
+        if ( !(value instanceof Number) && value.toString() == null )
+        {
+            throw new IllegalArgumentException( "Value of type " + value.getClass() + " has null toString" );
         }
     }
 }

@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
@@ -116,6 +117,11 @@ public class IndexProxyAdapter implements IndexProxy
 
     @Override
     public void validate()
+    {
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
     {
     }
 

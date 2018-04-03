@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -60,7 +61,7 @@ public class StateOperationsAutoIndexingTest
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );
     private final StoreReadLayer storeLayer = mock( StoreReadLayer.class, RETURNS_MOCKS );
     private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
-            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class) );
+            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class), mock( IndexingService.class ) );
 
     @Before
     public void setup() throws InvalidTransactionTypeKernelException

@@ -30,7 +30,9 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
@@ -53,7 +55,7 @@ public interface IndexAccessor extends Closeable
     /**
      * Return an updater for applying a set of changes to this index.
      * Updates must be visible in {@link #newReader() readers} created after this update.
-     *
+     * <p>
      * This is called with IndexUpdateMode.RECOVERY when starting up after
      * a crash or similar. Updates given then may have already been applied to this index, so
      * additional checks must be in place so that data doesn't get duplicated, but is idempotent.
@@ -119,6 +121,14 @@ public interface IndexAccessor extends Closeable
      * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
      */
     boolean isDirty();
+
+    /**
+     * Validates the {@link Value value tuple} before transaction determines that it can commit.
+     */
+    default void validateBeforeCommit( Value[] tuple )
+    {
+        // For most value types there are no specific validations to be made.
+    }
 
     class Adapter implements IndexAccessor
     {
@@ -270,6 +280,12 @@ public interface IndexAccessor extends Closeable
         public boolean isDirty()
         {
             return delegate.isDirty();
+        }
+
+        @Override
+        public void validateBeforeCommit( Value[] tuple )
+        {
+            delegate.validateBeforeCommit( tuple );
         }
     }
 }

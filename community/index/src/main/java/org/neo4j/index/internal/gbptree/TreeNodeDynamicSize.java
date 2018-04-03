@@ -63,6 +63,8 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 {
+    public static final int MAX_KEY_SIZE = DynamicSizeUtil.MAX_TWO_BYTE_KEY_SIZE;
+
     static final byte FORMAT_IDENTIFIER = 3;
     static final byte FORMAT_VERSION = 0;
 

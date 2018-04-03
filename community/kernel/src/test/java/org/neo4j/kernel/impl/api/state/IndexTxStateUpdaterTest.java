@@ -30,11 +30,14 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -83,7 +86,7 @@ public class IndexTxStateUpdaterTest
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
 
     @Before
-    public void setup()
+    public void setup() throws IndexNotFoundKernelException
     {
         state = mock( KernelStatement.class );
         txState = mock( TransactionState.class );
@@ -124,7 +127,10 @@ public class IndexTxStateUpdaterTest
         when( readOps.nodeGetProperty( state, node, propId2 ) ).thenReturn( Values.of( "hi2" ) );
         when( readOps.nodeGetProperty( state, node, propId3 ) ).thenReturn( Values.of( "hi3" ) );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
+        IndexingService indexingService = mock( IndexingService.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( mock( IndexProxy.class ) );
+
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, indexingService );
 
     }
 
