@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -69,7 +68,7 @@ public class GraphPropertiesProxy implements GraphProperties
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }
@@ -95,7 +94,7 @@ public class GraphPropertiesProxy implements GraphProperties
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
@@ -128,7 +127,7 @@ public class GraphPropertiesProxy implements GraphProperties
         KernelTransaction transaction = safeAcquireTransaction();
         PropertyCursor properties = transaction.propertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }

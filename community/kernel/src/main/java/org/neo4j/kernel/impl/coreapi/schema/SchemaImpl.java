@@ -74,7 +74,6 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -352,7 +351,7 @@ public class SchemaImpl implements Schema
 
     private static void assertValidLabel( Label label, int labelId )
     {
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        if ( labelId == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "Label %s not found", label.name() ) );
         }
@@ -362,7 +361,7 @@ public class SchemaImpl implements Schema
     {
         for ( int i = 0; i < propertyIds.length; i++ )
         {
-            if ( propertyIds[i] == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            if ( propertyIds[i] == TokenRead.NO_TOKEN )
             {
                 throw new NotFoundException(
                         format( "Property key %s not found", Iterables.asArray( String.class, properties )[i] ) );
