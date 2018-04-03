@@ -27,23 +27,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
-import org.neo4j.util.FeatureToggles;
 
 public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
 {
-    protected static final String LOW_WATERMARK_NAME = "low_watermark";
-    protected static final String HIGH_WATERMARK_NAME = "high_watermark";
-
     private final ConcurrentHashMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
     private final Log log;
     private final int lowWatermark;
     private final int highWatermark;
-
-    public BoltConnectionReadLimiter( Log log )
-    {
-        this( log, FeatureToggles.getInteger( BoltConnectionReadLimiter.class, LOW_WATERMARK_NAME, 100 ),
-                FeatureToggles.getInteger( BoltConnectionReadLimiter.class, HIGH_WATERMARK_NAME, 300 ) );
-    }
 
     public BoltConnectionReadLimiter( Log log, int lowWatermark, int highWatermark )
     {

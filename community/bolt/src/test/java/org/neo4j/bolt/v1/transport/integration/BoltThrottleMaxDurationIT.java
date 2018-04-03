@@ -107,7 +107,7 @@ public class BoltThrottleMaxDurationIT
         return settings ->
         {
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-            settings.put( GraphDatabaseSettings.bolt_write_throttle_max_duration.name(), "30s" );
+            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration.name(), "30s" );
         };
     }
 

@@ -58,7 +58,7 @@ public class BoltConnector extends Connector
     public final Setting<AdvertisedSocketAddress> advertised_address;
 
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
-    public final Setting<Integer> thread_pool_core_size;
+    public final Setting<Integer> thread_pool_min_size;
 
     @Description( "The maximum number of threads allowed in the thread pool bound to this connector." )
     public final Setting<Integer> thread_pool_max_size;
@@ -88,7 +88,7 @@ public class BoltConnector extends Connector
         this.address = group.scope( legacyAddressSetting );
         this.listen_address = group.scope( listenAddressSetting );
         this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
-        this.thread_pool_core_size = group.scope( setting( "thread_pool_core_size", INTEGER, String.valueOf( 10 ) ) );
+        this.thread_pool_min_size = group.scope( setting( "thread_pool_min_size", INTEGER, String.valueOf( 5 ) ) );
         this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 400 ) ) );
         this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
         this.unsupported_thread_pool_queue_size = group.scope( setting( "unsupported_thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
