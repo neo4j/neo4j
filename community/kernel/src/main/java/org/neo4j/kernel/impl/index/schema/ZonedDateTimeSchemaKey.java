@@ -31,10 +31,12 @@ import static java.lang.String.format;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values). A value can be any {@link DateTimeValue}.
- *
- * With these keys the DateTimeValues are sorted by UTC time, and then by time zone. Time zones are sorted so that
- * DateTimeValues with zoneOffset come first (sorted by the zoneOffset), followed by DateTimeValues with zoneIds,
- * sorted by zoneNumber.
+ * <p>
+ * With these keys the DateTimeValues are sorted
+ * 1. by epochSecond
+ * 2. by nanos
+ * 3. by effective Offset west-to-east
+ * 4. non-named TimeZones before named TimeZones. Named Timezones alphabetically.
  */
 class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
 {
@@ -82,7 +84,10 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
         if ( compare == 0 )
         {
             compare = Integer.compare( nanoOfSecond, other.nanoOfSecond );
-            if ( compare == 0 && hasValidTimeZone() && other.hasValidTimeZone() )
+            if ( compare == 0 &&
+                    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
+                    TimeZones.validZoneOffset( zoneOffsetSeconds ) &&
+                    TimeZones.validZoneOffset( other.zoneOffsetSeconds ) )
             {
                 // In the rare case of comparing the same instant in different time zones, we settle for
                 // mapping to values and comparing using the general values comparator.
@@ -126,11 +131,5 @@ class ZonedDateTimeSchemaKey extends NativeSchemaKey<ZonedDateTimeSchemaKey>
                     "Key layout does only support DateTimeValue, tried to create key from " + value );
         }
         return value;
-    }
-
-    // We need to check validity upfront without throwing exceptions, because the PageCursor might give garbage bytes
-    private boolean hasValidTimeZone()
-    {
-        return TimeZones.validZoneId( zoneId ) || TimeZones.validZoneOffset( zoneOffsetSeconds );
     }
 }
