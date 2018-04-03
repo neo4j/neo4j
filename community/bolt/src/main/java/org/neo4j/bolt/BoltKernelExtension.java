@@ -154,7 +154,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         BoltSchedulerProvider boltSchedulerProvider =
                 life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
         BoltConnectionFactory boltConnectionFactory =
-                createConnectionFactory( boltFactory, boltSchedulerProvider, throttleGroup, dependencies, logService, clock );
+                createConnectionFactory( config, boltFactory, boltSchedulerProvider, throttleGroup, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
         BoltProtocolPipelineInstallerFactory handlerFactory = createHandlerFactory( boltConnectionFactory, throttleGroup, logService );
@@ -171,12 +171,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return life;
     }
 
-    private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
+    private BoltConnectionFactory createConnectionFactory( Config config, BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
             TransportThrottleGroup throttleGroup,
             Dependencies dependencies, LogService logService, Clock clock )
     {
         return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, logService, clock,
-                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ), dependencies.monitors() );
+                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ),
+                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark ),
+                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), dependencies.monitors() );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,

@@ -86,7 +86,7 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "TRUE" );
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), BoltConnector.ConnectorType.BOLT.name() );
-            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_core_size.name(), "0" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_min_size.name(), "0" );
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size.name(), "2" );
         };
     }
