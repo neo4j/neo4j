@@ -21,12 +21,10 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time.{LocalDate, LocalTime}
 import java.time.format.DateTimeParseException
-import java.time.temporal.UnsupportedTemporalTypeException
 import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
-import org.neo4j.values.storable.DurationValue
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.values.storable.{DateValue, DurationValue}
 
@@ -296,7 +294,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to millennium with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "millennium",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to millennium with wrong argument") {
@@ -306,7 +304,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to century with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "century",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to century with wrong argument") {
@@ -316,7 +314,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to decade with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "decade",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to decade with wrong argument") {
@@ -326,7 +324,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to year with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "year",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to year with wrong argument") {
@@ -336,7 +334,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to weekYear with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "weekYear",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to weekYear with wrong argument") {
@@ -346,7 +344,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to quarter with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "quarter",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to quarter with wrong argument") {
@@ -356,7 +354,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to month with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "month",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to month with wrong argument") {
@@ -366,7 +364,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to week with wrong receiver") {
     shouldNotTruncate(Seq("time", "localtime"), "week",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate to week with wrong argument") {
@@ -381,7 +379,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to hour with wrong receiver") {
     shouldNotTruncate(Seq("date"), "hour",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate datetime to hour with wrong argument") {
@@ -410,7 +408,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to minute with wrong receiver") {
     shouldNotTruncate(Seq("date"), "minute",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate datetime to minute with wrong argument") {
@@ -439,7 +437,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to second with wrong receiver") {
     shouldNotTruncate(Seq("date"), "second",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate datetime to second with wrong argument") {
@@ -468,7 +466,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to millisecond with wrong receiver") {
     shouldNotTruncate(Seq("date"), "millisecond",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate datetime to millisecond with wrong argument") {
@@ -497,7 +495,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not truncate to microsecond with wrong receiver") {
     shouldNotTruncate(Seq("date"), "microsecond",
-      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "UnsupportedTemporalTypeException")
+      Seq("datetime({year:1984, month: 2, day:11, hour: 12, minute: 30, second: 40, timezone:'+01:00'})"), "CypherTypeException")
   }
 
   test("should not truncate datetime to microsecond with wrong argument") {
@@ -590,7 +588,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (func <- Seq("inMonths", "inDays"); arg1 <- args; arg2 <- args) {
       val query = s"RETURN duration.$func($arg1, $arg2)"
       withClue(s"Executing $query") {
-        failWithError(failConf2, query, Seq.empty, Seq("UnsupportedTemporalTypeException"))
+        failWithError(failConf2, query, Seq.empty, Seq("CypherTypeException"))
       }
     }
   }
@@ -605,7 +603,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
           *  Version 3.3 returns null instead due to running with 3.4 runtime
           *  SyntaxException come from the 3.4 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_4 + Configs.OldAndRule + Configs.Procs, query, Seq.empty, Seq("SyntaxException", "IncomparableValuesException"))
+        failWithError(Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
       }
     }
   }
@@ -628,7 +626,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"RETURN $func('', '', '', '')"
       withClue(s"Executing $query") {
         failWithError(Configs.AbsolutelyAll - Configs.Version2_3, query,
-          Seq("Function call does not provide the required number of arguments"), Seq("SyntaxException"))
+          Seq("Function call does not provide the required number of arguments"))
       }
     }
   }
@@ -706,8 +704,9 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotHaveAccessor(typ: String, accessors: Seq[String], args: String = ""): Unit = {
     for (acc <- accessors) {
       val query = s"RETURN $typ($args).$acc"
+      val possibleErrorMessages = Seq("No such field", "Unsupported field", "Cannot get the offset of", "Cannot get the time zone of", "not supported")
       withClue(s"Executing $query") {
-        failWithError(failConf1, query, Seq.empty, Seq("UnsupportedTemporalTypeException"))
+        failWithError(failConf1, query, possibleErrorMessages, Seq("CypherTypeException"))
       }
     }
   }

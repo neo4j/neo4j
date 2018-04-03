@@ -42,6 +42,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -317,13 +318,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
     }
 
     @Override

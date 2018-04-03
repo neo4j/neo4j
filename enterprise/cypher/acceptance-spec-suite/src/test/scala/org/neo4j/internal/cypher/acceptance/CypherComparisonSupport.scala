@@ -118,7 +118,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
           }
         // It was not expected to fail with the specified error message, do nothing
         case Failure(e: Throwable) =>  {
-          val actualErrorType = if( e.getCause == null) e.toString else e.getCause.toString
+          val actualErrorType = e.toString
           if (expectedToFailWithSpecificMessage) {
             if (!correctError(actualErrorType, errorType)) {
               fail("Correctly failed in " + thisScenario.name + " but instead of one the given error types, the error was '" + actualErrorType + "'", e)

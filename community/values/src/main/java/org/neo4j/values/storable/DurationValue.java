@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Double.parseDouble;
@@ -749,7 +750,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             val = seconds * NANOS_PER_SECOND + nanos;
             break;
         default:
-            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
 
         return Values.longValue( val );
