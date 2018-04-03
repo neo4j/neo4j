@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
  * set, or use <code>columnAs()</code> to access a single column with result objects
  * cast to a type.
  */
-public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
+public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result, QueryResultProvider
 {
     private final InternalExecutionResult inner;
 
@@ -394,6 +394,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
         return inner;
     }
 
+    @Override
     public QueryResult queryResult()
     {
         return inner;
