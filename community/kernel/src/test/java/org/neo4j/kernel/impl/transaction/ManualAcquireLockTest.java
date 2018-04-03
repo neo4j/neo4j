@@ -37,16 +37,16 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public DatabaseRule db = new ImpermanentDatabaseRule();
-    public GraphTransactionRule tx = new GraphTransactionRule( db );
+    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule
-    public TestRule chain = RuleChain.outerRule( db ).around( tx );
+    public final TestRule chain = RuleChain.outerRule( db ).around( tx );
 
     private Worker worker;
 
@@ -130,9 +130,8 @@ public class ManualAcquireLockTest
             worker.setProperty( node, key, "ksjd" );
             fail( "Shouldn't be able to grab it" );
         }
-        catch ( Exception e )
+        catch ( Exception ignored )
         {
-            // e.printStackTrace();
         }
 
         tx.success();
@@ -195,7 +194,7 @@ public class ManualAcquireLockTest
             {
                 node.setProperty( key, value );
                 return null;
-            }, 200, MILLISECONDS );
+            }, 2, SECONDS );
         }
     }
 }
