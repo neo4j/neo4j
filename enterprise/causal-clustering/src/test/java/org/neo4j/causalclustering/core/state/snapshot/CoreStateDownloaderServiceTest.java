@@ -98,7 +98,7 @@ public class CoreStateDownloaderServiceTest
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ), new NoTimeout(), () -> dbHealth );
+                        logProvider( log ), new NoTimeout(), () -> dbHealth, true );
 
         coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         Thread.sleep( 50 );
