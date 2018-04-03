@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -40,10 +40,8 @@ public class TokenProcedures
     public void createLabel( @Name( "newLabel" ) String newLabel )
             throws IllegalTokenNameException, TooManyLabelsException
     {
-        try ( Statement statement = tx.acquireStatement() )
-        {
-            statement.tokenWriteOperations().labelGetOrCreateForName( newLabel );
-        }
+
+        tx.tokenWrite().labelGetOrCreateForName( newLabel );
     }
 
     @Description( "Create a RelationshipType" )
