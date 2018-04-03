@@ -340,14 +340,14 @@ public final class Values
     public static PointValue minPointValue( PointValue reference )
     {
         double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, Double.NEGATIVE_INFINITY );
+        Arrays.fill( coordinates, -Double.MAX_VALUE );
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 
     public static PointValue maxPointValue( PointValue reference )
     {
         double[] coordinates = new double[reference.coordinate().length];
-        Arrays.fill( coordinates, Double.POSITIVE_INFINITY);
+        Arrays.fill( coordinates, Double.MAX_VALUE );
         return pointValue( reference.getCoordinateReferenceSystem(), coordinates );
     }
 
