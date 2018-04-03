@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContextInstanceCache
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -29,8 +28,7 @@ import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
 
-case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)])
-  extends ExecutionContextInstanceCache[ArrayResultExecutionContextFactory, ArrayResultExecutionContext] {
+case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)]) {
   val columnExpressionArray = columns.map(_._2).toArray
   val columnArraySize = columnExpressionArray.size
   val columnIndexMap = {
@@ -42,11 +40,6 @@ case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)]
     }
     m
   }
-
-  setExecutionContextConstructor((factory) => {
-    val resultArray = new Array[AnyValue](columnArraySize)
-    ArrayResultExecutionContext(resultArray, columnIndexMap, factory)
-  })
 
   def newResult(context: ExecutionContext, state: QueryState): ArrayResultExecutionContext = {
     val result = allocateExecutionContext
@@ -60,6 +53,31 @@ case class ArrayResultExecutionContextFactory(columns: Seq[(String, Expression)]
     }
     result
   }
+
+  //---------------------------------------------------------------------------
+  // Instance cache of size 1. Reuses the last created ArrayResultExecutionContext
+  private var freeExecutionContextInstance: ArrayResultExecutionContext = null
+
+  private def allocateExecutionContext: ArrayResultExecutionContext = {
+    if (freeExecutionContextInstance != null) {
+      val context = freeExecutionContextInstance
+      freeExecutionContextInstance = null
+      context
+    }
+    else {
+      createNewExecutionContext
+    }
+  }
+
+  def releaseExecutionContext(executionContext: ArrayResultExecutionContext) = {
+    freeExecutionContextInstance = executionContext
+  }
+
+  private def createNewExecutionContext: ArrayResultExecutionContext = {
+    val resultArray = new Array[AnyValue](columnArraySize)
+    ArrayResultExecutionContext(resultArray, columnIndexMap, this)
+  }
+  //---------------------------------------------------------------------------
 }
 
 case class ArrayResultExecutionContext(resultArray: Array[AnyValue],
