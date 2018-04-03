@@ -21,22 +21,14 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.io.fs.FileHandle;
+import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,7 +44,6 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
@@ -259,24 +250,7 @@ public class FusionIndexProvider extends IndexProvider
             File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
             if ( archiveExistentIndex && !FileUtils.isEmptyDirectory( rootIndexDirectory ) )
             {
-                Map<String,String> env = MapUtil.stringMap( "create", "true" );
-                Path rootPath = rootIndexDirectory.toPath();
-                URI archiveAbsoluteURI = URI.create( "jar:file:" + archiveFile( rootIndexDirectory ).toPath() );
-
-                try ( FileSystem zipFs = FileSystems.newFileSystem( archiveAbsoluteURI, env ) )
-                {
-                    List<FileHandle> fileHandles = fs.streamFilesRecursive( rootIndexDirectory ).collect( toList() );
-                    for ( FileHandle fileHandle : fileHandles )
-                    {
-                        Path sourcePath = fileHandle.getFile().toPath();
-                        Path zipFsPath = zipFs.getPath( rootPath.relativize( sourcePath ).toString() );
-                        if ( zipFsPath.getParent() != null )
-                        {
-                            Files.createDirectories( zipFsPath.getParent() );
-                        }
-                        Files.copy( sourcePath, zipFsPath );
-                    }
-                }
+                ZipUtils.zip( fs, rootIndexDirectory, archiveFile( rootIndexDirectory ) );
             }
             fs.deleteRecursively( rootIndexDirectory );
         }
