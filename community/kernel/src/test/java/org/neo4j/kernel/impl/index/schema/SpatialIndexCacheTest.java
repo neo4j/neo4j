@@ -21,85 +21,90 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.junit.Assert.assertNull;
-
 public class SpatialIndexCacheTest
 {
+
+    @SuppressWarnings( "Duplicates" )
     @Test
     public void stressCache() throws Exception
     {
         StringFactory factory = new StringFactory();
-        SpatialIndexCache<String,Exception> cache = new SpatialIndexCache<>( factory );
+        SpatialIndexCache<String> cache = new SpatialIndexCache<>( factory );
 
-        CacheStresser[] stressers = new CacheStresser[100];
-        for ( int i = 0; i < stressers.length; i++ )
+        ExecutorService pool = Executors.newFixedThreadPool( 20 );
+        Future<?>[] futures = new Future[100];
+        AtomicBoolean shouldContinue = new AtomicBoolean( true );
+
+        try
         {
-            stressers[i] = new CacheStresser( cache );
-            stressers[i].start();
+            for ( int i = 0; i < futures.length; i++ )
+            {
+                futures[i] = pool.submit( new CacheStresser( cache, shouldContinue ) );
+            }
+
+            Thread.sleep( 5_000 );
+
+            shouldContinue.set( false );
+
+            for ( Future<?> future : futures )
+            {
+                future.get( 10, TimeUnit.SECONDS );
+            }
         }
-
-        Thread.sleep( 5_000 );
-
-        for ( CacheStresser stresser : stressers )
+        finally
         {
-            stresser.interrupt();
-        }
-
-        for ( CacheStresser stresser : stressers )
-        {
-            stresser.join();
-        }
-
-        for ( CacheStresser stresser : stressers )
-        {
-            assertNull( stresser.failed );
+            pool.shutdown();
         }
     }
 
     private static final CoordinateReferenceSystem[] coordinateReferenceSystems =
             Iterators.stream( CoordinateReferenceSystem.all() ).toArray( CoordinateReferenceSystem[]::new );
 
-    static class CacheStresser extends Thread
+    static class CacheStresser implements Runnable
     {
-        SpatialIndexCache<String,Exception> cache;
-        Random r = new Random();
-        Exception failed;
+        private final SpatialIndexCache<String> cache;
+        private final AtomicBoolean shouldContinue;
+        private final Random random = new Random();
 
-        CacheStresser( SpatialIndexCache<String,Exception> cache )
+        CacheStresser( SpatialIndexCache<String> cache, AtomicBoolean shouldContinue )
         {
             this.cache = cache;
+            this.shouldContinue = shouldContinue;
         }
 
         @Override
         public void run()
         {
-            while ( !Thread.interrupted() && failed == null )
+            while ( shouldContinue.get() )
             {
-                try
-                {
-                    stress();
-                }
-                catch ( InterruptedException e )
-                {
-                    return;
-                }
-                catch ( Exception e )
-                {
-                    failed = e;
-                }
+                stress();
             }
         }
 
-        private void stress() throws Exception
+        private void stress()
         {
-            // select
-            cache.select( coordinateReferenceSystems[r.nextInt( coordinateReferenceSystems.length )] );
+            try
+            {
+                // select
+                cache.select( coordinateReferenceSystems[random.nextInt( coordinateReferenceSystems.length )] );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
             // iterate
             for ( String s : cache )
             {
@@ -111,7 +116,7 @@ public class SpatialIndexCacheTest
         }
     }
 
-    static class StringFactory implements SpatialIndexCache.Factory<String, Exception>
+    private static class StringFactory implements SpatialIndexCache.Factory<String>
     {
         AtomicInteger[] counters = new AtomicInteger[coordinateReferenceSystems.length];
 
@@ -124,7 +129,7 @@ public class SpatialIndexCacheTest
         }
 
         @Override
-        public String newSpatial( CoordinateReferenceSystem crs ) throws Exception
+        public String newSpatial( CoordinateReferenceSystem crs )
         {
             for ( int i = 0; i < coordinateReferenceSystems.length; i++ )
             {

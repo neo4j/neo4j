@@ -56,7 +56,7 @@ class SpatialIndexFiles
         return existing;
     }
 
-    <T, E extends Exception> void loadExistingIndexes( SpatialIndexCache<T,E> indexCache ) throws E
+    <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache ) throws IOException
     {
         for ( SpatialFileLayout fileLayout : existing() )
         {

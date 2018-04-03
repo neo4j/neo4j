@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,15 +35,14 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
  * Iterating over the cache will return all currently created parts.
  *
  * @param <T> Type of parts
- * @param <E> Type of exception potentially thrown during creation
  */
-class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
+class SpatialIndexCache<T> implements Iterable<T>
 {
-    private final Factory<T, E> factory;
+    private final Factory<T> factory;
 
     private Map<CoordinateReferenceSystem,T> spatials = new CopyOnWriteHashMap<>();
 
-    SpatialIndexCache( Factory<T, E> factory )
+    SpatialIndexCache( Factory<T> factory )
     {
         this.factory = factory;
     }
@@ -53,16 +54,25 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      * @param crs target coordinate reference system
      * @return selected part
      */
-    T uncheckedSelect( CoordinateReferenceSystem crs )
+    synchronized T uncheckedSelect( CoordinateReferenceSystem crs )
     {
-        try
+        T part = spatials.get( crs );
+        if ( part == null )
         {
-            return select( crs );
+            try
+            {
+                part = factory.newSpatial( crs );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+            if ( part != null )
+            {
+                spatials.put( crs, part );
+            }
         }
-        catch ( Exception t )
-        {
-            throw new RuntimeException( t );
-        }
+        return part;
     }
 
     /**
@@ -71,20 +81,17 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      *
      * @param crs target coordinate reference system
      * @return selected part
-     * @throws E exception potentially thrown during creation
      */
-    synchronized T select( CoordinateReferenceSystem crs ) throws E
+    T select( CoordinateReferenceSystem crs ) throws IOException
     {
-        T part = spatials.get( crs );
-        if ( part == null )
+        try
         {
-            part = factory.newSpatial( crs );
-            if ( part != null )
-            {
-                spatials.put( crs, part );
-            }
+            return uncheckedSelect( crs );
         }
-        return part;
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
     }
 
     /**
@@ -126,10 +133,9 @@ class SpatialIndexCache<T, E extends Exception> implements Iterable<T>
      * Factory used by the SpatialIndexCache to create parts.
      *
      * @param <T> Type of parts
-     * @param <E> Type of exception potentially thrown during create
      */
-    interface Factory<T, E extends Exception>
+    interface Factory<T>
     {
-        T newSpatial( CoordinateReferenceSystem crs ) throws E;
+        T newSpatial( CoordinateReferenceSystem crs ) throws IOException;
     }
 }

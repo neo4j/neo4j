@@ -21,7 +21,14 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterables;
@@ -64,80 +71,73 @@ public class TemporalIndexCacheTest
         assertThat( cache, containsInAnyOrder( "Date", "LocalDateTime", "ZonedDateTime", "LocalTime", "ZonedTime", "Duration" ) );
     }
 
+    @SuppressWarnings( "Duplicates" )
     @Test
     public void stressCache() throws Exception
     {
         StringFactory factory = new StringFactory();
         TemporalIndexCache<String> cache = new TemporalIndexCache<>( factory );
 
-        CacheStresser[] stressers = new CacheStresser[100];
-        for ( int i = 0; i < stressers.length; i++ )
+        ExecutorService pool = Executors.newFixedThreadPool( 20 );
+        Future<?>[] futures = new Future[100];
+        AtomicBoolean shouldContinue = new AtomicBoolean( true );
+
+        try
         {
-            stressers[i] = new CacheStresser( cache );
-            stressers[i].start();
+            for ( int i = 0; i < futures.length; i++ )
+            {
+                futures[i] = pool.submit( new CacheStresser( cache, shouldContinue ) );
+            }
+
+            Thread.sleep( 5_000 );
+
+            shouldContinue.set( false );
+
+            for ( Future<?> future : futures )
+            {
+                future.get( 10, TimeUnit.SECONDS );
+            }
         }
-
-        Thread.sleep( 5_000 );
-
-        for ( CacheStresser stresser : stressers )
+        finally
         {
-            stresser.interrupt();
-        }
-
-        for ( CacheStresser stresser : stressers )
-        {
-            stresser.join();
-        }
-
-        for ( CacheStresser stresser : stressers )
-        {
-            assertNull( stresser.failed );
+            pool.shutdown();
         }
     }
 
-    private static final ValueGroup[] valueGroups = {
-            ZONED_DATE_TIME,
-            LOCAL_DATE_TIME,
-            DATE,
-            ZONED_TIME,
-            LOCAL_TIME,
-            DURATION};
+    private static final ValueGroup[] valueGroups = {ZONED_DATE_TIME, LOCAL_DATE_TIME, DATE, ZONED_TIME, LOCAL_TIME, DURATION};
 
     static class CacheStresser extends Thread
     {
-        TemporalIndexCache<String> cache;
-        Random r = new Random();
-        Exception failed;
+        private final TemporalIndexCache<String> cache;
+        private final AtomicBoolean shouldContinue;
+        private final Random r = new Random();
 
-        CacheStresser( TemporalIndexCache<String> cache )
+        CacheStresser( TemporalIndexCache<String> cache, AtomicBoolean shouldContinue )
         {
             this.cache = cache;
+            this.shouldContinue = shouldContinue;
         }
 
         @Override
         public void run()
         {
-            while ( !Thread.interrupted() && failed == null )
+            while ( shouldContinue.get() )
             {
-                try
-                {
-                    stress();
-                }
-                catch ( InterruptedException e )
-                {
-                    return;
-                }
-                catch ( Exception e )
-                {
-                    failed = e;
-                }
+                stress();
             }
         }
 
-        private void stress() throws Exception
+        private void stress()
         {
-            // select
-            cache.select( valueGroups[r.nextInt( valueGroups.length )] );
+            try
+            {
+                // select
+                cache.select( valueGroups[r.nextInt( valueGroups.length )] );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
             // iterate
             for ( String s : cache )
             {
@@ -149,7 +149,7 @@ public class TemporalIndexCacheTest
         }
     }
 
-    static class StringFactory implements TemporalIndexCache.Factory<String>
+    private static class StringFactory implements TemporalIndexCache.Factory<String>
     {
         AtomicInteger dateCounter = new AtomicInteger( 0 );
         AtomicInteger localDateTimeCounter = new AtomicInteger( 0 );

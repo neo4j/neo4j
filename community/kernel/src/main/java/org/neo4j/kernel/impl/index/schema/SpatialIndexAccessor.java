@@ -49,7 +49,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor, IOException> implements IndexAccessor
+class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
 {
     private final SchemaIndexDescriptor descriptor;
 
@@ -210,7 +210,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         }
     }
 
-    static class PartFactory implements Factory<PartAccessor, IOException>
+    static class PartFactory implements Factory<PartAccessor>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;

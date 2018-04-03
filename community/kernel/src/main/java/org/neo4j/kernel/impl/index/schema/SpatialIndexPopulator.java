@@ -49,7 +49,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator, IOException> implements IndexPopulator
+class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
     private final IndexSamplerWrapper sampler;
 
@@ -59,7 +59,8 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             SpatialIndexFiles spatialIndexFiles,
             PageCache pageCache,
             FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
+            IndexProvider.Monitor monitor,
+            SpaceFillingCurveConfiguration configuration )
     {
         super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
         this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
@@ -89,7 +90,8 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
         for ( Map.Entry<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> entry : batchMap.entrySet() )
         {
-            select( entry.getKey() ).add( entry.getValue() );
+            PartPopulator partPopulator = select( entry.getKey() );
+            partPopulator.add( entry.getValue() );
         }
     }
 
@@ -228,7 +230,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
     }
 
-    static class PartFactory implements Factory<PartPopulator, IOException>
+    static class PartFactory implements Factory<PartPopulator>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
