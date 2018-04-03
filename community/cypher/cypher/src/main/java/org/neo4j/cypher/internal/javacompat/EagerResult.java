@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Notification;
@@ -33,13 +34,15 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.System.lineSeparator;
 
 /**
  * Result produced as result of eager query execution for cases when {@link SnapshotExecutionEngine} is used.
  */
-class EagerResult implements Result
+class EagerResult implements Result, QueryResultProvider
 {
     private static final String ITEM_SEPARATOR = ", ";
     private final Result originalResult;
@@ -107,6 +110,12 @@ class EagerResult implements Result
     public ExecutionPlanDescription getExecutionPlanDescription()
     {
         return originalResult.getExecutionPlanDescription();
+    }
+
+    @Override
+    public QueryResult queryResult()
+    {
+        return new EagerQueryResult();
     }
 
     @Override
@@ -213,6 +222,70 @@ class EagerResult implements Result
         public void close()
         {
             // Nothing to close.
+        }
+    }
+
+    private class EagerQueryResult implements QueryResult
+    {
+
+        private final String[] fields;
+
+        EagerQueryResult()
+        {
+            fields = originalResult.columns().toArray( new String[0] );
+        }
+
+        @Override
+        public String[] fieldNames()
+        {
+            return fields;
+        }
+
+        @Override
+        public <E extends Exception> void accept( QueryResultVisitor<E> visitor ) throws E
+        {
+            while ( hasNext() )
+            {
+                Map<String,Object> row = next();
+                AnyValue[] anyValues = new AnyValue[fields.length];
+
+                for ( int i = 0; i < fields.length; i++ )
+                {
+                    anyValues[i] = ValueUtils.of( row.get( fields[i] ) );
+                }
+
+                visitor.visit( () -> anyValues );
+            }
+        }
+
+        @Override
+        public QueryExecutionType executionType()
+        {
+            return originalResult.getQueryExecutionType();
+        }
+
+        @Override
+        public QueryStatistics queryStatistics()
+        {
+            return originalResult.getQueryStatistics();
+        }
+
+        @Override
+        public ExecutionPlanDescription executionPlanDescription()
+        {
+            return originalResult.getExecutionPlanDescription();
+        }
+
+        @Override
+        public Iterable<Notification> getNotifications()
+        {
+            return originalResult.getNotifications();
+        }
+
+        @Override
+        public void close()
+        {
+            // nothing to close
         }
     }
 }

@@ -25,14 +25,13 @@ import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.cypher.internal.javacompat.ExecutionResult;
-import org.neo4j.cypher.result.QueryResult;
-import org.neo4j.function.ThrowingAction;
+import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
+import org.neo4j.graphdb.Result;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
+import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 class TransactionStateMachineSPI implements TransactionStateMachine.SPI
@@ -141,10 +141,16 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             {
                 try
                 {
-                    QueryResult run =
-                            ((ExecutionResult) queryExecutionEngine.executeQuery( statement, params, transactionalContext ))
-                                    .queryResult();
-                    return new CypherAdapterStream( run, clock );
+                    Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                    if ( result instanceof QueryResultProvider )
+                    {
+                        return new CypherAdapterStream( ((QueryResultProvider) result).queryResult(), clock );
+                    }
+                    else
+                    {
+                        throw new IllegalStateException( format( "Unexpected query execution result. Expected to get instance of %s but was %s.",
+                                                                  QueryResultProvider.class.getName(), result.getClass().getName() ) );
+                    }
                 }
                 catch ( KernelException e )
                 {
