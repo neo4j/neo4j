@@ -655,9 +655,9 @@ public class IndexPopulationJobTest
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+              Statement ignore = tx.acquireStatement() )
         {
-            int result = statement.readOperations().propertyKeyGetForName( name );
+            int result = tx.tokenRead().propertyKey( name );
             tx.success();
             return result;
         }

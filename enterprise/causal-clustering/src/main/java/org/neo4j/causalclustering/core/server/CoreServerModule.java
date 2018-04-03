@@ -23,6 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -43,10 +44,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.core.SupportedProtocolCreator;
-import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
+import org.neo4j.causalclustering.core.SupportedProtocolCreator;
+import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
@@ -176,7 +177,7 @@ public class CoreServerModule
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy, catchUpClient );
 
         this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
-                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
+                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout(), databaseHealthSupplier );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
@@ -243,8 +244,11 @@ public class CoreServerModule
 
     private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy, CatchUpClient catchUpClient )
     {
+        ExponentialBackoffStrategy storeCopyBackoffStrategy =
+                new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
+
         RemoteStore remoteStore = new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider ),
+                new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(
@@ -281,7 +285,7 @@ public class CoreServerModule
     {
         return new CoreLife( consensusModule.raftMachine(),
                 localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess, coreStateMachinesModule.coreStateMachines,
-                handler, snapshotService );
+                handler, snapshotService, downloadService );
     }
 
     public CommandApplicationProcess commandApplicationProcess()

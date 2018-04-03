@@ -869,7 +869,7 @@ public class StateHandlingStatementOperations implements
 
         case range:
             assertSinglePredicate( predicates );
-            IndexQuery.RangePredicate rangePred = (IndexQuery.RangePredicate) firstPredicate;
+            IndexQuery.RangePredicate<?> rangePred = (IndexQuery.RangePredicate<?>) firstPredicate;
             return filterIndexStateChangesForRangeSeek( state, index, rangePred.valueGroup(),
                                                         rangePred.fromValue(), rangePred.fromInclusive(),
                                                         rangePred.toValue(), rangePred.toInclusive(),

@@ -516,23 +516,23 @@ public class GraphDatabaseSettings implements LoadableConfig
         NATIVE10( "lucene+native-1.0" ),
         LUCENE10( "lucene-1.0" );
 
-        private final String param;
+        private final String providerName;
 
-        SchemaIndex( String param )
+        SchemaIndex( String providerName )
         {
-            this.param = param;
+            this.providerName = providerName;
         }
 
-        public String param()
+        public String providerName()
         {
-            return param;
+            return providerName;
         }
     }
 
     @Description( "Index provider to use when creating new indexes." )
     public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( SchemaIndex.NATIVE20.param(), SchemaIndex.NATIVE10.param(), SchemaIndex.LUCENE10.param() ),
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
                     null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
@@ -602,9 +602,17 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
-                  "warmup after a restart, reducing the mean time to performance." )
+                  "warmup after a restart, reducing the mean time to performance. " +
+                  "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
             setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
+    @Internal
+    @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
+            "According to that profile pages can be reloaded on the restart, replication, etc. " +
+            "This setting allows disabling that behavior. " +
+            "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
     /**
      * Block size properties values depends from selected record format.

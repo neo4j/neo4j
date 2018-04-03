@@ -22,10 +22,12 @@ package org.neo4j.values.storable;
 import org.junit.Test;
 
 import java.time.DateTimeException;
+import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static java.time.ZoneOffset.UTC;
@@ -34,9 +36,6 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
-import static org.neo4j.values.storable.LocalTimeValue.inUTC;
-import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeUtil.asValidTime;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -111,14 +110,12 @@ public class TimeValueTest
         } )
         {
             List<TimeValue> values = new ArrayList<>( 1 );
-            List<LocalTimeValue> locals = new ArrayList<>( 1 );
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+                public void writeTime( OffsetTime offsetTime )
                 {
-                    values.add( time( nanosOfDayUTC, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-                    locals.add( localTime( asValidTime( nanosOfDayUTC ) ) );
+                    values.add( time( offsetTime ) );
                 }
             };
 
@@ -127,7 +124,6 @@ public class TimeValueTest
 
             // then
             assertEquals( singletonList( time ), values );
-            assertEquals( singletonList( inUTC( time ) ), locals );
         }
     }
 
@@ -210,6 +206,27 @@ public class TimeValueTest
         assertNotEquals( unexpected, actual );
     }
 
+    @Test
+    public void shouldWriteDerivedValueThatIsEqual()
+    {
+        TimeValue value1 = time( 42, ZoneOffset.of( "-18:00" ) );
+        TimeValue value2 = time( value1.temporal() );
+
+        OffsetTime offsetTime1 = write( value1 );
+        OffsetTime offsetTime2 = write( value2 );
+
+        assertEquals( offsetTime1, offsetTime2 );
+    }
+
+    @Test
+    public void shouldCompareDerivedValue()
+    {
+        TimeValue value1 = time( 4242, ZoneOffset.of( "-12:00" ) );
+        TimeValue value2 = time( value1.temporal() );
+
+        assertEquals( 0, value1.unsafeCompareTo( value2 ) );
+    }
+
     @SuppressWarnings( "UnusedReturnValue" )
     private DateTimeException assertCannotParse( String text )
     {
@@ -222,5 +239,19 @@ public class TimeValueTest
             return e;
         }
         throw new AssertionError( text );
+    }
+
+    private static OffsetTime write( TimeValue value )
+    {
+        AtomicReference<OffsetTime> result = new AtomicReference<>();
+        value.writeTo( new ThrowingValueWriter.AssertOnly()
+        {
+            @Override
+            public void writeTime( OffsetTime offsetTime )
+            {
+                result.set( offsetTime );
+            }
+        } );
+        return result.get();
     }
 }

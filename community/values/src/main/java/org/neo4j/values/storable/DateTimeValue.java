@@ -373,17 +373,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        // truncate the offset to whole minutes, unless we have a named timezone
-        if ( value.getZone() instanceof ZoneOffset )
-        {
-            int offsetMinutes = value.getOffset().getTotalSeconds() / 60;
-            ZoneOffset truncatedOffset = ZoneOffset.ofTotalSeconds( offsetMinutes * 60 );
-            this.value = value.withZoneSameInstant( truncatedOffset );
-        }
-        else
-        {
-            this.value = value;
-        }
+        this.value = value;
         this.epochSeconds = this.value.toEpochSecond();
     }
 
@@ -459,17 +449,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        Instant instant = value.toInstant();
-        ZoneId zone = value.getZone();
-        if ( zone instanceof ZoneOffset )
-        {
-            ZoneOffset offset = (ZoneOffset) zone;
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), offset.getTotalSeconds() );
-        }
-        else
-        {
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), zone.getId() );
-        }
+        writer.writeDateTime( value );
     }
 
     @Override

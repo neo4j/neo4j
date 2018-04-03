@@ -82,7 +82,7 @@ import org.neo4j.kernel.impl.api.Kernel;
  * }
  * </pre>
  */
-public interface KernelTransaction extends Transaction
+public interface KernelTransaction extends Transaction, AssertOpen
 {
     interface CloseListener
     {

@@ -19,17 +19,22 @@
  */
 package org.neo4j.values.utils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.lang.String.format;
 
@@ -179,63 +184,43 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeDate( long epochDay ) throws RuntimeException
+    public void writeDate( LocalDate localDate ) throws RuntimeException
     {
-        append( "{date: {epochDay: " );
-        append( Long.toString( epochDay ) );
-        append( "}}" );
+        append( "{date: " );
+        append( quote( localDate.toString() ) );
+        append( "}" );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
     {
-        append( "{localTime: {nanosOfDay: " );
-        append( Long.toString( nanoOfDay ) );
-        append( "}}" );
+        append( "{localTime: " );
+        append( quote( localTime.toString() ) );
+        append( "}" );
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
     {
-        append( "{time: {nanosOfDayUTC: " );
-        append( Long.toString( nanosOfDayUTC ) );
-        append( ", offsetSeconds: " );
-        append( Long.toString( offsetSeconds ) );
-        append( "}}" );
+        append( "{time: " );
+        append( quote( offsetTime.toString() ) );
+        append( "}" );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
     {
-        append( "{localDateTime: {epochDay: " );
-        append( Long.toString( epochSecond ) );
-        append( ", nanosOfDay: " );
-        append( Long.toString( nano ) );
-        append( "}}" );
+        append( "{localDateTime: " );
+        append( quote( localDateTime.toString() ) );
+        append( "}" );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
     {
-        append( "{datetime: {epochDay: " );
-        append( Long.toString( epochSecondUTC ) );
-        append( ", nanosOfDay: " );
-        append( Long.toString( nano ) );
-        append( ", offsetSeconds: " );
-        append( Long.toString( offsetSeconds ) );
-        append( "}}" );
-    }
-
-    @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
-    {
-        append( "{datetime: {epochDay: " );
-        append( Long.toString( epochSecondUTC ) );
-        append( ", nanosOfDay: " );
-        append( Long.toString( nano ) );
-        append( ", timezone: \"" );
-        append( zoneId );
-        append( "\"}}" );
+        append( "{datetime: " );
+        append( quote( zonedDateTime.toString() ) );
+        append( "}" );
     }
 
     @Override

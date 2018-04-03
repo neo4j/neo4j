@@ -34,15 +34,12 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
 
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
-    private static final boolean ENABLED = FeatureToggles.flag( PageCacheWarmerKernelExtension.class, "enabled", true );
-
     private final JobScheduler scheduler;
     private final AvailabilityGuard availabilityGuard;
     private final Supplier<NeoStoreFileListing> fileListing;
@@ -52,6 +49,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private final PageCacheWarmer pageCacheWarmer;
     private final AtomicBoolean profilingStarted;
     private volatile JobScheduler.JobHandle profileHandle;
+    private volatile boolean started;
 
     PageCacheWarmerKernelExtension(
             JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
@@ -68,12 +66,14 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
-        if ( ENABLED )
+        if ( config.get( GraphDatabaseSettings.pagecache_warmup_enabled ) )
         {
+            pageCacheWarmer.start();
             scheduleTryReheat();
             fileListing.get().registerStoreFileProvider( pageCacheWarmer );
+            started = true;
         }
     }
 
@@ -158,11 +158,14 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        JobScheduler.JobHandle handle = profileHandle;
-        if ( handle != null )
+        if ( started )
         {
-            handle.cancel( false );
+            JobScheduler.JobHandle handle = profileHandle;
+            if ( handle != null )
+            {
+                handle.cancel( false );
+            }
+            pageCacheWarmer.stop();
         }
-        pageCacheWarmer.stop();
     }
 }

@@ -35,15 +35,18 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.VerboseTimeout;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class LuceneRecoveryIT
 {
-
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
 
     @Test
     public void testHardCoreRecovery() throws Exception
@@ -61,71 +64,71 @@ public class LuceneRecoveryIT
         process.destroy();
         process.waitFor();
 
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
-        try ( Transaction transaction = db.beginTx() )
+        GraphDatabaseService db = null;
+        try
         {
-            assertTrue( db.index().existsForNodes( "myIndex" ) );
-            Index<Node> index = db.index().forNodes( "myIndex" );
-            for ( Node node : db.getAllNodes() )
+            db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+            try ( Transaction transaction = db.beginTx() )
             {
-                for ( String key : node.getPropertyKeys() )
+                assertTrue( db.index().existsForNodes( "myIndex" ) );
+                Index<Node> index = db.index().forNodes( "myIndex" );
+                for ( Node node : db.getAllNodes() )
                 {
-                    String value = (String) node.getProperty( key );
-                    boolean found = false;
-                    try ( IndexHits<Node> indexHits = index.get( key, value ) )
+                    for ( String key : node.getPropertyKeys() )
                     {
-                        for ( Node indexedNode : indexHits )
+                        String value = (String) node.getProperty( key );
+                        boolean found = false;
+                        try ( IndexHits<Node> indexHits = index.get( key, value ) )
                         {
-                            if ( indexedNode.equals( node ) )
+                            for ( Node indexedNode : indexHits )
                             {
-                                found = true;
-                                break;
+                                if ( indexedNode.equals( node ) )
+                                {
+                                    found = true;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    if ( !found )
-                    {
-                        throw new IllegalStateException( node + " has property '" + key + "'='" +
-                                value + "', but not in index" );
+                        if ( !found )
+                        {
+                            throw new IllegalStateException( node + " has property '" + key + "'='" + value + "', but not in index" );
+                        }
                     }
                 }
             }
-        }
-        catch ( Throwable e )
-        {
-            if ( Exceptions.contains( e, CorruptIndexException.class ) ||
-                    exceptionContainsStackTraceElementFromPackage( e, "org.apache.lucene" ) )
+            catch ( Throwable e )
             {
-                // On some machines and during some circumstances a lucene index may become
-                // corrupted during a crash. This is out of our control and since this test
-                // is about an explicit (a.k.a. legacy/manual) index the db cannot just re-populate the
-                // index automatically. We have to consider this an OK scenario and we cannot
-                // verify the index any further if it happens.
-                System.err.println( "Lucene exception happened during recovery after a real crash. " +
-                        "It may be that the index is corrupt somehow and this is out of control and not " +
-                        "something this test can really improve on right now. Printing the exception for reference" );
-                e.printStackTrace();
-                return;
+                if ( Exceptions.contains( e, CorruptIndexException.class ) || exceptionContainsStackTraceElementFromPackage( e, "org.apache.lucene" ) )
+                {
+                    // On some machines and during some circumstances a lucene index may become
+                    // corrupted during a crash. This is out of our control and since this test
+                    // is about an explicit (a.k.a. legacy/manual) index the db cannot just re-populate the
+                    // index automatically. We have to consider this an OK scenario and we cannot
+                    // verify the index any further if it happens.
+                    System.err.println( "Lucene exception happened during recovery after a real crash. " +
+                            "It may be that the index is corrupt somehow and this is out of control and not " +
+                            "something this test can really improve on right now. Printing the exception for reference" );
+                    e.printStackTrace();
+                    return;
+                }
+
+                // This was another unknown exception, throw it so that the test fails with it
+                throw e;
             }
 
-            // This was another unknown exception, throw it so that the test fails with it
-            throw e;
+            // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.
+            NodeCreator nodeCreator = new NodeCreator( db );
+            Thread t = new Thread( nodeCreator );
+            t.start();
+            t.join();
         }
-
-        // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.
-        Thread t = new Thread( () ->
+        finally
         {
-            try ( Transaction tx = db.beginTx() )
+            if ( db != null )
             {
-                Index<Node> index = db.index().forNodes( "myIndex" );
-                index.add( db.createNode(), "one", "two" );
-                tx.success();
+                db.shutdown();
             }
-        } );
-        t.start();
-        t.join();
-
-        db.shutdown();
+        }
     }
 
     private boolean exceptionContainsStackTraceElementFromPackage( Throwable e, String packageName )
@@ -152,4 +155,26 @@ public class LuceneRecoveryIT
             fail( "The inserter doesn't seem to have run properly" );
         }
     }
+
+    private static class NodeCreator implements Runnable
+    {
+        private final GraphDatabaseService db;
+
+        NodeCreator( GraphDatabaseService db )
+        {
+            this.db = db;
+        }
+
+        @Override
+        public void run()
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Index<Node> index = db.index().forNodes( "myIndex" );
+                index.add( db.createNode(), "one", "two" );
+                tx.success();
+            }
+        }
+    }
+
 }

@@ -213,7 +213,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Peter", "prefers" -> "Java"))
 
     val errorMessages = List("If you want to create multiple nodes, please use UNWIND.", "Parameter provided for node creation is not a Map")
-    failWithError(Configs.UpdateConf - Configs.Rule2_3 + Configs.Procs, "create ({params})", params = "params" -> maps, message = errorMessages)
+    failWithError(Configs.UpdateConf - Configs.Rule2_3 + Configs.Procs, "create ({params})", params = Map("params" -> maps), message = errorMessages)
   }
 
   test("fail to create from two iterables") {
@@ -227,7 +227,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Peter"))
     val query = "create (a {params1}), (b {params2})"
     val errorMessages = List("If you want to create multiple nodes, please use UNWIND.", "Parameter provided for node creation is not a Map", "If you create multiple elements, you can only create one of each.")
-    failWithError(Configs.UpdateConf + Configs.Procs, query, message = errorMessages, params = "params1" -> maps1, "params2" -> maps2)
+    failWithError(Configs.UpdateConf + Configs.Procs, query, message = errorMessages, params = Map("params1" -> maps1, "params2" -> maps2))
   }
 
   test("first read then write") {

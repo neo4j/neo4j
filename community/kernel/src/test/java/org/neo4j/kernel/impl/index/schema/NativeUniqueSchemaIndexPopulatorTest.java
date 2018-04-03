@@ -30,13 +30,12 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static java.util.Arrays.asList;
-
-public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+public abstract class NativeUniqueSchemaIndexPopulatorTest<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexPopulatorTest<KEY,VALUE>
 {
     @Test

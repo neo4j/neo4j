@@ -1167,10 +1167,9 @@ public class QueryExecutionLocksIT
             {
                 ThreadToStatementContextBridge bridge =
                         databaseRule.resolveDependency( ThreadToStatementContextBridge.class );
-                try ( Statement statement = bridge.get() )
-                {
-                    statement.readOperations().schemaStateFlush();
-                }
+                KernelTransaction ktx =
+                        bridge.getKernelTransactionBoundToThisThread( true );
+                ktx.schemaRead().schemaStateFlush();
             }
             executed = true;
         }
@@ -1407,6 +1406,12 @@ public class QueryExecutionLocksIT
         public PropertyCursor propertyCursor()
         {
             return internal.propertyCursor();
+        }
+
+        @Override
+        public void assertOpen()
+        {
+            internal.assertOpen();
         }
     }
 }

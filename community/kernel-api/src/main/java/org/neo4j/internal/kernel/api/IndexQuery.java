@@ -70,7 +70,7 @@ public abstract class IndexQuery
      * @param toInclusive the upper bound is inclusive if true.
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
-    public static RangePredicate range( int propertyKeyId,
+    public static RangePredicate<?> range( int propertyKeyId,
                                         Number from, boolean fromInclusive,
                                         Number to, boolean toInclusive )
     {
@@ -79,7 +79,7 @@ public abstract class IndexQuery
                                          to == null ? null : Values.numberValue( to ), toInclusive );
     }
 
-    public static RangePredicate range( int propertyKeyId,
+    public static RangePredicate<?> range( int propertyKeyId,
                                         String from, boolean fromInclusive,
                                         String to, boolean toInclusive )
     {
@@ -88,7 +88,7 @@ public abstract class IndexQuery
                                        to == null ? null : Values.stringValue( to ), toInclusive );
     }
 
-    public static <VALUE extends Value> RangePredicate range( int propertyKeyId,
+    public static <VALUE extends Value> RangePredicate<?> range( int propertyKeyId,
                                                               VALUE from, boolean fromInclusive,
                                                               VALUE to, boolean toInclusive )
     {
@@ -124,7 +124,7 @@ public abstract class IndexQuery
     /**
      * Create IndexQuery for retrieving all indexed entries of the given value group.
      */
-    public static RangePredicate range( int propertyKeyId, ValueGroup valueGroup )
+    public static RangePredicate<?> range( int propertyKeyId, ValueGroup valueGroup )
     {
         if ( valueGroup == ValueGroup.GEOMETRY )
         {
@@ -137,7 +137,7 @@ public abstract class IndexQuery
      * Create IndexQuery for retrieving all indexed entries with spatial value of the given
      * coordinate reference system.
      */
-    public static RangePredicate range( int propertyKeyId, CoordinateReferenceSystem crs )
+    public static RangePredicate<?> range( int propertyKeyId, CoordinateReferenceSystem crs )
     {
         return new GeometryRangePredicate( propertyKeyId, crs, null, true, null, true );
     }
@@ -510,8 +510,7 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return value != null && Values.isTextValue( value ) &&
-                    ((TextValue)value).stringValue().startsWith( prefix );
+            return Values.isTextValue( value ) && ((TextValue) value).stringValue().startsWith( prefix );
         }
 
         public String prefix()
@@ -539,7 +538,7 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).contains( contains );
+            return Values.isTextValue( value ) && ((String) value.asObject()).contains( contains );
         }
 
         public String contains()
@@ -567,7 +566,7 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return value != null && Values.isTextValue( value ) && ((String)value.asObject()).endsWith( suffix );
+            return Values.isTextValue( value ) && ((String) value.asObject()).endsWith( suffix );
         }
 
         public String suffix()

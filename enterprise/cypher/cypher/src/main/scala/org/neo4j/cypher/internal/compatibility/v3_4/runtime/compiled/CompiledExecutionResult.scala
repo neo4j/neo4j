@@ -52,7 +52,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {
-    if (!taskCloser.isClosed) {
+    if (!taskCloser.isClosed && executionMode == ProfileMode) {
       completed(success = false)
       throw new ProfilerStatisticsNotReadyException
     }

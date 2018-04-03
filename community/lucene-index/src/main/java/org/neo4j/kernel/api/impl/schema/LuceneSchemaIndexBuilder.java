@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
@@ -103,8 +102,7 @@ public class LuceneSchemaIndexBuilder extends AbstractLuceneIndexBuilder<LuceneS
         }
         else
         {
-            Boolean archiveFailed = getConfig( GraphDatabaseSettings.archive_failed_index );
-            PartitionedIndexStorage storage = storageBuilder.archivingFailed( archiveFailed ).build();
+            PartitionedIndexStorage storage = storageBuilder.build();
             return new WritableDatabaseSchemaIndex( storage, descriptor, samplingConfig,
                     new WritableIndexPartitionFactory( writerConfigFactory ) );
         }

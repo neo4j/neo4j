@@ -43,7 +43,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -54,11 +53,11 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue>
 {
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;
 
-    final FileSystemRule fs = new DefaultFileSystemRule();
+    final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     protected final RandomRule random = new RandomRule();
@@ -158,7 +157,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
         VALUE intoValue = layout.newValue();
         layout.copyKey( from.key(), intoKey );
         copyValue( from.value(), intoValue );
-        return new SimpleHit( intoKey, intoValue );
+        return new SimpleHit<>( intoKey, intoValue );
     }
 
     private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<SchemaIndexDescriptor>[] updates,
@@ -178,7 +177,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey,VALU
 
     private Hit<KEY,VALUE> hit( final KEY key, final VALUE value )
     {
-        return new SimpleHit( key, value );
+        return new SimpleHit<>( key, value );
     }
 
     void assertFilePresent()

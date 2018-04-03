@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import org.junit.Test;
 
 import java.time.DateTimeException;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,9 +98,9 @@ public class LocalTimeValueTest
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+                public void writeLocalTime( LocalTime localTime )
                 {
-                    values.add( localTime( nanoOfDay ) );
+                    values.add( localTime( localTime ) );
                 }
             };
 

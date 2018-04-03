@@ -62,8 +62,8 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProviderLucene() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db =
-                dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.param() ).newGraphDatabase();
+        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
+                GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() ).newGraphDatabase();
 
         // when
         createIndex( db );
@@ -76,8 +76,8 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProviderNative10() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db =
-                dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.param() ).newGraphDatabase();
+        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
+                GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() ).newGraphDatabase();
 
         // when
         createIndex( db );
@@ -90,8 +90,8 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProviderNative20() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db =
-                dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.param() ).newGraphDatabase();
+        GraphDatabaseService db = dbBuilder.setConfig( GraphDatabaseSettings.default_schema_provider,
+                GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() ).newGraphDatabase();
 
         // when
         createIndex( db );

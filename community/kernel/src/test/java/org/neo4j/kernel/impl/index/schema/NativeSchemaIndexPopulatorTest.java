@@ -62,7 +62,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 
-public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey,VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey<KEY>,VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;

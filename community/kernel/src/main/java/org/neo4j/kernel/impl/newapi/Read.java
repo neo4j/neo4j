@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
@@ -121,7 +122,7 @@ abstract class Read implements TxStateHolder,
                 {
                 case range:
                     ValueGroup valueGroup = q.valueGroup();
-                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY ) && !reader.hasFullValuePrecision( q ) )
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
@@ -431,19 +432,19 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Value value )
-            throws KernelException
+            NodeExplicitIndexCursor cursor, String index, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
         explicitIndex( (DefaultNodeExplicitIndexCursor) cursor,
-                explicitNodeIndex( index ).get( key, value.asObject() ) );
+                explicitNodeIndex( index ).get( key, value ) );
     }
 
     @Override
     public final void nodeExplicitIndexQuery(
             NodeExplicitIndexCursor cursor, String index, Object query )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
@@ -454,7 +455,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public final void nodeExplicitIndexQuery(
             NodeExplicitIndexCursor cursor, String index, String key, Object query )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
@@ -467,15 +468,15 @@ abstract class Read implements TxStateHolder,
             RelationshipExplicitIndexCursor cursor,
             String index,
             String key,
-            Value value,
+            Object value,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
         explicitIndex(
                 (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).get( key, value.asObject(), source, target ) );
+                explicitRelationshipIndex( index ).get( key, value, source, target ) );
     }
 
     @Override
@@ -484,7 +485,7 @@ abstract class Read implements TxStateHolder,
             String index,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
@@ -501,7 +502,7 @@ abstract class Read implements TxStateHolder,
             String key,
             Object query,
             long source,
-            long target ) throws KernelException
+            long target ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
@@ -544,9 +545,9 @@ abstract class Read implements TxStateHolder,
 
     abstract LabelScanReader labelScanReader();
 
-    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
-    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws KernelException;
+    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     @Override
     public abstract CapableIndexReference index( int label, int... properties );

@@ -99,7 +99,7 @@ public class UniqueDatabaseIndexPopulatorTest
     public void setUp()
     {
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();

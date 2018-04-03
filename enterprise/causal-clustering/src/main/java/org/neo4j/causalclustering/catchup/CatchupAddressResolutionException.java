@@ -24,12 +24,12 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 public class CatchupAddressResolutionException extends TopologyLookupException
 {
-    public CatchupAddressResolutionException( MemberId memberId )
+    CatchupAddressResolutionException( MemberId memberId )
     {
         super( memberId );
     }
 
-    public CatchupAddressResolutionException( Exception e )
+    CatchupAddressResolutionException( Exception e )
     {
         super( e );
     }

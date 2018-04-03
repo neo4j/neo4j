@@ -27,8 +27,15 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
 {
+    // A 1 signals a named time zone is stored, a 0 that an offset is stored
     private static final int ZONE_ID_FLAG = 0x0100_0000;
-    private static final int ZONE_ID_MASK = 0x0000_FFFF;
+    // Mask for offsets to remove to not collide with the flag for negative numbers
+    // It is 24 bits which allows to store all possible minute offsets
+    private static final int ZONE_ID_MASK = 0x00FF_FFFF;
+    // This is used to determine if the value is negative (after applying the bitmask)
+    private static final int ZONE_ID_HIGH = 0x0080_0000;
+    // This is ised to restore masked negative offsets to their real value
+    private static final int ZONE_ID_EXT =  0xFF00_0000;
 
     ZonedDateTimeLayout()
     {
@@ -47,7 +54,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         into.epochSecondUTC = key.epochSecondUTC;
         into.nanoOfSecond = key.nanoOfSecond;
         into.zoneId = key.zoneId;
-        into.zoneOffsetMinutes = key.zoneOffsetMinutes;
+        into.zoneOffsetSeconds = key.zoneOffsetSeconds;
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
         return into;
@@ -70,7 +77,7 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         }
         else
         {
-            cursor.putInt( key.zoneOffsetMinutes & ZONE_ID_MASK );
+            cursor.putInt( key.zoneOffsetSeconds & ZONE_ID_MASK );
         }
         cursor.putLong( key.getEntityId() );
     }
@@ -84,24 +91,31 @@ class ZonedDateTimeLayout extends SchemaLayout<ZonedDateTimeSchemaKey>
         if ( isZoneId( encodedZone ) )
         {
             into.zoneId = asZoneId( encodedZone );
-            into.zoneOffsetMinutes = 0;
+            into.zoneOffsetSeconds = 0;
         }
         else
         {
             into.zoneId = -1;
-            into.zoneOffsetMinutes = asZoneOffset( encodedZone );
+            into.zoneOffsetSeconds = asZoneOffset( encodedZone );
         }
         into.setEntityId( cursor.getLong() );
     }
 
     private int asZoneOffset( int encodedZone )
     {
-        return (short) encodedZone;
+        if ( (ZONE_ID_HIGH & encodedZone) == ZONE_ID_HIGH )
+        {
+            return ZONE_ID_EXT | encodedZone;
+        }
+        else
+        {
+            return encodedZone;
+        }
     }
 
     private short asZoneId( int encodedZone )
     {
-        return (short) ( encodedZone & ZONE_ID_MASK);
+        return (short) ( encodedZone & ZONE_ID_MASK );
     }
 
     private boolean isZoneId( int encodedZone )

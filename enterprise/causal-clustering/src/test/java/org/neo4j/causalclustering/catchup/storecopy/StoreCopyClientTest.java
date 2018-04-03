@@ -27,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.collection.primitive.Primitive;
@@ -42,6 +44,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -58,6 +61,8 @@ public class StoreCopyClientTest
 {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
 
@@ -73,12 +78,14 @@ public class StoreCopyClientTest
     // helpers
     private File[] serverFiles = new File[]{new File( "fileA.txt" ), new File( "fileB.bmp" )};
     private PrimitiveLongSet indexIds = Primitive.longSet();
+    private ConstantTimeTimeoutStrategy backOffStrategy;
 
     @Before
     public void setup()
     {
         indexIds.add( 13 );
-        subject = new StoreCopyClient( catchUpClient, logProvider );
+        backOffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
+        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
     }
 
     @Test
@@ -132,7 +139,7 @@ public class StoreCopyClientTest
     public void shouldFailIfTerminationConditionFails() throws CatchUpClientException
     {
         // given a file will fail an expected number of times
-        subject = new StoreCopyClient( catchUpClient, logProvider );
+        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
 
         // and requesting the individual file will fail
         when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn(

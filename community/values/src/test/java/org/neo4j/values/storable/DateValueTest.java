@@ -34,7 +34,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.values.storable.DateValue.date;
-import static org.neo4j.values.storable.DateValue.epochDate;
 import static org.neo4j.values.storable.DateValue.ordinalDate;
 import static org.neo4j.values.storable.DateValue.parse;
 import static org.neo4j.values.storable.DateValue.quarterDate;
@@ -189,9 +188,9 @@ public class DateValueTest
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeDate( long epochDay ) throws RuntimeException
+                public void writeDate( LocalDate localDate )
                 {
-                    values.add( epochDate( epochDay ) );
+                    values.add( date( localDate ) );
                 }
             };
 

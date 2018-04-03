@@ -96,6 +96,7 @@ public class LuceneIndexProviderFactory extends
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
+        boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
         IndexDirectoryStructure.Factory baseDirStructure = directoriesByProviderKey( storeDir );
         IndexDirectoryStructure.Factory childDirectoryStructure = directoriesBySubProvider( baseDirStructure.forProvider( PROVIDER_DESCRIPTOR ) );
 
@@ -107,12 +108,12 @@ public class LuceneIndexProviderFactory extends
 
         String defaultSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
         int priority = LuceneIndexProvider.PRIORITY;
-        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.param().equals( defaultSchemaProvider ) )
+        if ( GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName().equals( defaultSchemaProvider ) )
         {
             priority = 100;
         }
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
-                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+                PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
     }
 
 }

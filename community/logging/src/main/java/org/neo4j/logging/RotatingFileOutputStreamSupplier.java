@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 /**
  * A {@link Supplier} of {@link OutputStream}s backed by on-disk files, which
@@ -335,7 +335,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
 
     private OutputStream openOutputFile() throws IOException
     {
-        return createOrOpenAsOuputStream( fileSystem, outputFile, true );
+        return createOrOpenAsOutputStream( fileSystem, outputFile, true );
     }
 
     private void shiftArchivedOutputFiles() throws IOException

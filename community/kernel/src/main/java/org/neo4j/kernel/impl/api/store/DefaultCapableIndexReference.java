@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 public class DefaultCapableIndexReference implements CapableIndexReference
 {
@@ -80,15 +80,15 @@ public class DefaultCapableIndexReference implements CapableIndexReference
     }
 
     @Override
-    public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+    public IndexOrder[] orderCapability( ValueCategory... valueCategories )
     {
-        return capability.orderCapability( valueGroups );
+        return capability.orderCapability( valueCategories );
     }
 
     @Override
-    public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+    public IndexValueCapability valueCapability( ValueCategory... valueCategories )
     {
-        return capability.valueCapability( valueGroups );
+        return capability.valueCapability( valueCategories );
     }
 
     @Override
@@ -128,7 +128,7 @@ public class DefaultCapableIndexReference implements CapableIndexReference
     {
         boolean unique =  descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         final SchemaDescriptor schema = descriptor.schema();
-        return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, null,
+        return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, IndexProvider.UNDECIDED,
                 schema.keyId(), schema.getPropertyIds() );
     }
 }

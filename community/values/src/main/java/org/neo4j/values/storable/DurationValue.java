@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Double.parseDouble;
@@ -55,10 +56,10 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
-import static org.neo4j.values.storable.TimeUtil.AVG_DAYS_PER_MONTH;
-import static org.neo4j.values.storable.TimeUtil.AVG_SECONDS_PER_MONTH;
-import static org.neo4j.values.storable.TimeUtil.NANOS_PER_SECOND;
-import static org.neo4j.values.storable.TimeUtil.SECONDS_PER_DAY;
+import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
+import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
+import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
+import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
 
 /**
  * We use our own implementation because neither {@link java.time.Duration} nor {@link java.time.Period} fits our needs.
@@ -749,7 +750,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             val = seconds * NANOS_PER_SECOND + nanos;
             break;
         default:
-            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
 
         return Values.longValue( val );

@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -40,6 +41,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.SupportedProtocolCreator;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
+import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
@@ -112,7 +114,9 @@ public class BackupSupportingClassesFactory
     {
         CatchUpClient catchUpClient = new CatchUpClient( logProvider, clock, INACTIVITY_TIMEOUT_MILLIS, channelInitializer( config ) );
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
-        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider );
+        ExponentialBackoffStrategy backOffStrategy =
+                new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
+        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, fileSystemAbstraction, pageCache, storeCopyClient,

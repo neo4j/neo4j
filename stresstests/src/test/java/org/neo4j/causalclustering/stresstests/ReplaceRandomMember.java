@@ -27,6 +27,7 @@ import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -84,8 +85,9 @@ class ReplaceRandomMember extends RepeatOnRandomMember
         log.info( "Stopping: " + oldMember );
         oldMember.shutdown();
 
-        boolean newMemberIsCore = ThreadLocalRandom.current().nextBoolean();
-        ClusterMember newMember = newMemberIsCore ? cluster.newCoreMember() : cluster.newReadReplica();
+        ClusterMember newMember = (oldMember instanceof CoreClusterMember) ?
+                cluster.newCoreMember() :
+                cluster.newReadReplica();
 
         if ( backupDir != null )
         {

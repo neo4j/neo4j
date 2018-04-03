@@ -36,9 +36,9 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -169,7 +169,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         return Iterators.stream( iterator() ).anyMatch( NativeSchemaIndexAccessor::isDirty );
     }
 
-    static class PartAccessor<KEY extends NativeSchemaKey> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
+    static class PartAccessor<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexAccessor<KEY, NativeSchemaValue>
     {
         private final Layout<KEY,NativeSchemaValue> layout;
         private final SchemaIndexDescriptor descriptor;
@@ -263,7 +263,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return createPartAccessor( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeSchemaKey> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeSchemaKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
@@ -272,7 +272,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
             return new PartAccessor<>( pageCache, fs, fileLayout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
         }
 
-        private <KEY extends NativeSchemaKey> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeSchemaKey<KEY>> void createEmptyIndex( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             IndexPopulator populator = new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
             populator.create();

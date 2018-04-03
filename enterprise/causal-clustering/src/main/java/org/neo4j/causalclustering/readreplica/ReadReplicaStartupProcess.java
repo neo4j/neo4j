@@ -22,17 +22,19 @@ package org.neo4j.causalclustering.readreplica;
 import java.io.IOException;
 
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
@@ -83,7 +85,7 @@ class ReadReplicaStartupProcess implements Lifecycle
     }
 
     @Override
-    public void start() throws IOException
+    public void start() throws IOException, DatabaseShutdownException
     {
         boolean syncedWithUpstream = false;
         TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
@@ -106,11 +108,6 @@ class ReadReplicaStartupProcess implements Lifecycle
             catch ( StoreCopyFailedException e )
             {
                 lastIssue = issueOf( format( "copying store files from %s", source ), attempt );
-                debugLog.warn( lastIssue );
-            }
-            catch ( StreamingTransactionsFailedException e )
-            {
-                lastIssue = issueOf( format( "streaming transactions from %s", source ), attempt );
                 debugLog.warn( lastIssue );
             }
             catch ( StoreIdDownloadFailedException e )
@@ -155,8 +152,8 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void syncStoreWithUpstream( MemberId source )
-            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException, StreamingTransactionsFailedException, TopologyLookupException
+    private void syncStoreWithUpstream( MemberId source ) throws IOException, StoreIdDownloadFailedException,
+            StoreCopyFailedException, TopologyLookupException, DatabaseShutdownException
     {
         if ( localDatabase.isEmpty() )
         {
@@ -169,7 +166,9 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( CatchupAddressProvider.fromSingleAddress( fromAddress ), storeId );
+            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider addressProvider =
+                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
+            storeCopyProcess.replaceWithStoreFrom( addressProvider, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

@@ -36,7 +36,7 @@ import org.neo4j.values.storable.Value;
  * @param <KEY> type of {@link NumberSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public class NativeHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public class NativeHitIterator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
         implements PrimitiveLongResourceIterator
 {

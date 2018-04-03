@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 
 /**
@@ -39,7 +39,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes a node from an explicit index
@@ -74,6 +74,12 @@ public interface ExplicitIndexWrite
     void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
 
     /**
+     * Drops the explicit index with the given name
+     * @param indexName the index to drop
+     */
+    void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
      * Adds relationship to explicit index.
      *
      * @param indexName The name of the index
@@ -83,7 +89,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
     /**
      * Removes relationship from explicit index.
@@ -95,7 +101,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes relationship to explicit index.
@@ -106,7 +112,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Removes relationship to explicit index.
@@ -116,7 +122,7 @@ public interface ExplicitIndexWrite
      * @throws ExplicitIndexNotFoundKernelException If there is no explicit index with the given name
      */
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws KernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * Creates an explicit index in a separate transaction if not yet available.
@@ -149,4 +155,10 @@ public interface ExplicitIndexWrite
      * @param customConfig The configuration of the explicit index.
      */
     void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig );
+
+    /**
+     * Drops the explicit index with the given name
+     * @param indexName the index to drop
+     */
+    void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 }

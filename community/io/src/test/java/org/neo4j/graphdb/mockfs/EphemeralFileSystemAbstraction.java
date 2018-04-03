@@ -500,7 +500,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         for ( String pathItem : pathItems )
         {
-            file = file == null ? new File( pathItem ) : new File( file, pathItem );
+            String pathItemName = pathItem + File.separator;
+            file = file == null ? new File( pathItemName ) : new File( file, pathItemName );
         }
         return file;
     }

@@ -500,7 +500,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] = {
       val cursor = allocateAndTraceNodeExplicitIndexCursor()
-      tc.kernelTransaction.indexRead().nodeExplicitIndexLookup(cursor, name, key, Values.of(value))
+      tc.kernelTransaction.indexRead().nodeExplicitIndexLookup(cursor, name, key, value )
       new CursorIterator[Node] {
         override protected def fetchNext(): Node = {
           while (cursor.next() ) {
@@ -634,7 +634,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
 
     def indexGet(name: String, key: String, value: Any): Iterator[Relationship] = {
       val cursor = allocateAndTraceRelationshipExplicitIndexCursor()
-      tc.kernelTransaction.indexRead().relationshipExplicitIndexLookup(cursor, name, key, Values.of(value), -1, -1)
+      tc.kernelTransaction.indexRead().relationshipExplicitIndexLookup(cursor, name, key, value, -1, -1)
       new CursorIterator[Relationship] {
         override protected def fetchNext(): Relationship = {
           while (cursor.next() ) {

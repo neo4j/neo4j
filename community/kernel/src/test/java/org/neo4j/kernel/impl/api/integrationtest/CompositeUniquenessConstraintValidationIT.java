@@ -29,7 +29,6 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -38,7 +37,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -100,7 +98,6 @@ public class CompositeUniquenessConstraintValidationIT
     }
 
     private KernelTransaction transaction;
-    private Statement statement;
     private GraphDatabaseAPI graphDatabaseAPI;
     protected InwardKernel kernel;
 
@@ -112,7 +109,7 @@ public class CompositeUniquenessConstraintValidationIT
         kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( InwardKernel.class );
 
         newTransaction();
-        statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
         commit();
     }
 
@@ -125,7 +122,7 @@ public class CompositeUniquenessConstraintValidationIT
         }
 
         newTransaction();
-        statement.schemaWriteOperations()
+        transaction.schemaWrite()
                 .constraintDrop( ConstraintDescriptorFactory.uniqueForLabel( label, propertyIds() ) );
         commit();
 
@@ -147,7 +144,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeDelete( node );
+        transaction.dataWrite().nodeDelete( node );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -163,7 +160,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeRemoveLabel( node, label );
+        transaction.dataWrite().nodeRemoveLabel( node, label );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -179,7 +176,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeRemoveProperty( node, 0 );
+        transaction.dataWrite().nodeRemoveProperty( node, 0 );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -195,7 +192,7 @@ public class CompositeUniquenessConstraintValidationIT
 
         // when
         newTransaction();
-        statement.dataWriteOperations().nodeSetProperty( node, 0, Values.of( "Alive!" ) );
+        transaction.dataWrite().nodeSetProperty( node, 0, Values.of( "Alive!" ) );
         long newNode = createLabeledNode( label );
         setProperties( newNode, aValues );
 
@@ -320,13 +317,10 @@ public class CompositeUniquenessConstraintValidationIT
             fail( "tx already opened" );
         }
         transaction = kernel.newTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
-        statement = transaction.acquireStatement();
     }
 
     protected void commit() throws TransactionFailureException
     {
-        statement.close();
-        statement = null;
         transaction.success();
         try
         {
@@ -340,24 +334,24 @@ public class CompositeUniquenessConstraintValidationIT
 
     private long createLabeledNode( int labelId ) throws KernelException
     {
-        long node = statement.dataWriteOperations().nodeCreate();
-        statement.dataWriteOperations().nodeAddLabel( node, labelId );
+        long node = transaction.dataWrite().nodeCreate();
+        transaction.dataWrite().nodeAddLabel( node, labelId );
         return node;
     }
 
     private void addLabel( long nodeId, int labelId ) throws KernelException
     {
-        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
+        transaction.dataWrite().nodeAddLabel( nodeId, labelId );
     }
 
     private void setProperty( long nodeId, int propertyId, Object value ) throws KernelException
     {
-        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyId, Values.of( value ) );
+        transaction.dataWrite().nodeSetProperty( nodeId, propertyId, Values.of( value ) );
     }
 
     private long createNode() throws KernelException
     {
-        return statement.dataWriteOperations().nodeCreate();
+        return transaction.dataWrite().nodeCreate();
     }
 
     private long createNodeWithLabelAndProps( int labelId, Object[] propertyValues )

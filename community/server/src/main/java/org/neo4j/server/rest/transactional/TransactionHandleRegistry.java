@@ -126,7 +126,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             return true;
         }
 
-        public long getLastActiveTimestamp()
+        long getLastActiveTimestamp()
         {
             return lastActiveTimestamp;
         }
@@ -225,21 +225,23 @@ public class TransactionHandleRegistry implements TransactionRegistry
         {
             throw new InvalidTransactionId();
         }
-        else
-        {
-            TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
-            handle.terminate();
 
-            try
+        TransactionTerminationHandle handle = marker.getActiveTransaction().getTerminationHandle();
+        handle.terminate();
+
+        try
+        {
+            SuspendedTransaction transaction = marker.getSuspendedTransaction();
+            if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
             {
-                return acquire( id );
-            }
-            catch ( InvalidConcurrentTransactionAccess exception )
-            {
-                // We could not acquire the transaction. Let the other request clean up.
-                return null;
+                return transaction.transactionHandle;
             }
         }
+        catch ( InvalidConcurrentTransactionAccess exception )
+        {
+            // We could not acquire the transaction. Let the other request clean up.
+        }
+        return null;
     }
 
     @Override

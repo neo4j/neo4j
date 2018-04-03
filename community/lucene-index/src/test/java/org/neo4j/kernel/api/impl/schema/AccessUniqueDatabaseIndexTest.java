@@ -43,11 +43,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
-
-import static org.junit.Assert.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
 {
@@ -151,7 +149,7 @@ public class AccessUniqueDatabaseIndexTest
     {
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystemRule.get(),
                 directoriesByProviderKey( storeDirectory ).forProvider( PROVIDER_DESCRIPTOR ) );
-        return storageFactory.indexStorageOf( 1, false );
+        return storageFactory.indexStorageOf( 1 );
     }
 
     private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )

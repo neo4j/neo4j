@@ -217,7 +217,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.statementContext = txBridge;
         this.indexManager = Suppliers.lazySingleton( () ->
         {
-            IndexProviderImpl idxProvider = new IndexProviderImpl( this, txBridge );
+            IndexProviderImpl idxProvider = new IndexProviderImpl( this, () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
             AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                     () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
                     spi.autoIndexing().nodes() );
@@ -694,7 +694,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         if ( statementContext.hasTransaction() )
         {
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
-            return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ), statementContext );
+            return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
         return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ), statementContext );
     }

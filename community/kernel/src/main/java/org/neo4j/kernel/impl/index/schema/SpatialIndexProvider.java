@@ -28,6 +28,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,10 +43,12 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.values.storable.ValueCategory;
 
 public class SpatialIndexProvider extends IndexProvider
 {
     public static final String KEY = "spatial";
+    static final IndexCapability CAPABILITY = new SpatialIndexCapability();
     private static final Descriptor SPATIAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
     private final PageCache pageCache;
@@ -162,7 +166,7 @@ public class SpatialIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor indexDescriptor )
     {
-        return IndexCapability.NO_CAPABILITY;
+        return CAPABILITY;
     }
 
     @Override
@@ -171,5 +175,25 @@ public class SpatialIndexProvider extends IndexProvider
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    /**
+     * For single property spatial queries capabilities are
+     * Order: NONE (can not provide results in ordering)
+     * Value: NO (can not provide exact value)
+     */
+    private static class SpatialIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            return ORDER_NONE;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            return IndexValueCapability.NO;
+        }
     }
 }

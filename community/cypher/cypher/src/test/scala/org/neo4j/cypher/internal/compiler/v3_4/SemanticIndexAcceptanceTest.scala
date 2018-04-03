@@ -98,7 +98,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   def pointGen: Gen[PointValue] =
     for {
       dimension <- Gen.oneOf(allCRSDimensions)
-      coordinates <- Gen.listOfN(dimension, arbitrary[Double])
+      coordinates <- Gen.listOfN(dimension, arbitrary[Double].retryUntil(java.lang.Double.isFinite(_)))
       crs <- Gen.oneOf(allCRS(dimension))
     } yield Values.pointValue(crs, coordinates:_*)
 
