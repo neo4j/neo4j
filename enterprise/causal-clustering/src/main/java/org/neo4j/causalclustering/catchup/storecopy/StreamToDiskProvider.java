@@ -59,7 +59,7 @@ public class StreamToDiskProvider implements StoreFileStreamProvider
         {
             int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
             PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-            return new StreamToDisk( pagedFile.openWritableByteChannel(), autoCloseable );
+            return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile, autoCloseable );
         }
         else
         {
