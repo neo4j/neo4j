@@ -272,17 +272,6 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public ReadOperations readOperations()
-        {
-            if ( recordingReadOperationsWrapper == null )
-            {
-                recordingReadOperationsWrapper =
-                        new LockRecordingReadOperationsWrapper( delegate.readOperations(), recordedLocks, asList( listeners ) );
-            }
-            return recordingReadOperationsWrapper;
-        }
-
-        @Override
         public DbmsOperations dbmsOperations()
         {
             return delegate.dbmsOperations();
