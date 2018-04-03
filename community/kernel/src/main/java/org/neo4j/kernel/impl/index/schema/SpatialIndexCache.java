@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
@@ -40,7 +40,7 @@ class SpatialIndexCache<T> implements Iterable<T>
 {
     private final Factory<T> factory;
 
-    private Map<CoordinateReferenceSystem,T> spatials = new CopyOnWriteHashMap<>();
+    private Map<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
 
     SpatialIndexCache( Factory<T> factory )
     {
@@ -54,25 +54,19 @@ class SpatialIndexCache<T> implements Iterable<T>
      * @param crs target coordinate reference system
      * @return selected part
      */
-    synchronized T uncheckedSelect( CoordinateReferenceSystem crs )
+    T uncheckedSelect( CoordinateReferenceSystem crs )
     {
-        T part = spatials.get( crs );
-        if ( part == null )
+        return spatials.computeIfAbsent( crs, key ->
         {
             try
             {
-                part = factory.newSpatial( crs );
+                return factory.newSpatial( crs );
             }
             catch ( IOException e )
             {
                 throw new UncheckedIOException( e );
             }
-            if ( part != null )
-            {
-                spatials.put( crs, part );
-            }
-        }
-        return part;
+        } );
     }
 
     /**
