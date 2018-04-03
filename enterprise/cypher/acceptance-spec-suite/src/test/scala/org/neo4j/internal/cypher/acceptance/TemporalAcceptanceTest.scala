@@ -603,7 +603,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
           *  Version 3.3 returns null instead due to running with 3.4 runtime
           *  SyntaxException come from the 3.4 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_4 + Configs.OldAndRule + Configs.Procs, query, Seq.empty, Seq("SyntaxException", "IncomparableValuesException"))
+        failWithError(Configs.Version3_4 + Configs.Procs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
       }
     }
   }
@@ -626,7 +626,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = s"RETURN $func('', '', '', '')"
       withClue(s"Executing $query") {
         failWithError(Configs.AbsolutelyAll - Configs.Version2_3, query,
-          Seq("Function call does not provide the required number of arguments"), Seq("SyntaxException"))
+          Seq("Function call does not provide the required number of arguments"))
       }
     }
   }

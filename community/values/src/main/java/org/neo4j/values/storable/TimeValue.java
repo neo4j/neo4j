@@ -141,7 +141,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         }
         catch ( UnsupportedTemporalTypeException e )
         {
-            throw new UnsupportedTemporalUnitException( e.getMessage() );
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
         }
 
         if ( fields.size() == 0 )

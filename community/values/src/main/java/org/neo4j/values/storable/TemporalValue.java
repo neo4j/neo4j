@@ -206,7 +206,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         catch ( UnsupportedTemporalTypeException e )
         {
-            throw new UnsupportedTemporalUnitException( e.getMessage() );
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
         }
         return until;
     }
@@ -280,7 +280,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         catch ( UnsupportedTemporalTypeException e )
         {
-            throw new UnsupportedTemporalUnitException( e.getMessage() );
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
         }
         return accessor;
     }

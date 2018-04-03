@@ -26,4 +26,9 @@ public class ValuesException extends RuntimeException
     {
         super( errorMsg );
     }
+
+    public ValuesException( String errorMsg, Throwable cause )
+    {
+        super( errorMsg, cause );
+    }
 }

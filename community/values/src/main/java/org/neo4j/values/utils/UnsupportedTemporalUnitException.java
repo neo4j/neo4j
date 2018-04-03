@@ -26,4 +26,9 @@ public class UnsupportedTemporalUnitException extends ValuesException
     {
         super( errorMsg );
     }
+
+    public UnsupportedTemporalUnitException( String errorMsg, Throwable cause )
+    {
+        super( errorMsg, cause );
+    }
 }

@@ -109,7 +109,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   def mapToCypher(exception: ValuesException): CypherException = {
     exception match {
       case e: UnsupportedTemporalUnitException =>
-        exceptionHandler.cypherTypeException(e.getMessage, e.getCause)
+        exceptionHandler.cypherTypeException(e.getMessage, e)
     }
   }
 }

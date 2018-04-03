@@ -231,13 +231,13 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalUnitException( "Cannot get the timezone of: %s" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalUnitException( "Cannot get the offset of: %s" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
     }
 
     @Override
