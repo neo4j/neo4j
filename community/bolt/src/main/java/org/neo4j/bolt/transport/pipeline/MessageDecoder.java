@@ -56,7 +56,7 @@ public class MessageDecoder extends SimpleChannelInboundHandler<ByteBuf>
         }
         catch ( BoltIOException ex )
         {
-            if ( ex.causesFailure() )
+            if ( ex.causesFailureMessage() )
             {
                 messageHandler.onExternalError( Neo4jError.from( ex ) );
             }

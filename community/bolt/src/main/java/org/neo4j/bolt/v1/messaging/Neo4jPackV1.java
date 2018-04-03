@@ -61,9 +61,16 @@ public class Neo4jPackV1 implements Neo4jPack
     public static final long VERSION = 1;
 
     public static final byte NODE = 'N';
+    public static final int NODE_SIZE = 3;
+
     public static final byte RELATIONSHIP = 'R';
+    public static final int RELATIONSHIP_SIZE = 5;
+
     public static final byte UNBOUND_RELATIONSHIP = 'r';
+    public static final int UNBOUND_RELATIONSHIP_SIZE = 3;
+
     public static final byte PATH = 'P';
+    public static final int PATH_SIZE = 3;
 
     @Override
     public Neo4jPack.Packer newPacker( PackOutput output )
@@ -118,7 +125,7 @@ public class Neo4jPackV1 implements Neo4jPack
         @Override
         public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws IOException
         {
-            packStructHeader( 3, NODE );
+            packStructHeader( NODE_SIZE, NODE );
             pack( nodeId );
             packListHeader( labels.length() );
             for ( int i = 0; i < labels.length(); i++ )
@@ -138,7 +145,7 @@ public class Neo4jPackV1 implements Neo4jPack
         public void writeRelationship( long relationshipId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
                 throws IOException
         {
-            packStructHeader( 5, RELATIONSHIP );
+            packStructHeader( RELATIONSHIP_SIZE, RELATIONSHIP );
             pack( relationshipId );
             pack( startNodeId );
             pack( endNodeId );
@@ -194,7 +201,7 @@ public class Neo4jPackV1 implements Neo4jPack
             // the offset
             // into the
             // node list (zero indexed) and so on.
-            packStructHeader( 3, PATH );
+            packStructHeader( PATH_SIZE, PATH );
 
             writeNodesForPath( nodes );
             writeRelationshipsForPath( relationships );
@@ -282,7 +289,7 @@ public class Neo4jPackV1 implements Neo4jPack
                         //Note that we are not doing relationship.writeTo(this) here since the serialization protocol
                         //requires these to be _unbound relationships_, thus relationships without any start node nor
                         // end node.
-                        packStructHeader( 3, UNBOUND_RELATIONSHIP );
+                        packStructHeader( UNBOUND_RELATIONSHIP_SIZE, UNBOUND_RELATIONSHIP );
                         pack( edge.id() );
                         edge.type().writeTo( this );
                         edge.properties().writeTo( this );
@@ -463,9 +470,9 @@ public class Neo4jPackV1 implements Neo4jPack
             }
             case STRUCT:
             {
-                unpackStructHeader();
+                long size = unpackStructHeader();
                 char signature = unpackStructSignature();
-                return unpackStruct( signature );
+                return unpackStruct( signature, size );
             }
             case END_OF_STREAM:
             {
@@ -514,7 +521,7 @@ public class Neo4jPackV1 implements Neo4jPack
             }
         }
 
-        protected AnyValue unpackStruct( char signature ) throws IOException
+        protected AnyValue unpackStruct( char signature, long size ) throws IOException
         {
             KnownType knownType = KnownType.valueOf( signature );
             if ( knownType == null )

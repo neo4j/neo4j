@@ -22,29 +22,29 @@ package org.neo4j.bolt.messaging;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+
+import static java.util.Collections.unmodifiableMap;
+
 public enum KnownType
 {
-    NODE( 'N', "Node" ),
-    RELATIONSHIP( 'R', "Relationship" ),
-    UNBOUND_RELATIONSHIP( 'r', "Relationship" ),
-    PATH( 'P', "Path" ),
-    POINT_2D( 'X', "Point" ),
-    POINT_3D( 'Y', "Point" ),
-    DATE( 'D', "LocalDate" ),
-    TIME( 'T', "OffsetTime" ),
-    LOCAL_TIME( 't', "LocalTime" ),
-    LOCAL_DATE_TIME( 'd', "LocalDateTime" ),
-    DATE_TIME_WITH_ZONE_OFFSET( 'F', "OffsetDateTime" ),
-    DATE_TIME_WITH_ZONE_NAME( 'f', "ZonedDateTime" ),
-    DURATION( 'E', "Duration" );
+    NODE( Neo4jPackV1.NODE, "Node" ),
+    RELATIONSHIP( Neo4jPackV1.RELATIONSHIP, "Relationship" ),
+    UNBOUND_RELATIONSHIP( Neo4jPackV1.UNBOUND_RELATIONSHIP, "Relationship" ),
+    PATH( Neo4jPackV1.PATH, "Path" ),
+    POINT_2D( Neo4jPackV2.POINT_2D, "Point" ),
+    POINT_3D( Neo4jPackV2.POINT_3D, "Point" ),
+    DATE( Neo4jPackV2.DATE, "LocalDate" ),
+    TIME( Neo4jPackV2.TIME, "OffsetTime" ),
+    LOCAL_TIME( Neo4jPackV2.LOCAL_TIME, "LocalTime" ),
+    LOCAL_DATE_TIME( Neo4jPackV2.LOCAL_DATE_TIME, "LocalDateTime" ),
+    DATE_TIME_WITH_ZONE_OFFSET( Neo4jPackV2.DATE_TIME_WITH_ZONE_OFFSET, "OffsetDateTime" ),
+    DATE_TIME_WITH_ZONE_NAME( Neo4jPackV2.DATE_TIME_WITH_ZONE_NAME, "ZonedDateTime" ),
+    DURATION( Neo4jPackV2.DURATION, "Duration" );
 
     private final byte signature;
     private final String description;
-
-    KnownType( char signature, String description )
-    {
-        this( (byte)signature, description );
-    }
 
     KnownType( byte signature, String description )
     {
@@ -62,22 +62,26 @@ public enum KnownType
         return description;
     }
 
-    private static Map<Byte, KnownType> byteToKnownTypeMap = new HashMap<>();
-    static
-    {
-        for ( KnownType type : KnownType.values() )
-        {
-            byteToKnownTypeMap.put( type.signature, type );
-        }
-    }
+    private static Map<Byte, KnownType> knownTypesBySignature = knownTypesBySignature();
 
     public static KnownType valueOf( byte signature )
     {
-        return byteToKnownTypeMap.get( signature );
+        return knownTypesBySignature.get( signature );
     }
 
     public static KnownType valueOf( char signature )
     {
-        return KnownType.valueOf( (byte)signature );
+        return knownTypesBySignature.get( (byte)signature );
+    }
+
+    private static Map<Byte,KnownType> knownTypesBySignature()
+    {
+        KnownType[] types = KnownType.values();
+        Map<Byte,KnownType> result = new HashMap<>( types.length * 2 );
+        for ( KnownType type : types )
+        {
+            result.put( type.signature, type );
+        }
+        return unmodifiableMap( result );
     }
 }
