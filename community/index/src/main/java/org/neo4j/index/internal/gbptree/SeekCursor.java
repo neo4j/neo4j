@@ -530,7 +530,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     {
                         if ( resultOnTrack || isResultKey() )
                         {
-                            layout.copyKey( mutableKeys[cachedIndex], prevKey );
                             resultOnTrack = true;
                             return true; // which marks this read a hit that user can see
                         }
@@ -539,6 +538,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 }
                 else
                 {   // SLOW, next batch of keys/values needs to be read
+                    if ( resultOnTrack )
+                    {
+                        layout.copyKey( mutableKeys[cachedIndex], prevKey );
+                    }
                     if ( !readAndValidateNextKeyValueBatch() )
                     {
                         // Concurrent changes
@@ -566,7 +569,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     {
                         if ( isResultKey() )
                         {
-                            layout.copyKey( mutableKeys[cachedIndex], prevKey );
                             resultOnTrack = true;
                             return true; // which marks this read a hit that user can see
                         }
