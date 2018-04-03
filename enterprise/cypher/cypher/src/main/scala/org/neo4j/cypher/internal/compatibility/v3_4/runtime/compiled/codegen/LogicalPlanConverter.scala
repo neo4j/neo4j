@@ -198,14 +198,6 @@ object LogicalPlanConverter {
             indexSeekFun(opName, context.namer.newVarName(), expression, nodeVar, actions)
 
           //collection, create set and for each element of the set do an index lookup
-//          case plans.ManyQueryExpression(e: ast.ListLiteral) =>
-//            val expression = ToSet(createExpression(e)(context))
-//            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
-//            ForEachExpression(expressionVar, expression,
-//                              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-//                                           actions))
-
-          //Unknown, try to cast to collection and then same as above
           case plans.ManyQueryExpression(e) =>
             val expression = ToSet(createExpression(e)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)

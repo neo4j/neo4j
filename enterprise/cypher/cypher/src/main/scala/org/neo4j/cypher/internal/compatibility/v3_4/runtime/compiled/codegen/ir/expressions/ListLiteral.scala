@@ -40,12 +40,6 @@ case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpre
         }), cType)
 
       case _ =>
-//        structure.asList(expressions.map(e => structure.box(e.generateExpression(structure), e.codeGenType)))
-
-//        structure.asAnyValueList(expressions.map(e =>
-//          structure.toAnyValue(e.generateExpression(structure), e.codeGenType))
-//        )
-
         structure.asAnyValueList(expressions.map(e => e.codeGenType match {
           case CypherCodeGenType(ListType(_), ListReferenceType(innerRepr)) if RepresentationType.isPrimitive(innerRepr) =>
             structure.toMaterializedAnyValue(structure.iteratorFrom(e.generateExpression(structure)), e.codeGenType)
@@ -71,8 +65,6 @@ case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpre
       else
         AnyValueType
 
-    //val elementType = LiteralTypeSupport.deriveCodeGenType(commonType)
-    //CypherCodeGenType(symbols.CTList(commonType), ListReferenceType(elementType.repr))
     CypherCodeGenType(symbols.CTList(commonType), ListReferenceType(representationType))
   }
 }

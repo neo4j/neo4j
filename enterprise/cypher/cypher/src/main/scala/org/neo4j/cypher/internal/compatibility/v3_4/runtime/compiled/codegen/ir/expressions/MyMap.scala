@@ -32,7 +32,6 @@ case class MyMap(instructions: Map[String, CodeGenExpression]) extends CodeGenEx
     }
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-//    structure.asMap(instructions.mapValues(e => structure.box(e.generateExpression(structure), e.codeGenType)))
     structure.asMap(instructions.mapValues(e => e.codeGenType match {
       case CypherCodeGenType(ListType(_), ListReferenceType(innerRepr)) if RepresentationType.isPrimitive(innerRepr) =>
         structure.toAnyValue(structure.iteratorFrom(e.generateExpression(structure)), e.codeGenType)

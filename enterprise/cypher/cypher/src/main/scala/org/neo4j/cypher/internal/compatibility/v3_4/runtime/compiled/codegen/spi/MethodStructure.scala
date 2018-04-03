@@ -105,8 +105,6 @@ trait MethodStructure[E] {
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
 
-  //def castToCollection(value: E): E
-
   def loadVariable(varName: String): E
 
   // arithmetic

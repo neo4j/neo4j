@@ -1391,7 +1391,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def declareProperty(propertyVar: String) = {
-//    val localVariable = generator.declare(typeRef[Object], propertyVar)
     val localVariable = generator.declare(typeRef[Value], propertyVar)
     locals += (propertyVar -> localVariable)
     generator.assign(localVariable, noValue)

@@ -53,9 +53,6 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
     groupingKey.foreach {
       case (v, expr) =>
         structure.declare(v, expr.codeGenType)
-//        if (expr.codeGenType == CodeGenType.Any) structure.assign(v, expr.codeGenType,
-//                                                                  structure.materializeAny(expr.generateExpression(structure)))
-//        else structure.assign(v, expr.codeGenType, expr.generateExpression(structure))
         // Only materialize in produce results
         structure.assign(v, expr.codeGenType, expr.generateExpression(structure))
     }

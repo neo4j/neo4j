@@ -39,10 +39,6 @@ case class Distinct(opName: String, setName: String, vars: Iterable[(String, Cod
     vars.foreach {
       case (variable, expr) =>
         generator.declare(variable, expr.codeGenType)
-//        if (expr.codeGenType == CodeGenType.Any) generator.assign(variable, expr.codeGenType,
-//                                                                  generator
-//                                                                    .materializeAny(expr.generateExpression(generator)))
-//        else generator.assign(variable, expr.codeGenType, expr.generateExpression(generator))
         // Only materialize in produce results
         generator.assign(variable, expr.codeGenType, expr.generateExpression(generator))
     }

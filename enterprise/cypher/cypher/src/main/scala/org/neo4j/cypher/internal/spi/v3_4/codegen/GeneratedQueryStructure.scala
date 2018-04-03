@@ -252,7 +252,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CypherCodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
     case CypherCodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
     case CodeGenType.javaInt => typeRef[Int]
-    //case CypherCodeGenType(_, ValueType) => typeRef[Value]
     case CypherCodeGenType(_, _: AnyValueType) => typeRef[AnyValue]
     case _ => typeRef[Object]
   }

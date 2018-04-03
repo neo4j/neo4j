@@ -45,11 +45,6 @@ object LiteralTypeSupport {
     case _ => CypherCodeGenType(ct, toRepresentationType(ct))
   }
 
-//  def deriveCodeGenTypeWithRepresentation(ct: CypherType, representationAs: RepresentationType): CypherCodeGenType = ct match {
-//    case ListType(innerCt) => CypherCodeGenType(CTList(innerCt), ListReferenceType(representationAs))
-//    case _ => CypherCodeGenType(ct, representationAs)
-//  }
-
   private def toRepresentationType(ct: CypherType): RepresentationType = ct match {
     case CTInteger => LongType
     case CTFloat => expressions.FloatType

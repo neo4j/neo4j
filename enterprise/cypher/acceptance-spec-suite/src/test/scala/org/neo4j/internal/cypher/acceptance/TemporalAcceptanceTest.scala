@@ -141,18 +141,14 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
     // When
     val localConfig = Configs.All - Configs.OldAndRule
-//    val result = executeWith(localConfig,
-//      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-//      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-//        plan should useOperatorWithText("Projection", "timeSpan")
-//        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
-//      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-//      params = Map("param" ->
-//        Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
-    val result = innerExecuteDeprecated(
-      "CYPHER runtime=compiled MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
-        params = Map("param" ->
-          Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+    val result = executeWith(localConfig,
+      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "timeSpan")
+        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = Map("param" ->
+        Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
     // Then
     val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList

@@ -38,35 +38,11 @@ public final class NodeIdWrapperImpl extends VirtualNodeValue implements NodeIdW
         return id;
     }
 
-//    @Override
-//    public boolean equals( Object o )
-//    {
-//        if ( this == o )
-//        {
-//            return true;
-//        }
-//        if ( o == null || getClass() != o.getClass() )
-//        {
-//            return false;
-//        }
-//
-//        NodeIdWrapper that = (NodeIdWrapper) o;
-//
-//        return id == that.id();
-//
-//    }
-
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
         writer.writeNodeReference( id );
     }
-
-//    @Override
-//    public int hashCode()
-//    {
-//        return (int) (id ^ (id >>> 32));
-//    }
 
     @Override
     public String toString()

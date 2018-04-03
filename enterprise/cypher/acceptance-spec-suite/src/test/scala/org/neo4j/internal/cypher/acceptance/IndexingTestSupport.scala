@@ -93,7 +93,7 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     if (cypherComparisonSupport) {
       val result =
         executeWith(
-          Configs.Interpreted - Configs.OldAndRule,
+          Configs.All - Configs.OldAndRule,
           query,
           params = params,
           planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators(wantedOperator))

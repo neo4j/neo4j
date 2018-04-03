@@ -38,30 +38,6 @@ public final class RelationshipIdWrapperImpl extends VirtualRelationshipValue im
         return id;
     }
 
-//    @Override
-//    public boolean equals( Object o )
-//    {
-//        if ( this == o )
-//        {
-//            return true;
-//        }
-//        if ( o == null || getClass() != o.getClass() )
-//        {
-//            return false;
-//        }
-//
-//        RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
-//
-//        return id == that.id;
-//
-//    }
-
-//    @Override
-//    public int hashCode()
-//    {
-//        return (int) (id ^ (id >>> 32));
-//    }
-
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
