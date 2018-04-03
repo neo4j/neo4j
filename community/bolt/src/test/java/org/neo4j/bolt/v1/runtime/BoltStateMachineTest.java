@@ -22,19 +22,24 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Test;
 
 import java.time.Clock;
+import java.util.Collections;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.util.ValueUtils;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -516,4 +521,95 @@ public class BoltStateMachineTest
 
         verify( boltChannel ).close();
     }
+
+    @Test
+    public void shouldSetPendingErrorOnMarkFailedIfNoHandler()
+    {
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+
+        machine.markFailed( error );
+
+        assertEquals( error, machine.ctx.pendingError );
+        assertEquals( BoltStateMachine.State.FAILED, machine.state );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextInitMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.init( "Test/1.0", Collections.emptyMap(), handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextRunMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.run( "RETURN 1", ValueUtils.asMapValue( Collections.emptyMap() ), handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextPullAllMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.pullAll( handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextDiscardAllMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.discardAll( handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextResetMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.reset( handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextAckFailureMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.ackFailure( handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnNextExternalErrorMessageOnMarkFailedIfNoHandler() throws Exception
+    {
+        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.externalError( Neo4jError.from( Status.Request.Invalid, "invalid" ), handler ) );
+    }
+
+    @Test
+    public void shouldInvokeResponseHandlerOnMarkFailedIfThereIsHandler()
+    {
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+
+        machine.ctx.responseHandler = mock( BoltResponseHandler.class );
+        machine.markFailed( error );
+
+        assertNull( machine.ctx.pendingError );
+        assertEquals( BoltStateMachine.State.FAILED, machine.state );
+        verify( machine.ctx.responseHandler ).markFailed( error );
+    }
+
+    private static void testMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
+    {
+        // Given
+        BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+        machine.markFailed( error );
+
+        // When
+        action.accept( machine, responseHandler );
+
+        // Expect
+        assertEquals( BoltStateMachine.State.FAILED, machine.state );
+        verify( responseHandler ).markFailed( error );
+    }
+
 }
