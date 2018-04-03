@@ -25,7 +25,6 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.TokenWriteOperations;
 
 public class StubStatement extends StubResourceManager implements Statement
 {
@@ -46,12 +45,6 @@ public class StubStatement extends StubResourceManager implements Statement
     public ReadOperations readOperations()
     {
         return readOperations;
-    }
-
-    @Override
-    public TokenWriteOperations tokenWriteOperations()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

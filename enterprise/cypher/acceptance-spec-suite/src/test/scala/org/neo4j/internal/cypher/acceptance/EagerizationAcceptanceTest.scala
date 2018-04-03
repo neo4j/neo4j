@@ -203,12 +203,12 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("KNOWS")
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
-            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
-            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
-            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
+            val rel = transaction.dataWrite().relationshipCreate( nodeX.getId, relType, nodeY.getId)
+            val prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" )
+            transaction.dataWrite().relationshipSetProperty(rel, prop, Values.of(counter.counted))
             counter += 1
             RawIterator.of(Array(new java.lang.Long(rel)))
           } finally {
@@ -245,12 +245,12 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("KNOWS")
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
-            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
-            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
-            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
+            val rel = transaction.dataWrite().relationshipCreate( nodeX.getId, relType, nodeY.getId)
+            val prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" )
+            transaction.dataWrite().relationshipSetProperty(rel, prop, Values.of(counter.counted))
             counter += 1
             RawIterator.empty()
           } finally {

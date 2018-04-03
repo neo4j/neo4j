@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -130,14 +129,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     @Override
     public ProcedureCallOperations procedureCallOperations()
     {
-        return facade;
-    }
-
-    @Override
-    public TokenWriteOperations tokenWriteOperations()
-    {
-        accessCapability.assertCanWrite();
-
         return facade;
     }
 

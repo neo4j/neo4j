@@ -44,8 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -63,7 +61,6 @@ import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -109,7 +106,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, TokenWriteOperations,
+        implements ReadOperations, DataWriteOperations,
         QueryRegistryOperations, ProcedureCallOperations
 {
     private final KernelTransaction tx;
@@ -726,74 +723,6 @@ public class OperationsFacade
     }
 
     // </TokenRead>
-
-    // <TokenWrite>
-    @Override
-    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
-    {
-        statement.assertOpen();
-        int id = tokenRead().labelGetForName( statement, labelName );
-        if ( id != KeyReadOperations.NO_SUCH_LABEL )
-        {
-            return id;
-        }
-
-        return tokenWrite().labelGetOrCreateForName( statement, labelName );
-    }
-
-    @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
-    {
-        statement.assertOpen();
-        int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
-        if ( id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-        {
-            return id;
-        }
-        return tokenWrite().propertyKeyGetOrCreateForName( statement,
-                propertyKeyName );
-    }
-
-    @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
-    {
-        statement.assertOpen();
-        int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
-        if ( id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
-        {
-            return id;
-        }
-        return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
-    }
-
-    @Override
-    public void labelCreateForName( String labelName, int id ) throws
-            IllegalTokenNameException, TooManyLabelsException
-    {
-        statement.assertOpen();
-        tokenWrite().labelCreateForName( statement, labelName, id );
-    }
-
-    @Override
-    public void propertyKeyCreateForName( String propertyKeyName,
-            int id ) throws
-            IllegalTokenNameException
-    {
-        statement.assertOpen();
-        tokenWrite().propertyKeyCreateForName( statement, propertyKeyName, id );
-    }
-
-    @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName,
-            int id ) throws
-            IllegalTokenNameException
-    {
-        statement.assertOpen();
-        tokenWrite().relationshipTypeCreateForName( statement,
-                relationshipTypeName, id );
-    }
-
-    // </TokenWrite>
 
     // <SchemaState>
     @Override

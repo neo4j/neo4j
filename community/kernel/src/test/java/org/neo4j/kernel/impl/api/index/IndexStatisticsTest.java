@@ -402,15 +402,12 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.get() )
+            for ( String name : NAMES )
             {
-                for ( String name : NAMES )
+                long nodeId = createNode( bridge.getKernelTransactionBoundToThisThread( true ), "Person", "name", name );
+                if ( nodes != null )
                 {
-                    long nodeId = createNode( statement, "Person", "name", name );
-                    if ( nodes != null )
-                    {
-                        nodes[offset++] = nodeId;
-                    }
+                    nodes[offset++] = nodeId;
                 }
             }
             tx.success();
@@ -524,25 +521,23 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.get() )
-            {
-                createNode( statement, "Person", "name", "Davide" );
-                createNode( statement, "Person", "name", "Stefan" );
-                createNode( statement, "Person", "name", "John" );
-                createNode( statement, "Person", "name", "John" );
-            }
+            KernelTransaction ktx = bridge.getKernelTransactionBoundToThisThread( true );
+            createNode( ktx, "Person", "name", "Davide" );
+            createNode( ktx, "Person", "name", "Stefan" );
+            createNode( ktx, "Person", "name", "John" );
+            createNode( ktx, "Person", "name", "John" );
             tx.success();
         }
     }
 
-    private long createNode( Statement statement, String labelName, String propertyKeyName, Object value )
+    private long createNode( KernelTransaction ktx, String labelName, String propertyKeyName, Object value )
             throws KernelException
     {
-        int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
-        int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-        long nodeId = statement.dataWriteOperations().nodeCreate();
-        statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
-        statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
+        int labelId = ktx.tokenWrite().labelGetOrCreateForName( labelName );
+        int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyName );
+        long nodeId = ktx.dataWrite().nodeCreate();
+        ktx.dataWrite().nodeAddLabel( nodeId, labelId );
+        ktx.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value ) );
         return nodeId;
     }
 
