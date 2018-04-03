@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -281,13 +281,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
     @Override
     public void check()
     {
-        guard.check( (KernelStatement) statement );
+        guard.check( kernelTransaction() );
     }
 
     @Override
     public TxStateHolder stateView()
     {
-        return (KernelStatement) statement;
+        return (KernelTransactionImplementation) kernelTransaction();
     }
 
     @Override

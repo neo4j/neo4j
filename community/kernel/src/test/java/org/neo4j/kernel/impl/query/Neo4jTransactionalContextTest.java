@@ -80,12 +80,16 @@ public class Neo4jTransactionalContextTest
     {
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
         Kernel kernel = mock( Kernel.class );
+        ThreadToStatementContextBridge txBridge = mock( ThreadToStatementContextBridge.class );
+        KernelTransaction kernelTransaction = mockTransaction();
+        when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( kernelTransaction );
 
         Neo4jTransactionalContext transactionalContext =
                 new Neo4jTransactionalContext(
                         null,
                         guard,
-                        null,
+                        txBridge
+                        ,
                         null,
                         initialTransaction, initialStatement,
                         null,
@@ -94,7 +98,7 @@ public class Neo4jTransactionalContextTest
 
         transactionalContext.check();
 
-        verify( guard ).check( initialStatement );
+        verify( guard ).check( kernelTransaction );
     }
 
     @SuppressWarnings( "ConstantConditions" )
