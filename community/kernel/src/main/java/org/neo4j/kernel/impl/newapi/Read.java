@@ -122,7 +122,7 @@ abstract class Read implements TxStateHolder,
                 {
                 case range:
                     ValueGroup valueGroup = q.valueGroup();
-                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY ) && !reader.hasFullValuePrecision( q ) )
+                    if ( ( valueGroup == NUMBER || valueGroup == GEOMETRY) && !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }

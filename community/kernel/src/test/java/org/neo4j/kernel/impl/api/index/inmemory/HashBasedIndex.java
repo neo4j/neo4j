@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -42,6 +43,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyItera
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
+import static org.neo4j.values.storable.ValueGroup.NO_VALUE;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -86,26 +88,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return asResource( nodes == null ? emptyIterator() : toPrimitiveIterator( nodes.iterator() ) );
     }
 
-    private synchronized PrimitiveLongResourceIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private synchronized PrimitiveLongResourceIterator rangeSeek( Value lower, boolean includeLower, Value upper, boolean includeUpper,
+            ValueGroup targetValueGroup, IndexQuery query )
     {
-        IndexQuery query = IndexQuery.range( -1, lower, true, upper, true );
-
-        Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
-        {
-            Value key = Values.of( entry.getKey().get( 0 ) );
-            if ( query.acceptsValue( key ) )
-            {
-                nodeIds.addAll( entry.getValue() );
-            }
-        }
-        return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
-    }
-
-    private synchronized PrimitiveLongResourceIterator rangeSeekByString( String lower, boolean includeLower, String upper,
-            boolean includeUpper )
-    {
-        IndexQuery query = IndexQuery.range( -1, lower, includeLower, upper, includeUpper );
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
@@ -244,19 +229,25 @@ class HashBasedIndex extends InMemoryIndexImplementation
         case exact:
             return seek( ((IndexQuery.ExactPredicate) predicate).value() );
         case range:
-            switch ( predicate.valueGroup() )
+            switch ( predicate.valueGroup().category() )
             {
             case NUMBER:
                 IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-                return rangeSeekByNumberInclusive( np.from(), np.to() );
+                return rangeSeek( np.fromValue(), np.fromInclusive(), np.toValue(), np.toInclusive(), ValueGroup.NUMBER, np );
 
             case TEXT:
                 IndexQuery.TextRangePredicate srp = (IndexQuery.TextRangePredicate) predicate;
-                return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+                return rangeSeek( srp.fromValue(), srp.fromInclusive(), srp.toValue(), srp.toInclusive(), ValueGroup.TEXT, srp );
 
+            case TEMPORAL:
+                IndexQuery.RangePredicate trp = (IndexQuery.RangePredicate) predicate;
+                Value lower = trp.fromValue();
+                Value upper = trp.toValue();
+                return rangeSeek( lower, trp.fromInclusive(), upper, trp.toInclusive(), extractValueGroup( lower, upper ), trp );
+            case GEOMETRY:
             default:
                 throw new UnsupportedOperationException(
-                        format( "Range scan of valueGroup %s is not supported", predicate.valueGroup() ) );
+                        format( "Range scan of valueCategory %s is not supported", predicate.valueGroup().category() ) );
             }
         case stringPrefix:
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
@@ -309,5 +300,23 @@ class HashBasedIndex extends InMemoryIndexImplementation
     boolean hasSameContentsAs( InMemoryIndexImplementation other )
     {
         return this.data.equals( ((HashBasedIndex)other).data );
+    }
+
+    private ValueGroup extractValueGroup( Value o1, Value o2 )
+    {
+        if ( o1.valueGroup() != NO_VALUE && o2.valueGroup() != NO_VALUE )
+        {
+            assert o1.valueGroup() == o2.valueGroup() : "o1.valueGroup=" + o1.valueGroup() + ", o2.valueGroup=" + o2.valueGroup();
+            return o1.valueGroup();
+        }
+        else if ( o1.valueGroup() != NO_VALUE )
+        {
+            return o1.valueGroup();
+        }
+        else if ( o2.valueGroup() != NO_VALUE )
+        {
+            return o2.valueGroup();
+        }
+        throw new IllegalArgumentException( "Can't decide ValueGroup from null values" );
     }
 }

@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.values.storable;
 
-/**
- * Enum used for two purposes:
- * 1. As return value for {@link IndexCapability#orderCapability(org.neo4j.values.storable.ValueCategory...)}.
- * Only {@link #ASCENDING} and {@link #DESCENDING} is valid for this.
- * 2. As parameter for {@link Read#nodeIndexScan(IndexReference, NodeValueIndexCursor, IndexOrder)} and
- * {@link Read#nodeIndexSeek(IndexReference, NodeValueIndexCursor, IndexOrder, IndexQuery...)}. Where {@link #NONE} is used when
- * no ordering is available or required.
- */
-public enum IndexOrder
+public enum ValueCategory
 {
-    ASCENDING, DESCENDING, NONE
+    NUMBER,
+    TEXT,
+    GEOMETRY,
+    TEMPORAL,
+    REST,
+    UNKNOWN,
+    NO_CATEGORY
 }

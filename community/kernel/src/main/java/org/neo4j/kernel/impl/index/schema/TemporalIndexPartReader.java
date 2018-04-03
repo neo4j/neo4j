@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -47,7 +46,7 @@ class TemporalIndexPartReader<KEY extends NativeSchemaKey<KEY>> extends NativeSc
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( IndexCapability.NO_CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( TemporalIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override

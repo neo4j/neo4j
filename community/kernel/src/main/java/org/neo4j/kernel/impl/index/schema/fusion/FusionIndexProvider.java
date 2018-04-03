@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -197,15 +197,15 @@ public class FusionIndexProvider extends IndexProvider
         return new UnionIndexCapability( capabilities )
         {
             @Override
-            public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+            public IndexOrder[] orderCapability( ValueCategory... valueCategories )
             {
                 // No order capability when combining results from different indexes
-                if ( valueGroups.length == 1 && valueGroups[0] == ValueGroup.UNKNOWN )
+                if ( valueCategories.length == 1 && valueCategories[0] == ValueCategory.UNKNOWN )
                 {
                     return new IndexOrder[0];
                 }
                 // Otherwise union of capabilities
-                return super.orderCapability( valueGroups );
+                return super.orderCapability( valueCategories );
             }
         };
     }
