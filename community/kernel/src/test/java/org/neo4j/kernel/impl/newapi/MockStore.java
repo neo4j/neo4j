@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -417,6 +418,13 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         throw new UnsupportedOperationException();
@@ -430,6 +438,13 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public String[] relationshipExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
     }

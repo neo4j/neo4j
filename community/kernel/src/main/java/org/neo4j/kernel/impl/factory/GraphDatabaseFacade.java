@@ -226,7 +226,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                             idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
                     spi.autoIndexing().relationships() );
 
-            return new IndexManagerImpl( txBridge, idxProvider, nodeAutoIndexer, relAutoIndexer );
+            return new IndexManagerImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ), idxProvider,
+                    nodeAutoIndexer, relAutoIndexer );
         } );
 
         this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );

@@ -372,10 +372,8 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = bridge.get() )
-            {
-                statement.dataWriteOperations().nodeDelete( nodeId );
-            }
+
+            bridge.getKernelTransactionBoundToThisThread( true ).dataWrite().nodeDelete( nodeId );
             tx.success();
         }
     }
