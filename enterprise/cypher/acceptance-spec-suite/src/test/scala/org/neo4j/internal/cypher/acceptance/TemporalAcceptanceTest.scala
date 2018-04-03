@@ -131,7 +131,59 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     result.toList should equal(List(Map("$param" -> dateMap.asScala, "a" -> dateMap.get("a"), "b" -> dateMap.get("b"))))
   }
 
-  test("indexed date array should be readable from parameterized node property") {
+  test("should handle temporal array of size 1 as indexed property with array parameter") {
+    // Given
+    graph.createIndex("Occasion", "timeSpan")
+    createLabeledNode("Occasion")
+    graph.execute(
+      """MATCH (o:Occasion) SET o.timeSpan = [date("2018-04-01")]
+        |RETURN o.timeSpan as timeSpan""".stripMargin)
+
+    // When
+    val localConfig = Configs.All - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "timeSpan")
+        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = Map("param" ->
+        Array(LocalDate.of(2018, 4, 1))))
+
+    // Then
+    val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(List(
+      LocalDate.of(2018, 4, 1)
+    ))
+  }
+
+  test("should handle temporal array of size 1 as indexed property with list parameter") {
+    // Given
+    graph.createIndex("Occasion", "timeSpan")
+    createLabeledNode("Occasion")
+    graph.execute(
+      """MATCH (o:Occasion) SET o.timeSpan = [date("2018-04-01")]
+        |RETURN o.timeSpan as timeSpan""".stripMargin)
+
+    // When
+    val localConfig = Configs.All - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "timeSpan")
+        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = Map("param" ->
+        List(LocalDate.of(2018, 4, 1))))
+
+    // Then
+    val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(List(
+      LocalDate.of(2018, 4, 1)
+    ))
+  }
+
+  test("should handle temporal array as indexed property with array parameter") {
     // Given
     graph.createIndex("Occasion", "timeSpan")
     createLabeledNode("Occasion")
@@ -149,6 +201,33 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
       params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
+
+    // Then
+    val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList
+    dateList should equal(List(
+      LocalDate.of(2018, 4, 1),
+      LocalDate.of(2018, 4, 2))
+    )
+  }
+
+  test("should handle temporal array as indexed property with list parameter") {
+    // Given
+    graph.createIndex("Occasion", "timeSpan")
+    createLabeledNode("Occasion")
+    graph.execute(
+      """MATCH (o:Occasion) SET o.timeSpan = [date("2018-04-01"), date("2018-04-02")]
+        |RETURN o.timeSpan as timeSpan""".stripMargin)
+
+    // When
+    val localConfig = Configs.All - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (o:Occasion) WHERE o.timeSpan = $param RETURN o.timeSpan as timeSpan",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "timeSpan")
+        plan should useOperatorWithText("NodeIndexSeek", ":Occasion(timeSpan)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = Map("param" ->
+        List(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
     // Then
     val dateList = result.columnAs("timeSpan").toList.head.asInstanceOf[Iterable[LocalDate]].toList

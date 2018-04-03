@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{ZoneId, ZoneOffset}
+import java.time._
 
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 import org.neo4j.values.storable._
@@ -29,14 +29,21 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
   override val cypherComparisonSupport = true
 
   test("should seek") {
-    val conf =  Configs.Interpreted - Configs.OldAndRule
     createIndex()
-    assertSeek(DateValue.epochDate(10000), conf)
-    assertSeek(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC), conf)
-    assertSeek(LocalDateTimeValue.localDateTime(10000, 100), conf)
-    assertSeek(TimeValue.time(101010, ZoneOffset.UTC), conf)
-    assertSeek(LocalTimeValue.localTime(12345), conf)
-    assertSeek(DurationValue.duration(41, 32, 23, 14), Configs.All - Configs.OldAndRule)
+    assertSeek(DateValue.epochDate(10000))
+    assertSeek(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC))
+    assertSeek(LocalDateTimeValue.localDateTime(10000, 100))
+    assertSeek(TimeValue.time(101010, ZoneOffset.UTC))
+    assertSeek(LocalTimeValue.localTime(12345))
+    assertSeek(DurationValue.duration(41, 32, 23, 14))
+
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObject().asInstanceOf[LocalDate])))
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObject().asInstanceOf[LocalDate],
+                                      DateValue.epochDate(10001).asObject().asInstanceOf[LocalDate])))
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObject().asInstanceOf[ZonedDateTime])))
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObject().asInstanceOf[LocalDateTime])))
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObject().asInstanceOf[OffsetTime])))
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObject().asInstanceOf[LocalTime])))
   }
 
   test("should seek for arrays") {
@@ -143,13 +150,9 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     result.toList should equal(List(Map("n" -> node2)))
   }
 
-  def assertSeek(value: Value, config: TestConfiguration): Unit = {
+  def assertSeek(value: Value): Unit = {
     val node = createIndexedNode(value)
-    val query = s"MATCH (n:$LABEL) WHERE n.$PROPERTY = $$param RETURN n"
-    val result = executeWith(config, query, params = Map("param" -> value.asObject()),
-        planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"))
-      )
-    result.toList should equal(List(Map("n"-> node)))
+    assertSeekMatchFor(value, node)
   }
 
   def assertRangeScan(v1: Value, v2: Value, v3: Value, v4: Value): Unit = {
