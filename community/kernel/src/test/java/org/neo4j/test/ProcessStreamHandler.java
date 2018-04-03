@@ -54,16 +54,15 @@ public class ProcessStreamHandler
         this( process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler )
+    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler )
     {
         this( process, quiet, prefix, failureHandler, System.out, System.err );
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
+    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
     {
         this.process = process;
+
         this.out = new Thread( new StreamConsumer( process.getInputStream(), out, quiet, prefix, failureHandler ) );
         this.err = new Thread( new StreamConsumer( process.getErrorStream(), err, quiet, prefix, failureHandler ) );
     }
