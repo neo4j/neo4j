@@ -334,7 +334,7 @@ public class KernelTransactionTerminationTest
         }
     }
 
-    private static class TestKernelTransaction extends KernelTransactionImplementation
+    private static class  TestKernelTransaction extends KernelTransactionImplementation
     {
         final CommitTrackingMonitor monitor;
 

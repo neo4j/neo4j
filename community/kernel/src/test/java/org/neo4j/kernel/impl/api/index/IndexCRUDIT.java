@@ -35,17 +35,17 @@ import java.util.Set;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -87,12 +87,13 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        try ( Transaction tx = db.beginTx();
-                Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value1 ) ) ) ) );
@@ -128,12 +129,13 @@ public class IndexCRUDIT
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx();
-              Statement statement = ctxSupplier.get() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
-            int label = readOperations.labelGetForName( myLabel.name() );
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int propertyKey1 = tokenRead.propertyKey( indexProperty );
+            int label = tokenRead.nodeLabel( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
             assertThat( writer.updatesCommitted, equalTo( asSet(
                     IndexEntryUpdate.add( node.getId(), descriptor, Values.of( value ) ) ) ) );

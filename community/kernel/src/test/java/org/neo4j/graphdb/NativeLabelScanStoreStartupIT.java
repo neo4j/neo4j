@@ -28,7 +28,7 @@ import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -126,12 +126,10 @@ public class NativeLabelScanStoreStartupIT
         try ( Transaction transaction = dbRule.beginTx() )
         {
             node = dbRule.createNode( LABEL);
-            try ( Statement statement = dbRule.getDependencyResolver()
+             KernelTransaction ktx = dbRule.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class )
-                    .getKernelTransactionBoundToThisThread( true ).acquireStatement() )
-            {
-                labelId = statement.readOperations().labelGetForName( LABEL.name() );
-            }
+                    .getKernelTransactionBoundToThisThread( true );
+                labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
             transaction.success();
         }
         return node;

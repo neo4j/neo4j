@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -99,34 +99,31 @@ public abstract class StorageLayerTest
 
     protected int labelId( Label label )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( label.name() );
+            return ktx().tokenRead().nodeLabel( label.name() );
         }
     }
 
     protected int relationshipTypeId( RelationshipType type )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().relationshipTypeGetForName( type.name() );
+            return ktx().tokenRead().relationshipType( type.name() );
         }
     }
 
     protected int propertyKeyId( String propertyKey )
     {
-        try ( Transaction ignored = db.beginTx();
-                Statement statement = statement() )
+        try ( Transaction ignored = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propertyKey );
+            return ktx().tokenRead().propertyKey( propertyKey );
         }
     }
 
-    protected Statement statement()
+    protected KernelTransaction ktx()
     {
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 }

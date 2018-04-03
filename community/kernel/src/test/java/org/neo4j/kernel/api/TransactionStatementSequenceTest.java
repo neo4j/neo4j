@@ -36,10 +36,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 
     @Test
@@ -47,10 +47,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -58,10 +58,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
 
         // when / then
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
     }
 
     @Test
@@ -69,12 +69,12 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when
         try
         {
-            tx.acquireStatement().schemaWriteOperations();
+            tx.schemaWrite();
 
             fail( "expected exception" );
         }
@@ -91,12 +91,12 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when
         try
         {
-            tx.acquireStatement().dataWriteOperations();
+            tx.dataWrite();
 
             fail( "expected exception" );
         }
@@ -113,10 +113,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when / then
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -124,10 +124,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when / then
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
     }
 
     @Test
@@ -135,10 +135,10 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.write() );
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 
     @Test
@@ -146,9 +146,9 @@ public class TransactionStatementSequenceTest
     {
         // given
         KernelTransaction tx = kernelTransaction( AUTH_DISABLED );
-        tx.acquireStatement().schemaWriteOperations();
+        tx.schemaWrite();
 
         // when / then
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
     }
 }

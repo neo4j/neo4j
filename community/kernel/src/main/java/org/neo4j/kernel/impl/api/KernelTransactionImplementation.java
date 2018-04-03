@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
@@ -56,7 +57,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -108,7 +108,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, AssertOpen
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
     /*
      * IMPORTANT:
@@ -483,6 +483,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( reason != null )
         {
             throw new TransactionTerminatedException( reason );
+        }
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
         }
     }
 

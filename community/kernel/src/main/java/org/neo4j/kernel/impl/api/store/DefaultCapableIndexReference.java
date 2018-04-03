@@ -128,7 +128,7 @@ public class DefaultCapableIndexReference implements CapableIndexReference
     {
         boolean unique =  descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
         final SchemaDescriptor schema = descriptor.schema();
-        return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, null,
+        return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY, IndexProvider.UNDECIDED,
                 schema.keyId(), schema.getPropertyIds() );
     }
 }

@@ -172,6 +172,27 @@ public class KernelToken implements Token
         return Iterators.map( token -> new NamedToken( token.name(), token.id() ), store.relationshipTypeGetAllTokens());
     }
 
+    @Override
+    public int labelCount()
+    {
+        ktx.assertOpen();
+        return store.labelCount();
+    }
+
+    @Override
+    public int propertyKeyCount()
+    {
+        ktx.assertOpen();
+        return store.propertyKeyCount();
+    }
+
+    @Override
+    public int relationshipTypeCount()
+    {
+        ktx.assertOpen();
+        return store.relationshipTypeCount();
+    }
+
     private String checkValidTokenName( String name ) throws IllegalTokenNameException
     {
         if ( name == null || name.isEmpty() )

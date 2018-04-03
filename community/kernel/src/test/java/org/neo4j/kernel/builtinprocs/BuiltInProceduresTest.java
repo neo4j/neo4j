@@ -22,6 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
@@ -37,6 +38,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Read;
@@ -46,7 +49,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -55,9 +57,9 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -83,15 +85,14 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 public class BuiltInProceduresTest
 {
-    private final List<SchemaIndexDescriptor> indexes = new LinkedList<>();
-    private final List<SchemaIndexDescriptor> uniqueIndexes = new LinkedList<>();
+    private final List<IndexReference> indexes = new LinkedList<>();
+    private final List<IndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
     private final Map<Integer,String> relTypes = new HashMap<>();
 
     private final Read read = mock( Read.class );
-    private final ReadOperations readOperations = mock( ReadOperations.class );
     private final TokenRead tokens = mock( TokenRead.class );
     private final SchemaRead schemaRead = mock( SchemaRead.class );
     private final Statement statement = mock( Statement.class );
@@ -413,7 +414,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId, propId );
+        IndexReference index = DefaultIndexReference.general( labelId, propId );
         indexes.add( index );
     }
 
@@ -422,7 +423,7 @@ public class BuiltInProceduresTest
         int labelId = token( label, labels );
         int propId = token( propKey, propKeys );
 
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propId );
+        IndexReference index = DefaultIndexReference.unique( labelId, propId );
         uniqueIndexes.add( index );
         constraints.add( ConstraintDescriptorFactory.uniqueForLabel( labelId, propId ) );
     }
@@ -493,15 +494,35 @@ public class BuiltInProceduresTest
         when( tx.tokenRead() ).thenReturn( tokens );
         when( tx.dataRead() ).thenReturn( read );
         when( tx.schemaRead() ).thenReturn( schemaRead );
-        when( statement.readOperations() ).thenReturn( readOperations );
 
         when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
         when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
         when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( readOperations.indexesGetAll() ).thenAnswer(
+        when( schemaRead.indexesGetAll() ).thenAnswer(
                 i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
+        when( schemaRead.index( anyInt(), anyInt() )).thenAnswer(
+                (Answer<CapableIndexReference>) invocationOnMock -> {
+                    int label = invocationOnMock.getArgument( 0 );
+                    int prop = invocationOnMock.getArgument( 1 );
+                    for ( IndexReference index : indexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return new DefaultCapableIndexReference( index.isUnique(), null,
+                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                        }
+                    }
+                    for ( IndexReference index : uniqueIndexes )
+                    {
+                        if ( index.label() == label && prop == index.properties()[0] )
+                        {
+                            return new DefaultCapableIndexReference( index.isUnique(), null,
+                                    InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, label, prop );
+                        }
+                    }
+                    throw new AssertionError(  );
+                } );
         when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
-        when( readOperations.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when( tokens.propertyKeyName( anyInt() ) )
                 .thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
@@ -517,9 +538,7 @@ public class BuiltInProceduresTest
         when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
         when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
         when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( readOperations.indexGetState( any( SchemaIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.ONLINE );
-        when( readOperations.indexGetProviderDescriptor( any( SchemaIndexDescriptor.class ) ) )
-                .thenReturn( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
     }
 
     private Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
