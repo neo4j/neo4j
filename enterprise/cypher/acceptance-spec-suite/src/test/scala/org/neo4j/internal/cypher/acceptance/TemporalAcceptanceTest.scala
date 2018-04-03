@@ -733,7 +733,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotConstructWithArg(func: String, args: Seq[String]): Unit = {
     for (arg <- args) {
       val query = s"RETURN $func($arg)"
-      val validErrorMessages = Seq("Cannot assign", "cannot be selected together with", "cannot be specified without", "must be specified", "Builder state empty")
+      val validErrorMessages = Seq("Cannot assign", "cannot be selected together with", "cannot be specified without", "must be specified")
       withClue(s"Executing $query") {
         failWithError(failConf2, query, validErrorMessages, Seq("CypherTypeException", "InvalidArgumentException"))
       }

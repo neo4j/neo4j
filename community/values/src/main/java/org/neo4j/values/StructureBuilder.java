@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 import java.util.Map;
 
+import org.neo4j.values.utils.InvalidTemporalArgumentException;
 import org.neo4j.values.virtual.MapValue;
 
 public interface StructureBuilder<Input, Result>
@@ -31,6 +32,10 @@ public interface StructureBuilder<Input, Result>
 
     static <T> T build( StructureBuilder<AnyValue,T> builder, MapValue map )
     {
+        if ( map.size() == 0 )
+        {
+            throw new InvalidTemporalArgumentException( "At least one temporal unit must be specified." );
+        }
         return build( builder, map.entrySet() );
     }
 
