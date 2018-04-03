@@ -232,7 +232,7 @@ class EagerResult implements Result, QueryResultProvider
 
         EagerQueryResult()
         {
-            fields = originalResult.columns().toArray( new String[originalResult.columns().size()] );
+            fields = originalResult.columns().toArray( new String[0] );
         }
 
         @Override

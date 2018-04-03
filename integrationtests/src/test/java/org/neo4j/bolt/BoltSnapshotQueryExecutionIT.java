@@ -74,28 +74,22 @@ public class BoltSnapshotQueryExecutionIT
     @Test
     public void executeQueryWithSnapshotEngine()
     {
-        db = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory("withSnapshotEngine") )
-                .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
-                .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
-                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
-                .setConfig( GraphDatabaseSettings.snapshot_query, Settings.TRUE )
-                .newGraphDatabase();
-        initDatabase();
-        connectDirver();
-        verifyQueryExecution();
+        executeQuery( "withSnapshotEngine", Settings.TRUE );
     }
 
     @Test
     public void executeQueryWithoutSnapshotEngine()
     {
-        db = new EnterpriseGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory( "withoutSnapshotEngine" ) )
+        executeQuery( "withoutSnapshotEngine", Settings.FALSE );
+    }
+
+    private void executeQuery( String directory, String useSnapshotEngineSettingValue )
+    {
+        db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.directory( directory ) )
                 .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
                 .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
-                .setConfig( GraphDatabaseSettings.snapshot_query, Settings.FALSE )
-                .newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.snapshot_query, useSnapshotEngineSettingValue ).newGraphDatabase();
         initDatabase();
         connectDirver();
         verifyQueryExecution();
