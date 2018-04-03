@@ -51,7 +51,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -335,18 +334,16 @@ public class ClusterOverviewIT
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
         List<MemberInfo> infos = new ArrayList<>();
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
 
-            while ( itr.hasNext() )
-            {
-                Object[] row = itr.next();
-                List<String> addresses = (List<String>) row[1];
-                infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
-                        RoleInfo.valueOf( (String) row[2] ) ) );
-            }
+        RawIterator<Object[],ProcedureException> itr = transaction.procedures().procedureCallRead(
+                procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
+
+        while ( itr.hasNext() )
+        {
+            Object[] row = itr.next();
+            List<String> addresses = (List<String>) row[1];
+            infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
+                    RoleInfo.valueOf( (String) row[2] ) ) );
         }
 
         return infos;

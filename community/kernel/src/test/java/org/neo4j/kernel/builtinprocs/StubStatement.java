@@ -20,7 +20,6 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -55,12 +54,6 @@ public class StubStatement extends StubResourceManager implements Statement
 
     @Override
     public QueryRegistryOperations queryRegistration()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ProcedureCallOperations procedureCallOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

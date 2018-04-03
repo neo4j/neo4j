@@ -45,10 +45,4 @@ public interface Statement extends Resource, ResourceManager
      * @return interface exposing operations for associating metadata with this statement
      */
     QueryRegistryOperations queryRegistration();
-
-    /**
-     * @return interface exposing all procedure call operations.
-     */
-    ProcedureCallOperations procedureCallOperations();
-
 }

@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -123,12 +122,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     public ReadOperations readOperations()
     {
         assertAllows( AccessMode::allowsReads, "Read" );
-        return facade;
-    }
-
-    @Override
-    public ProcedureCallOperations procedureCallOperations()
-    {
         return facade;
     }
 
