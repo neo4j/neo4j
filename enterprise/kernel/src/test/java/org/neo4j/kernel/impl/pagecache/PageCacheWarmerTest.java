@@ -109,7 +109,7 @@ public class PageCacheWarmerTest
     public void doNotReheatAfterStop() throws IOException
     {
         try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
-                PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+              PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
             warmer.start();
@@ -122,7 +122,7 @@ public class PageCacheWarmerTest
     public void doNoProfileAfterStop() throws IOException
     {
         try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
-                PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+              PagedFile ignore = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
             warmer.start();
@@ -135,7 +135,7 @@ public class PageCacheWarmerTest
     public void profileAndReheatAfterRestart() throws IOException
     {
         try ( PageCache pageCache = pageCacheRule.getPageCache( fs, cfg );
-                PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
+              PagedFile pf = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.CREATE ) )
         {
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
             warmer.start();
@@ -283,7 +283,7 @@ public class PageCacheWarmerTest
                 assertThat( fileListing.size(), greaterThan( 0 ) );
                 assertFilesExists( fileListing );
                 warmer.profile();
-                try ( Resource secondListing = warmer.addFilesTo( new ArrayList<>(  ) ) )
+                try ( Resource secondListing = warmer.addFilesTo( new ArrayList<>() ) )
                 {
                     warmer.profile();
                     // This must hold even when there are file listings overlapping in time.
@@ -310,21 +310,21 @@ public class PageCacheWarmerTest
         Profile ab;
         Profile ba;
         List<Profile> sortedProfiles = Arrays.asList(
-                (aa = Profile.first( fileAA )),
-                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
-                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
-                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
-                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), aa.next(),
-                (ab = Profile.first( fileAB )),
-                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
-                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
-                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
-                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), ab.next(),
-                (ba = Profile.first( fileBA )),
-                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
-                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
-                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
-                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), ba.next()
+                aa = Profile.first( fileAA ),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(),
+                aa = aa.next(), aa = aa.next(), aa = aa.next(), aa = aa.next(), aa.next(),
+                ab = Profile.first( fileAB ),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(),
+                ab = ab.next(), ab = ab.next(), ab = ab.next(), ab = ab.next(), ab.next(),
+                ba = Profile.first( fileBA ),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(),
+                ba = ba.next(), ba = ba.next(), ba = ba.next(), ba = ba.next(), ba.next()
         );
         List<Profile> resortedProfiles = new ArrayList<>( sortedProfiles );
         Collections.shuffle( resortedProfiles );
