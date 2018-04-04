@@ -297,7 +297,6 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                          .map( pf -> pf.file().getParentFile() )
                          .distinct()
                          .flatMap( dir -> Profile.findProfilesInDirectory( fs, dir ) )
-                         .sorted()
                          .toArray( Profile[]::new );
     }
 }
