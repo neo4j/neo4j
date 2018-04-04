@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.catchup;
 import org.junit.Test;
 
 import java.net.ConnectException;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -209,9 +210,10 @@ public class CatchUpChannelPoolTest
         }
 
         @Override
-        public void close()
+        public CompletableFuture<Void> close()
         {
             closed = true;
+            return CompletableFuture.completedFuture( null );
         }
     }
 

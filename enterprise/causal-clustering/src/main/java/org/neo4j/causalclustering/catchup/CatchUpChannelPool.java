@@ -26,9 +26,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.concurrent.Futures;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.stream.Stream.concat;
@@ -119,9 +122,9 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
         idleChannels.computeIfAbsent( channel.destination(), address -> new LinkedList<>() ).add( channel );
     }
 
-    void close()
+    void close() throws ExecutionException, InterruptedException
     {
-        collectDisposed().forEach( Channel::close );
+        Futures.combine( collectDisposed().stream().map( Channel::close ).toArray( CompletableFuture[]::new ) ).get();
     }
 
     private synchronized Set<CHANNEL> collectDisposed()
@@ -145,6 +148,6 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
 
         boolean isActive();
 
-        void close();
+        CompletableFuture<Void> close();
     }
 }

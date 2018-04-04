@@ -20,20 +20,16 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.causalclustering.catchup.AbstractCatchupInboundHandler;
 import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
 import org.neo4j.causalclustering.catchup.CatchupClientProtocol;
 
-public class FileChunkHandler extends SimpleChannelInboundHandler<FileChunk>
+public class FileChunkHandler extends AbstractCatchupInboundHandler<FileChunk>
 {
-    private final CatchupClientProtocol protocol;
-    private CatchUpResponseHandler handler;
-
     public FileChunkHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
-        this.protocol = protocol;
-        this.handler = handler;
+        super( handler, protocol );
     }
 
     @Override

@@ -22,18 +22,15 @@ package org.neo4j.causalclustering.core.state.snapshot;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import org.neo4j.causalclustering.catchup.AbstractCatchupInboundHandler;
 import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
 import org.neo4j.causalclustering.catchup.CatchupClientProtocol;
 
-public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<CoreSnapshot>
+public class CoreSnapshotResponseHandler extends AbstractCatchupInboundHandler<CoreSnapshot>
 {
-    private final CatchupClientProtocol protocol;
-    private final CatchUpResponseHandler listener;
-
-    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler listener )
+    public CoreSnapshotResponseHandler( CatchupClientProtocol protocol, CatchUpResponseHandler handler )
     {
-        this.protocol = protocol;
-        this.listener = listener;
+        super( handler, protocol );
     }
 
     @Override
@@ -41,7 +38,7 @@ public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<Cor
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.CORE_SNAPSHOT ) )
         {
-            listener.onCoreSnapshot( coreSnapshot );
+            handler.onCoreSnapshot( coreSnapshot );
             protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
         }
         else

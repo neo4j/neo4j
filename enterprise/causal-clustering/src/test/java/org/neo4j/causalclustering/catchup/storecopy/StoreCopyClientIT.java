@@ -40,18 +40,22 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
+import org.neo4j.causalclustering.catchup.CatchUpClientException;
+import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.collection.primitive.base.Empty;
-import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.collection.Iterators;
@@ -71,6 +75,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +95,7 @@ public class StoreCopyClientIT
     private FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
     private Server catchupServer;
     private TestCatchupServerHandler serverHandler;
+    private CatchUpClient catchUpClient;
 
     private static void writeContents( FileSystemAbstraction fileSystemAbstraction, File file, String contents )
     {
@@ -119,7 +125,7 @@ public class StoreCopyClientIT
         catchupServer = new CatchupServerBuilder( protocol -> serverHandler ).listenAddress( listenAddress ).build();
         catchupServer.start();
 
-        CatchUpClient catchUpClient = new CatchupClientBuilder().build();
+        catchUpClient = new CatchupClientBuilder().build();
         catchUpClient.start();
 
         ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );

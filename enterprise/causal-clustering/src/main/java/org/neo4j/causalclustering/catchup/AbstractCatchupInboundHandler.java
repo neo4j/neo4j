@@ -17,33 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup.tx;
+package org.neo4j.causalclustering.catchup;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-import org.neo4j.causalclustering.catchup.AbstractCatchupInboundHandler;
-import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
-import org.neo4j.causalclustering.catchup.CatchupClientProtocol;
-
-public class TxPullResponseHandler extends AbstractCatchupInboundHandler<TxPullResponse>
+public abstract class AbstractCatchupInboundHandler<T> extends SimpleChannelInboundHandler<T>
 {
-    public TxPullResponseHandler( CatchupClientProtocol protocol,
-                                  CatchUpResponseHandler handler )
+    protected final CatchUpResponseHandler handler;
+    protected final CatchupClientProtocol protocol;
+
+    public AbstractCatchupInboundHandler( CatchUpResponseHandler catchUpResponseHandler, CatchupClientProtocol catchupClientProtocol )
     {
-        super( handler, protocol );
+        this.handler = catchUpResponseHandler;
+        this.protocol = catchupClientProtocol;
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final TxPullResponse msg )
+    public void channelInactive( ChannelHandlerContext ctx )
     {
-        if ( protocol.isExpecting( CatchupClientProtocol.State.TX_PULL_RESPONSE ) )
-        {
-            handler.onTxPullResponse( msg );
-            protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
-        }
-        else
-        {
-            ctx.fireChannelRead( msg );
-        }
+        handler.onChannelInactive();
+        protocol.expect( CatchupClientProtocol.State.MESSAGE_TYPE );
     }
 }
