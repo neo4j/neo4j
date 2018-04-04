@@ -29,7 +29,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -182,11 +182,10 @@ public class Schema extends TransactionProvidingApp
 
         int labelKey;
         int propertyKey;
-        try ( Statement statement = getServer().getStatement() )
-        {
-            labelKey = statement.readOperations().labelGetForName( labels[0].name() );
-            propertyKey = statement.readOperations().propertyKeyGetForName( property );
-        }
+
+        TokenRead tokenRead = getServer().getTokenRead();
+        labelKey = tokenRead.nodeLabel( labels[0].name() );
+        propertyKey = tokenRead.propertyKey( property );
 
         if ( labelKey == -1 )
         {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.kernel.api.ReadOperations;
 
 public class IdPrettyPrinter
 {
@@ -30,7 +30,7 @@ public class IdPrettyPrinter
 
     public static String label( int id )
     {
-        return id == ReadOperations.ANY_LABEL ? "" : (":label=" + id);
+        return id == Read.ANY_LABEL ? "" : (":label=" + id);
     }
 
     public static String propertyKey( int id )

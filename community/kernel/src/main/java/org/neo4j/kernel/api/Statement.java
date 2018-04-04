@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
 /**
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.
@@ -29,18 +28,6 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
  */
 public interface Statement extends Resource, ResourceManager
 {
-    /**
-     * @return interface exposing all read operations.
-     */
-    ReadOperations readOperations();
-
-    /**
-     * @return interface exposing all write operations about data such as nodes, relationships and properties.
-     * @throws InvalidTransactionTypeKernelException if type of this transaction have already been decided
-     * and it's of a different type..
-     */
-    DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException;
-
     /**
      * @return interface exposing operations for associating metadata with this statement
      */

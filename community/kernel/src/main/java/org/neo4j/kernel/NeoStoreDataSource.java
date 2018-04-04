@@ -48,8 +48,6 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
-import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -57,12 +55,9 @@ import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.kernel.impl.api.LockingStatementOperations;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
-import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -680,9 +675,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 indexConfigStore, kernelProvider, explicitIndexProviderLookup );
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
-                buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef,
-                        heapAllocationRef, indexingService ) );
+                buildStatementOperations(
+                        cpuClockRef,
+                        heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
 
@@ -864,44 +859,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
-            ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            ExplicitIndexStore explicitIndexStore, AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef,
-            IndexingService indexingService )
+    private StatementOperationParts buildStatementOperations( AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef )
     {
-        // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
-        // To it we add:
-        // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
-                autoIndexing, constraintIndexCreator, explicitIndexStore, indexingService );
-
         QueryRegistrationOperations queryRegistrationOperations =
                 new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
 
-        StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( databaseSchemaState ), null, stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, queryRegistrationOperations );
-        // + Constraints
-        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations( constraintSemantics, parts.entityWriteOperations(),
-                        parts.entityReadOperations(),
-                        parts.schemaWriteOperations(), parts.schemaReadOperations() );
-        // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext =
-                new DataIntegrityValidatingStatementOperations(
-                        parts.keyWriteOperations(), parts.schemaReadOperations(), constraintEnforcingEntityOperations );
-        parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null, null, null, null, null );
-        // + Locking
-        LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
-                parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
-                parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext, null, null, null, null );
-
-        return parts;
+        return new StatementOperationParts( queryRegistrationOperations );
     }
 
     @Override

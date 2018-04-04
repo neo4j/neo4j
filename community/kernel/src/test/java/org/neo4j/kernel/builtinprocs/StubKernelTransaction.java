@@ -39,24 +39,21 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 
 public class StubKernelTransaction implements KernelTransaction
 {
-    private final ReadOperations readOperations;
 
-    StubKernelTransaction( ReadOperations readOperations )
+    StubKernelTransaction( )
     {
-        this.readOperations = readOperations;
     }
 
     @Override
     public Statement acquireStatement()
     {
-        return new StubStatement( readOperations );
+        return new StubStatement( );
     }
 
     @Override

@@ -19,35 +19,15 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 
 public class StubStatement extends StubResourceManager implements Statement
 {
-    private final ReadOperations readOperations;
-
-    StubStatement( ReadOperations readOperations )
-    {
-        this.readOperations = readOperations;
-    }
 
     @Override
     public void close()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ReadOperations readOperations()
-    {
-        return readOperations;
-    }
-
-    @Override
-    public DataWriteOperations dataWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

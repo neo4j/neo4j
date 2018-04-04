@@ -31,25 +31,20 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.lang.String.format;
@@ -84,7 +79,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
-    private final AccessCapability accessCapability;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
@@ -97,43 +91,22 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private final VersionContextSupplier versionContextSupplier;
 
     public KernelStatement( KernelTransactionImplementation transaction,
-                            TxStateHolder txStateHolder,
-                            StorageStatement storeStatement,
-                            Procedures procedures,
-                            AccessCapability accessCapability,
-                            LockTracer systemLockTracer,
-                            StatementOperationParts statementOperations,
-                            ClockContext clockContext,
-                            VersionContextSupplier versionContextSupplier )
+            TxStateHolder txStateHolder,
+            StorageStatement storeStatement,
+            LockTracer systemLockTracer,
+            StatementOperationParts statementOperations,
+            ClockContext clockContext,
+            VersionContextSupplier versionContextSupplier )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
-        this.accessCapability = accessCapability;
-        this.facade = new OperationsFacade( transaction, this, procedures, statementOperations );
+        this.facade = new OperationsFacade( this, statementOperations );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
         this.versionContextSupplier = versionContextSupplier;
-    }
-
-    @Override
-    public ReadOperations readOperations()
-    {
-        assertAllows( AccessMode::allowsReads, "Read" );
-        return facade;
-    }
-
-    @Override
-    public DataWriteOperations dataWriteOperations()
-            throws InvalidTransactionTypeKernelException
-    {
-        accessCapability.assertCanWrite();
-
-        assertAllows( AccessMode::allowsWrites, "Write" );
-        transaction.upgradeToDataWrites();
-        return facade;
     }
 
     @Override

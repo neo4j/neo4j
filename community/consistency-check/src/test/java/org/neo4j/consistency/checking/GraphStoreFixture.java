@@ -43,7 +43,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -51,8 +51,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -423,7 +423,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         private void updateCounts( NodeRecord node, int delta )
         {
-            writer.incrementNodeCount( ReadOperations.ANY_LABEL, delta );
+            writer.incrementNodeCount( StatementConstants.ANY_LABEL, delta );
             for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes ) )
             {
                 writer.incrementNodeCount( (int)label, delta );

@@ -128,6 +128,18 @@ public class StubRead implements Read
     }
 
     @Override
+    public long nodesGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void singleRelationship( long reference, RelationshipScanCursor cursor )
     {
         throw new UnsupportedOperationException();

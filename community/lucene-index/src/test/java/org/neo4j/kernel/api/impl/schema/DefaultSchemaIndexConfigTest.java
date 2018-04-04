@@ -27,11 +27,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -103,14 +103,18 @@ public class DefaultSchemaIndexConfigTest
     private void assertIndexProvider( GraphDatabaseService db, IndexProvider.Descriptor expected ) throws IndexNotFoundKernelException
     {
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) db;
-        try ( Transaction tx = graphDatabaseAPI.beginTx();
-              Statement statement = graphDatabaseAPI.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            ReadOperations readOperations = statement.readOperations();
-            int labelId = readOperations.labelGetForName( LABEL.name() );
-            int propertyId = readOperations.propertyKeyGetForName( KEY );
-            IndexProvider.Descriptor descriptor = readOperations.indexGetProviderDescriptor( SchemaIndexDescriptorFactory.forLabel( labelId, propertyId ) );
-            assertEquals( "expected IndexProvider.Descriptor", expected, descriptor );
+            KernelTransaction ktx = graphDatabaseAPI.getDependencyResolver()
+                    .resolveDependency( ThreadToStatementContextBridge.class )
+                    .getKernelTransactionBoundToThisThread( true );
+            TokenRead tokenRead = ktx.tokenRead();
+            int labelId = tokenRead.nodeLabel( LABEL.name() );
+            int propertyId = tokenRead.propertyKey( KEY );
+            CapableIndexReference index = ktx.schemaRead().index( labelId, propertyId );
+
+            assertEquals( "expected IndexProvider.Descriptor", expected,
+                    new IndexProvider.Descriptor( index.providerKey(), index.providerVersion() ) );
             tx.success();
         }
     }

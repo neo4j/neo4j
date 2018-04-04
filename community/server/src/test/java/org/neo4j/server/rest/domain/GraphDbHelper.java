@@ -68,7 +68,7 @@ public class GraphDbHelper
         try ( Session session = kernel.beginSession( AnonymousContext.read() );
               org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit ) )
         {
-            return Math.toIntExact( tx.dataRead().countsForNode( Read.ANY_LABEL ) );
+            return Math.toIntExact( tx.dataRead().nodesGetCount() );
         }
         catch ( TransactionFailureException e )
         {
@@ -82,7 +82,7 @@ public class GraphDbHelper
         try ( Session session = kernel.beginSession( AnonymousContext.read() );
               org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( org.neo4j.internal.kernel.api.Transaction.Type.implicit ) )
         {
-            return Math.toIntExact( tx.dataRead().countsForRelationship( Read.ANY_LABEL, Read.ANY_RELATIONSHIP_TYPE, Read.ANY_LABEL ) );
+            return Math.toIntExact( tx.dataRead().relationshipsGetCount() );
         }
         catch ( TransactionFailureException e )
         {

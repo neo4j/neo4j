@@ -40,7 +40,6 @@ import static java.util.Arrays.stream;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
-import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
@@ -295,6 +294,32 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
         longSet.addAll( changes.getRemoved().iterator() );
         return longSet;
+    }
+
+    private static IndexQuery.ExactPredicate[] assertOnlyExactPredicates( IndexQuery[] predicates )
+    {
+        IndexQuery.ExactPredicate[] exactPredicates;
+        if ( predicates.getClass() == IndexQuery.ExactPredicate[].class )
+        {
+            exactPredicates = (IndexQuery.ExactPredicate[]) predicates;
+        }
+        else
+        {
+            exactPredicates = new IndexQuery.ExactPredicate[predicates.length];
+            for ( int i = 0; i < predicates.length; i++ )
+            {
+                if ( predicates[i] instanceof IndexQuery.ExactPredicate )
+                {
+                    exactPredicates[i] = (IndexQuery.ExactPredicate) predicates[i];
+                }
+                else
+                {
+                    // TODO: what to throw?
+                    throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
+                }
+            }
+        }
+        return exactPredicates;
     }
 
     public void release()
