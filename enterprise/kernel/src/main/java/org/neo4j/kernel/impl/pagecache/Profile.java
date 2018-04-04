@@ -53,7 +53,7 @@ final class Profile implements Comparable<Profile>
     @Override
     public int compareTo( Profile that )
     {
-        int compare = profileFile.compareTo( that.profileFile );
+        int compare = pagedFile.compareTo( that.pagedFile );
         return compare == 0 ? Long.compare( profileSequenceId, that.profileSequenceId ) : compare;
     }
 
@@ -72,6 +72,12 @@ final class Profile implements Comparable<Profile>
     public int hashCode()
     {
         return profileFile.hashCode();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Profile(" + profileSequenceId + " for " + pagedFile + ")";
     }
 
     File file()

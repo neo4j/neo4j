@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -243,6 +244,38 @@ public class PageCacheWarmerTest
             warmer.profile();
             assertFilesNotExists( fileListing );
         }
+    }
+
+    @Test
+    public void profilesMustSortByPagedFileAndProfileSequenceId()
+    {
+        File fileAA = new File( "aa" );
+        File fileAB = new File( "ab" );
+        File fileBA = new File( "ba" );
+        Profile aa;
+        Profile ab;
+        Profile ba;
+        List<Profile> sortedProfiles = Arrays.asList(
+                (aa = Profile.first( fileAA )),
+                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
+                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
+                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()),
+                (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), (aa = aa.next()), aa.next(),
+                (ab = Profile.first( fileAB )),
+                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
+                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
+                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()),
+                (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), (ab = ab.next()), ab.next(),
+                (ba = Profile.first( fileBA )),
+                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
+                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
+                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()),
+                (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), (ba = ba.next()), ba.next()
+        );
+        List<Profile> resortedProfiles = new ArrayList<>( sortedProfiles );
+        Collections.shuffle( resortedProfiles );
+        Collections.sort( resortedProfiles );
+        assertThat( resortedProfiles, is( sortedProfiles ) );
     }
 
     private void assertFilesExists( List<StoreFileMetadata> fileListing )
