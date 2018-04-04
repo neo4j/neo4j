@@ -84,11 +84,6 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return new LocalDateTimeValue( assertValidArgument( () -> ofInstant( ofEpochSecond( epochSecond, nano ), UTC ) ) );
     }
 
-    public static LocalDateTimeValue inUTC( DateTimeValue datetime )
-    {
-        return new LocalDateTimeValue( datetime.temporal().withZoneSameInstant( UTC ).toLocalDateTime() );
-    }
-
     public static LocalDateTimeValue parse( CharSequence text )
     {
         return parse( LocalDateTimeValue.class, PATTERN, LocalDateTimeValue::parse, text );

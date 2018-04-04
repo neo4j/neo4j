@@ -70,11 +70,6 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return new LocalTimeValue( assertValidArgument( () -> LocalTime.ofNanoOfDay( nanoOfDay ) ) );
     }
 
-    public static LocalTimeValue inUTC( TimeValue time )
-    {
-        return new LocalTimeValue( time.temporal().withOffsetSameInstant( UTC ).toLocalTime() );
-    }
-
     public static LocalTimeValue parse( CharSequence text )
     {
         return parse( LocalTimeValue.class, PATTERN, LocalTimeValue::parse, text );
