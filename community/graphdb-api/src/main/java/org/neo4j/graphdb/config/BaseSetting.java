@@ -70,12 +70,12 @@ public abstract class BaseSetting<T> implements Setting<T>
     }
 
     @Override
-    public boolean isSecret()
+    public boolean secret()
     {
         return this.isSecret;
     }
 
-    public void makeSecret( final boolean val )
+    public void setSecret( final boolean val )
     {
         this.isSecret = val;
     }

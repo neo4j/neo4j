@@ -42,6 +42,7 @@ public class ConfigValueTest
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
+        assertFalse( value.isSecret() );
     }
 
     @Test
@@ -51,6 +52,7 @@ public class ConfigValueTest
                 "description", true, false, false, Optional.empty(), false );
 
         assertTrue( value.internal() );
+        assertFalse( value.isSecret() );
     }
 
     @Test
@@ -64,6 +66,7 @@ public class ConfigValueTest
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
+        assertFalse( value.isSecret() );
     }
 
     @Test
@@ -77,6 +80,7 @@ public class ConfigValueTest
         assertTrue( value.deprecated() );
         assertEquals( "new_name", value.replacement().get() );
         assertFalse( value.internal() );
+        assertFalse( value.isSecret() );
     }
 
     @Test
@@ -90,7 +94,22 @@ public class ConfigValueTest
         assertTrue( value.deprecated() );
         assertEquals( "new_name", value.replacement().get() );
         assertFalse( value.internal() );
+        assertFalse( value.isSecret() );
         assertEquals( "a simple integer", value.valueDescription() );
+    }
+
+    @Test
+    public void handlesSecretValue() throws Exception
+    {
+        ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.of( "secret" ),
+                "description", false, false, false, Optional.empty(), true );
+
+        assertEquals( Optional.of( "secret" ), value.value() );
+        assertEquals( Secret.OBSFUCATED, value.toString() );
+        assertFalse( value.deprecated() );
+        assertEquals( Optional.empty(), value.replacement() );
+        assertFalse( value.internal() );
+        assertTrue( value.isSecret() );
     }
 
     @Test

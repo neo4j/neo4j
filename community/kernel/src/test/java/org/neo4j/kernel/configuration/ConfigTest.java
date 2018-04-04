@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,6 +50,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -390,6 +392,10 @@ public class ConfigTest
     {
         @Dynamic
         public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+
+        @Dynamic
+        @Secret
+        public static final Setting<String> secretSetting = setting( "password", STRING, "secret" );
     }
 
     @Test
@@ -469,5 +475,40 @@ public class ConfigTest
 
         verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
                              "new setting might not have taken effect: Boo", exception );
+    }
+
+    @Test
+    public void updateDynamicShouldWorkWithSecret() throws Exception
+    {
+        // Given a secret dynamic setting with a registered update listener
+        String settingName = MyDynamicSettings.secretSetting.name();
+        String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+
+        Log log = mock( Log.class );
+        config.setLogger( log );
+
+        AtomicInteger counter = new AtomicInteger( 0 );
+        config.registerDynamicUpdateListener( MyDynamicSettings.secretSetting, ( previous, update ) ->
+        {
+            counter.getAndIncrement();
+            assertThat( "Update listener should not see obsfucated secret", previous, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
+            assertThat( "Update listener should not see obsfucated secret", update, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
+        } );
+
+        // When changing secret settings three times
+        config.updateDynamicSetting( settingName, "another", ORIGIN );
+        config.updateDynamicSetting( settingName, "secret2", ORIGIN );
+        config.updateDynamicSetting( settingName, "", ORIGIN );
+
+        // Then we should see obsfucated log messages
+        InOrder order = inOrder( log );
+        order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBSFUCATED + ")", Secret.OBSFUCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, Secret.OBSFUCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, "default (" + Secret.OBSFUCATED + ")", ORIGIN );
+        verifyNoMoreInteractions( log );
+
+        // And see 3 calls to the update listener
+        assertThat( counter.get(), is( 3 ) );
     }
 }

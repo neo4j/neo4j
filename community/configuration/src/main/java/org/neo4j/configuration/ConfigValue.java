@@ -77,7 +77,7 @@ public class ConfigValue
     @Nonnull
     public Optional<String> valueAsString()
     {
-        return value.map( ConfigValue::valueToString );
+        return this.isSecret() ? Optional.of( Secret.OBSFUCATED ) : value.map( ConfigValue::valueToString );
     }
 
     @Override

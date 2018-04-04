@@ -397,7 +397,7 @@ public class Config implements DiagnosticsProvider, Configuration
         // Find secret settings
         configOptions.stream()
                 .map( ConfigOptions::settingGroup )
-                .filter( SettingGroup::isSecret )
+                .filter( SettingGroup::secret )
                 .filter( BaseSetting.class::isInstance )
                 .map( BaseSetting.class::cast )
                 .forEach( setting -> secrets.add( setting.name() ) );
@@ -646,9 +646,12 @@ public class Config implements DiagnosticsProvider, Configuration
                 }
                 newValue = update;
             }
+            //TODO: check if this is correct
+            String oldValueForLog = obsfucateIfSecret( setting, oldValue );
+            String newValueForLog = obsfucateIfSecret( setting, newValue );
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
-                    setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
-                    newValueIsDefault ? "default (" + newValue + ")" : newValue, origin );
+                    setting, oldValueIsDefault ? "default (" + oldValueForLog + ")" : oldValueForLog,
+                    newValueIsDefault ? "default (" + newValueForLog + ")" : newValueForLog, origin );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
@@ -761,7 +764,12 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private String obsfucateIfSecret( Map.Entry<String,String> param )
     {
-        return secrets.contains( param.getKey() ) ? Secret.OBSFUCATED : param.getValue();
+        return obsfucateIfSecret( param.getKey(), param.getValue() );
+    }
+
+    private String obsfucateIfSecret( String key, String value )
+    {
+        return secrets.contains( key ) ? Secret.OBSFUCATED : value;
     }
 
     /**
