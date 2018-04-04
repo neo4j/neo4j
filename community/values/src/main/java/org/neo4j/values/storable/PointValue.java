@@ -22,12 +22,14 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.MapValue;
 
@@ -47,7 +49,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         {
             if ( !Double.isFinite( c ) )
             {
-                throw new IllegalArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString(coordinate) );
+                throw new InvalidValuesArgumentException( "Cannot create a point with non-finite coordinate values: " + Arrays.toString(coordinate) );
             }
         }
     }
@@ -291,7 +293,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             // Merge InputFields: Data fields override header fields
             if ( !(fieldsFromHeader instanceof PointCSVHeaderInformation) )
             {
-                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+                throw new InvalidValuesArgumentException( "Wrong header information type: " + fieldsFromHeader );
             }
             fieldsFromData.mergeWithHeader( (PointCSVHeaderInformation) fieldsFromHeader );
         }
@@ -311,7 +313,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         int sridValue = fields.srid;
         if ( crsValue != null && sridValue != -1 )
         {
-            throw new IllegalArgumentException( "Cannot specify both CRS and SRID" );
+            throw new InvalidValuesArgumentException( "Cannot specify both CRS and SRID" );
         }
         else if ( crsValue != null )
         {
@@ -363,7 +365,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             if ( !crs.isGeographic() )
             {
-                throw new IllegalArgumentException( "Geographic points does not support coordinate reference system: " + crs +
+                throw new InvalidValuesArgumentException( "Geographic points does not support coordinate reference system: " + crs +
                         ". This is set either in the csv header or the actual data column" );
             }
         }
@@ -371,28 +373,28 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         {
             if ( crs == CoordinateReferenceSystem.Cartesian )
             {
-                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.Cartesian.getName() + " point must contain 'x' and 'y'" );
+                throw new InvalidValuesArgumentException( "A " + CoordinateReferenceSystem.Cartesian.getName() + " point must contain 'x' and 'y'" );
             }
             else if ( crs == CoordinateReferenceSystem.Cartesian_3D )
             {
-                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.Cartesian_3D.getName() + " point must contain 'x', 'y' and 'z'" );
+                throw new InvalidValuesArgumentException( "A " + CoordinateReferenceSystem.Cartesian_3D.getName() + " point must contain 'x', 'y' and 'z'" );
             }
             else if ( crs == CoordinateReferenceSystem.WGS84 )
             {
-                throw new IllegalArgumentException( "A " + CoordinateReferenceSystem.WGS84.getName() + " point must contain 'latitude' and 'longitude'" );
+                throw new InvalidValuesArgumentException( "A " + CoordinateReferenceSystem.WGS84.getName() + " point must contain 'latitude' and 'longitude'" );
             }
             else if ( crs == CoordinateReferenceSystem.WGS84_3D )
             {
-                throw new IllegalArgumentException(
+                throw new InvalidValuesArgumentException(
                         "A " + CoordinateReferenceSystem.WGS84_3D.getName() + " point must contain 'latitude', 'longitude' and 'height'" );
             }
-            throw new IllegalArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+            throw new InvalidValuesArgumentException( "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
         }
 
         if ( crs.getDimension() != coordinates.length )
         {
-            throw new IllegalArgumentException( "Cannot create point with " + crs.getDimension() + "D coordinate reference system and " + coordinates.length +
-                    " coordinates. Please consider using equivalent " + coordinates.length + "D coordinate reference system" );
+            throw new InvalidValuesArgumentException( "Cannot create point with " + crs.getDimension() + "D coordinate reference system and "
+                    + coordinates.length + " coordinates. Please consider using equivalent " + coordinates.length + "D coordinate reference system" );
         }
         return Values.pointValue( crs, coordinates );
     }
@@ -421,7 +423,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         case "srid":
             return Values.intValue( crs.getCode() );
         default:
-            throw new IllegalArgumentException( "No such field: " + fieldName );
+            throw new InvalidValuesArgumentException( "No such field: " + fieldName );
         }
     }
 
@@ -429,11 +431,11 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     {
         if ( onlyGeographic && !this.getCoordinateReferenceSystem().isGeographic() )
         {
-            throw new IllegalArgumentException( "Field: " + fieldName + " is not available on cartesian point: " + this );
+            throw new InvalidValuesArgumentException( "Field: " + fieldName + " is not available on cartesian point: " + this );
         }
         else if ( n >= this.coordinate().length )
         {
-            throw new IllegalArgumentException( "Field: " + fieldName + " is not available on point: " + this );
+            throw new InvalidValuesArgumentException( "Field: " + fieldName + " is not available on point: " + this );
         }
         else
         {
@@ -456,7 +458,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         {
             if ( key != null )
             {
-                throw new IllegalArgumentException( String.format( "Duplicate field '%s' is not allowed." , fieldName ) );
+                throw new InvalidValuesArgumentException( String.format( "Duplicate field '%s' is not allowed." , fieldName ) );
             }
         }
 
@@ -476,7 +478,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             }
             else
             {
-                throw new IllegalArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
             }
         }
 
@@ -543,7 +545,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             case "srid":
                 if ( srid != -1 )
                 {
-                    throw new IllegalArgumentException( "Duplicate field 'srid' is not allowed." );
+                    throw new InvalidValuesArgumentException( "Duplicate field 'srid' is not allowed." );
                 }
                 srid = (int) value;
                 break;
@@ -565,10 +567,10 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             case "longitude":
             case "latitude":
             case "height":
-                assignFloatingPoint( key, Double.parseDouble( value ) );
+                assignFloatingPoint( key, assertConvertible( () -> Double.parseDouble( value ) ) );
                 break;
             case "srid":
-                assignIntegral( key, Integer.parseInt( value ) );
+                assignIntegral( key, assertConvertible( () -> Integer.parseInt( value ) ) );
                 break;
             default:
                 throwOnUnrecognizedKey( key );
@@ -577,7 +579,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
         private void throwOnUnrecognizedKey( String key )
         {
-            throw new IllegalArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
+            throw new InvalidValuesArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
         }
 
         void mergeWithHeader( PointCSVHeaderInformation header )
@@ -590,6 +592,18 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             this.latitude = this.latitude == null ? header.latitude : this.latitude;
             this.height = this.height == null ? header.height : this.height;
             this.srid = this.srid == -1 ? header.srid : this.srid;
+        }
+    }
+
+    private static <T extends Number> T assertConvertible( Supplier<T> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( NumberFormatException e )
+        {
+            throw new InvalidValuesArgumentException( e.getMessage(), e );
         }
     }
 }
