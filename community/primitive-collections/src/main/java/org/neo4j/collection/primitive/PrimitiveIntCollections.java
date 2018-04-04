@@ -240,20 +240,6 @@ public class PrimitiveIntCollections
         return array;
     }
 
-    private static final IntIterator EMPTY = new PrimitiveIntBaseIterator()
-    {
-        @Override
-        protected boolean fetchNext()
-        {
-            return false;
-        }
-    };
-
-    public static IntIterator emptyIterator()
-    {
-        return EMPTY;
-    }
-
     public static IntIterator toPrimitiveIterator( final Iterator<Integer> iterator )
     {
         return new PrimitiveIntBaseIterator()
@@ -271,30 +257,6 @@ public class PrimitiveIntCollections
                     return next( nextValue.intValue() );
                 }
                 return false;
-            }
-        };
-    }
-
-    public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final IntIterator source )
-    {
-        return new Iterator<T>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
             }
         };
     }
