@@ -53,15 +53,12 @@ class TestCatchupServerHandler implements CatchupServerHandler
     private final Set<FakeFile> indexFiles = new HashSet<>();
     private final Map<String,Integer> pathToRequestCountMapping = new HashMap<>();
     private final Log log;
-    final CatchupServerProtocol protocol;
     private TestDirectory testDirectory;
     private FileSystemAbstraction fileSystemAbstraction;
 
-    TestCatchupServerHandler( LogProvider logProvider, CatchupServerProtocol protocol, TestDirectory testDirectory,
-            FileSystemAbstraction fileSystemAbstraction )
+    TestCatchupServerHandler( LogProvider logProvider, TestDirectory testDirectory, FileSystemAbstraction fileSystemAbstraction )
     {
         log = logProvider.getLog( TestCatchupServerHandler.class );
-        this.protocol = protocol;
         this.testDirectory = testDirectory;
         this.fileSystemAbstraction = fileSystemAbstraction;
     }
@@ -82,7 +79,7 @@ class TestCatchupServerHandler implements CatchupServerHandler
     }
 
     @Override
-    public ChannelHandler getStoreFileRequestHandler()
+    public ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new SimpleChannelInboundHandler<GetStoreFileRequest>()
         {
@@ -95,14 +92,14 @@ class TestCatchupServerHandler implements CatchupServerHandler
                 {
                     if ( handleFileDoesNotExist( channelHandlerContext, getStoreFileRequest ) )
                     {
-                        protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                        catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                         return;
                     }
                     handleFileExists( channelHandlerContext, getStoreFileRequest.file() );
                 }
                 finally
                 {
-                    protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                    catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                 }
             }
         };
@@ -117,12 +114,6 @@ class TestCatchupServerHandler implements CatchupServerHandler
             log.info( "FakeServer failing for file %s", getStoreFileRequest.file() );
             failed( channelHandlerContext );
             return true;
-        }
-        else if ( file.getRemainingNoResponse() > 0 )
-        {
-            log.info( "FakeServer not going to response for file %s", getStoreFileRequest.file() );
-            file.setRemainingNoResponse( file.getRemainingNoResponse() - 1 );
-            return true; // no response
         }
         return false;
     }
@@ -164,19 +155,19 @@ class TestCatchupServerHandler implements CatchupServerHandler
     }
 
     @Override
-    public ChannelHandler txPullRequestHandler()
+    public ChannelHandler txPullRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new ChannelInboundHandlerAdapter();
     }
 
     @Override
-    public ChannelHandler getStoreIdRequestHandler()
+    public ChannelHandler getStoreIdRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new ChannelInboundHandlerAdapter();
     }
 
     @Override
-    public ChannelHandler storeListingRequestHandler()
+    public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new SimpleChannelInboundHandler<PrepareStoreCopyRequest>()
         {
@@ -192,13 +183,13 @@ class TestCatchupServerHandler implements CatchupServerHandler
                 PrimitiveLongSet indexIds = Primitive.longSet();
                 indexIds.add( 13 );
                 channelHandlerContext.writeAndFlush( PrepareStoreCopyResponse.success( files, indexIds, transactionId ) );
-                protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
             }
         };
     }
 
     @Override
-    public ChannelHandler getIndexSnapshotRequestHandler()
+    public ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new SimpleChannelInboundHandler<GetIndexFilesRequest>()
         {
@@ -220,14 +211,14 @@ class TestCatchupServerHandler implements CatchupServerHandler
                 }
                 finally
                 {
-                    protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                    catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                 }
             }
         };
     }
 
     @Override
-    public Optional<ChannelHandler> snapshotHandler()
+    public Optional<ChannelHandler> snapshotHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return Optional.empty();
     }

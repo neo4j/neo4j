@@ -316,13 +316,13 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
 
-        Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory = state -> new RegularCatchupServerHandler( state, platformModule.monitors,
+        RegularCatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, null, new CheckpointerSupplier( platformModule.dependencies ) );
 
         CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( serverPipelineBuilderFactory,
-                logProvider, handlerFactory );
+                logProvider, catchupServerHandler );
 
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> serverProtocolInstallerRepository = new ProtocolInstallerRepository<>(
                 singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );

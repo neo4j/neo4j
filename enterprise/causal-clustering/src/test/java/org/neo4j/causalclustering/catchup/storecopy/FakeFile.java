@@ -79,26 +79,6 @@ class FakeFile
     }
 
     /**
-     * Number of times that requests for this file will result in communication breakdown (i.e. no response)
-     *
-     * @return
-     */
-    int getRemainingNoResponse()
-    {
-        return remainingNoResponse;
-    }
-
-    void setRemainingNoResponse( int remainingNoResponse )
-    {
-        this.remainingNoResponse = remainingNoResponse;
-    }
-
-    public void setRelativePath( Path relativePath )
-    {
-        this.relativePath = relativePath;
-    }
-
-    /**
      * Clear response that the file has failed to copy (safe connection close, communication, ...)
      *
      * @return

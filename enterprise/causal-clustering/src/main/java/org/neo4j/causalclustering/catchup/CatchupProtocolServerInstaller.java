@@ -27,7 +27,6 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
@@ -60,10 +59,10 @@ public class CatchupProtocolServerInstaller implements ProtocolInstaller<Orienta
 
     public static class Factory extends ProtocolInstaller.Factory<Orientation.Server,CatchupProtocolServerInstaller>
     {
-        public Factory( NettyPipelineBuilderFactory pipelineBuilderFactory, LogProvider logProvider,
-                Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory )
+        public Factory( NettyPipelineBuilderFactory pipelineBuilderFactory, LogProvider logProvider, CatchupServerHandler catchupServerHandler )
         {
-            super( APPLICATION_PROTOCOL, modifiers -> new CatchupProtocolServerInstaller( pipelineBuilderFactory, modifiers, logProvider, handlerFactory ) );
+            super( APPLICATION_PROTOCOL,
+                    modifiers -> new CatchupProtocolServerInstaller( pipelineBuilderFactory, modifiers, logProvider, catchupServerHandler ) );
         }
     }
 
@@ -72,23 +71,22 @@ public class CatchupProtocolServerInstaller implements ProtocolInstaller<Orienta
     private final Log log;
 
     private final LogProvider logProvider;
-    private final Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory;
+    private final CatchupServerHandler catchupServerHandler;
 
-    CatchupProtocolServerInstaller( NettyPipelineBuilderFactory pipelineBuilderFactory, List<ModifierProtocolInstaller<Orientation.Server>> modifiers,
-            LogProvider logProvider, Function<CatchupServerProtocol,CatchupServerHandler> handlerFactory )
+    private CatchupProtocolServerInstaller( NettyPipelineBuilderFactory pipelineBuilderFactory, List<ModifierProtocolInstaller<Orientation.Server>> modifiers,
+            LogProvider logProvider, CatchupServerHandler catchupServerHandler )
     {
         this.pipelineBuilderFactory = pipelineBuilderFactory;
         this.modifiers = modifiers;
         this.log = logProvider.getLog( getClass() );
         this.logProvider = logProvider;
-        this.handlerFactory = handlerFactory;
+        this.catchupServerHandler = catchupServerHandler;
     }
 
     @Override
     public void install( Channel channel ) throws Exception
     {
         CatchupServerProtocol state = new CatchupServerProtocol();
-        CatchupServerHandler handler = handlerFactory.apply( state );
 
         pipelineBuilderFactory.server( channel, log )
                 .modify( modifiers )
@@ -106,12 +104,12 @@ public class CatchupProtocolServerInstaller implements ProtocolInstaller<Orienta
                 .add( "in_req_type", serverMessageHandler( state ) )
                 .add( "dec_req_dispatch", requestDecoders( state ) )
                 .add( "out_chunked_write", new ChunkedWriteHandler() )
-                .add( "hnd_req_tx", handler.txPullRequestHandler() )
-                .add( "hnd_req_store_id", handler.getStoreIdRequestHandler() )
-                .add( "hnd_req_store_listing", handler.storeListingRequestHandler() )
-                .add( "hnd_req_store_file", handler.getStoreFileRequestHandler() )
-                .add( "hnd_req_index_snapshot", handler.getIndexSnapshotRequestHandler() )
-                .add( "hnd_req_snapshot", handler.snapshotHandler().map( Collections::singletonList ).orElse( emptyList() ) )
+                .add( "hnd_req_tx", catchupServerHandler.txPullRequestHandler( state ) )
+                .add( "hnd_req_store_id", catchupServerHandler.getStoreIdRequestHandler( state ) )
+                .add( "hnd_req_store_listing", catchupServerHandler.storeListingRequestHandler( state ) )
+                .add( "hnd_req_store_file", catchupServerHandler.getStoreFileRequestHandler( state ) )
+                .add( "hnd_req_index_snapshot", catchupServerHandler.getIndexSnapshotRequestHandler( state ) )
+                .add( "hnd_req_snapshot", catchupServerHandler.snapshotHandler( state ).map( Collections::singletonList ).orElse( emptyList() ) )
                 .install();
     }
 

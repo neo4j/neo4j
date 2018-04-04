@@ -68,9 +68,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -107,7 +105,7 @@ public class StoreCopyClientIT
     @Before
     public void setup()
     {
-        serverHandler = new TestCatchupServerHandler( logProvider, new CatchupServerProtocol(), testDirectory, fsa );
+        serverHandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa );
         serverHandler.addFile( fileA );
         serverHandler.addFile( fileB );
         serverHandler.addIndexFile( indexFileA );
@@ -116,7 +114,7 @@ public class StoreCopyClientIT
         writeContents( fsa, relative( indexFileA.getFilename() ), indexFileA.getContent() );
 
         ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
-        catchupServer = new CatchupServerBuilder( protocol -> serverHandler ).listenAddress( listenAddress ).build();
+        catchupServer = new CatchupServerBuilder( serverHandler ).listenAddress( listenAddress ).build();
         catchupServer.start();
 
         CatchUpClient catchUpClient = new CatchupClientBuilder().build();
@@ -180,27 +178,6 @@ public class StoreCopyClientIT
     }
 
     @Test
-    public void reconnectingWorks() throws StoreCopyFailedException, IOException
-    {
-        // given local client has a store
-        InMemoryStoreStreamProvider storeFileStream = new InMemoryStoreStreamProvider();
-
-        // and file B is broken once (after retry it works)
-        fileB.setRemainingNoResponse( 1 );
-
-        // when catchup is performed for valid transactionId and StoreId
-        CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
-
-        // then the catchup is possible to complete
-        assertEquals( fileContent( relative( fileA.getFilename() ) ), clientFileContents( storeFileStream, fileA.getFilename() ) );
-        assertEquals( fileContent( relative( fileB.getFilename() ) ), clientFileContents( storeFileStream, fileB.getFilename() ) );
-
-        // and verify file was requested more than once
-        assertThat( serverHandler.getRequestCount( fileB.getFilename() ), greaterThan( 1 ) );
-    }
-
-    @Test
     public void shouldNotAppendToFileWhenRetryingWithNewFile() throws Throwable
     {
         // given
@@ -211,10 +188,10 @@ public class StoreCopyClientIT
         Iterator<String> contents = Iterators.iterator( unfinishedContent, finishedContent );
 
         // and
-        TestCatchupServerHandler halfWayFailingServerhandler = new TestCatchupServerHandler( logProvider, new CatchupServerProtocol(), testDirectory, fsa )
+        TestCatchupServerHandler halfWayFailingServerhandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa )
         {
             @Override
-            public ChannelHandler getStoreFileRequestHandler()
+            public ChannelHandler getStoreFileRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<GetStoreFileRequest>()
                 {
@@ -238,7 +215,7 @@ public class StoreCopyClientIT
                         StoreCopyFinishedResponse.Status status =
                                 contents.hasNext() ? StoreCopyFinishedResponse.Status.E_UNKNOWN : StoreCopyFinishedResponse.Status.SUCCESS;
                         new StoreFileStreamingProtocol().end( ctx, status );
-                        protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                        catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
 
                     private void sendFile( ChannelHandlerContext ctx, File file, PageCache pageCache )
@@ -252,7 +229,7 @@ public class StoreCopyClientIT
             }
 
             @Override
-            public ChannelHandler storeListingRequestHandler()
+            public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<PrepareStoreCopyRequest>()
                 {
@@ -261,13 +238,13 @@ public class StoreCopyClientIT
                     {
                         ctx.write( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE );
                         ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, new Empty.EmptyPrimitiveLongSet(), 1 ) );
-                        protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+                        catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
                 };
             }
 
             @Override
-            public ChannelHandler getIndexSnapshotRequestHandler()
+            public ChannelHandler getIndexSnapshotRequestHandler( CatchupServerProtocol catchupServerProtocol )
             {
                 return new SimpleChannelInboundHandler<GetIndexFilesRequest>()
                 {
@@ -286,7 +263,7 @@ public class StoreCopyClientIT
         {
             // when
             ListenSocketAddress listenAddress = new ListenSocketAddress( "localhost", PortAuthority.allocatePort() );
-            halfWayFailingServer = new CatchupServerBuilder( protocol -> halfWayFailingServerhandler ).listenAddress( listenAddress ).build();
+            halfWayFailingServer = new CatchupServerBuilder( halfWayFailingServerhandler ).listenAddress( listenAddress ).build();
             halfWayFailingServer.start();
 
             CatchupAddressProvider addressProvider =
