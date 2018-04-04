@@ -209,7 +209,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT );
+        return !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT );
     }
 
     void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException

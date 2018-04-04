@@ -55,7 +55,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     {
         RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
         RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
-        if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
+        if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = indexProvider.directoryStructure().rootDirectory();
             if ( schemaIndexDirectory != null )
