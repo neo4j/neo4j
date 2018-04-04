@@ -30,27 +30,27 @@ public enum Capability
     /**
      * Store has schema support
      */
-    SCHEMA( false, CapabilityType.STORE ),
+    SCHEMA( CapabilityType.STORE ),
 
     /**
      * Store has dense node support
      */
-    DENSE_NODES( false, CapabilityType.FORMAT, CapabilityType.STORE ),
+    DENSE_NODES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
      * 3 bytes relationship type support
      */
-    RELATIONSHIP_TYPE_3BYTES( false, CapabilityType.FORMAT, CapabilityType.STORE ),
+    RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
      * Lucene version 3.x
      */
-    LUCENE_3( false, CapabilityType.INDEX ),
+    LUCENE_3( CapabilityType.INDEX ),
 
     /**
      * Lucene version 5.x
      */
-    LUCENE_5( false, CapabilityType.INDEX ),
+    LUCENE_5( CapabilityType.INDEX ),
 
     /**
      * Point Geometries are an addition to the format, not a change
@@ -65,10 +65,15 @@ public enum Capability
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( false, CapabilityType.FORMAT );
+    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
 
     private final CapabilityType[] types;
     private boolean additive;
+
+    Capability( CapabilityType... types )
+    {
+        this( false, types );
+    }
 
     Capability( boolean additive, CapabilityType... types )
     {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -137,19 +136,15 @@ public abstract class BaseRecordFormats implements RecordFormats
             return true;
         }
 
-        Set<Capability> removedCapabilities =
-                new HashSet<>( myFormatCapabilities ).stream().filter( capability -> !otherFormatCapabilities.contains( capability ) ).collect( toSet() );
-        Set<Capability> addedCapabilities =
-                new HashSet<>( otherFormatCapabilities ).stream().filter( capability -> !myFormatCapabilities.contains( capability ) ).collect( toSet() );
-        boolean allAddedAreAdditive = addedCapabilities.stream().allMatch( Capability::isAdditive );
-        if ( removedCapabilities.isEmpty() && allAddedAreAdditive )
-        {
-            // Even if capabilities of the two aren't the same then there's a special case where if the additional
-            // capabilities of the other format are all additive then they are also compatible because no data
-            // in the existing store needs to be migrated.
-            return true;
-        }
-        return false;
+        boolean capabilitiesNotRemoved = otherFormatCapabilities.containsAll( myFormatCapabilities );
+
+        otherFormatCapabilities.removeAll( myFormatCapabilities );
+        boolean allAddedAreAdditive = otherFormatCapabilities.stream().allMatch( Capability::isAdditive );
+
+        // Even if capabilities of the two aren't the same then there's a special case where if the additional
+        // capabilities of the other format are all additive then they are also compatible because no data
+        // in the existing store needs to be migrated.
+        return capabilitiesNotRemoved && allAddedAreAdditive;
     }
 
     @Override
