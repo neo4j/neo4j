@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive;
+package org.neo4j.bolt.v1.messaging;
 
 import java.util.Arrays;
 
@@ -26,7 +26,7 @@ import java.util.Arrays;
  * for an ordered, primitive-based key-value array. The array both
  * maintains insertion order and ensures key values are unique.
  */
-public class PrimitiveLongIntKeyValueArray
+class PrimitiveLongIntKeyValueArray
 {
     public static final int DEFAULT_INITIAL_CAPACITY = 100;
     public static final double DEFAULT_GROWTH_FACTOR = 0.2;
@@ -38,7 +38,7 @@ public class PrimitiveLongIntKeyValueArray
     private double growthFactor;
     private int size;
 
-    public PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
+    private PrimitiveLongIntKeyValueArray( int initialCapacity, double growthFactor )
     {
         if ( initialCapacity <= 0 )
         {
@@ -55,12 +55,12 @@ public class PrimitiveLongIntKeyValueArray
         this.growthFactor = growthFactor;
     }
 
-    public PrimitiveLongIntKeyValueArray( int initialCapacity )
+    PrimitiveLongIntKeyValueArray( int initialCapacity )
     {
         this( initialCapacity, DEFAULT_GROWTH_FACTOR );
     }
 
-    public PrimitiveLongIntKeyValueArray()
+    PrimitiveLongIntKeyValueArray()
     {
         this( DEFAULT_INITIAL_CAPACITY, DEFAULT_GROWTH_FACTOR );
     }
