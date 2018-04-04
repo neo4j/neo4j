@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
@@ -71,7 +72,7 @@ public class LabelTransactionStateTest
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
-                mock( ConstraintIndexCreator.class ), mock( ExplicitIndexStore.class ) );
+                mock( ConstraintIndexCreator.class ), mock( ExplicitIndexStore.class ), mock( IndexingService.class ) );
 
         storeStatement = mock( StoreStatement.class );
         when( state.getStoreStatement() ).thenReturn( storeStatement );

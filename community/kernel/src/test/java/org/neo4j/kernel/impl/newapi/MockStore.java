@@ -24,6 +24,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -33,6 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
@@ -57,10 +59,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -377,6 +381,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
         throw new UnsupportedOperationException();
@@ -396,6 +406,30 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
     {
         throw new UnsupportedOperationException();
     }
@@ -609,6 +643,38 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

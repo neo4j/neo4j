@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
@@ -158,6 +159,12 @@ public class PopulatingIndexProxy implements IndexProxy
     public void validate()
     {
         throw new IllegalStateException( "Cannot validate index while it is still populating: " + job );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        // It's OK to put whatever values in while populating because it will take the natural path of failing the population.
     }
 
     @Override

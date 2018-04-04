@@ -26,8 +26,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
  */
 public interface Kernel
 {
-    CursorFactory cursors();
-
     Session beginSession( LoginContext loginContext );
 
     Modes modes();

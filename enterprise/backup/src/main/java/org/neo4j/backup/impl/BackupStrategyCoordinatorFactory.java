@@ -20,6 +20,7 @@
 package org.neo4j.backup.impl;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.com.storecopy.FileMoveProvider;
@@ -74,9 +75,11 @@ class BackupStrategyCoordinatorFactory
         BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
         BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, timeout );
 
-        List<BackupStrategyWrapper> strategies = Arrays.asList(
-                wrap( ccStrategy, copyService, pageCache, config, recoveryService ),
-                wrap( haStrategy, copyService, pageCache, config, recoveryService ) );
+        BackupStrategyWrapper ccStrategyWrapper = wrap( ccStrategy, copyService, pageCache, config, recoveryService );
+        BackupStrategyWrapper haStrategyWrapper = wrap( haStrategy, copyService, pageCache, config, recoveryService );
+        StrategyResolverService strategyResolverService = new StrategyResolverService( haStrategyWrapper, ccStrategyWrapper );
+        List<BackupStrategyWrapper> strategies =
+                strategyResolverService.getStrategies( onlineBackupContext.getRequiredArguments().getSelectedBackupProtocol() );
 
         return new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
     }

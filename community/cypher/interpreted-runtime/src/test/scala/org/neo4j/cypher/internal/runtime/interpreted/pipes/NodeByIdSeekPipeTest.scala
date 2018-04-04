@@ -38,14 +38,14 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     // given
     val id = 17
     val node = nodeProxy(17)
-    val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[NodeValue]]
+    val nodeOps = mock[Operations[NodeValue]]
     when(nodeOps.getByIdIfExists(17)).thenAnswer(new Answer[Option[NodeValue]] {
       override def answer(invocation: InvocationOnMock): Option[NodeValue] = Some(fromNodeProxy(node))
     })
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeOps).thenReturn(nodeOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(id)))().createResults(queryState)
@@ -71,9 +71,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     })
 
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeOps).thenReturn(nodeOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // whens
     val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)

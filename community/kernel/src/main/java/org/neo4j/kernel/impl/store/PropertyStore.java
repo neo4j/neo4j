@@ -53,7 +53,6 @@ import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -411,7 +410,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return ByteBuffer.allocate( capacity ).order( ByteOrder.LITTLE_ENDIAN ).put( buffer );
     }
 
-    private static class PropertyBlockValueWriter implements ValueWriter<IllegalArgumentException>
+    private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>
     {
         private final PropertyBlock block;
         private final int keyId;
@@ -585,11 +584,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
 
         @Override
-        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws IllegalArgumentException
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
         {
             if ( allowStorePointsAndTemporal )
             {
-                block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayLocal, offsetSeconds ) );
+                block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
             }
             else
             {

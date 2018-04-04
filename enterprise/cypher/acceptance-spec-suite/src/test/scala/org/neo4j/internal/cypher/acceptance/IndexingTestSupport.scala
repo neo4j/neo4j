@@ -32,6 +32,7 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
 
   protected val LABEL: String = "Label"
   protected val PROPERTY: String = "prop"
+  protected val NONINDEXED: String = "nonindexed"
 
   def cypherComparisonSupport: Boolean
 
@@ -53,30 +54,42 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     }
   }
 
+  protected def setNonIndexedValue(node: Node, value: Value): Unit = {
+    graph.inTx {
+      node.setProperty(NONINDEXED, value.asObject())
+    }
+  }
+
   protected def assertSeekMatchFor(value: Value, nodes: Node*): Unit = {
     val query = s"MATCH (n:$LABEL) WHERE n.$PROPERTY = $$param RETURN n"
-    testIndexedRead(query, Map("param" -> value.asObject()), "NodeIndexSeek", nodes)
+    testRead(query, Map("param" -> value.asObject()), "NodeIndexSeek", nodes)
   }
 
   protected def assertScanMatch(nodes: Node*): Unit = {
     val query = s"MATCH (n:$LABEL) WHERE EXISTS(n.$PROPERTY) RETURN n"
-    testIndexedRead(query, Map(), "NodeIndexScan", nodes)
+    testRead(query, Map(), "NodeIndexScan", nodes)
   }
 
   protected def assertRangeScanFor(op: String, bound: Value, nodes: Node*): Unit = {
     val predicate = s"n.$PROPERTY $op $$param"
     val query = s"MATCH (n:$LABEL) WHERE $predicate RETURN n"
-    testIndexedRead(query, Map("param" -> bound.asObject()), "NodeIndexSeekByRange", nodes)
+    testRead(query, Map("param" -> bound.asObject()), "NodeIndexSeekByRange", nodes)
+  }
+
+  protected def assertLabelRangeScanFor(op: String, bound: Value, nodes: Node*): Unit = {
+    val predicate = s"n.$NONINDEXED $op $$param"
+    val query = s"MATCH (n:$LABEL) WHERE $predicate RETURN n"
+    testRead(query, Map("param" -> bound.asObject()), "NodeByLabelScan", nodes)
   }
 
   protected def assertRangeScanFor(op1: String, bound1: Value, op2: String, bound2: Value, nodes: Node*): Unit = {
     val predicate1 = s"n.$PROPERTY $op1 $$param1"
     val predicate2 = s"n.$PROPERTY $op2 $$param2"
     val query = s"MATCH (n:$LABEL) WHERE $predicate1 AND $predicate2 RETURN n"
-    testIndexedRead(query, Map("param1" -> bound1.asObject(), "param2" -> bound2.asObject()), "NodeIndexSeekByRange", nodes)
+    testRead(query, Map("param1" -> bound1.asObject(), "param2" -> bound2.asObject()), "NodeIndexSeekByRange", nodes)
   }
 
-  private def testIndexedRead(query: String, params: Map[String, AnyRef], wantedOperator: String, expected: Seq[Node]): Unit = {
+  private def testRead(query: String, params: Map[String, AnyRef], wantedOperator: String, expected: Seq[Node]): Unit = {
     if (cypherComparisonSupport) {
       val result =
         executeWith(
@@ -96,9 +109,6 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
 
       val plan = result.getExecutionPlanDescription.toString
       plan should include(wantedOperator)
-      plan should include (s":$LABEL($PROPERTY)")
     }
-
-
   }
 }

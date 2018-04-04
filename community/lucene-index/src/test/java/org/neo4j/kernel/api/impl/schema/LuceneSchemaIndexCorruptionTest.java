@@ -37,8 +37,8 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -153,9 +153,9 @@ public class LuceneSchemaIndexCorruptionTest
         }
 
         @Override
-        public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
+        public PartitionedIndexStorage indexStorageOf( long indexId )
         {
-            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId, archiveFailed );
+            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId );
         }
 
         PartitionedIndexStorage newFaultyPartitionedIndexStorage()

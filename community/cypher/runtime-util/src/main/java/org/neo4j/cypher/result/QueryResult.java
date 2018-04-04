@@ -43,6 +43,7 @@ public interface QueryResult
     interface Record
     {
         AnyValue[] fields();
+        default void release() {}
     }
 
     QueryExecutionType executionType();

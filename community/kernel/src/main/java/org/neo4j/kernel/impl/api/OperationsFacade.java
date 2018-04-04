@@ -52,8 +52,6 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -66,28 +64,17 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -124,7 +111,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
+        implements ReadOperations, DataWriteOperations, TokenWriteOperations,
         QueryRegistryOperations, ProcedureCallOperations, ExecutionStatisticsOperations
 {
     private final KernelTransaction tx;
@@ -937,69 +924,6 @@ public class OperationsFacade
     }
 
     // </DataWrite>
-
-    // <SchemaWrite>
-    @Override
-    public SchemaIndexDescriptor indexCreate( SchemaDescriptor descriptor )
-            throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException
-    {
-        statement.assertOpen();
-        return schemaWrite().indexCreate( statement, descriptor );
-    }
-
-    @Override
-    public void indexDrop( SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().indexDrop( statement, descriptor );
-    }
-
-    @Override
-    public NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
-            RepeatedPropertyInCompositeSchemaException
-    {
-        statement.assertOpen();
-        return schemaWrite().nodeKeyConstraintCreate( statement, descriptor );
-    }
-
-    @Override
-    public UniquenessConstraintDescriptor uniquePropertyConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
-            RepeatedPropertyInCompositeSchemaException
-    {
-        statement.assertOpen();
-        return schemaWrite().uniquePropertyConstraintCreate( statement, descriptor );
-    }
-
-    @Override
-    public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate( LabelSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException,
-            RepeatedPropertyInCompositeSchemaException
-    {
-        statement.assertOpen();
-        return schemaWrite().nodePropertyExistenceConstraintCreate( statement, descriptor );
-    }
-
-    @Override
-    public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
-            RelationTypeSchemaDescriptor descriptor )
-            throws CreateConstraintFailureException, AlreadyConstrainedException,
-            RepeatedPropertyInCompositeSchemaException
-    {
-        statement.assertOpen();
-        return schemaWrite().relationshipPropertyExistenceConstraintCreate( statement, descriptor );
-    }
-
-    @Override
-    public void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    // </SchemaWrite>
-
     // <Locking>
     @Override
     public void acquireExclusive( ResourceType type, long... ids )

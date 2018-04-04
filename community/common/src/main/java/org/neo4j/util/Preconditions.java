@@ -27,7 +27,7 @@ public final class Preconditions
 {
     private Preconditions()
     {
-        // util class
+        throw new AssertionError( "no instances" );
     }
 
     /**

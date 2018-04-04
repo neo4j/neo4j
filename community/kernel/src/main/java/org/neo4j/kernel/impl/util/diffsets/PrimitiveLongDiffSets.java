@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.util.Objects;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
@@ -115,7 +116,13 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     @Override
     public PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
-        return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+        return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
+    }
+
+    @Override
+    public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
+    {
+        return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
     }
 
     @Override

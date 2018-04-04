@@ -95,7 +95,7 @@ class DynamicSizeUtil
     // mask for one-byte key size to map to the k's in [_,_,_,k,k,k,k,k]
     static final int MASK_ONE_BYTE_KEY_SIZE = 0x1F;
     // max two-byte key size to map to the k's in [_,_,_,k,k,k,k,k][_,k,k,k,k,k,k,k]
-    private static final int MAX_TWO_BYTE_KEY_SIZE = 0xFFF;
+    static final int MAX_TWO_BYTE_KEY_SIZE = 0xFFF;
     // mask for one-byte value size to map to the v's in [_,v,v,v,v,v,v,v]
     static final int MASK_ONE_BYTE_VALUE_SIZE = 0x7F;
     // max two-byte value size to map to the v's in [_,v,v,v,v,v,v,v][v,v,v,v,v,v,v,v]

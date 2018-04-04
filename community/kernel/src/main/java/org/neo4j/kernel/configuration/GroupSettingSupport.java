@@ -49,7 +49,7 @@ public class GroupSettingSupport
     private GroupSettingSupport( String groupPrefix, String groupKey )
     {
         this.groupKey = groupKey;
-        this.groupName = String.format( "%s.%s", groupPrefix, groupKey );
+        this.groupName = groupPrefix + "." + groupKey;
     }
 
     /**
@@ -59,7 +59,7 @@ public class GroupSettingSupport
      */
     public <T> Setting<T> scope( Setting<T> setting )
     {
-        setting.withScope( key -> String.format( "%s.%s", groupName, key ) );
+        setting.withScope( key -> groupName + "." + key );
         return setting;
     }
 }

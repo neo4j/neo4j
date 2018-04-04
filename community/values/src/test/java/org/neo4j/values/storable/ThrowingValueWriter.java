@@ -19,6 +19,11 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.function.Supplier;
 
 public abstract class ThrowingValueWriter<E extends Exception> implements ValueWriter<E>
@@ -137,37 +142,31 @@ public abstract class ThrowingValueWriter<E extends Exception> implements ValueW
     }
 
     @Override
-    public void writeDate( long epochDay ) throws E
+    public void writeDate( LocalDate localDate ) throws E
     {
         throw exception( "writeDate" );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay ) throws E
+    public void writeLocalTime( LocalTime localTime ) throws E
     {
         throw exception( "writeLocalTime" );
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws E
+    public void writeTime( OffsetTime offsetTime ) throws E
     {
         throw exception( "writeTime" );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano ) throws E
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws E
     {
         throw exception( "writeLocalDateTime" );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws E
-    {
-        throw exception( "writeDateTime" );
-    }
-
-    @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws E
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
     {
         throw exception( "writeDateTime" );
     }

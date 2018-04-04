@@ -100,7 +100,7 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.RangePredicate query = IndexQuery.range( 1, 1, true, 2, true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, 1, true, 2, true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );
@@ -115,7 +115,7 @@ public class PartitionedIndexReaderTest
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
 
-        IndexQuery.RangePredicate query = IndexQuery.range( 1, "a", false, "b", true );
+        IndexQuery.RangePredicate<?> query = IndexQuery.range( 1, "a", false, "b", true );
         when( indexReader1.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 1 ) );
         when( indexReader2.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2 ) );
         when( indexReader3.query( query ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 3 ) );

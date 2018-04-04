@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
@@ -396,7 +397,7 @@ public class StateHandlingStatementOperationsTest
         } );
 
         IndexReader indexReader = addMockedIndexReader( storageStatement );
-        RangePredicate indexQuery =
+        RangePredicate<?> indexQuery =
                 IndexQuery.range( index.schema().getPropertyId(), lower.asObject(), true, upper.asObject(), false );
         when( indexReader.query( indexQuery ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null )
@@ -435,7 +436,7 @@ public class StateHandlingStatementOperationsTest
 
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         IndexReader indexReader = addMockedIndexReader( statement );
-        RangePredicate rangePredicate =
+        RangePredicate<?> rangePredicate =
                 IndexQuery.range( index.schema().getPropertyId(), "Anne", true, "Bill", false );
         when( indexReader.query( rangePredicate ) ).thenReturn(
                 PrimitiveLongCollections.resourceIterator( PrimitiveLongCollections.iterator( 43L, 44L, 46L ), null ) );
@@ -628,7 +629,7 @@ public class StateHandlingStatementOperationsTest
     {
         return new StateHandlingStatementOperations( delegate,
                 autoIndexing, mock( ConstraintIndexCreator.class ),
-                mock( ExplicitIndexStore.class ) );
+                mock( ExplicitIndexStore.class ), mock( IndexingService.class ) );
     }
 
     private IndexReader addMockedIndexReader( KernelStatement kernelStatement ) throws IndexNotFoundKernelException

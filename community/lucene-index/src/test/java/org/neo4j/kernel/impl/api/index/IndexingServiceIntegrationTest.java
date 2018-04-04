@@ -42,7 +42,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -82,7 +83,8 @@ public class IndexingServiceIntegrationTest
     {
         return asList(
                 new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory(), NativeLuceneFusionIndexProviderFactory.DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR},
                 new Object[]{new InMemoryIndexProviderFactory(), InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
     }
 

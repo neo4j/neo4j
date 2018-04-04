@@ -54,8 +54,12 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * The page cache warmer profiles the page cache to figure out what data is in memory and what is not, and uses those
  * profiles to load probably-desirable data into the page cache during startup.
  * <p>
- * The profiling data is stored in sibling files to the mapped files. These siblings have the same name as the mapped
- * file, except they start with a "." (to hide them on POSIX-like systems) and end with ".cacheprof".
+ * The profiling data is stored in a "profiles" directory in the same directory the mapped files.
+ * The profile files have the same name as their corresponding mapped file, except they end with a dot-hexadecimal
+ * sequence number, and ".cacheprof".
+ * <p>
+ * The profiles are collected in the "profiles" directory, so it is easy to get rid of all of them, on the off chance
+ * that something is wrong with them.
  * <p>
  * These cacheprof files are compressed bitmaps where each raised bit indicates that the page identified by the
  * bit-index was in memory.
@@ -130,8 +134,12 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      * reheating was stopped early via {@link #stop()}.
      * @throws IOException if anything goes wrong while reading the profiled data back in.
      */
-    public synchronized OptionalLong reheat() throws IOException
+    synchronized OptionalLong reheat() throws IOException
     {
+        if ( stopOngoingWarming )
+        {
+            return OptionalLong.empty();
+        }
         long pagesLoaded = 0;
         List<PagedFile> files = pageCache.listExistingMappings();
         Profile[] existingProfiles = findExistingProfiles( files );
@@ -146,7 +154,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 // The database is allowed to map and unmap files while we are trying to heat it up.
             }
         }
-        return stopOngoingWarming ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
+        return OptionalLong.of( pagesLoaded );
     }
 
     /**
@@ -158,6 +166,10 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      */
     public synchronized OptionalLong profile() throws IOException
     {
+        if ( stopOngoingWarming )
+        {
+            return OptionalLong.empty();
+        }
         // Note that we could in principle profile the files in parallel. However, producing a profile is usually so
         // fast, that it rivals the overhead of starting and stopping threads. Because of this, the complexity of
         // profiling in parallel is just not worth it.

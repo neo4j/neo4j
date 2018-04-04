@@ -335,6 +335,7 @@ public class IndexPopulationJobTest
         createNode( map( name, "irrelephant" ), FIRST );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         FlippableIndexProxy index = mock( FlippableIndexProxy.class );
+        when( index.getState() ).thenReturn( InternalIndexState.ONLINE );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, index, indexStoreView, logProvider, false );
 
@@ -345,7 +346,7 @@ public class IndexPopulationJobTest
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
         logProvider.assertExactly(
                 match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                match.info( "Index population completed. Index is now online: [%s]", ":FIRST(name)" )
+                match.info( "Index population completed. Index [%s] is %s.", ":FIRST(name)", "ONLINE" )
         );
     }
 
@@ -654,9 +655,9 @@ public class IndexPopulationJobTest
     private int getPropertyKeyForName( String name ) throws TransactionFailureException
     {
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+              Statement ignore = tx.acquireStatement() )
         {
-            int result = statement.readOperations().propertyKeyGetForName( name );
+            int result = tx.tokenRead().propertyKey( name );
             tx.success();
             return result;
         }

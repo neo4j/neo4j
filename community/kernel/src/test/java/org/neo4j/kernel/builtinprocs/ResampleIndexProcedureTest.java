@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -36,23 +39,40 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
+import static org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference.fromDescriptor;
 
 public class ResampleIndexProcedureTest
 {
-    private final ReadOperations operations = mock( ReadOperations.class );
-    private final IndexingService indexingService = mock( IndexingService.class );
-    private final IndexProcedures procedure =
-            new IndexProcedures( new StubKernelTransaction( operations ), indexingService );
+    private IndexingService indexingService;
+    private IndexProcedures procedure;
+    private TokenRead tokenRead;
+    private SchemaRead schemaRead;
+
+    @Before
+    public void setup()
+    {
+
+        KernelTransaction transaction = mock( KernelTransaction.class );
+        tokenRead = mock( TokenRead.class );
+        schemaRead = mock( SchemaRead.class );
+        procedure = new IndexProcedures( transaction, null );
+
+        when( transaction.tokenRead() ).thenReturn( tokenRead );
+        when( transaction.schemaRead() ).thenReturn( schemaRead );
+        indexingService = mock( IndexingService.class );
+        procedure =
+                new IndexProcedures( transaction, indexingService );
+    }
 
     @Test
     public void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
-        when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
+        when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
 
         try
         {
@@ -68,7 +88,7 @@ public class ResampleIndexProcedureTest
     @Test
     public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
-        when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
+        when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
 
         try
         {
@@ -86,13 +106,13 @@ public class ResampleIndexProcedureTest
             throws ProcedureException, SchemaRuleNotFoundException
     {
         SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 456 );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( index );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 456 );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
 
         procedure.resampleIndex( ":Person(name)" );
 
-        verify( operations ).indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 456 ) );
+        verify( schemaRead ).index( 123, 456 );
     }
 
     @Test
@@ -100,15 +120,14 @@ public class ResampleIndexProcedureTest
             throws ProcedureException, SchemaRuleNotFoundException
     {
         SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0, 1 );
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
-        when( operations.propertyKeyGetForName( "name" ) ).thenReturn( 0 );
-        when( operations.propertyKeyGetForName( "lastName" ) ).thenReturn( 1 );
-        when( operations.indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 0, 1 ) ) )
-                .thenReturn( index );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
+        when( tokenRead.propertyKey( "name" ) ).thenReturn( 0 );
+        when( tokenRead.propertyKey( "lastName" ) ).thenReturn( 1 );
+        when( schemaRead.index( 123, 0, 1  ) ).thenReturn( fromDescriptor( index ) );
 
         procedure.resampleIndex( ":Person(name, lastName)" );
 
-        verify( operations ).indexGetForSchema( SchemaDescriptorFactory.forLabel( 123, 0, 1 ) );
+        verify( schemaRead ).index( 123, 0, 1 );
     }
 
     @Test
@@ -116,10 +135,9 @@ public class ResampleIndexProcedureTest
             throws SchemaRuleNotFoundException
 
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( any() ) ).thenThrow(
-                new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( CapableIndexReference.NO_INDEX );
 
         try
         {
@@ -137,7 +155,7 @@ public class ResampleIndexProcedureTest
             throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
     {
         SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 123, 456 );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( index );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( fromDescriptor( index ) );
 
         procedure.resampleIndex( ":Person(name)" );
 

@@ -45,8 +45,6 @@ public interface Neo4jPack
 
         void packListHeader( int size ) throws IOException;
 
-        IOException consumeError();
-
         void flush() throws IOException;
     }
 

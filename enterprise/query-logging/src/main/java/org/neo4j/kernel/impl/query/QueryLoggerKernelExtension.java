@@ -77,7 +77,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             @Override
             public void shutdown()
             {
-                logger.close();
+                logger.shutdown();
             }
         };
     }

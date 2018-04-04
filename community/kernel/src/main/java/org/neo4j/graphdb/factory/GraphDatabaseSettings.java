@@ -504,9 +504,36 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
+    @Deprecated
+    @ReplacedBy( "dbms.index.default_schema_provider" )
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
+
+    public enum SchemaIndex
+    {
+        NATIVE20( "lucene+native-2.0" ),
+        NATIVE10( "lucene+native-1.0" ),
+        LUCENE10( "lucene-1.0" );
+
+        private final String providerName;
+
+        SchemaIndex( String providerName )
+        {
+            this.providerName = providerName;
+        }
+
+        public String providerName()
+        {
+            return providerName;
+        }
+    }
+
+    @Description( "Index provider to use when creating new indexes." )
+    public static final Setting<String> default_schema_provider =
+            setting( "dbms.index.default_schema_provider",
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
+                    null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location =
@@ -575,9 +602,17 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
-                  "warmup after a restart, reducing the mean time to performance." )
+                  "warmup after a restart, reducing the mean time to performance. " +
+                  "This feature available in Neo4j Enterprise Edition." )
     public static final Setting<Duration> pagecache_warmup_profiling_interval =
             setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
+    @Internal
+    @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
+            "According to that profile pages can be reloaded on the restart, replication, etc. " +
+            "This setting allows disabling that behavior. " +
+            "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
     /**
      * Block size properties values depends from selected record format.
@@ -826,58 +861,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, FALSE );
-
-    @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +
-            "underlying 1D space filling curve index. There is a balance to be made between many small 1D ranges that have few false " +
-            "positives, and fewer, larger 1D ranges that have more false positives. The former has a more efficient filtering of false " +
-            "positives, while the latter will have a more efficient search of the numerical index. The maximum depth to which the quad tree is " +
-            "processed when mapping 2D to 1D is based on the size of the search area compared to the size of the 2D tiles at that depth. " +
-            "This setting will cause the algorithm to search deeper, reducing false positives." )
-    @Internal
-    public static final Setting<Integer> space_filling_curve_extra_levels = setting(
-            "unsupported.dbms.index.spatial.curve.extra_levels", INTEGER, "1" );
-
-    @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +
-            "underlying 1D space filling curve index. There is a balance to be made between many small 1D ranges that have few false " +
-            "positives, and fewer, larger 1D ranges that have more false positives. The former has a more efficient filtering of false " +
-            "positives, while the latter will have a more efficient search of the numerical index. The maximum depth to which the quad tree is " +
-            "processed when mapping 2D to 1D is based on the size of the search area compared to the size of the 2D tiles at that depth. " +
-            "When traversing the tree to this depth, we can stop early based on when the search envelope overlaps the current tile by " +
-            "more than a certain threshold. The threshold is calculated based on depth, from the `top_threshold` at the top of the tree " +
-            "to the `bottom_threshold` at the depth calculated by the area comparison. Setting the top to 0.99 and the bottom to 0.5, " +
-            "for example would mean that if we reached the maximum depth, and the search area overlapped the current tile by more than " +
-            "50%, we would stop traversing the tree, and return the 1D range for that entire tile to the search set. If the overlap is even " +
-            "higher, we would stop higher in the tree. This technique reduces the number of 1D ranges passed to the underlying space filling " +
-            "curve index. Setting this value to zero turns off this feature." )
-    @Internal
-    public static final Setting<Double> space_filling_curve_top_threshold = setting(
-            "unsupported.dbms.index.spatial.curve.top_threshold", DOUBLE, "0" );
-
-    @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +
-            "underlying 1D space filling curve index. There is a balance to be made between many small 1D ranges that have few false " +
-            "positives, and fewer, larger 1D ranges that have more false positives. The former has a more efficient filtering of false " +
-            "positives, while the latter will have a more efficient search of the numerical index. The maximum depth to which the quad tree is " +
-            "processed when mapping 2D to 1D is based on the size of the search area compared to the size of the 2D tiles at that depth. " +
-            "When traversing the tree to this depth, we can stop early based on when the search envelope overlaps the current tile by " +
-            "more than a certain threshold. The threshold is calculated based on depth, from the `top_threshold` at the top of the tree " +
-            "to the `bottom_threshold` at the depth calculated by the area comparison. Setting the top to 0.99 and the bottom to 0.5, " +
-            "for example would mean that if we reached the maximum depth, and the search area overlapped the current tile by more than " +
-            "50%, we would stop traversing the tree, and return the 1D range for that entire tile to the search set. If the overlap is even " +
-            "higher, we would stop higher in the tree. This technique reduces the number of 1D ranges passed to the underlying space filling " +
-            "curve index. Setting this value to zero turns off this feature." )
-    @Internal
-    public static final Setting<Double> space_filling_curve_bottom_threshold = setting(
-            "unsupported.dbms.index.spatial.curve.bottom_threshold", DOUBLE, "0" );
-
-    @Description( "The maximum number of bits to use for levels in the quad tree representing the spatial index. When creating the spatial index, we " +
-            "simulate a quad tree using a 2D (or 3D) to 1D mapping function. This requires that the extents of the index and the depth " +
-            "of the tree be defined in advance, so ensure the 2D to 1D mapping is deterministic and repeatable. This setting will define " +
-            "the maximum depth of any future spatial index created, calculated as max_bits / dimensions. For example 60 bits will define 30 levels in 2D " +
-            "and 20 levels in 3D. Existing indexes will not be changed, and need to be recreated if you wish to use the new value. " +
-            "For 2D indexes, a value of 30 is the largest supported. For 3D indexes 20 is the largest." )
-    @Internal
-    public static final Setting<Integer> space_filling_curve_max_bits = setting(
-            "unsupported.dbms.index.spatial.curve.max_bits", INTEGER, "60" );
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )

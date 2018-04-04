@@ -57,7 +57,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.Iterables.append;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
 {
@@ -130,7 +130,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             final OutputStream logOutputStream;
             try
             {
-                logOutputStream = createOrOpenAsOuputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
+                logOutputStream = createOrOpenAsOutputStream( fileSystem, new File( serverFolder, "neo4j.log" ), true );
             }
             catch ( IOException e )
             {

@@ -180,9 +180,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     @Override
@@ -191,14 +203,10 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return database;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;
-    }
-
-    public Config getMemberConfig()
-    {
-        return memberConfig;
     }
 
     public RaftLogPruner raftLogPruner()
@@ -258,6 +266,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    @Override
     public Config config()
     {
         return memberConfig;

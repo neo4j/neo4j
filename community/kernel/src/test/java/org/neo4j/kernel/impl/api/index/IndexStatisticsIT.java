@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -139,27 +139,25 @@ public class IndexStatisticsIT
 
     private int labelId( Label alien )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( alien.name() );
+            return ktx().tokenRead().nodeLabel( alien.name() );
         }
     }
 
     private int pkId( String propertyName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propertyName );
+            return ktx().tokenRead().propertyKey( propertyName );
         }
     }
 
-    private Statement statement()
+    private KernelTransaction ktx()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver()
-                                        .resolveDependency( ThreadToStatementContextBridge.class )
-                                        .get();
+        return ((GraphDatabaseAPI) db).getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
     }
 
     private void createAliens()

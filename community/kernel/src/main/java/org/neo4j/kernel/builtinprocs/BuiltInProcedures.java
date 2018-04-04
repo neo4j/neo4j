@@ -42,20 +42,22 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -63,10 +65,8 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQUE;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 
@@ -112,21 +112,22 @@ public class BuiltInProcedures
     @Procedure( name = "db.indexes", mode = READ )
     public Stream<IndexResult> listIndexes() throws ProcedureException
     {
-        try ( Statement statement = tx.acquireStatement() )
+        try ( Statement ignore = tx.acquireStatement() )
         {
-            ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
+            TokenRead tokenRead = tx.tokenRead();
+            TokenNameLookup tokens = new SilentTokenNameLookup( tokenRead );
 
-            List<SchemaIndexDescriptor> indexes = asList( operations.indexesGetAll() );
+            SchemaRead schemaRead = tx.schemaRead();
+            List<IndexReference> indexes = asList( schemaRead.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
 
             ArrayList<IndexResult> result = new ArrayList<>();
-            for ( SchemaIndexDescriptor index : indexes )
+            for ( IndexReference index : indexes )
             {
                 try
                 {
                     String type;
-                    if ( index.type() == UNIQUE )
+                    if ( index.isUnique() )
                     {
                         type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
                     }
@@ -135,17 +136,24 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    String label = index.schema().keyName( tokens );
+                    String label = tokenRead.nodeLabelName( index.label() );
                     List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), label,
+                    result.add( new IndexResult( "INDEX ON " +
+                                                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() )
+                                                         .userDescription( tokens ), label,
                             propertyNames,
-                            operations.indexGetState( index ).toString(), type,
-                            indexProviderDescriptorMap( operations.indexGetProviderDescriptor( index ) ) ) );
+                            schemaRead.indexGetState( index ).toString(), type,
+                            indexProviderDescriptorMap( schemaRead.index( index.label(), index.properties() ) ) ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
                     throw new ProcedureException( Status.Schema.IndexNotFound, e,
                             "No index on ", index.userDescription( tokens ) );
+                }
+                catch ( LabelNotFoundKernelException e )
+                {
+                    throw new ProcedureException( Status.General.InvalidArguments, e,
+                            "Label not found " );
                 }
             }
             return result.stream();
@@ -223,7 +231,7 @@ public class BuiltInProcedures
         try ( Statement ignore = tx.acquireStatement() )
         {
             NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
-            tx.indexRead().nodeExplicitIndexLookup( cursor, explicitIndexName, key, Values.of( value ) );
+            tx.indexRead().nodeExplicitIndexLookup( cursor, explicitIndexName, key, value );
 
             return toStream( cursor, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
@@ -264,7 +272,7 @@ public class BuiltInProcedures
         try ( Statement ignore = tx.acquireStatement() )
         {
             RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
-            tx.indexRead().relationshipExplicitIndexGet( cursor, manualIndexName, key, Values.of( value ),
+            tx.indexRead().relationshipExplicitIndexLookup( cursor, manualIndexName, key, value,
                     -1, -1 );
             return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
@@ -368,7 +376,7 @@ public class BuiltInProcedures
         try ( Statement ignore = tx.acquireStatement() )
         {
             NodeExplicitIndexCursor cursor = tx.cursors().allocateNodeExplicitIndexCursor();
-            tx.indexRead().nodeExplicitIndexLookup( cursor, "node_auto_index", key, Values.of( value ) );
+            tx.indexRead().nodeExplicitIndexLookup( cursor, "node_auto_index", key, value );
             return toStream( cursor, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
         catch ( KernelException e )
@@ -406,7 +414,7 @@ public class BuiltInProcedures
         {
             RelationshipExplicitIndexCursor cursor = tx.cursors().allocateRelationshipExplicitIndexCursor();
             tx.indexRead()
-                    .relationshipExplicitIndexGet( cursor, "relationship_auto_index", key, Values.of( value ), -1, -1 );
+                    .relationshipExplicitIndexLookup( cursor, "relationship_auto_index", key,  value, -1, -1 );
             return toStream( cursor, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( KernelException e )
@@ -584,16 +592,16 @@ public class BuiltInProcedures
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
     }
 
-    private Map<String,String> indexProviderDescriptorMap( IndexProvider.Descriptor providerDescriptor )
+    private Map<String,String> indexProviderDescriptorMap( CapableIndexReference indexReference )
     {
         return MapUtil.stringMap(
-                "key", providerDescriptor.getKey(),
-                "version", providerDescriptor.getVersion() );
+                "key", indexReference.providerKey(),
+                "version", indexReference.providerVersion() );
     }
 
-    private List<String> propertyNames( TokenNameLookup tokens, SchemaIndexDescriptor index )
+    private List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
     {
-        int[] propertyIds = index.schema().getPropertyIds();
+        int[] propertyIds = index.properties();
         List<String> propertyNames = new ArrayList<>( propertyIds.length );
         for ( int propertyId : propertyIds )
         {

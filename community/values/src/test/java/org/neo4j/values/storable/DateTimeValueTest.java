@@ -44,7 +44,6 @@ import static org.neo4j.values.storable.DateTimeValue.parse;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.FrozenClockRule.assertEqualTemporal;
 import static org.neo4j.values.storable.InputMappingStructureBuilder.fromValues;
-import static org.neo4j.values.storable.LocalDateTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
@@ -147,21 +146,12 @@ public class DateTimeValueTest
         } )
         {
             List<DateTimeValue> values = new ArrayList<>( 1 );
-            List<LocalDateTimeValue> locals = new ArrayList<>( 1 );
             ValueWriter<RuntimeException> writer = new ThrowingValueWriter.AssertOnly()
             {
                 @Override
-                public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+                public void writeDateTime( ZonedDateTime zonedDateTime )
                 {
-                    values.add( datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-                    locals.add( localDateTime( epochSecondUTC, nano ) );
-                }
-
-                @Override
-                public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
-                {
-                    values.add( datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ) );
-                    locals.add( localDateTime( epochSecondUTC, nano ) );
+                    values.add( datetime( zonedDateTime ) );
                 }
             };
 
@@ -170,7 +160,6 @@ public class DateTimeValueTest
 
             // then
             assertEquals( singletonList( value ), values );
-            assertEquals( singletonList( inUTC( value ) ), locals );
         }
     }
 
@@ -471,5 +460,11 @@ public class DateTimeValueTest
     public void shouldNotEqualSameInstantInSameLocalTimeButDifferentTimezone()
     {
         assertNotEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 11, 52, 5, 6, "+01:00" ) );
+    }
+
+    @Test
+    public void shouldNotEqualSameInstantButDifferentTimezoneWithSameOffset()
+    {
+        assertNotEqual( datetime( 1969, 12, 31, 23, 59, 59, 0, UTC ), datetime(1969, 12, 31, 23, 59, 59, 0, "Africa/Freetown" ) );
     }
 }

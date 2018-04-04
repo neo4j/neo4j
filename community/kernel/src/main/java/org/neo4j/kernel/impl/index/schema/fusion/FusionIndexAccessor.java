@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -39,7 +38,9 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Arrays.stream;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
@@ -147,10 +148,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         List<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexAccessor accessor : instances )
-        {
-            snapshots.add( accessor.snapshotFiles() );
-        }
+        forAll( accessor -> snapshots.add( accessor.snapshotFiles() ), instances );
         return concatResourceIterators( snapshots.iterator() );
     }
 
@@ -167,6 +165,12 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public boolean isDirty()
     {
-        return Arrays.stream( instances ).anyMatch( IndexAccessor::isDirty );
+        return stream( instances ).anyMatch( IndexAccessor::isDirty );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        selector.select( instances, tuple ).validateBeforeCommit( tuple );
     }
 }

@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.HashMap;
@@ -40,6 +39,8 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
+import org.neo4j.values.utils.TemporalUtil;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -47,7 +48,6 @@ import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
-import static org.neo4j.values.storable.DurationValue.SECONDS_PER_DAY;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
@@ -72,9 +72,23 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayLocal, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), offset ) );
+        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
+    }
+
+    public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
+    {
+        if ( fieldsFromHeader != null )
+        {
+            if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
+            {
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+            }
+            // Override defaultZone
+            defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );
+        }
+        return parse( TimeValue.class, PATTERN, TimeValue::parse, text, defaultZone );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
@@ -120,7 +134,15 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             Supplier<ZoneId> defaultZone )
     {
         OffsetTime time = input.getTimePart( defaultZone );
-        OffsetTime truncatedOT = time.truncatedTo( unit );
+        OffsetTime truncatedOT;
+        try
+        {
+            truncatedOT = time.truncatedTo( unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
 
         if ( fields.size() == 0 )
         {
@@ -189,7 +211,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 }
                 else
                 {
-                    result = defaultTime( timezone() );
+                    ZoneId timezone = timezone();
+                    if ( !(timezone instanceof ZoneOffset) )
+                    {
+                        timezone = ZonedDateTime.ofInstant( Instant.now(), timezone ).getOffset();
+                    }
+
+                    result = defaultTime( timezone );
                     selectingTimeZone = false;
                 }
 
@@ -235,17 +263,25 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     }
 
     private final OffsetTime value;
+    private final long nanosOfDayUTC;
 
     private TimeValue( OffsetTime value )
     {
+        // truncate the offset to whole minutes
         this.value = value;
+        this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
     }
 
     @Override
     int unsafeCompareTo( Value otherValue )
     {
         TimeValue other = (TimeValue) otherValue;
-        return value.compareTo( other.value );
+        int compare = Long.compare( nanosOfDayUTC, other.nanosOfDayUTC );
+        if ( compare == 0 )
+        {
+            compare = Integer.compare( value.getOffset().getTotalSeconds(), other.value.getOffset().getTotalSeconds() );
+        }
+        return compare;
     }
 
     @Override
@@ -305,10 +341,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        int zoneOffsetSeconds = value.getOffset().getTotalSeconds();
-        long seconds = value.getLong( ChronoField.SECOND_OF_DAY );
-        long nanosOfDayLocal = seconds * DurationValue.NANOS_PER_SECOND + value.getNano();
-        writer.writeTime( nanosOfDayLocal, zoneOffsetSeconds );
+        writer.writeTime( value );
     }
 
     @Override
@@ -387,8 +420,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue( OffsetTime
-                .of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
+        return new TimeValue( OffsetTime.of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
     }
 
     private static ZoneOffset parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )

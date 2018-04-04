@@ -70,6 +70,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
@@ -136,13 +137,14 @@ public class StateHandlingStatementOperations implements
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, AutoIndexing propertyTrackers,
             ConstraintIndexCreator constraintIndexCreator,
-            ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore,
+            IndexingService indexingService )
     {
         this.storeLayer = storeLayer;
         this.autoIndexing = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
         this.explicitIndexStore = explicitIndexStore;
-        this.indexTxStateUpdater = new IndexTxStateUpdater( storeLayer, this );
+        this.indexTxStateUpdater = new IndexTxStateUpdater( storeLayer, this, indexingService );
     }
 
     // <Cursors>
@@ -829,19 +831,20 @@ public class StateHandlingStatementOperations implements
             KernelStatement state, SchemaIndexDescriptor index, IndexQuery.ExactPredicate... query )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
-        IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
-
-        /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
-         * since subsequent filtering will happen outside, but at the same time have the ability to
-         * close the IndexReader when done iterating over the lookup result. This is because we get
-         * a fresh reader that isn't associated with the current transaction and hence will not be
-         * automatically closed. */
-        PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( query )
-                ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
-        PrimitiveLongIterator changesFiltered =
-                filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
-        return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        try ( IndexReader reader = state.getStoreStatement().getFreshIndexReader( index ) )
+        {
+            /* Here we have an intricate scenario where we need to return the PrimitiveLongIterator
+             * since subsequent filtering will happen outside, but at the same time have the ability to
+             * close the IndexReader when done iterating over the lookup result. This is because we get
+             * a fresh reader that isn't associated with the current transaction and hence will not be
+             * automatically closed. */
+            PrimitiveLongResourceIterator committed = reader.query( query );
+            PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( query )
+                                                         ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
+            PrimitiveLongResourceIterator changesFiltered =
+                    filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
+            return single( resourceIterator( changesFiltered, committed ), NO_SUCH_NODE );
+        }
     }
 
     @Override
@@ -868,7 +871,7 @@ public class StateHandlingStatementOperations implements
 
         case range:
             assertSinglePredicate( predicates );
-            IndexQuery.RangePredicate rangePred = (IndexQuery.RangePredicate) firstPredicate;
+            IndexQuery.RangePredicate<?> rangePred = (IndexQuery.RangePredicate<?>) firstPredicate;
             return filterIndexStateChangesForRangeSeek( state, index, rangePred.valueGroup(),
                                                         rangePred.fromValue(), rangePred.fromInclusive(),
                                                         rangePred.toValue(), rangePred.toInclusive(),
@@ -1096,7 +1099,7 @@ public class StateHandlingStatementOperations implements
                     existingValue = properties.get().value();
 
                     autoIndexing.nodes().propertyRemoved( ops, nodeId, propertyKeyId );
-                    state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId, existingValue );
+                    state.txState().nodeDoRemoveProperty( node.id(), propertyKeyId );
 
                     indexTxStateUpdater.onPropertyRemove( state, node, propertyKeyId, existingValue );
                 }
@@ -1122,8 +1125,7 @@ public class StateHandlingStatementOperations implements
                     existingValue = properties.get().value();
 
                     autoIndexing.relationships().propertyRemoved( ops, relationshipId, propertyKeyId );
-                    state.txState()
-                            .relationshipDoRemoveProperty( relationship.id(), propertyKeyId, existingValue );
+                    state.txState().relationshipDoRemoveProperty( relationship.id(), propertyKeyId );
                 }
             }
             return existingValue;
@@ -1136,7 +1138,7 @@ public class StateHandlingStatementOperations implements
         Value existingValue = graphGetProperty( state, propertyKeyId );
         if ( existingValue != Values.NO_VALUE )
         {
-            state.txState().graphDoRemoveProperty( propertyKeyId, existingValue );
+            state.txState().graphDoRemoveProperty( propertyKeyId );
         }
         return existingValue;
     }

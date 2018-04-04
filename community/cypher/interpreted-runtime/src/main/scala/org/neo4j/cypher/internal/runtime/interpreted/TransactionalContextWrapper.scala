@@ -29,11 +29,12 @@ import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{KernelTransaction, ReadOperations, ResourceTracker, Statement}
+import org.neo4j.kernel.api.{KernelTransaction, ResourceTracker, Statement}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
+  def twoLayerTransactionState: Boolean = tc.twoLayerTransactionState()
 
   def getOrBeginNewIfClosed(): TransactionalContextWrapper = TransactionalContextWrapper(tc.getOrBeginNewIfClosed())
 
@@ -66,8 +67,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   override def schemaRead: SchemaRead = tc.kernelTransaction().schemaRead()
 
   override def dataWrite: Write = tc.kernelTransaction().dataWrite()
-
-  override def readOperations: ReadOperations = tc.readOperations()
 
   override def dbmsOperations: DbmsOperations = tc.dbmsOperations()
 

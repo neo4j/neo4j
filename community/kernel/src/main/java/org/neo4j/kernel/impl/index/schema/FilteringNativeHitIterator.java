@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-class FilteringNativeHitIterator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIterator<KEY,VALUE>
+class FilteringNativeHitIterator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends NativeHitIterator<KEY,VALUE>
 {
     private final IndexQuery[] filters;
 

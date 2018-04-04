@@ -37,7 +37,6 @@ public class NewKernel implements Kernel, Modes
     private final InwardKernel kernel;
 
     private StorageStatement statement;
-    private DefaultCursors cursors;
 
     private volatile boolean isRunning;
 
@@ -46,13 +45,6 @@ public class NewKernel implements Kernel, Modes
         this.engine = engine;
         this.kernel = kernel;
         this.isRunning = false;
-    }
-
-    @Override
-    public CursorFactory cursors()
-    {
-        assert isRunning : "kernel is not running, so it is not possible to use it";
-        return cursors;
     }
 
     @Override
@@ -71,7 +63,6 @@ public class NewKernel implements Kernel, Modes
     public void start()
     {
         statement = engine.storeReadLayer().newStatement();
-        this.cursors = new DefaultCursors();
         isRunning = true;
     }
 
@@ -83,7 +74,6 @@ public class NewKernel implements Kernel, Modes
         }
         statement.close();
         isRunning = false;
-        this.cursors = null;
     }
 
     @Override

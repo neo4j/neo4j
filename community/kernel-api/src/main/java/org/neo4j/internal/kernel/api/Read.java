@@ -236,9 +236,9 @@ public interface Read
 
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
-    void relationshipLabelScan( int label, RelationshipScanCursor cursor );
+    void relationshipTypeScan( int type, RelationshipScanCursor cursor );
 
-    Scan<RelationshipScanCursor> relationshipLabelScan( int label );
+    Scan<RelationshipScanCursor> relationshipTypeScan( int type );
 
     /**
      * @param nodeReference

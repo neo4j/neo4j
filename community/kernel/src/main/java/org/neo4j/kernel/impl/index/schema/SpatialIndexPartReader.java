@@ -38,18 +38,20 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 
-public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
+public class SpatialIndexPartReader<VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<SpatialSchemaKey,VALUE>
 {
     private final SpatialLayout spatial;
     private final SpaceFillingCurveConfiguration configuration;
 
-    SpatialIndexPartReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
+    SpatialIndexPartReader( GBPTree<SpatialSchemaKey,VALUE> tree, Layout<SpatialSchemaKey,VALUE> layout,
+            IndexSamplingConfig samplingConfig, SchemaIndexDescriptor descriptor,
             SpaceFillingCurveConfiguration configuration )
     {
         super( tree, layout, samplingConfig, descriptor );
@@ -65,16 +67,11 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
             throw new UnsupportedOperationException( "Spatial index doesn't handle composite queries" );
         }
 
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException(
-                    format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder, Arrays.toString( predicates ),
-                            IndexOrder.NONE ) );
-        }
+        CapabilityValidator.validateQuery( SpatialIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
-    boolean initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    boolean initializeRangeForQuery( SpatialSchemaKey treeKeyFrom, SpatialSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         throw new UnsupportedOperationException( "Cannot initialize 1D range in multidimensional spatial index reader" );
     }
@@ -116,8 +113,8 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
 
     private void startSeekForExists( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
     {
-        KEY treeKeyFrom = layout.newKey();
-        KEY treeKeyTo = layout.newKey();
+        SpatialSchemaKey treeKeyFrom = layout.newKey();
+        SpatialSchemaKey treeKeyTo = layout.newKey();
         treeKeyFrom.initAsLowest();
         treeKeyTo.initAsHighest();
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
@@ -125,8 +122,8 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
 
     private void startSeekForExact( IndexProgressor.NodeValueClient client, Value value, IndexQuery... predicates )
     {
-        KEY treeKeyFrom = layout.newKey();
-        KEY treeKeyTo = layout.newKey();
+        SpatialSchemaKey treeKeyFrom = layout.newKey();
+        SpatialSchemaKey treeKeyTo = layout.newKey();
         treeKeyFrom.from( Long.MIN_VALUE, value );
         treeKeyTo.from( Long.MAX_VALUE, value );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, false );
@@ -139,18 +136,16 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
             client.initialize( descriptor, multiProgressor, query );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
-            Envelope completeEnvelope = SpatialIndexFiles.envelopeFromCRS( spatial.crs );
-            double[] from = rangePredicate.from() == null ? completeEnvelope.getMin() : rangePredicate.from().coordinate();
-            double[] to = rangePredicate.to() == null ? completeEnvelope.getMax() : rangePredicate.to().coordinate();
-            Envelope envelope = new Envelope( from, to );
-            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( envelope, configuration );
+            double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
+            double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
+            List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
             for ( SpaceFillingCurve.LongRange range : ranges )
             {
-                KEY treeKeyFrom = layout.newKey();
-                KEY treeKeyTo = layout.newKey();
+                SpatialSchemaKey treeKeyFrom = layout.newKey();
+                SpatialSchemaKey treeKeyTo = layout.newKey();
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
-                RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+                RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
                 IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
                 multiProgressor.initialize( descriptor, hitProgressor, query );
             }
@@ -167,7 +162,8 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query, boolean needFilter )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialSchemaKey treeKeyFrom,
+            SpatialSchemaKey treeKeyTo, IndexQuery[] query, boolean needFilter )
     {
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
@@ -176,7 +172,7 @@ public class SpatialIndexPartReader<KEY extends SpatialSchemaKey, VALUE extends 
         }
         try
         {
-            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+            RawCursor<Hit<SpatialSchemaKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
             IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
             client.initialize( descriptor, hitProgressor, query );
         }

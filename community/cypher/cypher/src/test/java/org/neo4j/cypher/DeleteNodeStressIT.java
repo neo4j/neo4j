@@ -19,28 +19,25 @@
  */
 package org.neo4j.cypher;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 
 public class DeleteNodeStressIT
 {
-    private final AtomicBoolean hasFailed = new AtomicBoolean( false );
+    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Rule
     public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
@@ -63,85 +60,74 @@ public class DeleteNodeStressIT
         }
     }
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
+    @After
+    public void tearDown()
+    {
+        executorService.shutdown();
+    }
 
     @Test
-    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException
+    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
-        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
-
-        // When
-        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
+        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // Then
-        assertFalse(hasFailed.get());
+        query1.get();
+        query2.get();
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException
+    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN exists(n.prop)" );
-        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN exists(n.prop)" );
+        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
-        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
-        assertFalse(hasFailed.get());
+        query1.get();
+        query2.get();
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException
+    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
-        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
+        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
-        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
-        assertFalse(hasFailed.get());
+        query1.get();
+        query2.get();
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException
+    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException, ExecutionException
     {
         // Given
-        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
-        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
+        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
-        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
-        assertFalse(hasFailed.get());
+        query1.get();
+        query2.get();
     }
 
     @Test
-    public void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException
+    public void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException, ExecutionException
     {
         // Given
-        executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );
-        executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
+        Future query1 = executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );
+        Future query2 = executeInThread( "MATCH (n:L {prop:42}) DELETE n" );
 
         // When
-        executorService.awaitTermination( 3L, TimeUnit.SECONDS );
-        assertFalse(hasFailed.get());
+        query1.get();
+        query2.get();
     }
 
-    private void executeInThread( final String query )
+    private Future executeInThread( final String query )
     {
-        executorService.execute( () ->
-        {
-            Result execute = db.execute( query );
-            try
-            {
-                //resultAsString is good test case since it serializes labels, types, properties etc
-                execute.resultAsString();
-            }
-            catch ( Exception e )
-            {
-                e.printStackTrace();
-                hasFailed.set( true );
-            }
-        } );
+        return executorService.submit( () -> db.execute( query ).resultAsString() );
     }
 }

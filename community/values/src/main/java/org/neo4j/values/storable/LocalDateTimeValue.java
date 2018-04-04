@@ -42,6 +42,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -263,17 +264,24 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     private final LocalDateTime value;
+    private final long epochSecondsInUTC;
 
     private LocalDateTimeValue( LocalDateTime value )
     {
         this.value = value;
+        this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
     }
 
     @Override
-    int unsafeCompareTo( Value otherValue )
+    int unsafeCompareTo( Value other )
     {
-        LocalDateTimeValue other = (LocalDateTimeValue) otherValue;
-        return value.compareTo( other.value );
+        LocalDateTimeValue that = (LocalDateTimeValue) other;
+        int cmp = Long.compare( epochSecondsInUTC, that.epochSecondsInUTC );
+        if ( cmp == 0 )
+        {
+            cmp = value.getNano() - that.value.getNano();
+        }
+        return cmp;
     }
 
     @Override
@@ -310,13 +318,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     ZoneId getZoneId()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the timezone of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the timezone of: %s", this ) );
     }
 
     @Override
     ZoneOffset getZoneOffset()
     {
-        throw new UnsupportedTemporalTypeException( "Cannot get the offset of" + this );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the offset of: %s", this ) );
     }
 
     @Override
@@ -340,7 +348,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeLocalDateTime( value.toEpochSecond( UTC ), value.getNano() );
+        writer.writeLocalDateTime( value );
     }
 
     @Override

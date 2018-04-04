@@ -32,15 +32,12 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
 
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
-    private static final boolean ENABLED = FeatureToggles.flag( PageCacheWarmerKernelExtension.class, "enabled", true );
-
     private final JobScheduler scheduler;
     private final AvailabilityGuard availabilityGuard;
     private final Supplier<NeoStoreFileListing> fileListing;
@@ -67,7 +64,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     @Override
     public void start()
     {
-        if ( ENABLED )
+        if ( config.get( GraphDatabaseSettings.pagecache_warmup_enabled ) )
         {
             pageCacheWarmer.start();
             scheduleTryReheat();

@@ -33,10 +33,10 @@ import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
@@ -112,8 +112,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private GraphState graphState;
     private DiffSets<SchemaIndexDescriptor> indexChanges;
     private DiffSets<ConstraintDescriptor> constraintsChanges;
-
-    private PropertyChanges propertyChangesForNodes;
 
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
@@ -531,7 +529,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     {
         NodeStateImpl nodeState = getOrCreateNodeState( nodeId );
         nodeState.addProperty( newPropertyKeyId, value );
-        nodePropertyChanges().addProperty( nodeId, newPropertyKeyId, value );
         dataChanged();
     }
 
@@ -539,7 +536,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void nodeDoChangeProperty( long nodeId, int propertyKeyId, Value replacedValue, Value newValue )
     {
         getOrCreateNodeState( nodeId ).changeProperty( propertyKeyId, newValue );
-        nodePropertyChanges().changeProperty( nodeId, propertyKeyId, replacedValue, newValue );
         dataChanged();
     }
 
@@ -573,24 +569,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId, Value removedValue )
+    public void nodeDoRemoveProperty( long nodeId, int propertyKeyId )
     {
-        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId, removedValue );
-        nodePropertyChanges().removeProperty( nodeId, propertyKeyId, removedValue );
+        getOrCreateNodeState( nodeId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId, Value removedValue )
+    public void relationshipDoRemoveProperty( long relationshipId, int propertyKeyId )
     {
-        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId, removedValue );
+        getOrCreateRelationshipState( relationshipId ).removeProperty( propertyKeyId );
         dataChanged();
     }
 
     @Override
-    public void graphDoRemoveProperty( int propertyKeyId, Value removedValue )
+    public void graphDoRemoveProperty( int propertyKeyId )
     {
-        getOrCreateGraphState().removeProperty( propertyKeyId, removedValue );
+        getOrCreateGraphState().removeProperty( propertyKeyId );
         dataChanged();
     }
 
@@ -1014,6 +1009,34 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor descriptor, IndexQuery query )
+    {
+        assert descriptor.schema().getPropertyIds().length == 1 :
+                "Suffix and contains queries are only supported for single property queries";
+
+        if ( indexUpdates == null )
+        {
+            return PrimitiveLongReadableDiffSets.EMPTY;
+        }
+        Map<ValueTuple, PrimitiveLongDiffSets> updates = indexUpdates.get( descriptor.schema() );
+        if ( updates == null )
+        {
+            return PrimitiveLongReadableDiffSets.EMPTY;
+        }
+        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
+        for ( Map.Entry<ValueTuple,PrimitiveLongDiffSets> entry : updates.entrySet() )
+        {
+            if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
+            {
+                PrimitiveLongDiffSets diffsets = entry.getValue();
+                diffs.addAll( diffsets.getAdded().iterator() );
+                diffs.removeAll( diffsets.getRemoved().iterator() );
+            }
+        }
+        return diffs;
+    }
+
+    @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor descriptor, ValueTuple values )
     {
         PrimitiveLongDiffSets indexUpdatesForSeek = getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false );
@@ -1229,13 +1252,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap != null && nodeStatesMap.containsKey( nodeId );
     }
 
-    private PropertyChanges nodePropertyChanges()
-    {
-        return propertyChangesForNodes == null ? propertyChangesForNodes = new PropertyChanges( collectionsFactory ) : propertyChangesForNodes;
-    }
-
     @Override
-    public PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed )
+    public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
     {
         return addedAndRemovedNodes().augment( committed );
     }
@@ -1286,10 +1304,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( relationshipStatesMap != null )
         {
             relationshipStatesMap.close();
-        }
-        if ( propertyChangesForNodes != null )
-        {
-            propertyChangesForNodes.release();
         }
         if ( nodes != null && nodes.removedFromAdded != null )
         {

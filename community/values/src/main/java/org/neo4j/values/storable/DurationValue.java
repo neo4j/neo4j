@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
@@ -38,6 +37,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Double.parseDouble;
@@ -56,6 +56,10 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
+import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
+import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
+import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
+import static org.neo4j.values.utils.TemporalUtil.SECONDS_PER_DAY;
 
 /**
  * We use our own implementation because neither {@link java.time.Duration} nor {@link java.time.Period} fits our needs.
@@ -192,11 +196,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     .thenComparingLong( d -> d.months )
                     .thenComparingLong( d -> d.days )
                     .thenComparingLong( d -> d.seconds );
-    static final int NANOS_PER_SECOND = 1_000_000_000;
-    static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
-    /** 30.4375 days = 30 days, 10 hours, 30 minutes */
-    private static final double AVERAGE_DAYS_PER_MONTH = 365.2425 / 12;
-    private static final long AVG_SECONDS_PER_MONTH = 2_629_746;
     private final long months;
     private final long days;
     private final long seconds;
@@ -630,7 +629,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         str.append( '.' );
         int n = nanos < 0 ? -nanos : nanos;
-        for ( int mod = NANOS_PER_SECOND; mod > 1 && n > 0; n %= mod )
+        for ( int mod = (int)NANOS_PER_SECOND; mod > 1 && n > 0; n %= mod )
         {
             str.append( n / (mod /= 10) );
         }
@@ -751,7 +750,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             val = seconds * NANOS_PER_SECOND + nanos;
             break;
         default:
-            throw new UnsupportedTemporalTypeException( "No such field: " + fieldName );
+            throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
 
         return Values.longValue( val );
@@ -912,7 +911,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     private static DurationValue approximate( double months, double days, double seconds, double nanos )
     {
         long m = (long) months;
-        days += AVERAGE_DAYS_PER_MONTH * (months - m);
+        days += AVG_DAYS_PER_MONTH * (months - m);
         long d = (long) days;
         seconds += SECONDS_PER_DAY * (days - d);
         long s = (long) seconds;

@@ -59,17 +59,19 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -78,7 +80,6 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -220,16 +221,15 @@ public class FullCheckIntegrationTest
             try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
             {
                 db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
-
-                try ( KernelStatement statement = statementOn( db ) )
+                KernelTransaction ktx = transactionOn( db );
+                try ( Statement ignore = ktx.acquireStatement() )
                 {
                     // the Core API for composite index creation is not quite merged yet
-                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-                    key1 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
-                    key2 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
-                    label3 = statement.readOperations().labelGetForName( "label3" );
-                    statement.schemaWriteOperations()
-                            .indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                    TokenWrite tokenWrite = ktx.tokenWrite();
+                    key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+                    key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+                    label3 = ktx.tokenRead().nodeLabel( "label3" );
+                    ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
                 }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
@@ -259,20 +259,21 @@ public class FullCheckIntegrationTest
                 set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
-                try ( KernelStatement statement = statementOn( db ) )
+                KernelTransaction ktx = transactionOn( db );
+                try ( Statement ignore = ktx.acquireStatement() )
                 {
-                    ReadOperations readOperations = statement.readOperations();
-                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-                    label1 = readOperations.labelGetForName( "label1" );
-                    label2 = readOperations.labelGetForName( "label2" );
-                    label3 = readOperations.labelGetForName( "label3" );
-                    label4 = readOperations.labelGetForName( "label4" );
-                    draconian = tokenWriteOperations.labelGetOrCreateForName( "draconian" );
-                    key1 = readOperations.propertyKeyGetForName( PROP1 );
-                    mandatory = tokenWriteOperations.propertyKeyGetOrCreateForName( "mandatory" );
-                    C = readOperations.relationshipTypeGetForName( "C" );
-                    T = readOperations.relationshipTypeGetForName( "T" );
-                    M = tokenWriteOperations.relationshipTypeGetOrCreateForName( "M" );
+                    TokenRead tokenRead = ktx.tokenRead();
+                    TokenWrite tokenWrite = ktx.tokenWrite();
+                    label1 = tokenRead.nodeLabel( "label1" );
+                    label2 = tokenRead.nodeLabel( "label2" );
+                    label3 = tokenRead.nodeLabel( "label3" );
+                    label4 = tokenRead.nodeLabel( "label4" );
+                    draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
+                    key1 = tokenRead.propertyKey( PROP1 );
+                    mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
+                    C = tokenRead.relationshipType( "C" );
+                    T = tokenRead.relationshipType( "T" );
+                    M = tokenWrite.relationshipTypeGetOrCreateForName( "M" );
                 }
             }
             catch ( KernelException e )
@@ -2321,11 +2322,11 @@ public class FullCheckIntegrationTest
         }
     }
 
-    private static KernelStatement statementOn( GraphDatabaseService db )
+    private static KernelTransaction transactionOn( GraphDatabaseService db )
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
         ThreadToStatementContextBridge bridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
-        return (KernelStatement) bridge.get();
+        return bridge.getKernelTransactionBoundToThisThread( true );
     }
 
     private static class Reference<T>

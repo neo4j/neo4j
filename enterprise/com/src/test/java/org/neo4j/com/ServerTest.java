@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -78,7 +79,7 @@ public class ServerTest
         // Then
         try
         {
-            protocol.deserializeResponse( channel.asBlockingReadHandler(), ByteBuffer.allocateDirect( 1024 ), 1,
+            protocol.deserializeResponse( channel.asBlockingReadHandler(), ByteBuffer.allocate( (int) ByteUnit.kibiBytes( 1 ) ), 1,
                     VOID_DESERIALIZER, mock( ResourceReleaser.class ), new VersionAwareLogEntryReader<>() );
             fail( "Should have failed." );
         }

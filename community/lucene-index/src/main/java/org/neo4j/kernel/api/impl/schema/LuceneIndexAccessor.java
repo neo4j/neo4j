@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -125,6 +126,16 @@ public class LuceneIndexAccessor implements IndexAccessor
     public boolean isDirty()
     {
         return !luceneIndex.isValid();
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
+        for ( Value value : tuple )
+        {
+            LuceneIndexValueValidator.INSTANCE.validate( value );
+        }
     }
 
     private class LuceneIndexUpdater implements IndexUpdater

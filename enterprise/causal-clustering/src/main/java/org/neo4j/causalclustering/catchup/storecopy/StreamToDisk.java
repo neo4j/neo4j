@@ -21,86 +21,54 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.monitoring.Monitors;
 
-public class StreamToDisk implements StoreFileStreams
+import static org.neo4j.io.IOUtils.closeAll;
+
+public class StreamToDisk implements StoreFileStream
 {
-    private final File storeDir;
-    private final FileSystemAbstraction fs;
-    private final PageCache pageCache;
-    private final FileCopyMonitor fileCopyMonitor;
-    private final Map<String,WritableByteChannel> channels;
-    private final Map<String,PagedFile> pagedFiles;
+    private WritableByteChannel writableByteChannel;
+    private List<AutoCloseable> closeables;
 
-    public StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
+    static StreamToDisk fromPagedFile( PagedFile pagedFile ) throws IOException
     {
-        this.storeDir = storeDir;
-        this.fs = fs;
-        this.pageCache = pageCache;
-        fs.mkdirs( storeDir );
-        this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
-        channels = new HashMap<>();
-        pagedFiles = new HashMap<>();
+        return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile );
+    }
 
+    static StreamToDisk fromFile( FileSystemAbstraction fsa, File file ) throws IOException
+    {
+        return new StreamToDisk( fsa.open( file, OpenMode.READ_WRITE ) );
+    }
+
+    private StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
+    {
+        this.writableByteChannel = writableByteChannel;
+        this.closeables = new ArrayList<>();
+        this.closeables.add( writableByteChannel );
+        this.closeables.addAll( Arrays.asList( closeables ) );
     }
 
     @Override
-    public void write( String destination, int requiredAlignment, byte[] data ) throws IOException
+    public void write( byte[] data ) throws IOException
     {
-        File fileName = new File( storeDir, destination );
-        fs.mkdirs( fileName.getParentFile() );
-
-        fileCopyMonitor.copyFile( fileName );
-
-        if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( destination ) )
+        ByteBuffer buffer = ByteBuffer.wrap( data );
+        while ( buffer.hasRemaining() )
         {
-            WritableByteChannel channel = channels.get( destination );
-            if ( channel == null )
-            {
-                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
-                PagedFile pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-                channel = pagedFile.openWritableByteChannel();
-                pagedFiles.put( destination, pagedFile );
-                channels.put( destination, channel );
-            }
-
-            ByteBuffer buffer = ByteBuffer.wrap( data );
-            while ( buffer.hasRemaining() )
-            {
-                channel.write( buffer );
-            }
-        }
-        else
-        {
-            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
-            {
-                outputStream.write( data );
-            }
+            writableByteChannel.write( buffer );
         }
     }
 
     @Override
     public void close() throws IOException
     {
-        for ( WritableByteChannel channel : channels.values() )
-        {
-            channel.close();
-        }
-        for ( PagedFile pagedFile : pagedFiles.values() )
-        {
-            pagedFile.close();
-        }
+        closeAll( closeables );
     }
 }

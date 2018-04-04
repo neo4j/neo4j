@@ -33,6 +33,8 @@ import org.neo4j.logging.NullLog;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -163,6 +165,36 @@ public class TestGraphDatabaseConfigurationMigrator
                 migratedProperties, stringMap( "dbms.allow_upgrade", "true" ));
 
         assertContainsWarningMessage("dbms.allow_format_migration has been replaced with dbms.allow_upgrade.");
+    }
+
+    @Test
+    public void migrateEnableNativeSchemaIndex()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.enable_native_schema_index", "false" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.index.default_schema_provider", LUCENE10.providerName() ));
+
+        assertContainsWarningMessage("unsupported.dbms.enable_native_schema_index has been replaced with dbms.index.default_schema_provider.");
+    }
+
+    @Test
+    public void skipMigrationOfEnableNativeSchemaIndexIfNotPresent()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.index.default_schema_provider", NATIVE10.providerName() ), getLog() );
+        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.index.default_schema_provider", NATIVE10.providerName() ) );
+        logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    public void skipMigrationOfEnableNativeSchemaIndexIfDefaultSchemaIndexConfigured()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap(
+                "dbms.index.default_schema_provider", NATIVE10.providerName(),
+                "unsupported.dbms.enable_native_schema_index", "false"
+                ), getLog() );
+        assertEquals( "Should keep pre configured default schema index.",
+                migratedProperties, stringMap( "dbms.index.default_schema_provider", NATIVE10.providerName() ) );
+        assertContainsWarningMessage();
     }
 
     private Log getLog()

@@ -23,8 +23,11 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ValueRange;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,7 +38,6 @@ import java.util.stream.IntStream;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
-import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -45,8 +47,11 @@ import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.virtual.ListValue;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -58,6 +63,8 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.bolt.v1.packstream.PackStream.INT_16;
+import static org.neo4j.bolt.v1.packstream.PackStream.INT_32;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -242,6 +249,45 @@ public class Neo4jPackV2Test
     public void shouldPackAndUnpackListsOfDateTimeWithTimeZoneOffset()
     {
         testPackingAndUnpacking( () -> randomList( this::randomDateTimeWithTimeZoneOffset ) );
+    }
+
+    @Test
+    public void shouldPackLocalDateTimeWithTimeZoneOffset()
+    {
+        LocalDateTime localDateTime = LocalDateTime.of( 2015, 3, 23, 19, 15, 59, 10 );
+        ZoneOffset offset = ZoneOffset.ofHoursMinutes( -5, -15 );
+        ZonedDateTime zonedDateTime = ZonedDateTime.of( localDateTime, offset );
+
+        PackedOutputArray packedOutput = pack( datetime( zonedDateTime ) );
+        ByteBuffer buffer = ByteBuffer.wrap( packedOutput.bytes() );
+
+        buffer.getShort(); // skip struct header
+        assertEquals( INT_32, buffer.get() );
+        assertEquals( localDateTime.toEpochSecond( UTC ), buffer.getInt() );
+        assertEquals( localDateTime.getNano(), buffer.get() );
+        assertEquals( INT_16, buffer.get() );
+        assertEquals( offset.getTotalSeconds(), buffer.getShort() );
+    }
+
+    @Test
+    public void shouldPackLocalDateTimeWithTimeZoneId()
+    {
+        LocalDateTime localDateTime = LocalDateTime.of( 1999, 12, 30, 9, 49, 20, 999999999 );
+        ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
+        ZonedDateTime zonedDateTime = ZonedDateTime.of( localDateTime, zoneId );
+
+        PackedOutputArray packedOutput = pack( datetime( zonedDateTime ) );
+        ByteBuffer buffer = ByteBuffer.wrap( packedOutput.bytes() );
+
+        buffer.getShort(); // skip struct header
+        assertEquals( INT_32, buffer.get() );
+        assertEquals( localDateTime.toEpochSecond( UTC ), buffer.getInt() );
+        assertEquals( INT_32, buffer.get() );
+        assertEquals( localDateTime.getNano(), buffer.getInt() );
+        buffer.getShort(); // skip zoneId string header
+        byte[] zoneIdBytes = new byte[zoneId.getId().getBytes( UTF_8 ).length];
+        buffer.get( zoneIdBytes );
+        assertEquals( zoneId.getId(), new String( zoneIdBytes, UTF_8 ) );
     }
 
     private static <T extends AnyValue> void testPackingAndUnpacking( Supplier<T> randomValueGenerator )

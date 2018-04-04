@@ -68,7 +68,7 @@ public class PartitionedIndexStorageTest
     public void createIndexStorage()
     {
         fs = fsRule.get();
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), false );
+        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir() );
     }
 
     @Test
@@ -182,7 +182,7 @@ public class PartitionedIndexStorageTest
                 } )
         {
             PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
-                    scramblingFs, testDir.graphDbDir(), false );
+                    scramblingFs, testDir.graphDbDir() );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )
@@ -237,7 +237,7 @@ public class PartitionedIndexStorageTest
 
     private void createRandomFile( File rootFolder ) throws IOException
     {
-        File file = new File( rootFolder, RandomStringUtils.randomAlphabetic( 5 ) );
+        File file = new File( rootFolder, RandomStringUtils.randomNumeric( 5 ) );
         try ( StoreChannel channel = fs.create( file ) )
         {
             channel.writeAll( ByteBuffer.allocate( 100 ) );
@@ -246,7 +246,7 @@ public class PartitionedIndexStorageTest
 
     private File createRandomFolder( File rootFolder ) throws IOException
     {
-        File folder = new File( rootFolder, RandomStringUtils.randomAlphabetic( 5 ) );
+        File folder = new File( rootFolder, RandomStringUtils.randomNumeric( 5 ) );
         fs.mkdirs( folder );
         return folder;
     }
@@ -254,7 +254,7 @@ public class PartitionedIndexStorageTest
     private static Document randomDocument()
     {
         Document doc = new Document();
-        doc.add( new StringField( "field", RandomStringUtils.randomAlphabetic( 5 ), Field.Store.YES ) );
+        doc.add( new StringField( "field", RandomStringUtils.randomNumeric( 5 ), Field.Store.YES ) );
         return doc;
     }
 

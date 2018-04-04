@@ -493,7 +493,7 @@ class LoadCsvAcceptanceTest
     try {
       intercept[QueryExecutionException] {
         db.execute(s"LOAD CSV FROM 'file:///../foo.csv' AS line RETURN line[0] AS field", emptyMap()).asScala.size
-      }.getMessage should endWith(" file URL points outside configured import directory")
+      }.getMessage should endWith(" file URL points outside configured import directory").or(include("Couldn't load the external resource at"))
     } finally {
       db.shutdown()
     }

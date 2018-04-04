@@ -22,16 +22,19 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -39,10 +42,11 @@ import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>, IOException> implements IndexPopulator
+class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
 {
     private final IndexSamplerWrapper sampler;
 
@@ -73,13 +77,16 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
+        Map<ValueGroup,List<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
-            select( update.values()[0].valueGroup() ).batchUpdate( update );
+            ValueGroup valueGroup = update.values()[0].valueGroup();
+            List<IndexEntryUpdate<?>> batch = batchMap.computeIfAbsent( valueGroup, k -> new ArrayList<>() );
+            batch.add( update );
         }
-        for ( PartPopulator part : this )
+        for ( Map.Entry<ValueGroup,List<IndexEntryUpdate<?>>> entry : batchMap.entrySet() )
         {
-            part.applyUpdateBatch();
+            select( entry.getKey() ).add( entry.getValue() );
         }
     }
 
@@ -173,31 +180,12 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
     }
 
-    static class PartPopulator<KEY extends NativeSchemaKey> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
+    static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
     {
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
-
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
                        IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
-        }
-
-        void batchUpdate( IndexEntryUpdate<?> update )
-        {
-            updates.add( update );
-        }
-
-        void applyUpdateBatch() throws IOException, IndexEntryConflictException
-        {
-            try
-            {
-                add( updates );
-            }
-            finally
-            {
-                updates = new ArrayList<>();
-            }
         }
 
         @Override
@@ -219,7 +207,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>, IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
@@ -277,7 +265,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeSchemaKey> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
+        private <KEY extends NativeSchemaKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout ) throws IOException
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor, indexId, samplingConfig );
             populator.create();

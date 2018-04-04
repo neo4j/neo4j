@@ -61,7 +61,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query,
+    val result = executeWith(Configs.All - Configs.Version2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -157,7 +157,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN n""".stripMargin
 
     // WHEN
-    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = "foo" -> 42)
+    failWithError(Configs.AbsolutelyAll + Configs.Morsel, query, List("No such index"), params = Map("foo" -> 42))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {

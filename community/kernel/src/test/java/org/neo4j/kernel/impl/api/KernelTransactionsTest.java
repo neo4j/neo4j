@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -595,7 +596,8 @@ public class KernelTransactionsTest
                 new CanWrite(),
                 DefaultCursors::new, AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
-                mock( ConstraintSemantics.class ), mock( SchemaState.class ) );
+                mock( ConstraintSemantics.class ), mock( SchemaState.class ),
+                mock( IndexingService.class) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -664,7 +666,8 @@ public class KernelTransactionsTest
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     accessCapability, cursors, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
-                    ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ) );
+                    ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                    mock( IndexingService.class ) );
         }
 
         @Override

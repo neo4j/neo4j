@@ -55,7 +55,7 @@ public class ReadOnlyLuceneSchemaIndexTest
     public void setUp()
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                fileSystemRule.get(), testDirectory.directory(), false );
+                fileSystemRule.get(), testDirectory.directory() );
         Config config = Config.defaults();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, SchemaIndexDescriptorFactory.forLabel( 0, 0 ),

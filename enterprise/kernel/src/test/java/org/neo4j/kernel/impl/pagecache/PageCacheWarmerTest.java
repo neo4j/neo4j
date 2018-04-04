@@ -178,6 +178,7 @@ public class PageCacheWarmerTest
             }
             pf.flushAndForce();
             PageCacheWarmer warmer = new PageCacheWarmer( fs, pageCache, scheduler );
+            warmer.start();
             warmer.profile();
         }
 

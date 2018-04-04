@@ -92,7 +92,6 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should handle profile in compiled runtime") {
     runWithConfig() {
       db =>
-        assertProfiled(db, "CYPHER 3.1 runtime=compiled PROFILE MATCH (n) RETURN n")
         assertProfiled(db, "CYPHER 3.4 runtime=compiled PROFILE MATCH (n) RETURN n")
     }
   }

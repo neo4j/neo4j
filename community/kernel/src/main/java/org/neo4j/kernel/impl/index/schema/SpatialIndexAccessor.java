@@ -49,7 +49,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor, IOException> implements IndexAccessor
+class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
 {
     private final SchemaIndexDescriptor descriptor;
 
@@ -204,13 +204,13 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         }
 
         @Override
-        public SpatialIndexPartReader<SpatialSchemaKey,NativeSchemaValue> newReader()
+        public SpatialIndexPartReader<NativeSchemaValue> newReader()
         {
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
         }
     }
 
-    static class PartFactory implements Factory<PartAccessor, IOException>
+    static class PartFactory implements Factory<PartAccessor>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
@@ -254,6 +254,10 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             if ( !fs.fileExists( fileLayout.indexFile ) )
             {
                 createEmptyIndex( fileLayout );
+            }
+            else
+            {
+                fileLayout.readHeader( pageCache );
             }
             return new PartAccessor( pageCache,
                                      fs,

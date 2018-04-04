@@ -144,12 +144,6 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public CursorFactory cursors()
-    {
-        return newKernel.cursors();
-    }
-
-    @Override
     public Session beginSession( LoginContext loginContext )
     {
         return newKernel.beginSession( loginContext );

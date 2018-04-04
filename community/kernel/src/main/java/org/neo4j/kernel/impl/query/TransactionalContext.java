@@ -61,6 +61,8 @@ public interface TransactionalContext
 
     void cleanForReuse();
 
+    boolean twoLayerTransactionState();
+
     TransactionalContext getOrBeginNewIfClosed();
 
     boolean isOpen();

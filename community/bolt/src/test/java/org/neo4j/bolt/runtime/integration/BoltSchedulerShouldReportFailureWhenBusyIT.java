@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime.integration;
 
-import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,34 +28,26 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.emptyMap;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -71,13 +63,12 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
     private AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule::get, getSettingsFunction() );
+    private TransportConnection connection1;
+    private TransportConnection connection2;
+    private TransportConnection connection3;
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
-    @Rule
-    public OtherThreadRule<Integer> spawnedUpdate1 = new OtherThreadRule<>();
-    @Rule
-    public OtherThreadRule<Integer> spawnedUpdate2 = new OtherThreadRule<>();
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
@@ -100,37 +91,50 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         };
     }
 
+    @Before
+    public void setup() throws Exception
+    {
+        address = server.lookupDefaultConnector();
+
+        connection1 = performHandshake( newConnection() );
+        connection2 = performHandshake( newConnection() );
+        connection3 = performHandshake( newConnection() );
+    }
+
+    @After
+    public void cleanup() throws Exception
+    {
+        connection1.disconnect();
+        connection2.disconnect();
+        connection3.disconnect();
+    }
+
     @Test
     public void shouldReportFailureWhenAllThreadsInThreadPoolAreBusy() throws Exception
     {
-        AtomicInteger updateCounter = new AtomicInteger();
+        // it's enough to get the bolt state machine into streaming mode to have
+        // the thread sticked to the connection, causing all the available threads
+        // to be busy (logically)
+        enterStreaming( connection1 );
+        enterStreaming( connection2 );
 
-        address = server.lookupDefaultConnector();
-        TransportConnection connection1 = performHandshake( newConnection() );
-        TransportConnection connection2 = performHandshake( newConnection() );
-        TransportConnection connection3 = performHandshake( newConnection() );
-        TransportConnection connection4 = performHandshake( newConnection() );
+        try
+        {
+            connection3.send( util.chunk( run( "RETURN 1" ), pullAll() ) );
+            assertThat( connection3, util.eventuallyReceives(
+                    msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ),
+                    msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
 
-        // Generate a Lock
-        createNode( connection1, 100 );
-        // Start update request
-        updateNode( connection1, 100, 101, updateCounter );
-
-        // Try to update the same node, these two lines will block all available threads
-        Future<Integer> result1 = spawnedUpdate1.execute( state -> updateNodeNoThrow( connection2, 100, 101, updateCounter ) );
-        Future<Integer> result2 = spawnedUpdate2.execute( state -> updateNodeNoThrow( connection3, 100, 101, updateCounter ) );
-
-        Predicates.await( () -> updateCounter.get() > 2, 1, MINUTES );
-
-        connection4.send( util.chunk( run( "RETURN 1" ), pullAll() ) );
-        assertThat( connection4,
-                util.eventuallyReceives( msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ),
-                        msgFailure( Status.Request.NoThreadsAvailable, "There are no available threads to serve this request at the moment" ) ) );
-
-        userLogProvider.assertContainsMessageContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
-        internalLogProvider.assertAtLeastOnce( AssertableLogProvider.inLog( startsWith( BoltConnection.class.getPackage().getName() ) ).error(
-                containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
-                isA( RejectedExecutionException.class ) ) );
+            userLogProvider.assertContainsMessageContaining( "since there are no available threads to serve it at the moment. You can retry at a later time" );
+            internalLogProvider.assertAtLeastOnce( AssertableLogProvider.inLog( startsWith( BoltConnection.class.getPackage().getName() ) ).error(
+                    containsString( "since there are no available threads to serve it at the moment. You can retry at a later time" ),
+                    isA( RejectedExecutionException.class ) ) );
+        }
+        finally
+        {
+            exitStreaming( connection1 );
+            exitStreaming( connection2 );
+        }
     }
 
     private TransportConnection performHandshake( TransportConnection connection ) throws Exception
@@ -143,35 +147,17 @@ public class BoltSchedulerShouldReportFailureWhenBusyIT extends AbstractBoltTran
         return connection;
     }
 
-    private void createNode( TransportConnection connection, int id ) throws Exception
+    private void enterStreaming( TransportConnection connection ) throws Exception
     {
-        connection.send( util.chunk( run( "BEGIN" ), pullAll(), run( "CREATE (n { id: {id} })", ValueUtils.asMapValue( MapUtil.map( "id", id ) ) ), pullAll(),
-                run( "COMMIT" ), pullAll() ) );
+        connection.send( util.chunk( run( "UNWIND RANGE (1, 100) AS x RETURN x" ) ) );
 
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess(), msgSuccess(), msgSuccess(), msgSuccess(), msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
-    private void updateNode( TransportConnection connection, int oldId, int newId, AtomicInteger updateCounter ) throws Exception
+    private void exitStreaming( TransportConnection connection ) throws Exception
     {
-        connection.send( util.chunk( run( "BEGIN" ), pullAll(),
-                run( "MATCH (n { id: {oldId} }) SET n.id = {newId}", ValueUtils.asMapValue( MapUtil.map( "oldId", oldId, "newId", newId ) ) ), pullAll() ) );
+        connection.send( util.chunk( discardAll() ) );
 
-        updateCounter.incrementAndGet();
-
-        assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess(), msgSuccess(), msgSuccess() ) );
-    }
-
-    private int updateNodeNoThrow( TransportConnection connection, int oldId, int newId, AtomicInteger updateCounter )
-    {
-        try
-        {
-            updateNode( connection, oldId, newId, updateCounter );
-        }
-        catch ( Throwable t )
-        {
-            return -1;
-        }
-
-        return 0;
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 }

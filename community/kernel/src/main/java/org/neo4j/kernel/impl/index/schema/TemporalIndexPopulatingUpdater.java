@@ -25,8 +25,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.values.storable.ValueGroup;
 
-public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpdater,IOException> implements IndexUpdater
+public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpdater> implements IndexUpdater
 {
     TemporalIndexPopulatingUpdater( TemporalIndexPopulator populator, PropertyAccessor propertyAccessor )
     {
@@ -78,7 +79,7 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         }
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<IndexUpdater,IOException>
+    static class PartFactory implements TemporalIndexCache.Factory<IndexUpdater>
     {
         private final TemporalIndexPopulator populator;
         private PropertyAccessor propertyAccessor;
@@ -92,37 +93,37 @@ public class TemporalIndexPopulatingUpdater extends TemporalIndexCache<IndexUpda
         @Override
         public IndexUpdater newDate() throws IOException
         {
-            return populator.date().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.DATE).newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newLocalDateTime() throws IOException
         {
-            return populator.localDateTime().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.LOCAL_DATE_TIME).newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newZonedDateTime() throws IOException
         {
-            return populator.zonedDateTime().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.ZONED_DATE_TIME).newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newLocalTime() throws IOException
         {
-            return populator.localTime().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.LOCAL_TIME).newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newZonedTime() throws IOException
         {
-            return populator.zonedTime().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.ZONED_TIME).newPopulatingUpdater( propertyAccessor );
         }
 
         @Override
         public IndexUpdater newDuration() throws IOException
         {
-            return populator.duration().newPopulatingUpdater( propertyAccessor );
+            return populator.select(ValueGroup.DURATION).newPopulatingUpdater( propertyAccessor );
         }
     }
 }

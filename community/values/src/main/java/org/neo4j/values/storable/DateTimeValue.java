@@ -123,6 +123,20 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return new DateTimeValue( ofInstant( ofEpochMilli( millisUTC.longValue() ), UTC ) );
     }
 
+    public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
+    {
+        if ( fieldsFromHeader != null )
+        {
+            if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
+            {
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
+            }
+            // Override defaultZone
+            defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );
+        }
+        return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );
+    }
+
     public static DateTimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone )
     {
         return parse( DateTimeValue.class, PATTERN, DateTimeValue::parse, text, defaultZone );
@@ -355,10 +369,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     private final ZonedDateTime value;
+    private final long epochSeconds;
 
     private DateTimeValue( ZonedDateTime value )
     {
         this.value = value;
+        this.epochSeconds = this.value.toEpochSecond();
     }
 
     @Override
@@ -423,9 +439,27 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         if ( other instanceof DateTimeValue )
         {
             ZonedDateTime that = ((DateTimeValue) other).value;
-            return value.toLocalDateTime().equals( that.toLocalDateTime() ) &&
-                   value.getOffset().equals( that.getOffset() ) &&
-                   !areDifferentZones( value.getZone(), that.getZone() );
+            boolean res = value.toLocalDateTime().equals( that.toLocalDateTime() );
+            if ( res )
+            {
+                ZoneId thisZone = value.getZone();
+                ZoneId thatZone = that.getZone();
+                boolean thisIsOffset = thisZone instanceof ZoneOffset;
+                boolean thatIsOffset = thatZone instanceof ZoneOffset;
+                if ( thisIsOffset && thatIsOffset )
+                {
+                    res = thisZone.equals( thatZone );
+                }
+                else if ( !thisIsOffset && !thatIsOffset )
+                {
+                    res = TimeZones.map( thisZone.getId() ) == TimeZones.map( thatZone.getId() );
+                }
+                else
+                {
+                    res = false;
+                }
+            }
+            return res;
 
         }
         return false;
@@ -434,44 +468,41 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        Instant instant = value.toInstant();
-        ZoneId zone = value.getZone();
-        if ( zone instanceof ZoneOffset )
-        {
-            ZoneOffset offset = (ZoneOffset) zone;
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), offset.getTotalSeconds() );
-        }
-        else
-        {
-            writer.writeDateTime( instant.getEpochSecond(), instant.getNano(), zone.getId() );
-        }
+        writer.writeDateTime( value );
     }
 
     @Override
     int unsafeCompareTo( Value other )
     {
-        ZonedDateTime that = ((DateTimeValue) other).value;
-        int cmp = Long.compare( value.toEpochSecond(), that.toEpochSecond() );
+        DateTimeValue that = (DateTimeValue) other;
+        int cmp = Long.compare( epochSeconds, that.epochSeconds );
         if ( cmp == 0 )
         {
-            cmp = value.toLocalTime().getNano() - that.toLocalTime().getNano();
+            cmp = value.toLocalTime().getNano() - that.value.toLocalTime().getNano();
             if ( cmp == 0 )
             {
-                cmp = value.toLocalDateTime().compareTo( that.toLocalDateTime() );
+                ZoneOffset thisOffset = value.getOffset();
+                ZoneOffset thatOffset = that.value.getOffset();
+
+                cmp = Integer.compare( thisOffset.getTotalSeconds(), thatOffset.getTotalSeconds() );
                 if ( cmp == 0 )
                 {
                     ZoneId thisZone = value.getZone();
-                    ZoneId thatZone = that.getZone();
+                    ZoneId thatZone = that.value.getZone();
                     boolean thisIsOffset = thisZone instanceof ZoneOffset;
                     boolean thatIsOffset = thatZone instanceof ZoneOffset;
-                    cmp = Boolean.compare( thatIsOffset, thisIsOffset ); // offsets before named zones
-                    if ( cmp == 0 && areDifferentZones( thisZone, thatZone ) )
+                    // non-named timezone (just offset) before named-time zones, alphabetically
+                    cmp = Boolean.compare( thatIsOffset, thisIsOffset );
+                    if ( cmp == 0 )
                     {
-                        cmp = thisZone.getId().compareTo( thatZone.getId() );
+                        if ( !thisIsOffset ) // => also means !thatIsOffset
+                        {
+                            cmp = compareNamedZonesWithMapping( thisZone, thatZone );
+                        }
                     }
                     if ( cmp == 0 )
                     {
-                        cmp = value.getChronology().compareTo( that.getChronology() );
+                        cmp = value.getChronology().compareTo( that.value.getChronology() );
                     }
                 }
             }
@@ -479,11 +510,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return cmp;
     }
 
-    private boolean areDifferentZones( ZoneId thisZone, ZoneId thatZone )
+    private int compareNamedZonesWithMapping( ZoneId thisZone, ZoneId thatZone )
     {
-        return !(thisZone instanceof ZoneOffset) &&
-               !(thatZone instanceof ZoneOffset) &&
-                TimeZones.map( thisZone.getId() ) != TimeZones.map( thatZone.getId() );
+        String thisZoneNormalized = TimeZones.map( TimeZones.map( thisZone.getId() ) );
+        String thatZoneNormalized = TimeZones.map( TimeZones.map( thatZone.getId() ) );
+        return thisZoneNormalized.compareTo( thatZoneNormalized );
     }
 
     @Override

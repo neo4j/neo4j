@@ -81,7 +81,7 @@ public class VerboseTimeout extends Timeout
     {
         private TimeUnit timeUnit = TimeUnit.SECONDS;
         private long timeout;
-        private List<FailureParameter> additionalParameters = new ArrayList<>();
+        private List<FailureParameter<?>> additionalParameters = new ArrayList<>();
 
         private static Function<Object,String> toStringFunction()
         {
@@ -98,7 +98,7 @@ public class VerboseTimeout extends Timeout
 
         public <T> VerboseTimeoutBuilder describeOnFailure( T entity, Function<T,String> descriptor )
         {
-            additionalParameters.add( new FailureParameter( entity, descriptor ) );
+            additionalParameters.add( new FailureParameter<>( entity, descriptor ) );
             return this;
         }
 
@@ -125,7 +125,7 @@ public class VerboseTimeout extends Timeout
             return timeUnit;
         }
 
-        public List<FailureParameter> getAdditionalParameters()
+        public List<FailureParameter<?>> getAdditionalParameters()
         {
             return additionalParameters;
         }
@@ -158,7 +158,7 @@ public class VerboseTimeout extends Timeout
         private final Statement originalStatement;
         private final TimeUnit timeUnit;
         private final long timeout;
-        private final List<VerboseTimeoutBuilder.FailureParameter> additionalParameters;
+        private final List<VerboseTimeoutBuilder.FailureParameter<?>> additionalParameters;
 
         VerboseFailOnTimeout( Statement statement, VerboseTimeoutBuilder builder )
         {
@@ -207,7 +207,7 @@ public class VerboseTimeout extends Timeout
                 if ( !additionalParameters.isEmpty() )
                 {
                     System.err.println( "==== Requested additional parameters: ====" );
-                    for ( VerboseTimeoutBuilder.FailureParameter additionalParameter : additionalParameters )
+                    for ( VerboseTimeoutBuilder.FailureParameter<?> additionalParameter : additionalParameters )
                     {
                         System.err.println( additionalParameter.describe() );
                     }

@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 /**
  * Controls access to {@link IndexPopulator}, {@link IndexAccessor} during different stages
@@ -112,6 +113,14 @@ public interface IndexProxy extends SchemaDescriptorSupplier
     void activate() throws IndexActivationFailedKernelException;
 
     void validate() throws IndexPopulationFailedKernelException, UniquePropertyValueValidationException;
+
+    /**
+     * Validates a {@link Value} so that it's OK to later apply to the index. This method is designed to be
+     * called before committing a transaction as to prevent exception during applying that transaction.
+     *
+     * @param tuple {@link Value value tuple} to validate.
+     */
+    void validateBeforeCommit( Value[] tuple );
 
     long getIndexId();
 

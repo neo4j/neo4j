@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.api.index;
 
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 
 import org.neo4j.string.UTF8;
@@ -166,44 +169,37 @@ public final class ArrayEncoder
         }
 
         @Override
-        public void writeDate( long epochDay ) throws RuntimeException
+        public void writeDate( LocalDate localDate ) throws RuntimeException
         {
-            builder.append( DateValue.epochDate( epochDay ).prettyPrint() );
+            builder.append( DateValue.date( localDate ).prettyPrint() );
             builder.append( '|' );
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+        public void writeLocalTime( LocalTime localTime ) throws RuntimeException
         {
-            builder.append( LocalTimeValue.localTime( nanoOfDay ).prettyPrint() );
+            builder.append( LocalTimeValue.localTime( localTime ).prettyPrint() );
             builder.append( '|' );
         }
 
         @Override
-        public void writeTime( long nanosOfDayLocal, int offsetSeconds ) throws RuntimeException
+        public void writeTime( OffsetTime offsetTime ) throws RuntimeException
         {
-            builder.append( TimeValue.time( nanosOfDayLocal, ZoneOffset.ofTotalSeconds( offsetSeconds ) ).prettyPrint() );
+            builder.append( TimeValue.time( offsetTime ).prettyPrint() );
             builder.append( '|' );
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
         {
-            builder.append( LocalDateTimeValue.localDateTime( epochSecond, nano ).prettyPrint() );
+            builder.append( LocalDateTimeValue.localDateTime( localDateTime ).prettyPrint() );
             builder.append( '|' );
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
         {
-            builder.append( DateTimeValue.datetime( epochSecondUTC, nano, ZoneOffset.ofTotalSeconds( offsetSeconds ) ).prettyPrint() );
-            builder.append( '|' );
-        }
-
-        @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
-        {
-            builder.append( DateTimeValue.datetime( epochSecondUTC, nano, ZoneId.of( zoneId ) ).prettyPrint() );
+            builder.append( DateTimeValue.datetime( zonedDateTime ).prettyPrint() );
             builder.append( '|' );
         }
 

@@ -1,3 +1,0 @@
-org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategy
-org.neo4j.causalclustering.readreplica.ConnectRandomlyWithinServerGroupStrategy
-org.neo4j.causalclustering.readreplica.ConnectRandomlyToServerGroupStrategy

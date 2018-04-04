@@ -19,9 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
@@ -31,22 +29,11 @@ import org.neo4j.helpers.collection.Pair;
 public class CoordinateReferenceSystem implements CRS
 {
     public static final CoordinateReferenceSystem Cartesian = new CoordinateReferenceSystem( "cartesian", CRSTable.SR_ORG, 7203, 2, false );
-    public static final CoordinateReferenceSystem Cartesian_3D = new CoordinateReferenceSystem( "cartesian-3D", CRSTable.SR_ORG, 9157, 3, false );
-    public static final CoordinateReferenceSystem WGS84 = new CoordinateReferenceSystem( "WGS-84", CRSTable.EPSG, 4326, 2, true );
-    public static final CoordinateReferenceSystem WGS84_3D = new CoordinateReferenceSystem( "WGS-84-3D", CRSTable.EPSG, 4979, 3, true );
+    public static final CoordinateReferenceSystem Cartesian_3D = new CoordinateReferenceSystem( "cartesian-3d", CRSTable.SR_ORG, 9157, 3, false );
+    public static final CoordinateReferenceSystem WGS84 = new CoordinateReferenceSystem( "wgs-84", CRSTable.EPSG, 4326, 2, true );
+    public static final CoordinateReferenceSystem WGS84_3D = new CoordinateReferenceSystem( "wgs-84-3d", CRSTable.EPSG, 4979, 3, true );
 
     private static final CoordinateReferenceSystem[] TYPES = new CoordinateReferenceSystem[]{Cartesian, Cartesian_3D, WGS84, WGS84_3D};
-    private static final Map<String,CoordinateReferenceSystem> all_by_name = new HashMap<>( TYPES.length );
-    private static final Map<String,CoordinateReferenceSystem> all_by_href = new HashMap<>( TYPES.length );
-
-    static
-    {
-        for ( CoordinateReferenceSystem crs : TYPES )
-        {
-            all_by_name.put( crs.name.toLowerCase(), crs );
-            all_by_href.put( crs.href.toLowerCase(), crs );
-        }
-    }
 
     public static Iterator<CoordinateReferenceSystem> all()
     {
@@ -56,15 +43,14 @@ public class CoordinateReferenceSystem implements CRS
     public static CoordinateReferenceSystem get( int tableId, int code )
     {
         CRSTable table = CRSTable.find( tableId );
-        String href = table.href( code );
-        if ( all_by_href.containsKey( href.toLowerCase() ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_href.get( href.toLowerCase() );
+            if ( type.table == table && type.code == code )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
-        }
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
     }
 
     public static CoordinateReferenceSystem get( CRS crs )
@@ -75,26 +61,27 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem byName( String name )
     {
-        if ( all_by_name.containsKey( name.toLowerCase() ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_name.get( name.toLowerCase() );
+            if ( type.name.equals( name.toLowerCase() ) )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
-        }
+
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
     }
 
     public static CoordinateReferenceSystem get( String href )
     {
-        if ( all_by_href.containsKey( href.toLowerCase() ) )
+        for ( CoordinateReferenceSystem type : TYPES )
         {
-            return all_by_href.get( href.toLowerCase() );
+            if ( type.href.equals( href ) )
+            {
+                return type;
+            }
         }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
-        }
+        throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
     }
 
     public static CoordinateReferenceSystem get( int code )
@@ -102,9 +89,12 @@ public class CoordinateReferenceSystem implements CRS
         for ( CRSTable table : CRSTable.values() )
         {
             String href = table.href( code );
-            if ( all_by_href.containsKey( href.toLowerCase() ) )
+            for ( CoordinateReferenceSystem type : TYPES )
             {
-                return all_by_href.get( href.toLowerCase() );
+                if ( type.href.equals( href ) )
+                {
+                    return type;
+                }
             }
         }
         throw new IllegalArgumentException( "Unknown coordinate reference system code: " + code );
@@ -116,18 +106,17 @@ public class CoordinateReferenceSystem implements CRS
     private final String href;
     private final int dimension;
     private final boolean geographic;
-    private final Pair<double[],double[]> indexEnvelope;
     private final CRSCalculator calculator;
 
     private CoordinateReferenceSystem( String name, CRSTable table, int code, int dimension, boolean geographic )
     {
+        assert name.toLowerCase().equals( name );
         this.name = name;
         this.table = table;
         this.code = code;
         this.href = table.href( code );
         this.dimension = dimension;
         this.geographic = geographic;
-        this.indexEnvelope = envelopeFromCRS( dimension, geographic, -1000000, 1000000 );
         if ( geographic )
         {
             this.calculator = new CRSCalculator.GeographicCalculator( dimension );
@@ -210,31 +199,4 @@ public class CoordinateReferenceSystem implements CRS
         return href.hashCode();
     }
 
-    public Pair<double[],double[]> getIndexEnvelope()
-    {
-        return indexEnvelope;
-    }
-
-    private static Pair<double[],double[]> envelopeFromCRS( int dimension, boolean geographic, double minCartesian, double maxCartesian )
-    {
-        assert dimension >= 2;
-        double[] min = new double[dimension];
-        double[] max = new double[dimension];
-        int cartesianStartIndex = 0;
-        if ( geographic )
-        {
-            // Geographic CRS default to extent of the earth in degrees
-            min[0] = -180.0;
-            max[0] = 180.0;
-            min[1] = -90.0;
-            max[1] = 90.0;
-            cartesianStartIndex = 2;    // if geographic index has higher than 2D, then other dimensions are cartesian
-        }
-        for ( int i = cartesianStartIndex; i < dimension; i++ )
-        {
-            min[i] = minCartesian;
-            max[i] = maxCartesian;
-        }
-        return Pair.of( min, max );
-    }
 }

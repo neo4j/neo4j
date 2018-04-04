@@ -20,14 +20,9 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.util.Map;
-import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.helpers.SocketAddress;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
-
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 class ClusterConfiguration
 {
@@ -47,14 +42,6 @@ class ClusterConfiguration
         settings.put( CausalClusteringSettings.raft_log_rotation_size.name(), "1K" );
         settings.put( CausalClusteringSettings.raft_log_pruning_frequency.name(), "250ms" );
         settings.put( CausalClusteringSettings.raft_log_pruning_strategy.name(), "keep_none" );
-        return settings;
-    }
-
-    static Map<String,IntFunction<String>> configureBackup( Map<String,IntFunction<String>> settings,
-            IntFunction<SocketAddress> address )
-    {
-        settings.put( OnlineBackupSettings.online_backup_enabled.name(), id -> TRUE );
-        settings.put( OnlineBackupSettings.online_backup_server.name(), id -> address.apply( id ).toString() );
         return settings;
     }
 }

@@ -342,24 +342,11 @@ public final class UTF8StringValue extends StringValue
 
     public static int codePointByteArrayCompare( byte[] value1, byte[] value2 )
     {
-        return codePointByteArrayCompare( value1, 0, value1.length,
-                value2, 0, value2.length, false );
+        return codePointByteArrayCompare( value1, 0, value1.length, value2, 0, value2.length );
     }
 
     public static int codePointByteArrayCompare( byte[] value1, int value1Offset, int value1Length,
             byte[] value2, int value2Offset, int value2Length )
-    {
-        return codePointByteArrayCompare( value1, value1Offset, value1Length,
-                value2, value2Offset, value2Length, false );
-    }
-
-    public static int codePointByteArrayCompare( byte[] value1, byte[] value2, boolean ignoreLength )
-    {
-        return codePointByteArrayCompare( value1, 0, value1.length, value2, 0, value2.length, ignoreLength );
-    }
-
-    public static int codePointByteArrayCompare( byte[] value1, int value1Offset, int value1Length,
-            byte[] value2, int value2Offset, int value2Length, boolean ignoreLength )
     {
         int len1 = value1.length;
         int len2 = value2.length;
@@ -391,11 +378,7 @@ public final class UTF8StringValue extends StringValue
                 return thisCodePoint - thatCodePoint;
             }
         }
-        if ( !ignoreLength )
-        {
-            return numberOfCodePoints( value1, value1Offset, value1Length ) - numberOfCodePoints( value2, value2Offset, value2Length );
-        }
-        return 0;
+        return numberOfCodePoints( value1, value1Offset, value1Length ) - numberOfCodePoints( value2, value2Offset, value2Length );
     }
 
     @Override

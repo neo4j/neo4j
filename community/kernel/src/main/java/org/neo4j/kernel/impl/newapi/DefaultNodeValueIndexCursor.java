@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.stream;
@@ -75,19 +76,24 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             seekQuery( descriptor, query );
             break;
 
-        case stringSuffix:
-        case stringContains:
         case exists:
             scanQuery( descriptor );
             break;
 
         case range:
             assert query.length == 1;
-            rangeQuery( descriptor, (IndexQuery.RangePredicate) query[0] );
+            rangeQuery( descriptor, (IndexQuery.RangePredicate) firstPredicate );
             break;
 
         case stringPrefix:
-            prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) query[0] );
+            assert query.length == 1;
+            prefixQuery( descriptor, (IndexQuery.StringPrefixPredicate) firstPredicate );
+            break;
+
+        case stringSuffix:
+        case stringContains:
+            assert query.length == 1;
+            suffixOrContainsQuery( descriptor, firstPredicate );
             break;
 
         default:
@@ -229,10 +235,11 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate predicate )
+    private void rangeQuery( SchemaIndexDescriptor descriptor, IndexQuery.RangePredicate<?> predicate )
     {
         ValueGroup valueGroup = predicate.valueGroup();
-        this.needsValues = valueGroup == ValueGroup.TEXT || valueGroup == ValueGroup.NUMBER;
+        ValueCategory category = valueGroup.category();
+        this.needsValues = category == ValueCategory.TEXT || category == ValueCategory.NUMBER || category == ValueCategory.TEMPORAL;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -252,6 +259,18 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             TransactionState txState = read.txState();
             PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
+        }
+    }
+
+    private void suffixOrContainsQuery( SchemaIndexDescriptor descriptor, IndexQuery query )
+    {
+        needsValues = true;
+        if ( read.hasTxStateWithChanges() )
+        {
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForSuffixOrContains( descriptor, query );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }

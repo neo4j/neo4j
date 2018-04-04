@@ -24,19 +24,25 @@ import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.IndexTextValueLengthValidator;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.Value;
 
 /**
  * {@link IndexAccessor} using {@link StringLayout}, i.e for {@link String} values.
  */
 public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringSchemaKey,NativeSchemaValue>
 {
+    private static final Validator<Value> VALIDATOR = new IndexTextValueLengthValidator( TreeNodeDynamicSize.MAX_KEY_SIZE );
+
     StringSchemaIndexAccessor(
             PageCache pageCache,
             FileSystemAbstraction fs,
@@ -56,5 +62,11 @@ public class StringSchemaIndexAccessor extends NativeSchemaIndexAccessor<StringS
     {
         assertOpen();
         return new StringSchemaIndexReader( tree, layout, samplingConfig, descriptor );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        VALIDATOR.validate( tuple[0] );
     }
 }

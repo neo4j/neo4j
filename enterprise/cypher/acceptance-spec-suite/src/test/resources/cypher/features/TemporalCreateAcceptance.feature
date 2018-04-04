@@ -402,6 +402,26 @@ Feature: TemporalCreateAcceptance
       | 'PT1M31S' |
     And no side effects
 
+  Scenario: Should construct temporal with time offset with second precision
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [ time({hour: 12, minute: 34, second: 56, timezone:'+02:05:00'}),
+               time({hour: 12, minute: 34, second: 56, timezone:'+02:05:59'}),
+               time({hour: 12, minute: 34, second: 56, timezone:'-02:05:07'}),
+               datetime({year: 1984, month: 10, day: 11, hour: 12, minute: 34, second: 56, timezone:'+02:05:59'})
+             ] as d
+      RETURN d
+      """
+    Then the result should be, in order:
+      | d                              |
+      | '12:34:56+02:05'               |
+      | '12:34:56+02:05:59'            |
+      | '12:34:56-02:05:07'            |
+      | '1984-10-11T12:34:56+02:05:59' |
+
+    And no side effects
+
   Scenario: Should store date
     Given an empty graph
     When executing query:

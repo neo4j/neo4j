@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -47,7 +48,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
@@ -229,9 +229,9 @@ public class BoltResponseMessageTest
         RecordingByteChannel channel = new RecordingByteChannel();
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
                 neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                neo4jPack.newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK,
-                NullBoltMessageLogger.getInstance() );
+        BufferedChannelOutput output = new BufferedChannelOutput( channel );
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+                NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         msg.dispatch( writer );
         writer.flush();

@@ -38,7 +38,7 @@ public class ClientCrashingWriter implements MadeUpWriter
     @Override
     public void write( ReadableByteChannel data )
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect( 1000 );
+        ByteBuffer buffer = ByteBuffer.allocate( 1000 );
         while ( true )
         {
             buffer.clear();

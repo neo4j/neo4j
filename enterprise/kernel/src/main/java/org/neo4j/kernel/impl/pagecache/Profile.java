@@ -37,6 +37,7 @@ import static org.neo4j.kernel.impl.pagecache.PageCacheWarmer.SUFFIX_CACHEPROF;
 
 final class Profile implements Comparable<Profile>
 {
+    private static final String PROFILE_DIR = "profiles";
     private final File profileFile;
     private final File pagedFile;
     private final long profileSequenceId;
@@ -106,6 +107,7 @@ final class Profile implements Comparable<Profile>
 
     OutputStream write( FileSystemAbstraction fs ) throws IOException
     {
+        fs.mkdirs( profileFile.getParentFile() ); // Create PROFILE_FOLDER if it does not exist.
         OutputStream sink = fs.openAsOutputStream( profileFile, false );
         try
         {
@@ -132,8 +134,8 @@ final class Profile implements Comparable<Profile>
     private static File profileName( File file, long count )
     {
         String name = file.getName();
-        File dir = file.getParentFile();
-        return new File( dir, "." + name + "." + Long.toHexString( count ) + SUFFIX_CACHEPROF );
+        File dir = new File( file.getParentFile(), PROFILE_DIR );
+        return new File( dir, name + "." + Long.toHexString( count ) + SUFFIX_CACHEPROF );
     }
 
     static Predicate<Profile> relevantTo( PagedFile pagedFile )
@@ -143,7 +145,7 @@ final class Profile implements Comparable<Profile>
 
     static Stream<Profile> findProfilesInDirectory( FileSystemAbstraction fs, File dir )
     {
-        File[] files = fs.listFiles( dir );
+        File[] files = fs.listFiles( new File( dir, PROFILE_DIR ) );
         if ( files == null )
         {
             return Stream.empty();
@@ -153,9 +155,10 @@ final class Profile implements Comparable<Profile>
 
     private static Stream<Profile> parseProfileName( File profile )
     {
-        File dir = profile.getParentFile();
+        File profileFolder = profile.getParentFile();
+        File dir = profileFolder.getParentFile();
         String name = profile.getName();
-        if ( !name.startsWith( "." ) && !name.endsWith( SUFFIX_CACHEPROF ) )
+        if ( !name.endsWith( SUFFIX_CACHEPROF ) )
         {
             return Stream.empty();
         }
@@ -165,7 +168,7 @@ final class Profile implements Comparable<Profile>
         try
         {
             long sequenceId = Long.parseLong( countStr, 16 );
-            String mappedFileName = name.substring( 1, secondLastDot );
+            String mappedFileName = name.substring( 0, secondLastDot );
             return Stream.of( new Profile( profile, new File( dir, mappedFileName ), sequenceId ) );
         }
         catch ( NumberFormatException e )

@@ -23,6 +23,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.values.storable.Value;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -108,5 +109,15 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
     {
         return new IndexUpdaterMap( indexMap, mode );
+    }
+
+    public void validateBeforeCommit( SchemaDescriptor index, Value[] tuple )
+    {
+        IndexProxy proxy = indexMap.getIndexProxy( index );
+        if ( proxy != null )
+        {
+            // Do this null-check since from the outside there's a best-effort matching going on between updates and actual indexes backing those.
+            proxy.validateBeforeCommit( tuple );
+        }
     }
 }

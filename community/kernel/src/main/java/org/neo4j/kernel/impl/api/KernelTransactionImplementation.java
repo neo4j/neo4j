@@ -30,10 +30,12 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
@@ -55,7 +57,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -67,6 +68,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -98,6 +100,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
@@ -106,7 +109,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
  * as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
  */
-public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder, AssertOpen
+public class KernelTransactionImplementation implements KernelTransaction, TxStateHolder
 {
     /*
      * IMPORTANT:
@@ -191,7 +194,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine, AccessCapability accessCapability, DefaultCursors cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
-            SchemaState schemaState )
+            SchemaState schemaState, IndexingService indexingService )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -221,7 +224,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, indexingService ),
                         storageStatement,
                         this, new KernelToken( storeLayer, this ), cursors, autoIndexing, constraintIndexCreator,
                         constraintSemantics );
@@ -482,6 +485,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             throw new TransactionTerminatedException( reason );
         }
+        if ( closed )
+        {
+            throw new NotInTransactionException( "The transaction has been closed." );
+        }
     }
 
     private boolean hasChanges()
@@ -720,14 +727,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
     }
 
     @Override
     public Read stableDataRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.dataRead();
     }
 
@@ -741,7 +748,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         upgradeToDataWrites();
         return operations;
     }
@@ -749,32 +756,28 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenWrite tokenWrite()
     {
-        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
-
         return operations.token();
     }
 
     @Override
     public Token token()
     {
-        currentStatement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
         accessCapability.assertCanWrite();
-
         return operations.token();
     }
 
     @Override
     public TokenRead tokenRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.token();
     }
 
     @Override
     public ExplicitIndexRead indexRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
 
         return operations.indexRead();
     }
@@ -783,7 +786,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllows( AccessMode::allowsWrites, "Write" );
         upgradeToDataWrites();
 
         return operations;
@@ -792,7 +795,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SchemaRead schemaRead()
     {
-        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllows( AccessMode::allowsReads, "Read" );
         return operations.schemaRead();
     }
 
@@ -800,7 +803,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        currentStatement.assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
+        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
 
         upgradeToSchemaWrites();
         return operations;
@@ -832,6 +835,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public LockTracer lockTracer()
     {
         return currentStatement.lockTracer();
+    }
+
+    public void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !allows.apply( accessMode ) )
+        {
+            throw accessMode.onViolation(
+                    format( "%s operations are not allowed for %s.", mode,
+                           securityContext().description() ) );
+        }
     }
 
     private void afterCommit( long txId )

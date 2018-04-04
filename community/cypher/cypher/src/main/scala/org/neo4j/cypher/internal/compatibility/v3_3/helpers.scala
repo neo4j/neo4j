@@ -167,7 +167,7 @@ object helpers {
       Some(as3_4(statement3_3)),
       None,
       logicalPlanState.maybeExtractedParams,
-      semanticTable3_4,
+      Some(semanticTable3_4),
       None,
       Some(plan3_4),
       Some(logicalPlanState.maybePeriodicCommit.flatten.map(x => as3_4(x))),
@@ -176,7 +176,7 @@ object helpers {
 
   private def convertLogicalPlan(logicalPlanState: LogicalPlanStateV3_3,
                                  solveds: Solveds,
-                                 cardinalities: Cardinalities): (LogicalPlanV3_4, Option[SemanticTableV3_4]) = {
+                                 cardinalities: Cardinalities): (LogicalPlanV3_4, SemanticTableV3_4) = {
 
     def isImportant(expression: ExpressionV3_3) : Boolean =
       logicalPlanState.maybeSemanticTable.exists(_.seen(expression))
@@ -193,8 +193,12 @@ object helpers {
 
     val attributes = Attributes(idConverter.idGenFromMax, solveds, cardinalities)
     val planWithActiveReads = ActiveReadInjector(attributes).apply(plan3_4)
-    val semanticTable = logicalPlanState.maybeSemanticTable.map(
-                          table => SemanticTableConverter.convertSemanticTable(table, expressionMap))
+    val maybeTable = logicalPlanState.maybeSemanticTable
+    val semanticTable = if (maybeTable.isDefined) {
+      SemanticTableConverter.convertSemanticTable(maybeTable.get, expressionMap)
+    } else {
+      new SemanticTableV3_4()
+    }
     (planWithActiveReads, semanticTable)
   }
 }

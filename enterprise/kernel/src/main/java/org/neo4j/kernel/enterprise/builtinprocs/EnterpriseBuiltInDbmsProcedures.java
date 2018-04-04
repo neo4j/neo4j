@@ -257,8 +257,9 @@ public class EnterpriseBuiltInDbmsProcedures
         private boolean isAdminProcedure( String procedureName )
         {
             return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                   name.equals( "dbms.listConfig" ) ||
-                   name.equals( "dbms.setConfigValue" );
+                    name.equals( "dbms.listConfig" ) ||
+                    name.equals( "dbms.setConfigValue" ) ||
+                    name.equals( "dbms.clearQueryCaches" );
         }
     }
 

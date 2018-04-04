@@ -25,13 +25,8 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 /**
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.
  * There are accessors for different types of operations. The operations are divided into
- * read and write operations, write operations are divided into {@link #dataWriteOperations()} and
- * {@link #schemaWriteOperations()} since there can be only one type of write operations inside
- * any given transaction. In both cases {@link #tokenWriteOperations()} are allowed though,
- * which is why it can be accessed separately. The transaction, if still "undecided" about its
- * type of write operations, will be decided when calling either {@link #dataWriteOperations()}
- * or {@link #schemaWriteOperations()}, otherwise if already decided, verified so that it's
- * of the same type.
+ * read and write operations. In both cases {@link #tokenWriteOperations()} are allowed though,
+ * which is why it can be accessed separately.
  */
 public interface Statement extends Resource, ResourceManager
 {
@@ -48,16 +43,9 @@ public interface Statement extends Resource, ResourceManager
     /**
      * @return interface exposing all write operations about data such as nodes, relationships and properties.
      * @throws InvalidTransactionTypeKernelException if type of this transaction have already been decided
-     * and it's of a different type, e.g {@link #schemaWriteOperations()}.
+     * and it's of a different type..
      */
     DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException;
-
-    /**
-     * @return interface exposing all write operations about schema such as indexes and constraints.
-     * @throws InvalidTransactionTypeKernelException if type of this transaction have already been decided
-     * and it's of a different type, e.g {@link #dataWriteOperations()}.
-     */
-    SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException;
 
     /**
      * @return interface exposing operations for associating metadata with this statement

@@ -422,9 +422,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     )
   }
 
-  override def mapGetExpression(mapName: String, key: String): Expression = {
+  override def mapGetExpression(map: Expression, key: String): Expression = {
     invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "mapGetProperty", typeRef[Object],
-                           typeRef[String]), generator.load(mapName), constantExpression(key))
+                           typeRef[String]), map, constantExpression(key))
   }
 
   override def constantExpression(value: AnyRef) = constant(value)

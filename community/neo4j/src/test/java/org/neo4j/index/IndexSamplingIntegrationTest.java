@@ -31,8 +31,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -198,17 +199,21 @@ public class IndexSamplingIntegrationTest
     {
         ThreadToStatementContextBridge contextBridge =
                 api.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
-        try ( Transaction tx = api.beginTx();
-              Statement statement = contextBridge.get() )
+        try ( Transaction tx = api.beginTx() )
         {
-            IndexingService indexingService =
-                    api.getDependencyResolver().resolveDependency( IndexingService.class );
-            ReadOperations readOperations = statement.readOperations();
-            int labelId = readOperations.labelGetForName( label.name() );
-            int propertyKeyId = readOperations.propertyKeyGetForName( property );
-            long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
-            tx.success();
-            return indexId;
+            KernelTransaction ktx =
+                    contextBridge.getKernelTransactionBoundToThisThread( true );
+            try ( Statement ignore = ktx.acquireStatement() )
+            {
+                IndexingService indexingService =
+                        api.getDependencyResolver().resolveDependency( IndexingService.class );
+                TokenRead tokenRead = ktx.tokenRead();
+                int labelId = tokenRead.nodeLabel( label.name() );
+                int propertyKeyId = tokenRead.propertyKey( property );
+                long indexId = indexingService.getIndexId( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                tx.success();
+                return indexId;
+            }
         }
     }
 

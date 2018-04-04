@@ -41,7 +41,6 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -132,8 +131,8 @@ public class BoltRequestMessageTest
         RecordingByteChannel channel = new RecordingByteChannel();
         BoltRequestMessageReader reader = new BoltRequestMessageReader(
                 neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
-        BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                neo4jPack.newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+        Neo4jPack.Packer packer = neo4jPack.newPacker( new BufferedChannelOutput( channel ) );
+        BoltRequestMessageWriter writer = new BoltRequestMessageWriter( packer );
 
         writer.write( msg ).flush();
 

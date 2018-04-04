@@ -20,13 +20,10 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -52,7 +49,6 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
-import static java.time.ZoneOffset.UTC;
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 /**
@@ -364,39 +360,33 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeDate( long epochDay )
+    public void writeDate( LocalDate localDate )
     {
-        writeValue( LocalDate.ofEpochDay( epochDay ) );
+        writeValue( localDate );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay )
+    public void writeLocalTime( LocalTime localTime )
     {
-        writeValue( LocalTime.ofNanoOfDay( nanoOfDay ) );
+        writeValue( localTime );
     }
 
     @Override
-    public void writeTime( long nanosOfDayLocal, int offsetSeconds )
+    public void writeTime( OffsetTime offsetTime )
     {
-        writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayLocal ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
+        writeValue( offsetTime );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano )
+    public void writeLocalDateTime( LocalDateTime localDateTime )
     {
-        writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond(epochSecond, nano), UTC ) );
+        writeValue( localDateTime );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
+    public void writeDateTime( ZonedDateTime zonedDateTime )
     {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
-    }
-
-    @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
-    {
-        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
+        writeValue( zonedDateTime );
     }
 
     private interface Writer

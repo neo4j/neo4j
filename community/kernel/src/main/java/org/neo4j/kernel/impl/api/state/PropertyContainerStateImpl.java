@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -32,21 +32,22 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.newSetFromMap;
 
-public class PropertyContainerStateImpl implements PropertyContainerState
+class PropertyContainerStateImpl implements PropertyContainerState
 {
     private final long id;
 
     private VersionedHashMap<Integer, Value> addedProperties;
     private VersionedHashMap<Integer, Value> changedProperties;
-    private VersionedHashMap<Integer, Value> removedProperties;
+    private Set<Integer> removedProperties;
 
     private final Predicate<StorageProperty> excludePropertiesWeKnowAbout = new Predicate<StorageProperty>()
     {
         @Override
         public boolean test( StorageProperty item )
         {
-            return (removedProperties == null || !removedProperties.containsKey( item.propertyKeyId() ))
+            return (removedProperties == null || !removedProperties.contains( item.propertyKeyId() ))
                     && (addedProperties == null || !addedProperties.containsKey( item.propertyKeyId() ))
                     && (changedProperties == null || !changedProperties.containsKey( item.propertyKeyId() ));
         }
@@ -62,7 +63,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         return id;
     }
 
-    public void clear()
+    void clear()
     {
         if ( changedProperties != null )
         {
@@ -80,13 +81,10 @@ public class PropertyContainerStateImpl implements PropertyContainerState
 
     void changeProperty( int propertyKeyId, Value value )
     {
-        if ( addedProperties != null )
+        if ( addedProperties != null && addedProperties.containsKey( propertyKeyId ) )
         {
-            if ( addedProperties.containsKey( propertyKeyId ) )
-            {
-                addedProperties.put( propertyKeyId, value );
-                return;
-            }
+            addedProperties.put( propertyKeyId, value );
+            return;
         }
 
         if ( changedProperties == null )
@@ -103,16 +101,12 @@ public class PropertyContainerStateImpl implements PropertyContainerState
 
     void addProperty( int propertyKeyId, Value value )
     {
-        if ( removedProperties != null )
+        if ( removedProperties != null && removedProperties.remove( propertyKeyId ) )
         {
-            Value removed = removedProperties.remove( propertyKeyId );
-            if ( removed != null )
-            {
-                // This indicates the user did remove+add as two discrete steps, which should be translated to
-                // a single change operation.
-                changeProperty( propertyKeyId, value );
-                return;
-            }
+            // This indicates the user did remove+add as two discrete steps, which should be translated to
+            // a single change operation.
+            changeProperty( propertyKeyId, value );
+            return;
         }
         if ( addedProperties == null )
         {
@@ -121,20 +115,17 @@ public class PropertyContainerStateImpl implements PropertyContainerState
         addedProperties.put( propertyKeyId, value );
     }
 
-    public void removeProperty( int propertyKeyId, Value value )
+    void removeProperty( int propertyKeyId )
     {
-        if ( addedProperties != null )
+        if ( addedProperties != null && addedProperties.remove( propertyKeyId ) != null )
         {
-            if ( addedProperties.remove( propertyKeyId ) != null )
-            {
-                return;
-            }
+            return;
         }
         if ( removedProperties == null )
         {
-            removedProperties = new VersionedHashMap<>();
+            removedProperties = newSetFromMap( new VersionedHashMap<>() );
         }
-        removedProperties.put( propertyKeyId, value );
+        removedProperties.add( propertyKeyId );
         if ( changedProperties != null )
         {
             changedProperties.remove( propertyKeyId );
@@ -156,7 +147,7 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public Iterator<Integer> removedProperties()
     {
-        return removedProperties != null ? removedProperties.keySet().iterator() : emptyIterator();
+        return removedProperties != null ? removedProperties.iterator() : emptyIterator();
     }
 
     @Override
@@ -223,20 +214,20 @@ public class PropertyContainerStateImpl implements PropertyContainerState
     @Override
     public boolean isPropertyChangedOrRemoved( int propertyKey )
     {
-        return (removedProperties != null && removedProperties.containsKey( propertyKey ))
+        return (removedProperties != null && removedProperties.contains( propertyKey ))
                || (changedProperties != null && changedProperties.containsKey( propertyKey ));
     }
 
     @Override
     public boolean isPropertyRemoved( int propertyKeyId )
     {
-        return removedProperties != null && removedProperties.containsKey( propertyKeyId );
+        return removedProperties != null && removedProperties.contains( propertyKeyId );
     }
 
     private Iterator<StorageProperty> toPropertyIterator( VersionedHashMap<Integer,Value> propertyMap )
     {
-        return propertyMap == null ? Collections.emptyIterator() :
-                Iterators.map(
+        return propertyMap == null ? emptyIterator() :
+               Iterators.map(
                     entry -> new PropertyKeyValue( entry.getKey(), entry.getValue() ),
                     propertyMap.entrySet().iterator()
                 );

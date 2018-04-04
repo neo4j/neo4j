@@ -68,7 +68,7 @@ public class LogMatchers
         StoreChannel fileChannel = fileSystem.open( logFile, OpenMode.READ );
 
         // Always a header
-        LogHeader header = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, true, logFile );
+        LogHeader header = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), fileChannel, true, logFile );
 
         // Read all log entries
         PhysicalLogVersionedStoreChannel versionedStoreChannel =

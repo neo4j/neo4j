@@ -22,11 +22,13 @@ package org.neo4j.bolt.runtime;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
@@ -41,10 +43,13 @@ import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -70,13 +75,16 @@ public class DefaultBoltConnectionTest
     private BoltChannel boltChannel;
     private BoltStateMachine stateMachine;
 
+    @Rule
+    public OtherThreadRule<Boolean> otherThread = new OtherThreadRule<>();
+
     @Before
     public void setup() throws Throwable
     {
         ChannelHandlerContext handlerContext = mock( ChannelHandlerContext.class );
         when( handlerContext.channel() ).thenReturn( channel );
         boltChannel = BoltChannel.open( connector, handlerContext, messageLogger );
-        stateMachine = mock( BoltStateMachine.class ); // MachineRoom.newMachineWithOwner( BoltStateMachine.State.READY, "neo4j" );
+        stateMachine = mock( BoltStateMachine.class );
         when( stateMachine.owner() ).thenReturn( "neo4j" );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );
@@ -305,6 +313,58 @@ public class DefaultBoltConnectionTest
         verify( stateMachine ).close();
         logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
                 containsString( "Unexpected error detected in bolt session" ), is( exception ) ) );
+    }
+
+    @Test
+    public void processNextBatchShouldThrowAssertionErrorIfStatementOpen() throws Exception
+    {
+        BoltConnection connection = newConnection( 1 );
+        connection.enqueue( Jobs.noop() );
+        connection.enqueue( Jobs.noop() );
+
+        // force to a message waiting loop
+        when( stateMachine.hasOpenStatement() ).thenReturn( true );
+
+        connection.processNextBatch();
+
+        logProvider.assertExactly(
+                AssertableLogProvider.inLog( DefaultBoltConnection.class.getName() ).error( startsWith( "Unexpected error" ), isA( AssertionError.class ) ) );
+    }
+
+    @Test
+    public void processNextBatchShouldNotThrowAssertionErrorIfStatementOpenButStopping() throws Exception
+    {
+        BoltConnection connection = newConnection( 1 );
+        connection.enqueue( Jobs.noop() );
+        connection.enqueue( Jobs.noop() );
+
+        // force to a message waiting loop
+        when( stateMachine.hasOpenStatement() ).thenReturn( true );
+
+        connection.stop();
+        connection.processNextBatch();
+
+        logProvider.assertNone(
+                AssertableLogProvider.inLog( DefaultBoltConnection.class.getName() ).error( startsWith( "Unexpected error" ), isA( AssertionError.class ) ) );
+    }
+
+    @Test
+    public void processNextBatchShouldReturnWhenConnectionIsStopped() throws Exception
+    {
+        BoltConnection connection = newConnection( 1 );
+        connection.enqueue( Jobs.noop() );
+        connection.enqueue( Jobs.noop() );
+
+        // force to a message waiting loop
+        when( stateMachine.shouldStickOnThread() ).thenReturn( true );
+
+        Future<Boolean> future = otherThread.execute( state -> connection.processNextBatch() );
+
+        connection.stop();
+
+        otherThread.get().awaitFuture( future );
+
+        verify( stateMachine ).close();
     }
 
     private DefaultBoltConnection newConnection()

@@ -31,7 +31,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -136,18 +135,17 @@ public class ProceduresKernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void registeredProcedureShouldGetReadOperations() throws Throwable
+    public void registeredProcedureShouldGetRead() throws Throwable
     {
         // Given
         kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+            public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+                    ResourceTracker resourceTracker ) throws ProcedureException
             {
-                try ( Statement statement = ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement() )
-                {
-                    return RawIterator.<Object[],ProcedureException>of( new Object[]{statement.readOperations()} );
-                }
+                return RawIterator.<Object[],ProcedureException>of(
+                        new Object[]{ctx.get( Context.KERNEL_TRANSACTION ).dataRead()} );
             }
         } );
 

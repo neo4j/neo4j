@@ -236,31 +236,46 @@ public class TransactionStateMachine implements StatementProcessor
                             {
                                 ctx.lastStatement = statement;
                             }
-                            if ( spi.isPeriodicCommit( statement ) )
-                            {
-                                BoltResultHandle resultHandle = executeQuery( ctx, spi, statement, params, noop() );
-                                startExecution( ctx, resultHandle );
-                                ctx.currentTransaction = null; // Periodic commit will change the current transaction, so
-                                // we can't trust this to point to the actual current transaction;
-                                return AUTO_COMMIT;
-                            }
-                            else
-                            {
-                                ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
-                                BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
-                                startExecution( ctx, resultHandle );
-                                return AUTO_COMMIT;
-                            }
+
+                            execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ) );
+
+                            return AUTO_COMMIT;
                         }
                     }
 
-                    /*
-                     * In AUTO_COMMIT we must make sure to fail, close and set the current
-                     * transaction to null.
-                     */
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
+                    void execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params, boolean isPeriodicCommit )
+                            throws KernelException
                     {
-                        return executeQuery( ctx, spi, statement, params, () -> closeTransaction( ctx, false ) );
+                        // only acquire a new transaction when the statement does not contain periodic commit
+                        if ( !isPeriodicCommit )
+                        {
+                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
+                        }
+
+                        boolean failed = true;
+                        try
+                        {
+                            BoltResultHandle resultHandle = spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params );
+                            startExecution( ctx, resultHandle );
+                            failed = false;
+                        }
+                        finally
+                        {
+                            // if we acquired a transaction and a failure occurred, then simply close the transaction
+                            if ( !isPeriodicCommit )
+                            {
+                                if ( failed )
+                                {
+                                    closeTransaction( ctx, false );
+                                }
+                            }
+                            else
+                            {
+                                // Periodic commit will change the current transaction, so
+                                // we can't trust this to point to the actual current transaction;
+                                ctx.currentTransaction = null;
+                            }
+                        }
                     }
 
                     @Override
@@ -268,8 +283,16 @@ public class TransactionStateMachine implements StatementProcessor
                                        ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
                     {
                         assert ctx.currentResult != null;
-                        consumeResult( ctx, resultConsumer );
-                        closeTransaction( ctx, true );
+
+                        boolean success = false;
+                        try
+                        {
+                            success = consumeResult( ctx, resultConsumer );
+                        }
+                        finally
+                        {
+                            closeTransaction( ctx, success );
+                        }
                     }
                 },
         EXPLICIT_TRANSACTION
@@ -325,14 +348,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                     private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                     {
-                        return executeQuery( ctx, spi, statement, params,
-                                () ->
-                                {
-                                    if ( ctx.currentTransaction != null )
-                                    {
-                                        ctx.currentTransaction.failure();
-                                    }
-                                } );
+                        return executeQuery( ctx, spi, statement, params );
                     }
 
                     @Override
@@ -400,7 +416,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        void consumeResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+        boolean consumeResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
         {
             boolean success = false;
             try
@@ -419,6 +435,7 @@ public class TransactionStateMachine implements StatementProcessor
                     ctx.currentResultHandle = null;
                 }
             }
+            return success;
         }
 
         void startExecution( MutableTransactionState ctx, BoltResultHandle resultHandle ) throws KernelException
@@ -439,9 +456,9 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     private static BoltResultHandle executeQuery( MutableTransactionState ctx, SPI spi, String statement,
-                                                  MapValue params, ThrowingAction<KernelException> onFail )
+                                                  MapValue params )
     {
-        return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, onFail );
+        return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params );
     }
 
     /**
@@ -509,9 +526,6 @@ public class TransactionStateMachine implements StatementProcessor
         boolean isPeriodicCommit( String query );
 
         BoltResultHandle executeQuery( BoltQuerySource querySource,
-                LoginContext loginContext,
-                String statement,
-                MapValue params,
-                ThrowingAction<KernelException> onFail );
+                LoginContext loginContext, String statement, MapValue params );
     }
 }

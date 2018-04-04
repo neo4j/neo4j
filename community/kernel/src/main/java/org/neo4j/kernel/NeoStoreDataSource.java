@@ -681,7 +681,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
                         constraintIndexCreator, databaseSchemaState, explicitIndexStore, cpuClockRef,
-                        heapAllocationRef ) );
+                        heapAllocationRef, indexingService ) );
 
         TransactionHooks hooks = new TransactionHooks();
 
@@ -691,7 +691,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock,
                 cpuClockRef, heapAllocationRef, accessCapability, DefaultCursors::new, autoIndexing,
                 explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                databaseSchemaState ) );
+                databaseSchemaState, indexingService ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -866,13 +866,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
             ExplicitIndexStore explicitIndexStore, AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef )
+            AtomicReference<HeapAllocation> heapAllocationRef,
+            IndexingService indexingService )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeReadLayer,
-                autoIndexing, constraintIndexCreator, explicitIndexStore );
+                autoIndexing, constraintIndexCreator, explicitIndexStore, indexingService );
 
         QueryRegistrationOperations queryRegistrationOperations =
                 new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );

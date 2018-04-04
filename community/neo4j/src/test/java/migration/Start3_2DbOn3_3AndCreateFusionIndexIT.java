@@ -34,14 +34,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -157,32 +157,36 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
 
     private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
     {
-        try ( Transaction tx = db.beginTx();
-              KernelTransaction ktx = db.getDependencyResolver()
-                      .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
-              Statement statement = ktx.acquireStatement() )
+        try ( Transaction tx = db.beginTx() )
         {
-            ReadOperations read = statement.readOperations();
-            int labelId = read.labelGetForName( label.name() );
-            int[] propertyKeyIds = new int[keys.length];
-            for ( int i = 0; i < keys.length; i++ )
-            {
-                propertyKeyIds[i] = read.propertyKeyGetForName( keys[i] );
-            }
+            KernelTransaction ktx = db.getDependencyResolver()
+                    .resolveDependency( ThreadToStatementContextBridge.class )
+                    .getKernelTransactionBoundToThisThread( true );
 
-            SchemaIndexDescriptor index = read.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ) );
-            int count;
-            StorageStatement storeStatement = ((KernelStatement)statement).getStoreStatement();
-            IndexReader reader = storeStatement.getIndexReader( index );
-            IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
-            for ( int i = 0; i < propertyKeyIds.length; i++ )
+            try ( Statement statement = ktx.acquireStatement() )
             {
-                predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
-            }
-            count = count( reader.query( predicates ) );
+                TokenRead tokenRead = ktx.tokenRead();
+                int labelId = tokenRead.nodeLabel( label.name() );
+                int[] propertyKeyIds = new int[keys.length];
+                for ( int i = 0; i < keys.length; i++ )
+                {
+                    propertyKeyIds[i] = tokenRead.propertyKey( keys[i] );
+                }
 
-            tx.success();
-            return count;
+                CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
+                int count;
+                StorageStatement storeStatement = ((KernelStatement) statement).getStoreStatement();
+                IndexReader reader = storeStatement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );
+                IndexQuery[] predicates = new IndexQuery[propertyKeyIds.length];
+                for ( int i = 0; i < propertyKeyIds.length; i++ )
+                {
+                    predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
+                }
+                count = count( reader.query( predicates ) );
+
+                tx.success();
+                return count;
+            }
         }
     }
 

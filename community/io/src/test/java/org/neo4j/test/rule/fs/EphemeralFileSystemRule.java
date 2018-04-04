@@ -19,11 +19,7 @@
  */
 package org.neo4j.test.rule.fs;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class EphemeralFileSystemRule extends FileSystemRule<EphemeralFileSystemAbstraction>
 {
@@ -61,11 +57,6 @@ public class EphemeralFileSystemRule extends FileSystemRule<EphemeralFileSystemA
     public EphemeralFileSystemAbstraction snapshot()
     {
         return fs.snapshot();
-    }
-
-    public void copyRecursivelyFromOtherFs( File from, FileSystemAbstraction fromFs, File to ) throws IOException
-    {
-        fs.copyRecursivelyFromOtherFs( from, fromFs, to );
     }
 
     public long checksum()

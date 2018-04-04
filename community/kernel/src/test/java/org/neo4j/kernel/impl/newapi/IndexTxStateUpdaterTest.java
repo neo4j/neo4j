@@ -29,9 +29,12 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -79,7 +82,7 @@ public class IndexTxStateUpdaterTest
     private StubPropertyCursor propertyCursor;
 
     @Before
-    public void setup()
+    public void setup() throws IndexNotFoundKernelException
     {
         txState = mock( TransactionState.class );
 
@@ -111,7 +114,9 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps );
+        IndexingService indexingService = mock( IndexingService.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( mock( IndexProxy.class ) );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, indexingService );
 
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -192,6 +194,27 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         // tried to delete node that does not exist
         return false;
+    }
+
+    @Override
+    public int nodeDetachDelete( final long nodeId ) throws KernelException
+    {
+        final MutableInt count = new MutableInt();
+        TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking(
+                relId ->
+                {
+                    ktx.assertOpen();
+                    if ( relationshipDelete( relId ) )
+                    {
+                        count.increment();
+                    }
+                } );
+
+        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx );
+        ktx.assertOpen();
+
+        nodeDelete( nodeId );
+        return count.intValue();
     }
 
     @Override
@@ -483,7 +506,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey );
-            ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue );
+            ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
         }
 
@@ -529,7 +552,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         if ( existingValue != NO_VALUE )
         {
             autoIndexing.relationships().propertyRemoved( this, relationship, propertyKey );
-            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey, existingValue );
+            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey );
         }
 
         return existingValue;
@@ -559,7 +582,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )
         {
-            ktx.txState().graphDoRemoveProperty( propertyKey, existingValue );
+            ktx.txState().graphDoRemoveProperty( propertyKey );
         }
         return existingValue;
     }
@@ -569,14 +592,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
+        allStoreHolder.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node );
+        allStoreHolder.explicitIndexTxState().nodeChanges( indexName ).remove( node );
     }
 
     @Override
@@ -584,7 +607,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key, value );
+        allStoreHolder.explicitIndexTxState().nodeChanges( indexName ).remove( node, key, value );
     }
 
     @Override
@@ -592,14 +615,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().nodeChanges( indexName ).remove( node, key );
+        allStoreHolder.explicitIndexTxState().nodeChanges( indexName ).remove( node, key );
     }
 
     @Override
     public void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().createIndex( IndexEntityType.Node, indexName, customConfig );
+        allStoreHolder.explicitIndexTxState().createIndex( IndexEntityType.Node, indexName, customConfig );
     }
 
     @Override
@@ -610,14 +633,23 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
+    public void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        ExplicitIndexTransactionState txState = allStoreHolder.explicitIndexTxState();
+        txState.nodeChanges( indexName ).drop();
+        txState.deleteIndex( IndexEntityType.Node, indexName );
+    }
+
+    @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws KernelException
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         ktx.assertOpen();
         allStoreHolder.singleRelationship( relationship, relationshipCursor );
         if ( relationshipCursor.next() )
         {
-            ktx.explicitIndexTxState().relationshipChanges( indexName ).addRelationship( relationship, key, value,
+            allStoreHolder.explicitIndexTxState().relationshipChanges( indexName ).addRelationship( relationship, key, value,
                     relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
         }
         else
@@ -631,14 +663,15 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
+        allStoreHolder.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
     }
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
             throws ExplicitIndexNotFoundKernelException
     {
-        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
+        ktx.assertOpen();
+        allStoreHolder.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
 
     }
 
@@ -646,14 +679,15 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
             throws ExplicitIndexNotFoundKernelException
     {
-        ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
+        ktx.assertOpen();
+        allStoreHolder.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
     }
 
     @Override
     public void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         ktx.assertOpen();
-        ktx.explicitIndexTxState().createIndex( IndexEntityType.Relationship, indexName, customConfig );
+        allStoreHolder.explicitIndexTxState().createIndex( IndexEntityType.Relationship, indexName, customConfig );
     }
 
     @Override
@@ -661,6 +695,15 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         ktx.assertOpen();
         allStoreHolder.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        ExplicitIndexTransactionState txState = allStoreHolder.explicitIndexTxState();
+        txState.relationshipChanges( indexName ).drop();
+        txState.deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     private Value readNodeProperty( int propertyKey )
@@ -912,7 +955,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertConstraintDoesNotExist( constraint );
 
         //enforce constraints
-        allStoreHolder.relationshipLabelScan( descriptor.getRelTypeId(), relationshipCursor );
+        allStoreHolder.relationshipTypeScan( descriptor.getRelTypeId(), relationshipCursor );
         constraintSemantics
                 .validateRelationshipPropertyExistenceConstraint( relationshipCursor, propertyCursor, descriptor );
 
@@ -985,7 +1028,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         if ( !ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            ktx.statementLocks().optimistic()
+                    .acquireExclusive( ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 

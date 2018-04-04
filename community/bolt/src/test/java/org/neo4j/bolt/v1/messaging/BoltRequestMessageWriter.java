@@ -38,12 +38,10 @@ import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 {
     private final Neo4jPack.Packer packer;
-    private final BoltResponseMessageBoundaryHook onMessageComplete;
 
-    public BoltRequestMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
+    public BoltRequestMessageWriter( Neo4jPack.Packer packer )
     {
         this.packer = packer;
-        this.onMessageComplete = onMessageComplete;
     }
 
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
@@ -60,7 +58,6 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
             packer.packStructHeader( 2, INIT.signature() );
             packer.pack( clientName );
             packer.pack( ValueUtils.asMapValue( credentials ) );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {
@@ -74,7 +71,6 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         try
         {
             packer.packStructHeader( 0, ACK_FAILURE.signature() );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {
@@ -88,7 +84,6 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
         try
         {
             packer.packStructHeader( 0, RESET.signature() );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {
@@ -98,14 +93,12 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 
     @Override
     public void onRun( String statement, MapValue params )
-
     {
         try
         {
             packer.packStructHeader( 2, RUN.signature() );
             packer.pack( statement );
             packer.pack( params );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {
@@ -115,12 +108,10 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 
     @Override
     public void onDiscardAll()
-
     {
         try
         {
             packer.packStructHeader( 0, DISCARD_ALL.signature() );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {
@@ -130,12 +121,10 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler
 
     @Override
     public void onPullAll()
-
     {
         try
         {
             packer.packStructHeader( 0, PULL_ALL.signature() );
-            onMessageComplete.onMessageComplete();
         }
         catch ( IOException e )
         {

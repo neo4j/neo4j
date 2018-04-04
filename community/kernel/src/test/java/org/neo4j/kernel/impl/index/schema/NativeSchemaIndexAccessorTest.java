@@ -82,7 +82,7 @@ import static org.neo4j.values.storable.Values.of;
  * <li>{@link NumberSchemaIndexReader}</li>
  * </ul>
  */
-public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexTestUtil<KEY,VALUE>
 {
     NativeSchemaIndexAccessor<KEY,VALUE> accessor;
@@ -715,8 +715,17 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
 
     private static Predicate<IndexEntryUpdate<SchemaIndexDescriptor>> skipExisting( IndexEntryUpdate<SchemaIndexDescriptor>[] existing )
     {
-        Set<IndexEntryUpdate<SchemaIndexDescriptor>> set = new HashSet<>( Arrays.asList( existing ) );
-        return set::add;
+        return update ->
+        {
+            for ( IndexEntryUpdate<SchemaIndexDescriptor> e : existing )
+            {
+                if ( Arrays.equals( e.values(), update.values() ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        };
     }
 
     private Object valueOf( IndexEntryUpdate<SchemaIndexDescriptor> update )

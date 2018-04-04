@@ -19,17 +19,35 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 
 import scala.collection.Map
+import scala.collection.immutable.{Map => ImmutableMap}
 
-class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
   private val equalityConfig = Configs.Interpreted - Configs.OldAndRule
   private val indexConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+
+  override def cypherComparisonSupport = true
+
+  test("inequality query should give same answer for indexed and non-indexed property") {
+    createIndex()
+    val point = Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)
+    val node = createIndexedNode(point)
+    setNonIndexedValue(node, point)
+
+    assertRangeScanFor("<", point)
+    assertLabelRangeScanFor("<", point)
+
+    assertRangeScanFor("<=", point, node)
+    assertLabelRangeScanFor("<=", point, node)
+
+    assertRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
+    assertLabelRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
+  }
 
   test("indexed point should be readable from node property") {
     // Given
@@ -51,6 +69,52 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  test("indexed point should be readable from parameterized node property") {
+    // Given
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+
+    // When
+    val localConfig = Configs.All - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = ImmutableMap("param" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
+
+    // Then
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    // And CRS names should equal
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  test("indexed point array should be readable from parameterized node property") {
+    // Given
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = [point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})] RETURN p.location as point")
+
+    // When
+    val localConfig = Configs.All - Configs.OldAndRule
+    val result = executeWith(localConfig,
+      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
+      params = ImmutableMap("param" -> Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+
+    // Then
+    val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
+    pointList should equal(List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
+    // And CRS names should equal
+    pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
   test("with multiple indexed points only exact match should be returned") {
@@ -319,89 +383,56 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
   test("indexed points in 3D cartesian space - range queries") {
     // Given
-    graph.createIndex("Place", "location")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 0, y: 0, z: 0})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: 100000, z: 100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: -100000, y: 100000, z: 100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: -100000, y: -100000, z: 100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: -100000, z: 100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: 100000, z: -100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: -100000, y: 100000, z: -100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: -100000, y: -100000, z: -100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: -100000, z: -100000})")
+    createIndex()
+    val originPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0)
+    val maxPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, 100000)
+    val minPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, -100000)
+
+    val origin = createIndexedNode(originPoint)
+    val upRightTop = createIndexedNode(maxPoint)
+    val downLeftBottom = createIndexedNode(minPoint)
+
+    val downrightTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, 100000, 100000))
+    val downLeftTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, 100000))
+    val upLeftTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, -100000, 100000))
+    val upRightBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, -100000))
+    val downRightBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, 100000, -100000))
+    val upLeftBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, -100000, -100000))
     // 2D points should never be returned
-    graph.execute("CREATE (p:Place) SET p.location = point({x: -100000, y: -100000})")
-    graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: 100000})")
+    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, -100000, -100000))
+    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 100000, 100000))
 
-    // When running inequality queries expect correct results
-    Map(">" -> Set(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, 100000)),
-      ">=" -> Set(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, 100000), Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0)),
-      "<" -> Set(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, -100000)),
-      "<=" -> Set(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, -100000), Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0)),
-      "between" -> Set(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0))
-    ).foreach { entry =>
-      val (inequality, expected) = entry
-      withClue(s"When testing inequality '$inequality'") {
-        val query = inequality match {
-          case "between" => s"CYPHER MATCH (p:Place) WHERE p.location < point({x: 100000, y: 100000, z: 100000}) AND p.location > point({x: -100000, y: -100000, z: -100000}) RETURN p.location as point"
-          case _ => s"CYPHER MATCH (p:Place) WHERE p.location $inequality point({x: 0, y: 0, z: 0}) RETURN p.location as point"
-        }
-        val result = executeWith(indexConfig, query)
-
-        // Then
-        val plan = result.executionPlanDescription()
-        plan should useOperatorWithText("Projection", "point")
-        if (inequality == "between") {
-          plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) < point", ":Place(location) > point")
-        } else {
-          plan should useOperatorWithText("NodeIndexSeekByRange", s":Place(location) $inequality point")
-        }
-        result.columnAs("point").toList.asInstanceOf[List[PointValue]].toSet should equal(expected)
-      }
-    }
+    assertRangeScanFor(">", originPoint, upRightTop)
+    assertRangeScanFor(">=", originPoint, origin, upRightTop)
+    assertRangeScanFor("<", originPoint, downLeftBottom)
+    assertRangeScanFor("<=", originPoint, origin, downLeftBottom)
+    assertRangeScanFor(">", minPoint, "<", maxPoint, origin, downLeftTop, downRightBottom, downrightTop, upLeftBottom, upLeftTop, upRightBottom)
   }
 
   test("indexed points 3D WGS84 space - range queries") {
     // Given
-    graph.createIndex("Place", "location")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.5, longitude: 13.0, height: 50})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.6, longitude: 13.1, height: 100})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.4, longitude: 13.1, height: 100})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.4, longitude: 12.9, height: 100})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.6, longitude: 12.9, height: 0})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.6, longitude: 13.1, height: 0})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.4, longitude: 13.1, height: 0})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.4, longitude: 12.9, height: 0})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.6, longitude: 12.9, height: 0})")
+    createIndex()
+    val maxPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 13.1, 100)
+    val midPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.5, 13.0, 50)
+    val minPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 12.9, 0)
+
+    val n0 = createIndexedNode(midPoint)
+    val n1 = createIndexedNode(maxPoint)
+    val n2 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 13.1, 100))
+    val n3 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 12.9, 100))
+    val n4 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 12.9, 0))
+    val n5 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 13.1, 0))
+    val n6 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 13.1, 0))
+    val n8 = createIndexedNode(minPoint)
+    val n7 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 12.9, 0))
     // 2D points should never be returned
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.6, longitude: 13.1})")
-    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.4, longitude: 12.9})")
+    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84, 56.6, 13.1))
+    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84, 56.4, 12.9))
 
-    // When running inequality queries expect correct results
-    Map(">" -> Set(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.1, 56.6, 100)),
-      ">=" -> Set(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.1, 56.6, 100), Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.0, 56.5, 50)),
-      "<" -> Set(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.9, 56.4, 0)),
-      "<=" -> Set(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 12.9, 56.4, 0), Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.0, 56.5, 50)),
-      "between" -> Set(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 13.0, 56.5, 50))
-    ).foreach { entry =>
-      val (inequality, expected) = entry
-      withClue(s"When testing inequality '$inequality'") {
-        val query = inequality match {
-          case "between" => s"CYPHER MATCH (p:Place) WHERE p.location < point({latitude: 56.6, longitude: 13.1, height: 100}) AND p.location > point({latitude: 56.4, longitude: 12.9, height: 0}) RETURN p.location as point"
-          case _ => s"CYPHER MATCH (p:Place) WHERE p.location $inequality point({latitude: 56.5, longitude: 13.0, height: 50}) RETURN p.location as point"
-        }
-        val result = executeWith(indexConfig, query)
-
-        // Then
-        val plan = result.executionPlanDescription()
-        plan should useOperatorWithText("Projection", "point")
-        if (inequality == "between") {
-          plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) < point", ":Place(location) > point")
-        } else {
-          plan should useOperatorWithText("NodeIndexSeekByRange", s":Place(location) $inequality point")
-        }
-        result.columnAs("point").toList.asInstanceOf[List[PointValue]].toSet should equal(expected)
-      }
-    }
+    assertRangeScanFor(">", midPoint, n1)
+    assertRangeScanFor(">=", midPoint, n0, n1)
+    assertRangeScanFor("<", midPoint, n8)
+    assertRangeScanFor("<=", midPoint, n0, n8)
+    assertRangeScanFor(">", minPoint, "<", maxPoint, n0, n2, n3, n4, n5, n6, n7)
   }
 }

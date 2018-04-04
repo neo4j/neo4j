@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.neo4j.helpers.collection.Pair;
 
 import static java.lang.Math.asin;
@@ -34,7 +38,7 @@ public abstract class CRSCalculator
 {
     public abstract double distance( PointValue p1, PointValue p2 );
 
-    public abstract Pair<PointValue,PointValue> boundingBox( PointValue center, double distance );
+    public abstract List<Pair<PointValue,PointValue>> boundingBox( PointValue center, double distance );
 
     protected static double pythagoras( double[] a, double[] b )
     {
@@ -65,7 +69,7 @@ public abstract class CRSCalculator
         }
 
         @Override
-        public Pair<PointValue,PointValue> boundingBox( PointValue center, double distance )
+        public List<Pair<PointValue,PointValue>> boundingBox( PointValue center, double distance )
         {
             assert center.getCoordinateReferenceSystem().getDimension() == dimension;
             double[] coordinates = center.coordinate();
@@ -77,7 +81,7 @@ public abstract class CRSCalculator
                 max[i] = coordinates[i] + distance;
             }
             CoordinateReferenceSystem crs = center.getCoordinateReferenceSystem();
-            return Pair.of( Values.pointValue( crs, min ), Values.pointValue( crs, max ) );
+            return Collections.singletonList( Pair.of( Values.pointValue( crs, min ), Values.pointValue( crs, max ) ) );
         }
     }
 
@@ -105,9 +109,16 @@ public abstract class CRSCalculator
             double dy = c2[1] - c1[1];
             double alpha = pow( sin( dy / 2 ), 2.0 ) + cos( c1[1] ) * cos( c2[1] ) * pow( sin( dx / 2.0 ), 2.0 );
             double greatCircleDistance = 2.0 * atan2( sqrt( alpha ), sqrt( 1 - alpha ) );
-            double distance2D = EARTH_RADIUS_METERS * greatCircleDistance;
-            if ( dimension > 2 )
+            if ( dimension == 2 )
             {
+                return EARTH_RADIUS_METERS * greatCircleDistance;
+            }
+            else if ( dimension == 3 )
+            {
+                // get average height
+                double avgHeight = (p1.coordinate()[2] + p2.coordinate()[2]) / 2;
+                double distance2D = (EARTH_RADIUS_METERS + avgHeight) * greatCircleDistance;
+
                 double[] a = new double[dimension - 1];
                 double[] b = new double[dimension - 1];
                 a[0] = distance2D;
@@ -121,18 +132,21 @@ public abstract class CRSCalculator
             }
             else
             {
-                return distance2D;
+                // The above calculation works for more than 3D if all higher dimensions are orthogonal to the 3rd dimension.
+                // This might not be true in the general case, and so until we genuinely support higher dimensions fullstack
+                // we will explicitly disabled them here for now.
+                throw new UnsupportedOperationException( "More than 3 dimensions are not supported for distance calculations." );
             }
         }
 
         @Override
         // http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
         // But calculating in degrees instead of radians to avoid rounding errors
-        public Pair<PointValue,PointValue> boundingBox( PointValue center, double distance )
+        public List<Pair<PointValue,PointValue>> boundingBox( PointValue center, double distance )
         {
             if ( distance == 0.0 )
             {
-                return Pair.of( center, center );
+                return Collections.singletonList( Pair.of( center, center ) );
             }
 
             // Extend the distance slightly to assure that all relevant points lies inside the bounding box,
@@ -151,11 +165,11 @@ public abstract class CRSCalculator
             // If your query circle includes one of the poles
             if ( latMax >= 90 )
             {
-                return boundingBoxOf( -180, 180, latMin, 90, center, distance );
+                return Collections.singletonList( boundingBoxOf( -180, 180, latMin, 90, center, distance ) );
             }
             else if ( latMin <= -90 )
             {
-                return boundingBoxOf( -180, 180, -90, latMax, center, distance );
+                return Collections.singletonList( boundingBoxOf( -180, 180, -90, latMax, center, distance ) );
             }
             else
             {
@@ -164,15 +178,28 @@ public abstract class CRSCalculator
                 double lonMax = lon + deltaLon;
 
                 // If you query circle wraps around the dateline
-                // Large rectangle covering all longitudes
-                // TODO implement two rectangle solution instead
-                if ( lonMin < -180 || lonMax > 180 )
+                if ( lonMin < -180 && lonMax > 180 )
                 {
-                    return boundingBoxOf( -180, 180, latMin, latMax, center, distance );
+                    // Large rectangle covering all longitudes
+                    return Collections.singletonList( boundingBoxOf( -180, 180, latMin, latMax, center, distance ) );
+                }
+                else if ( lonMin < -180 )
+                {
+                    // two small rectangles east and west of dateline
+                    Pair<PointValue,PointValue> box1 = boundingBoxOf( lonMin + 360, 180, latMin, latMax, center, distance );
+                    Pair<PointValue,PointValue> box2 = boundingBoxOf( -180, lonMax, latMin, latMax, center, distance );
+                    return Arrays.asList( box1, box2 );
+                }
+                else if ( lonMax > 180 )
+                {
+                    // two small rectangles east and west of dateline
+                    Pair<PointValue,PointValue> box1 = boundingBoxOf( lonMin, 180, latMin, latMax, center, distance );
+                    Pair<PointValue,PointValue> box2 = boundingBoxOf( -180, lonMax - 360, latMin, latMax, center, distance );
+                    return Arrays.asList( box1, box2 );
                 }
                 else
                 {
-                    return boundingBoxOf( lonMin, lonMax, latMin, latMax, center, distance );
+                    return Collections.singletonList( boundingBoxOf( lonMin, lonMax, latMin, latMax, center, distance ) );
                 }
             }
         }

@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
@@ -35,12 +36,13 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -59,7 +61,7 @@ import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type.UNIQU
  * @param <KEY> type of {@link NativeSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_FAILED = 0;
@@ -109,11 +111,16 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
     @Override
     public synchronized void create() throws IOException
     {
+        create( new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+    }
+
+    protected synchronized void create( Consumer<PageCursor> headerWriter ) throws IOException
+    {
         assertNotDropped();
         assertNotClosed();
 
         gbpTreeFileUtil.deleteFileIfPresent( storeFile );
-        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
@@ -292,12 +299,12 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
     }
 
-    private void markTreeAsOnline() throws IOException
+    void markTreeAsOnline() throws IOException
     {
         tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
     }
 
-    static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateApply<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
     {
         private final GBPTree<KEY,VALUE> tree;
         private final KEY treeKey;
@@ -324,7 +331,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
     }
 
-    static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateWork<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
             implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;
@@ -335,7 +342,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
 
         @Override
-        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork work )
+        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork<KEY,VALUE> work )
         {
             ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
             combined.addAll( work.updates );

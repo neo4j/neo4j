@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
@@ -71,7 +72,12 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
+        throw failureCause();
+    }
+
+    private IndexPopulationFailedKernelException failureCause()
+    {
+        return getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
     }
 
     @Override
@@ -83,7 +89,13 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validate() throws IndexPopulationFailedKernelException
     {
-        throw getPopulationFailure().asIndexPopulationFailure( getDescriptor().schema(), indexUserDescription );
+        throw failureCause();
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        throw new IllegalStateException( "Shouldn't be called on a failed index proxy. Cause:" + getPopulationFailure().asString() );
     }
 
     @Override

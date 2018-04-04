@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.Result;

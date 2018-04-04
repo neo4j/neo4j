@@ -31,33 +31,32 @@ import org.neo4j.cypher.internal.v3_3.logical.plans._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{InternalIndexState, procs}
-import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
 
-class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
-  extends TransactionBoundTokenContext(readOperationsSupplier) with PlanContext with IndexDescriptorCompatibility {
+class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
+  extends TransactionBoundTokenContext(txSupplier) with PlanContext with IndexDescriptorCompatibility {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    readOperationsSupplier().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+    txSupplier().schemaRead().indexesGetForLabel(labelId).asScala
+        .filterNot(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
   def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(readOperationsSupplier().indexGetForSchema(descriptor))
+    getOnlineIndex(txSupplier().schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = readOperationsSupplier().indexesGetForLabel(labelId).asScala
-        .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+      val onlineIndexDescriptors = txSupplier().schemaRead.indexesGetForLabel(labelId).asScala
+        .filterNot(_.isUnique)
         .flatMap(getOnlineIndex)
 
       onlineIndexDescriptors.nonEmpty
@@ -67,14 +66,14 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    readOperationsSupplier().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
+    txSupplier().schemaRead.indexesGetForLabel(labelId).asScala
+      .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
   def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
     val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(readOperationsSupplier().indexGetForSchema(descriptor))
+    getOnlineIndex(txSupplier().schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
   }
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
@@ -84,40 +83,39 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
       case _: KernelException => None
     }
 
-  private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
-    readOperationsSupplier().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().keyId, descriptor.schema().getPropertyIds))
+  private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
+    txSupplier().schemaRead.indexGetState(reference) match {
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(reference.label(), reference.properties()))
       case _ => None
     }
-
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      readOperationsSupplier().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+      txSupplier().schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
     }
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!readOperationsSupplier().nodeExplicitIndexesGetAll().contains(idxName)) {
+    if (!txSupplier().indexRead().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String) {
-    if (!readOperationsSupplier().relationshipExplicitIndexesGetAll().contains(idxName)) {
+    if (!txSupplier().indexRead().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
     val javaCreator = new java.util.function.Function[Any, T]() {
-      def apply(key: Any): T = f
+      def apply(key: Any) = f
     }
-    readOperationsSupplier().schemaStateGetOrCreate(key, javaCreator)
+    txSupplier().schemaRead.schemaStateGetOrCreate(key, javaCreator)
   }
 
   val statistics: GraphStatistics = graphStatistics
@@ -125,27 +123,31 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
   // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_3/Compatibility
   def txIdProvider: () => Long = ???
 
-  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
+  override def procedureSignature(name: QualifiedName) = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val ks = readOperationsSupplier().procedureGet(kn).signature()
-    val input = ks.inputSignature().asScala
+    val procedures = txSupplier().procedures()
+    val handle = procedures.procedureGet(kn)
+    val signature = handle.signature()
+    val input = signature.inputSignature().asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
-    val output = if (ks.isVoid) None else Some(
-      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
-    val deprecationInfo = asOption(ks.deprecated())
-    val mode = asCypherProcMode(ks.mode(), ks.allowed())
-    val description = asOption(ks.description())
-    val warning = asOption(ks.warning())
+    val output = if (signature.isVoid) None else Some(
+      signature.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val deprecationInfo = asOption(signature.deprecated())
+    val mode = asCypherProcMode(signature.mode(), signature.allowed())
+    val description = asOption(signature.description())
+    val warning = asOption(signature.warning())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val maybeFunction = readOperationsSupplier().functionGet(kn)
-    val (fcn, aggregation) = if (maybeFunction != null) (maybeFunction, false)
-    else (readOperationsSupplier().aggregationFunctionGet(kn), true)
+    val procedures = txSupplier().procedures()
+    val func = procedures.functionGet(kn)
+
+    val (fcn, aggregation) = if (func != null) (func, false)
+    else (procedures.aggregationFunctionGet(kn), true)
     if (fcn == null) None
     else {
       val signature = fcn.signature()
@@ -156,7 +158,8 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
       val deprecationInfo = asOption(signature.deprecated())
       val description = asOption(signature.description())
 
-      Some(UserFunctionSignature(name, input, output, deprecationInfo, signature.allowed(), description, isAggregate = aggregation))
+      Some(UserFunctionSignature(name, input, output, deprecationInfo,
+                                 signature.allowed(), description, isAggregate = aggregation))
     }
   }
 

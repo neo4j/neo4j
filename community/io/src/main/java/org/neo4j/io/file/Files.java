@@ -42,7 +42,7 @@ public class Files
      * @return An output stream
      * @throws IOException If an error occurs creating directories or opening the file
      */
-    public static OutputStream createOrOpenAsOuputStream( FileSystemAbstraction fileSystem, File file, boolean append ) throws IOException
+    public static OutputStream createOrOpenAsOutputStream( FileSystemAbstraction fileSystem, File file, boolean append ) throws IOException
     {
         if ( file.getParentFile() != null )
         {

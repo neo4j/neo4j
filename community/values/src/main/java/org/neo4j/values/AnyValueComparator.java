@@ -88,8 +88,18 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
         if ( x == 0 )
         {
             //noinspection ConstantConditions
-            return isValue1 ? compareValues.apply( (Value)v1, (Value)v2 ) :
-                   compareVirtualValues( (VirtualValue)v1, (VirtualValue)v2 );
+            // Do not turn this into ?-operator
+            if ( isValue1 )
+            {
+                // This return Integer (null possible!)
+                return compareValues.apply( (Value) v1, (Value) v2 );
+            }
+            else
+            {
+                // This returns int
+                return compareVirtualValues( (VirtualValue)v1, (VirtualValue)v2 );
+            }
+
         }
         return x;
     }
@@ -109,7 +119,7 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
     @Override
     public boolean equals( Object obj )
     {
-        return obj != null && obj instanceof AnyValueComparator;
+        return obj instanceof AnyValueComparator;
     }
 
     @Override

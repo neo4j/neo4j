@@ -21,8 +21,11 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
+import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,11 +36,13 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.values.storable.ValueCategory;
 
 public class TemporalIndexProvider extends IndexProvider
 {
     public static final String KEY = "temporal";
-    public static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    static final IndexCapability CAPABILITY = new TemporalIndexCapability();
+    private static final Descriptor TEMPORAL_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -117,7 +122,7 @@ public class TemporalIndexProvider extends IndexProvider
                 default: // continue
                 }
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
                 return InternalIndexState.POPULATING;
@@ -129,7 +134,7 @@ public class TemporalIndexProvider extends IndexProvider
     @Override
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
-        return IndexCapability.NO_CAPABILITY;
+        return CAPABILITY;
     }
 
     @Override
@@ -138,5 +143,44 @@ public class TemporalIndexProvider extends IndexProvider
         // Since this native provider is a new one, there's no need for migration on this level.
         // Migration should happen in the combined layer for the time being.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    /**
+     * For single property temporal queries capabilities are
+     * Order: ASCENDING
+     * Value: YES (can provide exact value)
+     *
+     * For other queries there is no support
+     */
+    private static class TemporalIndexCapability implements IndexCapability
+    {
+        @Override
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
+        {
+            if ( support( valueCategories ) )
+            {
+                return ORDER_ASC;
+            }
+            return ORDER_NONE;
+        }
+
+        @Override
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
+        {
+            if ( support( valueCategories ) )
+            {
+                return IndexValueCapability.YES;
+            }
+            if ( singleWildcard( valueCategories ) )
+            {
+                return IndexValueCapability.PARTIAL;
+            }
+            return IndexValueCapability.NO;
+        }
+
+        private boolean support( ValueCategory[] valueCategories )
+        {
+            return valueCategories.length == 1 && valueCategories[0] == ValueCategory.TEMPORAL;
+        }
     }
 }

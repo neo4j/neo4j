@@ -20,11 +20,11 @@
 package org.neo4j.helper;
 
 import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.System.getenv;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class StressTestingHelper
 {
@@ -32,15 +32,13 @@ public class StressTestingHelper
     {
     }
 
-    public static File ensureExistsAndEmpty( File directory )
+    public static File ensureExistsAndEmpty( File directory ) throws IOException
     {
+        FileUtils.deleteRecursively( directory );
+
         if ( !directory.mkdirs() )
         {
-            assertTrue( directory.exists() );
-            assertTrue( directory.isDirectory() );
-            String[] list = directory.list();
-            assertNotNull( list );
-            assertEquals( 0, list.length );
+            throw new RuntimeException( "Could not create directory: " + directory.getAbsolutePath() );
         }
         return directory;
     }
@@ -50,5 +48,4 @@ public class StressTestingHelper
         String environmentVariableValue = getenv( environmentVariableName );
         return environmentVariableValue == null ? defaultValue : environmentVariableValue;
     }
-
 }

@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -157,17 +156,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
         assertAllows( AccessMode::allowsWrites, "Write" );
         transaction.upgradeToDataWrites();
-        return facade;
-    }
-
-    @Override
-    public SchemaWriteOperations schemaWriteOperations()
-            throws InvalidTransactionTypeKernelException
-    {
-        accessCapability.assertCanWrite();
-
-        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
-        transaction.upgradeToSchemaWrites();
         return facade;
     }
 
@@ -332,13 +320,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     void assertAllows( Function<AccessMode,Boolean> allows, String mode )
     {
-        AccessMode accessMode = transaction.securityContext().mode();
-        if ( !allows.apply( accessMode ) )
-        {
-            throw accessMode.onViolation(
-                    format( "%s operations are not allowed for %s.", mode,
-                            transaction.securityContext().description() ) );
-        }
+      transaction.assertAllows( allows, mode );
     }
 
     private void recordOpenCloseMethods()

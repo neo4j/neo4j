@@ -76,7 +76,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -563,62 +562,6 @@ public class BackupIT
         catch ( RuntimeException ex )
         {
             assertThat( ex.getCause().getCause(), instanceOf( StoreLockException.class ) );
-        }
-
-        StartupChecker proc = new LockProcess().start( path );
-        try
-        {
-            assertFalse( "Could start up database in subprocess, store is not locked", proc.startupOk() );
-        }
-        finally
-        {
-            SubProcess.stop( proc );
-        }
-    }
-
-    public interface StartupChecker
-    {
-        boolean startupOk();
-    }
-
-    @SuppressWarnings( "serial" )
-    private static class LockProcess extends SubProcess<StartupChecker, File> implements StartupChecker
-    {
-        private volatile Object state;
-
-        @Override
-        public boolean startupOk()
-        {
-            Object result;
-            do
-            {
-                result = state;
-            }
-            while ( result == null );
-            return !( state instanceof Exception );
-        }
-
-        @Override
-        protected void startup( File path )
-        {
-            GraphDatabaseService db = null;
-            try
-            {
-                db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
-            }
-            catch ( RuntimeException ex )
-            {
-                if ( ex.getCause().getCause() instanceof StoreLockException )
-                {
-                    state = ex;
-                    return;
-                }
-            }
-            state = new Object();
-            if ( db != null )
-            {
-                db.shutdown();
-            }
         }
     }
 

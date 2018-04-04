@@ -21,53 +21,53 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
-abstract class TransactionBoundTokenContext(statement: => Statement) extends TokenContext {
+abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
-    val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
+    val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
     if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY) None
     else Some(propertyId)
   }
 
   def getPropertyKeyId(propertyKeyName: String) = {
-    val propertyId: Int = statement.readOperations().propertyKeyGetForName(propertyKeyName)
+    val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
     if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY)
       throw new PropertyKeyNotFoundException("No such property.", null)
     propertyId
   }
 
-  def getPropertyKeyName(propertyKeyId: Int): String = statement.readOperations().propertyKeyGetName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Int): String = transaction.tokenRead().propertyKeyName(propertyKeyId)
 
   def getLabelId(labelName: String): Int = {
-    val labelId: Int = statement.readOperations().labelGetForName(labelName)
+    val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
     if (labelId == KeyReadOperations.NO_SUCH_LABEL)
       throw new LabelNotFoundKernelException("No such label", null)
     labelId
   }
 
   def getOptLabelId(labelName: String): Option[Int] = {
-    val labelId: Int = statement.readOperations().labelGetForName(labelName)
+    val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
     if (labelId == KeyReadOperations.NO_SUCH_LABEL) None
     else Some(labelId)
   }
 
-  def getLabelName(labelId: Int): String = statement.readOperations().labelGetName(labelId)
+  def getLabelName(labelId: Int): String = transaction.tokenRead().nodeLabelName(labelId)
 
   def getOptRelTypeId(relType: String): Option[Int] = {
-    val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
+    val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
     if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE) None
     else Some(relTypeId)
   }
 
   def getRelTypeId(relType: String): Int = {
-    val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
+    val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
     if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE)
       throw new RelationshipTypeNotFoundException("No such relationship.", null)
     relTypeId
   }
 
-  def getRelTypeName(id: Int): String = statement.readOperations().relationshipTypeGetName(id)
+  def getRelTypeName(id: Int): String = transaction.tokenRead().relationshipTypeName(id)
 }

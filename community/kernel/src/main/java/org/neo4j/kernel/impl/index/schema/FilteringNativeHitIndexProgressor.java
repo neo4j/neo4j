@@ -27,7 +27,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-class FilteringNativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY,VALUE>
+class FilteringNativeHitIndexProgressor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY,VALUE>
 {
     private final IndexQuery[] filter;
 
@@ -39,7 +39,7 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE exten
     }
 
     @Override
-    boolean acceptValue( Value[] values )
+    protected boolean acceptValue( Value[] values )
     {
         for ( int i = 0; i < values.length; i++ )
         {

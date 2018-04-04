@@ -30,7 +30,7 @@ import org.neo4j.values.storable.PointValue;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-public class SpatialIndexUpdater extends SpatialIndexCache<NativeSchemaIndexUpdater<?, NativeSchemaValue>,IOException> implements IndexUpdater
+public class SpatialIndexUpdater extends SpatialIndexCache<NativeSchemaIndexUpdater<?, NativeSchemaValue>> implements IndexUpdater
 {
     SpatialIndexUpdater( SpatialIndexAccessor accessor, IndexUpdateMode mode )
     {
@@ -73,7 +73,7 @@ public class SpatialIndexUpdater extends SpatialIndexCache<NativeSchemaIndexUpda
         forAll( NativeSchemaIndexUpdater::close, this );
     }
 
-    static class PartFactory implements Factory<NativeSchemaIndexUpdater<?, NativeSchemaValue>,IOException>
+    static class PartFactory implements Factory<NativeSchemaIndexUpdater<?, NativeSchemaValue>>
     {
 
         private final SpatialIndexAccessor accessor;

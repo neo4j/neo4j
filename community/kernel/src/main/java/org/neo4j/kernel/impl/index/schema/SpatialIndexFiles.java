@@ -20,32 +20,32 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class SpatialIndexFiles
 {
     private static final Pattern CRS_DIR_PATTERN = Pattern.compile( "(\\d+)-(\\d+)" );
     private final FileSystemAbstraction fs;
-    private final int maxBits;
+    private final SpaceFillingCurveSettingsFactory settingsFactory;
     private final File indexDirectory;
 
-    SpatialIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, FileSystemAbstraction fs, int maxBits )
+    SpatialIndexFiles( IndexDirectoryStructure directoryStructure, long indexId, FileSystemAbstraction fs, SpaceFillingCurveSettingsFactory settingsFactory )
     {
         this.fs = fs;
-        this.maxBits = maxBits;
+        this.settingsFactory = settingsFactory;
         indexDirectory = directoryStructure.directoryForIndex( indexId );
     }
 
@@ -56,7 +56,7 @@ class SpatialIndexFiles
         return existing;
     }
 
-    <T, E extends Exception> void loadExistingIndexes( SpatialIndexCache<T,E> indexCache ) throws E
+    <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache ) throws IOException
     {
         for ( SpatialFileLayout fileLayout : existing() )
         {
@@ -66,22 +66,7 @@ class SpatialIndexFiles
 
     SpatialFileLayout forCrs( CoordinateReferenceSystem crs )
     {
-        SpaceFillingCurve curve;
-        if ( crs.getDimension() == 2 )
-        {
-            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), Math.min( 30, maxBits / 2 ) );
-        }
-        else if ( crs.getDimension() == 3 )
-        {
-            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), Math.min( 20, maxBits / 3 ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot create spatial index with other than 2D or 3D coordinate reference system: " + crs );
-        }
-        String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
-        File file = new File( indexDirectory, s );
-        return new SpatialFileLayout( file, new SpatialLayout( crs, curve ), crs );
+        return new SpatialFileLayout( crs, settingsFactory.settingsFor( crs ), indexDirectory );
     }
 
     private void addExistingFiles( List<SpatialFileLayout> existing )
@@ -107,20 +92,23 @@ class SpatialIndexFiles
     static class SpatialFileLayout
     {
         final File indexFile;
-        final Layout<SpatialSchemaKey,NativeSchemaValue> layout;
-        final CoordinateReferenceSystem crs;
+        final SpaceFillingCurveSettings settings;
+        private final CoordinateReferenceSystem crs;
+        Layout<SpatialSchemaKey,NativeSchemaValue> layout;
 
-        SpatialFileLayout( File indexFile, Layout<SpatialSchemaKey,NativeSchemaValue> layout, CoordinateReferenceSystem crs )
+        private SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
         {
-            this.indexFile = indexFile;
-            this.layout = layout;
             this.crs = crs;
+            this.settings = settings;
+            this.layout = new SpatialLayout( crs, settings.curve() );
+            String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
+            this.indexFile = new File( indexDirectory, s );
         }
-    }
 
-    static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
-    {
-        Pair<double[],double[]> indexEnvelope = crs.getIndexEnvelope();
-        return new Envelope( indexEnvelope.first(), indexEnvelope.other() );
+        public void readHeader( PageCache pageCache ) throws IOException
+        {
+            GBPTree.readHeader( pageCache, indexFile, settings.headerReader() );
+            this.layout = new SpatialLayout( crs, settings.curve() );
+        }
     }
 }
