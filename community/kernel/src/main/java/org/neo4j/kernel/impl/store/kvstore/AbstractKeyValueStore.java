@@ -29,6 +29,7 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -98,8 +99,10 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             {
                 return lookup.value( !originalState.lookup( key, lookup ) );
             }
-            catch ( IllegalStateException e )
+            catch ( FileIsNotMappedException e )
             {
+                // if the state has changed we think the exception is caused by a rotation event. In this
+                // case we simply retry the lookup on the rotated state. Otherwise we rethrow.
                 if ( originalState == this.state )
                 {
                     throw e;
