@@ -53,26 +53,6 @@ public class BasicTableTest
             @Override
             public Table newTable( int capacity )
             {
-                return new IntKeyTable( capacity, VALUE_MARKER );
-            }
-
-            @Override
-            public boolean supportsLongs()
-            {
-                return false;
-            }
-
-            @Override
-            public Object sampleValue()
-            {
-                return null;
-            }
-        } } );
-        result.add( new Object[] { new TableFactory()
-        {
-            @Override
-            public Table newTable( int capacity )
-            {
                 return new LongKeyTable( capacity, VALUE_MARKER );
             }
 
@@ -80,26 +60,6 @@ public class BasicTableTest
             public boolean supportsLongs()
             {
                 return true;
-            }
-
-            @Override
-            public Object sampleValue()
-            {
-                return null;
-            }
-        } } );
-        result.add( new Object[] { new TableFactory()
-        {
-            @Override
-            public Table newTable( int capacity )
-            {
-                return new IntKeyUnsafeTable( capacity, VALUE_MARKER, GlobalMemoryTracker.INSTANCE );
-            }
-
-            @Override
-            public boolean supportsLongs()
-            {
-                return false;
             }
 
             @Override
