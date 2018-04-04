@@ -259,7 +259,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_LOCAL_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_LOCAL_TIME ) );
     }
 
     @Override

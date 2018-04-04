@@ -532,7 +532,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_DATE_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_DATE_TIME ) );
     }
 
     @Override

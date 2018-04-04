@@ -268,7 +268,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_DATE );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_DATE ) );
     }
 
     @Override

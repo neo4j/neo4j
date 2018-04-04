@@ -350,7 +350,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_LOCAL_DATE_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_LOCAL_DATE_TIME ) );
     }
 
     @Override

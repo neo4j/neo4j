@@ -1449,6 +1449,18 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
     }
 
+    static String assertPrintable( Supplier<String> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException e )
+        {
+            throw new TemporalParseException( e.getMessage(), e );
+        }
+    }
+
     static <TEMP extends Temporal> TEMP assertValidArithmetic( Supplier<TEMP> func )
     {
         try

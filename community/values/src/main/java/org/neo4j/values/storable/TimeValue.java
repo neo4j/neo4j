@@ -341,7 +341,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_TIME ) );
     }
 
     @Override
