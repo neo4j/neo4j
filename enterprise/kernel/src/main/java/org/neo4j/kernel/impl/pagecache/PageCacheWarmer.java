@@ -79,8 +79,6 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         this.fs = fs;
         this.pageCache = pageCache;
         this.scheduler = scheduler;
-        this.executor = buildExecutorService( scheduler );
-        this.pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
         this.refCounts = new ProfileRefCounts();
     }
 
@@ -98,10 +96,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             coll.add( new StoreFileMetadata( profile.file(), 1, false ) );
         }
         refCounts.incrementRefCounts( existingProfiles );
-        return () ->
-        {
-            refCounts.decrementRefCounts( existingProfiles );
-        };
+        return () -> refCounts.decrementRefCounts( existingProfiles );
     }
 
     public synchronized void start()
@@ -152,6 +147,41 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             }
         }
         return stopOngoingWarming ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
+    }
+
+    /**
+     * Profile the in-memory data in the page cache, and write it to "cacheprof" file siblings of the mapped files.
+     *
+     * @return An {@link OptionalLong} of the number of pages that were found to be in memory, or
+     * {@link OptionalLong#empty()} if the profiling was stopped early via {@link #stop()}.
+     * @throws IOException If anything goes wrong while accessing the page cache or writing out the profile data.
+     */
+    public synchronized OptionalLong profile() throws IOException
+    {
+        // Note that we could in principle profile the files in parallel. However, producing a profile is usually so
+        // fast, that it rivals the overhead of starting and stopping threads. Because of this, the complexity of
+        // profiling in parallel is just not worth it.
+        long pagesInMemory = 0;
+        List<PagedFile> files = pageCache.listExistingMappings();
+        Profile[] existingProfiles = findExistingProfiles( files );
+        for ( PagedFile file : files )
+        {
+            try
+            {
+                pagesInMemory += profile( file, existingProfiles );
+            }
+            catch ( FileIsNotMappedException ignore )
+            {
+                // The database is allowed to map and unmap files while we are profiling the page cache.
+            }
+            if ( stopOngoingWarming )
+            {
+                pageCache.reportEvents();
+                return OptionalLong.empty();
+            }
+        }
+        pageCache.reportEvents();
+        return OptionalLong.of( pagesInMemory );
     }
 
     private long reheat( PagedFile file, Profile[] existingProfiles ) throws IOException
@@ -213,41 +243,6 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             return false;
         }
         return true;
-    }
-
-    /**
-     * Profile the in-memory data in the page cache, and write it to "cacheprof" file siblings of the mapped files.
-     *
-     * @return An {@link OptionalLong} of the number of pages that were found to be in memory, or
-     * {@link OptionalLong#empty()} if the profiling was stopped early via {@link #stop()}.
-     * @throws IOException If anything goes wrong while accessing the page cache or writing out the profile data.
-     */
-    public synchronized OptionalLong profile() throws IOException
-    {
-        // Note that we could in principle profile the files in parallel. However, producing a profile is usually so
-        // fast, that it rivals the overhead of starting and stopping threads. Because of this, the complexity of
-        // profiling in parallel is just not worth it.
-        long pagesInMemory = 0;
-        List<PagedFile> files = pageCache.listExistingMappings();
-        Profile[] existingProfiles = findExistingProfiles( files );
-        for ( PagedFile file : files )
-        {
-            try
-            {
-                pagesInMemory += profile( file, existingProfiles );
-            }
-            catch ( FileIsNotMappedException ignore )
-            {
-                // The database is allowed to map and unmap files while we are profiling the page cache.
-            }
-            if ( stopOngoingWarming )
-            {
-                pageCache.reportEvents();
-                return OptionalLong.empty();
-            }
-        }
-        pageCache.reportEvents();
-        return OptionalLong.of( pagesInMemory );
     }
 
     private long profile( PagedFile file, Profile[] existingProfiles ) throws IOException
