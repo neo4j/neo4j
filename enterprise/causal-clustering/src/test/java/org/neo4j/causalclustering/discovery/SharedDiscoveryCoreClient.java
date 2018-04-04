@@ -79,7 +79,8 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public boolean setClusterId( ClusterId clusterId, String dbName )
     {
-        return sharedDiscoveryService.casClusterId( clusterId, dbName );
+        log.debug( "Attempting to set %s for database name %s", clusterId, dbName );
+        return sharedDiscoveryService.casClusterId( clusterId, dbName, log );
     }
 
     @Override
