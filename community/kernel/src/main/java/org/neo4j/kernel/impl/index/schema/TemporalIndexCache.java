@@ -19,40 +19,49 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
-import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.date;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.duration;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.localTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedDateTime;
+import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedTime;
 
 /**
  * Cache for lazily creating parts of the temporal index. Each part is created using the factory
  * the first time it is selected in a select() query, or the first time it's explicitly
  * asked for using e.g. date().
- *
+ * <p>
  * Iterating over the cache will return all currently created parts.
  *
  * @param <T> Type of parts
- * @param <E> Type of exception potentially thrown during creation
  */
-class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
+class TemporalIndexCache<T> implements Iterable<T>
 {
-    private final Factory<T, E> factory;
+    private final Factory<T> factory;
 
-    private volatile T date;
-    private volatile T localDateTime;
-    private volatile T zonedDateTime;
-    private volatile T localTime;
-    private volatile T zonedTime;
-    private volatile T duration;
+    enum Offset
+    {
+        date,
+        localDateTime,
+        zonedDateTime,
+        localTime,
+        zonedTime,
+        duration
+    }
 
-    private List<T> parts;
+    private final ConcurrentHashMap<Offset,T> cache = new ConcurrentHashMap<>();
 
-    TemporalIndexCache( Factory<T, E> factory )
+    TemporalIndexCache( Factory<T> factory )
     {
         this.factory = factory;
-        this.parts = new ArrayList<>();
     }
 
     /**
@@ -63,26 +72,6 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
      * @return selected part
      */
     T uncheckedSelect( ValueGroup valueGroup )
-    {
-        try
-        {
-            return select( valueGroup );
-        }
-        catch ( Exception t )
-        {
-            throw new RuntimeException( t );
-        }
-    }
-
-    /**
-     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
-     * in which case an exception of type E might be thrown.
-     *
-     * @param valueGroup target value group
-     * @return selected part
-     * @throws E exception potentially thrown during creation
-     */
-    T select( ValueGroup valueGroup ) throws E
     {
         switch ( valueGroup )
         {
@@ -110,6 +99,25 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     }
 
     /**
+     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
+     * in which case an exception of type E might be thrown.
+     *
+     * @param valueGroup target value group
+     * @return selected part
+     */
+    T select( ValueGroup valueGroup ) throws IOException
+    {
+        try
+        {
+            return uncheckedSelect( valueGroup );
+        }
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
+    }
+
+    /**
      * Select the part corresponding to the given ValueGroup, apply function to it and return the result.
      * If the part isn't created yet return orElse.
      *
@@ -119,99 +127,125 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
      * @param <RESULT> type of result
      * @return the result
      */
-    <RESULT> RESULT selectOrElse( ValueGroup valueGroup, Function<T, RESULT> function, RESULT orElse )
+    <RESULT> RESULT selectOrElse( ValueGroup valueGroup, Function<T,RESULT> function, RESULT orElse )
     {
+        T cachedValue;
         switch ( valueGroup )
         {
         case DATE:
-            return date != null ? function.apply( date ) : orElse;
-
+            cachedValue = cache.get( date );
+            break;
         case LOCAL_DATE_TIME:
-            return localDateTime != null ? function.apply( localDateTime ) : orElse;
-
+            cachedValue = cache.get( localDateTime );
+            break;
         case ZONED_DATE_TIME:
-            return zonedDateTime != null ? function.apply( zonedDateTime ) : orElse;
-
+            cachedValue = cache.get( zonedDateTime );
+            break;
         case LOCAL_TIME:
-            return localTime != null ? function.apply( localTime ) : orElse;
-
+            cachedValue = cache.get( localTime );
+            break;
         case ZONED_TIME:
-            return zonedTime != null ? function.apply( zonedTime ) : orElse;
-
+            cachedValue = cache.get( zonedTime );
+            break;
         case DURATION:
-            return duration != null ? function.apply( duration ) : orElse;
-
+            cachedValue = cache.get( duration );
+            break;
         default:
             throw new IllegalStateException( "Unsupported value group " + valueGroup );
         }
+
+        return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
-    T date() throws E
+    private T date() throws UncheckedIOException
     {
-        if ( date == null )
+        return cache.computeIfAbsent( date, d ->
         {
-            date = factory.newDate();
-            addPartToList( date );
-        }
-        return date;
+            try
+            {
+                return factory.newDate();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
-    T localDateTime() throws E
+    private T localDateTime() throws UncheckedIOException
     {
-        if ( localDateTime == null )
+
+        return cache.computeIfAbsent( localDateTime, d  ->
         {
-            localDateTime = factory.newLocalDateTime();
-            addPartToList( localDateTime );
-        }
-        return localDateTime;
+            try
+            {
+                return factory.newLocalDateTime();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
-    T zonedDateTime() throws E
+    private T zonedDateTime() throws UncheckedIOException
     {
-        if ( zonedDateTime == null )
+        return cache.computeIfAbsent( zonedDateTime, d ->
         {
-            zonedDateTime = factory.newZonedDateTime();
-            addPartToList( zonedDateTime );
-        }
-        return zonedDateTime;
+            try
+            {
+                return factory.newZonedDateTime();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
-    T localTime() throws E
+    private T localTime() throws UncheckedIOException
     {
-        if ( localTime == null )
+        return cache.computeIfAbsent( localTime, d ->
         {
-            localTime = factory.newLocalTime();
-            addPartToList( localTime );
-        }
-        return localTime;
+            try
+            {
+                return factory.newLocalTime();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
-    T zonedTime() throws E
+    private T zonedTime() throws UncheckedIOException
     {
-        if ( zonedTime == null )
+        return cache.computeIfAbsent( zonedTime, d ->
         {
-            zonedTime = factory.newZonedTime();
-            addPartToList( zonedTime );
-        }
-        return zonedTime;
+            try
+            {
+                return factory.newZonedTime();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
-    T duration() throws E
+    private T duration() throws UncheckedIOException
     {
-        if ( duration == null )
+        return cache.computeIfAbsent( duration, d ->
         {
-            duration = factory.newDuration();
-            addPartToList( duration );
-        }
-        return duration;
-    }
-
-    private void addPartToList( T t )
-    {
-        if ( t != null )
-        {
-            parts.add( t );
-        }
+            try
+            {
+                return factory.newDuration();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        } );
     }
 
     void loadAll()
@@ -234,22 +268,26 @@ class TemporalIndexCache<T, E extends Exception> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return parts.iterator();
+        return cache.values().iterator();
     }
 
     /**
      * Factory used by the TemporalIndexCache to create parts.
      *
      * @param <T> Type of parts
-     * @param <E> Type of exception potentially thrown during create
      */
-    interface Factory<T, E extends Exception>
+    interface Factory<T>
     {
-        T newDate() throws E;
-        T newLocalDateTime() throws E;
-        T newZonedDateTime() throws E;
-        T newLocalTime() throws E;
-        T newZonedTime() throws E;
-        T newDuration() throws E;
+        T newDate() throws IOException;
+
+        T newLocalDateTime() throws IOException;
+
+        T newZonedDateTime() throws IOException;
+
+        T newLocalTime() throws IOException;
+
+        T newZonedTime() throws IOException;
+
+        T newDuration() throws IOException;
     }
 }

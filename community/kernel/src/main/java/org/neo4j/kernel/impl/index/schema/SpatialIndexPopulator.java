@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,7 +49,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
-class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator, IOException> implements IndexPopulator
+class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
     private final IndexSamplerWrapper sampler;
 
@@ -57,7 +59,8 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             SpatialIndexFiles spatialIndexFiles,
             PageCache pageCache,
             FileSystemAbstraction fs,
-            IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
+            IndexProvider.Monitor monitor,
+            SpaceFillingCurveConfiguration configuration )
     {
         super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
         this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
@@ -78,14 +81,17 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException, IndexEntryConflictException
     {
+        Map<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
             PointValue point = (PointValue) update.values()[0];
-            select( point.getCoordinateReferenceSystem() ).batchUpdate( update );
+            List<IndexEntryUpdate<?>> batch = batchMap.computeIfAbsent( point.getCoordinateReferenceSystem(), k -> new ArrayList<>() );
+            batch.add( update );
         }
-        for ( PartPopulator part : this )
+        for ( Map.Entry<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> entry : batchMap.entrySet() )
         {
-            part.applyUpdateBatch();
+            PartPopulator partPopulator = select( entry.getKey() );
+            partPopulator.add( entry.getValue() );
         }
     }
 
@@ -183,7 +189,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
-        List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
                 IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
@@ -192,18 +197,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
-        }
-
-        void batchUpdate( IndexEntryUpdate<?> update )
-        {
-            updates.add( update );
-        }
-
-        void applyUpdateBatch() throws IOException, IndexEntryConflictException
-        {
-            List<IndexEntryUpdate<?>> batch = updates;
-            updates = new ArrayList<>();
-            add( batch );
         }
 
         @Override
@@ -237,7 +230,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
     }
 
-    static class PartFactory implements Factory<PartPopulator, IOException>
+    static class PartFactory implements Factory<PartPopulator>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;

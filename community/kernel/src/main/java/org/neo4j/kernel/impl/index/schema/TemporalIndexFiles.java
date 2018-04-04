@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +64,7 @@ class TemporalIndexFiles
         return existing;
     }
 
-    <T,E extends Exception> void loadExistingIndexes( TemporalIndexCache<T,E> indexCache ) throws E
+    <T> void loadExistingIndexes( TemporalIndexCache<T> indexCache ) throws IOException
     {
         for ( FileLayout fileLayout : existing() )
         {
