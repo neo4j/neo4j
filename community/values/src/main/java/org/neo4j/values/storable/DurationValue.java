@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -135,9 +136,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             switch ( (ChronoUnit) unit )
             {
             case MONTHS:
-                return newDuration( from.until( to, unit ), 0, 0, 0 );
+                return newDuration( assertValidUntil( from, to ,unit ), 0, 0, 0 );
             case DAYS:
-                return newDuration( 0, from.until( to, unit ), 0, 0 );
+                return newDuration( 0, assertValidUntil( from, to ,unit ), 0, 0 );
             case SECONDS:
                 return durationInSecondsAndNanos( from, to );
             default:
@@ -496,19 +497,37 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         long days = 0;
         if ( from.isSupported( EPOCH_DAY ) && to.isSupported( EPOCH_DAY ) )
         {
-            Period period = Period.between( LocalDate.from( from ), LocalDate.from( to ) );
+            LocalDate fromDate;
+            LocalDate toDate;
+            try
+            {
+                fromDate = LocalDate.from( from );
+                toDate = LocalDate.from( to );
+            }
+            catch ( DateTimeException e )
+            {
+                throw new InvalidTemporalArgumentException( e.getMessage(), e );
+            }
+            Period period = Period.between( fromDate, toDate );
             months = period.getYears() * 12L + period.getMonths();
             days = period.getDays();
             if ( months != 0 || days != 0 )
             {
                 // Adjust in order to get to a point where we can compute the time difference,
                 // without having to bother with the length of days (which might differ due to timezone)
-                from = from.plus( period );
+                try
+                {
+                    from = from.plus( period );
+                }
+                catch ( DateTimeException | ArithmeticException e )
+                {
+                    throw new TemporalArithmeticException( e.getMessage(), e );
+                }
             }
         }
         // Compute the time difference - which is simple at this point
         // NANOS of a day will never overflow a long
-        long nanos = from.until( to, NANOS );
+        long nanos = assertValidUntil( from, to, NANOS );
         return newDuration( months, days, nanos / NANOS_PER_SECOND, (int) (nanos % NANOS_PER_SECOND) );
     }
 
@@ -524,7 +543,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             from = to;
             to = tmp;
         }
-        seconds = from.until( to, SECONDS );
+        seconds = assertValidUntil( from, to, SECONDS );
         int fromNanos = from.isSupported( NANO_OF_SECOND ) ? from.get( NANO_OF_SECOND ) : 0;
         int toNanos = to.isSupported( NANO_OF_SECOND ) ? to.get( NANO_OF_SECOND ) : 0;
         nanos = toNanos - fromNanos;
@@ -943,6 +962,22 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         catch ( DateTimeException | ArithmeticException e )
         {
             throw new TemporalArithmeticException( e.getMessage(), e );
+        }
+    }
+
+    private static long assertValidUntil( Temporal from, Temporal to, TemporalUnit unit )
+    {
+        try
+        {
+            return from.until( to, unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
+        catch ( DateTimeException e )
+        {
+            throw new InvalidTemporalArgumentException( e.getMessage(), e );
         }
     }
 }
