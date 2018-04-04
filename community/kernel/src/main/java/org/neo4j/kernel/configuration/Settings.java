@@ -27,11 +27,14 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -48,6 +51,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.helpers.TimeUtil;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 
@@ -1374,5 +1378,31 @@ public class Settings
         {
             return "A filesystem path; relative paths are resolved against the root, _<" + relativeRoot.name() + ">_";
         }
+    }
+
+    public static BaseSetting<String> prefixSetting( final String name, final Function<String,String> parser, final String defaultValue )
+    {
+        BiFunction<String,Function<String,String>,String> valueLookup = ( n, settings ) -> settings.apply( n );
+        BiFunction<String,Function<String,String>,String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+
+        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
+        {
+            @Override
+            public Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer ) throws InvalidSettingException
+            {
+                // Validate setting, if present or default value otherwise
+                try
+                {
+                    apply( rawConfig::get );
+                    // only return if it was present though
+
+                    return rawConfig.entrySet().stream().filter( entry -> entry.getKey().startsWith( name() ) ).collect( CollectorsUtil.entriesToMap() );
+                }
+                catch ( RuntimeException e )
+                {
+                    throw new InvalidSettingException( e.getMessage(), e );
+                }
+            }
+        };
     }
 }

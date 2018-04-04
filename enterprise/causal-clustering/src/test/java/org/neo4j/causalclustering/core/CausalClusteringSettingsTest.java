@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.BaseSetting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.junit.Assert.assertEquals;
@@ -36,7 +35,7 @@ public class CausalClusteringSettingsTest
     public void shouldValidatePrefixBasedKeys()
     {
         // given
-        BaseSetting<String> setting = GraphDatabaseSettings.prefixSetting( "foo", Settings.STRING, "" );
+        BaseSetting<String> setting = Settings.prefixSetting( "foo", Settings.STRING, "" );
 
         Map<String, String> rawConfig = new HashMap<>();
         rawConfig.put( "foo.us_east_1c", "abcdef" );
@@ -55,7 +54,7 @@ public class CausalClusteringSettingsTest
     public void shouldValidateMultiplePrefixBasedKeys()
     {
         // given
-        BaseSetting<String> setting = GraphDatabaseSettings.prefixSetting( "foo", Settings.STRING, "" );
+        BaseSetting<String> setting = Settings.prefixSetting( "foo", Settings.STRING, "" );
 
         Map<String, String> rawConfig = new HashMap<>();
         rawConfig.put( "foo.us_east_1c", "abcdef" );
@@ -92,7 +91,7 @@ public class CausalClusteringSettingsTest
     public void shouldBeInvalidIfPrefixDoesNotMatch()
     {
         // given
-        BaseSetting<String> setting = GraphDatabaseSettings.prefixSetting( "bar", Settings.STRING, "" );
+        BaseSetting<String> setting = Settings.prefixSetting( "bar", Settings.STRING, "" );
         Map<String, String> rawConfig = new HashMap<>();
         rawConfig.put( "foo.us_east_1c", "abcdef" );
 

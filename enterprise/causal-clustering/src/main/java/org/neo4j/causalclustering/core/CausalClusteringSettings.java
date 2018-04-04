@@ -41,7 +41,6 @@ import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Imp
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY_VALIDATING;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.prefixSetting;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -60,6 +59,7 @@ import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.prefixSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
