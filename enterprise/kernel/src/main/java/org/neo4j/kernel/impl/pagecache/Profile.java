@@ -39,22 +39,22 @@ final class Profile implements Comparable<Profile>
 {
     private final File profileFile;
     private final File pagedFile;
-    private final long profileCount;
+    private final long profileSequenceId;
 
-    private Profile( File profileFile, File pagedFile, long profileCount )
+    private Profile( File profileFile, File pagedFile, long profileSequenceId )
     {
         Objects.requireNonNull( profileFile );
         Objects.requireNonNull( pagedFile );
         this.profileFile = profileFile;
         this.pagedFile = pagedFile;
-        this.profileCount = profileCount;
+        this.profileSequenceId = profileSequenceId;
     }
 
     @Override
     public int compareTo( Profile that )
     {
         int compare = profileFile.compareTo( that.profileFile );
-        return compare == 0 ? Long.compare( profileCount, that.profileCount ) : compare;
+        return compare == 0 ? Long.compare( profileSequenceId, that.profileSequenceId ) : compare;
     }
 
     @Override
@@ -114,8 +114,8 @@ final class Profile implements Comparable<Profile>
 
     Profile next()
     {
-        long nextCount = profileCount + 1L;
-        return new Profile( profileName( pagedFile, nextCount ), pagedFile, nextCount );
+        long next = profileSequenceId + 1L;
+        return new Profile( profileName( pagedFile, next ), pagedFile, next );
     }
 
     static Profile first( File file )
@@ -158,9 +158,9 @@ final class Profile implements Comparable<Profile>
         String countStr = name.substring( secondLastDot + 1, lastDot );
         try
         {
-            long count = Long.parseLong( countStr, 16 );
+            long sequenceId = Long.parseLong( countStr, 16 );
             String mappedFileName = name.substring( 1, secondLastDot );
-            return Stream.of( new Profile( profile, new File( dir, mappedFileName ), count ) );
+            return Stream.of( new Profile( profile, new File( dir, mappedFileName ), sequenceId ) );
         }
         catch ( NumberFormatException e )
         {
