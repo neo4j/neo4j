@@ -259,12 +259,8 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         {
             int stepper = 0;
             int b = 0;
-            for ( ; ; )
+            while ( cursor.next() )
             {
-                if ( !cursor.next() )
-                {
-                    break; // Exit the loop if there are no more pages.
-                }
                 if ( cursor.getCurrentPageId() != PageCursor.UNBOUND_PAGE_ID )
                 {
                     pagesInMemory++;
