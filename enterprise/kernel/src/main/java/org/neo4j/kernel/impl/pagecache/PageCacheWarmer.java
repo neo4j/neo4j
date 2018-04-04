@@ -74,7 +74,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private final PageCache pageCache;
     private final JobScheduler scheduler;
     private final ProfileRefCounts refCounts;
-    private volatile boolean stopOngoingWarming;
+    private volatile boolean stopped;
     private ExecutorService executor;
     private PageLoaderFactory pageLoaderFactory;
 
@@ -89,7 +89,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     @Override
     public synchronized Resource addFilesTo( Collection<StoreFileMetadata> coll ) throws IOException
     {
-        if ( stopOngoingWarming )
+        if ( stopped )
         {
             return Resource.EMPTY;
         }
@@ -105,14 +105,14 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     public synchronized void start()
     {
-        stopOngoingWarming = false;
+        stopped = false;
         executor = buildExecutorService( scheduler );
         pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
     }
 
     public void stop()
     {
-        stopOngoingWarming = true;
+        stopped = true;
         stopWarmer();
     }
 
@@ -136,7 +136,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      */
     synchronized OptionalLong reheat() throws IOException
     {
-        if ( stopOngoingWarming )
+        if ( stopped )
         {
             return OptionalLong.empty();
         }
@@ -166,7 +166,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
      */
     public synchronized OptionalLong profile() throws IOException
     {
-        if ( stopOngoingWarming )
+        if ( stopped )
         {
             return OptionalLong.empty();
         }
@@ -186,7 +186,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             {
                 // The database is allowed to map and unmap files while we are profiling the page cache.
             }
-            if ( stopOngoingWarming )
+            if ( stopped )
             {
                 pageCache.reportEvents();
                 return OptionalLong.empty();
@@ -219,7 +219,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             {
                 for ( int i = 0; i < 8; i++ )
                 {
-                    if ( stopOngoingWarming )
+                    if ( stopped )
                     {
                         pageCache.reportEvents();
                         return pagesLoaded;
