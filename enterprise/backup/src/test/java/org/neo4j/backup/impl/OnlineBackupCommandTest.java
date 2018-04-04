@@ -129,16 +129,9 @@ public class OnlineBackupCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new OnlineBackupCommandProvider(), ps::println );
 
-            /*
-
-usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>
-                          [--from=<address>] [--protocol=<catchup>]
-                          [--fallback-to-full[=<true|false>]]
-                          [--timeout=<timeout>] [--pagecache=<8m>]
-             */
             assertEquals(
                     format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
-                            "                          [--from=<address>] [--protocol=<catchup>]%n" +
+                            "                          [--from=<address>] [--protocol=<any|catchup|common>]%n" +
                             "                          [--fallback-to-full[=<true|false>]]%n" +
                             "                          [--timeout=<timeout>] [--pagecache=<8m>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +
@@ -173,7 +166,7 @@ usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>
                             "                                           backup will be attempted.%n" +
                             "  --from=<address>                         Host and port of Neo4j.%n" +
                             "                                           [default:localhost:6362]%n" +
-                            "  --protocol=<catchup>                     Preferred protocol to use for%n" +
+                            "  --protocol=<any|catchup|common>          Preferred protocol to use for%n" +
                             "                                           communication [default:any]%n" +
                             "  --fallback-to-full=<true|false>          If an incremental backup fails backup%n" +
                             "                                           will move the old backup to%n" +

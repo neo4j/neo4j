@@ -205,7 +205,7 @@ public class OnlineBackupCommandCcIT
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=defaultport",
-                        "--proto=legacy") );
+                        "--proto=common") );
     }
 
     @Test

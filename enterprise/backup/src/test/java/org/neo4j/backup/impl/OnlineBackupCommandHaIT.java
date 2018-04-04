@@ -205,7 +205,7 @@ public class OnlineBackupCommandHaIT
                 runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--proto=catchup",
+                        "--protocol=catchup",
                         "--name=" + backupName ) );
     }
 
