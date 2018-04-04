@@ -98,7 +98,7 @@ public class DefaultCapableIndexReference implements CapableIndexReference
         {
             return true;
         }
-        if ( o == null || !(o instanceof IndexReference) )
+        if ( !(o instanceof IndexReference) )
         {
             return false;
         }

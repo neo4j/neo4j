@@ -117,7 +117,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
             }
             else
             {
-                engine.report().unsupportedSchemaRuleKind( null ); // this really cant happen... right?
+                engine.report().unsupportedSchemaRuleKind( null );
             }
         }
     }
