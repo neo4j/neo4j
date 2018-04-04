@@ -69,10 +69,10 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final JobScheduler scheduler;
-    private volatile boolean stopOngoingWarming;
-    private final ExecutorService executor;
-    private final PageLoaderFactory pageLoaderFactory;
     private final ProfileRefCounts refCounts;
+    private volatile boolean stopOngoingWarming;
+    private ExecutorService executor;
+    private PageLoaderFactory pageLoaderFactory;
 
     PageCacheWarmer( FileSystemAbstraction fs, PageCache pageCache, JobScheduler scheduler )
     {
@@ -104,16 +104,28 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         };
     }
 
+    public synchronized void start()
+    {
+        stopOngoingWarming = false;
+        executor = buildExecutorService( scheduler );
+        pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
+    }
+
     public void stop()
     {
         stopOngoingWarming = true;
-        synchronized ( this )
+        stopWarmer();
+    }
+
+    /**
+     * Stopping warmer process, needs to be synchronised to prevent racing with profiling and heating
+     */
+    private synchronized void stopWarmer()
+    {
+        if ( executor != null )
         {
-            // This synchronised block means we'll wait for any reheat() or profile() to notice our raised stopped flag,
-            // before we return to the caller. This helps avoid races, e.g. if the page cache is closed while this page
-            // cache warmer is still holding on to some mapped pages.
+            executor.shutdown();
         }
-        executor.shutdown();
     }
 
     /**

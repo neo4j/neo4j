@@ -49,6 +49,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private final Config config;
     private final PageCacheWarmer pageCacheWarmer;
     private volatile JobScheduler.JobHandle profileHandle;
+    private volatile boolean started;
 
     PageCacheWarmerKernelExtension(
             JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
@@ -68,8 +69,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     {
         if ( ENABLED )
         {
+            pageCacheWarmer.start();
             scheduleTryReheat();
             fileListing.get().registerStoreFileProvider( pageCacheWarmer );
+            started = true;
         }
     }
 
@@ -141,11 +144,14 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     @Override
     public void stop() throws Throwable
     {
-        JobScheduler.JobHandle handle = profileHandle;
-        if ( handle != null )
+        if ( started )
         {
-            handle.cancel( false );
+            JobScheduler.JobHandle handle = profileHandle;
+            if ( handle != null )
+            {
+                handle.cancel( false );
+            }
+            pageCacheWarmer.stop();
         }
-        pageCacheWarmer.stop();
     }
 }
