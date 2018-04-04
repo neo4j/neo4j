@@ -229,7 +229,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     }
 
     @Override
-    public boolean isSecret()
+    public boolean secret()
     {
         return false;
     }

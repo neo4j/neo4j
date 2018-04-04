@@ -1228,9 +1228,9 @@ public class Settings
             }
 
             @Override
-            public boolean isSecret()
+            public boolean secret()
             {
-                return newSetting.isSecret();
+                return newSetting.secret();
             }
 
             @Override

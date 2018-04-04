@@ -61,7 +61,7 @@ public class ConfigOptions
                             setting.documentedDefaultValue(),
                         Optional.ofNullable( val.getValue() ),
                             setting.valueDescription(), setting.internal(), setting.dynamic(),
-                            setting.deprecated(), setting.replacement(), setting.isSecret() );
+                            setting.deprecated(), setting.replacement(), setting.secret() );
                 } )
                 .collect( Collectors.toList() );
     }

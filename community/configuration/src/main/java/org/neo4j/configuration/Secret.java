@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 
 /**
  * Used to define a configuration setting as secret, which means we should not show the value in logs.
+ * It is supported in configs set using LoadableConfig, but not for group settings, like connectors and SSL policies.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( {ElementType.TYPE, ElementType.FIELD} )

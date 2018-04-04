@@ -158,7 +158,7 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
     }
 
     @Override
-    public boolean isSecret()
+    public boolean secret()
     {
         return false;
     }
