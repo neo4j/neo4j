@@ -28,33 +28,6 @@ import static org.mockito.Mockito.verify;
 public class ClosingTablesTest
 {
     @Test
-    public void intCollectionsMustDelegateCloseToTable()
-    {
-        // Given
-        Table table = mock( Table.class );
-        AbstractIntHopScotchCollection coll = new AbstractIntHopScotchCollection( table )
-        {
-            @Override
-            public boolean equals( Object other )
-            {
-                return false;
-            }
-
-            @Override
-            public int hashCode()
-            {
-                return 0;
-            }
-        };
-
-        // When
-        coll.close();
-
-        // Then
-        verify( table ).close();
-    }
-
-    @Test
     public void longCollectionsMustDelegateCloseToTable()
     {
         // Given
