@@ -68,34 +68,26 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final JobScheduler scheduler;
+    private volatile boolean stopOngoingWarming;
     private final ExecutorService executor;
     private final PageLoaderFactory pageLoaderFactory;
     private final ProfileRefCounts refCounts;
-    private volatile boolean stopped;
 
     PageCacheWarmer( FileSystemAbstraction fs, PageCache pageCache, JobScheduler scheduler )
     {
         this.fs = fs;
         this.pageCache = pageCache;
+        this.scheduler = scheduler;
         this.executor = buildExecutorService( scheduler );
         this.pageLoaderFactory = new PageLoaderFactory( executor, pageCache );
         this.refCounts = new ProfileRefCounts();
     }
 
-    private ExecutorService buildExecutorService( JobScheduler scheduler )
-    {
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( IO_PARALLELISM * 4 );
-        RejectedExecutionHandler rejectionPolicy = new ThreadPoolExecutor.CallerRunsPolicy();
-        ThreadFactory threadFactory = scheduler.threadFactory( JobScheduler.Groups.pageCacheIOHelper );
-        return new ThreadPoolExecutor(
-                0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
-                threadFactory, rejectionPolicy );
-    }
-
     @Override
     public synchronized Resource addFilesTo( Collection<StoreFileMetadata> coll ) throws IOException
     {
-        if ( stopped )
+        if ( stopOngoingWarming )
         {
             return Resource.EMPTY;
         }
@@ -114,7 +106,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 
     public void stop()
     {
-        stopped = true;
+        stopOngoingWarming = true;
         synchronized ( this )
         {
             // This synchronised block means we'll wait for any reheat() or profile() to notice our raised stopped flag,
@@ -147,7 +139,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 // The database is allowed to map and unmap files while we are trying to heat it up.
             }
         }
-        return stopped ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
+        return stopOngoingWarming ? OptionalLong.empty() : OptionalLong.of( pagesLoaded );
     }
 
     private long reheat( PagedFile file, Profile[] existingProfiles ) throws IOException
@@ -173,7 +165,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             {
                 for ( int i = 0; i < 8; i++ )
                 {
-                    if ( stopped )
+                    if ( stopOngoingWarming )
                     {
                         pageCache.reportEvents();
                         return pagesLoaded;
@@ -236,7 +228,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
             {
                 // The database is allowed to map and unmap files while we are profiling the page cache.
             }
-            if ( stopped )
+            if ( stopOngoingWarming )
             {
                 pageCache.reportEvents();
                 return OptionalLong.empty();
@@ -284,6 +276,16 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 .forEach( profile -> profile.delete( fs ) );
 
         return pagesInMemory;
+    }
+
+    private ExecutorService buildExecutorService( JobScheduler scheduler )
+    {
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>( IO_PARALLELISM * 4 );
+        RejectedExecutionHandler rejectionPolicy = new ThreadPoolExecutor.CallerRunsPolicy();
+        ThreadFactory threadFactory = scheduler.threadFactory( JobScheduler.Groups.pageCacheIOHelper );
+        return new ThreadPoolExecutor(
+                0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
+                threadFactory, rejectionPolicy );
     }
 
     private Stream<Profile> filterRelevant( Profile[] profiles, PagedFile pagedFile )
