@@ -32,7 +32,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -42,7 +41,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -176,7 +175,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue dtField = fields.get( Field.datetime );
                     if ( !(dtField instanceof TemporalValue) )
                     {
-                        throw new InvalidTemporalArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
+                        throw new InvalidValuesArgumentException( String.format( "Cannot construct local date time from: %s", dtField ) );
                     }
                     TemporalValue dt = (TemporalValue) dtField;
                     result = LocalDateTime.of( dt.getDatePart(), dt.getLocalTimePart() );
@@ -189,7 +188,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                         AnyValue timeField = fields.get( Field.time );
                         if ( !(timeField instanceof TemporalValue) )
                         {
-                            throw new InvalidTemporalArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
+                            throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", timeField ) );
                         }
                         TemporalValue t = (TemporalValue) timeField;
                         time = t.getLocalTimePart();
@@ -204,7 +203,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                         AnyValue dateField = fields.get( Field.date );
                         if ( !(dateField instanceof TemporalValue) )
                         {
-                            throw new InvalidTemporalArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
+                            throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", dateField ) );
                         }
                         TemporalValue t = (TemporalValue) dateField;
                         date = t.getDatePart();
@@ -244,7 +243,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     LocalTime timePart = v.getLocalTimePart();
                     return LocalDateTime.of( datePart, timePart );
                 }
-                throw new InvalidTemporalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
+                throw new InvalidValuesArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
             }
 
             @Override

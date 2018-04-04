@@ -20,14 +20,14 @@
 package org.neo4j.values.utils;
 
 
-public class InvalidTemporalArgumentException extends ValuesException
+public class InvalidValuesArgumentException extends ValuesException
 {
-    public InvalidTemporalArgumentException( String errorMsg )
+    public InvalidValuesArgumentException( String errorMsg )
     {
         super( errorMsg );
     }
 
-    public InvalidTemporalArgumentException( String errorMsg, Throwable cause )
+    public InvalidValuesArgumentException( String errorMsg, Throwable cause )
     {
         super( errorMsg, cause );
     }

@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import java.time.Clock;
-import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -30,7 +29,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalUnit;
-import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -39,14 +37,12 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
-import org.neo4j.values.utils.InvalidTemporalArgumentException;
-import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.Integer.parseInt;
-import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
@@ -146,7 +142,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue time = fields.get( Field.time );
                     if ( !(time instanceof TemporalValue) )
                     {
-                        throw new InvalidTemporalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                        throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                     }
                     result = ((TemporalValue) time).getLocalTimePart();
                 }
@@ -166,7 +162,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
                 if ( !(time instanceof TemporalValue) )
                 {
-                    throw new InvalidTemporalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                    throw new InvalidValuesArgumentException( String.format( "Cannot construct local time from: %s", time ) );
                 }
                 TemporalValue v = (TemporalValue) time;
                 LocalTime lt = v.getLocalTimePart();

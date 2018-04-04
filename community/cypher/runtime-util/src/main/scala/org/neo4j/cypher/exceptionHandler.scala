@@ -110,7 +110,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
     exception match {
       case e: UnsupportedTemporalUnitException =>
         exceptionHandler.cypherTypeException(e.getMessage, e)
-      case e: InvalidTemporalArgumentException =>
+      case e: InvalidValuesArgumentException =>
         exceptionHandler.invalidArgumentException(e.getMessage, e)
       case e: TemporalArithmeticException =>
         exceptionHandler.arithmeticException(e.getMessage, e)

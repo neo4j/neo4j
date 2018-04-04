@@ -23,7 +23,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -31,7 +30,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
@@ -329,7 +328,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "nanosecond", 1000000000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid nanosecond: 1000000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -338,7 +337,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "microsecond", 1000000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid microsecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -347,7 +346,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "millisecond", 1000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid millisecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid millisecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -357,7 +356,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "nanosecond", 1000000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid nanosecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -367,7 +366,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "microsecond", 1 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -377,7 +376,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -388,7 +387,7 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
                 .add( "nanosecond", 999 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -399,16 +398,16 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 999 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( InvalidTemporalArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
     }
 
     @Test
     public void shouldRejectInvalidComponentValues()
     {
-        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( InvalidTemporalArgumentException.class,
+        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( InvalidValuesArgumentException.class,
                 "No such field: moment" );
         asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "month", 12 ).add( "day", 5 ).add( "hour", 5 ).add( "minute", 5 ).add( "second",
-                5 ).add( "picosecond", 12 ).assertThrows( InvalidTemporalArgumentException.class, "No such field: picosecond" );
+                5 ).add( "picosecond", 12 ).assertThrows( InvalidValuesArgumentException.class, "No such field: picosecond" );
     }
 
     @Test
