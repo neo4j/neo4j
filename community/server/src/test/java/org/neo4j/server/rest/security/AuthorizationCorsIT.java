@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import javax.ws.rs.core.HttpHeaders;
 
+import org.neo4j.server.web.HttpMethod;
 import org.neo4j.test.server.HTTP;
 
 import static com.sun.jersey.api.client.ClientResponse.Status.FORBIDDEN;
@@ -36,6 +37,10 @@ import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_METHODS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_HEADERS;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_METHOD;
+import static org.neo4j.server.web.HttpMethod.DELETE;
+import static org.neo4j.server.web.HttpMethod.GET;
+import static org.neo4j.server.web.HttpMethod.PATCH;
+import static org.neo4j.server.web.HttpMethod.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AuthorizationCorsIT extends CommunityServerTestBase
@@ -96,13 +101,10 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
     {
         startServer( false );
 
-        HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
-                .withHeaders( ACCESS_CONTROL_REQUEST_METHOD, "POST, GET, DELETE" );
-        HTTP.Response response = runQuery( requestBuilder );
-
-        assertEquals( OK.getStatusCode(), response.status() );
-        assertCorsHeaderPresent( response );
-        assertEquals( "POST, GET, DELETE", response.header( ACCESS_CONTROL_ALLOW_METHODS ) );
+        testCorsAllowMethods( POST );
+        testCorsAllowMethods( GET );
+        testCorsAllowMethods( PATCH );
+        testCorsAllowMethods( DELETE );
     }
 
     @Test
@@ -117,6 +119,17 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
         assertEquals( OK.getStatusCode(), response.status() );
         assertCorsHeaderPresent( response );
         assertEquals( "Accept, X-Not-Accept", response.header( ACCESS_CONTROL_ALLOW_HEADERS ) );
+    }
+
+    private void testCorsAllowMethods( HttpMethod method ) throws Exception
+    {
+        HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
+                .withHeaders( ACCESS_CONTROL_REQUEST_METHOD, method.toString() );
+        HTTP.Response response = runQuery( requestBuilder );
+
+        assertEquals( OK.getStatusCode(), response.status() );
+        assertCorsHeaderPresent( response );
+        assertEquals( method, HttpMethod.valueOf( response.header( ACCESS_CONTROL_ALLOW_METHODS ) ) );
     }
 
     private HTTP.Response changePassword( String username, String oldPassword, String newPassword )
