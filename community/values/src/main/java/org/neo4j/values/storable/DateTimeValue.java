@@ -556,13 +556,13 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     public DateTimeValue add( DurationValue duration )
     {
-        return replacement( value.plus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.plus( duration ) ) );
     }
 
     @Override
     public DateTimeValue sub( DurationValue duration )
     {
-        return replacement( value.minus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.minus( duration ) ) );
     }
 
     @Override
@@ -624,7 +624,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         {
             parsedName = ZONE_NAME_PARSER.parse( zoneName.replace( ' ', '_' ) ).query( TemporalQueries.zoneId() );
         }
-        catch ( DateTimeParseException e)
+        catch ( DateTimeParseException e )
         {
             throw new TemporalParseException( e.getMessage(), e.getParsedString(), e.getErrorIndex(), e );
         }

@@ -283,13 +283,13 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     @Override
     public LocalTimeValue add( DurationValue duration )
     {
-        return replacement( value.plusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.plusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override
     public LocalTimeValue sub( DurationValue duration )
     {
-        return replacement( value.minusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.minusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.lang.invoke.MethodHandle;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
@@ -37,6 +38,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -808,30 +810,30 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( months != 0 && temporal.isSupported( MONTHS ) )
         {
-            temporal = temporal.plus( months, MONTHS );
+            temporal = assertValidPlus( temporal, months, MONTHS );
         }
         if ( days != 0 && temporal.isSupported( DAYS ) )
         {
-            temporal = temporal.plus( days, DAYS );
+            temporal = assertValidPlus( temporal, days, DAYS );
         }
         if ( seconds != 0 )
         {
             if ( temporal.isSupported( SECONDS ) )
             {
-                temporal = temporal.plus( seconds, SECONDS );
+                temporal = assertValidPlus( temporal, seconds, SECONDS );
             }
             else
             {
                 long asDays = seconds / SECONDS_PER_DAY;
                 if ( asDays != 0 )
                 {
-                    temporal = temporal.plus( asDays, DAYS );
+                    temporal = assertValidPlus( temporal, asDays, DAYS );
                 }
             }
         }
         if ( nanos != 0 && temporal.isSupported( NANOS ) )
         {
-            temporal = temporal.plus( nanos, NANOS );
+            temporal = assertValidPlus( temporal, nanos, NANOS );
         }
         return temporal;
     }
@@ -841,30 +843,30 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( months != 0 && temporal.isSupported( MONTHS ) )
         {
-            temporal = temporal.minus( months, MONTHS );
+            temporal = assertValidMinus( temporal, months, MONTHS );
         }
         if ( days != 0 && temporal.isSupported( DAYS ) )
         {
-            temporal = temporal.minus( days, DAYS );
+            temporal = assertValidMinus( temporal, days, DAYS );
         }
         if ( seconds != 0 )
         {
             if ( temporal.isSupported( SECONDS ) )
             {
-                temporal = temporal.minus( seconds, SECONDS );
+                temporal = assertValidMinus( temporal, seconds, SECONDS );
             }
             else if ( temporal.isSupported( DAYS ) )
             {
                 long asDays = seconds / SECONDS_PER_DAY;
                 if ( asDays != 0 )
                 {
-                    temporal = temporal.minus( asDays, DAYS );
+                    temporal = assertValidMinus( temporal, asDays, DAYS );
                 }
             }
         }
         if ( nanos != 0 && temporal.isSupported( NANOS ) )
         {
-            temporal = temporal.minus( nanos, NANOS );
+            temporal = assertValidMinus( temporal, nanos, NANOS );
         }
         return temporal;
     }
@@ -918,5 +920,29 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         nanos += NANOS_PER_SECOND * (seconds - s);
         long n = (long) nanos;
         return duration( m, d, s, n );
+    }
+
+    private static Temporal assertValidPlus( Temporal temporal, long amountToAdd, TemporalUnit unit )
+    {
+        try
+        {
+            return temporal.plus(amountToAdd,  unit);
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
+        }
+    }
+
+    private static Temporal assertValidMinus( Temporal temporal, long amountToAdd, TemporalUnit unit )
+    {
+        try
+        {
+            return temporal.minus(amountToAdd,  unit);
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
+        }
     }
 }

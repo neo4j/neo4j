@@ -374,13 +374,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     @Override
     public LocalDateTimeValue add( DurationValue duration )
     {
-        return replacement( value.plus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.plus( duration ) ) );
     }
 
     @Override
     public LocalDateTimeValue sub( DurationValue duration )
     {
-        return replacement( value.minus( duration ) );
+        return replacement( assertValidArithmetic( () -> value.minus( duration ) ) );
     }
 
     @Override

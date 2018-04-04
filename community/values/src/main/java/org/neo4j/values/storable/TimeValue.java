@@ -365,13 +365,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public TimeValue add( DurationValue duration )
     {
-        return replacement( value.plusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.plusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override
     public TimeValue sub( DurationValue duration )
     {
-        return replacement( value.minusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.minusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override

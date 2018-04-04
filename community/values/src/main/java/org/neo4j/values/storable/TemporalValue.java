@@ -53,6 +53,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.utils.InvalidTemporalArgumentException;
+import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
@@ -1445,6 +1446,18 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         catch ( DateTimeException e )
         {
             throw new TemporalParseException( e.getMessage(), e );
+        }
+    }
+
+    static <TEMP extends Temporal> TEMP assertValidArithmetic( Supplier<TEMP> func )
+    {
+        try
+        {
+            return func.get();
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
         }
     }
 
