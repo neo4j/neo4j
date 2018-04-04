@@ -406,28 +406,13 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallProcedureWithByteArrayWithDefault() throws Throwable
-    {
-        // Given
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault" );
-
-            // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{4, 3, 2} ) );
-            assertFalse( res.hasNext() );
-        }
-    }
-
-    @Test
     public void shouldCallProcedureWithByteArrayWithParameter() throws Throwable
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault($param)", map( "param", new byte[]{4, 5, 6} ) );
+            Result res = db.execute( "CALL org.neo4j.procedure.incrBytes($param)", map( "param", new byte[]{4, 5, 6} ) );
 
             // Then
             assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 7} ) );
@@ -442,7 +427,7 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault([7,8,9]) YIELD bytes RETURN bytes" );
+            Result res = db.execute( "WITH $param AS b CALL org.neo4j.procedure.incrBytes(b) YIELD bytes RETURN bytes", map( "param", new byte[]{7, 8, 9} ) );
 
             // Then
             assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{8, 9, 10} ) );
@@ -457,29 +442,29 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "WITH [10,11,12] as param CALL org.neo4j.procedure.incrBytesWithDefault(param) YIELD bytes RETURN bytes, param" );
+            Result res = db.execute( "WITH $param AS param CALL org.neo4j.procedure.incrBytes(param) YIELD bytes RETURN bytes, param",
+                    map( "param", new byte[]{10, 11, 12} ) );
 
             // Then
             assertTrue(res.hasNext());
             Map<String,Object> results = res.next();
             assertFalse( res.hasNext() );
             assertThat( results.get( "bytes" ), equalTo( new byte[]{11, 12, 13} ) );
-            assertThat( results.get( "param" ), equalTo( asList( 10L, 11L, 12L ) ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
         }
     }
 
     @Test
-    public void shouldNotAllowNonByteValuesInImplicitByteArrayConversionInProcedures() throws Throwable
+    public void shouldNotBeAbleCallWithCypherLiteralInByteArrayProcedure() throws Throwable
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot convert 500 to byte for input to procedure" );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
 
         // When
         try ( Transaction ignore = db.beginTx() )
         {
-            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
-            Result result = db.execute( "CALL org.neo4j.procedure.incrBytesWithDefault([1,2,500])" );
+            Result result = db.execute( "CALL org.neo4j.procedure.incrBytes([1,2,3])" );
             result.next();
         }
     }
@@ -1357,46 +1342,16 @@ public class ProcedureIT
     }
 
     @Test
-    public void shouldCallFunctionWithByteArrayWithDefault() throws Throwable
-    {
-        // Given
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault() AS bytes" );
-
-            // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{2, 1, 0} ) );
-            assertFalse( res.hasNext() );
-        }
-    }
-
-    @Test
     public void shouldCallFunctionWithByteArrayWithParameter() throws Throwable
     {
         // Given
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault($param) AS bytes", map( "param", new byte[]{4, 5, 6} ) );
+            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytes($param) AS bytes", map( "param", new byte[]{4, 5, 6} ) );
 
             // Then
             assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{3, 4, 5} ) );
-            assertFalse( res.hasNext() );
-        }
-    }
-
-    @Test
-    public void shouldCallFunctionWithByteArrayWithLiteral() throws Throwable
-    {
-        // Given
-        try ( Transaction ignore = db.beginTx() )
-        {
-            // When
-            Result res = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([7,8,9]) AS bytes" );
-
-            // Then
-            assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{6, 7, 8} ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -1408,14 +1363,14 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "WITH [10,11,12] as param RETURN org.neo4j.procedure.decrBytesWithDefault(param) AS bytes, param" );
+            Result res = db.execute( "WITH $param as param RETURN org.neo4j.procedure.decrBytes(param) AS bytes, param", map( "param", new byte[]{10, 11, 12} ) );
 
             // Then
             assertTrue(res.hasNext());
             Map<String,Object> results = res.next();
             assertFalse( res.hasNext() );
             assertThat( results.get( "bytes" ), equalTo( new byte[]{9, 10, 11} ) );
-            assertThat( results.get( "param" ), equalTo( asList( 10L, 11L, 12L ) ) );
+            assertThat( results.get( "param" ), equalTo( new byte[]{10, 11, 12} ) );
         }
     }
 
@@ -1424,45 +1379,13 @@ public class ProcedureIT
     {
         //Expect
         exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot convert 500 to byte for input to procedure" );
+        exception.expectMessage( "Cannot convert 1 to byte for input to procedure" );
 
         // When
         try ( Transaction ignore = db.beginTx() )
         {
             //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
-            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,500]) AS bytes" );
-            result.next();
-        }
-    }
-
-    @Test
-    public void shouldNotAllowNonIntegerValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
-    {
-        //Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot convert 3.4 to byte for input to procedure" );
-
-        // When
-        try ( Transaction ignore = db.beginTx() )
-        {
-            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
-            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,3.4]) AS bytes" );
-            result.next();
-        }
-    }
-
-    @Test
-    public void shouldNotAllowNonNumberValuesInImplicitByteArrayConversionWithUserDefinedFunction() throws Throwable
-    {
-        //Expect
-        exception.expect( QueryExecutionException.class );
-        exception.expectMessage( "Cannot convert X to byte for input to procedure" );
-
-        // When
-        try ( Transaction ignore = db.beginTx() )
-        {
-            //Make sure argument here is not auto parameterized away as that will drop all type information on the floor
-            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytesWithDefault([1,2,'X']) AS bytes" );
+            Result result = db.execute( "RETURN org.neo4j.procedure.decrBytes([1,2,5]) AS bytes" );
             result.next();
         }
     }
@@ -1474,7 +1397,11 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "UNWIND [[1,2,3],[3,2,1],[1,2,1]] AS bytes RETURN org.neo4j.procedure.aggregateByteArrays(bytes) AS bytes" );
+            byte[][] data = new byte[3][];
+            data[0] = new byte[]{1, 2, 3};
+            data[1] = new byte[]{3, 2, 1};
+            data[2] = new byte[]{1, 2, 1};
+            Result res = db.execute( "UNWIND $data AS bytes RETURN org.neo4j.procedure.aggregateByteArrays(bytes) AS bytes", map( "data", data ) );
 
             // Then
             assertThat( res.columnAs( "bytes" ).next(), equalTo( new byte[]{5, 6, 5} ) );
@@ -1761,7 +1688,7 @@ public class ProcedureIT
         }
 
         @Procedure
-        public Stream<BytesOutput> incrBytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
+        public Stream<BytesOutput> incrBytes( @Name( value = "bytes" ) byte[] bytes )
         {
             for ( int i = 0; i < bytes.length; i++ )
             {
@@ -2051,7 +1978,7 @@ public class ProcedureIT
         }
 
         @UserFunction
-        public byte[] decrBytesWithDefault( @Name( value = "bytes", defaultValue = "[3, 2, 1]" ) byte[] bytes )
+        public byte[] decrBytes( @Name( value = "bytes" ) byte[] bytes )
         {
             for ( int i = 0; i < bytes.length; i++ )
             {

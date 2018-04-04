@@ -63,15 +63,9 @@ public class ByteArrayConverter implements Function<String,Neo4jValue>, FieldSig
             for ( int a = 0; a < bytes.length; a++ )
             {
                 Object value = list.get( a );
-                // We do not check for Number here in order to rule out floats
-                if ( value instanceof Long || value instanceof Integer || value instanceof Byte )
+                if ( value instanceof Byte )
                 {
-                    Number number = (Number) value;
-                    bytes[a] = ((Number) value).byteValue();
-                    if ( ((Byte) bytes[a]).longValue() != number.longValue() )
-                    {
-                        throw new IllegalArgumentException( "Cannot convert " + value + " to byte for input to procedure - valid values are -128 to +127" );
-                    }
+                    bytes[a] = (Byte) value;
                 }
                 else
                 {
