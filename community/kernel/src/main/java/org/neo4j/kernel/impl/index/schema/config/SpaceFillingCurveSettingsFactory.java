@@ -77,7 +77,7 @@ public class SpaceFillingCurveSettingsFactory
             if ( key.startsWith( SPATIAL_SETTING_PREFIX ) )
             {
                 String[] fields = key.replace( SPATIAL_SETTING_PREFIX, "" ).split( "\\." );
-                if ( fields.length < 3 )
+                if ( fields.length != 3 )
                 {
                     throw new IllegalArgumentException(
                             "Invalid spatial config settings, expected three fields after '" + SPATIAL_SETTING_PREFIX + "': " + key );
@@ -90,6 +90,10 @@ public class SpaceFillingCurveSettingsFactory
                     if ( index < 0 )
                     {
                         throw new IllegalArgumentException( "Invalid spatial coordinate key (should be one of 'x', 'y' or 'z'): " + fields[1] );
+                    }
+                    if ( index >= crs.getDimension() )
+                    {
+                        throw new IllegalArgumentException( "Invalid spatial coordinate key for " + crs.getDimension() + "D: " + fields[1] );
                     }
                     switch ( fields[2].toLowerCase() )
                     {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -118,6 +119,26 @@ public class SpaceFillingCurveSettings
     }
 
     /**
+     * The settings are read from the GBPTree header structure, but when this is a FAILED index, there are no settings, but instead an error message
+     * describing the failure. If that happens, code that triggered the read should check this. If the value is true, calling getFailureMessage() will
+     * provide an error message describing the failure.
+     */
+    public boolean isFailed()
+    {
+        return this.failureMessage != null;
+    }
+
+    private void markAsFailed( String failureMessage )
+    {
+        this.failureMessage = failureMessage;
+    }
+
+    private void markAsSucceeded()
+    {
+        this.failureMessage = null;
+    }
+
+    /**
      * Make an instance of the SpaceFillingCurve that can perform the 2D (or 3D) to 1D mapping based on these settings.
      *
      * @return a configured instance of SpaceFillingCurve
@@ -166,16 +187,23 @@ public class SpaceFillingCurveSettings
                     @Override
                     public void readHeader( SpaceFillingCurveSettings settings, ByteBuffer headerBytes )
                     {
-                        settings.maxLevels = headerBytes.getInt();
-                        settings.dimensions = headerBytes.getInt();
-                        double[] min = new double[settings.dimensions];
-                        double[] max = new double[settings.dimensions];
-                        for ( int i = 0; i < settings.dimensions; i++ )
+                        try
                         {
-                            min[i] = headerBytes.getDouble();
-                            max[i] = headerBytes.getDouble();
+                            settings.maxLevels = headerBytes.getInt();
+                            settings.dimensions = headerBytes.getInt();
+                            double[] min = new double[settings.dimensions];
+                            double[] max = new double[settings.dimensions];
+                            for ( int i = 0; i < settings.dimensions; i++ )
+                            {
+                                min[i] = headerBytes.getDouble();
+                                max[i] = headerBytes.getDouble();
+                            }
+                            settings.extents = new Envelope( min, max );
                         }
-                        settings.extents = new Envelope( min, max );
+                        catch ( BufferUnderflowException e )
+                        {
+                            settings.markAsFailed( "Failed to read settings from GBPTree header: " + e.getMessage() );
+                        }
                     }
                 };
         private int id;
@@ -223,14 +251,17 @@ public class SpaceFillingCurveSettings
             }
             else
             {
-                this.failureMessage = null;
                 int typeId = headerBytes.getInt();
                 SpatialIndexType indexType = SpatialIndexType.get( typeId );
                 if ( indexType == null )
                 {
-                    this.failureMessage = "Unknown spatial index type in index header: " + typeId;
+                    markAsFailed( "Unknown spatial index type in index header: " + typeId );
                 }
-                indexType.readHeader( SpaceFillingCurveSettings.this, headerBytes );
+                else
+                {
+                    markAsSucceeded();
+                    indexType.readHeader( SpaceFillingCurveSettings.this, headerBytes );
+                }
             }
         };
     }

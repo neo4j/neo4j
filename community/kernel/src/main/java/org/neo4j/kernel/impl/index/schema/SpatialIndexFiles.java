@@ -108,7 +108,7 @@ class SpatialIndexFiles
         public void readHeader( PageCache pageCache ) throws IOException
         {
             GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
-            if ( settings.getFailureMessage() != null )
+            if ( settings.isFailed() )
             {
                 throw new IOException( settings.getFailureMessage() );
             }
