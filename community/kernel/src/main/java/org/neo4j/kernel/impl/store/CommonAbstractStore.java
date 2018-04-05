@@ -331,9 +331,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             if ( cursor.next() )
             {
+                cursor.setOffset( offset );
+                cursor.mark();
                 do
                 {
-                    cursor.setOffset( offset );
+                    cursor.setOffsetToMark();
                     cursor.getBytes( data );
                 }
                 while ( cursor.shouldRetry() );
@@ -392,9 +394,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             boolean recordIsInUse = false;
             if ( cursor.next() )
             {
+                cursor.setOffset( offset );
+                cursor.mark();
                 do
                 {
-                    cursor.setOffset( offset );
+                    cursor.setOffsetToMark();
                     recordIsInUse = isInUse( cursor );
                 }
                 while ( cursor.shouldRetry() );
@@ -1052,9 +1056,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         if ( cursor.next( pageId ) )
         {
             // There is a page in the store that covers this record, go read it
+            cursor.setOffset( offset );
+            cursor.mark();
             do
             {
-                prepareForReading( cursor, offset, record );
+                prepareForReading( cursor, record );
                 recordFormat.read( record, cursor, mode, recordSize );
             }
             while ( cursor.shouldRetry() );
@@ -1191,7 +1197,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    private void prepareForReading( PageCursor cursor, int offset, RECORD record )
+    private void prepareForReading( PageCursor cursor, RECORD record )
     {
         // Mark this record as unused. This to simplify implementations of readRecord.
         // readRecord can behave differently depending on RecordLoad argument and so it may be that
@@ -1199,7 +1205,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         // can still be initialized data. Know that for many record stores, deleting a record means
         // just setting one byte or bit in that record.
         record.setInUse( false );
-        cursor.setOffset( offset );
+        cursor.setOffsetToMark();
     }
 
     @Override
