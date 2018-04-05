@@ -58,7 +58,23 @@ class PrettifierTest extends CypherFunSuite {
 
       "create (a)--(b) RETURN a" ->
         """CREATE (a)--(b)
-          |RETURN a""".stripMargin
+          |RETURN a""".stripMargin,
+
+      "unwind [1,2] as a return a"->
+        """
+          |
+        """.stripMargin,
+
+      "match(p:Person) where p.name starts with 'Keanu' return p"->
+        """
+          |
+        """.stripMargin,
+
+      "match(p:Person) where p.name ends with 'Reeves' return p"->
+        """
+          |
+        """.stripMargin
+
     )
 
   tests foreach {
