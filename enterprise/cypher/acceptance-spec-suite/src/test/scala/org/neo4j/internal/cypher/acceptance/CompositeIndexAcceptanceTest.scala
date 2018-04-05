@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.values.storable.{CoordinateReferenceSystem, DurationValue, Values}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -397,6 +400,86 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       }, Configs.OldAndRule), params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
+  }
+
+  test("should use composite index with spatial") {
+    // Given
+    val n1 = createLabeledNode(Map("name" -> "Joe", "city" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 5.6).asObjectCopy()), "User")
+    createLabeledNode(Map("name" -> "Joe", "city" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4).asObjectCopy()), "User")
+    createLabeledNode(Map("name" -> "Joe", "city" -> "Point{ cartesian, [1.2, 5.6]}"), "User")
+
+    // When
+    val query = "MATCH (n:User) WHERE n.name = 'Joe' AND n.city = point({x: 1.2, y: 5.6}) RETURN n"
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("User", "name", "city")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
+  }
+
+  test("should use composite index with temporal") {
+    // Given
+    val n1 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18), "time" -> LocalTime.of(21,22,0)), "Label")
+    val n2 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18), "time" -> OffsetTime.of(21,22,0,0, ZoneOffset.of("+00:00"))), "Label")
+    val n3 = createLabeledNode(Map("date" -> "1991-10-18", "time" -> LocalTime.of(21,22,0)), "Label")
+    val n4 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18).toEpochDay, "time" -> LocalTime.of(21,22,0) ), "Label")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Label)
+        |WHERE n.date = date('1991-10-18') AND n.time = localtime('21:22')
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Label", "date","time")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
+  }
+
+  test("should use composite index with duration") {
+    // Given
+    val n1 = createLabeledNode(Map("name" -> "Neo", "result" -> DurationValue.duration(0, 0, 1800, 0).asObject()), "Runner")
+    createLabeledNode(Map("name" -> "Neo", "result" -> LocalTime.of(0,30,0)), "Runner")
+    createLabeledNode(Map("name" -> "Neo", "result" -> "PT30M"), "Runner")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Runner)
+        |WHERE n.name = 'Neo' AND n.result = duration('PT30M')
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Runner", "name", "result")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {

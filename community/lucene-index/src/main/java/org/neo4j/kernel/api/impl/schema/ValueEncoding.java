@@ -140,6 +140,72 @@ enum ValueEncoding
                             new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
                 }
             },
+    Spatial
+            {
+                @Override
+                String key()
+                {
+                    return "spatial";
+                }
+
+                @Override
+                boolean canEncode( Value value )
+                {
+                    return Values.isGeometryValue( value );
+                }
+
+                @Override
+                Field encodeField( String name, Value value )
+                {
+                    return stringField( name, value.prettyPrint() );
+                }
+
+                @Override
+                void setFieldValue( Value value, Field field )
+                {
+                    field.setStringValue( value.prettyPrint() );
+                }
+
+                @Override
+                Query encodeQuery( Value value, int propertyNumber )
+                {
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                }
+            },
+    Temporal
+            {
+                @Override
+                String key()
+                {
+                    return "temporal";
+                }
+
+                @Override
+                boolean canEncode( Value value )
+                {
+                    return Values.isTemporalValue( value );
+                }
+
+                @Override
+                Field encodeField( String name, Value value )
+                {
+                    return stringField( name, value.prettyPrint() );
+                }
+
+                @Override
+                void setFieldValue( Value value, Field field )
+                {
+                    field.setStringValue( value.prettyPrint() );
+                }
+
+                @Override
+                Query encodeQuery( Value value, int propertyNumber )
+                {
+                    return new ConstantScoreQuery(
+                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                }
+            },
     String
             {
                 @Override
