@@ -25,14 +25,14 @@ package org.neo4j.internal.kernel.api;
 public interface ExecutionStatistics
 {
     /**
-     * Returns the number of page hits in the current transaction
-     * @return the number of page hits in the current transaction
+     * Returns the number of page hits in the current counters
+     * @return the number of page hits in the current counters
      */
     long pageHits();
 
     /**
-     * Returns the number of page faults in the current transaction
-     * @return the number of page faults in the current transaction
+     * Returns the number of page faults in the current counters
+     * @return the number of page faults in the current counters
      */
     long pageFaults();
 }

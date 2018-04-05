@@ -24,7 +24,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -58,7 +57,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
      * Field can be read from a different thread in {@link #terminate()}.
      */
     private volatile InternalTransaction transaction;
-    private Transaction apiTransaction;
     private Statement statement;
     private boolean isOpen = true;
 

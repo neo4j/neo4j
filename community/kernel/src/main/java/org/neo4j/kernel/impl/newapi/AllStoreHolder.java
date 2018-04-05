@@ -491,6 +491,7 @@ public class AllStoreHolder extends Read
     @Override
     public long nodesGetCount( )
     {
+        ktx.assertOpen();
         long base = storeReadLayer.nodesGetCount();
         return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedNodes().delta() : base;
     }
@@ -498,6 +499,7 @@ public class AllStoreHolder extends Read
     @Override
     public long relationshipsGetCount( )
     {
+        ktx.assertOpen();
         long base = storeReadLayer.relationshipsGetCount();
         return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedRelationships().delta() : base;
     }

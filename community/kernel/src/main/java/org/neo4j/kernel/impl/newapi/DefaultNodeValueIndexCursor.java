@@ -315,7 +315,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                 else
                 {
                     // TODO: what to throw?
-                    throw new UnsupportedOperationException( "Query not supported: " + Arrays.toString( predicates ) );
+                    throw new IllegalArgumentException( "Query not supported: " + Arrays.toString( predicates ) );
                 }
             }
         }
