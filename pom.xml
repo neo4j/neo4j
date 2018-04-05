@@ -380,6 +380,10 @@
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
             </systemPropertyVariables>
             <jvm>${test.runner.jvm}</jvm>
+            <excludes>
+              <exclude>**/*$*.class</exclude>
+              <exclude>**/*IntegrationTest.class</exclude>
+            </excludes>
           </configuration>
         </plugin>
         <plugin>
@@ -391,6 +395,12 @@
             <forkCount>${forkCounts}</forkCount>
             <reuseForks>true</reuseForks>
             <runOrder>random</runOrder>
+            <includes>
+              <include>**/IT*.class</include>
+              <include>**/*IT.class</include>
+              <include>**/*ITCase.class</include>
+              <include>**/*IntegrationTest.class</include>
+            </includes>
             <systemPropertyVariables>
               <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
               <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
