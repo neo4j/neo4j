@@ -92,7 +92,7 @@ public class SrvRecordResolverImpl implements SrvRecordResolver
             this.weight = weight;
             this.port = port;
             // Typically the SRV record has a trailing dot - if that is the case we should remove it
-            this.host = host.charAt( host.length() - 1 ) == '.' ? host.substring( 0, host.length() - 2 ) : host;
+            this.host = host.charAt( host.length() - 1 ) == '.' ? host.substring( 0, host.length() - 1 ) : host;
         }
 
         public static SrvRecord parse( String input )
