@@ -31,6 +31,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private int type;
     private long next;
     private long highMark;
+    private long nextStoreReference;
     private PageCursor pageCursor;
     private LongSet addedRelationships;
 
@@ -51,9 +52,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         {
             pageCursor = read.relationshipPage( 0 );
         }
-        next = 0;
+        this.next = 0;
         this.type = type;
-        highMark = read.relationshipHighMark();
+        this.highMark = read.relationshipHighMark();
+        this.nextStoreReference = NO_ID;
         init( read );
         this.addedRelationships = LongSets.immutable.empty();
     }
@@ -68,9 +70,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         {
             pageCursor = read.relationshipPage( reference );
         }
-        next = reference;
-        type = -1;
-        highMark = NO_ID;
+        this.next = reference;
+        this.type = -1;
+        this.highMark = NO_ID;
+        this.nextStoreReference = NO_ID;
         init( read );
         this.addedRelationships = LongSets.immutable.empty();
     }
@@ -100,9 +103,16 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
                 next++;
                 setInUse( false );
             }
+            else if ( nextStoreReference == next )
+            {
+                read.relationshipAdvance( this, pageCursor );
+                next++;
+                nextStoreReference++;
+            }
             else
             {
                 read.relationship( this, next++, pageCursor );
+                nextStoreReference = next;
             }
 
             if ( next > highMark )

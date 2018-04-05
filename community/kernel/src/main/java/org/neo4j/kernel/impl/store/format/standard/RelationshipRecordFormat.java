@@ -35,6 +35,7 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
     // first_prev_rel_id(int)+first_next_rel_id+second_prev_rel_id(int)+
     // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
     public static final int RECORD_SIZE = 34;
+    private static final int HEADER_SIZE = 1;
 
     public RelationshipRecordFormat()
     {
@@ -101,6 +102,11 @@ public class RelationshipRecordFormat extends BaseOneByteHeaderRecordFormat<Rela
                     BaseRecordFormat.longFromIntAndMod( secondNextRel, secondNextRelMod ),
                     (extraByte & 0x1) != 0,
                     (extraByte & 0x2) != 0 );
+        }
+        else
+        {
+            int nextOffset = cursor.getOffset() + recordSize - HEADER_SIZE;
+            cursor.setOffset( nextOffset );
         }
     }
 

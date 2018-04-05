@@ -720,6 +720,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    void relationshipAdvance( RelationshipRecord record, PageCursor pageCursor )
+    {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
+        relationships.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
     void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // We need to load forcefully for relationship chain traversal since otherwise we cannot
