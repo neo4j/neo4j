@@ -19,11 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.block.factory.Functions;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,11 +38,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
 /**
@@ -46,26 +50,26 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
  */
 public final class IndexMap implements Cloneable
 {
-    private final PrimitiveLongObjectMap<IndexProxy> indexesById;
+    private final MutableLongObjectMap<IndexProxy> indexesById;
     private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
-    private final Map<SchemaDescriptor,Long> indexIdsByDescriptor;
+    private final MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
     private final MutableIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
 
     public IndexMap()
     {
-        this( Primitive.longObjectMap(), new HashMap<>(), new HashMap<>() );
+        this( Primitive.longObjectMap(), new HashMap<>(), new ObjectLongHashMap<>() );
     }
 
-    IndexMap( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    IndexMap( MutableLongObjectMap<IndexProxy> indexesById )
     {
         this( indexesById, indexesByDescriptor( indexesById ), indexIdsByDescriptor( indexesById ) );
     }
 
     private IndexMap(
-            PrimitiveLongObjectMap<IndexProxy> indexesById,
+            MutableLongObjectMap<IndexProxy> indexesById,
             Map<SchemaDescriptor,IndexProxy> indexesByDescriptor,
-            Map<SchemaDescriptor,Long> indexIdsByDescriptor )
+            MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
@@ -122,13 +126,9 @@ public final class IndexMap implements Cloneable
         return removedProxy;
     }
 
-    public void forEachIndexProxy( BiConsumer<Long, IndexProxy> consumer )
+    void forEachIndexProxy( LongObjectProcedure<IndexProxy> consumer )
     {
-        indexesById.visitEntries( ( key, indexProxy ) ->
-        {
-            consumer.accept( key, indexProxy);
-            return false;
-        } );
+        indexesById.forEachKeyValue( consumer );
     }
 
     public Iterable<IndexProxy> getAllIndexProxies()
@@ -169,8 +169,7 @@ public final class IndexMap implements Cloneable
     @Override
     public IndexMap clone()
     {
-        return new IndexMap( clonePrimitiveMap( indexesById ), cloneMap( indexesByDescriptor ),
-                cloneMap( indexIdsByDescriptor ) );
+        return new IndexMap( LongObjectHashMap.newMap( indexesById ), cloneMap( indexesByDescriptor ), new ObjectLongHashMap<>( indexIdsByDescriptor ) );
     }
 
     public Iterator<SchemaDescriptor> descriptors()
@@ -180,7 +179,7 @@ public final class IndexMap implements Cloneable
 
     public LongIterator indexIds()
     {
-        return indexesById.longIterator();
+        return indexesById.keySet().longIterator();
     }
 
     public int size()
@@ -195,11 +194,6 @@ public final class IndexMap implements Cloneable
         Map<K, V> shallowCopy = new HashMap<>( map.size() );
         shallowCopy.putAll( map );
         return shallowCopy;
-    }
-
-    private PrimitiveLongObjectMap<IndexProxy> clonePrimitiveMap( PrimitiveLongObjectMap<IndexProxy> indexesById )
-    {
-        return PrimitiveLongCollections.copy( indexesById );
     }
 
     private void addDescriptorToLookups( SchemaDescriptor schema )
@@ -239,23 +233,18 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( LongObjectMap<IndexProxy> indexesById )
     {
-        Map<SchemaDescriptor, IndexProxy> map = new HashMap<>();
-        for ( IndexProxy proxy : indexesById.values() )
-        {
-            map.put( proxy.schema(), proxy );
-        }
-        return map;
+        return indexesById.toMap( IndexProxy::schema, Functions.identity() );
     }
 
-    private static Map<SchemaDescriptor, Long> indexIdsByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    private static MutableObjectLongMap<SchemaDescriptor> indexIdsByDescriptor( LongObjectMap<IndexProxy> indexesById )
     {
-        Map<SchemaDescriptor, Long> map = new HashMap<>();
-        indexesById.visitEntries( ( key, indexProxy ) ->
+        final MutableObjectLongMap<SchemaDescriptor> map = new ObjectLongHashMap<>( indexesById.size() );
+        indexesById.forEachKeyValue( ( id, indexProxy ) ->
         {
-            map.put( indexProxy.schema(), key );
-            return false;
+            map.put( indexProxy.schema(), id );
+
         } );
         return map;
     }

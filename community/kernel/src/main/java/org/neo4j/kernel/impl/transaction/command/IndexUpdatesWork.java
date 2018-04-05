@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -86,8 +87,8 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
             }
 
             @Override
-            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            public void feed( LongObjectMap<List<PropertyCommand>> propCommands,
+                    LongObjectMap<NodeCommand> nodeCommands )
             {
                 throw new UnsupportedOperationException();
             }

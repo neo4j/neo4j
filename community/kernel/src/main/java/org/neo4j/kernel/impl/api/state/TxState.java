@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -34,7 +35,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -103,8 +104,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private final CollectionsFactory collectionsFactory;
 
     private MutableIntObjectMap<DiffSets<Long>> labelStatesMap;
-    private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
-    private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
+    private MutableLongObjectMap<NodeStateImpl> nodeStatesMap;
+    private MutableLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
     private MutableIntObjectMap<String> createdLabelTokens;
     private MutableIntObjectMap<String> createdPropertyKeyTokens;
@@ -885,7 +886,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             nodeStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return nodeStatesMap.computeIfAbsent( nodeId, unused -> new NodeStateImpl( nodeId, this ) );
+        return nodeStatesMap.getIfAbsentPut( nodeId, () -> new NodeStateImpl( nodeId, this ) );
     }
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
@@ -894,7 +895,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             relationshipStatesMap = collectionsFactory.newLongObjectMap();
         }
-        return relationshipStatesMap.computeIfAbsent( relationshipId, unused -> new RelationshipStateImpl( relationshipId ) );
+        return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId ) );
     }
 
     private GraphState getOrCreateGraphState()
@@ -1299,14 +1300,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 //        {
 //            createdRelationshipTypeTokens.close();
 //        }
-        if ( nodeStatesMap != null )
-        {
-            nodeStatesMap.close();
-        }
-        if ( relationshipStatesMap != null )
-        {
-            relationshipStatesMap.close();
-        }
+//        if ( nodeStatesMap != null )
+//        {
+//            nodeStatesMap.close();
+//        }
+//        if ( relationshipStatesMap != null )
+//        {
+//            relationshipStatesMap.close();
+//        }
         // todo ak
 //        if ( nodes != null && nodes.removedFromAdded != null )
 //        {

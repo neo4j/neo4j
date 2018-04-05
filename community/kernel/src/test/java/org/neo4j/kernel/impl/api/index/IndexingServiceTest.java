@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -44,7 +45,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -729,8 +729,7 @@ public class IndexingServiceTest
             }
 
             @Override
-            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            public void feed( LongObjectMap<List<PropertyCommand>> propCommands, LongObjectMap<NodeCommand> nodeCommands )
             {
                 throw new UnsupportedOperationException();
             }

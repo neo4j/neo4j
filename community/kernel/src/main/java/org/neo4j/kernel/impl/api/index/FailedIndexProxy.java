@@ -54,7 +54,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         indexCountsRemover.remove();
         String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +

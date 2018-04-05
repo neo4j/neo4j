@@ -433,7 +433,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             delegate.drop();
         }

@@ -130,7 +130,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         taskCoordinator.cancel();
         try
@@ -139,7 +139,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
         }
         catch ( InterruptedException e )
         {
-            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
+            throw new RuntimeException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
         super.drop();
     }

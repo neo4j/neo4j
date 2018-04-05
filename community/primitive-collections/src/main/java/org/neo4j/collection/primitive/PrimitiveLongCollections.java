@@ -184,17 +184,6 @@ public class PrimitiveLongCollections
         return set;
     }
 
-    public static <T> PrimitiveLongObjectMap<T> copy( PrimitiveLongObjectMap<T> original )
-    {
-        PrimitiveLongObjectMap<T> copy = Primitive.longObjectMap( original.size() );
-        original.visitEntries( ( key, value ) ->
-        {
-            copy.put( key, value );
-            return false;
-        } );
-        return copy;
-    }
-
     public static int count( LongIterator iterator )
     {
         int count = 0;

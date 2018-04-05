@@ -20,8 +20,10 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.document.Document;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,7 +37,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Entity;
@@ -75,12 +76,12 @@ class FulltextUpdateApplier extends LifecycleAdapter
     }
 
     <E extends Entity> AsyncFulltextIndexOperation updatePropertyData(
-            PrimitiveLongObjectMap<Map<String,Object>> state, WritableFulltext index ) throws IOException
+            LongObjectMap<Map<String, Object>> state, WritableFulltext index ) throws IOException
     {
         FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
-            state.visitEntries( ( entityId, value ) ->
+            state.forEachKeyValue( ( entityId, value ) ->
             {
                 Set<String> indexedProperties = index.getProperties();
                 if ( !Collections.disjoint( indexedProperties, value.keySet() ) )
@@ -96,7 +97,6 @@ class FulltextUpdateApplier extends LifecycleAdapter
                         updateDocument( indexWriter, entityId, allProperties );
                     }
                 }
-                return false;
             } );
         } );
 
@@ -104,15 +104,21 @@ class FulltextUpdateApplier extends LifecycleAdapter
         return update;
     }
 
-    private static void updateDocument(
-            PartitionedIndexWriter indexWriter, long entityId, Map<String,Object> properties ) throws IOException
+    private static void updateDocument( PartitionedIndexWriter indexWriter, long entityId, Map<String, Object> properties )
     {
         Document document = documentRepresentingProperties( entityId, properties );
-        indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
+        try
+        {
+            indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     <E extends Entity> AsyncFulltextIndexOperation removePropertyData(
-            Iterable<PropertyEntry<E>> propertyEntries, PrimitiveLongObjectMap<Map<String,Object>> state, WritableFulltext index )
+            Iterable<PropertyEntry<E>> propertyEntries, LongObjectMap<Map<String, Object>> state, WritableFulltext index )
             throws IOException
     {
         FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->

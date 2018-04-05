@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,8 +36,6 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
@@ -175,8 +175,8 @@ public class SchemaCache
     {
         private final ConstraintSemantics constraintSemantics;
         private final Set<ConstraintDescriptor> constraints;
-        private final PrimitiveLongObjectMap<IndexRule> indexRuleById;
-        private final PrimitiveLongObjectMap<ConstraintRule> constraintRuleById;
+        private final MutableLongObjectMap<IndexRule> indexRuleById;
+        private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,SchemaIndexDescriptor> indexDescriptors;
         private final MutableIntObjectMap<Set<SchemaIndexDescriptor>> indexDescriptorsByLabel;
@@ -201,8 +201,8 @@ public class SchemaCache
         SchemaCacheState( SchemaCacheState schemaCacheState )
         {
             this.constraintSemantics = schemaCacheState.constraintSemantics;
-            this.indexRuleById = PrimitiveLongCollections.copy( schemaCacheState.indexRuleById );
-            this.constraintRuleById = PrimitiveLongCollections.copy( schemaCacheState.constraintRuleById );
+            this.indexRuleById = LongObjectHashMap.newMap( schemaCacheState.indexRuleById );
+            this.constraintRuleById = LongObjectHashMap.newMap( schemaCacheState.constraintRuleById );
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );

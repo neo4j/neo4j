@@ -50,7 +50,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         super.drop();
         indexWriter = null;

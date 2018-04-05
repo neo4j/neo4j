@@ -21,8 +21,12 @@ package org.neo4j.kernel.impl.locking.community;
 
 import org.eclipse.collections.api.block.procedure.Procedure;
 import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
@@ -52,12 +53,12 @@ public class CommunityLockClient implements Locks.Client
     private final LockManagerImpl manager;
     private final LockTransaction lockTransaction = new LockTransaction();
 
-    private final MutableIntObjectMap<PrimitiveLongObjectMap<LockResource>> sharedLocks = new IntObjectHashMap<>();
-    private final MutableIntObjectMap<PrimitiveLongObjectMap<LockResource>> exclusiveLocks = new IntObjectHashMap<>();
-    private final PrimitiveLongObjectVisitor<LockResource,RuntimeException> readReleaser;
-    private final PrimitiveLongObjectVisitor<LockResource,RuntimeException> writeReleaser;
-    private final Procedure<PrimitiveLongObjectMap<LockResource>> typeReadReleaser;
-    private final Procedure<PrimitiveLongObjectMap<LockResource>> typeWriteReleaser;
+    private final MutableIntObjectMap<MutableLongObjectMap<LockResource>> sharedLocks = new IntObjectHashMap<>();
+    private final MutableIntObjectMap<MutableLongObjectMap<LockResource>> exclusiveLocks = new IntObjectHashMap<>();
+    private final LongObjectProcedure<LockResource> readReleaser;
+    private final LongObjectProcedure<LockResource> writeReleaser;
+    private final Procedure<LongObjectMap<LockResource>> typeReadReleaser;
+    private final Procedure<LongObjectMap<LockResource>> typeWriteReleaser;
 
     // To be able to close Locks.Client instance properly we should be able to do couple of things:
     //  - have a possibility to prevent new clients to come
@@ -71,20 +72,10 @@ public class CommunityLockClient implements Locks.Client
     {
         this.manager = manager;
 
-        readReleaser = ( key, lockResource ) ->
-        {
-            manager.releaseReadLock( lockResource, lockTransaction );
-            return false;
-        };
-
-        writeReleaser = ( key, lockResource ) ->
-        {
-            manager.releaseWriteLock( lockResource, lockTransaction );
-            return false;
-        };
-
-        typeReadReleaser = value -> value.visitEntries( readReleaser );
-        typeWriteReleaser = value -> value.visitEntries( writeReleaser );
+        readReleaser = ( key, lockResource ) -> manager.releaseReadLock( lockResource, lockTransaction );
+        writeReleaser = ( key, lockResource ) -> manager.releaseWriteLock( lockResource, lockTransaction );
+        typeReadReleaser = value -> value.forEachKeyValue( readReleaser );
+        typeWriteReleaser = value -> value.forEachKeyValue( writeReleaser );
     }
 
     @Override
@@ -93,7 +84,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
+            MutableLongObjectMap<LockResource> localLocks = localShared( resourceType );
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
@@ -127,7 +118,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
+            MutableLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
@@ -161,7 +152,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
+            final MutableLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             LockResource resource = localLocks.get( resourceId );
             if ( resource != null )
             {
@@ -194,7 +185,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
+            final MutableLongObjectMap<LockResource> localLocks = localShared( resourceType );
             LockResource resource = localLocks.get( resourceId );
             if ( resource != null )
             {
@@ -249,7 +240,7 @@ public class CommunityLockClient implements Locks.Client
         }
     }
 
-    private boolean reEnter( PrimitiveLongObjectMap<LockResource> localLocks, long resourceId )
+    private boolean reEnter( LongObjectMap<LockResource> localLocks, long resourceId )
     {
         LockResource resource = localLocks.get( resourceId );
         if ( resource != null )
@@ -269,7 +260,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
+            final MutableLongObjectMap<LockResource> localLocks = localShared( resourceType );
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
@@ -292,7 +283,7 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
+            final MutableLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
@@ -388,51 +379,38 @@ public class CommunityLockClient implements Locks.Client
         return counter.locks;
     }
 
-    private static class LockCounter implements IntObjectProcedure<PrimitiveLongObjectMap<LockResource>>
+    private static class LockCounter implements IntObjectProcedure<LongObjectMap<LockResource>>
     {
         long locks;
 
         @Override
-        public void value( int key, PrimitiveLongObjectMap<LockResource> value )
+        public void value( int key, LongObjectMap<LockResource> value )
         {
             locks += value.size();
         }
     }
 
-    private static IntObjectProcedure<PrimitiveLongObjectMap<LockResource>> collectActiveLocks(
+    private static IntObjectProcedure<LongObjectMap<LockResource>> collectActiveLocks(
             List<ActiveLock> locks, ActiveLock.Factory activeLock )
     {
         return ( typeId, exclusive ) ->
         {
             ResourceType resourceType = ResourceTypes.fromId( typeId );
-            exclusive.visitEntries( ( resourceId, lock ) ->
+            exclusive.forEachKeyValue( ( resourceId, lock ) ->
             {
                 locks.add( activeLock.create( resourceType, resourceId ) );
-                return false;
             } );
         };
     }
 
-    private PrimitiveLongObjectMap<LockResource> localShared( ResourceType resourceType )
+    private MutableLongObjectMap<LockResource> localShared( ResourceType resourceType )
     {
-        PrimitiveLongObjectMap<LockResource> map = sharedLocks.get( resourceType.typeId() );
-        if ( map == null )
-        {
-            map = Primitive.longObjectMap();
-            sharedLocks.put( resourceType.typeId(), map );
-        }
-        return map;
+        return sharedLocks.getIfAbsentPut( resourceType.typeId(), LongObjectHashMap::new );
     }
 
-    private PrimitiveLongObjectMap<LockResource> localExclusive( ResourceType resourceType )
+    private MutableLongObjectMap<LockResource> localExclusive( ResourceType resourceType )
     {
-        PrimitiveLongObjectMap<LockResource> map = exclusiveLocks.get( resourceType.typeId() );
-        if ( map == null )
-        {
-            map = Primitive.longObjectMap();
-            exclusiveLocks.put( resourceType.typeId(), map );
-        }
-        return map;
+        return exclusiveLocks.getIfAbsentPut( resourceType.typeId(), LongObjectHashMap::new );
     }
 
     @Override
