@@ -23,11 +23,10 @@ import java.time.OffsetTime;
 import java.time.ZoneOffset;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static org.neo4j.graphdb.temporal.Duration.NANOS_PER_SECOND;
 
 public final class TemporalUtil
 {
-    public static final long NANOS_PER_SECOND = 1_000_000_000L;
-    public static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
     public static final double AVG_DAYS_PER_MONTH = 365.2425 / 12;
     public static final long AVG_SECONDS_PER_MONTH = 2_629_746;
