@@ -19,19 +19,23 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.values.storable.ValueGroup;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+public class DurationNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchemaIndexPopulatorTest<DurationSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator<DurationSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new NumberSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
+        TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout =
+                new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
+        return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<DurationSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new NumberUniqueLayoutTestUtil();
+        return new DurationLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

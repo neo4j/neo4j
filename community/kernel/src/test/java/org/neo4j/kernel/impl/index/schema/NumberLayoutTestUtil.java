@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -63,7 +64,7 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberSchemaKey,Nativ
     @Override
     IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, (Number) from, fromInclusive, (Number) to, toInclusive );
+        return IndexQuery.range( 0, (NumberValue) from, fromInclusive, (NumberValue) to, toInclusive );
     }
 
     @Override

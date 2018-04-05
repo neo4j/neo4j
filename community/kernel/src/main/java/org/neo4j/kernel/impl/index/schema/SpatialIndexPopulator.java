@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.StreamSupport;
 import java.util.Map;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -37,9 +38,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -48,11 +47,10 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
 class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
-    private final IndexSamplerWrapper sampler;
-
     SpatialIndexPopulator( long indexId,
             SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
@@ -63,7 +61,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             SpaceFillingCurveConfiguration configuration )
     {
         super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
-        this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
     }
 
     @Override
@@ -129,66 +126,25 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        sampler.includeSample( update.values() );
+        Value[] values = update.values();
+        assert values.length == 1;
+        uncheckedSelect( ((PointValue) values[0]).getCoordinateReferenceSystem() ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return sampler.sampleResult();
-    }
-
-    private static class IndexSamplerWrapper
-    {
-        private final DefaultNonUniqueIndexSampler generalSampler;
-        private final UniqueIndexSampler uniqueSampler;
-
-        IndexSamplerWrapper( SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
-        {
-            switch ( descriptor.type() )
-            {
-            case GENERAL:
-                generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
-                uniqueSampler = null;
-                break;
-            case UNIQUE:
-                generalSampler = null;
-                uniqueSampler = new UniqueIndexSampler();
-                break;
-            default:
-                throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
-            }
-        }
-
-        void includeSample( Value[] values )
-        {
-            if ( uniqueSampler != null )
-            {
-                uniqueSampler.increment( 1 );
-            }
-            else
-            {
-                generalSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) values ) );
-            }
-        }
-
-        IndexSample sampleResult()
-        {
-            if ( uniqueSampler != null )
-            {
-                return uniqueSampler.result();
-            }
-            else
-            {
-                return generalSampler.result();
-            }
-        }
+        IndexSample[] indexSamples = StreamSupport.stream( this.spliterator(), false )
+                .map( PartPopulator::sampleResult )
+                .toArray( IndexSample[]::new );
+        return combineSamples( indexSamples );
     }
 
     static class PartPopulator extends NativeSchemaIndexPopulator<SpatialSchemaKey, NativeSchemaValue>
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
+        private final IndexSamplerWrapper sampler;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
                 IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
@@ -197,6 +153,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
+            this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
         }
 
         @Override
@@ -208,13 +165,13 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         @Override
         public void includeSample( IndexEntryUpdate<?> update )
         {
-            throw new UnsupportedOperationException( "please to not get here!" );
+            sampler.includeSample( update.values() );
         }
 
         @Override
         public IndexSample sampleResult()
         {
-            throw new UnsupportedOperationException( "this sampling code needs a rewrite." );
+            return sampler.sampleResult();
         }
 
         @Override

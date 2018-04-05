@@ -20,18 +20,26 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public abstract class StringSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<StringSchemaKey,NativeSchemaValue>
+public class DateNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<DateSchemaKey,NativeSchemaValue>
 {
     @Override
-    StringSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    NativeSchemaIndexAccessor<DateSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor,
-                schemaIndexDescriptor, indexId, samplingConfig );
+        TemporalIndexFiles.FileLayout<DateSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DATE );
+        return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
-    // TODO test reader unsupported index order
+    @Override
+    protected LayoutTestUtil<DateSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    {
+        return new DateLayoutTestUtil( SchemaIndexDescriptorFactory.forLabel( 42, 666 ) );
+    }
+
 }

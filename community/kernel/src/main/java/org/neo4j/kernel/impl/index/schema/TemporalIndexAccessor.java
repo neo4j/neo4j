@@ -193,6 +193,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         @Override
         public TemporalIndexPartReader<KEY> newReader()
         {
+            assertOpen();
             return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
         }
     }
