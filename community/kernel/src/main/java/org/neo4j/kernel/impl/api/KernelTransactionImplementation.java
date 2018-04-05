@@ -129,7 +129,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationParts statementOperations;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
@@ -197,7 +196,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics,
             SchemaState schemaState, IndexingService indexingService )
     {
-        this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
