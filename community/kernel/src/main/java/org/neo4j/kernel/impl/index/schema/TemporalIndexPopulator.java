@@ -63,6 +63,13 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     public synchronized void create() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::clear, this );
+
+        // We must make sure to have at least one subindex:
+        // to be able to persist fialure and to have the right state in the beginning
+        if( !this.iterator().hasNext() )
+        {
+            uncheckedSelect( ValueGroup.DATE );
+        }
     }
 
     @Override
