@@ -19,7 +19,12 @@
  */
 package org.neo4j.values.utils;
 
-
+/**
+ * {@code InvalidValuesArgumentException} is thrown when trying to pass in an invalid argument to
+ * a {@code PointValue}, {@code TemporalValue} or {@code DurationValue} method. Examples of such
+ * cases include trying to pass an invalid CRS to a {@code PointValue} and trying to pass a
+ * temporal unit out of range when creating a {@code TemporalValue}, e.g. specifying {@code month: 13}.
+ */
 public class InvalidValuesArgumentException extends ValuesException
 {
     public InvalidValuesArgumentException( String errorMsg )

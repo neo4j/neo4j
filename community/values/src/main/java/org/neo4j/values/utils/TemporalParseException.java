@@ -19,16 +19,15 @@
  */
 package org.neo4j.values.utils;
 
-
+/**
+ * {@code TemporalParseException} is thrown if parsing of a TemporalValue is unsuccessful.
+ * The constructor parameters {@code parsedData} and {@code errorIndex} can optionally be provided
+ * in order to conform with Java's {@code DateTimeParseException} and {@code SyntaxException}.
+ */
 public class TemporalParseException extends ValuesException
 {
     private String parsedData;
     private int errorIndex;
-
-    public TemporalParseException( String errorMsg )
-    {
-        super( errorMsg );
-    }
 
     public TemporalParseException( String errorMsg, Throwable cause )
     {

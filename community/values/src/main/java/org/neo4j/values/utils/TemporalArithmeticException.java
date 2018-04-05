@@ -19,14 +19,14 @@
  */
 package org.neo4j.values.utils;
 
-
+/**
+ * {@code TemporalArithmeticException} is thrown when arithmetic operations of temporal values and
+ * durations are unsuccessful. Examples of such arithmetic operations include adding a
+ * {@code TemporalValue} and {@code DurationValue} and subtracting a {@code DurationValue} from a
+ * {@code TemporalValue}.
+ */
 public class TemporalArithmeticException extends ValuesException
 {
-    public TemporalArithmeticException( String errorMsg )
-    {
-        super( errorMsg );
-    }
-
     public TemporalArithmeticException( String errorMsg, Throwable cause )
     {
         super( errorMsg, cause );
