@@ -42,7 +42,7 @@ public class ConfigValueTest
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
-        assertFalse( value.isSecret() );
+        assertFalse( value.secret() );
     }
 
     @Test
@@ -52,7 +52,7 @@ public class ConfigValueTest
                 "description", true, false, false, Optional.empty(), false );
 
         assertTrue( value.internal() );
-        assertFalse( value.isSecret() );
+        assertFalse( value.secret() );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class ConfigValueTest
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
-        assertFalse( value.isSecret() );
+        assertFalse( value.secret() );
     }
 
     @Test
@@ -80,7 +80,7 @@ public class ConfigValueTest
         assertTrue( value.deprecated() );
         assertEquals( "new_name", value.replacement().get() );
         assertFalse( value.internal() );
-        assertFalse( value.isSecret() );
+        assertFalse( value.secret() );
     }
 
     @Test
@@ -94,7 +94,7 @@ public class ConfigValueTest
         assertTrue( value.deprecated() );
         assertEquals( "new_name", value.replacement().get() );
         assertFalse( value.internal() );
-        assertFalse( value.isSecret() );
+        assertFalse( value.secret() );
         assertEquals( "a simple integer", value.valueDescription() );
     }
 
@@ -109,7 +109,7 @@ public class ConfigValueTest
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
-        assertTrue( value.isSecret() );
+        assertTrue( value.secret() );
     }
 
     @Test

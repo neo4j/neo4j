@@ -277,8 +277,8 @@ public class ConfigTest
                 .build();
 
         // Then
-        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).isSecret() );
-        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).isSecret() );
+        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).secret() );
+        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).secret() );
         String configText = config.toString();
         assertTrue( configText.contains( Secret.OBSFUCATED ) );
         assertFalse( configText.contains( "this should not be visible" ) );
