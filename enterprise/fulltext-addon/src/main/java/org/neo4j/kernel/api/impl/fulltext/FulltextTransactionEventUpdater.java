@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -46,8 +48,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
     @Override
     public FulltextTransactionContext beforeCommit( TransactionData data )
     {
-        PrimitiveLongObjectMap<Map<String,Object>> nodeMap = Primitive.longObjectMap();
-        PrimitiveLongObjectMap<Map<String,Object>> relationshipMap = Primitive.longObjectMap();
+        final MutableLongObjectMap<Map<String, Object>> nodeMap = Primitive.longObjectMap();
+        final MutableLongObjectMap<Map<String, Object>> relationshipMap = Primitive.longObjectMap();
         Lock lock = fulltextProvider.readLockIndexConfiguration();
         FulltextTransactionContext fulltextTransactionContext = new FulltextTransactionContext( nodeMap, relationshipMap, lock );
 
@@ -95,8 +97,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
         {
             try
             {
-                PrimitiveLongObjectMap<Map<String,Object>> nodeMap = state.getNodeMap();
-                PrimitiveLongObjectMap<Map<String,Object>> relationshipMap = state.getRelationshipMap();
+                final LongObjectMap<Map<String, Object>> nodeMap = state.getNodeMap();
+                final LongObjectMap<Map<String, Object>> relationshipMap = state.getRelationshipMap();
 
                 //update node indices
                 for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
@@ -151,24 +153,23 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
 
     public static class FulltextTransactionContext
     {
-        private final PrimitiveLongObjectMap<Map<String,Object>> nodeMap;
-        private final PrimitiveLongObjectMap<Map<String,Object>> relationshipMap;
+        private final LongObjectMap<Map<String, Object>> nodeMap;
+        private final LongObjectMap<Map<String, Object>> relationshipMap;
         private final Lock lock;
 
-        private FulltextTransactionContext( PrimitiveLongObjectMap<Map<String,Object>> nodeMap,
-                PrimitiveLongObjectMap<Map<String,Object>> relationshipMap, Lock lock )
+        private FulltextTransactionContext( LongObjectMap<Map<String, Object>> nodeMap, LongObjectMap<Map<String, Object>> relationshipMap, Lock lock )
         {
             this.nodeMap = nodeMap;
             this.relationshipMap = relationshipMap;
             this.lock = lock;
         }
 
-        public PrimitiveLongObjectMap<Map<String,Object>> getRelationshipMap()
+        public LongObjectMap<Map<String, Object>> getRelationshipMap()
         {
             return relationshipMap;
         }
 
-        public PrimitiveLongObjectMap<Map<String,Object>> getNodeMap()
+        public LongObjectMap<Map<String, Object>> getNodeMap()
         {
             return nodeMap;
         }

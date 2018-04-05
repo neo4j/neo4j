@@ -71,7 +71,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void start() throws IOException
+    public void start()
     {
         if ( state.compareAndSet( State.INIT, State.STARTING ) )
         {
@@ -133,7 +133,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {

@@ -24,7 +24,7 @@ import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMa
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.eclipse.collections.api.set.primitive.LongSet
-import org.eclipse.collections.impl.map.mutable.primitive.{LongIntHashMap, LongLongHashMap}
+import org.eclipse.collections.impl.map.mutable.primitive.{LongIntHashMap, LongLongHashMap, LongObjectHashMap}
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
@@ -90,7 +90,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       // compute the participating types
       val valueType = aux.typeReference(tupleDescriptor)
       val listType = parameterizedType(classOf[JArrayList[_]], valueType)
-      val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
+      val tableType = parameterizedType(classOf[LongObjectHashMap[_]], valueType)
       // the methods we use on those types
       val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
       val put = methodReference(tableType, typeRef[Object], "put", typeRef[Long], typeRef[Object])
@@ -906,13 +906,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType) = {
-  // todo ak
   val setType = if (elementType.repr == LongType) typeRef[LongHashSet] else typeRef[JHashSet[Object]]
     if (keyTypes.size == 1 && keyTypes.head.repr == LongType) {
-      val typ =  TypeReference.parameterizedType(typeRef[PrimitiveLongObjectMap[_]], setType)
-      generator.assign(generator.declare(typ, name),
-        invoke(method[Primitive, PrimitiveLongObjectMap[LongHashSet]]("longObjectMap")))
-
+      val typ = TypeReference.parameterizedType(typeRef[LongObjectHashMap[_]], setType)
+      generator.assign(generator.declare(typ, name), createNewInstance(typ))
     } else {
       val typ =  TypeReference.parameterizedType(typeRef[JHashMap[_,_]], typeRef[Object], setType)
 
@@ -992,21 +989,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       val tmp = context.namer.newVarName()
 
       if (valueType.repr == LongType) {
-        // todo ak
         val localVariable = generator.declare(typeRef[LongHashSet], tmp)
         generator.assign(localVariable,
           cast(typeRef[LongHashSet],
                               invoke(generator.load(name),
-                                     method[PrimitiveLongObjectMap[Object], Object]("get", typeRef[Long]),
-                                     keyExpression)))
+                                method[LongObjectHashMap[Object], Object]("get", typeRef[Long]), keyExpression)))
 
 
         using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
           inner.assign(localVariable, createNewInstance(typeRef[LongHashSet]))
           inner.expression(pop(invoke(generator.load(name),
-                                      method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
-                                                                                     typeRef[Object]),
-                                      keyExpression, inner.load(tmp))))
+            method[LongObjectHashMap[Object], Object]("put", typeRef[Long], typeRef[Object]), keyExpression, inner.load(tmp))))
         }
         using(generator.ifStatement(not(invoke(generator.load(tmp),
           method[LongHashSet, Boolean]("contains", typeRef[Long]),
@@ -1020,14 +1013,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         generator.assign(localVariable,
                          cast(typeRef[JHashSet[Object]],
                               invoke(generator.load(name),
-                                     method[PrimitiveLongObjectMap[Object], Object]("get", typeRef[Long]),
-                                     keyExpression)))
+                                method[LongObjectHashMap[Object], Object]("get", typeRef[Long]), keyExpression)))
         using(generator.ifStatement(Expression.isNull(generator.load(tmp)))) { inner =>
           inner.assign(localVariable, createNewInstance(typeRef[JHashSet[Object]]))
           inner.expression(pop(invoke(generator.load(name),
-                                      method[PrimitiveLongObjectMap[Object], Object]("put", typeRef[Long],
-                                                                                     typeRef[Object]),
-                                      keyExpression, inner.load(tmp))))
+            method[LongObjectHashMap[Object], Object]("put", typeRef[Long], typeRef[Object]), keyExpression, inner.load(tmp))))
         }
         using(generator.ifStatement(not(invoke(generator.load(tmp),
                                                method[JHashSet[Object], Boolean]("contains", typeRef[Object]),
@@ -1204,7 +1194,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       case LongsToCountTable =>
         parameterizedType(classOf[JHashMap[_, _]], classOf[CompositeKey], classOf[java.lang.Integer])
       case LongToListTable(tupleDescriptor, _) =>
-        parameterizedType(classOf[PrimitiveLongObjectMap[_]],
+        parameterizedType(classOf[LongObjectHashMap[_]],
                           parameterizedType(classOf[JArrayList[_]],
                                             aux.typeReference(tupleDescriptor)))
       case LongsToListTable(tupleDescriptor, _) =>
@@ -1218,7 +1208,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def allocate(resultType: JoinTableType): Expression = resultType match {
     case LongToCountTable => Templates.newCountingMap
-    case LongToListTable(_, _) => Templates.newLongObjectMap
+    case LongToListTable(tupleDescriptor, _) => createNewInstance(parameterizedType(classOf[LongObjectHashMap[_]],
+      parameterizedType(classOf[JArrayList[_]], aux.typeReference(tupleDescriptor))))
     case LongsToCountTable => createNewInstance(joinTableType(LongsToCountTable))
     case typ: LongsToListTable => createNewInstance(joinTableType(typ))
   }

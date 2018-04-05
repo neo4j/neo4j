@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -231,8 +230,8 @@ public class TransactionRecordStateTest
         // -- later recovering that tx, there should be only one update
         assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
         MutableLongSet recoveredNodeIds = new LongHashSet();
-        recoveredNodeIds.addAll( PrimitiveLongCollections.asSet( extractor.nodeCommandsById().longIterator() ) );
-        recoveredNodeIds.addAll( PrimitiveLongCollections.asSet( extractor.propertyCommandsByNodeIds().longIterator() ) );
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().keySet() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().keySet() );
         assertEquals( 1, recoveredNodeIds.size() );
         assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
     }

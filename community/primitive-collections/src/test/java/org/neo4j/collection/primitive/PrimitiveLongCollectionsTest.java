@@ -39,7 +39,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -217,21 +216,6 @@ public class PrimitiveLongCollectionsTest
         LongSet longSet = LongHashSet.newSetWith( 1L, 3L, 5L );
         Set<Long> longs = PrimitiveLongCollections.toSet( longSet );
         assertThat( longs, containsInAnyOrder(1L, 3L, 5L) );
-    }
-
-    @Test
-    public void copyMap()
-    {
-        PrimitiveLongObjectMap<Object> originalMap = Primitive.longObjectMap();
-        originalMap.put( 1L, "a" );
-        originalMap.put( 2L, "b" );
-        originalMap.put( 3L, "c" );
-        PrimitiveLongObjectMap<Object> copyMap = PrimitiveLongCollections.copy( originalMap );
-        assertNotSame( originalMap, copyMap );
-        assertEquals( 3, copyMap.size() );
-        assertEquals( "a", copyMap.get( 1L ) );
-        assertEquals( "b", copyMap.get( 2L ) );
-        assertEquals( "c", copyMap.get( 3L ) );
     }
 
     private void assertNoMoreItems( LongIterator iterator )

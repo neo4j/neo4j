@@ -21,12 +21,13 @@ package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 
 import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.index.IndexCommand;
 
@@ -39,7 +40,7 @@ class CommitContext implements Closeable
     final LuceneDataSource dataSource;
     final IndexIdentifier identifier;
     final IndexType indexType;
-    final PrimitiveLongObjectMap<DocumentContext> documents = Primitive.longObjectMap();
+    final MutableLongObjectMap<DocumentContext> documents = Primitive.longObjectMap();
     final boolean recovery;
 
     IndexReference searcher;
@@ -85,10 +86,9 @@ class CommitContext implements Closeable
         return context;
     }
 
-    private void applyDocuments( IndexWriter writer, IndexType type,
-            PrimitiveLongObjectMap<DocumentContext> documents ) throws IOException
+    private void applyDocuments( IndexWriter writer, IndexType type, LongObjectMap<DocumentContext> documents ) throws IOException
     {
-        for ( DocumentContext context : documents.values() )
+        for ( DocumentContext context : documents )
         {
             if ( context.exists )
             {

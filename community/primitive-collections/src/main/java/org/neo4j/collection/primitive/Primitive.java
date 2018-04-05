@@ -21,16 +21,14 @@ package org.neo4j.collection.primitive;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
-import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
-import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 import org.neo4j.memory.MemoryAllocationTracker;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
 
 /**
  * Convenient factory for common primitive sets and maps.
@@ -60,14 +58,14 @@ public class Primitive
         return new LongHashSet();
     }
 
-    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()
+    public static <VALUE> MutableLongObjectMap<VALUE> longObjectMap()
     {
         return longObjectMap( DEFAULT_HEAP_CAPACITY );
     }
 
-    public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int initialCapacity )
+    public static <VALUE> MutableLongObjectMap<VALUE> longObjectMap( int initialCapacity )
     {
-        return new PrimitiveLongObjectHashMap<>( new LongKeyObjectValueTable<VALUE>( initialCapacity ), NO_MONITOR );
+        return new LongObjectHashMap<>( initialCapacity );
     }
 
     public static MutableIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )

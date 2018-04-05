@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
@@ -26,7 +27,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -48,7 +48,7 @@ public class IndexMapTest
     @Before
     public void setup()
     {
-        PrimitiveLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
+        MutableLongObjectMap<IndexProxy> map = Primitive.longObjectMap();
         map.put( 1L, new TestIndexProxy( schema3_4 ) );
         map.put( 2L, new TestIndexProxy( schema5_6_7 ) );
         map.put( 3L, new TestIndexProxy( schema5_8 ) );

@@ -45,7 +45,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     protected abstract IndexProxy getDelegate();
 
     @Override
-    public void start() throws IOException
+    public void start()
     {
         getDelegate().start();
     }
@@ -57,7 +57,7 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         getDelegate().drop();
     }

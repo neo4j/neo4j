@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap
+import org.neo4j.collection.primitive.Primitive
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.util.v3_5.attribution.Id
@@ -83,7 +84,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                    val pathLength: Int,
                    val queryState: QueryState,
                    val row: ExecutionContext,
-                   val expandMap: PrimitiveLongObjectMap[NodeState],
+                   val expandMap: MutableLongObjectMap[NodeState],
                    val prevLocalRelIndex: Int,
                    val prevNodeState: NodeState ) {
 
@@ -295,11 +296,11 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       else executionContextFactory.copyWith(inputRow, self.toName, endNode)
     }
 
-    def push( node: VirtualNodeValue,
-              pathLength: Int,
-              expandMap: PrimitiveLongObjectMap[NodeState],
-              prevLocalRelIndex: Int,
-              prevNodeState: NodeState ): VirtualNodeValue = {
+    def push(node: VirtualNodeValue,
+             pathLength: Int,
+             expandMap: MutableLongObjectMap[NodeState],
+             prevLocalRelIndex: Int,
+             prevNodeState: NodeState): VirtualNodeValue = {
       depth += 1
       nodeState(depth) =
         new PruningDFS(this, node, path, pathLength, queryState, inputRow, expandMap, prevLocalRelIndex, prevNodeState)

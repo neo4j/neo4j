@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
@@ -96,7 +96,7 @@ public class OffHeapCollectionsFactoryTest
     {
         final long mem0 = memoryTracker.usedDirectMemory();
 
-        final PrimitiveLongObjectMap<Object> map = factory.newLongObjectMap();
+        final MutableLongObjectMap<Object> map = factory.newLongObjectMap();
         map.put( 1L, "foo" );
 
         final long mem1 = memoryTracker.usedDirectMemory();

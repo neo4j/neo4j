@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -133,12 +134,16 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey<KEY
     }
 
     @Override
-    public synchronized void drop() throws IOException
+    public synchronized void drop()
     {
         try
         {
             closeTree();
             gbpTreeFileUtil.deleteFileIfPresent( storeFile );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
         finally
         {

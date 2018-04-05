@@ -43,10 +43,8 @@ public interface IndexPopulator
 
     /**
      * Closes and deletes this index.
-     *
-     * @throws IOException on I/O error.
      */
-    void drop() throws IOException;
+    void drop();
 
     /**
      * Called when initially populating an index over existing data. Guaranteed to be

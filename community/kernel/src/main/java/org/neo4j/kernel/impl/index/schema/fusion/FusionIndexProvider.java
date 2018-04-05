@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -219,7 +220,7 @@ public class FusionIndexProvider extends IndexProvider
          * @throws IOException on I/O error.
          * @see GraphDatabaseSettings#archive_failed_index
          */
-        void drop( long indexId, boolean archiveExistentIndex ) throws IOException;
+        void drop( long indexId, boolean archiveExistentIndex );
 
         /**
          * Deletes the index directory and everything in it, as last part of dropping an index.
@@ -227,7 +228,7 @@ public class FusionIndexProvider extends IndexProvider
          * @param indexId the index id, for which directory to drop.
          * @throws IOException on I/O error.
          */
-        default void drop( long indexId ) throws IOException
+        default void drop( long indexId )
         {
             drop( indexId, false );
         }
@@ -245,14 +246,21 @@ public class FusionIndexProvider extends IndexProvider
         }
 
         @Override
-        public void drop( long indexId, boolean archiveExistentIndex ) throws IOException
+        public void drop( long indexId, boolean archiveExistentIndex )
         {
-            File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
-            if ( archiveExistentIndex && !FileUtils.isEmptyDirectory( rootIndexDirectory ) )
+            try
             {
-                ZipUtils.zip( fs, rootIndexDirectory, archiveFile( rootIndexDirectory ) );
+                File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
+                if ( archiveExistentIndex && !FileUtils.isEmptyDirectory( rootIndexDirectory ) )
+                {
+                    ZipUtils.zip( fs, rootIndexDirectory, archiveFile( rootIndexDirectory ) );
+                }
+                fs.deleteRecursively( rootIndexDirectory );
             }
-            fs.deleteRecursively( rootIndexDirectory );
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
 
         private File archiveFile( File folder )

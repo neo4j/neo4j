@@ -56,7 +56,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         forAll( IndexPopulator::drop, instances );
         dropAction.drop( indexId );

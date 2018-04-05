@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.map.primitive.LongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -30,7 +32,6 @@ import java.util.function.Function;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -514,8 +515,8 @@ public class MockStore extends Read implements TestRule
         }
     }
 
-    private PrimitiveLongObjectMap<Node> nodes;
-    private PrimitiveLongObjectMap<Property> properties;
+    private MutableLongObjectMap<Node> nodes;
+    private MutableLongObjectMap<Property> properties;
 
     @Override
     public Statement apply( Statement base, Description description )
@@ -526,18 +527,15 @@ public class MockStore extends Read implements TestRule
             public void evaluate() throws Throwable
             {
 
-                try ( PrimitiveLongObjectMap<Node> nodes = Primitive.longObjectMap();
-                      PrimitiveLongObjectMap<Property> properties = Primitive.longObjectMap() )
-                {
-                    MockStore.this.nodes = nodes;
-                    MockStore.this.properties = properties;
-                    base.evaluate();
-                }
-                finally
-                {
-                    MockStore.this.nodes = null;
-                    MockStore.this.properties = null;
-                }
+                MutableLongObjectMap<Node> nodes = Primitive.longObjectMap();
+                MutableLongObjectMap<Property> properties = Primitive.longObjectMap();
+
+                MockStore.this.nodes = nodes;
+                MockStore.this.properties = properties;
+                base.evaluate();
+
+                MockStore.this.nodes = null;
+                MockStore.this.properties = null;
             }
         };
     }
@@ -545,7 +543,7 @@ public class MockStore extends Read implements TestRule
     private static <R extends AbstractBaseRecord, S extends Record<R>> void initialize(
             R record,
             long reference,
-            PrimitiveLongObjectMap<S> store )
+            LongObjectMap<S> store )
     {
         record.setId( reference );
         S node = store.get( reference );
