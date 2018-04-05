@@ -60,7 +60,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -313,7 +312,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         NodeCursor nodes = transaction.nodeCursor();
         PropertyCursor properties = transaction.propertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
@@ -441,7 +440,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
@@ -475,7 +474,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }
@@ -604,7 +603,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         try ( Statement ignore = transaction.acquireStatement() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );
-            if ( labelId != KeyReadOperations.NO_SUCH_LABEL )
+            if ( labelId != TokenRead.NO_TOKEN )
             {
                 transaction.dataWrite().nodeRemoveLabel( getId(), labelId );
             }

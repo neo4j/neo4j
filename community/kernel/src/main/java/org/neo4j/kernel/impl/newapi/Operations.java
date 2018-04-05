@@ -96,7 +96,8 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
+        .CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -642,6 +643,22 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
+    public String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
+    {
+       ktx.assertOpen();
+       return allStoreHolder.explicitIndexStore().setNodeIndexConfiguration( indexName, key, value );
+    }
+
+    @Override
+    public String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return allStoreHolder.explicitIndexStore().removeNodeIndexConfiguration( indexName, key );
+    }
+
+    @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
             throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
@@ -963,6 +980,22 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         ktx.txState().constraintDoAdd( constraint );
         return constraint;
 
+    }
+
+    @Override
+    public String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return allStoreHolder.explicitIndexStore().setRelationshipIndexConfiguration( indexName, key, value );
+    }
+
+    @Override
+    public String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return allStoreHolder.explicitIndexStore().removeRelationshipIndexConfiguration( indexName, key );
     }
 
     @Override

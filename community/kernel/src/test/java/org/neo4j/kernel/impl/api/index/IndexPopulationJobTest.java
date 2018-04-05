@@ -127,11 +127,10 @@ public class IndexPopulationJobTest
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
 
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = tx.acquireStatement() )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
-            labelId = statement.tokenWriteOperations().labelGetOrCreateForName( FIRST.name() );
-            statement.tokenWriteOperations().labelGetOrCreateForName( SECOND.name() );
+            labelId = tx.tokenWrite().labelGetOrCreateForName( FIRST.name() );
+            tx.tokenWrite().labelGetOrCreateForName( SECOND.name() );
             tx.success();
         }
     }
@@ -625,11 +624,10 @@ public class IndexPopulationJobTest
     private SchemaIndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement statement = tx.acquireStatement() )
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
         {
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKey );
+            int labelId = tx.tokenWrite().labelGetOrCreateForName( label.name() );
+            int propertyKeyId = tx.tokenWrite().propertyKeyGetOrCreateForName( propertyKey );
             SchemaIndexDescriptor descriptor = constraint ?
                                                SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ) :
                                                SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId );

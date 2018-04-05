@@ -35,7 +35,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
@@ -175,17 +174,16 @@ public class ExplicitIndexStore
 
                 // We were the first one here, let's create this config
                 try ( KernelTransaction transaction =
-                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-                      Statement statement = transaction.acquireStatement() )
+                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
                 {
                     switch ( entityType )
                     {
                     case Node:
-                        statement.dataWriteOperations().nodeExplicitIndexCreate( indexName, config );
+                        transaction.indexWrite().nodeExplicitIndexCreate( indexName, config );
                         break;
 
                     case Relationship:
-                        statement.dataWriteOperations().relationshipExplicitIndexCreate( indexName, config );
+                        transaction.indexWrite().relationshipExplicitIndexCreate( indexName, config );
                         break;
 
                     default:

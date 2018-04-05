@@ -21,7 +21,6 @@ package org.neo4j.kernel.guard;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
  * Guard that check entities for compatibility with some kind of guard criteria.
@@ -30,5 +29,4 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 public interface Guard
 {
     void check( KernelTransaction transaction );
-    void check( KernelStatement statement );
 }

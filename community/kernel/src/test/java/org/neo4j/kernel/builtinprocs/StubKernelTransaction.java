@@ -22,6 +22,7 @@ package org.neo4j.kernel.builtinprocs;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
@@ -150,6 +151,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Procedures procedures()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public ExecutionStatistics executionStatistics()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

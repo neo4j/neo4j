@@ -34,8 +34,8 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.newapi.Read;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -409,7 +409,7 @@ public class CompositeCountsTest
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = tokenRead.nodeLabel( start.name() )) )
+                if ( TokenRead.NO_TOKEN == (startId = tokenRead.nodeLabel( start.name() )) )
                 {
                     return 0;
                 }
@@ -417,11 +417,11 @@ public class CompositeCountsTest
             // type
             if ( type == null )
             {
-                typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
+                typeId = TokenRead.NO_TOKEN;
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = tokenRead.relationshipType( type.name() )) )
+                if ( TokenRead.NO_TOKEN == (typeId = tokenRead.relationshipType( type.name() )) )
                 {
                     return 0;
                 }
@@ -429,11 +429,11 @@ public class CompositeCountsTest
             // end
             if ( end == null )
             {
-                endId = ReadOperations.ANY_LABEL;
+                endId = Read.ANY_LABEL;
             }
             else
             {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = tokenRead.nodeLabel( end.name() )) )
+                if ( TokenRead.NO_TOKEN == (endId = tokenRead.nodeLabel( end.name() )) )
                 {
                     return 0;
                 }
