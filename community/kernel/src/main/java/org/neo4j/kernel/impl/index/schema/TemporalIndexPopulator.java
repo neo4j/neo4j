@@ -137,31 +137,16 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
 
     static class PartPopulator<KEY extends NativeSchemaKey<KEY>> extends NativeSchemaIndexPopulator<KEY, NativeSchemaValue>
     {
-        private final IndexSamplerWrapper sampler;
-
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
                        IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
-            this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
         }
 
         @Override
         IndexReader newReader()
         {
             return new TemporalIndexPartReader<>( tree, layout, samplingConfig, descriptor );
-        }
-
-        @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-            sampler.includeSample( update.values() );
-        }
-
-        @Override
-        public IndexSample sampleResult()
-        {
-            return sampler.sampleResult();
         }
     }
 

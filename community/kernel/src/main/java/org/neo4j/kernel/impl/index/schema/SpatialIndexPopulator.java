@@ -144,7 +144,6 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     {
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
-        private final IndexSamplerWrapper sampler;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
                 IndexProvider.Monitor monitor, SchemaIndexDescriptor descriptor, long indexId, IndexSamplingConfig samplingConfig,
@@ -153,25 +152,12 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, indexId, samplingConfig );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
-            this.sampler = new IndexSamplerWrapper( descriptor, samplingConfig );
         }
 
         @Override
         IndexReader newReader()
         {
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, configuration );
-        }
-
-        @Override
-        public void includeSample( IndexEntryUpdate<?> update )
-        {
-            sampler.includeSample( update.values() );
-        }
-
-        @Override
-        public IndexSample sampleResult()
-        {
-            return sampler.sampleResult();
         }
 
         @Override
