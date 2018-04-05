@@ -21,8 +21,6 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.CursorFactory;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;

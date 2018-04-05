@@ -33,7 +33,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
@@ -72,12 +75,14 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForSchema;
+import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
@@ -477,6 +482,36 @@ public class OperationsLockTest
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
         order.verify( txState ).constraintDoDrop( constraint );
+    }
+
+    @Test
+    public void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    {
+        long nodeId = 1L;
+        returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
+        when(transaction.nodeCursor()).thenReturn( new StubNodeCursor( false ) );
+
+        operations.nodeDetachDelete( nodeId );
+
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( txState ).nodeDoDelete( nodeId );
+    }
+
+    @Test
+    public void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    {
+        long nodeId = 1L;
+        returnRelationships( transaction, false,
+                new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
+        when( transaction.nodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        operations.nodeDetachDelete( nodeId );
+
+        order.verify( locks ).acquireExclusive(
+                LockTracer.NONE, ResourceTypes.NODE, nodeId, 2L );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, 2L );
+        order.verify( txState ).nodeDoDelete( nodeId );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

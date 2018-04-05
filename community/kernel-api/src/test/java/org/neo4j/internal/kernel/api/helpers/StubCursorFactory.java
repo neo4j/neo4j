@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -37,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 public class StubCursorFactory implements CursorFactory
 {
+    private final boolean continueWithLastItem;
     private Queue<NodeCursor> nodeCursors = new LinkedList<>(  );
     private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>(  );
     private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>(  );
@@ -47,63 +47,89 @@ public class StubCursorFactory implements CursorFactory
     private Queue<NodeExplicitIndexCursor> nodeExplicitIndexCursors = new LinkedList<>(  );
     private Queue<RelationshipExplicitIndexCursor> relationshipExplicitIndexCursors = new LinkedList<>(  );
 
+    public StubCursorFactory()
+    {
+        this( false );
+    }
+
+    public StubCursorFactory( boolean continueWithLastItem )
+    {
+        this.continueWithLastItem = continueWithLastItem;
+    }
+
     @Override
     public NodeCursor allocateNodeCursor()
     {
-        return nodeCursors.poll();
+        return poll( nodeCursors );
     }
 
     @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return relationshipScanCursors.poll();
+        return poll( relationshipScanCursors );
     }
 
     @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return relationshiTraversalCursors.poll();
+        return poll( relationshiTraversalCursors );
     }
 
     @Override
     public PropertyCursor allocatePropertyCursor()
     {
-        return propertyCursors.poll();
+        return poll( propertyCursors );
     }
 
     @Override
     public RelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return groupCursors.poll();
+        return poll( groupCursors );
     }
 
     @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor()
     {
-        return nodeValueIndexCursors.poll();
+        return poll( nodeValueIndexCursors );
     }
 
     @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
-        return nodeLabelIndexCursors.poll();
+        return poll( nodeLabelIndexCursors );
     }
 
     @Override
     public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
-        return nodeExplicitIndexCursors.poll();
+        return poll( nodeExplicitIndexCursors );
     }
 
     @Override
     public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
     {
-        return relationshipExplicitIndexCursors.poll();
+        return poll( relationshipExplicitIndexCursors );
     }
 
-    StubCursorFactory withGroupCursors( RelationshipGroupCursor...cursors )
+    public StubCursorFactory withGroupCursors( RelationshipGroupCursor...cursors )
     {
         groupCursors.addAll( Arrays.asList( cursors ) );
         return this;
+    }
+
+    public StubCursorFactory withRelationshipTraversalCursors( RelationshipTraversalCursor...cursors )
+    {
+        relationshiTraversalCursors.addAll( Arrays.asList( cursors ) );
+        return this;
+    }
+
+    private <T> T poll( Queue<T> queue )
+    {
+        T poll = queue.poll();
+        if ( continueWithLastItem && queue.isEmpty() )
+        {
+            queue.offer( poll );
+        }
+        return poll;
     }
 }

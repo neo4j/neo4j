@@ -32,7 +32,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
 {
     private StubRelationshipCursor innerByGroup =
             new StubRelationshipCursor(
-                    new TestRelationshipChain()
+                    new TestRelationshipChain( 42L )
                             .outgoing( 0, 10, typeA )
                             .incoming( 1, 11, typeA )
                             .loop( 2, typeA )
@@ -45,7 +45,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
 
     private StubRelationshipCursor innerByDir =
             new StubRelationshipCursor(
-                    new TestRelationshipChain()
+                    new TestRelationshipChain( 42L )
                             .outgoing( 1, 10, typeA )
                             .outgoing( 2, 11, typeB )
                             .outgoing( 3, 12, typeC )
