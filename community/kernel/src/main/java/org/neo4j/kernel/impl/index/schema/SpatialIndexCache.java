@@ -110,10 +110,9 @@ class SpatialIndexCache<T> implements Iterable<T>
 
     void loadAll()
     {
-        Iterator<CoordinateReferenceSystem> crsIterator = CoordinateReferenceSystem.all();
-        while ( crsIterator.hasNext() )
+        for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            uncheckedSelect( crsIterator.next() );
+            uncheckedSelect( crs );
         }
     }
 

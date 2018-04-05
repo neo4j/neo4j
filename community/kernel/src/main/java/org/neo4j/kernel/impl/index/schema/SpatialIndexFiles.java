@@ -107,7 +107,11 @@ class SpatialIndexFiles
 
         public void readHeader( PageCache pageCache ) throws IOException
         {
-            GBPTree.readHeader( pageCache, indexFile, settings.headerReader() );
+            GBPTree.readHeader( pageCache, indexFile, settings.headerReader( NativeSchemaIndexHeaderReader::readFailureMessage ) );
+            if ( settings.isFailed() )
+            {
+                throw new IOException( settings.getFailureMessage() );
+            }
             this.layout = new SpatialLayout( crs, settings.curve() );
         }
     }

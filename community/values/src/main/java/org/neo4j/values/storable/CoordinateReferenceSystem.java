@@ -19,12 +19,10 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Iterator;
 import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.helpers.collection.Iterables;
 
 public class CoordinateReferenceSystem implements CRS
 {
@@ -35,9 +33,9 @@ public class CoordinateReferenceSystem implements CRS
 
     private static final CoordinateReferenceSystem[] TYPES = new CoordinateReferenceSystem[]{Cartesian, Cartesian_3D, WGS84, WGS84_3D};
 
-    public static Iterator<CoordinateReferenceSystem> all()
+    public static Iterable<CoordinateReferenceSystem> all()
     {
-        return Iterators.iterator( TYPES );
+        return Iterables.asIterable( TYPES );
     }
 
     public static CoordinateReferenceSystem get( int tableId, int code )
