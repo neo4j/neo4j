@@ -33,6 +33,10 @@ public class ResolutionResolverFactory
         {
             return new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() );
         }
+        else if ( discoveryType == CausalClusteringSettings.DiscoveryType.SRV )
+        {
+            return new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() );
+        }
         else
         {
             return new NoOpHostnameResolver();

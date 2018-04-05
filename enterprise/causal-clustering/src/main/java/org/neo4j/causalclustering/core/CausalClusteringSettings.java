@@ -173,7 +173,8 @@ public class CausalClusteringSettings implements LoadableConfig
     public enum DiscoveryType
     {
         DNS,
-        LIST
+        LIST,
+        SRV
     }
 
     @Description( "Configure the discovery type used for cluster name resolution" )
