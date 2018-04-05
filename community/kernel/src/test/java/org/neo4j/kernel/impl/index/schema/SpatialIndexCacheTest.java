@@ -71,7 +71,7 @@ public class SpatialIndexCacheTest
     }
 
     private static final CoordinateReferenceSystem[] coordinateReferenceSystems =
-            Iterators.stream( CoordinateReferenceSystem.all() ).toArray( CoordinateReferenceSystem[]::new );
+            Iterators.stream( CoordinateReferenceSystem.all().iterator() ).toArray( CoordinateReferenceSystem[]::new );
 
     static class CacheStresser implements Runnable
     {
