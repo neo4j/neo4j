@@ -59,7 +59,7 @@ public class IndexAccessors implements Closeable
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
                     IndexRule indexRule = rules.next();
-                    if ( indexRule.isNotValidatedIndexConstraint() )
+                    if ( indexRule.isIndexWithoutOwningConstraint() )
                     {
                         notOnlineIndexRules.add( indexRule );
                     }

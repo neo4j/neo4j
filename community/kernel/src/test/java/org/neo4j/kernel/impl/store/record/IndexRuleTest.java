@@ -85,7 +85,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         SchemaIndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         IndexRule indexRule = IndexRule.indexRule( RULE_ID, descriptor, PROVIDER_DESCRIPTOR );
 
-        assertTrue( indexRule.isNotValidatedIndexConstraint() );
+        assertTrue( indexRule.isIndexWithoutOwningConstraint() );
     }
 
     private void assertEqualityByDescriptor( SchemaIndexDescriptor descriptor )
