@@ -707,6 +707,12 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    void nodeAdvance( NodeRecord record, PageCursor pageCursor )
+    {
+        nodes.nextRecordByCursor( record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
         // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine

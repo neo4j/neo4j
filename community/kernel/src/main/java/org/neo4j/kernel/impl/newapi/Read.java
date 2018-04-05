@@ -587,6 +587,8 @@ abstract class Read implements TxStateHolder,
 
     abstract void node( NodeRecord record, long reference, PageCursor pageCursor );
 
+    abstract void nodeAdvance( NodeRecord record, PageCursor pageCursor );
+
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
     abstract void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor );

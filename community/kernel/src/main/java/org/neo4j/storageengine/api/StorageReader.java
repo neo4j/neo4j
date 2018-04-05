@@ -602,6 +602,22 @@ public interface StorageReader extends AutoCloseable
         void getRecordByCursor( long reference, RECORD record, RecordLoad mode, PageCursor cursor )
                 throws InvalidRecordException;
 
+        /**
+         * Reads a record from the store into {@code target}, see
+         * {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+         * <p>
+         * This method requires that the cursor page and offset point to the first byte of the record in target on calling.
+         * The provided page cursor will be used to get the record, and in doing this it will be redirected to the
+         * next page if the input record was the last on it's page.
+         *
+         * @param record the record to fill.
+         * @param mode loading behaviour, read more in {@link RecordStore#getRecord(long, AbstractBaseRecord, RecordLoad)}.
+         * @param cursor the PageCursor to use for record loading.
+         * @throws InvalidRecordException if record not in use and the {@code mode} allows for throwing.
+         */
+        void nextRecordByCursor( RECORD record, RecordLoad mode, PageCursor cursor )
+                throws InvalidRecordException;
+
         long getHighestPossibleIdInUse();
     }
 

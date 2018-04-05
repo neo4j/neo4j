@@ -1042,7 +1042,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException( e );
         }
-
     }
 
     void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
@@ -1055,22 +1054,56 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         int offset = offsetForId( id );
         if ( cursor.next( pageId ) )
         {
-            // There is a page in the store that covers this record, go read it
             cursor.setOffset( offset );
-            cursor.mark();
-            do
-            {
-                prepareForReading( cursor, record );
-                recordFormat.read( record, cursor, mode, recordSize );
-            }
-            while ( cursor.shouldRetry() );
-            checkForDecodingErrors( cursor, id, mode );
-            verifyAfterReading( record, mode );
+            readRecordFromPage( id, record, mode, cursor );
         }
         else
         {
             verifyAfterNotRead( record, mode );
         }
+    }
+
+    @Override
+    public void nextRecordByCursor( RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
+    {
+        assert cursor.getOffset() % recordSize == 0 : "Cursor offset is record start";
+        assert cursor.getCurrentPageId() >= -1 : "Pages are assumed to be positive or -1 if not initialized";
+
+        try
+        {
+            int offset = cursor.getOffset();
+            long id = record.getId() + 1;
+            record.setId( id );
+            long pageId = cursor.getCurrentPageId();
+            if ( offset >= storeFile.pageSize() || pageId < 0 )
+            {
+                if ( !cursor.next( pageId + 1 ) )
+                {
+                    verifyAfterNotRead( record, mode );
+                    return;
+                }
+                cursor.setOffset( 0 );
+            }
+            readRecordFromPage( id, record, mode, cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private void readRecordFromPage( long id, RECORD record, RecordLoad mode, PageCursor cursor )
+            throws IOException
+    {
+        cursor.mark();
+        do
+        {
+            prepareForReading( cursor, record );
+            recordFormat.read( record, cursor, mode, recordSize );
+        }
+        while ( cursor.shouldRetry() );
+        checkForDecodingErrors( cursor, id, mode );
+        verifyAfterReading( record, mode );
     }
 
     @Override
