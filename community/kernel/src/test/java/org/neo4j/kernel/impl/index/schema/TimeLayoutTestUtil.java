@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
@@ -50,6 +51,11 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( 18 ) ),
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( -18 ) ),
     };
+
+    public static TimeValue randomTime( Randoms random )
+    {
+        return TimeValue.time( random.nextLong( 0, MAX_NANOS_PER_DAY ), UTC);
+    }
 
     TimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -86,7 +92,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
         TimeValue candidate;
         do
         {
-            candidate = TimeValue.time( random.nextLong( 0, MAX_NANOS_PER_DAY ), UTC);
+            candidate = randomTime( random.randoms() );
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

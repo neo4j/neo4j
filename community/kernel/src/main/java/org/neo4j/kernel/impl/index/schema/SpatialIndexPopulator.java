@@ -70,7 +70,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
 
         // We must make sure to have at least one subindex:
         // to be able to persist fialure and to have the right state in the beginning
-        if( !this.iterator().hasNext() )
+        if ( !this.iterator().hasNext() )
         {
             uncheckedSelect( CoordinateReferenceSystem.WGS84 );
         }

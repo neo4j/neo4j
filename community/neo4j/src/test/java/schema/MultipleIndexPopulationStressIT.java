@@ -47,6 +47,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.DateLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DurationLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalDateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.SpatialLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -284,7 +291,7 @@ public class MultipleIndexPopulationStressIT
             }
             else
             {   // CHANGE
-                node.setProperty( key, randomPropertyValue( random.random() ) );
+                node.setProperty( key, randomPropertyValue( random ) );
             }
             tx.success();
         }
@@ -304,9 +311,29 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    private static int randomPropertyValue( Random random )
+    static Object randomPropertyValue( Randoms random )
     {
-        return random.nextInt( 100 );
+        switch ( random.nextInt( 9 ) )
+        {
+        case 0:
+            return random.nextInt( 100 );
+        case 1:
+            return random.string();
+        case 2:
+            return DateTimeLayoutTestUtil.randomDateTime( random );
+        case 3:
+            return TimeLayoutTestUtil.randomTime( random );
+        case 4:
+            return DateLayoutTestUtil.randomDate( random );
+        case 5:
+            return LocalDateTimeLayoutTestUtil.randomLocalDateTime( random );
+        case 6:
+            return LocalTimeLayoutTestUtil.randomLocalTime( random );
+        case 7:
+            return DurationLayoutTestUtil.randomDuration( random );
+        default:
+            return SpatialLayoutTestUtil.randomPoint( random );
+        }
     }
 
     private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
@@ -339,7 +366,7 @@ public class MultipleIndexPopulationStressIT
                 String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
                 for ( String key : keys )
                 {
-                    visitor.property( key, randomPropertyValue( state.random() ) );
+                    visitor.property( key, randomPropertyValue( state ) );
                 }
                 visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
             } ) );

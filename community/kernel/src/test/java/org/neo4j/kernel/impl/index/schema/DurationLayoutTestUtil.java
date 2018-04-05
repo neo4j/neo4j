@@ -28,6 +28,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Value;
@@ -46,6 +47,14 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
             DurationValue.duration( 0, 0, 0, Long.MIN_VALUE),
             DurationValue.duration( 0, 0, 0, Long.MAX_VALUE),
     };
+
+    public static DurationValue randomDuration( Randoms random )
+    {
+        return DurationValue.duration( random.nextLong( -999_999_999L * 12, 999_999_999L * 12),
+                random.nextLong( -999_999_999L * 12 * 28, 999_999_999L * 12 * 28),
+                random.nextLong(),
+                random.nextLong() );
+    }
 
     DurationLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -82,10 +91,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
         DurationValue candidate;
         do
         {
-            candidate = DurationValue.duration( random.nextLong( -999_999_999L * 12, 999_999_999L * 12),
-                    random.nextLong( -999_999_999L * 12 * 28, 999_999_999L * 12 * 28),
-                    random.nextLong(),
-                    random.nextLong() );
+            candidate = randomDuration( random.randoms() );
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

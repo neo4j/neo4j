@@ -29,6 +29,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
@@ -45,6 +46,11 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
             LocalDate.of( 0, 1, 3),
             LocalDate.of( -1, 12, 31)
     };
+
+    public static DateValue randomDate( Randoms random )
+    {
+        return DateValue.epochDate( random.nextLong( (-999_999_999L - 1970) * 365, (999_999_999L - 1970) * 365) );
+    }
 
     DateLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -81,7 +87,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
         DateValue candidate;
         do
         {
-            candidate = DateValue.epochDate( random.nextLong( (-999_999_999L - 1970) * 365, (999_999_999L - 1970) * 365) );
+            candidate = randomDate( random.randoms() );
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

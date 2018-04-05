@@ -29,6 +29,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.Value;
@@ -47,6 +48,11 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
             LocalTime.of(23,59,59,999_999_998 ),
             LocalTime.of(23,59,59,999_999_999 )
     };
+
+    public static LocalTimeValue randomLocalTime( Randoms random )
+    {
+        return LocalTimeValue.localTime(random.nextLong( 0, MAX_NANOS_PER_DAY ) );
+    }
 
     LocalTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -83,7 +89,7 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
         LocalTimeValue candidate;
         do
         {
-            candidate = LocalTimeValue.localTime(random.nextLong( 0, MAX_NANOS_PER_DAY ) );
+            candidate = randomLocalTime( random.randoms() );
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );

@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -49,6 +50,11 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
             ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( 18 ) ),
             ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
     };
+
+    public static DateTimeValue randomDateTime( Randoms random )
+    {
+        return DateTimeValue.datetime( random.nextLong( (-999_999_999L - 1970) * 365 * 24 * 60 * 60, (999_999_999L - 1970) * 365 * 24 * 60 * 60 ), 0, UTC );
+    }
 
     DateTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
     {
@@ -85,8 +91,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
         DateTimeValue candidate;
         do
         {
-            candidate = DateTimeValue.datetime( random.nextLong( (-999_999_999L - 1970) * 365 * 24 * 60 * 60, (999_999_999L - 1970) * 365 * 24 * 60 * 60 ), 0,
-                    UTC );
+            candidate = randomDateTime( random.randoms() );
         }
         while ( !uniqueCompareValues.add( candidate ) );
         uniqueValues.add( candidate );
