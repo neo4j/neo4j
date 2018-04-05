@@ -85,7 +85,6 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
-    private final Set<String> secrets = new HashSet<>();
     private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
@@ -393,14 +392,6 @@ public class Config implements DiagnosticsProvider, Configuration
                 .filter( BaseSetting.class::isInstance )
                 .map( BaseSetting.class::cast )
                 .forEach( setting -> settingsMap.put( setting.name(), setting ) );
-
-        // Find secret settings
-        configOptions.stream()
-                .map( ConfigOptions::settingGroup )
-                .filter( SettingGroup::secret )
-                .filter( BaseSetting.class::isInstance )
-                .map( BaseSetting.class::cast )
-                .forEach( setting -> secrets.add( setting.name() ) );
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
@@ -769,7 +760,14 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private String obsfucateIfSecret( String key, String value )
     {
-        return secrets.contains( key ) ? Secret.OBSFUCATED : value;
+        if ( settingsMap.containsKey( key ) && settingsMap.get( key ).secret() )
+        {
+            return Secret.OBSFUCATED;
+        }
+        else
+        {
+            return value;
+        }
     }
 
     /**
