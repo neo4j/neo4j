@@ -130,6 +130,18 @@ public class DelegatingPageCursor extends PageCursor
     }
 
     @Override
+    public void mark()
+    {
+        delegate.mark();
+    }
+
+    @Override
+    public void setOffsetToMark()
+    {
+        delegate.setOffsetToMark();
+    }
+
+    @Override
     public void close()
     {
         delegate.close();

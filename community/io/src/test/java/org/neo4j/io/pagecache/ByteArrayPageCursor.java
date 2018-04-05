@@ -204,6 +204,18 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
+    public void mark()
+    {
+        buffer.mark();
+    }
+
+    @Override
+    public void setOffsetToMark()
+    {
+        buffer.reset();
+    }
+
+    @Override
     public long getCurrentPageId()
     {
         throw new UnsupportedOperationException();
