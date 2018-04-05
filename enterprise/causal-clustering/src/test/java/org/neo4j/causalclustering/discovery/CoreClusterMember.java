@@ -233,6 +233,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         }
     }
 
+    @Override
     public File homeDir()
     {
         return neo4jHome;

@@ -21,12 +21,7 @@ package org.neo4j.causalclustering.core;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
@@ -34,13 +29,9 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
-import org.neo4j.graphdb.config.BaseSetting;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.collection.CollectorsUtil;
-import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -64,11 +55,11 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.prefixSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
@@ -449,37 +440,6 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Time out for protocol negotiation handshake" )
     public static final Setting<Duration> handshake_timeout =
             setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
-
-    static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
-                                              final String defaultValue )
-    {
-        BiFunction<String, Function<String, String>, String> valueLookup = ( n, settings ) -> settings.apply( n );
-        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
-                valueLookup );
-
-        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
-        {
-            @Override
-            public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )
-                    throws InvalidSettingException
-            {
-                // Validate setting, if present or default value otherwise
-                try
-                {
-                    apply( rawConfig::get );
-                    // only return if it was present though
-
-                    return rawConfig.entrySet().stream()
-                            .filter( entry -> entry.getKey().startsWith( name() ) )
-                            .collect( CollectorsUtil.entriesToMap() );
-                }
-                catch ( RuntimeException e )
-                {
-                    throw new InvalidSettingException( e.getMessage(), e );
-                }
-            }
-        };
-    }
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +

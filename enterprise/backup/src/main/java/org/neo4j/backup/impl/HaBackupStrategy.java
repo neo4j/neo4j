@@ -27,24 +27,29 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
 {
     private final BackupProtocolService backupProtocolService;
     private final AddressResolver addressResolver;
     private final long timeout;
+    private final Log log;
 
-    HaBackupStrategy( BackupProtocolService backupProtocolService, AddressResolver addressResolver, long timeout )
+    HaBackupStrategy( BackupProtocolService backupProtocolService, AddressResolver addressResolver, LogProvider logProvider, long timeout )
     {
         this.backupProtocolService = backupProtocolService;
         this.addressResolver = addressResolver;
         this.timeout = timeout;
+        this.log = logProvider.getLog( HaBackupStrategy.class );
     }
 
     @Override
     public Fallible<BackupStageOutcome> performIncrementalBackup( Path backupDestination, Config config, OptionalHostnamePort fromAddress )
     {
         HostnamePort resolvedAddress = addressResolver.resolveCorrectHAAddress( config, fromAddress );
+        log.info( "Resolved address for backup protocol is " + resolvedAddress );
         try
         {
             String host = resolvedAddress.getHost();
@@ -68,6 +73,7 @@ class HaBackupStrategy extends LifecycleAdapter implements BackupStrategy
                                                            OptionalHostnamePort userProvidedAddress )
     {
         HostnamePort fromAddress = addressResolver.resolveCorrectHAAddress( config, userProvidedAddress );
+        log.info( "Resolved address for backup protocol is " + fromAddress );
         ConsistencyCheck consistencyCheck = ConsistencyCheck.NONE;
         boolean forensics = false;
         try

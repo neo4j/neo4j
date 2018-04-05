@@ -77,7 +77,7 @@ class ReplaceRandomMember extends RepeatOnRandomMember
                     .withConsistencyCheck( false )
                     .withHost( address.getHostname() )
                     .withPort( address.getPort() )
-                    .backup( backupDir );
+                    .backup( baseBackupDir, backupName );
 
             log.info( "Created backup: " + backupName + " from: " + oldMember );
         }

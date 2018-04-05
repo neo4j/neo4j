@@ -72,8 +72,8 @@ class BackupStrategyCoordinatorFactory
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
         Config config = onlineBackupContext.getConfig();
 
-        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver );
-        BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, timeout );
+        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, logProvider );
+        BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, logProvider, timeout );
 
         BackupStrategyWrapper ccStrategyWrapper = wrap( ccStrategy, copyService, pageCache, config, recoveryService );
         BackupStrategyWrapper haStrategyWrapper = wrap( haStrategy, copyService, pageCache, config, recoveryService );

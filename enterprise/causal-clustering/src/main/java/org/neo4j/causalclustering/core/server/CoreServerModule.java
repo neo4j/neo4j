@@ -124,7 +124,7 @@ public class CoreServerModule
             CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
             LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier, File clusterStateDirectory,
             NettyPipelineBuilderFactory clientPipelineBuilderFactory, NettyPipelineBuilderFactory serverPipelineBuilderFactory,
-            InstalledProtocolHandler installedProtocolsHandler )
+            NettyPipelineBuilderFactory backupServerPipelineBuilderFactory, InstalledProtocolHandler installedProtocolsHandler )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
@@ -214,8 +214,15 @@ public class CoreServerModule
                 .serverName( "catchup-server" )
                 .build();
 
-        TransactionBackupServiceProvider transactionBackupServiceProvider = new TransactionBackupServiceProvider( logProvider, userLogProvider,
-                handshakeServerInitializer, installedProtocolsHandler );
+        TransactionBackupServiceProvider transactionBackupServiceProvider =
+                new TransactionBackupServiceProvider( logProvider,
+                        userLogProvider,
+                        supportedCatchupProtocols,
+                        supportedModifierProtocols,
+                        backupServerPipelineBuilderFactory,
+                        catchupServerHandler,
+                        installedProtocolsHandler );
+
         backupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );

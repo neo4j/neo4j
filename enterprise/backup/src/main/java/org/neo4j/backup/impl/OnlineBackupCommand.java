@@ -59,7 +59,7 @@ class OnlineBackupCommand implements AdminCommand
                 backupSupportingClassesFactory.createSupportingClasses( onlineBackupContext.getConfig() );
 
         // Make sure destination exists
-        checkDestination( onlineBackupContext.getRequiredArguments().getFolder() );
+        checkDestination( onlineBackupContext.getRequiredArguments().getDirectory() );
         checkDestination( onlineBackupContext.getRequiredArguments().getReportDir() );
 
         BackupStrategyCoordinator backupStrategyCoordinator = backupStrategyCoordinatorFactory.backupStrategyCoordinator(

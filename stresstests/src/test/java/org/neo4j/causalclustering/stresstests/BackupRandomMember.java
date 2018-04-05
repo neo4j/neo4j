@@ -54,7 +54,6 @@ class BackupRandomMember extends RepeatOnRandomMember
             AdvertisedSocketAddress address = member.config().get( CausalClusteringSettings.transaction_advertised_address );
 
             String backupName = "backup-" + backupNumber++;
-            File targetDir = new File( baseBackupDir, backupName );
 
             new OnlineBackupCommandBuilder()
                     .withOutput( NULL_OUTPUT_STREAM )
@@ -62,7 +61,7 @@ class BackupRandomMember extends RepeatOnRandomMember
                     .withConsistencyCheck( true )
                     .withHost( address.getHostname() )
                     .withPort( address.getPort() )
-                    .backup( targetDir );
+                    .backup( baseBackupDir, backupName );
 
             log.info( String.format( "Created backup %s from %s", backupName, member ) );
             successfulBackups++;
