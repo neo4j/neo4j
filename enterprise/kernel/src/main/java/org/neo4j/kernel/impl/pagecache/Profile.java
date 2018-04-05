@@ -135,7 +135,7 @@ final class Profile implements Comparable<Profile>
     {
         String name = file.getName();
         File dir = new File( file.getParentFile(), PROFILE_DIR );
-        return new File( dir, name + "." + Long.toHexString( count ) + SUFFIX_CACHEPROF );
+        return new File( dir, name + "." + Long.toString( count ) + SUFFIX_CACHEPROF );
     }
 
     static Predicate<Profile> relevantTo( PagedFile pagedFile )
@@ -167,7 +167,7 @@ final class Profile implements Comparable<Profile>
         String countStr = name.substring( secondLastDot + 1, lastDot );
         try
         {
-            long sequenceId = Long.parseLong( countStr, 16 );
+            long sequenceId = Long.parseLong( countStr, 10 );
             String mappedFileName = name.substring( 0, secondLastDot );
             return Stream.of( new Profile( profile, new File( dir, mappedFileName ), sequenceId ) );
         }
