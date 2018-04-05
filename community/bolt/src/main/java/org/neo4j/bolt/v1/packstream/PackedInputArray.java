@@ -81,10 +81,4 @@ public class PackedInputArray implements PackInput
         data.reset();
         return value;
     }
-
-    @Override
-    public void close() throws IOException
-    {
-        data.close();
-    }
 }

@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.messaging.KnownType;
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
@@ -523,15 +523,15 @@ public class Neo4jPackV1 implements Neo4jPack
 
         protected AnyValue unpackStruct( char signature, long size ) throws IOException
         {
-            KnownType knownType = KnownType.valueOf( signature );
-            if ( knownType == null )
+            StructType structType = StructType.valueOf( signature );
+            if ( structType == null )
             {
                 throw new BoltIOException( Status.Request.InvalidFormat,
                         String.format( "Struct types of 0x%s are not recognized.", Integer.toHexString( signature ) ) );
             }
 
             throw new BoltIOException( Status.Statement.TypeError,
-                    String.format( "%s values cannot be unpacked with this version of bolt.", knownType.description() ) );
+                    String.format( "%s values cannot be unpacked with this version of bolt.", structType.description() ) );
         }
 
         @Override

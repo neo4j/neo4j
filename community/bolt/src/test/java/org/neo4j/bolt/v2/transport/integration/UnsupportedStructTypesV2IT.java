@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.bolt.messaging.KnownType;
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessage;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
@@ -57,7 +57,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 
 @RunWith( Parameterized.class )
-public class UnsupportedKnownTypesV2IT
+public class UnsupportedStructTypesV2IT
 {
     private static final String USER_AGENT = "TestClient/2.0";
 
@@ -99,7 +99,7 @@ public class UnsupportedKnownTypesV2IT
     {
         testFailureWithUnpackableValue( packer ->
         {
-            packer.packStructHeader( 3, KnownType.POINT_2D.signature() );
+            packer.packStructHeader( 3, StructType.POINT_2D.signature() );
             packer.pack( Values.of( 5 ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
@@ -111,7 +111,7 @@ public class UnsupportedKnownTypesV2IT
     {
         testFailureWithUnpackableValue( packer ->
         {
-            packer.packStructHeader( 4, KnownType.POINT_3D.signature() );
+            packer.packStructHeader( 4, StructType.POINT_3D.signature() );
             packer.pack( Values.of( 1200 ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
@@ -124,7 +124,7 @@ public class UnsupportedKnownTypesV2IT
     {
         testDisconnectWithUnpackableValue( packer ->
         {
-            packer.packStructHeader( 3, KnownType.POINT_3D.signature() );
+            packer.packStructHeader( 3, StructType.POINT_3D.signature() );
             packer.pack( Values.of( CoordinateReferenceSystem.Cartesian_3D.getCode() ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
@@ -136,7 +136,7 @@ public class UnsupportedKnownTypesV2IT
     {
         testFailureWithUnpackableValue( packer ->
         {
-            packer.packStructHeader( 4, KnownType.POINT_3D.signature() );
+            packer.packStructHeader( 4, StructType.POINT_3D.signature() );
             packer.pack( Values.of( CoordinateReferenceSystem.Cartesian.getCode() ) );
             packer.pack( Values.of( 3.15 ) );
             packer.pack( Values.of( 4.012 ) );
@@ -149,7 +149,7 @@ public class UnsupportedKnownTypesV2IT
     {
         testFailureWithUnpackableValue( packer ->
         {
-            packer.packStructHeader( 3, KnownType.DATE_TIME_WITH_ZONE_NAME.signature() );
+            packer.packStructHeader( 3, StructType.DATE_TIME_WITH_ZONE_NAME.signature() );
             packer.pack( Values.of( 0 ) );
             packer.pack( Values.of( 0 ) );
             packer.pack( Values.of( "Europe/Marmaris" ) );

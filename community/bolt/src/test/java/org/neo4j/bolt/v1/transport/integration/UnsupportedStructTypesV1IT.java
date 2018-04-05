@@ -63,7 +63,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.values.storable.Values.pointValue;
 
 @RunWith( Parameterized.class )
-public class UnsupportedKnownTypesV1IT
+public class UnsupportedStructTypesV1IT
 {
     private static final String USER_AGENT = "TestClient/1.0";
 

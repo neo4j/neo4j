@@ -83,12 +83,6 @@ public class ByteBufInput implements PackInput
         return buf.getByte( buf.readerIndex() );
     }
 
-    @Override
-    public void close() throws IOException
-    {
-        stop();
-    }
-
     private void assertNotStarted()
     {
         if ( buf != null )

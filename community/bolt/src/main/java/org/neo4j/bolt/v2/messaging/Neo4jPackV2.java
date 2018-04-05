@@ -30,7 +30,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 
-import org.neo4j.bolt.messaging.KnownType;
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
@@ -232,31 +232,31 @@ public class Neo4jPackV2 extends Neo4jPackV1
                 switch ( signature )
                 {
                 case POINT_2D:
-                    ensureCorrectStructSize( KnownType.POINT_2D, POINT_2D_SIZE, size );
+                    ensureCorrectStructSize( StructType.POINT_2D, POINT_2D_SIZE, size );
                     return unpackPoint2D();
                 case POINT_3D:
-                    ensureCorrectStructSize( KnownType.POINT_3D, POINT_3D_SIZE, size );
+                    ensureCorrectStructSize( StructType.POINT_3D, POINT_3D_SIZE, size );
                     return unpackPoint3D();
                 case DURATION:
-                    ensureCorrectStructSize( KnownType.DURATION, DURATION_SIZE, size );
+                    ensureCorrectStructSize( StructType.DURATION, DURATION_SIZE, size );
                     return unpackDuration();
                 case DATE:
-                    ensureCorrectStructSize( KnownType.DATE, DATE_SIZE, size );
+                    ensureCorrectStructSize( StructType.DATE, DATE_SIZE, size );
                     return unpackDate();
                 case LOCAL_TIME:
-                    ensureCorrectStructSize( KnownType.LOCAL_TIME, LOCAL_TIME_SIZE, size );
+                    ensureCorrectStructSize( StructType.LOCAL_TIME, LOCAL_TIME_SIZE, size );
                     return unpackLocalTime();
                 case TIME:
-                    ensureCorrectStructSize( KnownType.TIME, TIME_SIZE, size );
+                    ensureCorrectStructSize( StructType.TIME, TIME_SIZE, size );
                     return unpackTime();
                 case LOCAL_DATE_TIME:
-                    ensureCorrectStructSize( KnownType.LOCAL_DATE_TIME, LOCAL_DATE_TIME_SIZE, size );
+                    ensureCorrectStructSize( StructType.LOCAL_DATE_TIME, LOCAL_DATE_TIME_SIZE, size );
                     return unpackLocalDateTime();
                 case DATE_TIME_WITH_ZONE_OFFSET:
-                    ensureCorrectStructSize( KnownType.DATE_TIME_WITH_ZONE_OFFSET, DATE_TIME_WITH_ZONE_OFFSET_SIZE, size );
+                    ensureCorrectStructSize( StructType.DATE_TIME_WITH_ZONE_OFFSET, DATE_TIME_WITH_ZONE_OFFSET_SIZE, size );
                     return unpackDateTimeWithZoneOffset();
                 case DATE_TIME_WITH_ZONE_NAME:
-                    ensureCorrectStructSize( KnownType.DATE_TIME_WITH_ZONE_NAME, DATE_TIME_WITH_ZONE_NAME_SIZE, size );
+                    ensureCorrectStructSize( StructType.DATE_TIME_WITH_ZONE_NAME, DATE_TIME_WITH_ZONE_NAME_SIZE, size );
                     return unpackDateTimeWithZoneName();
                 default:
                     return super.unpackStruct( signature, size );
@@ -268,7 +268,7 @@ public class Neo4jPackV2 extends Neo4jPackV1
             }
             catch ( Throwable ex )
             {
-                KnownType type = KnownType.valueOf( signature );
+                StructType type = StructType.valueOf( signature );
                 if ( type != null )
                 {
                     throw new BoltIOException( Status.Statement.TypeError,

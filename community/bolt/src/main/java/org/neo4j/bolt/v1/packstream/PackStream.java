@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.neo4j.bolt.messaging.KnownType;
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.packstream.utf8.UTF8Encoder;
 
 /**
@@ -766,13 +766,13 @@ public class PackStream
             return type( markerByte );
         }
 
-        public static void ensureCorrectStructSize( KnownType knownType, int expected, long actual ) throws IOException
+        public static void ensureCorrectStructSize( StructType structType, int expected, long actual ) throws IOException
         {
             if ( expected != actual )
             {
                 throw new PackStreamException(
                         String.format( "Invalid message received, serialized %s structures should have %d fields, " + "received %s structure has %d fields.",
-                                knownType.description(), expected, knownType.description(), actual ) );
+                                structType.description(), expected, structType.description(), actual ) );
             }
         }
     }

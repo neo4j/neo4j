@@ -30,11 +30,6 @@ public class MessageAccumulator extends ByteToMessageDecoder
 {
     private boolean readMessageBoundary;
 
-    public MessageAccumulator()
-    {
-
-    }
-
     @Override
     public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
     {

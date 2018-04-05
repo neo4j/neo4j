@@ -45,7 +45,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 
-public class UnsupportedKnownTypesV1V2IT extends AbstractBoltTransportsTest
+public class UnsupportedStructTypesV1V2IT extends AbstractBoltTransportsTest
 {
     private static final String USER_AGENT = "TestClient/1.0";
 

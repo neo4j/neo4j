@@ -27,7 +27,7 @@ import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 
 import static java.util.Collections.unmodifiableMap;
 
-public enum KnownType
+public enum StructType
 {
     NODE( Neo4jPackV1.NODE, "Node" ),
     RELATIONSHIP( Neo4jPackV1.RELATIONSHIP, "Relationship" ),
@@ -46,7 +46,7 @@ public enum KnownType
     private final byte signature;
     private final String description;
 
-    KnownType( byte signature, String description )
+    StructType( byte signature, String description )
     {
         this.signature = signature;
         this.description = description;
@@ -62,23 +62,23 @@ public enum KnownType
         return description;
     }
 
-    private static Map<Byte, KnownType> knownTypesBySignature = knownTypesBySignature();
+    private static Map<Byte,StructType> knownTypesBySignature = knownTypesBySignature();
 
-    public static KnownType valueOf( byte signature )
+    public static StructType valueOf( byte signature )
     {
         return knownTypesBySignature.get( signature );
     }
 
-    public static KnownType valueOf( char signature )
+    public static StructType valueOf( char signature )
     {
         return knownTypesBySignature.get( (byte)signature );
     }
 
-    private static Map<Byte,KnownType> knownTypesBySignature()
+    private static Map<Byte,StructType> knownTypesBySignature()
     {
-        KnownType[] types = KnownType.values();
-        Map<Byte,KnownType> result = new HashMap<>( types.length * 2 );
-        for ( KnownType type : types )
+        StructType[] types = StructType.values();
+        Map<Byte,StructType> result = new HashMap<>( types.length * 2 );
+        for ( StructType type : types )
         {
             result.put( type.signature, type );
         }

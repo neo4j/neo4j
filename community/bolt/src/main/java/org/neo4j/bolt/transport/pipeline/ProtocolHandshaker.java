@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport.pipeline;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -107,7 +106,7 @@ public class ProtocolHandshaker extends ChannelInboundHandlerAdapter
                     }
                     else
                     {
-                        ctx.writeAndFlush( Unpooled.wrappedBuffer( new byte[]{0, 0, 0, 0} ) ).addListener( ChannelFutureListener.CLOSE );
+                        ctx.writeAndFlush( ctx.alloc().buffer().writeBytes( new byte[]{0, 0, 0, 0} ) ).addListener( ChannelFutureListener.CLOSE );
                     }
                 }
                 else
