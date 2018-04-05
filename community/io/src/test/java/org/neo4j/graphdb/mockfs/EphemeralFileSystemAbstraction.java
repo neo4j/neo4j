@@ -307,8 +307,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                                              + "' (The system cannot find the path specified)" );
         }
 
-        EphemeralFileData data = new EphemeralFileData( clock );
-        Optional.ofNullable( files.put( canonicalFile( fileName ), data ) ).ifPresent( EphemeralFileData::free );
+        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( clock ) );
         return new StoreFileChannel(
                 new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
