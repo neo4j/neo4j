@@ -85,7 +85,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         {
             if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
             {
-                throw new TemporalParseException( "Wrong header information type: " + fieldsFromHeader );
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
             }
             // Override defaultZone
             defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );

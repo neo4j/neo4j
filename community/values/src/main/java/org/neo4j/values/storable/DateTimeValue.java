@@ -134,7 +134,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         {
             if ( !(fieldsFromHeader instanceof TimeCSVHeaderInformation) )
             {
-                throw new TemporalParseException( "Wrong header information type: " + fieldsFromHeader );
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
             }
             // Override defaultZone
             defaultZone = ((TimeCSVHeaderInformation) fieldsFromHeader).zoneSupplier( defaultZone );

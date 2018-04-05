@@ -293,7 +293,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             // Merge InputFields: Data fields override header fields
             if ( !(fieldsFromHeader instanceof PointCSVHeaderInformation) )
             {
-                throw new InvalidValuesArgumentException( "Wrong header information type: " + fieldsFromHeader );
+                throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
             }
             fieldsFromData.mergeWithHeader( (PointCSVHeaderInformation) fieldsFromHeader );
         }
