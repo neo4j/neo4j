@@ -37,7 +37,7 @@ case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeG
   }
 
   private def anyValue[E](generator: MethodStructure[E], v: CodeGenExpression)(implicit context: CodeGenContext) = {
-    if (v.nullable) {
+    if (v.needsJavaNullCheck) {
       val variable = context.namer.newVarName()
       generator.localVariable(variable, v.generateExpression(generator), v.codeGenType)
       generator.ternaryOperator(generator.isNull(generator.loadVariable(variable), v.codeGenType),

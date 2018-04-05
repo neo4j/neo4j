@@ -133,6 +133,7 @@ trait MethodStructure[E] {
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(expr: E, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
+  def ifNullThenNoValue(expr: E): E // NOTE: Only for non-primitives
   def box(expression:E, codeGenType: CodeGenType): E
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E

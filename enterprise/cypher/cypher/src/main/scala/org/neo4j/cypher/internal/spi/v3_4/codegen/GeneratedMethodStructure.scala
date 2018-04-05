@@ -221,7 +221,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
           Expression.notEqual(test, nullValue(codeGenType))
 
         case CypherCodeGenType(_, ReferenceType) =>
-          Expression.notNull(test)
+          Expression.and(Expression.notNull(test), Expression.notEqual(test, noValue()))
 
         case _ =>
           throw new IllegalArgumentException(s"CodeGenType $codeGenType does not have a null value")
@@ -529,6 +529,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def notNull(expr: Expression, codeGenType: CodeGenType) = not(isNull(expr, codeGenType))
 
   override def notNull(varName: String, codeGenType: CodeGenType) = notNull(generator.load(varName), codeGenType)
+
+  override def ifNullThenNoValue(expr: Expression) = {
+    ternary(Expression.isNull(expr), noValue(), expr)
+  }
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CypherCodeGenType(symbols.CTNode, LongType) =>
@@ -1482,7 +1486,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType), propertyCursor, body.load(propIdVar))
       )
     } { fail =>
-      fail.assign(local, constant(null))
+      fail.assign(local, noValue())
     }
   }
 
@@ -1498,7 +1502,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType),  propertyCursor, constant(propId))
       )
     }{ fail =>
-      fail.assign(local, constant(null))
+      fail.assign(local, noValue())
     }
   }
 
@@ -1533,7 +1537,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType), propertyCursor, body.load(propIdVar))
       )
     } { fail =>
-      fail.assign(local, constant(null))
+      fail.assign(local, noValue())
     }
   }
 
@@ -1549,7 +1553,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType),  propertyCursor, constant(propId))
       )
     }{ fail =>
-      fail.assign(local, constant(null))
+      fail.assign(local, noValue())
     }
   }
 
