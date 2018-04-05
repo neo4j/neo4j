@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.transport;
+package org.neo4j.bolt.transport.pipeline;
 
-import org.neo4j.bolt.BoltChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-/**
- * Represents a component that instantiates Bolt protocol handlers.
- *
- * @see BoltMessagingProtocolHandler
- */
-@FunctionalInterface
-public interface BoltProtocolHandlerFactory
+public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    /**
-     * Instantiate a handler for Bolt protocol with the specified version. Return {@code null} when handler for the
-     * given version can't be instantiated.
-     *
-     * @param protocolVersion the version as negishiated by the initial handshake.
-     * @param channel the channel representing network connection from the client.
-     * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
-     */
-    BoltMessagingProtocolHandler create( long protocolVersion, BoltChannel channel );
+    private static final int MAX_FRAME_LENGTH = 0xFFFF;
+    private static final int LENGTH_FIELD_OFFSET = 0;
+    private static final int LENGTH_FIELD_SIZE = 2;
+    private static final int LENGTH_ADJUSTMENT = 0;
+    private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_SIZE;
+
+    public ChunkDecoder()
+    {
+        super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_SIZE, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
+    }
 }

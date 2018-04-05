@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
@@ -72,15 +71,7 @@ public class BoltRequestMessageReader
                 case RUN:
                     String statement = unpacker.unpackString();
                     MapValue params = unpacker.unpackMap();
-                    Neo4jError error = unpacker.consumeError();
-                    if ( error != null )
-                    {
-                        handler.onExternalError( error );
-                    }
-                    else
-                    {
-                        handler.onRun( statement, params );
-                    }
+                    handler.onRun( statement, params );
                     break;
                 case DISCARD_ALL:
                     handler.onDiscardAll();
@@ -89,20 +80,20 @@ public class BoltRequestMessageReader
                     handler.onPullAll();
                     break;
                 default:
-                    throw new BoltIOException( Status.Request.Invalid,
-                            "Message 0x" + Integer.toHexString( signature ) + " is not supported." );
+                    throw new BoltIOException( Status.Request.InvalidFormat,
+                            String.format( "Message 0x%s is not supported.", Integer.toHexString( signature ) ) );
                 }
             }
             catch ( IllegalArgumentException e )
             {
-                throw new BoltIOException( Status.Request.Invalid,
-                        "0x" + Integer.toHexString( signature ) + " is not a valid message signature." );
+                throw new BoltIOException( Status.Request.InvalidFormat,
+                        String.format( "Message 0x%s is not a valid message signature.", Integer.toHexString( signature ) ) );
             }
         }
         catch ( PackStream.PackStreamException e )
         {
-            throw new BoltIOException( Status.Request.InvalidFormat, "Unable to read message type. " +
-                                                                     "Error was: " + e.getMessage(), e );
+            throw new BoltIOException( Status.Request.InvalidFormat,
+                    String.format( "Unable to read message type. Error was: %s.", e.getMessage() ), e );
         }
     }
 

@@ -46,20 +46,21 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
     private final MessageProcessingHandler resultHandler;
     private final MessageProcessingHandler defaultHandler;
 
+    private BoltResponseMessageHandler<IOException> output;
     private BoltConnection connection;
 
     public BoltMessageRouter( Log internalLog, BoltMessageLogger messageLogger,
-                              BoltConnection connection, BoltResponseMessageHandler<IOException> output,
-                              Runnable onEachCompletedRequest )
+                              BoltConnection connection, BoltResponseMessageHandler<IOException> output )
     {
         this.messageLogger = messageLogger;
 
-        this.initHandler = new InitHandler( output, onEachCompletedRequest, connection, internalLog );
-        this.runHandler = new RunHandler( output, onEachCompletedRequest, connection, internalLog );
-        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, connection, internalLog );
-        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, connection, internalLog );
+        this.initHandler = new InitHandler( output, connection, internalLog );
+        this.runHandler = new RunHandler( output, connection, internalLog );
+        this.resultHandler = new ResultHandler( output, connection, internalLog );
+        this.defaultHandler = new MessageProcessingHandler( output, connection, internalLog );
 
         this.connection = connection;
+        this.output = output;
     }
 
     @Override
@@ -115,28 +116,28 @@ public class BoltMessageRouter implements BoltRequestMessageHandler
 
     private static class InitHandler extends MessageProcessingHandler
     {
-        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection, Log log )
+        InitHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, connection, log );
+            super( handler, connection, log );
         }
 
     }
 
     private static class RunHandler extends MessageProcessingHandler
     {
-        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection, Log log )
+        RunHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, connection, log );
+            super( handler, connection, log );
         }
 
     }
 
     private static class ResultHandler extends MessageProcessingHandler
     {
-        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection,
+        ResultHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection,
                 Log log )
         {
-            super( handler, onCompleted, connection, log );
+            super( handler, connection, log );
         }
 
         @Override

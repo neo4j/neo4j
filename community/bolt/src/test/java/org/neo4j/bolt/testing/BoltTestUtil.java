@@ -17,35 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.messaging;
+package org.neo4j.bolt.testing;
 
-import java.io.IOException;
+import io.netty.buffer.ByteBuf;
 
-import org.neo4j.kernel.api.exceptions.Status;
+import static org.junit.Assert.assertEquals;
 
-public class BoltIOException extends IOException implements Status.HasStatus
+public class BoltTestUtil
 {
-    private final Status status;
-
-    public BoltIOException( Status status, String message, Throwable cause )
+    public static void assertByteBufEquals( ByteBuf expected, ByteBuf actual )
     {
-        super( message, cause );
-        this.status = status;
+        try
+        {
+            assertEquals( expected, actual );
+        }
+        finally
+        {
+            releaseIfPossible( expected );
+            releaseIfPossible( actual );
+        }
     }
 
-    public BoltIOException( Status status, String message )
+    private static void releaseIfPossible( ByteBuf buf )
     {
-        this( status, message, null );
-    }
-
-    @Override
-    public Status status()
-    {
-        return status;
-    }
-
-    public boolean causesFailureMessage()
-    {
-        return status != Status.Request.InvalidFormat;
+        if ( buf.refCnt() > 0 )
+        {
+            buf.release();
+        }
     }
 }

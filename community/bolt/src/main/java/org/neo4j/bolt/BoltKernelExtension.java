@@ -36,8 +36,8 @@ import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
-import org.neo4j.bolt.transport.DefaultBoltProtocolHandlerFactory;
+import org.neo4j.bolt.transport.BoltProtocolPipelineInstallerFactory;
+import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstallerFactory;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
@@ -147,15 +147,17 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
+
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
         BoltSchedulerProvider boltSchedulerProvider =
                 life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
-        BoltConnectionFactory boltConnectionFactory = createConnectionFactory( boltFactory, boltSchedulerProvider, dependencies, logService, clock );
+        BoltConnectionFactory boltConnectionFactory =
+                createConnectionFactory( boltFactory, boltSchedulerProvider, throttleGroup, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
-        BoltProtocolHandlerFactory handlerFactory = createHandlerFactory( boltConnectionFactory, throttleGroup, logService );
+        BoltProtocolPipelineInstallerFactory handlerFactory = createHandlerFactory( boltConnectionFactory, throttleGroup, logService );
 
         if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
@@ -170,14 +172,15 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
+            TransportThrottleGroup throttleGroup,
             Dependencies dependencies, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, logService, clock,
                 new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ), dependencies.monitors() );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,
-            BoltMessageLogging boltLogging, TransportThrottleGroup throttleGroup, BoltProtocolHandlerFactory handlerFactory )
+            BoltMessageLogging boltLogging, TransportThrottleGroup throttleGroup, BoltProtocolPipelineInstallerFactory handlerFactory )
     {
         Map<BoltConnector,ProtocolInitializer> connectors =
                 config.enabledBoltConnectors().stream().collect( Collectors.toMap( Function.identity(), connConfig ->
@@ -244,9 +247,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return new BasicAuthentication( authManager, userManagerSupplier );
     }
 
-    private static BoltProtocolHandlerFactory createHandlerFactory( BoltConnectionFactory connectionFactory,
+    private static BoltProtocolPipelineInstallerFactory createHandlerFactory( BoltConnectionFactory connectionFactory,
             TransportThrottleGroup throttleGroup, LogService logService )
     {
-        return new DefaultBoltProtocolHandlerFactory( connectionFactory, throttleGroup, logService );
+        return new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, throttleGroup, logService );
     }
 }

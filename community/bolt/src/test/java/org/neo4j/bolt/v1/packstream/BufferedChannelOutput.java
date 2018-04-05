@@ -149,6 +149,17 @@ public class BufferedChannelOutput implements PackOutput
         return this;
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        buffer.clear();
+
+        if ( channel != null )
+        {
+            channel.close();
+        }
+    }
+
     private void ensure( int size ) throws IOException
     {
         if ( buffer.remaining() < size )

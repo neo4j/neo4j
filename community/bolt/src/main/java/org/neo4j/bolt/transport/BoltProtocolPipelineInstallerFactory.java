@@ -19,16 +19,23 @@
  */
 package org.neo4j.bolt.transport;
 
-public enum HandshakeOutcome
+import org.neo4j.bolt.BoltChannel;
+
+/**
+ * Represents a component that instantiates Bolt protocol handlers.
+ *
+ * @see BoltProtocolPipelineInstaller
+ */
+@FunctionalInterface
+public interface BoltProtocolPipelineInstallerFactory
 {
-    /** Yay! */
-    PROTOCOL_CHOSEN,
-    /** Pending more bytes before handshake can complete */
-    PARTIAL_HANDSHAKE,
-    /** the client sent an invalid handshake */
-    INVALID_HANDSHAKE,
-    /** None of the clients suggested protocol versions are available :( */
-    NO_APPLICABLE_PROTOCOL,
-    /** Encryption is required but the connection is not encrypted */
-    INSECURE_HANDSHAKE
+    /**
+     * Instantiate a handler for Bolt protocol with the specified version. Return {@code null} when handler for the
+     * given version can't be instantiated.
+     *
+     * @param protocolVersion the version as negotiated by the initial handshake.
+     * @param channel the channel representing network connection from the client.
+     * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
+     */
+    BoltProtocolPipelineInstaller create( long protocolVersion, BoltChannel channel );
 }

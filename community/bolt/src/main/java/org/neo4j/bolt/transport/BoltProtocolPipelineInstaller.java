@@ -19,23 +19,16 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-
-import java.io.IOException;
-
 /**
- * Implementations define a versioned implementation of the Bolt Protocol. Incoming messages from clients are
- * forwarded to the {@link #handle(io.netty.channel.ChannelHandlerContext, io.netty.buffer.ByteBuf)} method.
+ * Implementations install related channel handlers into the given channel pipeline that facilitates the
+ * protocol to play.
  */
-public interface BoltMessagingProtocolHandler
+public interface BoltProtocolPipelineInstaller
 {
-    /** Handle an incoming message, and reply if desired via the {@code ctx} argument */
-    void handle( ChannelHandlerContext ctx, ByteBuf data );
+
+    void install();
 
     /** Used for version negotiation */
-    int version();
+    long version();
 
-    /** Close this instance of the protocol, disposing of any held resources */
-    void close();
 }

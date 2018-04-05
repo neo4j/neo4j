@@ -108,6 +108,12 @@ public class PackedOutputArray implements PackOutput
         return this;
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        data.close();
+    }
+
     public byte[] bytes()
     {
         return raw.toByteArray();

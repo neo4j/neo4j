@@ -19,8 +19,7 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
@@ -33,13 +32,12 @@ import org.neo4j.kernel.impl.logging.NullLogService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class DefaultBoltProtocolHandlerFactoryTest
+public class DefaultBoltProtocolPipelineInstallerFactoryTest
 {
     private static final String CONNECTOR = "default";
 
@@ -60,27 +58,31 @@ public class DefaultBoltProtocolHandlerFactoryTest
     {
         int protocolVersion = 42;
         BoltChannel channel = mock( BoltChannel.class );
-        BoltProtocolHandlerFactory factory = new DefaultBoltProtocolHandlerFactory( mock( BoltConnectionFactory.class ),
+        BoltProtocolPipelineInstallerFactory factory = new DefaultBoltProtocolPipelineInstallerFactory( mock( BoltConnectionFactory.class ),
                 TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
 
-        BoltMessagingProtocolHandler handler = factory.create( protocolVersion, channel );
+        BoltProtocolPipelineInstaller handler = factory.create( protocolVersion, channel );
 
         // handler is not created
         assertNull( handler );
     }
 
-    private static void testHandlerCreation( int protocolVersion )
+    private static void testHandlerCreation( long protocolVersion )
     {
-        BoltChannel boltChannel = BoltChannel.open( CONNECTOR, newChannelCtxMock(), NullBoltMessageLogger.getInstance() );
+        EmbeddedChannel channel = new EmbeddedChannel();
+
+        BoltChannel boltChannel = BoltChannel.open( CONNECTOR, channel, NullBoltMessageLogger.getInstance() );
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
 
         BoltConnection connection = mock( BoltConnection.class );
         when( connectionFactory.newConnection( boltChannel ) ).thenReturn( connection );
 
-        BoltProtocolHandlerFactory factory = new DefaultBoltProtocolHandlerFactory( connectionFactory,
+        BoltProtocolPipelineInstallerFactory factory = new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory,
                 TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
 
-        BoltMessagingProtocolHandler handler = factory.create( protocolVersion, boltChannel );
+        BoltProtocolPipelineInstaller handler = factory.create( protocolVersion, boltChannel );
+
+        handler.install();
 
         // handler with correct version is created
         assertEquals( protocolVersion, handler.version() );
@@ -89,15 +91,9 @@ public class DefaultBoltProtocolHandlerFactoryTest
 
         // and halts this same worker when closed
         verify( connection, never() ).stop();
-        handler.close();
+        channel.close();
         verify( connection ).stop();
-    }
 
-    private static ChannelHandlerContext newChannelCtxMock()
-    {
-        ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        Channel channel = mock( Channel.class, RETURNS_MOCKS );
-        when( ctx.channel() ).thenReturn( channel );
-        return ctx;
+        channel.finishAndReleaseAll();
     }
 }
