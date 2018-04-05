@@ -39,6 +39,28 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     assertSeek(DurationValue.duration(41, 32, 23, 14), Configs.All - Configs.OldAndRule)
   }
 
+  test("should seek for arrays") {
+    val conf =  Configs.Interpreted - Configs.OldAndRule
+    createIndex()
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy(),
+                                      DateValue.epochDate(20000).asObjectCopy())), conf)
+
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy(),
+                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())), conf)
+
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy(),
+                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())), conf)
+
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy(),
+                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())), conf)
+
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy(),
+                                           LocalTimeValue.localTime(23456).asObjectCopy())), conf)
+
+    assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy(),
+                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())), conf)
+  }
+
   test("should range scan") {
     createIndex()
     assertRangeScan(
