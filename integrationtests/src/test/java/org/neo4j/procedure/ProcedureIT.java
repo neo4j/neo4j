@@ -1363,7 +1363,8 @@ public class ProcedureIT
         try ( Transaction ignore = db.beginTx() )
         {
             // When
-            Result res = db.execute( "WITH $param as param RETURN org.neo4j.procedure.decrBytes(param) AS bytes, param", map( "param", new byte[]{10, 11, 12} ) );
+            Result res =
+                    db.execute( "WITH $param AS param RETURN org.neo4j.procedure.decrBytes(param) AS bytes, param", map( "param", new byte[]{10, 11, 12} ) );
 
             // Then
             assertTrue(res.hasNext());
