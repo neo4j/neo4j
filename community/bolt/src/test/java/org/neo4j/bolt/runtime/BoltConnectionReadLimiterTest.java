@@ -28,9 +28,7 @@ import java.util.Arrays;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
-import org.neo4j.util.FeatureToggles;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -68,26 +66,6 @@ public class BoltConnectionReadLimiterTest
     public void cleanup()
     {
         channel.finishAndReleaseAll();
-    }
-
-    @Test
-    public void shouldUseWatermarksFromSystemProperties()
-    {
-        FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.LOW_WATERMARK_NAME, 5 );
-        FeatureToggles.set( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.HIGH_WATERMARK_NAME, 10 );
-
-        try
-        {
-           BoltConnectionReadLimiter limiter = newLimiterWithDefaults();
-
-           assertThat( limiter.getLowWatermark(), is( 5 ) );
-           assertThat( limiter.getHighWatermark(), is( 10 ) );
-        }
-        finally
-        {
-            FeatureToggles.clear( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.LOW_WATERMARK_NAME );
-            FeatureToggles.clear( BoltConnectionReadLimiter.class, BoltConnectionReadLimiter.HIGH_WATERMARK_NAME );
-        }
     }
 
     @Test
@@ -243,10 +221,4 @@ public class BoltConnectionReadLimiterTest
     {
         return new BoltConnectionReadLimiter( log, low, high );
     }
-
-    private BoltConnectionReadLimiter newLimiterWithDefaults()
-    {
-        return new BoltConnectionReadLimiter( log );
-    }
-
 }

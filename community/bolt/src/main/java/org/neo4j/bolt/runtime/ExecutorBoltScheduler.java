@@ -83,7 +83,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     @Override
     public void start()
     {
-        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize,
+        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, true,
                 new NameAppendingThreadFactory( connector, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) ) );
     }
 

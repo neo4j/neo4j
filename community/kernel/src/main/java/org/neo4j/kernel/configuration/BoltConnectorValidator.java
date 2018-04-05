@@ -90,7 +90,7 @@ public class BoltConnectorValidator extends ConnectorValidator
                     listenAddress( settingName, 7687 ) );
             setting.setDescription( "Advertised address for this connector." );
             break;
-        case "thread_pool_core_size":
+        case "thread_pool_min_size":
             setting = (BaseSetting) setting( settingName, INTEGER, NO_DEFAULT );
             setting.setDescription( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." );
             break;
@@ -102,7 +102,7 @@ public class BoltConnectorValidator extends ConnectorValidator
             setting = (BaseSetting) setting( settingName, DURATION, NO_DEFAULT );
             setting.setDescription( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." );
             break;
-        case "thread_pool_queue_size":
+        case "unsupported_thread_pool_queue_size":
             setting = (BaseSetting) setting( settingName, INTEGER, NO_DEFAULT );
             setting.setDescription( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" );
             break;
