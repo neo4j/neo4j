@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -75,7 +76,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -111,6 +111,8 @@ public class OperationsLockTest
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
         when( transaction.txState() ).thenReturn( txState );
+        when( transaction.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+
         DefaultCursors cursors = mock( DefaultCursors.class );
         nodeCursor = mock( DefaultNodeCursor.class );
         propertyCursor = mock( DefaultPropertyCursor.class );
@@ -121,18 +123,18 @@ public class OperationsLockTest
         AutoIndexing autoindexing = mock( AutoIndexing.class );
         when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
         when( autoindexing.relationships() ).thenReturn( mock( AutoIndexOperations.class ) );
-        StorageStatement store = mock( StorageStatement.class );
+        StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
-        allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
+        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
                 constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 
@@ -494,7 +496,7 @@ public class OperationsLockTest
         operations.nodeDetachDelete( nodeId );
 
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
         order.verify( txState ).nodeDoDelete( nodeId );
     }
 
@@ -509,8 +511,8 @@ public class OperationsLockTest
 
         order.verify( locks ).acquireExclusive(
                 LockTracer.NONE, ResourceTypes.NODE, nodeId, 2L );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, nodeId );
-        order.verify( locks, times( 0 ) ).releaseExclusive( ResourceTypes.NODE, 2L );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, 2L );
         order.verify( txState ).nodeDoDelete( nodeId );
     }
 
