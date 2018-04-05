@@ -141,7 +141,7 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
                             ", lastCommittedTxId:" + last.transactionId() +
                             ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
                             ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
-                            ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
+                            ", earliestSafeTimestamp:" + informativeTimestamp( earliestSafeTimestamp ) +
                             ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
                             "\n" +
                             "  Transaction: lastCommittedTimestamp:" +
