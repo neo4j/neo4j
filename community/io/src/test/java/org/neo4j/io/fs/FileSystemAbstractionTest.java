@@ -725,6 +725,12 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
+    public void lastModifiedOfNonExistingFileIsZero() throws Exception
+    {
+        assertThat( fsa.lastModifiedTime( nonExistingFile( "blabla" ) ), is( 0L ) );
+    }
+
+    @Test
     public void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
     {
         File dir = existingDirectory( "/././home/.././././home/././.././././././././././././././././././home/././" );

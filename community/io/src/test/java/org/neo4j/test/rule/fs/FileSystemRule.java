@@ -217,7 +217,7 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
         return fs.lastModifiedTime( file );
     }

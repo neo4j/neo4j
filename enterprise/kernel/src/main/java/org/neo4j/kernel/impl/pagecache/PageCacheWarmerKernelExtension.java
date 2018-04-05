@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -47,7 +45,6 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private final PageCacheWarmerMonitor monitor;
     private final Config config;
     private final PageCacheWarmer pageCacheWarmer;
-    private final AtomicBoolean profilingStarted;
     private volatile JobScheduler.JobHandle profileHandle;
     private volatile boolean started;
 
@@ -62,7 +59,6 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         this.monitor = monitor;
         this.config = config;
         pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler );
-        profilingStarted = new AtomicBoolean();
     }
 
     @Override
@@ -108,7 +104,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
                            " to load " + pagesLoaded + " pages." );
             } );
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             log.debug( "Active page cache warmup failed, " +
                        "so it may take longer for the cache to be populated with hot data.", e );
@@ -118,16 +114,8 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private void scheduleProfile()
     {
         long frequencyMillis = config.get( GraphDatabaseSettings.pagecache_warmup_profiling_interval ).toMillis();
-        profileHandle = scheduler.schedule(
-                pageCacheIOHelper, this::tryStartProfile, frequencyMillis, TimeUnit.MILLISECONDS );
-    }
-
-    private void tryStartProfile()
-    {
-        if ( profilingStarted.compareAndSet( false, true ) )
-        {
-            doProfile();
-        }
+        profileHandle = scheduler.scheduleRecurring(
+                pageCacheIOHelper, this::doProfile, frequencyMillis, TimeUnit.MILLISECONDS );
     }
 
     private void doProfile()
@@ -143,15 +131,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
                            ", and found " + pagesInMemory + " pages in memory." );
             });
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             log.debug( "Page cache profiling failed, so no new profile of what data is hot or not was produced. " +
                        "This may reduce the effectiveness of a future page cache warmup process.", e );
-        }
-        finally
-        {
-            profilingStarted.set( false );
-            scheduleProfile();
         }
     }
 
