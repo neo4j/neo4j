@@ -39,7 +39,7 @@ import static org.neo4j.graphdb.Label.label;
 
 public class SchemaRecoveryIT
 {
-    @Test
+    @Test( timeout = 60_000 )
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
         // given

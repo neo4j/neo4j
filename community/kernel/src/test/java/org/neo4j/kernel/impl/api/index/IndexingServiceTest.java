@@ -37,7 +37,6 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -72,6 +71,8 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -80,7 +81,6 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -128,7 +128,6 @@ import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
-import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -156,6 +155,7 @@ public class IndexingServiceTest
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
+    private final SchemaStorage schemaStorage = mock( SchemaStorage.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
@@ -361,6 +361,7 @@ public class IndexingServiceTest
     {
         // given
         IndexProvider provider = mock( IndexProvider.class );
+        SchemaStorage schemaStorage = mock( SchemaStorage.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexAccessor.class ) );
@@ -370,9 +371,10 @@ public class IndexingServiceTest
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
+        when( schemaStorage.indexesGetAll() ).thenReturn( asList( onlineIndex, populatingIndex, failedIndex ).iterator() );
 
         life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
-                mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
+                mock( IndexStoreView.class ), mockLookup, schemaStorage,
                 logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
@@ -406,14 +408,16 @@ public class IndexingServiceTest
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         IndexProviderMap providerMap = new DefaultIndexProviderMap( provider );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
+        SchemaStorage schemaStorage = mock( SchemaStorage.class );
 
         IndexRule onlineIndex     = indexRule( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
+        when( schemaStorage.indexesGetAll() ).thenReturn( iterator( onlineIndex, populatingIndex, failedIndex ) );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
-                asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
+                schemaStorage, logProvider, IndexingService.NO_MONITOR,
                 schemaState );
 
         when( provider.getInitialState( onlineIndex.getId(), onlineIndex.getIndexDescriptor() ) )
@@ -536,18 +540,6 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void shouldIgnoreActivateCallDuringRecovery() throws Exception
-    {
-        // given
-        IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
-
-        // when
-        indexingService.activateIndex( 0 );
-
-        // then no exception should be thrown.
-    }
-
-    @Test
     public void shouldLogTriggerSamplingOnAllIndexes() throws Exception
     {
         // given
@@ -605,11 +597,6 @@ public class IndexingServiceTest
             // Then
             assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
         }
-    }
-
-    private IndexUpdates updates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
-    {
-        return new DirectIndexUpdates( updates );
     }
 
     @Test
@@ -679,69 +666,6 @@ public class IndexingServiceTest
         verify( updater2 ).close();
     }
 
-    private void waitForIndexesToComeOnline( IndexingService indexing, long... indexRuleIds )
-            throws IndexNotFoundKernelException
-    {
-        waitForIndexesToGetIntoState( indexing, ONLINE, indexRuleIds );
-    }
-
-    private void waitForIndexesToGetIntoState( IndexingService indexing, InternalIndexState state,
-            long... indexRuleIds )
-            throws IndexNotFoundKernelException
-    {
-        long end = currentTimeMillis() + SECONDS.toMillis( 30 );
-        while ( !allInState( indexing, state, indexRuleIds ) )
-        {
-            if ( currentTimeMillis() > end )
-            {
-                fail( "Indexes couldn't come online" );
-            }
-        }
-    }
-
-    private boolean allInState( IndexingService indexing, InternalIndexState state,
-            long[] indexRuleIds ) throws IndexNotFoundKernelException
-    {
-        for ( long indexRuleId : indexRuleIds )
-        {
-            if ( indexing.getIndexProxy( indexRuleId ).getState() != state )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private IndexUpdates nodeIdsAsIndexUpdates( long... nodeIds )
-    {
-        return new IndexUpdates()
-        {
-            @Override
-            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
-            {
-                List<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
-                for ( long nodeId : nodeIds )
-                {
-                    updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
-                }
-                return updates.iterator();
-            }
-
-            @Override
-            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
-                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean hasUpdates()
-            {
-                return nodeIds.length > 0;
-            }
-        };
-    }
-
     /*
      * See comments in IndexingService#createIndex
      */
@@ -782,7 +706,7 @@ public class IndexingServiceTest
         verify( accessor ).newUpdater( RECOVERY );
     }
 
-    @Test
+    @Test( timeout = 60_000 )
     public void shouldWaitForRecoveredUniquenessConstraintIndexesToBeFullyPopulated() throws Exception
     {
         // I.e. when a uniqueness constraint is created, but database crashes before that schema record
@@ -811,8 +735,9 @@ public class IndexingServiceTest
         life.init();
         // simulating an index being created as part of applying recovered transactions
         long fakeOwningConstraintRuleId = 1;
-        indexing.createIndexes( constraintIndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR,
-                fakeOwningConstraintRuleId ) );
+        IndexRule indexRule = constraintIndexRule( 2, labelId, propertyKeyId, PROVIDER_DESCRIPTOR, fakeOwningConstraintRuleId );
+        indexing.createIndexes( indexRule );
+        when( schemaStorage.indexGetForSchema( indexRule.getIndexDescriptor() ) ).thenReturn( indexRule );
         // and then starting, i.e. considering recovery completed
         life.start();
 
@@ -921,7 +846,6 @@ public class IndexingServiceTest
     @Test
     public void shouldLogIndexStateOutliersOnInit() throws Exception
     {
-        // given
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -947,9 +871,10 @@ public class IndexingServiceTest
         {
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
+        when( schemaStorage.indexesGetAll() ).thenReturn( indexes.iterator() );
 
         life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
-                mock( IndexStoreView.class ), mockLookup, indexes, logProvider, IndexingService.NO_MONITOR,
+                mock( IndexStoreView.class ), mockLookup, schemaStorage, logProvider, IndexingService.NO_MONITOR,
                 schemaState ) );
 
         when( mockLookup.propertyKeyGetName( 1 ) ).thenReturn( "prop" );
@@ -970,6 +895,7 @@ public class IndexingServiceTest
     public void shouldLogIndexStateOutliersOnStart() throws Exception
     {
         // given
+        SchemaStorage schemaStorage = mock( SchemaStorage.class );
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( provider.getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
@@ -995,9 +921,10 @@ public class IndexingServiceTest
         {
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
+        when( schemaStorage.indexesGetAll() ).thenReturn( indexes.iterator() );
 
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
-                mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
+                mock( JobScheduler.class ), providerMap, storeView, mockLookup, schemaStorage,
                 logProvider, IndexingService.NO_MONITOR, schemaState );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenReturn( newDoubleLongRegister( 32L, 32L ) );
@@ -1094,6 +1021,69 @@ public class IndexingServiceTest
 
         // Then
         verify( accessor, times( 1 ) ).refresh();
+    }
+
+    private void waitForIndexesToComeOnline( IndexingService indexing, long... indexRuleIds )
+            throws IndexNotFoundKernelException
+    {
+        waitForIndexesToGetIntoState( indexing, ONLINE, indexRuleIds );
+    }
+
+    private void waitForIndexesToGetIntoState( IndexingService indexing, InternalIndexState state,
+            long... indexRuleIds )
+            throws IndexNotFoundKernelException
+    {
+        long end = currentTimeMillis() + SECONDS.toMillis( 30 );
+        while ( !allInState( indexing, state, indexRuleIds ) )
+        {
+            if ( currentTimeMillis() > end )
+            {
+                fail( "Indexes couldn't come online" );
+            }
+        }
+    }
+
+    private boolean allInState( IndexingService indexing, InternalIndexState state,
+            long[] indexRuleIds ) throws IndexNotFoundKernelException
+    {
+        for ( long indexRuleId : indexRuleIds )
+        {
+            if ( indexing.getIndexProxy( indexRuleId ).getState() != state )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private IndexUpdates nodeIdsAsIndexUpdates( long... nodeIds )
+    {
+        return new IndexUpdates()
+        {
+            @Override
+            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
+            {
+                List<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
+                for ( long nodeId : nodeIds )
+                {
+                    updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
+                }
+                return updates.iterator();
+            }
+
+            @Override
+            public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+                    PrimitiveLongObjectMap<NodeCommand> nodeCommands )
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public boolean hasUpdates()
+            {
+                return nodeIds.length > 0;
+            }
+        };
     }
 
     private IndexProxy createIndexProxyMock()
@@ -1221,6 +1211,7 @@ public class IndexingServiceTest
 
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
+        when( schemaStorage.indexesGetAll() ).thenReturn( iterator( rules ) );
 
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
@@ -1229,7 +1220,7 @@ public class IndexingServiceTest
                         new DefaultIndexProviderMap( indexProvider ),
                         storeView,
                         nameLookup,
-                        loop( iterator( rules ) ),
+                        schemaStorage,
                         logProvider,
                         monitor,
                         schemaState )
@@ -1396,9 +1387,14 @@ public class IndexingServiceTest
     private IndexingService createIndexServiceWithCustomIndexMap( IndexMapReference indexMapReference )
     {
         return new IndexingService( mock( IndexProxyCreator.class ), mock( IndexProviderMap.class ),
-                indexMapReference, mock( IndexStoreView.class ), Collections.emptyList(),
+                indexMapReference, mock( IndexStoreView.class ), mock( SchemaStorage.class ),
                 mock( IndexSamplingController.class ), mock( TokenNameLookup.class ),
                 mock( JobScheduler.class ), mock( SchemaState.class ), mock( MultiPopulatorFactory.class ),
                 logProvider, IndexingService.NO_MONITOR );
+    }
+
+    private IndexUpdates updates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
+    {
+        return new DirectIndexUpdates( updates );
     }
 }

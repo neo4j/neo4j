@@ -40,7 +40,6 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -321,7 +320,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
-                    providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
+                    providerMap, storeView, tokenNameLookup, new SchemaStorage( neoStores.getSchemaStore() ),
                     NullLogProvider.getInstance(), IndexingService.NO_MONITOR, getSchemaState() );
             indexService.start();
 
@@ -387,11 +386,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return labelNameIdMap.values().stream()
                 .map( index -> IndexRule.indexRule( index, SchemaIndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
                 .toArray( IndexRule[]::new );
-    }
-
-    private List<IndexRule> getIndexRules( NeoStores neoStores )
-    {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

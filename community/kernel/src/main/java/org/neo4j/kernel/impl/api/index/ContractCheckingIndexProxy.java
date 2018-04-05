@@ -63,7 +63,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     private final AtomicReference<State> state;
     private final AtomicInteger openCalls;
 
-    public ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
+    ContractCheckingIndexProxy( IndexProxy delegate, boolean started )
     {
         super( delegate );
         this.state = new AtomicReference<>( started ? State.STARTED : State.INIT );

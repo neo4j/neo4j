@@ -103,6 +103,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Long.max;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -226,7 +227,7 @@ public class RecoveryIT
         recoveredDatabase.shutdown();
     }
 
-    @Test( timeout = 60_000 )
+    @Test//( timeout = 60_000 )
     public void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates()
     {
         Label label = Label.label( "Foo" );
@@ -314,7 +315,7 @@ public class RecoveryIT
         UpdateCapturingIndexProvider updateCapturingIndexProvider = new UpdateCapturingIndexProvider( indexProvider, new HashMap<>() );
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory()
-                .setKernelExtensions( asList( new InMemoryIndexProviderFactory( updateCapturingIndexProvider ) ) )
+                .setKernelExtensions( singletonList( new InMemoryIndexProviderFactory( updateCapturingIndexProvider ) ) )
                 .setFileSystem( fs );
         GraphDatabaseService db = dbFactory.newImpermanentDatabase( storeDir );
         Label label = TestLabels.LABEL_ONE;

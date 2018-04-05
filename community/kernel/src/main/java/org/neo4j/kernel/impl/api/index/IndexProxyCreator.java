@@ -120,16 +120,35 @@ class IndexProxyCreator
             IndexAccessor onlineAccessor =
                     onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
             IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
-            IndexProxy proxy;
-            proxy = new OnlineIndexProxy( ruleId, indexMeta, onlineAccessor, storeView, false );
-            proxy = new ContractCheckingIndexProxy( proxy, true );
-            return proxy;
+            IndexProxy onlineIndex = new OnlineIndexProxy( ruleId, indexMeta, onlineAccessor, storeView, false );
+            return new ContractCheckingIndexProxy( onlineIndex, true );
         }
         catch ( IOException e )
         {
             logProvider.getLog( getClass() ).error( "Failed to open index: " + ruleId +
                                                     " (" + descriptor.userDescription( tokenNameLookup ) +
                                                     "), requesting re-population.", e );
+            return createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
+        }
+    }
+
+    IndexProxy createTentativeIndexProxy( long ruleId, SchemaIndexDescriptor descriptor, IndexProvider.Descriptor providerDescriptor )
+    {
+        try
+        {
+            FlippableIndexProxy flipper = new FlippableIndexProxy();
+            IndexAccessor onlineAccessor = onlineAccessorFromProvider( providerDescriptor, ruleId, descriptor, samplingConfig );
+            IndexMeta indexMeta = indexMetaFromProvider( ruleId, providerDescriptor, descriptor );
+            OnlineIndexProxy onlineIndex = new OnlineIndexProxy( ruleId, indexMeta, onlineAccessor, storeView, false );
+
+            TentativeConstraintIndexProxy tentativeIndexProxy = new TentativeConstraintIndexProxy( flipper, onlineIndex );
+            flipper.flipTo( tentativeIndexProxy );
+            return new ContractCheckingIndexProxy( flipper, true );
+        }
+        catch ( IOException e )
+        {
+            logProvider.getLog( getClass() ).error(
+                    "Failed to open index: " + ruleId + " (" + descriptor.userDescription( tokenNameLookup ) + "), requesting re-population.", e );
             return createRecoveringIndexProxy( ruleId, descriptor, providerDescriptor );
         }
     }

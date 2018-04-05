@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
-import org.neo4j.kernel.impl.store.record.IndexRule;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -44,7 +44,7 @@ public class IndexingServiceFactory
                                           IndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
-                                          Iterable<IndexRule> indexRules,
+                                          SchemaStorage schemaStorage,
                                           LogProvider logProvider,
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState )
@@ -65,7 +65,7 @@ public class IndexingServiceFactory
         IndexProxyCreator proxySetup =
                 new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, logProvider );
 
-        return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
+        return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, schemaStorage,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
                 multiPopulatorFactory, logProvider, monitor );
     }

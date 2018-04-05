@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -88,12 +90,13 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class IndexingService extends LifecycleAdapter implements IndexingUpdateService
 {
+    private final SchemaStorage schemaStorage;
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
     private final IndexStoreView storeView;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
-    private final Iterable<IndexRule> indexRules;
+    private final PrimitiveLongObjectMap<IndexRule> indexIdProxyMap;
     private final Log log;
     private final TokenNameLookup tokenNameLookup;
     private final MultiPopulatorFactory multiPopulatorFactory;
@@ -152,7 +155,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
             IndexStoreView storeView,
-            Iterable<IndexRule> indexRules,
+            SchemaStorage schemaStorage,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
@@ -165,13 +168,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         this.providerMap = providerMap;
         this.indexMapRef = indexMapRef;
         this.storeView = storeView;
-        this.indexRules = indexRules;
+        this.schemaStorage = schemaStorage;
         this.samplingController = samplingController;
         this.tokenNameLookup = tokenNameLookup;
         this.schemaState = schemaState;
         this.multiPopulatorFactory = multiPopulatorFactory;
         this.logProvider = logProvider;
         this.monitor = monitor;
+        this.indexIdProxyMap = Primitive.longObjectMap();
         this.populationJobController = new IndexPopulationJobController( scheduler );
         this.log = logProvider.getLog( getClass() );
     }
@@ -185,8 +189,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
-            for ( IndexRule indexRule : indexRules )
+            Iterator<IndexRule> indexRules = schemaStorage.indexesGetAll();
+            while ( indexRules.hasNext() )
             {
+                IndexRule indexRule = indexRules.next();
                 IndexProxy indexProxy;
 
                 long indexId = indexRule.getId();
@@ -194,20 +200,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
                 IndexProvider provider = providerMap.apply( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
-                indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
-                .add( new IndexLogRecord( indexId, descriptor ) );
+                indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
 
                 log.debug( indexStateInfo( "init", indexId, initialState, descriptor ) );
                 switch ( initialState )
                 {
                 case ONLINE:
-                    indexProxy =
-                    indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
+                    indexProxy = indexWithoutOwningConstraint( indexRule ) ?
+                                 indexProxyCreator.createTentativeIndexProxy( indexId, descriptor, providerDescriptor ) :
+                                 indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                    indexProxy = indexProxyCreator.createRecoveringIndexProxy(
-                            indexId, descriptor, providerDescriptor );
+                    indexProxy = indexProxyCreator.createRecoveringIndexProxy( indexId, descriptor, providerDescriptor );
                     break;
                 case FAILED:
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId, descriptor ) );
@@ -218,10 +223,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     throw new IllegalArgumentException( "" + initialState );
                 }
                 indexMap.putIndexProxy( indexId, indexProxy );
+                indexIdProxyMap.put( indexProxy.getIndexId(), indexRule );
             }
             logIndexStateSummary( "init", indexStates );
             return indexMap;
         } );
+    }
+
+    private boolean indexWithoutOwningConstraint( IndexRule indexRule )
+    {
+        return indexRule.canSupportUniqueConstraint() && indexRule.getOwningConstraint() == null;
     }
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.
@@ -244,8 +255,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             {
                 InternalIndexState state = proxy.getState();
                 SchemaIndexDescriptor descriptor = proxy.getDescriptor();
-                indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
-                .add( new IndexLogRecord( indexId, descriptor ) );
+                indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( indexId, descriptor ) );
                 log.debug( indexStateInfo( "start", indexId, state, descriptor ) );
                 switch ( state )
                 {
@@ -276,11 +286,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 rebuildingDescriptors.visitEntries(
                         (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
                         {
+                            IndexRule indexRule = indexIdProxyMap.computeIfAbsent( indexId,
+                                    value -> schemaStorage.indexGetForSchema( descriptor.getSchemaIndexDescriptor() ) );
+                            SchemaIndexDescriptor schemaIndexDescriptor = descriptor.getSchemaIndexDescriptor();
                             IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(
-                                    indexId,
-                                    descriptor.getSchemaIndexDescriptor(),
-                                    descriptor.getProviderDescriptor(),
-                                    false, // never pass through a tentative online state during recovery
+                                    indexId, schemaIndexDescriptor, descriptor.getProviderDescriptor(),
+                                    indexWithoutOwningConstraint( indexRule ),
                                     monitor,
                                     populationJob );
                             proxy.start();
@@ -302,9 +313,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         rebuildingDescriptors.visitEntries(
                 (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.getSchemaIndexDescriptor().type() != SchemaIndexDescriptor.Type.UNIQUE )
+                    if ( (descriptor.getSchemaIndexDescriptor().type() != SchemaIndexDescriptor.Type.UNIQUE) ||
+                          indexWithoutOwningConstraint( indexIdProxyMap.get( indexId ) ) )
                     {
-                        // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return false;
                     }
 
