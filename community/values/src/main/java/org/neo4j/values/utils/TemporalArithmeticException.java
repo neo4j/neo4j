@@ -20,19 +20,14 @@
 package org.neo4j.values.utils;
 
 /**
- * {@code UnsupportedTemporalUnitException} is thrown if trying to get or assign a temporal unit
- * which is not supported for the current temporal type. Examples of such cases include trying to
- * assign a month to a {@code TimeValue}, trying to truncate a {@code DateValue} to minutes and
- * trying to get the timezone of a {@code LocalDateTimeValue}.
+ * {@code TemporalArithmeticException} is thrown when arithmetic operations of temporal values and
+ * durations are unsuccessful. Examples of such arithmetic operations include adding a
+ * {@code TemporalValue} and {@code DurationValue} and subtracting a {@code DurationValue} from a
+ * {@code TemporalValue}.
  */
-public class UnsupportedTemporalUnitException extends ValuesException
+public class TemporalArithmeticException extends ValuesException
 {
-    public UnsupportedTemporalUnitException( String errorMsg )
-    {
-        super( errorMsg );
-    }
-
-    public UnsupportedTemporalUnitException( String errorMsg, Throwable cause )
+    public TemporalArithmeticException( String errorMsg, Throwable cause )
     {
         super( errorMsg, cause );
     }

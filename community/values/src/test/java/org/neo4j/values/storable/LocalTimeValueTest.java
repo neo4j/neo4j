@@ -26,6 +26,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.values.utils.TemporalParseException;
+
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
@@ -125,13 +127,13 @@ public class LocalTimeValueTest
     }
 
     @SuppressWarnings( "UnusedReturnValue" )
-    private DateTimeException assertCannotParse( String text )
+    private TemporalParseException assertCannotParse( String text )
     {
         try
         {
             parse( text );
         }
-        catch ( DateTimeException e )
+        catch ( TemporalParseException e )
         {
             return e;
         }

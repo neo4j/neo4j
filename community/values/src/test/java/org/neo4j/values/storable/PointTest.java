@@ -22,6 +22,8 @@ package org.neo4j.values.storable;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -140,7 +142,7 @@ public class PointTest
             PointValue.parse( data ); // this shouldn't work
             fail( "Was able to parse point although latitude was missing" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidValuesArgumentException e )
         {
             // this is expected
         }
@@ -187,14 +189,14 @@ public class PointTest
         assertCannotParse( "{crs:WGS-84 , lat:1, y:2}" );
     }
 
-    private IllegalArgumentException assertCannotParse( String text )
+    private InvalidValuesArgumentException assertCannotParse( String text )
     {
         PointValue value;
         try
         {
             value = PointValue.parse( text );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidValuesArgumentException e )
         {
             return e;
         }

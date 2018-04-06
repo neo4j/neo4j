@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import java.lang.invoke.MethodHandle;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.Period;
@@ -37,6 +38,8 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -133,18 +136,18 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             switch ( (ChronoUnit) unit )
             {
             case MONTHS:
-                return newDuration( from.until( to, unit ), 0, 0, 0 );
+                return newDuration( assertValidUntil( from, to ,unit ), 0, 0, 0 );
             case DAYS:
-                return newDuration( 0, from.until( to, unit ), 0, 0 );
+                return newDuration( 0, assertValidUntil( from, to ,unit ), 0, 0 );
             case SECONDS:
                 return durationInSecondsAndNanos( from, to );
             default:
-                throw new IllegalArgumentException( "Unsupported unit: " + unit );
+                throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
             }
         }
         else
         {
-            throw new IllegalArgumentException( "Unsupported unit: " + unit );
+            throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
         }
     }
 
@@ -373,13 +376,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             months = parseLong( month );
             if ( months > 12 )
             {
-                throw new IllegalArgumentException( "months is out of range: " + month );
+                throw new InvalidValuesArgumentException( "months is out of range: " + month );
             }
             months += parseLong( year ) * 12;
             days = parseLong( day );
             if ( days > 31 )
             {
-                throw new IllegalArgumentException( "days is out of range: " + day );
+                throw new InvalidValuesArgumentException( "days is out of range: " + day );
             }
         }
         if ( time )
@@ -436,15 +439,15 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             if ( hours > 24 )
             {
-                throw new IllegalArgumentException( "hours out of range: " + hours );
+                throw new InvalidValuesArgumentException( "hours out of range: " + hours );
             }
             if ( minutes > 60 )
             {
-                throw new IllegalArgumentException( "minutes out of range: " + minutes );
+                throw new InvalidValuesArgumentException( "minutes out of range: " + minutes );
             }
             if ( seconds > 60 )
             {
-                throw new IllegalArgumentException( "seconds out of range: " + seconds );
+                throw new InvalidValuesArgumentException( "seconds out of range: " + seconds );
             }
         }
         seconds += hours * 3600 + minutes * 60;
@@ -494,19 +497,37 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         long days = 0;
         if ( from.isSupported( EPOCH_DAY ) && to.isSupported( EPOCH_DAY ) )
         {
-            Period period = Period.between( LocalDate.from( from ), LocalDate.from( to ) );
+            LocalDate fromDate;
+            LocalDate toDate;
+            try
+            {
+                fromDate = LocalDate.from( from );
+                toDate = LocalDate.from( to );
+            }
+            catch ( DateTimeException e )
+            {
+                throw new InvalidValuesArgumentException( e.getMessage(), e );
+            }
+            Period period = Period.between( fromDate, toDate );
             months = period.getYears() * 12L + period.getMonths();
             days = period.getDays();
             if ( months != 0 || days != 0 )
             {
                 // Adjust in order to get to a point where we can compute the time difference,
                 // without having to bother with the length of days (which might differ due to timezone)
-                from = from.plus( period );
+                try
+                {
+                    from = from.plus( period );
+                }
+                catch ( DateTimeException | ArithmeticException e )
+                {
+                    throw new TemporalArithmeticException( e.getMessage(), e );
+                }
             }
         }
         // Compute the time difference - which is simple at this point
         // NANOS of a day will never overflow a long
-        long nanos = from.until( to, NANOS );
+        long nanos = assertValidUntil( from, to, NANOS );
         return newDuration( months, days, nanos / NANOS_PER_SECOND, (int) (nanos % NANOS_PER_SECOND) );
     }
 
@@ -522,7 +543,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             from = to;
             to = tmp;
         }
-        seconds = from.until( to, SECONDS );
+        seconds = assertValidUntil( from, to, SECONDS );
         int fromNanos = from.isSupported( NANO_OF_SECOND ) ? from.get( NANO_OF_SECOND ) : 0;
         int toNanos = to.isSupported( NANO_OF_SECOND ) ? to.get( NANO_OF_SECOND ) : 0;
         nanos = toNanos - fromNanos;
@@ -690,7 +711,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 break;
             }
         }
-        throw new UnsupportedTemporalTypeException( "Unsupported unit: " + unit );
+        throw new UnsupportedTemporalUnitException( "Unsupported unit: " + unit );
     }
 
     /**
@@ -808,30 +829,30 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( months != 0 && temporal.isSupported( MONTHS ) )
         {
-            temporal = temporal.plus( months, MONTHS );
+            temporal = assertValidPlus( temporal, months, MONTHS );
         }
         if ( days != 0 && temporal.isSupported( DAYS ) )
         {
-            temporal = temporal.plus( days, DAYS );
+            temporal = assertValidPlus( temporal, days, DAYS );
         }
         if ( seconds != 0 )
         {
             if ( temporal.isSupported( SECONDS ) )
             {
-                temporal = temporal.plus( seconds, SECONDS );
+                temporal = assertValidPlus( temporal, seconds, SECONDS );
             }
             else
             {
                 long asDays = seconds / SECONDS_PER_DAY;
                 if ( asDays != 0 )
                 {
-                    temporal = temporal.plus( asDays, DAYS );
+                    temporal = assertValidPlus( temporal, asDays, DAYS );
                 }
             }
         }
         if ( nanos != 0 && temporal.isSupported( NANOS ) )
         {
-            temporal = temporal.plus( nanos, NANOS );
+            temporal = assertValidPlus( temporal, nanos, NANOS );
         }
         return temporal;
     }
@@ -841,30 +862,30 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( months != 0 && temporal.isSupported( MONTHS ) )
         {
-            temporal = temporal.minus( months, MONTHS );
+            temporal = assertValidMinus( temporal, months, MONTHS );
         }
         if ( days != 0 && temporal.isSupported( DAYS ) )
         {
-            temporal = temporal.minus( days, DAYS );
+            temporal = assertValidMinus( temporal, days, DAYS );
         }
         if ( seconds != 0 )
         {
             if ( temporal.isSupported( SECONDS ) )
             {
-                temporal = temporal.minus( seconds, SECONDS );
+                temporal = assertValidMinus( temporal, seconds, SECONDS );
             }
             else if ( temporal.isSupported( DAYS ) )
             {
                 long asDays = seconds / SECONDS_PER_DAY;
                 if ( asDays != 0 )
                 {
-                    temporal = temporal.minus( asDays, DAYS );
+                    temporal = assertValidMinus( temporal, asDays, DAYS );
                 }
             }
         }
         if ( nanos != 0 && temporal.isSupported( NANOS ) )
         {
-            temporal = temporal.minus( nanos, NANOS );
+            temporal = assertValidMinus( temporal, nanos, NANOS );
         }
         return temporal;
     }
@@ -899,7 +920,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             double factor = number.doubleValue();
             return approximate( months * factor, days * factor, seconds * factor, nanos * factor );
         }
-        throw new IllegalArgumentException( "Factor must be either integer of floating point number." );
+        throw new InvalidValuesArgumentException( "Factor must be either integer of floating point number." );
     }
 
     public DurationValue div( NumberValue number )
@@ -918,5 +939,45 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         nanos += NANOS_PER_SECOND * (seconds - s);
         long n = (long) nanos;
         return duration( m, d, s, n );
+    }
+
+    private static Temporal assertValidPlus( Temporal temporal, long amountToAdd, TemporalUnit unit )
+    {
+        try
+        {
+            return temporal.plus(amountToAdd,  unit);
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
+        }
+    }
+
+    private static Temporal assertValidMinus( Temporal temporal, long amountToAdd, TemporalUnit unit )
+    {
+        try
+        {
+            return temporal.minus(amountToAdd,  unit);
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new TemporalArithmeticException( e.getMessage(), e );
+        }
+    }
+
+    private static long assertValidUntil( Temporal from, Temporal to, TemporalUnit unit )
+    {
+        try
+        {
+            return from.until( to, unit );
+        }
+        catch ( UnsupportedTemporalTypeException e )
+        {
+            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
+        }
+        catch ( DateTimeException e )
+        {
+            throw new InvalidValuesArgumentException( e.getMessage(), e );
+        }
     }
 }
