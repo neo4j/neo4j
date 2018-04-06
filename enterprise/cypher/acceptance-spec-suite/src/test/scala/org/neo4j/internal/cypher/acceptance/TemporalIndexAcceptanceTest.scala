@@ -61,6 +61,36 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
                                           DurationValue.duration(12, 34, 56, 78).asObjectCopy())), conf)
   }
 
+  test("should distinguish between duration array and string array") {
+    // Given
+    val durArray = Values.durationArray(Array(DurationValue.duration(0, 0, 1800, 0), DurationValue.duration(0, 1, 0, 0))).asObject()
+    val stringArray = Values.stringArray("PT30M", "P1D").asObject()
+
+    val n1 = createLabeledNode(Map("results" -> durArray), "Runner")
+    createLabeledNode(Map("results" -> stringArray), "Runner")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Runner)
+        |WHERE n.results = [duration('PT30M'), duration('P1D')]
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Runner", "results")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
+  }
+
   test("should range scan") {
     createIndex()
     assertRangeScan(
