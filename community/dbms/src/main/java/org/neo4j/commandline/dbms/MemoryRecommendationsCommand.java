@@ -19,19 +19,28 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.function.ToDoubleFunction;
 
 import org.neo4j.commandline.admin.AdminCommand;
+import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
 import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
@@ -39,6 +48,7 @@ import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
@@ -66,7 +76,10 @@ public class MemoryRecommendationsCommand implements AdminCommand
             new Bracket( 1024.0, 30, 31 ),
     };
     private static final String ARG_MEMORY = "memory";
+    private static final String ARG_DB = "db";
+    private final Path homeDir;
     private final OutsideWorld outsideWorld;
+    private final Path configDir;
 
     static long recommendOsMemory( long totalMemoryBytes )
     {
@@ -118,7 +131,12 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return new Arguments()
                 .withArgument( new OptionalNamedArg( ARG_MEMORY, memory, memory,
                         "Recommend memory settings with respect to the given amount of memory, " +
-                        "instead of the total memory of the system running the command." ) );
+                        "instead of the total memory of the system running the command." ) )
+                .withArgument( new OptionalBooleanArg( ARG_DB, false,
+                        "Specific database to calculate page cache memory requirement for. " +
+                        "The generic calculation is still a good generic recommendation for this machine, " +
+                        "but there will be an additional calculation for minimal required page cache memory " +
+                        "for mapping all store and index files that are managed by the page cache." ) );
     }
 
     static String bytesToString( double bytes )
@@ -159,13 +177,15 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
     }
 
-    MemoryRecommendationsCommand( OutsideWorld outsideWorld )
+    MemoryRecommendationsCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
+        this.homeDir = homeDir;
         this.outsideWorld = outsideWorld;
+        this.configDir = configDir;
     }
 
     @Override
-    public void execute( String[] args ) throws IncorrectUsage
+    public void execute( String[] args ) throws IncorrectUsage, CommandFailed
     {
         Arguments arguments = buildArgs().parse( args );
 
@@ -199,6 +219,92 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
+
+        boolean db = arguments.getBoolean( ARG_DB );
+        if ( !db )
+        {
+            return;
+        }
+        File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
+        File storeDir = getConfig( configFile ).get( database_path );
+
+        print( "#" );
+        print( "# A minimal page cache memory setting to fully map the database contents of '" + storeDir.getAbsolutePath() + "':" );
+        print( pagecache_memory.name() + "=" + dbSpecificPageCacheMemory( storeDir ) );
+    }
+
+    private FilenameFilter getNativeIndexFileFilter()
+    {
+        return ( dir, name ) ->
+        {
+            File file = new File( dir, name );
+            if ( FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( name ) )
+            {
+                return false;
+            }
+
+            if ( outsideWorld.fileSystem().isDirectory( file ) && dir.getName().startsWith( "lucene-" ) )
+            {
+                // Do not go down directory containing lucene index files, i.e. something like lucene-x.y/z/index.file
+                // so this condition is for not going down the 'z' directory. There may be spatial/temporal native index files
+                // in lucene/x.y/ so still go down there.
+                return false;
+            }
+            return true;
+        };
+    }
+
+    private String dbSpecificPageCacheMemory( File storeDir )
+    {
+        long total = 0;
+
+        // All neostore files
+        for ( StoreType type : StoreType.values() )
+        {
+            if ( type.isRecordStore() )
+            {
+                File file = new File( storeDir, type.getStoreFile().storeFileName() );
+                if ( outsideWorld.fileSystem().fileExists( file ) )
+                {
+                    total += outsideWorld.fileSystem().getFileSize( file );
+                }
+            }
+        }
+
+        // All native index files
+        File baseSchemaIndexDir = baseSchemaIndexFolder( storeDir );
+        total = sumNativeIndexFiles( baseSchemaIndexDir, getNativeIndexFileFilter(), total );
+
+        return bytesToString( total );
+    }
+
+    private long sumNativeIndexFiles( File file, FilenameFilter filter, long total )
+    {
+        if ( outsideWorld.fileSystem().isDirectory( file ) )
+        {
+            File[] children = outsideWorld.fileSystem().listFiles( file, filter );
+            if ( children != null )
+            {
+                for ( File child : children )
+                {
+                    total = sumNativeIndexFiles( child, filter, total );
+                }
+            }
+        }
+        else
+        {
+            total += outsideWorld.fileSystem().getFileSize( file );
+        }
+        return total;
+    }
+
+    private Config getConfig( File configFile ) throws CommandFailed
+    {
+        if ( !outsideWorld.fileSystem().fileExists( configFile ) )
+        {
+            throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
+        }
+        return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
     }
 
     private void print( String text )
