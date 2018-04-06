@@ -220,7 +220,8 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public String toIndexableString()
     {
-        return format( "Point{%s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
+        CoordinateReferenceSystem crs = getCoordinateReferenceSystem();
+        return format( "%d-%d%s", crs.getTable().getTableId(), crs.getCode(), Arrays.toString( coordinate ) );
     }
 
     @Override
