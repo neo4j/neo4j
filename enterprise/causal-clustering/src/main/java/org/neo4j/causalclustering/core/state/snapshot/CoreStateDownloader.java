@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.impl.util.DebugUtil;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state;
 
+import java.util.Optional;
+
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -28,6 +30,7 @@ import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
 {
@@ -56,7 +59,11 @@ public class RaftMessageApplier implements LifecycleMessageHandler<RaftMessages.
             ConsensusOutcome outcome = raftMachine.handle( wrappedMessage.message() );
             if ( outcome.needsFreshSnapshot() )
             {
-                downloadService.scheduleDownload( raftMachine );
+                Optional<JobHandle> downloadJob = downloadService.scheduleDownload( raftMachine );
+                if ( downloadJob.isPresent() )
+                {
+                    downloadJob.get().waitTermination();
+                }
             }
             else
             {

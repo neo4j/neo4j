@@ -19,14 +19,18 @@
  */
 package org.neo4j.causalclustering.core.state;
 
+import java.util.Optional;
+
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.identity.BoundState;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.kernel.lifecycle.SafeLifecycle;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 public class CoreLife extends SafeLifecycle
 {
@@ -38,14 +42,11 @@ public class CoreLife extends SafeLifecycle
     private final CoreStateMachines coreStateMachines;
     private final LifecycleMessageHandler<?> raftMessageHandler;
     private final CoreSnapshotService snapshotService;
+    private final CoreStateDownloaderService downloadService;
 
-    public CoreLife( RaftMachine raftMachine,
-            LocalDatabase localDatabase,
-            ClusterBinder clusterBinder,
-            CommandApplicationProcess commandApplicationProcess,
-            CoreStateMachines coreStateMachines,
-            LifecycleMessageHandler<?> raftMessageHandler,
-            CoreSnapshotService snapshotService )
+    public CoreLife( RaftMachine raftMachine, LocalDatabase localDatabase, ClusterBinder clusterBinder, CommandApplicationProcess commandApplicationProcess,
+            CoreStateMachines coreStateMachines, LifecycleMessageHandler<?> raftMessageHandler, CoreSnapshotService snapshotService,
+            CoreStateDownloaderService downloadService )
     {
         this.raftMachine = raftMachine;
         this.localDatabase = localDatabase;
@@ -54,6 +55,7 @@ public class CoreLife extends SafeLifecycle
         this.coreStateMachines = coreStateMachines;
         this.raftMessageHandler = raftMessageHandler;
         this.snapshotService = snapshotService;
+        this.downloadService = downloadService;
     }
 
     @Override
@@ -68,6 +70,7 @@ public class CoreLife extends SafeLifecycle
         BoundState boundState = clusterBinder.bindToCluster();
         raftMessageHandler.start( boundState.clusterId() );
 
+        boolean startedByDownloader = false;
         if ( boundState.snapshot().isPresent() )
         {
             // this means that we bootstrapped the cluster
@@ -77,10 +80,19 @@ public class CoreLife extends SafeLifecycle
         else
         {
             snapshotService.awaitState();
+            Optional<JobHandle> downloadJob = downloadService.downloadJob();
+            if ( downloadJob.isPresent() )
+            {
+                downloadJob.get().waitTermination();
+                startedByDownloader = true;
+            }
         }
 
-        localDatabase.start();
-        coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
+        if ( !startedByDownloader )
+        {
+            localDatabase.start();
+            coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
+        }
         applicationProcess.start();
         raftMachine.postRecoveryActions();
     }
