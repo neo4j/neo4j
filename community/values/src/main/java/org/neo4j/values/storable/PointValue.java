@@ -218,6 +218,10 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         return format( "Point{%s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
     }
 
+    /**
+     * The string representation of this object when indexed in string-only indexes, like lucene, for equality search only. This should normally only
+     * happen when points are part of composite indexes, because otherwise they are indexed in the spatial index.
+     */
     public String toIndexableString()
     {
         CoordinateReferenceSystem crs = getCoordinateReferenceSystem();
