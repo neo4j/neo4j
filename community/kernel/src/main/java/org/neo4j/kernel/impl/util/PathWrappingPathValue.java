@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.util;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 public class PathWrappingPathValue extends PathValue
 {
@@ -77,5 +77,10 @@ public class PathWrappingPathValue extends PathValue
             values[i++] = ValueUtils.fromRelationshipProxy( relationship );
         }
         return values;
+    }
+
+    public Path path()
+    {
+        return path;
     }
 }

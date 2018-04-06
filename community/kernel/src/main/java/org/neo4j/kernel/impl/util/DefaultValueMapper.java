@@ -71,6 +71,10 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     @Override
     public Path mapPath( PathValue value )
     {
+        if ( value instanceof PathWrappingPathValue )
+        {
+            return ((PathWrappingPathValue) value).path();
+        }
         NodeValue[] nodeValues = value.nodes();
         RelationshipValue[] relationshipValues = value.relationships();
         long[] nodes = new long[nodeValues.length];
