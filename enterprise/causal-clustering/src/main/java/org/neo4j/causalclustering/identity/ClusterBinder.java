@@ -42,6 +42,7 @@ import static java.lang.String.format;
 public class ClusterBinder implements Supplier<Optional<ClusterId>>
 {
     private final SimpleStorage<ClusterId> clusterIdStorage;
+    private final SimpleStorage<DatabaseName> dbNameStorage;
     private final CoreTopologyService topologyService;
     private final CoreBootstrapper coreBootstrapper;
     private final Log log;
@@ -54,11 +55,12 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     private ClusterId clusterId;
 
-    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
-                            LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts )
+    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, LogProvider logProvider, Clock clock,
+            ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts,
+            CoreTopologyService topologyService )
     {
         this.clusterIdStorage = clusterIdStorage;
+        this.dbNameStorage = dbNameStorage;
         this.topologyService = topologyService;
         this.coreBootstrapper = coreBootstrapper;
         this.log = logProvider.getLog( getClass() );
@@ -111,6 +113,20 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
      */
     public BoundState bindToCluster() throws Throwable
     {
+
+        if ( dbNameStorage.exists() )
+        {
+            String storedName = dbNameStorage.readState().name();
+            if ( !dbName.equals( storedName ) )
+            {
+                throw new IllegalStateException( format("Your configured database name may have changed. Found %s, expected %s", dbName, storedName ) );
+            }
+        }
+        else
+        {
+            dbNameStorage.writeState( new DatabaseName( dbName ) );
+        }
+
         if ( clusterIdStorage.exists() )
         {
             clusterId = clusterIdStorage.readState();

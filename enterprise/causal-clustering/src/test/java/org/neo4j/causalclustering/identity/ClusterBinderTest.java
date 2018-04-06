@@ -62,10 +62,11 @@ public class ClusterBinderTest
     private final int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
     private final String dbName = config.get( CausalClusteringSettings.database );
 
-    private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService )
+    private ClusterBinder clusterBinder( SimpleStorage<ClusterId> clusterIdStorage,
+            CoreTopologyService topologyService )
     {
-        return new ClusterBinder( clusterIdStorage, topologyService, NullLogProvider.getInstance(), clock,
-                () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000, coreBootstrapper, dbName, minCoreHosts );
+        return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), NullLogProvider.getInstance(), clock,
+                () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000, coreBootstrapper, dbName, minCoreHosts, topologyService );
     }
 
     @Test
@@ -80,7 +81,7 @@ public class ClusterBinderTest
         int minCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
         String dbName = config.get( CausalClusteringSettings.database );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         try
         {
@@ -108,7 +109,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.localCoreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         // when
         binder.bindToCluster();
@@ -129,7 +130,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( true );
 
-        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        StubSimpleStorage<ClusterId> clusterIdStorage = new StubSimpleStorage<>();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
         ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
@@ -153,7 +154,7 @@ public class ClusterBinderTest
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( false );
 
-        StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
+        StubSimpleStorage<ClusterId> clusterIdStorage = new StubSimpleStorage<>();
         clusterIdStorage.writeState( previouslyBoundClusterId );
 
         ClusterBinder binder = clusterBinder( clusterIdStorage, topologyService );
@@ -187,7 +188,7 @@ public class ClusterBinderTest
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
-        ClusterBinder binder = clusterBinder( new StubClusterIdStorage(), topologyService );
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
 
         // when
         BoundState boundState = binder.bindToCluster();
@@ -201,26 +202,26 @@ public class ClusterBinderTest
         assertEquals( boundState.snapshot().get(), snapshot );
     }
 
-    private class StubClusterIdStorage implements SimpleStorage<ClusterId>
+    private class StubSimpleStorage<T> implements SimpleStorage<T>
     {
-        private ClusterId clusterId;
+        private T state;
 
         @Override
         public boolean exists()
         {
-            return clusterId != null;
+            return state != null;
         }
 
         @Override
-        public ClusterId readState()
+        public T readState()
         {
-            return clusterId;
+            return state;
         }
 
         @Override
-        public void writeState( ClusterId state )
+        public void writeState( T state )
         {
-            clusterId = state;
+            this.state = state;
         }
     }
 }

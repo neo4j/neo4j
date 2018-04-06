@@ -226,21 +226,28 @@ public class Cluster
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( errorHandler, coreMembers() );
             shutdownReadReplicas( errorHandler );
         }
     }
 
-    private void shutdownCoreMembers( ErrorHandler errorHandler )
+    private void shutdownCoreMembers( ErrorHandler errorHandler, Collection<CoreClusterMember> members )
     {
-        shutdownMembers( coreMembers(), errorHandler );
+        shutdownMembers( members, errorHandler );
     }
 
     public void shutdownCoreMembers()
     {
+        shutdownCoreMembers( coreMembers().toArray( new CoreClusterMember[0] ) );
+    }
+
+    public void shutdownCoreMembers( CoreClusterMember... members )
+    {
+        List<CoreClusterMember> membersColl = Arrays.asList( members );
+
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( errorHandler, membersColl );
         }
     }
 
@@ -586,8 +593,13 @@ public class Cluster
 
     public void startCoreMembers() throws InterruptedException, ExecutionException
     {
-        Collection<CoreClusterMember> members = coreMembers.values();
-        List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
+        startCoreMembers( coreMembers.values().toArray( new CoreClusterMember[0] ) );
+    }
+
+    public void startCoreMembers( CoreClusterMember... members ) throws InterruptedException, ExecutionException
+    {
+        List<CoreClusterMember> membersColl = Arrays.asList( members );
+        List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", membersColl, cm ->
         {
             cm.start();
             return cm.database();

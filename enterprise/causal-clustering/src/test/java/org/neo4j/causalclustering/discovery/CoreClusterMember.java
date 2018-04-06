@@ -233,6 +233,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         }
     }
 
+    public void updateDbNameConfig( String dbName )
+    {
+        this.memberConfig.augment( CausalClusteringSettings.database, dbName );
+    }
+
     @Override
     public File homeDir()
     {

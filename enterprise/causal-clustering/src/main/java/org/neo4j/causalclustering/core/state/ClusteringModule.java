@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.identity.DatabaseName;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -44,6 +45,7 @@ import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
+import static org.neo4j.causalclustering.core.server.CoreServerModule.DB_NAME;
 import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 public class ClusteringModule
@@ -62,6 +64,10 @@ public class ClusteringModule
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
+        String dbName = config.get( CausalClusteringSettings.database );
+        SimpleStorage<DatabaseName> dbNameStorage =
+                new SimpleFileStorage<>( fileSystem, clusterStateDirectory, DB_NAME, new DatabaseName.Marshal(), logProvider );
+
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
                         userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
@@ -78,10 +84,9 @@ public class ClusteringModule
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
         int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
-        String dbName = config.get( CausalClusteringSettings.database );
 
-        clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
-                () -> sleep( 100 ), 300_000, coreBootstrapper, dbName, minimumCoreHosts );
+        clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, logProvider, Clocks.systemClock(),
+                () -> sleep( 100 ), 300_000, coreBootstrapper, dbName, minimumCoreHosts, topologyService );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

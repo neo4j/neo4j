@@ -101,6 +101,7 @@ public class CoreServerModule
 {
     public static final String CLUSTER_ID_NAME = "cluster-id";
     public static final String LAST_FLUSHED_NAME = "last-flushed";
+    public static final String DB_NAME = "db-name";
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
     private final Server catchupServer;
