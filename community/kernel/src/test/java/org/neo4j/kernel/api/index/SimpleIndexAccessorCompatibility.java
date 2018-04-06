@@ -32,8 +32,11 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
 import static java.util.Arrays.asList;
@@ -174,6 +177,24 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             ) );
 
         assertThat( query( range( 1, d4, true, d7, true ) ), Matchers.contains( 4L, 5L, 6L, 7L ) );
+    }
+
+    @Test
+    public void testIndexRangeSeekWithSpatial() throws Exception
+    {
+        Assume.assumeTrue( testSuite.supportsSpatial() );
+
+        PointValue p1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, -1 );
+        PointValue p2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -180, 1 );
+        PointValue p3 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
+
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), p1 ),
+                add( 2L, descriptor.schema(), p2 ),
+                add( 3L, descriptor.schema(), p3 )
+            ) );
+
+        assertThat( query( range( 1, p1, true, p2, true ) ), Matchers.contains( 1L, 2L ) );
     }
 
     @Test

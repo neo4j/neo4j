@@ -19,42 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
-
-public class SpatialNonUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<SpatialSchemaKey,NativeSchemaValue>
+public class SpatialNonUniqueSchemaIndexAccessorTest extends SpatialSchemaIndexAccessorTest
 {
-    private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    private static final SpaceFillingCurveSettings settings = new SpaceFillingCurveSettingsFactory( Config.defaults() ).settingsFor( crs );
-
-    SpatialIndexFiles.SpatialFileLayout fileLayout;
-
-    @Override
-    NativeSchemaIndexAccessor<SpatialSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
-    {
-        fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        SpatialIndexFiles.SpatialFileLayout fileLayout =
-                new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig,
-                new StandardConfiguration() );
-    }
-
-    @Override
-    public File getIndexFile()
-    {
-        return fileLayout.indexFile;
-    }
-
     @Override
     protected LayoutTestUtil<SpatialSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {

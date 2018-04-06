@@ -46,10 +46,10 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialSchemaKey,Nativ
     {
             Values.pointValue( WGS84, -180, -90 ),
             Values.pointValue( WGS84, -180, 90 ),
+            Values.pointValue( WGS84, -1, -1 ),
             Values.pointValue( WGS84, 0, 0 ),
-            Values.pointValue( WGS84, -1, 1 ),
-            Values.pointValue( WGS84, 180, 90 ),
             Values.pointValue( WGS84, 180, -90 ),
+            Values.pointValue( WGS84, 180, 90 ),
     };
 
     public static PointValue randomPoint( Randoms random )
