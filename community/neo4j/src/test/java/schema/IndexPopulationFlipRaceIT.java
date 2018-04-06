@@ -27,22 +27,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Session;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -166,24 +158,5 @@ public class IndexPopulationFlipRaceIT
                         indexB, nodeBId, Values.of( nodeBId ) ) );
             }
         }
-    }
-
-    int countIndexed( org.neo4j.internal.kernel.api.Transaction tx, SchemaIndexDescriptor index, long nodeId, Value value )
-            throws KernelException
-    {
-        IndexReference ref = DefaultIndexReference.fromDescriptor( index );
-        int count = 0;
-        try ( NodeValueIndexCursor node = tx.cursors().allocateNodeValueIndexCursor() )
-        {
-            tx.dataRead().nodeIndexSeek( ref, node, IndexOrder.NONE, IndexQuery.exact( index.schema().getPropertyId(), value ) );
-            while ( node.next() )
-            {
-                if ( node.nodeReference() == nodeId )
-                {
-                    count++;
-                }
-            }
-        }
-        return count;
     }
 }

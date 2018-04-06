@@ -128,7 +128,8 @@ public class ClusterDiscoveryIT
               Transaction tx = session.beginTransaction( Type.implicit ) )
         {
             // when
-            List<Object[]> currentMembers = asList( tx.procedures().procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ), new Object[0] ) );
+            List<Object[]> currentMembers =
+                    asList( tx.procedures().procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ), new Object[0] ) );
 
             return (List<Map<String,Object>>) currentMembers.get( 0 )[1];
         }

@@ -31,9 +31,9 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -158,7 +158,6 @@ public class KernelSchemaStateFlushingTest
     private IndexReference createIndex() throws KernelException
     {
         try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
-//              Statement ignore = transaction.acquireStatement() )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -170,7 +169,6 @@ public class KernelSchemaStateFlushingTest
     private void dropIndex( IndexReference reference ) throws KernelException
     {
         try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
-//              Statement ignore = transaction.acquireStatement() )
         {
             transaction.schemaWrite().indexDrop( reference );
             transaction.success();
@@ -181,7 +179,6 @@ public class KernelSchemaStateFlushingTest
             throws IndexNotFoundKernelException, TransactionFailureException
     {
         try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
-//              Statement ignore = transaction.acquireStatement() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.success();
@@ -192,7 +189,6 @@ public class KernelSchemaStateFlushingTest
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
         try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
-//              Statement ignore = transaction.acquireStatement() )
         {
             while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
