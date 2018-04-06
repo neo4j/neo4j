@@ -34,6 +34,8 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasSameStoreId;
 
@@ -45,21 +47,24 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
     private final PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider;
     private final Supplier<NeoStoreDataSource> dataSourceSupplier;
     private final StoreFileStreamingProtocol streamingProtocol = new StoreFileStreamingProtocol();
+    private final Log log;
 
     public PrepareStoreCopyRequestHandler( CatchupServerProtocol catchupServerProtocol, Supplier<CheckPointer> checkPointerSupplier,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex, Supplier<NeoStoreDataSource> dataSourceSupplier,
-            PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider )
+            PrepareStoreCopyFilesProvider prepareStoreCopyFilesProvider, LogProvider logProvider )
     {
         this.protocol = catchupServerProtocol;
         this.checkPointerSupplier = checkPointerSupplier;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
         this.prepareStoreCopyFilesProvider = prepareStoreCopyFilesProvider;
         this.dataSourceSupplier = dataSourceSupplier;
+        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     protected void channelRead0( ChannelHandlerContext channelHandlerContext, PrepareStoreCopyRequest prepareStoreCopyRequest ) throws IOException
     {
+        log.debug( "Received prepare store copy request for store id: " + prepareStoreCopyRequest.getStoreId() );
         CloseablesListener closeablesListener = new CloseablesListener();
         PrepareStoreCopyResponse response = PrepareStoreCopyResponse.error( PrepareStoreCopyResponse.Status.E_LISTING_STORE );
         try

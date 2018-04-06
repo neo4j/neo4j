@@ -98,7 +98,7 @@ public class RegularCatchupServerHandler implements CatchupServerHandler
     public ChannelHandler storeListingRequestHandler( CatchupServerProtocol catchupServerProtocol )
     {
         return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
-                new PrepareStoreCopyFilesProvider( pageCache, fs ) );
+                new PrepareStoreCopyFilesProvider( pageCache, fs ), logProvider );
     }
 
     @Override

@@ -38,6 +38,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -75,7 +76,7 @@ public class PrepareStoreCopyRequestHandlerTest
         when( prepareStoreCopyFilesProvider.prepareStoreCopyFiles( any() ) ).thenReturn( prepareStoreCopyFiles );
 
         return new PrepareStoreCopyRequestHandler( catchupServerProtocol, checkPointerSupplier, storeCopyCheckPointMutex, dataSourceSupplier,
-                prepareStoreCopyFilesProvider );
+                prepareStoreCopyFilesProvider, NullLogProvider.getInstance() );
     }
 
     @Test
