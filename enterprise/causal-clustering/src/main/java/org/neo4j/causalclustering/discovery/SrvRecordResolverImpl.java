@@ -43,7 +43,8 @@ public class SrvRecordResolverImpl extends SrvRecordResolver
     {
         Attributes attrs = (_idc == null ? getIdc() : _idc).getAttributes( url, SRV_RECORDS );
 
-        return enumerationAsStream( (NamingEnumeration<String>) attrs.get( SRV_ATTR ).getAll() ).map( SrvRecord::parse );
+        return enumerationAsStream( (NamingEnumeration<String>) attrs.get( SRV_ATTR ).getAll() )
+                .map( SrvRecord::parse );
     }
 
     private synchronized InitialDirContext getIdc()
