@@ -196,7 +196,8 @@ public class NettyPipelineBuilderTest
 
         assertEquals( 3, getHandlers( channel.pipeline() ).size() ); // head/tail error handlers also counted
         assertThat( channel.pipeline().names(),
-                hasItems( "error_handler_head", NettyPipelineBuilder.MESSAGE_GATE_NAME, "error_handler_tail" ) );
+                hasItems( NettyPipelineBuilder.ERROR_HANDLER_HEAD, NettyPipelineBuilder.MESSAGE_GATE_NAME,
+                        NettyPipelineBuilder.ERROR_HANDLER_TAIL ) );
 
         // when
         ServerNettyPipelineBuilder builderB = NettyPipelineBuilder.server( channel.pipeline(), log );
@@ -206,7 +207,8 @@ public class NettyPipelineBuilderTest
         // then
         assertEquals( 4, getHandlers( channel.pipeline() ).size() ); // head/tail error handlers also counted
         assertThat( channel.pipeline().names(),
-                hasItems( "error_handler_head", "my_handler", NettyPipelineBuilder.MESSAGE_GATE_NAME, "error_handler_tail" ) );
+                hasItems( NettyPipelineBuilder.ERROR_HANDLER_HEAD, "my_handler", NettyPipelineBuilder.MESSAGE_GATE_NAME,
+                        NettyPipelineBuilder.ERROR_HANDLER_TAIL ) );
     }
 
     private List<ChannelHandler> getHandlers( ChannelPipeline pipeline )
