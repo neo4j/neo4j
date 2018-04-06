@@ -22,9 +22,11 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,7 +37,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -118,7 +119,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private RemovalsCountingDiffSets nodes;
     private RemovalsCountingRelationshipsDiffSets relationships;
 
-    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint;
+    private MutableObjectLongMap<IndexBackedConstraintDescriptor> createdConstraintIndexesByConstraint;
 
     private Map<SchemaDescriptor,Map<ValueTuple,PrimitiveLongDiffSets>> indexUpdates;
 
@@ -1235,11 +1236,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return updates;
     }
 
-    private Map<IndexBackedConstraintDescriptor, Long> createdConstraintIndexesByConstraint()
+    private MutableObjectLongMap<IndexBackedConstraintDescriptor> createdConstraintIndexesByConstraint()
     {
         if ( createdConstraintIndexesByConstraint == null )
         {
-            createdConstraintIndexesByConstraint = new HashMap<>();
+            createdConstraintIndexesByConstraint = new ObjectLongHashMap<>();
         }
         return createdConstraintIndexesByConstraint;
     }

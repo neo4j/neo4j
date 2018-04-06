@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -42,8 +42,8 @@ public class PhysicalLogCommandReaderV2_2_4Test
         IndexDefineCommand definitions = new IndexDefineCommand();
         int indexNameId = 10;
         definitions.init(
-                MapUtil.genericMap( "myindex", indexNameId ),
-                MapUtil.genericMap() );
+                ObjectIntHashMap.newWithKeysValues( "myindex", indexNameId ),
+                new ObjectIntHashMap<>() );
         definitions.serialize( channel );
         RemoveCommand removeCommand = new IndexCommand.RemoveCommand();
         removeCommand.init( indexNameId, IndexEntityType.Node.id(), 1234, -1, null );
