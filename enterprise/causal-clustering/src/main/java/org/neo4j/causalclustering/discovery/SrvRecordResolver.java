@@ -19,14 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.stream.Stream;
 import javax.naming.NamingException;
-
-import org.neo4j.helpers.AdvertisedSocketAddress;
 
 public abstract class SrvRecordResolver
 {
@@ -58,47 +52,12 @@ public abstract class SrvRecordResolver
         public static SrvRecord parse( String input )
         {
             String[] parts = input.split( " " );
-            return new SrvRecord( Integer.parseInt( parts[0] ), Integer.parseInt( parts[1] ), Integer.parseInt( parts[2] ), parts[3] );
-        }
-    }
-
-    public static class MockSrvRecordResolver extends SrvRecordResolver
-    {
-
-        private final HashMap<String,List<SrvRecord>> records;
-
-        public MockSrvRecordResolver( HashMap<String,List<SrvRecord>> records )
-        {
-            this.records = records;
-        }
-
-        public void addRecords( String url, Collection<SrvRecord> records )
-        {
-            records.forEach( r -> addRecord( url, r ) );
-        }
-
-        public synchronized void addRecord( String url, SrvRecord record )
-        {
-            List<SrvRecord> srvRecords = records.getOrDefault( url, new ArrayList<>() );
-            srvRecords.add( record );
-
-            if ( !records.containsKey( url ) )
-            {
-                records.put( url, srvRecords );
-            }
-        }
-
-        @Override
-        public Stream<SrvRecord> resolveSrvRecord( String url ) throws NamingException
-        {
-            List<SrvRecord> srvRecords = records.get( url );
-            if ( srvRecords == null )
-            {
-                NamingException e = new NamingException( "No SRV records found" );
-                e.appendRemainingComponent( url );
-                throw e;
-            }
-            return srvRecords.stream();
+            return new SrvRecord(
+                    Integer.parseInt( parts[0] ),
+                    Integer.parseInt( parts[1] ),
+                    Integer.parseInt( parts[2] ),
+                    parts[3]
+            );
         }
     }
 }

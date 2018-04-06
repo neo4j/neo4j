@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,8 +29,6 @@ import javax.naming.NamingException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
 
 public class SrvHostnameResolver implements HostnameResolver
 {
@@ -60,15 +58,15 @@ public class SrvHostnameResolver implements HostnameResolver
 
             if ( addresses.isEmpty() )
             {
-                log.error( format( "Failed to resolve srv records for '%s'", initialAddress.getHostname() ) );
+                log.error( "Failed to resolve srv records for '%s'", initialAddress.getHostname() );
             }
 
             return addresses;
         }
         catch ( NamingException e )
         {
-            log.error( format( "Failed to resolve srv records for '%s'", initialAddress.getHostname() ), e );
-            return new HashSet<>( 0 );
+            log.error( "Failed to resolve srv records for '%s'", initialAddress.getHostname(), e );
+            return Collections.emptySet();
         }
     }
 }

@@ -35,8 +35,8 @@ import static org.junit.Assert.assertTrue;
 
 public class SrvHostnameResolverTest
 {
-    SrvRecordResolver.MockSrvRecordResolver mockSrvRecordResolver =
-            new SrvRecordResolver.MockSrvRecordResolver( new HashMap<String,List<SrvRecordResolver.SrvRecord>>()
+    MockSrvRecordResolver mockSrvRecordResolver =
+            new MockSrvRecordResolver( new HashMap<String,List<SrvRecordResolver.SrvRecord>>()
             {
                 {
                     put( "emptyrecord.com", new ArrayList<>() );
@@ -102,7 +102,7 @@ public class SrvHostnameResolverTest
         resolver.resolve( new AdvertisedSocketAddress( "unknown.com", 0 ) );
 
         // then
-        logProvider.assertContainsMessageContaining( "Failed to resolve srv records for 'unknown.com'" );
+        logProvider.assertContainsMessageContaining( "Failed to resolve srv records for '%s'" );
     }
 
     @Test
@@ -112,6 +112,6 @@ public class SrvHostnameResolverTest
         resolver.resolve( new AdvertisedSocketAddress( "emptyrecord.com", 0 ) );
 
         // then
-        logProvider.assertContainsMessageContaining( "Failed to resolve srv records for 'emptyrecord.com'" );
+        logProvider.assertContainsMessageContaining( "Failed to resolve srv records for '%s'" );
     }
 }
