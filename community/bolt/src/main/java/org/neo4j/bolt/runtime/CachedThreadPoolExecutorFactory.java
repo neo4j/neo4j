@@ -54,9 +54,14 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
     }
 
     @Override
-    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, ThreadFactory threadFactory )
+    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepAlive, int queueSize, boolean startCoreThreads, ThreadFactory threadFactory )
     {
         ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepAlive, createTaskQueue( queueSize ), threadFactory, rejectionHandler );
+
+        if ( startCoreThreads )
+        {
+            result.prestartAllCoreThreads();
+        }
 
         return result;
     }

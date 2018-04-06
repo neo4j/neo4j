@@ -254,7 +254,7 @@ public class DefaultBoltConnection implements BoltConnection
         {
             error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
             message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
-                    "serve it at the moment. You can retry at a later time or consider increasing max pool / queue size for bolt connector(s).", id() );
+                    "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
         }
         else
         {
