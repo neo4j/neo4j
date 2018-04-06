@@ -117,6 +117,23 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
+  test("seeks should work for indexed point arrays") {
+    createIndex()
+
+    val point1 = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4).asObjectCopy()
+    val point2 = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 5.6).asObjectCopy()
+
+    val pointArray1 = Values.pointArray(Array(point1, point2))
+    val pointArray2 = Values.pointArray(Array(point2, point1))
+    val pointArray3 = Values.pointArray(Array(point1, point2, point1))
+
+    val n1 = createIndexedNode(pointArray1)
+    createIndexedNode(pointArray2)
+    createIndexedNode(pointArray3)
+
+    assertSeekMatchFor(pointArray1, n1)
+  }
+
   test("with multiple indexed points only exact match should be returned") {
     // Given
     graph.createIndex("Place", "location")
