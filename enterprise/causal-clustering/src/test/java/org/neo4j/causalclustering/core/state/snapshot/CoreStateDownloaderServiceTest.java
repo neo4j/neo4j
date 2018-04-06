@@ -142,7 +142,7 @@ public class CoreStateDownloaderServiceTest
             {
                 return false;
             }
-        }, 1, TimeUnit.SECONDS );
+        }, 20, TimeUnit.SECONDS );
     }
 
     private LogProvider logProvider( Log log )
