@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -37,32 +38,31 @@ public class SrvRecordResolverImpl extends SrvRecordResolver
     private final String[] SRV_RECORDS = {"SRV"};
     private final String SRV_ATTR = "srv";
 
-    private InitialDirContext _idc;
+    private Optional<InitialDirContext> _idc = Optional.empty();
 
     public Stream<SrvRecord> resolveSrvRecord( String url ) throws NamingException
     {
-        Attributes attrs = (_idc == null ? getIdc() : _idc).getAttributes( url, SRV_RECORDS );
+        Attributes attrs = _idc.orElseGet( this::setIdc ).getAttributes( url, SRV_RECORDS );
 
-        return enumerationAsStream( (NamingEnumeration<String>) attrs.get( SRV_ATTR ).getAll() )
-                .map( SrvRecord::parse );
+        return enumerationAsStream( (NamingEnumeration<String>) attrs.get( SRV_ATTR ).getAll() ).map( SrvRecord::parse );
     }
 
-    private synchronized InitialDirContext getIdc()
+    private synchronized InitialDirContext setIdc()
     {
-        if ( _idc == null )
+        return _idc.orElseGet( () ->
         {
+            Properties env = new Properties();
+            env.put( Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory" );
             try
             {
-                Properties env = new Properties();
-                env.put( Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.dns.DnsContextFactory" );
-                _idc = new InitialDirContext( env );
+                _idc = Optional.of( new InitialDirContext( env ) );
+                return _idc.get();
             }
             catch ( NamingException e )
             {
                 throw new RuntimeException( e );
             }
-        }
-        return _idc;
+        } );
     }
 
     private static <T> Stream<T> enumerationAsStream( Enumeration<T> e )
