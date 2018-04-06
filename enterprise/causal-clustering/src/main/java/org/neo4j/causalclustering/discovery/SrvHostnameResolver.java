@@ -61,7 +61,7 @@ public class SrvHostnameResolver implements HostnameResolver
         }
         catch ( NamingException e )
         {
-            log.error( format( "Failed to resolve srv records '%s'", initialAddress.getHostname() ), e );
+            log.error( format( "Failed to resolve srv records for '%s'", initialAddress.getHostname() ), e );
             return new HashSet<>( 0 );
         }
     }
