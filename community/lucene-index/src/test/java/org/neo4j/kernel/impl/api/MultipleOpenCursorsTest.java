@@ -187,7 +187,6 @@ public class MultipleOpenCursorsTest
         return list;
     }
 
-
     @Test
     public void multipleCursorsNotNestedExact() throws Exception
     {
