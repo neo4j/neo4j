@@ -62,24 +62,23 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
     protected void channelRead0( ChannelHandlerContext ctx, GetIndexFilesRequest snapshotRequest ) throws IOException
     {
         CloseablesListener closeablesListener = new CloseablesListener();
-        NeoStoreDataSource neoStoreDataSource = dataSource.get();
-        if ( !hasSameStoreId( snapshotRequest.expectedStoreId(), neoStoreDataSource ) )
+        StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;
+        try
         {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH );
-            protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
-        }
-        else if ( !isTransactionWithinReach( snapshotRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
-        {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND );
-        }
-        else
-        {
-            StoreCopyFinishedResponse.Status status = StoreCopyFinishedResponse.Status.E_UNKNOWN;
-            File storeDir = neoStoreDataSource.getStoreDir();
-            ResourceIterator<StoreFileMetadata> resourceIterator =
-                    neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.indexId() );
-            try
+            NeoStoreDataSource neoStoreDataSource = dataSource.get();
+            if ( !hasSameStoreId( snapshotRequest.expectedStoreId(), neoStoreDataSource ) )
             {
+                responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
+            }
+            else if ( !isTransactionWithinReach( snapshotRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
+            {
+                responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
+            }
+            else
+            {
+                File storeDir = neoStoreDataSource.getStoreDir();
+                ResourceIterator<StoreFileMetadata> resourceIterator =
+                        neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( snapshotRequest.indexId() );
                 closeablesListener.add( resourceIterator );
                 while ( resourceIterator.hasNext() )
                 {
@@ -89,13 +88,13 @@ public class GetIndexSnapshotRequestHandler extends SimpleChannelInboundHandler<
                     int recordSize = storeFileMetadata.recordSize();
                     storeFileStreamingProtocol.stream( ctx, new StoreResource( file, relativePath, recordSize, pageCache, fs ) );
                 }
-                status = StoreCopyFinishedResponse.Status.SUCCESS;
+                responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;
             }
-            finally
-            {
-                storeFileStreamingProtocol.end( ctx, status ).addListener( closeablesListener );
-                protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
-            }
+        }
+        finally
+        {
+            storeFileStreamingProtocol.end( ctx, responseStatus );
+            protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
         }
     }
 }
