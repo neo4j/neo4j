@@ -19,38 +19,31 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Properties;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.InitialDirContext;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-
-public class SrvRecordResolverImpl implements SrvRecordResolver
+public class SrvRecordResolverImpl extends SrvRecordResolver
 {
-
     private final String[] SRV_RECORDS = {"SRV"};
     private final String SRV_ATTR = "srv";
 
     private InitialDirContext _idc;
 
-    public AdvertisedSocketAddress[] resolveSrvRecord( String url ) throws NamingException
+    public Stream<SrvRecord> resolveSrvRecord( String url ) throws NamingException
     {
         Attributes attrs = (_idc == null ? getIdc() : _idc).getAttributes( url, SRV_RECORDS );
 
-        NamingEnumeration<?> records = attrs.get( SRV_ATTR ).getAll();
-        List<AdvertisedSocketAddress> addresses = new ArrayList<>();
-        while ( records.hasMore() )
-        {
-            SrvRecord record = SrvRecord.parse( (String) records.next() );
-            addresses.add( new AdvertisedSocketAddress( record.host, record.port ) );
-        }
-
-        return addresses.toArray( new AdvertisedSocketAddress[addresses.size()] );
+        return enumerationAsStream( (NamingEnumeration<String>) attrs.get( SRV_ATTR ).getAll() ).map( SrvRecord::parse );
     }
 
     private synchronized InitialDirContext getIdc()
@@ -71,39 +64,19 @@ public class SrvRecordResolverImpl implements SrvRecordResolver
         return _idc;
     }
 
-    public AdvertisedSocketAddress[] resolveSrvRecord( String service, String protocol,
-            String hostname ) throws NamingException
+    private static <T> Stream<T> enumerationAsStream( Enumeration<T> e )
     {
-        String url = String.format( "_%s._%s.%s", service, protocol, hostname );
-
-        return resolveSrvRecord( url );
-    }
-
-    static class SrvRecord
-    {
-        public final int priority;
-        public final int weight;
-        public final int port;
-        public final String host;
-
-        private SrvRecord( int priority, int weight, int port, String host )
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( new Iterator<T>()
         {
-            this.priority = priority;
-            this.weight = weight;
-            this.port = port;
-            // Typically the SRV record has a trailing dot - if that is the case we should remove it
-            this.host = host.charAt( host.length() - 1 ) == '.' ? host.substring( 0, host.length() - 1 ) : host;
-        }
+            public T next()
+            {
+                return e.nextElement();
+            }
 
-        public static SrvRecord parse( String input )
-        {
-            String[] parts = input.split( " " );
-            return new SrvRecord(
-                    Integer.parseInt( parts[0] ),
-                    Integer.parseInt( parts[1] ),
-                    Integer.parseInt( parts[2] ),
-                    parts[3]
-            );
-        }
+            public boolean hasNext()
+            {
+                return e.hasMoreElements();
+            }
+        }, Spliterator.ORDERED ), false );
     }
 }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.naming.NamingException;
 
@@ -49,19 +49,20 @@ public class SrvHostnameResolver implements HostnameResolver
     @Override
     public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress initialAddress )
     {
-        AdvertisedSocketAddress[] srvAddresses = new AdvertisedSocketAddress[0];
         try
         {
-            srvAddresses = srvRecordResolver.resolveSrvRecord( initialAddress.getHostname() );
+            Set<AdvertisedSocketAddress> addresses = srvRecordResolver
+                    .resolveSrvRecord( initialAddress.getHostname() )
+                    .map( srvRecord -> new AdvertisedSocketAddress( srvRecord.host, srvRecord.port ) )
+                    .collect( Collectors.toSet() );
+
+            userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
+            return addresses;
         }
         catch ( NamingException e )
         {
             log.error( format( "Failed to resolve srv records '%s'", initialAddress.getHostname() ), e );
+            return new HashSet<>( 0 );
         }
-
-        Set<AdvertisedSocketAddress> addresses = new HashSet<>( Arrays.asList( srvAddresses ) );
-
-        userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
-        return addresses;
     }
 }

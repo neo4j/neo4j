@@ -22,9 +22,17 @@ package org.neo4j.causalclustering.core;
 import java.io.File;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
+import org.neo4j.causalclustering.discovery.DnsHostnameResolver;
+import org.neo4j.causalclustering.discovery.DomainNameResolverImpl;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvRecordResolverImpl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -32,6 +40,7 @@ import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -172,9 +181,23 @@ public class CausalClusteringSettings implements LoadableConfig
 
     public enum DiscoveryType
     {
-        DNS,
-        LIST,
-        SRV
+        DNS( ( logProvider, userLogProvider ) -> new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() ) ),
+
+        LIST( ( logProvider, userLogProvider ) -> new NoOpHostnameResolver() ),
+
+        SRV( ( logProvider, userLogProvider ) -> new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() ) );
+
+        private final BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier;
+
+        DiscoveryType( BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier )
+        {
+            this.resolverSupplier = resolverSupplier;
+        }
+
+        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider )
+        {
+            return this.resolverSupplier.apply( logProvider, userLogProvider );
+        }
     }
 
     @Description( "Configure the discovery type used for cluster name resolution" )

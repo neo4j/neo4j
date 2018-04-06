@@ -29,17 +29,6 @@ public class ResolutionResolverFactory
             LogProvider userLogProvider )
     {
         CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
-        if ( discoveryType == CausalClusteringSettings.DiscoveryType.DNS )
-        {
-            return new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() );
-        }
-        else if ( discoveryType == CausalClusteringSettings.DiscoveryType.SRV )
-        {
-            return new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() );
-        }
-        else
-        {
-            return new NoOpHostnameResolver();
-        }
+        return discoveryType.getHostnameResolver( logProvider, userLogProvider );
     }
 }
