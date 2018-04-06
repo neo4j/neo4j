@@ -649,6 +649,68 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
+    @Test
+    public void shouldListAllConstraints() throws Exception
+    {
+        ConstraintDescriptor toRetain;
+        ConstraintDescriptor toRetain2;
+        ConstraintDescriptor toDrop;
+        ConstraintDescriptor created;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int label2 = tx.tokenWrite().labelGetOrCreateForName( "label2" );
+
+            toRetain = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            toRetain2 = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label2, prop1 ) );
+            toDrop = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            created = tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( label, prop1 ) );
+            tx.schemaWrite().constraintDrop( toDrop );
+
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetAll();
+            assertThat( allConstraints, containsInAnyOrder( toRetain, toRetain2, created ) );
+
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldListConstraintsByLabel() throws Exception
+    {
+        int wrongLabel;
+
+        ConstraintDescriptor inStore;
+        ConstraintDescriptor droppedInTx;
+        ConstraintDescriptor createdInTx;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            wrongLabel = tx.tokenWrite().labelGetOrCreateForName( "label2" );
+            tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( wrongLabel, prop1 ) );
+
+            inStore = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            droppedInTx = tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop2 ) );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            createdInTx = tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( label, prop1 ) );
+            tx.schemaWrite().nodePropertyExistenceConstraintCreate( labelDescriptor( wrongLabel, prop1 ) );
+            tx.schemaWrite().constraintDrop( droppedInTx );
+
+            Iterable<ConstraintDescriptor> allConstraints = () -> tx.schemaRead().constraintsGetForLabel( label );
+            assertThat( allConstraints, containsInAnyOrder( inStore, createdInTx ) );
+
+            tx.success();
+        }
+    }
+
     protected abstract RelationTypeSchemaDescriptor typeDescriptor( int label, int... props );
 
     protected abstract LabelSchemaDescriptor labelDescriptor( int label, int... props );
