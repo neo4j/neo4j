@@ -30,6 +30,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -41,6 +42,9 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures
 {
+    @Context
+    public Log log;
+
     @Context
     public GraphDatabaseAPI graph;
 
@@ -99,6 +103,7 @@ public class BuiltInDbmsProcedures
 
         String result = numberOfClearedQueries == 0 ? "Query cache already empty."
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
+        log.info( result );
         return Stream.of( new StringResult( result ) );
     }
 
