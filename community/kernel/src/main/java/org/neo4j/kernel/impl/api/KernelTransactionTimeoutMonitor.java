@@ -58,7 +58,7 @@ public class KernelTransactionTimeoutMonitor implements Runnable
                 {
                     if ( activeTransaction.markForTermination( Status.Transaction.TransactionTimedOut ) )
                     {
-                        log.warn( "Transaction %s timeout.", activeTransaction );
+                        log.warn( "Transaction %s timeout after %d ms.", activeTransaction, transactionTimeoutMillis );
                     }
                 }
             }
