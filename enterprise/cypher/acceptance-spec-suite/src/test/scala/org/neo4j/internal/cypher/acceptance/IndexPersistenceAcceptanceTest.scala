@@ -165,7 +165,7 @@ class IndexPersistenceAcceptanceTest extends IndexingTestSupport {
 
   test("Should not get new index configuration on database settings changes of WGS84 minimum x extent") {
     // remove the entire western hemisphere
-    val wgs84_x_min = Settings.setting("unsupported.dbms.db.spatial.crs.wgs-84.x.min", Settings.DOUBLE, "0")
+    val wgs84_x_min = SpatialIndexSettings.makeCRSRangeSetting(CoordinateReferenceSystem.WGS84, 0, "min")
     testIndexRestartWithSettingsChanges(Map(wgs84_x_min -> "0"))
   }
 
