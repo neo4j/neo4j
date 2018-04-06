@@ -36,9 +36,10 @@ import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.SubCurve3D;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
@@ -1003,6 +1004,49 @@ public class SpaceFillingCurveTest
             HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
             shouldNeverStepMoreThanDistanceOne( curve, level, 10 );
         }
+    }
+
+    @Test
+    public void testEnsureSideRatioNotTooSmall2D()
+    {
+        // No change expected
+        double[] from = new double[] {0, 0};
+        double[] to = new double[] {1, 1};
+
+        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
+        double[] expectedFrom = new double[] {0, 0};
+        double[] expectedTo = new double[] {1, 1};
+        assertArrayEquals( expectedFrom, from , 0);
+        assertArrayEquals( expectedTo, to, 0 );
+
+        // Expected to change
+        to = new double[] {100, 0.1};
+        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
+        double[] expectedTo2 = new double[] {100, 1};
+        assertArrayEquals( expectedFrom, from , 0);
+        assertArrayEquals( expectedTo2, to, 0.00001 );
+    }
+
+    // Works for any number of dimensions, and 4 is more interesting than 3
+    @Test
+    public void testEnsureSideRatioNotTooSmall4D()
+    {
+        // No change expected
+        double[] from = new double[] {0, 0, 0, 0};
+        double[] to = new double[] {1, 1, 1, 1};
+
+        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
+        double[] expectedFrom = new double[] {0, 0, 0, 0};
+        double[] expectedTo = new double[] {1, 1, 1, 1};
+        assertArrayEquals( expectedFrom, from , 0);
+        assertArrayEquals( expectedTo, to, 0 );
+
+        // Expected to change
+        to = new double[] {100, 0.1, 12, 0.01};
+        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
+        double[] expectedTo2 = new double[] {100, 1, 12, 1};
+        assertArrayEquals( expectedFrom, from , 0);
+        assertArrayEquals( expectedTo2, to, 0.00001 );
     }
 
     private void shouldNeverStepMoreThanDistanceOne( SpaceFillingCurve curve, int level, int badnessThresholdPercentage )

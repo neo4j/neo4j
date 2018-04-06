@@ -31,6 +31,7 @@ import org.neo4j.gis.spatial.index.Envelope;
 public abstract class SpaceFillingCurve
 {
 
+    private static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100;
     /**
      * Description of the space filling curve structure
      */
@@ -283,8 +284,28 @@ public abstract class SpaceFillingCurve
                 }
             }
         }
+        ensureSideRatioNotTooSmall( from, to );
         Envelope referenceEnvelope = new Envelope( from, to );
         return getTilesIntersectingEnvelope( referenceEnvelope, config, null );
+    }
+
+    static void ensureSideRatioNotTooSmall( double[] from, double[] to )
+    {
+        double highestDiff = -Double.MAX_VALUE;
+        double[] diffs = new double[from.length];
+        for ( int i = 0; i < from.length; i++ )
+        {
+            diffs[i] = to[i] - from[i];
+            highestDiff = Math.max( highestDiff, diffs[i] );
+        }
+        final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
+        for ( int i = 0; i < from.length; i++ )
+        {
+            if ( diffs[i] < mindiff )
+            {
+                to[i] = from[i] + mindiff;
+            }
+        }
     }
 
     List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor )

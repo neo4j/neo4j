@@ -67,8 +67,7 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
         double searchRatio = range.getArea() / referenceEnvelope.getArea();
         if ( Double.isInfinite( searchRatio ) )
         {
-            // TODO: revert to maxLevel and fix getTilesIntersectingEnvelope
-            return Math.min( 10, maxLevel );
+            return maxLevel;
         }
         return Math.min( maxLevel, (int) (Math.log( searchRatio ) / Math.log( Math.pow( 2, nbrDim ) )) + extraLevels );
     }
