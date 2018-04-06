@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -132,8 +133,8 @@ public class LogTruncationTest
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
-        indexDefineCommand.init( MapUtil.genericMap(
-                "string1", 45, "key1", 2 ), MapUtil.genericMap( "string", 2 ) );
+        indexDefineCommand.init( ObjectIntHashMap.newWithKeysValues(
+                "string1", 45, "key1", 2 ), ObjectIntHashMap.newWithKeysValues( "string", 2 ) );
         permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
 
         // Counts commands
