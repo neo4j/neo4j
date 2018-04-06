@@ -81,6 +81,16 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    public void shouldNotFindNonExistentIndex() throws Exception
+    {
+        try ( Transaction transaction = session.beginTransaction() )
+        {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertThat( schemaRead.index( label, prop1 ), equalTo( CapableIndexReference.NO_INDEX ) );
+        }
+    }
+
+    @Test
     public void shouldCreateIndex() throws Exception
     {
         IndexReference index;
@@ -107,6 +117,18 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             assertThat( index.providerKey(), equalTo( "Undecided" ));
             assertThat( index.providerVersion(), equalTo( "0" ));
+        }
+    }
+
+    @Test
+    public void createdIndexShouldPopulateInTx() throws Exception
+    {
+        IndexReference index;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            index = tx.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            assertThat( tx.schemaRead().indexGetState( index ), equalTo( InternalIndexState.POPULATING ) );
+            tx.success();
         }
     }
 
