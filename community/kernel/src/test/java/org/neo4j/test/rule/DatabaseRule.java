@@ -435,6 +435,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return statementSupplier.get();
     }
 
+    public KernelTransaction transaction()
+    {
+        ensureStarted();
+        return database.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
+    }
+
     @Override
     public DependencyResolver getDependencyResolver()
     {
