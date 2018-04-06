@@ -621,7 +621,7 @@ public class IndexStatisticsTest
                     deleteNode( nodeId );
                     updatesTracker.increaseDeleted( 1 );
                 }
-                catch ( EntityNotFoundException ex )
+                catch ( EntityNotFoundException | NotFoundException ex )
                 {
                     // ignore
                 }
