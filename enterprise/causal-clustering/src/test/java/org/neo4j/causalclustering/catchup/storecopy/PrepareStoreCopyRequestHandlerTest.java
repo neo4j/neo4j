@@ -54,7 +54,7 @@ public class PrepareStoreCopyRequestHandlerTest
 
     private static final CheckPointer checkPointer = mock( CheckPointer.class );
     private static final NeoStoreDataSource neoStoreDataSource = mock( NeoStoreDataSource.class );
-    private final CatchupServerProtocol catchupServerProtocol = new CatchupServerProtocol();
+    private CatchupServerProtocol catchupServerProtocol;
     private final PrepareStoreCopyFiles prepareStoreCopyFiles = mock( PrepareStoreCopyFiles.class );
 
     @Before
@@ -67,6 +67,8 @@ public class PrepareStoreCopyRequestHandlerTest
 
     private PrepareStoreCopyRequestHandler createHandler( StoreCopyCheckPointMutex storeCopyCheckPointMutex )
     {
+        catchupServerProtocol = new CatchupServerProtocol();
+        catchupServerProtocol.expect( CatchupServerProtocol.State.PREPARE_STORE_COPY );
         Supplier<CheckPointer> checkPointerSupplier = () -> checkPointer;
         Supplier<NeoStoreDataSource> dataSourceSupplier = () -> neoStoreDataSource;
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );

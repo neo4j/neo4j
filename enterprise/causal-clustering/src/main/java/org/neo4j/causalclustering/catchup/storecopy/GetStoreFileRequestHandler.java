@@ -70,24 +70,31 @@ public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetS
     protected void channelRead0( ChannelHandlerContext ctx, GetStoreFileRequest fileRequest ) throws Exception
     {
         log.debug( "Requesting file %s", fileRequest.file() );
-        NeoStoreDataSource neoStoreDataSource = dataSource.get();
-        if ( !hasSameStoreId( fileRequest.expectedStoreId(), neoStoreDataSource ) )
+        StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;
+        try
         {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH );
-            protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
+            NeoStoreDataSource neoStoreDataSource = dataSource.get();
+            if ( !hasSameStoreId( fileRequest.expectedStoreId(), neoStoreDataSource ) )
+            {
+                responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
+            }
+            else if ( !isTransactionWithinReach( fileRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
+            {
+                responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
+            }
+            else
+            {
+                File storeDir = neoStoreDataSource.getStoreDir();
+                StoreFileMetadata storeFileMetadata = findFile( fileRequest.file().getName() );
+                storeFileStreamingProtocol.stream( ctx,
+                        new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(),
+                                pageCache, fs ) );
+                responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;
+            }
         }
-        else if ( !isTransactionWithinReach( fileRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
+        finally
         {
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND );
-        }
-        else
-        {
-            File storeDir = neoStoreDataSource.getStoreDir();
-            StoreFileMetadata storeFileMetadata = findFile( fileRequest.file().getName() );
-            storeFileStreamingProtocol.stream( ctx,
-                    new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(), pageCache,
-                            fs ) );
-            storeFileStreamingProtocol.end( ctx, StoreCopyFinishedResponse.Status.SUCCESS );
+            storeFileStreamingProtocol.end( ctx, responseStatus );
             protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
         }
     }
