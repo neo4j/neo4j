@@ -19,14 +19,27 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.apache.commons.lang3.mutable.MutableInt;
-
 import java.util.HashMap;
 import java.util.Map;
 
 class ProfileRefCounts
 {
-    private final Map<Profile,MutableInt> bag;
+    private static class Counter
+    {
+        private int count;
+
+        void increment()
+        {
+            count++;
+        }
+
+        int decrementAndGet()
+        {
+            return --count;
+        }
+    }
+
+    private final Map<Profile,Counter> bag;
 
     ProfileRefCounts()
     {
@@ -37,7 +50,7 @@ class ProfileRefCounts
     {
         for ( Profile profile : profiles )
         {
-            bag.computeIfAbsent( profile, p -> new MutableInt() ).increment();
+            bag.computeIfAbsent( profile, p -> new Counter() ).increment();
         }
     }
 
