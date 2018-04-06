@@ -57,6 +57,12 @@ public class SrvHostnameResolver implements HostnameResolver
                     .collect( Collectors.toSet() );
 
             userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
+
+            if ( addresses.isEmpty() )
+            {
+                log.error( format( "Failed to resolve srv records for '%s'", initialAddress.getHostname() ) );
+            }
+
             return addresses;
         }
         catch ( NamingException e )
