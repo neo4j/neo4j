@@ -50,6 +50,8 @@ import static java.util.Arrays.asList;
 public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientation, BUILDER extends NettyPipelineBuilder<O, BUILDER>>
 {
     static final String MESSAGE_GATE_NAME = "message_gate";
+    static final String ERROR_HANDLER_TAIL = "error_handler_tail";
+    static final String ERROR_HANDLER_HEAD = "error_handler_head";
 
     private final ChannelPipeline pipeline;
     private final Log log;
@@ -148,44 +150,37 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
      */
     public void install()
     {
-        ChannelHandler oldGateHandler = removeOldGate();
-        clear();
+        ensureErrorHandling();
+        installGate();
+        clearUserHandlers();
+
+        String userHead = ERROR_HANDLER_HEAD;
         for ( HandlerInfo info : handlerInfos )
         {
-            pipeline.addLast( info.name, info.handler );
+            pipeline.addAfter( userHead, info.name, info.handler );
+            userHead = info.name;
         }
-        installGate( oldGateHandler );
-        installErrorHandling();
     }
 
-    private ChannelHandler removeOldGate()
+    private void installGate()
     {
-        if ( pipeline.get( MESSAGE_GATE_NAME ) != null )
-        {
-            return pipeline.remove( MESSAGE_GATE_NAME );
-        }
-        return null;
-    }
-
-    private void installGate( ChannelHandler oldGateHandler )
-    {
-        if ( oldGateHandler != null && gatePredicate != null )
+        if ( pipeline.get( MESSAGE_GATE_NAME ) != null && gatePredicate != null )
         {
             throw new IllegalStateException( "Cannot have more than one gate." );
         }
         else if ( gatePredicate != null )
         {
-            pipeline.addLast( MESSAGE_GATE_NAME, new MessageGate( gatePredicate ) );
-        }
-        else if ( oldGateHandler != null )
-        {
-            pipeline.addLast( MESSAGE_GATE_NAME, oldGateHandler );
+            pipeline.addBefore( ERROR_HANDLER_TAIL, MESSAGE_GATE_NAME, new MessageGate( gatePredicate ) );
         }
     }
 
-    private void clear()
+    private void clearUserHandlers()
     {
-        pipeline.names().stream().filter( this::isNotDefault ).forEach( pipeline::remove );
+        pipeline.names().stream()
+                .filter( this::isNotDefault )
+                .filter( this::isNotErrorHandler )
+                .filter( this::isNotGate )
+                .forEach( pipeline::remove );
     }
 
     private boolean isNotDefault( String name )
@@ -194,10 +189,31 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
         return pipeline.get( name ) != null;
     }
 
-    private void installErrorHandling()
+    private boolean isNotErrorHandler( String name )
     {
+        return !name.equals( ERROR_HANDLER_HEAD ) && !name.equals( ERROR_HANDLER_TAIL );
+    }
+
+    private boolean isNotGate( String name )
+    {
+        return !name.equals( MESSAGE_GATE_NAME );
+    }
+
+    private void ensureErrorHandling()
+    {
+        int size = pipeline.names().size();
+
+        if ( pipeline.names().get( 0 ).equals( ERROR_HANDLER_HEAD ) )
+        {
+            if ( !pipeline.names().get( size - 2 ).equals( ERROR_HANDLER_TAIL ) ) // last position before netty's tail sentinel
+            {
+                throw new IllegalStateException( "Both error handlers must exist." );
+            }
+            return;
+        }
+
         // inbound goes in the direction from first->last
-        pipeline.addLast( "error_handler_tail", new ChannelDuplexHandler()
+        pipeline.addLast( ERROR_HANDLER_TAIL, new ChannelDuplexHandler()
         {
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
@@ -231,7 +247,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             }
         } );
 
-        pipeline.addFirst( "error_handler_head", new ChannelOutboundHandlerAdapter()
+        pipeline.addFirst( ERROR_HANDLER_HEAD, new ChannelOutboundHandlerAdapter()
         {
             // exceptions which did not get fulfilled on the promise of a write, etc.
             @Override
