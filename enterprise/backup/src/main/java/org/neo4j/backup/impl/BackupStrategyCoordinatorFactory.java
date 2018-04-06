@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup.impl;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.com.storecopy.FileMoveProvider;

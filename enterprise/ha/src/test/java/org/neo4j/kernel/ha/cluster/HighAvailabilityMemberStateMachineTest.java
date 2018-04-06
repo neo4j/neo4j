@@ -42,7 +42,7 @@ import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
@@ -562,7 +562,7 @@ public class HighAvailabilityMemberStateMachineTest
                 mock( PullerFactory.class, RETURNS_MOCKS ),
                 Iterables.empty(), masterClientResolver,
                 monitor,
-                new StoreCopyClient.Monitor.Adapter(),
+                new StoreCopyClientMonitor.Adapter(),
                 Suppliers.singleton( dataSource ),
                 Suppliers.singleton( transactionIdStoreMock ),
                 slave ->

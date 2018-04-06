@@ -41,6 +41,7 @@ import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -123,7 +124,6 @@ public class BackupProtocolService
         this.logDestination = logDestination;
         this.monitors = monitors;
         this.pageCache = pageCache;
-        monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
 
     public BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, Path targetDirectory,
@@ -156,7 +156,7 @@ public class BackupProtocolService
             long lastCommittedTx = -1;
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory.toFile(), tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
-                    monitors.newMonitor( StoreCopyClient.Monitor.class, getClass() ), forensics );
+                    monitors.newMonitor( StoreCopyClientMonitor.class, getClass() ), forensics );
             FullBackupStoreCopyRequester storeCopyRequester =
                     new FullBackupStoreCopyRequester( sourceHostNameOrIp, sourcePort, timeout, forensics, monitors );
             storeCopier.copyStore(
@@ -494,64 +494,6 @@ public class BackupProtocolService
         public void done()
         {
             client.stop();
-        }
-    }
-
-    private static class StoreCopyClientLoggingMonitor implements StoreCopyClient.Monitor
-    {
-        private final Log log;
-
-        StoreCopyClientLoggingMonitor( Log log )
-        {
-            this.log = log;
-        }
-
-        @Override
-        public void startReceivingStoreFiles()
-        {
-            log.debug( "Start receiving store files" );
-        }
-
-        @Override
-        public void finishReceivingStoreFiles()
-        {
-            log.debug( "Finish receiving store files" );
-        }
-
-        @Override
-        public void startReceivingStoreFile( File file )
-        {
-            log.debug( "Start receiving store file %s", file );
-        }
-
-        @Override
-        public void finishReceivingStoreFile( File file )
-        {
-            log.debug( "Finish receiving store file %s", file );
-        }
-
-        @Override
-        public void startReceivingTransactions( long startTxId )
-        {
-            log.info( "Start receiving transactions from %d", startTxId );
-        }
-
-        @Override
-        public void finishReceivingTransactions( long endTxId )
-        {
-            log.info( "Finish receiving transactions at %d", endTxId );
-        }
-
-        @Override
-        public void startRecoveringStore()
-        {
-            log.info( "Start recovering store" );
-        }
-
-        @Override
-        public void finishRecoveringStore()
-        {
-            log.info( "Finish recovering store" );
         }
     }
 }

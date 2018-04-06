@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -39,8 +40,11 @@ import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
@@ -68,6 +72,7 @@ public class StoreCopyClientTest
 
     private StoreCopyClient subject;
     private final LogProvider logProvider = FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out );
+    private final Monitors monitors = new Monitors();
 
     // params
     private final AdvertisedSocketAddress expectedAdvertisedAddress = new AdvertisedSocketAddress( "host", 1234 );
@@ -77,6 +82,7 @@ public class StoreCopyClientTest
 
     // helpers
     private File[] serverFiles = new File[]{new File( "fileA.txt" ), new File( "fileB.bmp" )};
+    private File targetLocation = new File( "targetLocation" );
     private PrimitiveLongSet indexIds = Primitive.longSet();
     private ConstantTimeTimeoutStrategy backOffStrategy;
 
@@ -85,7 +91,7 @@ public class StoreCopyClientTest
     {
         indexIds.add( 13 );
         backOffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
-        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
     }
 
     @Test
@@ -103,7 +109,7 @@ public class StoreCopyClientTest
         when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
 
         // when client requests catchup
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
 
         // then there are as many requests to the server for individual requests
         List<String> filteredRequests = filenamesFromIndividualFileRequests( getRequests() );
@@ -139,7 +145,7 @@ public class StoreCopyClientTest
     public void shouldFailIfTerminationConditionFails() throws CatchUpClientException
     {
         // given a file will fail an expected number of times
-        subject = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
+        subject = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
 
         // and requesting the individual file will fail
         when( catchUpClient.makeBlockingRequest( any(), any(), any() ) ).thenReturn(
@@ -156,7 +162,7 @@ public class StoreCopyClientTest
             subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, () -> () ->
             {
                 throw new StoreCopyFailedException( "This can't go on" );
-            } );
+            }, targetLocation );
             fail( "Expected exception: " + StoreCopyFailedException.class );
         }
         catch ( StoreCopyFailedException expectedException )
@@ -181,7 +187,7 @@ public class StoreCopyClientTest
         expectedException.expect( StoreCopyFailedException.class );
 
         // when
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
     }
 
     @Test
@@ -197,7 +203,71 @@ public class StoreCopyClientTest
         expectedException.expect( StoreCopyFailedException.class );
 
         // when
-        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely() );
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
+    }
+
+    @Test
+    public void storeFileEventsAreReported() throws Exception
+    {
+        // given
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
+        when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( prepareStoreCopyResponse );
+
+        // and
+        StoreCopyFinishedResponse success = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.SUCCESS );
+        when( catchUpClient.makeBlockingRequest( any(), any( GetStoreFileRequest.class ), any() ) ).thenReturn( success );
+
+        // and
+        when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
+
+        // and
+        StoreCopyClientMonitor storeCopyClientMonitor = mock( StoreCopyClientMonitor.class );
+        monitors.addMonitorListener( storeCopyClientMonitor );
+
+        // when
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
+
+        // then
+        verify( storeCopyClientMonitor ).startReceivingStoreFiles();
+        for ( File storeFileRequested : serverFiles )
+        {
+            verify( storeCopyClientMonitor ).startReceivingStoreFile( Paths.get( targetLocation.toString(), storeFileRequested.toString() ).toString() );
+            verify( storeCopyClientMonitor ).finishReceivingStoreFile( Paths.get( targetLocation.toString(), storeFileRequested.toString() ).toString() );
+        }
+        verify( storeCopyClientMonitor ).finishReceivingStoreFiles();
+    }
+
+    @Test
+    public void snapshotEventsAreReported() throws Exception
+    {
+        // given
+        PrepareStoreCopyResponse prepareStoreCopyResponse = PrepareStoreCopyResponse.success( serverFiles, indexIds, -123L );
+        when( catchUpClient.makeBlockingRequest( any(), any( PrepareStoreCopyRequest.class ), any() ) ).thenReturn( prepareStoreCopyResponse );
+
+        // and
+        StoreCopyFinishedResponse success = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.SUCCESS );
+        when( catchUpClient.makeBlockingRequest( any(), any( GetStoreFileRequest.class ), any() ) ).thenReturn( success );
+
+        // and
+        when( catchUpClient.makeBlockingRequest( any(), any( GetIndexFilesRequest.class ), any() ) ).thenReturn( success );
+
+        // and
+        StoreCopyClientMonitor storeCopyClientMonitor = mock( StoreCopyClientMonitor.class );
+        monitors.addMonitorListener( storeCopyClientMonitor );
+
+        // when
+        subject.copyStoreFiles( catchupAddressProvider, expectedStoreId, expectedStoreFileStream, continueIndefinitely(), targetLocation );
+
+        // then
+        verify( storeCopyClientMonitor ).startReceivingIndexSnapshots();
+        PrimitiveLongIterator iterator = indexIds.iterator();
+        while ( iterator.hasNext() )
+        {
+            long indexSnapshotIdRequested = iterator.next();
+            verify( storeCopyClientMonitor ).startReceivingIndexSnapshot( indexSnapshotIdRequested );
+            verify( storeCopyClientMonitor ).finishReceivingIndexSnapshot( indexSnapshotIdRequested );
+        }
+        verify( storeCopyClientMonitor ).finishReceivingIndexSnapshots();
     }
 
     private List<CatchUpRequest> getRequests() throws CatchUpClientException

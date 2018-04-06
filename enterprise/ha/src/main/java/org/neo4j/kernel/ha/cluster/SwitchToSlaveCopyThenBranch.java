@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.storecopy.MoveAfterCopy;
 import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -77,7 +78,7 @@ public class SwitchToSlaveCopyThenBranch extends SwitchToSlave
                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                         MasterClientResolver masterClientResolver,
                                         SwitchToSlave.Monitor monitor,
-                                        StoreCopyClient.Monitor storeCopyMonitor,
+                                        StoreCopyClientMonitor storeCopyMonitor,
                                         Supplier<NeoStoreDataSource> neoDataSourceSupplier,
                                         Supplier<TransactionIdStore> transactionIdStoreSupplier,
                                         Function<Slave, SlaveServer> slaveServerFactory,

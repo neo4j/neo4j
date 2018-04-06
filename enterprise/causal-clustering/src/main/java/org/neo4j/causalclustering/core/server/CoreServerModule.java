@@ -89,6 +89,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -256,7 +257,7 @@ public class CoreServerModule
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
 
         RemoteStore remoteStore = new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy ),
+                new StoreCopyClient( catchUpClient, platformModule.monitors, logProvider, storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(

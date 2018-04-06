@@ -28,7 +28,9 @@ import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public class CausalClusteringTestHelpers
@@ -40,6 +42,15 @@ public class CausalClusteringTestHelpers
                 .resolveDependency( Config.class )
                 .get( CausalClusteringSettings.transaction_advertised_address );
         return String.format( "%s:%s", hostnamePort.getHostname(), hostnamePort.getPort() );
+    }
+
+    public static String backupAddress( GraphDatabaseFacade graphDatabaseFacade )
+    {
+        HostnamePort backupAddress = graphDatabaseFacade
+                .getDependencyResolver()
+                .resolveDependency( Config.class )
+                .get( OnlineBackupSettings.online_backup_server );
+        return String.format( "%s:%s", backupAddress.getHost(), backupAddress.getPort() );
     }
 
     public static Map<Integer, String> distributeDatabaseNamesToHostNums( int nHosts, Set<String> databaseNames )
