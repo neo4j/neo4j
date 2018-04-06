@@ -457,7 +457,6 @@ public class OperationsLockTest
         order.verify( txState ).indexDoDrop( index );
     }
 
-
     @Test
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {

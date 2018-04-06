@@ -54,7 +54,6 @@ public class TwoPhaseNodeForRelationshipLockingTest
     private final long nodeId = 42L;
     private static int TYPE = 77;
 
-
     @Test
     public void shouldLockNodesInOrderAndConsumeTheRelationships() throws Throwable
     {

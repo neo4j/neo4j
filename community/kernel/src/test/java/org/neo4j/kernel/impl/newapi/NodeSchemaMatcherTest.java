@@ -52,14 +52,12 @@ public class NodeSchemaMatcherTest
     private static final int nonExistentPropId = 23;
     private static final int specialPropId = 24;
 
-
     SchemaIndexDescriptor index1 = forLabel( labelId1, propId1 );
     SchemaIndexDescriptor index1_2 = forLabel( labelId1, propId1, propId2 );
     SchemaIndexDescriptor indexWithMissingProperty = forLabel( labelId1, propId1, nonExistentPropId );
     SchemaIndexDescriptor indexWithMissingLabel = forLabel( nonExistentLabelId, propId1, propId2 );
     SchemaIndexDescriptor indexOnSpecialProperty = forLabel( labelId1, propId1, specialPropId );
     private StubNodeCursor node;
-
 
     @Before
     public void setup()
