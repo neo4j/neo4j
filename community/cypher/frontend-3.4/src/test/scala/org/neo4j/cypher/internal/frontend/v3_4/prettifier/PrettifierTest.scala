@@ -61,19 +61,18 @@ class PrettifierTest extends CypherFunSuite {
           |RETURN a""".stripMargin,
 
       "unwind [1,2] as a return a"->
-        """
-          |
-        """.stripMargin,
+        """UNWIND [1, 2] AS a
+          |RETURN a""".stripMargin,
 
       "match(p:Person) where p.name starts with 'Keanu' return p"->
-        """
-          |
-        """.stripMargin,
+        """MATCH (p:Person)
+          |  WHERE p.name STARTS WITH "Keanu"
+          |RETURN p""".stripMargin,
 
       "match(p:Person) where p.name ends with 'Reeves' return p"->
-        """
-          |
-        """.stripMargin
+        """MATCH (p:Person)
+          |  WHERE p.name ENDS WITH "Reeves"
+          |RETURN p""".stripMargin
 
     )
 

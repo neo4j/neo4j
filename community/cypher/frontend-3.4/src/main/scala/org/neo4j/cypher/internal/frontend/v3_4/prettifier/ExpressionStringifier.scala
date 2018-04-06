@@ -40,7 +40,12 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case l: Literal =>
         l.asCanonicalStringVal
       case e: BinaryOperatorExpression =>
-        s"${parens(e, e.lhs)} ${e.canonicalOperatorSymbol} ${parens(e, e.rhs)}"
+        val op = e match {
+          case _: StartsWith => "STARTS WITH"
+          case _: EndsWith => "ENDS WITH"
+          case _ => e.canonicalOperatorSymbol
+        }
+        s"${parens(e, e.lhs)} ${op} ${parens(e, e.rhs)}"
       case Variable(v) =>
         backtick(v)
       case ListLiteral(expressions) =>
