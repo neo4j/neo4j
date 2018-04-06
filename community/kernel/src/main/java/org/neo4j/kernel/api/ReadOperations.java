@@ -63,7 +63,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Value;
 
 /**
- * Defines all types of read operations that can be done from the {@link InwardKernel}.
+ * Defines all types of read operations that can be done.
  */
 public interface ReadOperations
 {

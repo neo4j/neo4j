@@ -31,9 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -54,7 +53,7 @@ public class RelationshipIT extends KernelIntegrationTest
     public void shouldListRelationshipsInCurrentAndSubsequentTx() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
         int relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
 
@@ -120,7 +119,7 @@ public class RelationshipIT extends KernelIntegrationTest
         int relType1;
         int relType2;
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
             relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -132,7 +131,7 @@ public class RelationshipIT extends KernelIntegrationTest
             commit();
         }
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // When
             transaction.dataWrite().relationshipDelete( fromRefToOther1 );
@@ -149,7 +148,7 @@ public class RelationshipIT extends KernelIntegrationTest
     @Test
     public void shouldReturnRelsWhenAskingForRelsWhereOnlySomeTypesExistInCurrentRel() throws Exception
     {
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         int relType1 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
         int relType2 = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -171,7 +170,7 @@ public class RelationshipIT extends KernelIntegrationTest
         int relTypeTheNodeDoesUse;
         int relTypeTheNodeDoesNotUse;
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             relTypeTheNodeDoesUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type1" );
             relTypeTheNodeDoesNotUse = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "Type2" );
@@ -186,7 +185,7 @@ public class RelationshipIT extends KernelIntegrationTest
             }
             commit();
         }
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
 
         // When I've asked for rels that the node does not have
         assertRels( nodeGetRelationships( transaction, refNode, Direction.INCOMING, new int[]{relTypeTheNodeDoesNotUse} ) );
@@ -201,8 +200,7 @@ public class RelationshipIT extends KernelIntegrationTest
     {
         assertTrue( otherThread.execute( state ->
         {
-            try ( Transaction ignore = db.beginTx();
-                    KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true ) )
+            try ( Transaction ktx = session.beginTransaction() )
             {
                 assertRels( nodeGetRelationships( ktx, refNode, both ), longs );
             }

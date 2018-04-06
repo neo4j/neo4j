@@ -27,12 +27,13 @@ import org.junit.Test;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
@@ -49,7 +50,8 @@ public class KernelSchemaStateFlushingTest
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
 
     private GraphDatabaseAPI db;
-    private InwardKernel kernel;
+    private Kernel kernel;
+    private Session session;
 
     @Test
     public void shouldKeepSchemaStateIfSchemaIsNotModified() throws TransactionFailureException
@@ -135,7 +137,7 @@ public class KernelSchemaStateFlushingTest
     private ConstraintDescriptor createConstraint() throws KernelException
     {
 
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -146,7 +148,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             transaction.schemaWrite().constraintDrop( descriptor );
             transaction.success();
@@ -155,8 +157,7 @@ public class KernelSchemaStateFlushingTest
 
     private IndexReference createIndex() throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -167,8 +168,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexReference reference ) throws KernelException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             transaction.schemaWrite().indexDrop( reference );
             transaction.success();
@@ -178,8 +178,7 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexReference descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.success();
@@ -189,8 +188,7 @@ public class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
@@ -202,7 +200,7 @@ public class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.success();
@@ -210,24 +208,23 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    private String getOrCreateFromState( KernelTransaction tx, String key, final String value )
+    private String getOrCreateFromState( Transaction tx, String key, final String value )
     {
-        try ( Statement ignore = tx.acquireStatement() )
-        {
-            return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
-        }
+        return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
     }
 
     @Before
     public void setup()
     {
         db = dbRule.getGraphDatabaseAPI();
-        kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
+        kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        session = kernel.beginSession( AUTH_DISABLED );
     }
 
     @After
     public void after()
     {
+        session.close();
         db.shutdown();
     }
 }

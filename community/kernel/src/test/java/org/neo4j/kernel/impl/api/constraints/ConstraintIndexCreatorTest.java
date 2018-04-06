@@ -25,27 +25,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
-import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -297,18 +294,18 @@ public class ConstraintIndexCreatorTest
         verifyNoMoreInteractions( schemaRead );
     }
 
-    private class StubKernel implements InwardKernel
+    private class StubKernel implements Kernel, Session
     {
         private final List<KernelTransactionImplementation> transactions = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext )
+        public Transaction beginTransaction() throws TransactionFailureException
         {
             return remember( createTransaction() );
         }
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
+        public Transaction beginTransaction( Transaction.Type type ) throws TransactionFailureException
         {
             return remember( createTransaction() );
         }
@@ -320,39 +317,20 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void registerTransactionHook( TransactionHook hook )
-        {
-            throw new UnsupportedOperationException( "Please implement" );
-        }
-
-        @Override
-        public void registerProcedure( CallableProcedure procedure )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void registerUserFunction( CallableUserFunction function )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void registerUserAggregationFunction( CallableUserAggregationFunction function )
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Session beginSession( LoginContext loginContext )
         {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         @Override
         public Modes modes()
         {
             return null;
+        }
+
+        @Override
+        public void close()
+        {
         }
     }
 

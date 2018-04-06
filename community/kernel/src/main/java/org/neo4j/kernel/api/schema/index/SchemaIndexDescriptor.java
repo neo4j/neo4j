@@ -159,6 +159,5 @@ public class SchemaIndexDescriptor implements SchemaDescriptorSupplier
         return Iterators.concat(
                 Iterators.filter( GENERAL, materialized.iterator() ),
                 Iterators.filter( UNIQUE, materialized.iterator() ) );
-
     }
 }

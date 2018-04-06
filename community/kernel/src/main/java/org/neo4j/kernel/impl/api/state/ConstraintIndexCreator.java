@@ -23,18 +23,20 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -66,10 +68,10 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
-    private final Supplier<InwardKernel> kernelSupplier;
+    private final Supplier<Kernel> kernelSupplier;
     private final PropertyAccessor propertyAccessor;
 
-    public ConstraintIndexCreator( Supplier<InwardKernel> kernelSupplier, IndexingService indexingService,
+    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService,
             PropertyAccessor propertyAccessor )
     {
         this.kernelSupplier = kernelSupplier;
@@ -297,9 +299,9 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( SchemaIndexDescriptor descriptor )
             throws TransactionFailureException
     {
-        try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
+              Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
+              Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
             ((KernelTransactionImplementation) transaction).txState().indexDoDrop( descriptor );
             transaction.success();
@@ -399,9 +401,9 @@ public class ConstraintIndexCreator
 
     public SchemaIndexDescriptor createConstraintIndex( final SchemaDescriptor schema )
     {
-        try ( KernelTransaction transaction =
-                      kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-              Statement ignore = transaction.acquireStatement() )
+        try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
+              Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
+              Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
             SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
             ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index );

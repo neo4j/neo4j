@@ -487,8 +487,8 @@ public class Cluster
     private boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
-               e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
-               ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
+               e.getCause() instanceof org.neo4j.internal.kernel.api.exceptions.TransactionFailureException &&
+               ((org.neo4j.internal.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
                LockSessionExpired;
     }
 

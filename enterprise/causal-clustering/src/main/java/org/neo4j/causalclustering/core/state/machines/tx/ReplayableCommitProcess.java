@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.core.state.machines.tx;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;

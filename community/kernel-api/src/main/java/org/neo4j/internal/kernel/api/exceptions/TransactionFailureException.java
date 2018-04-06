@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.internal.kernel.api.exceptions;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
  * This class (in its current form - 2013-05-07) is a vector for exceptions thrown by a transaction manager, for

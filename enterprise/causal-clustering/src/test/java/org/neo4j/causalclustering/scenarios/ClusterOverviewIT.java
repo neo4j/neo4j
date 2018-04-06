@@ -46,12 +46,13 @@ import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -331,22 +332,22 @@ public class ClusterOverviewIT
     private List<MemberInfo> clusterOverview( GraphDatabaseFacade db )
             throws TransactionFailureException, ProcedureException
     {
-        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+
         List<MemberInfo> infos = new ArrayList<>();
-
-        RawIterator<Object[],ProcedureException> itr = transaction.procedures().procedureCallRead(
-                procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
-
-        while ( itr.hasNext() )
+        try ( Session session = kernel.beginSession( AnonymousContext.read() ); Transaction tx = session.beginTransaction( Type.implicit ) )
         {
-            Object[] row = itr.next();
-            List<String> addresses = (List<String>) row[1];
-            infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
-                    RoleInfo.valueOf( (String) row[2] ) ) );
-        }
+            RawIterator<Object[],ProcedureException> itr =
+                    tx.procedures().procedureCallRead( procedureName( "dbms", "cluster", ClusterOverviewProcedure.PROCEDURE_NAME ), null );
 
-        return infos;
+            while ( itr.hasNext() )
+            {
+                Object[] row = itr.next();
+                List<String> addresses = (List<String>) row[1];
+                infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ), RoleInfo.valueOf( (String) row[2] ) ) );
+            }
+            return infos;
+        }
     }
 
     private static class MemberInfo

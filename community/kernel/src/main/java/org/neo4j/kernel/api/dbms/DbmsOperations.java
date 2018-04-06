@@ -23,13 +23,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.values.AnyValue;
 
 /**
  * Defines all types of system-oriented operations - i.e. those which do not read from or
- * write to the graph - that can be done from the {@link InwardKernel}.
+ * write to the graph - that can be done.
  * An example of this is changing a user's password
  */
 public interface DbmsOperations
