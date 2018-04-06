@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 import org.neo4j.values.utils.TemporalUtil;
 import org.neo4j.values.virtual.MapValue;
@@ -69,12 +70,12 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
     {
         return new TimeValue(
-                OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
+                OffsetTime.of( assertValidArgument( () -> LocalTime.of( hour, minute, second, nanosOfSecond ) ), offset ) );
     }
 
     public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
+        return new TimeValue( OffsetTime.ofInstant( assertValidArgument( () -> Instant.ofEpochSecond( 0, nanosOfDayUTC ) ), offset ) );
     }
 
     public static TimeValue parse( CharSequence text, Supplier<ZoneId> defaultZone, CSVHeaderInformation fieldsFromHeader )
@@ -134,16 +135,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             Supplier<ZoneId> defaultZone )
     {
         OffsetTime time = input.getTimePart( defaultZone );
-        OffsetTime truncatedOT;
-        try
-        {
-            truncatedOT = time.truncatedTo( unit );
-        }
-        catch ( UnsupportedTemporalTypeException e )
-        {
-            throw new UnsupportedTemporalUnitException( e.getMessage(), e );
-        }
-
+        OffsetTime truncatedOT = assertValidUnit( () -> time.truncatedTo( unit ) );
         if ( fields.size() == 0 )
         {
             return time( truncatedOT );
@@ -156,7 +148,8 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             {
                 if ( "timezone".equals( entry.getKey() ) )
                 {
-                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezoneOf( entry.getValue() ) ).getOffset();
+                    ZonedDateTime currentDT = assertValidArgument( () -> ZonedDateTime.ofInstant( Instant.now(), timezoneOf( entry.getValue() ) ) );
+                    ZoneOffset currentOffset = currentDT.getOffset();
                     truncatedOT = truncatedOT.withOffsetSameLocal( currentOffset );
                 }
                 else
@@ -179,7 +172,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     static OffsetTime defaultTime( ZoneId zoneId )
     {
         return OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
-                ZoneOffset.of( zoneId.toString() ) );
+                assertValidZone( () -> ZoneOffset.of( zoneId.toString() ) ) );
     }
 
     static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
@@ -203,7 +196,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     AnyValue time = fields.get( Field.time );
                     if ( !(time instanceof TemporalValue) )
                     {
-                        throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", time ) );
+                        throw new InvalidValuesArgumentException( String.format( "Cannot construct time from: %s", time ) );
                     }
                     TemporalValue t = (TemporalValue) time;
                     result = t.getTimePart( defaultZone );
@@ -214,7 +207,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     ZoneId timezone = timezone();
                     if ( !(timezone instanceof ZoneOffset) )
                     {
-                        timezone = ZonedDateTime.ofInstant( Instant.now(), timezone ).getOffset();
+                        timezone = assertValidArgument( () -> ZonedDateTime.ofInstant( Instant.now(), timezone() ) ).getOffset();
                     }
 
                     result = defaultTime( timezone );
@@ -224,7 +217,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 result = assignAllFields( result );
                 if ( timezone != null )
                 {
-                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
+                    ZoneOffset currentOffset = assertValidArgument( () -> ZonedDateTime.ofInstant( Instant.now(), timezone() ) ).getOffset();
                     if ( selectingTime && selectingTimeZone )
                     {
                         result = result.withOffsetSameInstant( currentOffset );
@@ -242,7 +235,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             {
                 if ( !(temporal instanceof TemporalValue) )
                 {
-                    throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
+                    throw new InvalidValuesArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
                 }
                 if ( temporal instanceof TimeValue &&
                         timezone == null )
@@ -254,7 +247,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                 OffsetTime time = v.getTimePart( defaultZone );
                 if ( timezone != null )
                 {
-                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
+                    ZoneOffset currentOffset = assertValidArgument( () -> ZonedDateTime.ofInstant( Instant.now(), timezone() ) ).getOffset();
                     time = time.withOffsetSameInstant( currentOffset );
                 }
                 return time( time );
@@ -293,7 +286,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     LocalDate getDatePart()
     {
-        throw new IllegalArgumentException( String.format( "Cannot get the date of: %s", this ) );
+        throw new UnsupportedTemporalUnitException( String.format( "Cannot get the date of: %s", this ) );
     }
 
     @Override
@@ -347,7 +340,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public String prettyPrint()
     {
-        return value.format( DateTimeFormatter.ISO_TIME );
+        return assertPrintable( () -> value.format( DateTimeFormatter.ISO_TIME ) );
     }
 
     @Override
@@ -371,13 +364,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     @Override
     public TimeValue add( DurationValue duration )
     {
-        return replacement( value.plusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.plusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override
     public TimeValue sub( DurationValue duration )
     {
-        return replacement( value.minusNanos( duration.nanosOfDay() ) );
+        return replacement( assertValidArithmetic( () -> value.minusNanos( duration.nanosOfDay() ) ) );
     }
 
     @Override
@@ -398,7 +391,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         {
             return parseOffset( matcher );
         }
-        throw new IllegalArgumentException( "Not a valid offset: " + offset );
+        throw new InvalidValuesArgumentException( "Not a valid offset: " + offset );
     }
 
     static ZoneOffset parseOffset( Matcher matcher )
@@ -415,7 +408,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         int factor = zone.charAt( 0 ) == '+' ? 1 : -1;
         int hours = parseInt( matcher.group( "zoneHour" ) );
         int minutes = optInt( matcher.group( "zoneMinute" ) );
-        return ZoneOffset.ofHoursMinutes( factor * hours, factor * minutes );
+        return assertValidZone( () -> ZoneOffset.ofHoursMinutes( factor * hours, factor * minutes ) );
     }
 
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )

@@ -21,6 +21,8 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,7 +48,7 @@ public class CoordinateReferenceSystemTest
             CoordinateReferenceSystem.get( 42 );
             fail( "Exception expected" );
         }
-        catch ( IllegalArgumentException e )
+        catch ( InvalidValuesArgumentException e )
         {
             assertEquals( "Unknown coordinate reference system code: 42", e.getMessage() );
         }

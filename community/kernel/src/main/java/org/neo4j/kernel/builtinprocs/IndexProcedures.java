@@ -26,6 +26,7 @@ import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -86,7 +86,7 @@ public class IndexProcedures implements AutoCloseable
     private int getLabelId( String labelName ) throws ProcedureException
     {
         int labelId = ktx.tokenRead().nodeLabel( labelName );
-        if ( labelId == KeyReadOperations.NO_SUCH_LABEL )
+        if ( labelId == TokenRead.NO_TOKEN )
         {
             throw new ProcedureException( Status.Schema.LabelAccessFailed, "No such label %s", labelName );
         }
@@ -100,7 +100,7 @@ public class IndexProcedures implements AutoCloseable
         {
 
             int propertyKeyId = ktx.tokenRead().propertyKey( propertyKeyNames[i] );
-            if ( propertyKeyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+            if ( propertyKeyId == TokenRead.NO_TOKEN )
             {
                 throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
                         propertyKeyNames );

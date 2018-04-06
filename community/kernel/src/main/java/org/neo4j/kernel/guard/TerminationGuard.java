@@ -21,7 +21,6 @@ package org.neo4j.kernel.guard;
 
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelStatement;
 
 /**
  * Guard that checks kernel transaction for termination.
@@ -29,19 +28,9 @@ import org.neo4j.kernel.impl.api.KernelStatement;
  */
 public class TerminationGuard implements Guard
 {
-
-    @Override
-    public void check( KernelStatement statement )
-    {
-        statement.assertOpen();
-    }
-
     @Override
     public void check( KernelTransaction transaction )
     {
-        if ( transaction.isTerminated() )
-        {
-            throw new TransactionTerminatedException( transaction.getReasonIfTerminated().get() );
-        }
+        transaction.assertOpen();
     }
 }

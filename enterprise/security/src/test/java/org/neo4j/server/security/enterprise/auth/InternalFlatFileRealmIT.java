@@ -233,7 +233,7 @@ public class InternalFlatFileRealmIT
         }
 
         @Override
-        public long lastModifiedTime( File fileName ) throws IOException
+        public long lastModifiedTime( File fileName )
         {
             if ( fileName.equals( userStoreFile ) )
             {

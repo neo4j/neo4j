@@ -292,9 +292,16 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
-        return Files.getLastModifiedTime( path( file ) ).toMillis();
+        try
+        {
+            return Files.getLastModifiedTime( path( file ) ).toMillis();
+        }
+        catch ( IOException e )
+        {
+            return 0;
+        }
     }
 
     @Override

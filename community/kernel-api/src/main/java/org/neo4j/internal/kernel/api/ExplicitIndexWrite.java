@@ -80,6 +80,27 @@ public interface ExplicitIndexWrite
     void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     /**
+     * Updates configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @param value the value to be associated with the key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Remove a configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
      * Adds relationship to explicit index.
      *
      * @param indexName The name of the index
@@ -161,4 +182,26 @@ public interface ExplicitIndexWrite
      * @param indexName the index to drop
      */
     void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Updates configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @param value the value to be associated with the key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * Remove a configuration of the given index
+     * @param indexName the name of the index
+     * @param key the configuration key
+     * @return The old value associated with the key or <tt>null</tt> if nothing associated with the key.
+     * @throws ExplicitIndexNotFoundKernelException if no such index exists
+     */
+    String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
+
 }

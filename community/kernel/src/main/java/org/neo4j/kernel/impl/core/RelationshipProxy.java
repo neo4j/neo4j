@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
@@ -333,7 +332,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
@@ -368,7 +367,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         RelationshipScanCursor relationships = transaction.relationshipCursor();
         PropertyCursor properties = transaction.propertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return defaultValue;
         }
@@ -395,7 +394,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
 
         KernelTransaction transaction = safeAcquireTransaction();
         int propertyKey = transaction.tokenRead().propertyKey( key );
-        if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
+        if ( propertyKey == TokenRead.NO_TOKEN )
         {
             return false;
         }

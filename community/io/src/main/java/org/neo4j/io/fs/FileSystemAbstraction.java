@@ -92,7 +92,7 @@ public interface FileSystemAbstraction extends Closeable
 
     void truncate( File path, long size ) throws IOException;
 
-    long lastModifiedTime( File file ) throws IOException;
+    long lastModifiedTime( File file );
 
     void deleteFileOrThrow( File file ) throws IOException;
 

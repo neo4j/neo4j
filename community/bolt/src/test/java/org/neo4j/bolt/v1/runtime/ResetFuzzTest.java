@@ -46,10 +46,10 @@ import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.concurrent.Runnables;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
@@ -68,6 +68,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
@@ -99,7 +100,8 @@ public class ResetFuzzTest
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), mock( BoltChannel.class ), clock, NullLogService.getInstance() );
     private final BoltConnectionFactory connectionFactory =
-            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltSchedulerProvider, NullLogService.getInstance(), clock, null, monitors );
+            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltSchedulerProvider, TransportThrottleGroup.NO_THROTTLE,
+                    NullLogService.getInstance(), clock, null, monitors );
     private BoltChannel boltChannel;
 
     private final List<List<RequestMessage>> sequences = asList(
@@ -113,7 +115,7 @@ public class ResetFuzzTest
     @Before
     public void setup()
     {
-        boltChannel = mock( BoltChannel.class );
+        boltChannel = mock( BoltChannel.class, RETURNS_MOCKS );
         when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
         when( boltChannel.connector() ).thenReturn( CONNECTOR );
     }
@@ -149,7 +151,7 @@ public class ResetFuzzTest
             public void onSuccess( MapValue metadata )
             {
             }
-        }, Runnables.EMPTY_RUNNABLE );
+        } );
 
         // Test random combinations of messages within a small budget of testing time.
         long deadline = System.currentTimeMillis() + 2 * 1000;

@@ -25,7 +25,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 /**
  * Manages user-facing locks.
@@ -52,30 +51,6 @@ public class PropertyContainerLocker
             {
                 throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
             }
-        }
-    }
-
-    /**
-     * The Cypher runtime keeps statements open for longer, so this method does not close the statement after itself
-     */
-    public Lock exclusiveLock( Statement statement, PropertyContainer container )
-    {
-        if ( container instanceof Node )
-        {
-            long id = ((Node) container).getId();
-            statement.readOperations().acquireExclusive( ResourceTypes.NODE, id );
-            return () -> statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
-        }
-        else if ( container instanceof Relationship )
-        {
-            long id = ((Relationship) container).getId();
-            statement.readOperations()
-                    .acquireExclusive( ResourceTypes.RELATIONSHIP, id );
-            return () -> statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
         }
     }
 

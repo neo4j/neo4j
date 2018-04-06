@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.Settings;
@@ -125,14 +124,12 @@ public class ClusterDiscoveryIT
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         KernelTransaction transaction = kernel.newTransaction( Type.implicit, AnonymousContext.read() );
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            // when
-            List<Object[]> currentMembers = asList( statement.procedureCallOperations()
-                    .procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ),
-                            new Object[0] ) );
+        // when
+        List<Object[]> currentMembers = asList(
+                transaction.procedures()
+                        .procedureCallRead( procedureName( GET_SERVERS_V1.fullyQualifiedProcedureName() ),
+                                new Object[0] ) );
 
-            return (List<Map<String, Object>>) currentMembers.get( 0 )[1];
-        }
+        return (List<Map<String,Object>>) currentMembers.get( 0 )[1];
     }
 }

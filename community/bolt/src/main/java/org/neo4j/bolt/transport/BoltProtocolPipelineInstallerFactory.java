@@ -24,18 +24,18 @@ import org.neo4j.bolt.BoltChannel;
 /**
  * Represents a component that instantiates Bolt protocol handlers.
  *
- * @see BoltMessagingProtocolHandler
+ * @see BoltProtocolPipelineInstaller
  */
 @FunctionalInterface
-public interface BoltProtocolHandlerFactory
+public interface BoltProtocolPipelineInstallerFactory
 {
     /**
      * Instantiate a handler for Bolt protocol with the specified version. Return {@code null} when handler for the
      * given version can't be instantiated.
      *
-     * @param protocolVersion the version as negishiated by the initial handshake.
+     * @param protocolVersion the version as negotiated by the initial handshake.
      * @param channel the channel representing network connection from the client.
      * @return new protocol handler when given protocol version is known and valid, {@code null} otherwise.
      */
-    BoltMessagingProtocolHandler create( long protocolVersion, BoltChannel channel );
+    BoltProtocolPipelineInstaller create( long protocolVersion, BoltChannel channel );
 }

@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.bolt.transport.pipeline;
 
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
-/**
- * Defines methods that expose various statistical information from kernel
- */
-public interface ExecutionStatisticsOperations
+public class ChunkDecoder extends LengthFieldBasedFrameDecoder
 {
-    /**
-     * @return provide current page cursor tracer that expose current transaction page cache statistic
-     */
-    PageCursorTracer getPageCursorTracer();
+    private static final int MAX_FRAME_LENGTH = 0xFFFF;
+    private static final int LENGTH_FIELD_OFFSET = 0;
+    private static final int LENGTH_FIELD_SIZE = 2;
+    private static final int LENGTH_ADJUSTMENT = 0;
+    private static final int INITIAL_BYTES_TO_STRIP = LENGTH_FIELD_SIZE;
+
+    public ChunkDecoder()
+    {
+        super( MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_SIZE, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP );
+    }
 }

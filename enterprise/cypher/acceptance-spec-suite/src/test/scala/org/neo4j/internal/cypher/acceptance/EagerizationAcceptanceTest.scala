@@ -23,15 +23,15 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{Counter, CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.helpers.{RelationshipSelectionCursor, RelationshipSelections}
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.{Neo4jTypes, ProcedureSignature}
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.Context
 import org.neo4j.kernel.api.{ResourceTracker, proc}
-import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.Values
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -203,12 +203,12 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("KNOWS")
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
-            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
-            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
-            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
+            val rel = transaction.dataWrite().relationshipCreate( nodeX.getId, relType, nodeY.getId)
+            val prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" )
+            transaction.dataWrite().relationshipSetProperty(rel, prop, Values.of(counter.counted))
             counter += 1
             RawIterator.of(Array(new java.lang.Long(rel)))
           } finally {
@@ -245,12 +245,12 @@ class EagerizationAcceptanceTest
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
-            val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
+            val relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName("KNOWS")
             val nodeX = input(0).asInstanceOf[Node]
             val nodeY = input(1).asInstanceOf[Node]
-            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
-            val prop = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" )
-            statement.dataWriteOperations().relationshipSetProperty(rel, prop, Values.of(counter.counted))
+            val rel = transaction.dataWrite().relationshipCreate( nodeX.getId, relType, nodeY.getId)
+            val prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" )
+            transaction.dataWrite().relationshipSetProperty(rel, prop, Values.of(counter.counted))
             counter += 1
             RawIterator.empty()
           } finally {
@@ -283,24 +283,28 @@ class EagerizationAcceptanceTest
         override def apply(ctx: Context, input: Array[AnyRef],
                            resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement = transaction.acquireStatement()
+          val cursors = transaction.cursors()
+          val nodeCursor = cursors.allocateNodeCursor()
+          var relCursor: RelationshipSelectionCursor = null
           try {
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
-            val nodeCursor = statement.readOperations().nodeCursorById(idX)
+            transaction.dataRead().singleNode(idX, nodeCursor)
             val result = Array.newBuilder[Array[AnyRef]]
-            val relationshipIterator = statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
-            while (relationshipIterator.hasNext) {
-              relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
-                override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long) {
-                  if (endNodeId == idY)
-                    result += Array(new java.lang.Long(relationshipId))
+            if (nodeCursor.next()) {
+              relCursor = RelationshipSelections.outgoingCursor(cursors, nodeCursor, null)
+              while (relCursor.next()) {
+                if (relCursor.targetNodeReference() == idY) {
+                  result += Array(new java.lang.Long(relCursor.relationshipReference()))
                 }
-              })
+              }
             }
             RawIterator.of(result.result(): _*)
           } finally {
-            statement.close()
+            nodeCursor.close()
+            if (relCursor != null) {
+              relCursor.close()
+            }
           }
         }
       }
@@ -333,23 +337,24 @@ class EagerizationAcceptanceTest
         override def apply(ctx: Context, input: Array[AnyRef],
                            resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement = transaction.acquireStatement()
+          val cursors = transaction.cursors()
+          val nodeCursor = cursors.allocateNodeCursor()
+          var relCursor: RelationshipSelectionCursor = null
+
           try {
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
-            val nodeCursor = statement.readOperations().nodeCursorById(idX)
-            val relationshipIterator = statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
-            while (relationshipIterator.hasNext) {
-              relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
-                override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
-                  if (endNodeId == idY)
-                    counter += 1
-                }
-              })
+            transaction.dataRead().singleNode(idX, nodeCursor)
+            if (nodeCursor.next()) {
+              relCursor = RelationshipSelections.outgoingCursor(cursors, nodeCursor, null)
+              while (relCursor.next()) if (relCursor.targetNodeReference() == idY) counter += 1
             }
             RawIterator.empty()
           } finally {
-            statement.close()
+            nodeCursor.close()
+            if (relCursor != null) {
+              relCursor.close()
+            }
           }
         }
       }

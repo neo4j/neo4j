@@ -24,6 +24,7 @@ import io.netty.channel.Channel;
 import java.net.SocketAddress;
 import java.util.concurrent.RejectedExecutionException;
 
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.Job;
 
 public interface BoltConnection
@@ -56,6 +57,11 @@ public interface BoltConnection
      * @return netty channel
      */
     Channel channel();
+
+    /**
+     * Returns the packer that's used to generate response streams
+     */
+    PackOutput output();
 
     /**
      * Returns whether there's any pending Job waiting to be processed

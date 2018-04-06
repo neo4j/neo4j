@@ -31,6 +31,7 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -238,19 +239,19 @@ public abstract class Value extends AnyValue
         String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
         if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
-            throw new IllegalArgumentException( errorMessage );
+            throw new InvalidValuesArgumentException( errorMessage );
         }
 
         String mapContents = mapMatcher.group( 1 );
         if ( mapContents.isEmpty() )
         {
-            throw new IllegalArgumentException( errorMessage );
+            throw new InvalidValuesArgumentException( errorMessage );
         }
 
         Matcher matcher = keyValuePattern.matcher( mapContents );
         if ( !(matcher.find()) )
         {
-            throw new IllegalArgumentException( errorMessage );
+            throw new InvalidValuesArgumentException( errorMessage );
         }
 
         do

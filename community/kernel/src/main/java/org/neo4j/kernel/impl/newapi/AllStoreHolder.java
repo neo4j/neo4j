@@ -289,6 +289,14 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return explicitIndexStore.getNodeIndexConfiguration( indexName );
+    }
+
+    @Override
     public String[] relationshipExplicitIndexesGetAll()
     {
         ktx.assertOpen();
@@ -300,6 +308,14 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         return explicitIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
+    }
+
+    @Override
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        return explicitIndexStore.getRelationshipIndexConfiguration( indexName );
     }
 
     @Override
@@ -1017,6 +1033,11 @@ public class AllStoreHolder extends Read
     public void schemaStateFlush()
     {
         schemaState.clear();
+    }
+
+    ExplicitIndexStore explicitIndexStore()
+    {
+        return explicitIndexStore;
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(

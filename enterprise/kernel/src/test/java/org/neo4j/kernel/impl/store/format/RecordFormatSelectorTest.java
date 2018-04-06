@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
@@ -163,6 +164,7 @@ public class RecordFormatSelectorTest
         when( pageCache.pageSize() ).thenReturn( PageCache.PAGE_SIZE );
         when( pageCache.map( any(), anyInt(), any() ) ).thenThrow( new IOException( "No reading..." ) );
         assertNull( selectForStore( storeDir, pageCache, LOG ) );
+        verify( pageCache ).map( any(), anyInt(), any() );
     }
 
     @Test

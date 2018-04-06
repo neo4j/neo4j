@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -225,7 +225,7 @@ public class LabelCountsTest
         }
         else
         {
-            if ( KeyReadOperations.NO_SUCH_LABEL == (labelId = transaction.tokenRead().nodeLabel( label.name() )) )
+            if ( TokenRead.NO_TOKEN == (labelId = transaction.tokenRead().nodeLabel( label.name() )) )
             {
                 return 0;
             }

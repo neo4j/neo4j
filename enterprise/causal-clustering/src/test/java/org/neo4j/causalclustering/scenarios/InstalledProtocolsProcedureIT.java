@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -110,23 +109,21 @@ public class InstalledProtocolsProcedureIT
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         KernelTransaction transaction = kernel.newTransaction( Transaction.Type.implicit, AnonymousContext.read() );
         List<ProtocolInfo> infos = new LinkedList<>();
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", InstalledProtocolsProcedure.PROCEDURE_NAME ), null );
 
-            while ( itr.hasNext() )
+        RawIterator<Object[],ProcedureException> itr = transaction.procedures().procedureCallRead(
+                procedureName( "dbms", "cluster", InstalledProtocolsProcedure.PROCEDURE_NAME ), null );
+
+        while ( itr.hasNext() )
+        {
+            Object[] row = itr.next();
+            String orientation = (String) row[0];
+            String address = localhost( (String) row[1] );
+            String protocol = (String) row[2];
+            long version = (long) row[3];
+            String modifiers = (String) row[4];
+            if ( orientation.equals( wantedOrientation ) )
             {
-                Object[] row = itr.next();
-                String orientation = (String) row[0];
-                String address = localhost( (String) row[1] );
-                String protocol = (String) row[2];
-                long version = (long) row[3];
-                String modifiers = (String) row[4];
-                if ( orientation.equals( wantedOrientation ) )
-                {
-                    infos.add( new ProtocolInfo( orientation, address, protocol, version, modifiers ) );
-                }
+                infos.add( new ProtocolInfo( orientation, address, protocol, version, modifiers ) );
             }
         }
         return infos;

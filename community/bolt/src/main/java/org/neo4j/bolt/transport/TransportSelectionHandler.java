@@ -32,10 +32,13 @@ import io.netty.handler.ssl.SslHandler;
 
 import java.util.List;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.transport.pipeline.ProtocolHandshaker;
+import org.neo4j.bolt.transport.pipeline.WebSocketFrameTranslator;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.bolt.transport.BoltHandshakeProtocolHandler.BOLT_MAGIC_PREAMBLE;
+import static org.neo4j.bolt.transport.pipeline.ProtocolHandshaker.BOLT_MAGIC_PREAMBLE;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder
 {
@@ -49,11 +52,10 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
-    private final BoltProtocolHandlerFactory handlerFactory;
+    private final BoltProtocolPipelineInstallerFactory handlerFactory;
 
     TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               BoltProtocolHandlerFactory handlerFactory,
-                               BoltMessageLogging boltLogging )
+            BoltProtocolPipelineInstallerFactory handlerFactory, BoltMessageLogging boltLogging )
     {
         this.connector = connector;
         this.sslCtx = sslCtx;
@@ -119,15 +121,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging,
-                handlerFactory, boltLogging ) );
+        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging, handlerFactory, boltLogging ) );
         p.remove( this );
     }
 
     private void switchToSocket( ChannelHandlerContext ctx )
     {
         ChannelPipeline p = ctx.pipeline();
-        p.addLast( newSocketTransportHandler() );
+        p.addLast( newHandshaker( ctx ) );
         p.remove( this );
     }
 
@@ -140,14 +141,13 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                 new WebSocketServerProtocolHandler( "/", null, false, MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameAggregator( MAX_WEBSOCKET_FRAME_SIZE ),
                 new WebSocketFrameTranslator(),
-                newSocketTransportHandler() );
+                newHandshaker( ctx ) );
         p.remove( this );
     }
 
-    private SocketTransportHandler newSocketTransportHandler()
+    private ProtocolHandshaker newHandshaker( ChannelHandlerContext ctx )
     {
-        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( handlerFactory,
+        return new ProtocolHandshaker( handlerFactory, BoltChannel.open( connector, ctx.channel(), boltLogging.newLogger( ctx.channel() ) ), logging,
                 encryptionRequired, isEncrypted );
-        return new SocketTransportHandler( connector, protocolHandler, logging, boltLogging );
     }
 }
