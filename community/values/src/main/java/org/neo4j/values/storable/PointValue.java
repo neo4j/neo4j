@@ -215,7 +215,12 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     @Override
     public String toString()
     {
-        return format( "Point{ %s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
+        return format( "Point{%s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
+    }
+
+    public String toIndexableString()
+    {
+        return format( "Point{%s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
     }
 
     @Override

@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -157,20 +158,23 @@ enum ValueEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return stringField( name, value.prettyPrint() );
+                    PointValue pointVal = (PointValue) value;
+                    return stringField( name, pointVal.toIndexableString() );
                 }
 
                 @Override
                 void setFieldValue( Value value, Field field )
                 {
-                    field.setStringValue( value.prettyPrint() );
+                    PointValue pointVal = (PointValue) value;
+                    field.setStringValue( pointVal.toIndexableString() );
                 }
 
                 @Override
                 Query encodeQuery( Value value, int propertyNumber )
                 {
+                    PointValue pointVal = (PointValue) value;
                     return new ConstantScoreQuery(
-                            new TermQuery( new Term( key( propertyNumber ), value.prettyPrint() ) ) );
+                            new TermQuery( new Term( key( propertyNumber ), pointVal.toIndexableString() ) ) );
                 }
             },
     Temporal
