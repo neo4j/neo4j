@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2002-2018 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.index.schema;
+
+import java.util.Random;
+
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.values.storable.Value;
+
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84_3D;
+import static org.neo4j.values.storable.Values.pointValue;
+
+public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
+{
+    @Override
+    IndexProvider newProvider( IndexDirectoryStructure.Factory directory )
+    {
+        return new SpatialIndexProvider( rules.pageCache(),
+                                          rules.fileSystem(),
+                                          directory,
+                                          IndexProvider.Monitor.EMPTY,
+                                          RecoveryCleanupWorkCollector.IMMEDIATE,
+                                          false,
+                                          Config.defaults() );
+    }
+
+    @Override
+    Value randomValue( Random random )
+    {
+        switch ( random.nextInt( 4 ) )
+        {
+        case 0:
+            return pointValue( Cartesian, random.nextDouble(), random.nextDouble() );
+
+            case 1:
+            return pointValue( Cartesian_3D, random.nextDouble(), random.nextDouble(), random.nextDouble() );
+
+        case 2:
+            return pointValue( WGS84, random.nextDouble(), random.nextDouble() );
+
+        case 3:
+            return pointValue( WGS84_3D, random.nextDouble(), random.nextDouble(), random.nextDouble() );
+
+            default:
+                throw new IllegalStateException( "Broke java.util.Random." );
+        }
+
+    }
+}
