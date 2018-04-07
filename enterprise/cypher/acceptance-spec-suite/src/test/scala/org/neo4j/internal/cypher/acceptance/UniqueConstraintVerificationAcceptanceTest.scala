@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalDateTime}
+
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.ListSupport
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.impl.api.OperationsFacade
@@ -133,6 +136,19 @@ class UniqueConstraintVerificationAcceptanceTest
         val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
         constraints shouldBe empty
+    }
+  }
+
+  test("Should handle temporal with unique constraint") {
+    // When
+    graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.birthday) IS UNIQUE")
+
+    // Then
+    createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    createLabeledNode(Map("birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+    createLabeledNode(Map("birthday" -> "1991-10-18"), "User")
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
     }
   }
 }
