@@ -36,36 +36,37 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     assertSeek(TimeValue.time(101010, ZoneOffset.UTC))
     assertSeek(LocalTimeValue.localTime(12345))
     assertSeek(DurationValue.duration(41, 32, 23, 14))
-
-    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObject().asInstanceOf[LocalDate])))
-    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObject().asInstanceOf[LocalDate],
-                                      DateValue.epochDate(10001).asObject().asInstanceOf[LocalDate])))
-    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObject().asInstanceOf[ZonedDateTime])))
-    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObject().asInstanceOf[LocalDateTime])))
-    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObject().asInstanceOf[OffsetTime])))
-    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObject().asInstanceOf[LocalTime])))
   }
 
   test("should seek for arrays") {
-    val conf =  Configs.Interpreted - Configs.OldAndRule
     createIndex()
+
+    // Length 1
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy())))
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy())))
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy())))
+    assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy())))
+
+    // Length 2
     assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy(),
-                                      DateValue.epochDate(20000).asObjectCopy())), conf)
+                                      DateValue.epochDate(20000).asObjectCopy())))
 
     assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy(),
-                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())), conf)
+                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())))
 
     assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy(),
-                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())), conf)
+                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())))
 
     assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy(),
-                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())), conf)
+                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())))
 
     assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy(),
-                                           LocalTimeValue.localTime(23456).asObjectCopy())), conf)
+                                           LocalTimeValue.localTime(23456).asObjectCopy())))
 
     assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy(),
-                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())), conf)
+                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())))
   }
 
   test("should distinguish between duration array and string array") {
