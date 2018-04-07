@@ -46,7 +46,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -91,7 +90,7 @@ public abstract class CompiledConversionUtils
 
     public static Set<?> toSet( Object value )
     {
-        if ( value == null || value instanceof NoValue )
+        if ( value == null || value == NO_VALUE )
         {
             return Collections.emptySet();
         }
@@ -99,14 +98,25 @@ public abstract class CompiledConversionUtils
         {
             SequenceValue sequenceValue = (SequenceValue) value;
             Iterator<AnyValue> iterator = sequenceValue.iterator();
-            Set<AnyValue> set = sequenceValue.iterationPreference() == RANDOM_ACCESS ?
-                                // If we have a random access sequence value length() should be cheap and we can optimize the initial capacity
-                                new HashSet<>( sequenceValue.length() ) : new HashSet<>();
-
-            while ( iterator.hasNext() )
+            Set<AnyValue> set;
+            if ( sequenceValue.iterationPreference() == RANDOM_ACCESS )
             {
-                AnyValue element = iterator.next();
-                set.add( element );
+                // If we have a random access sequence value length() should be cheap and we can optimize the initial capacity
+                int length = sequenceValue.length();
+                set = new HashSet<>( length );
+                for ( int i = 0; i < length; i++ )
+                {
+                    set.add( sequenceValue.value( i ) );
+                }
+            }
+            else
+            {
+                set = new HashSet<>();
+                while ( iterator.hasNext() )
+                {
+                    AnyValue element = iterator.next();
+                    set.add( element );
+                }
             }
             return set;
         }

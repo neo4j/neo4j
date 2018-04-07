@@ -325,9 +325,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
 
     private void equal( Expression lhs, Expression rhs, boolean equal )
     {
-//        assertSameType( lhs, rhs, "compare" ); // TODO: Is this assert unnecessary / too strong?
         if ( lhs.type().isPrimitive() )
         {
+            assert rhs.type().isPrimitive();
+
             switch ( lhs.type().name() )
             {
             case "int":
@@ -335,15 +336,19 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             case "short":
             case "char":
             case "boolean":
+                assertSameType( lhs, rhs, "compare" );
                 compareIntOrReferenceType( lhs, rhs, equal ? IF_ICMPNE : IF_ICMPEQ );
                 break;
             case "long":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, LCMP, equal ? IFNE : IFEQ );
                 break;
             case "float":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, FCMPL, equal ? IFNE : IFEQ );
                 break;
             case "double":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, DCMPL, equal ? IFNE : IFEQ );
                 break;
             default:
@@ -352,6 +357,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         else
         {
+            assert !(rhs.type().isPrimitive());
             compareIntOrReferenceType( lhs, rhs, equal ? IF_ACMPNE : IF_ACMPEQ );
         }
     }
@@ -829,7 +835,9 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     {
         if ( !lhs.type().equals( rhs.type() ) )
         {
-            throw new IllegalArgumentException( String.format( "Can only %s values of the same type", operation ) );
+            throw new IllegalArgumentException(
+                    String.format( "Can only %s values of the same type (lhs: %s, rhs: %s)", operation, lhs.type().toString(), rhs.type().toString() )
+            );
         }
     }
 

@@ -519,11 +519,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def isNull(varName: String, codeGenType: CodeGenType) = isNull(generator.load(varName), codeGenType)
 
-  override def isNull(expr: Expression, codeGenType: CodeGenType) = codeGenType match {
-    case _: AnyValueType =>
-      invoke(noValue(), method[NoValue, Boolean]("eq"), expr)
-    case _ =>
-      equal(nullValue(codeGenType), expr)
+  override def isNull(expr: Expression, codeGenType: CodeGenType) = {
+    equal(nullValue(codeGenType), expr)
   }
 
   override def notNull(expr: Expression, codeGenType: CodeGenType) = not(isNull(expr, codeGenType))

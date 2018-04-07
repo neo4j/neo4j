@@ -28,7 +28,7 @@ import org.neo4j.values.ValueMapper;
  * The NULL object of the Value world. Is implemented as a singleton, to allow direct reference equality checks (==),
  * and avoid unnecessary object creation.
  */
-public final class NoValue extends Value
+final class NoValue extends Value
 {
     @SuppressWarnings( "WeakerAccess" )
     static final NoValue NO_VALUE = new NoValue();

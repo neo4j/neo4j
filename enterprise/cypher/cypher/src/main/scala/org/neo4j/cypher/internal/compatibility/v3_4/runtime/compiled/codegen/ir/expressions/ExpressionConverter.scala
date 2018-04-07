@@ -137,7 +137,6 @@ object ExpressionConverter {
       case ast.Parameter(name, cypherType) =>
         // Parameters always comes as AnyValue
         expressions.Parameter(name, context.namer.newVarName(), CypherCodeGenType(cypherType, AnyValueType))
-        //expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenTypeWithRepresentation(cypherType, AnyValueType))
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 
