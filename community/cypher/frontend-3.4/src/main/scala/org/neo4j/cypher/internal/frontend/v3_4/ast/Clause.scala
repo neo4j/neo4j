@@ -176,10 +176,11 @@ final case class ConstructGraph(
     super.semanticCheck chain
       SemanticState.recordCurrentScope(this) chain
       clones.semanticCheck chain
-      checkDuplicatedRels chain
+      checkDuplicatedRelationships chain
+      checkBaseNodes chain
       news.semanticCheck
 
-  def checkDuplicatedRels: SemanticCheck = (state) => {
+  private def checkDuplicatedRelationships: SemanticCheck = (state) => {
     val relationshipVars = news.flatMap(_.pattern.patternParts).collect {
       case EveryPath(element) => collectRelationshipVars(element)
     }.flatten
@@ -193,9 +194,30 @@ final case class ConstructGraph(
       .foldSemanticCheck { v => error(s"Relationship `${v.name}` can only be declared once", v.position) }(state)
   }
 
+  private def checkBaseNodes: SemanticCheck = {
+    val nodeToBaseMapping = news.flatMap(_.pattern.patternParts).collect {
+      case EveryPath(element) => nodeToBaseNodeMapping(element)
+    }.flatten
+
+    nodeToBaseMapping
+      .groupBy(_._1.name)
+      .map { case (_, values) => values.head._1 -> values.map(_._2) }
+      .filter(x => x._2.size > 1)
+      .foldSemanticCheck {
+        case (v, bases) =>
+          error(s"Node ${v.name} cannot inherit from multiple bases ${bases.map(_.name).mkString(", ")}", v.position)
+      }
+  }
+
   private def collectRelationshipVars(patternElement: PatternElement): Seq[LogicalVariable] = patternElement match {
     case RelationshipChain(element, rel, _) if rel.variable.isDefined => collectRelationshipVars(element) :+ rel.variable.get
     case RelationshipChain(element, _, _) => collectRelationshipVars(element)
+    case _ => Seq.empty
+  }
+
+  private def nodeToBaseNodeMapping(patternElement: PatternElement): Seq[(LogicalVariable, LogicalVariable)] = patternElement match {
+    case RelationshipChain(element, _, node) => nodeToBaseNodeMapping(element) ++ nodeToBaseNodeMapping(node)
+    case NodePattern(Some(v), _, _, Some(base)) => Seq(v -> base)
     case _ => Seq.empty
   }
 

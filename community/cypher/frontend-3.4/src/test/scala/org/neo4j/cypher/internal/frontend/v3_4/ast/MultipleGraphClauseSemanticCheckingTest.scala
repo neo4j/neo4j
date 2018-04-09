@@ -183,6 +183,20 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("Do not allow to specify conflicting base nodes for new nodes") {
+    parsing(
+      """MATCH (a),(b)
+        |CONSTRUCT
+        |   NEW (a2 COPY OF a)
+        |   NEW (a2 COPY OF b)-[r:REL]->(a)
+        |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("Node a2 cannot inherit from multiple bases a, b")
+      )
+    }
+  }
+
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting.transform(TestState(Some(astNode)), TestContext).statement()
     val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
