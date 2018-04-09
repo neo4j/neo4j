@@ -106,7 +106,7 @@ public class SessionResetIT
     private static final String[] STRESS_IT_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
     private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 6, MINUTES ).build();
-    private final Neo4jRule db = new EnterpriseNeo4jRule()
+    private final Neo4jRule db = new EnterpriseNeo4jRule( true )
             .withConfig( GraphDatabaseSettings.load_csv_file_url_root, "import" )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
             .withConfig( ServerSettings.script_enabled, Settings.TRUE );

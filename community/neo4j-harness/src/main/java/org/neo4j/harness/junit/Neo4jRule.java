@@ -46,20 +46,32 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 {
     private TestServerBuilder builder;
     private ServerControls controls;
+    private boolean dumpLogsOnFailure;
 
-    Neo4jRule( TestServerBuilder builder )
+    Neo4jRule( TestServerBuilder builder, boolean dumpLogsOnFailure )
     {
         this.builder = builder;
+        this.dumpLogsOnFailure = dumpLogsOnFailure;
     }
 
     public Neo4jRule()
     {
-        this( TestServerBuilders.newInProcessBuilder() );
+        this( false );
+    }
+
+    public Neo4jRule( boolean dumpLogsOnFailure )
+    {
+        this( TestServerBuilders.newInProcessBuilder(), dumpLogsOnFailure );
     }
 
     public Neo4jRule( File workingDirectory )
     {
-        this( TestServerBuilders.newInProcessBuilder( workingDirectory ) );
+        this( workingDirectory, false );
+    }
+
+    public Neo4jRule( File workingDirectory, boolean dumpLogsOnFailure )
+    {
+        this( TestServerBuilders.newInProcessBuilder( workingDirectory ), dumpLogsOnFailure );
     }
 
     @Override
@@ -72,7 +84,19 @@ public class Neo4jRule implements TestRule, TestServerBuilder
             {
                 try ( ServerControls sc = controls = builder.newServer() )
                 {
-                    base.evaluate();
+                    try
+                    {
+                        base.evaluate();
+                    }
+                    catch ( Throwable t )
+                    {
+                        if ( dumpLogsOnFailure )
+                        {
+                            sc.printLogs( System.out );
+                        }
+
+                        throw t;
+                    }
                 }
             }
         };
