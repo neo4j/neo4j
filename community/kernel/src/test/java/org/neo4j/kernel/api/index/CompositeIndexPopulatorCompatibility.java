@@ -68,14 +68,9 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-            {
-                p.create();
-                p.add( Arrays.asList(
-                        add( 1, descriptor.schema(), "v1", "v2" ),
-                        add( 2, descriptor.schema(), "v1", "v2" ) ) );
-                p.close( true );
-            } );
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( Arrays.asList(
+                    add( 1, descriptor.schema(), "v1", "v2" ),
+                    add( 2, descriptor.schema(), "v1", "v2" ) ) ) );
 
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
@@ -110,7 +105,6 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
                 p.add( Arrays.asList(
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
                         IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
@@ -140,8 +134,6 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
-
                 // when
                 p.add( Arrays.asList(
                         IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),

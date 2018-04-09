@@ -149,6 +149,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         {
             try
             {
+                populator.create();
                 runWithPopulator.accept( populator );
             }
             finally
