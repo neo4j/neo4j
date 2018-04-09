@@ -36,10 +36,10 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
-import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -395,6 +395,10 @@ public abstract class CompiledConversionUtils
         {
             return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
         }
+        else if ( anyValue instanceof Node )
+        {
+            return ValueUtils.fromNodeProxy( (Node) anyValue );
+        }
         throw new IllegalArgumentException( "Do not know how to materialize node value from type " + anyValue.getClass().getName() );
     }
 
@@ -408,6 +412,10 @@ public abstract class CompiledConversionUtils
         else if ( anyValue instanceof VirtualRelationshipValue )
         {
             return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+        }
+        else if ( anyValue instanceof Relationship )
+        {
+            return ValueUtils.fromRelationshipProxy( (Relationship) anyValue );
         }
         throw new IllegalArgumentException( "Do not know how to materialize relationship value from type " + anyValue.getClass().getName() );
     }
@@ -547,7 +555,7 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( "unused" ) // called from compiled code
-    public static long unboxNodeOrNull( NodeIdWrapper value )
+    public static long unboxNodeOrNull( VirtualNodeValue value )
     {
         if ( value == null )
         {
@@ -557,7 +565,7 @@ public abstract class CompiledConversionUtils
     }
 
     @SuppressWarnings( "unused" ) // called from compiled code
-    public static long unboxRelationshipOrNull( RelationshipIdWrapper value )
+    public static long unboxRelationshipOrNull( VirtualRelationshipValue value )
     {
         if ( value == null )
         {
@@ -572,14 +580,6 @@ public abstract class CompiledConversionUtils
         if ( obj == null || obj == NO_VALUE )
         {
             return -1L;
-        }
-        else if ( obj instanceof NodeIdWrapper )
-        {
-            return ((NodeIdWrapper) obj).id();
-        }
-        else if ( obj instanceof RelationshipIdWrapper )
-        {
-            return ((RelationshipIdWrapper) obj).id();
         }
         else if ( obj instanceof VirtualNodeValue )
         {

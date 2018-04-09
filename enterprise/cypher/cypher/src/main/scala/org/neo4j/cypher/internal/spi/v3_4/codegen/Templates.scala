@@ -66,6 +66,12 @@ object Templates {
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
   val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
+  def createNewNodeReference(expression: Expression): Expression =
+    Expression.invoke(method[VirtualValues, NodeReference]("node", typeRef[Long]), expression)
+
+  def createNewRelationshipReference(expression: Expression): Expression =
+    Expression.invoke(method[VirtualValues, RelationshipReference]("relationship", typeRef[Long]), expression)
+
   def createNewNodeValueFromPrimitive(proxySpi: Expression, expression: Expression) =
     Expression.invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
       Expression.invoke(proxySpi, newNodeProxyById, expression))

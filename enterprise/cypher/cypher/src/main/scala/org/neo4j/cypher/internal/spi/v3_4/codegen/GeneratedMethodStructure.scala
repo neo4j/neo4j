@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
@@ -47,7 +46,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.virtual._
 
 import scala.collection.mutable
 
@@ -294,7 +293,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       if (materializeEntities)
         createNewNodeValueFromPrimitive(nodeManager, expression)
       else
-        createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
+        createNewNodeReference(expression)
 
     case CypherCodeGenType(CTNode, _) => // NOTE: This may already be a NodeValue
       invoke(method[ValueUtils, NodeValue]("asNodeValue", typeRef[Object]), expression)
@@ -304,7 +303,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       if (materializeEntities)
         createNewRelationshipValueFromPrimitive(nodeManager, expression)
       else
-        createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
+        createNewRelationshipReference(expression)
 
     case CypherCodeGenType(CTRelationship, _) => // NOTE: This may already be a RelationshipValue
       invoke(method[ValueUtils, RelationshipValue]("asRelationshipValue", typeRef[Object]), expression)
@@ -380,11 +379,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(materializeNodeValue, nodeManager, generator.load(nodeIdVar))
     else
       invoke(nodeManager, newNodeProxyById,
-        invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
+        invoke(cast(typeRef[VirtualNodeValue], generator.load(nodeIdVar)), nodeId))
 
   override def node(nodeIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive) generator.load(nodeIdVar)
-    else invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId)
+    else invoke(cast(typeRef[VirtualNodeValue], generator.load(nodeIdVar)), nodeId)
 
   // Unused in production
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
@@ -412,7 +411,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       invoke(materializeRelationshipValue, nodeManager, generator.load(relIdVar))
     else
       invoke(nodeManager, newRelationshipProxyById,
-        invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
+        invoke(cast(typeRef[VirtualRelationshipValue], generator.load(relIdVar)), relId))
 
   override def relationship(relIdVar: String, codeGenType: CodeGenType) =
     generator.load(relIdVar)
@@ -453,10 +452,10 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       // a primitive variable we need to force it to be unboxed
       codeGenType match {
         case CodeGenType.primitiveNode =>
-          unbox(Expression.cast(typeRef[NodeIdWrapper], invokeLoadParameter),
+          unbox(Expression.cast(typeRef[VirtualNodeValue], invokeLoadParameter),
             CypherCodeGenType(symbols.CTNode, ReferenceType))
         case CodeGenType.primitiveRel =>
-          unbox(Expression.cast(typeRef[RelationshipIdWrapper], invokeLoadParameter),
+          unbox(Expression.cast(typeRef[VirtualRelationshipValue], invokeLoadParameter),
             CypherCodeGenType(symbols.CTRelationship, ReferenceType))
         case CodeGenType.primitiveInt =>
           Expression.unbox(Expression.cast(typeRef[java.lang.Long], invokeLoadParameter))
@@ -539,9 +538,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CypherCodeGenType(symbols.CTNode, LongType) =>
-      createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
+      createNewNodeReference(expression)
     case CypherCodeGenType(symbols.CTRelationship, LongType) =>
-      createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
+      createNewRelationshipReference(expression)
     case _ => Expression.box(expression)
   }
 
