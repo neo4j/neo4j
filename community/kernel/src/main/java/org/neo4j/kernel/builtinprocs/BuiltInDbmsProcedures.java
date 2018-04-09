@@ -103,7 +103,7 @@ public class BuiltInDbmsProcedures
 
         String result = numberOfClearedQueries == 0 ? "Query cache already empty."
                                                     : "Query caches successfully cleared of " + numberOfClearedQueries + " queries.";
-        log.info( result );
+        log.info( "Called dbms.clearQueryCaches(): " + result );
         return Stream.of( new StringResult( result ) );
     }
 
