@@ -366,11 +366,12 @@ public abstract class CompiledConversionUtils
         }
         else if ( anyValue instanceof AnyValue )
         {
-            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities (storable arrays should
-            // TODO: This is expensive and will copy all the data even if no conversion is actually performed.
-            // Investigate if it pays off to (1) first do a dry run and return as is if no conversion is needed,
-            // or (2) always create proxy objects directly whenever we create values so we can skip this,
-            // or (3) wrap with TransformedListValue (existing) or TransformedMapValue (non-existing) that does the conversion lazily
+            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities if needed.
+            // This will first do a dry run and return as it is if no conversion is needed.
+            // If in the future we will always create proxy objects directly whenever we create values we can skip this
+            // Doing this conversion lazily instead, by wrapping with TransformedListValue or TransformedMapValue is probably not a
+            // good idea because of the complexities involved (see TOMBSTONE in VirtualValues about why TransformedListValue was killed).
+            // NOTE: There is also a case where a ListValue can be storable (ArrayValueListValue) where no conversion is needed
             if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
             {
                 return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
