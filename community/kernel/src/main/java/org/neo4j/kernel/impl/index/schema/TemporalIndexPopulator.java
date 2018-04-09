@@ -65,10 +65,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         forAll( NativeSchemaIndexPopulator::clear, this );
 
         // We must make sure to have at least one subindex:
-        // to be able to persist fialure and to have the right state in the beginning
+        // to be able to persist failure and to have the right state in the beginning
         if ( !this.iterator().hasNext() )
         {
-            uncheckedSelect( ValueGroup.DATE );
+            select( ValueGroup.DATE );
         }
     }
 
