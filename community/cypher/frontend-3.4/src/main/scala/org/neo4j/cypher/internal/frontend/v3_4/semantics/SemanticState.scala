@@ -76,29 +76,12 @@ final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSp
   def expect(types: TypeSpec): ExpressionTypeInfo = copy(expected = Some(types))
 }
 
-final case class ContextGraphs(source: String, target: String) {
-
-  override def toString: String = s"$source >> $target"
-
-  def updated(newSource: Option[String]): ContextGraphs =
-    updated(newSource, newSource)
-
-  def updated(newSource: Option[String], newTarget: Option[String]): ContextGraphs =
-    copy(source = newSource.getOrElse(source), target = newTarget.getOrElse(target))
-}
-
 object Scope {
   val empty = Scope(symbolTable = HashMap.empty, children = Vector())
-
-  def withContext(newContextGraphs: Option[ContextGraphs]): Scope = newContextGraphs match {
-    case Some(_) => empty.copy(contextGraphs = newContextGraphs)
-    case _ => empty
-  }
 }
 
 final case class Scope(symbolTable: Map[String, Symbol],
-                       children: Seq[Scope],
-                       contextGraphs: Option[ContextGraphs] = None
+                       children: Seq[Scope]
 ) extends TreeElem[Scope] {
 
   self =>
@@ -179,9 +162,8 @@ final case class Scope(symbolTable: Map[String, Symbol],
   import scala.compat.Platform.EOL
 
   private def dumpSingle(indent: String, includeId: Boolean, builder: StringBuilder): Unit = {
-    val contextGraphsInScope = contextGraphs.map(_.toString).map(" /* " ++ _ ++ " */").getOrElse("")
-    if (includeId) builder.append(s"$indent${self.toIdString} {$contextGraphsInScope$EOL")
-    else builder.append(s"$indent{$contextGraphsInScope$EOL")
+    if (includeId) builder.append(s"$indent${self.toIdString} {$EOL")
+    else builder.append(s"$indent{$EOL")
     dumpTree(s"  $indent", includeId, builder)
     builder.append(s"$indent}$EOL")
   }
