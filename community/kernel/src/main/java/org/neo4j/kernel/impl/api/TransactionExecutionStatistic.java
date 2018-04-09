@@ -55,7 +55,7 @@ public class TransactionExecutionStatistic
         KernelTransactionImplementation.Statistics statistics = tx.getStatistics();
         this.waitTimeMillis = NANOSECONDS.toMillis( statistics.getWaitingTimeNanos( nowNanos ) );
         this.heapAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
-        this.directAllocatedBytes = nullIfNegative( statistics.heapAllocatedBytes() );
+        this.directAllocatedBytes = nullIfNegative( statistics.directAllocatedBytes() );
         this.cpuTimeMillis = nullIfNegative( statistics.cpuTimeMillis() );
         this.pageFaults = statistics.totalTransactionPageCacheFaults();
         this.pageHits = statistics.totalTransactionPageCacheHits();
