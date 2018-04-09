@@ -100,9 +100,38 @@ case class New(pattern: Pattern)(val position: InputPosition) extends MultipleGr
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
-      checkRelTypes(pattern)
+      checkNewRelTypes chain
+      SemanticPatternCheck.check(Pattern.SemanticContext.Construct, pattern)
 
+
+
+  /**
+    * Checks if a relationship in new is cloned or newly created.
+    * If it is cloned, no type needs to be specified.
+    * Otherwise it has to have exactly one type.
+    * @return
+    */
+  private def checkNewRelTypes: SemanticCheck = {
+    def isCloned(rel: RelationshipPattern, state: SemanticState): Boolean =
+      rel.variable.isDefined && state.symbol(rel.variable.get.name).isDefined
+    def isCopy(rel: RelationshipPattern): Boolean =
+      rel.baseRel.isDefined
+
+    (state) => {
+      val checks = pattern.patternParts.collect {
+        case EveryPath(RelationshipChain(_, rel, _)) =>
+          if (rel.types.isEmpty && (isCloned(rel, state) || isCopy(rel)))
+            success
+          else
+            checkRelTypes(pattern)
+        case _ => success
+      }
+
+      val foldedCheck = checks.reduce((acc, check) => acc chain check)
+
+      foldedCheck(state)
+    }
+  }
 }
 
 trait SingleRelTypeCheck {
