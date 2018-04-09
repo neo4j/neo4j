@@ -133,7 +133,6 @@ final case class ConstructGraph(
       SemanticState.recordCurrentScope(this) chain
       clones.semanticCheck chain
       news.semanticCheck
-
 }
 
 final case class ReturnGraph(graphName: Option[QualifiedGraphName])(val position: InputPosition) extends MultipleGraphClause {
@@ -289,7 +288,7 @@ case class Match(
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id =>
+      case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop)), _) if variable == id =>
         acc => (acc ++ prop.map(_._1.name), None)
     }
 
@@ -311,7 +310,7 @@ case class Match(
 
   private def containsLabelPredicate(variable: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), nodeLabels, _) if variable == id =>
+      case NodePattern(Some(Variable(id)), nodeLabels, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
     }
     labels = where match {

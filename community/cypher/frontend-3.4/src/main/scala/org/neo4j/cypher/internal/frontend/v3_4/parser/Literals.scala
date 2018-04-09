@@ -57,7 +57,8 @@ trait Literals extends Parser
     keyword("UNWIND") |
     keyword("USE") |
     keyword("CONSTRUCT") |
-    keyword("WITH")
+    keyword("WITH") |
+    keyword("COPY")
 
   def ProcedureName: Rule1[ast.ProcedureName] =
     rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_) ) }.memoMismatches

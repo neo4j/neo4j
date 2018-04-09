@@ -184,19 +184,6 @@ trait SemanticAnalysisTooling {
   def implicitVariable(v:LogicalVariable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(v, possibleType)
 
-  def declareGraphMarkedAsGenerated(v:Variable): SemanticCheck = {
-    val declare = (_: SemanticState).declareGraph(v)
-    val mark = (_: SemanticState).localMarkAsGenerated(v)
-    declare chain mark
-  }
-
-  def implicitGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
-    (_: SemanticState).implicitGraph(v)
-
-  def ensureGraphDefined(v:Variable): SemanticCheck = {
-    val ensured = (_: SemanticState).ensureGraphDefined(v)
-    ensured chain expectType(CTGraphRef.covariant, v)
-  }
 
   def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck =
     s => {

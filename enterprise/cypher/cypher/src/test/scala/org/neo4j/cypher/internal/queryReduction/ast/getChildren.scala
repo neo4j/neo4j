@@ -49,8 +49,8 @@ object getChildren {
       case EveryPath(elem) =>
         Seq(elem)
 
-      case NodePattern(maybeVar, labels, maybeProps) =>
-        ofOption(maybeVar) ++ labels ++ ofOption(maybeProps)
+      case NodePattern(maybeVar, labels, maybeProps, base) =>
+        ofOption(maybeVar) ++ labels ++ ofOption(maybeProps) ++ ofOption(base)
 
       case Variable(_) =>
         Seq()
@@ -92,7 +92,7 @@ object getChildren {
       case RelationshipChain(element, relationship, rightNode) =>
         Seq(element, relationship, rightNode)
 
-      case RelationshipPattern(variable, types, length, properties, _, _) =>
+      case RelationshipPattern(variable, types, length, properties, _, _, _) =>
         ofOption(variable) ++  types ++ ofOption(length.flatten) ++ ofOption(properties)
 
       case FunctionInvocation(namespace, functionName, _, args) =>

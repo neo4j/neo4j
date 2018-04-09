@@ -58,14 +58,14 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer,
 
   private def whereRewriter: Rewriter = Rewriter.lift {
     // WHERE (a)-[:R]->() to WHERE GetDegree( (a)-[:R]->()) > 0
-    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None),
-                                                                    RelationshipPattern(None, types, None, None, dir, _),
-                                                                    NodePattern(None, List(), None)))) =>
+    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None, _),
+                                                                    RelationshipPattern(None, types, None, None, dir, _, _),
+                                                                    NodePattern(None, List(), None, _)))) =>
       GreaterThan(calculateUsingGetDegree(p, node, types, dir), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
     // WHERE ()-[:R]->(a) to WHERE GetDegree( (a)<-[:R]-()) > 0
-    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None),
-                                                                    RelationshipPattern(None, types, None, None, dir, _),
-                                                                    NodePattern(Some(node), List(), None)))) =>
+    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None, _),
+                                                                    RelationshipPattern(None, types, None, None, dir, _, _),
+                                                                    NodePattern(Some(node), List(), None, _)))) =>
       GreaterThan(calculateUsingGetDegree(p, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
 
     case a@And(lhs, rhs) =>

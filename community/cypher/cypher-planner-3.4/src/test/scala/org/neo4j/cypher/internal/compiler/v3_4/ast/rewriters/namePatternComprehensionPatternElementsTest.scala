@@ -34,9 +34,9 @@ class namePatternComprehensionPatternElementsTest extends CypherFunSuite with As
                         NodePattern(None, Seq.empty, None) _) _) _, None, StringLiteral("foo") _) _
 
     namePatternComprehensionPatternElements(input) match {
-      case PatternComprehension(_, RelationshipsPattern(RelationshipChain(NodePattern(Some(_), _, _),
-                                                                          RelationshipPattern(Some(_), _, _, _, _, _),
-                                                                          NodePattern(Some(_), _, _))), _, _, _) => ()
+      case PatternComprehension(_, RelationshipsPattern(RelationshipChain(NodePattern(Some(_), _, _, _),
+                                                                          RelationshipPattern(Some(_), _, _, _, _, _, _),
+                                                                          NodePattern(Some(_), _, _, _))), _, _, _) => ()
       case _ => fail("All things were not named")
     }
   }

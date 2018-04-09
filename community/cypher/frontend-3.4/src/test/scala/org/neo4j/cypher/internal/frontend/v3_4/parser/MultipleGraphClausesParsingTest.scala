@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause}
+import org.neo4j.cypher.internal.v3_4.expressions.RelationshipChain
 import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala.Rule1
 
@@ -88,6 +89,44 @@ class MultipleGraphClausesParsingTest
 
   test("CONSTRUCT NEW (:A)") {
     val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, Seq(exp.LabelName("A")(pos)), None)(pos))))(pos)
+    val newClause: ast.New = ast.New(pattern)(pos)
+
+    yields(ast.ConstructGraph(news = List(newClause)))
+  }
+
+  test("CONSTRUCT NEW (b COPY OF a:A)") {
+    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(Some(varFor("b")), Seq(exp.LabelName("A")(pos)), None, Some(varFor("a")))(pos))))(pos)
+    val newClause: ast.New = ast.New(pattern)(pos)
+
+    yields(ast.ConstructGraph(news = List(newClause)))
+  }
+
+  test("CONSTRUCT NEW (COPY OF a:A)") {
+    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, Seq(exp.LabelName("A")(pos)), None, Some(varFor("a")))(pos))))(pos)
+    val newClause: ast.New = ast.New(pattern)(pos)
+
+    yields(ast.ConstructGraph(news = List(newClause)))
+  }
+
+  test("CONSTRUCT NEW ()-[r2 COPY OF r:REL]->()") {
+    val relChain = RelationshipChain(
+      exp.NodePattern(None, List.empty, None, None)(pos),
+      exp.RelationshipPattern(Some(varFor("r2")), Seq(exp.RelTypeName("REL")(pos)), None, None, exp.SemanticDirection.OUTGOING, false, Some(varFor("r")))(pos),
+      exp.NodePattern(None, List.empty, None, None)(pos)
+    )(pos)
+    val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
+    val newClause: ast.New = ast.New(pattern)(pos)
+
+    yields(ast.ConstructGraph(news = List(newClause)))
+  }
+
+  test("CONSTRUCT NEW ()-[COPY OF r:REL]->()") {
+    val relChain = RelationshipChain(
+      exp.NodePattern(None, List.empty, None, None)(pos),
+      exp.RelationshipPattern(None, Seq(exp.RelTypeName("REL")(pos)), None, None, exp.SemanticDirection.OUTGOING, false, Some(varFor("r")))(pos),
+      exp.NodePattern(None, List.empty, None, None)(pos)
+    )(pos)
+    val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
     val newClause: ast.New = ast.New(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))

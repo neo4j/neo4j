@@ -58,8 +58,8 @@ object domainsOf {
       case EveryPath(elem) =>
         ofSingle(elem, classOf[PatternElement])
 
-      case NodePattern(maybeVar, labels, maybeProps) =>
-        ofOption(maybeVar, classOf[Variable]) ++ ofSeq(labels, classOf[LabelName]) ++ ofOption(maybeProps, classOf[Expression])
+      case NodePattern(maybeVar, labels, maybeProps, base) =>
+        ofOption(maybeVar, classOf[Variable]) ++ ofSeq(labels, classOf[LabelName]) ++ ofOption(maybeProps, classOf[Expression]) ++ ofOption(base, classOf[Variable])
 
       case Variable(_) => Seq()
 
@@ -104,7 +104,7 @@ object domainsOf {
           ofSingle(relationship, classOf[RelationshipPattern]) ++
           ofSingle(rightNode, classOf[NodePattern])
 
-      case RelationshipPattern(variable, types, length, properties, _, _) =>
+      case RelationshipPattern(variable, types, length, properties, _, _, _) =>
         ofOption(variable, classOf[Variable]) ++
           ofSeq(types, classOf[RelTypeName]) ++
           ofOption(length.flatten, classOf[Range]) ++

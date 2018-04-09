@@ -119,7 +119,7 @@ object ClauseConverters {
   private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder =
     clause.pattern.patternParts.foldLeft(builder) {
       //CREATE (n :L1:L2 {prop: 42})
-      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
+      case (acc, EveryPath(NodePattern(Some(id), labels, props, _))) =>
         acc
           .amendQueryGraph(_.addMutatingPatterns(CreateNodePattern(id.name, labels, props)))
 
@@ -168,9 +168,9 @@ object ClauseConverters {
   }
 
   private def allCreatePatterns(element: PatternElement): (Vector[CreateNodePattern], Vector[CreateRelationshipPattern]) = element match {
-    case NodePattern(None, _, _) => throw new InternalException("All nodes must be named at this instance")
+    case NodePattern(None, _, _, _) => throw new InternalException("All nodes must be named at this instance")
     //CREATE ()
-    case NodePattern(Some(variable), labels, props) =>
+    case NodePattern(Some(variable), labels, props, _) =>
       (Vector(CreateNodePattern(variable.name, labels, props)), Vector.empty)
 
     //CREATE ()-[:R]->()
@@ -290,7 +290,7 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foldLeft(builder) {
       //MERGE (n :L1:L2 {prop: 42})
-      case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
+      case (acc, EveryPath(NodePattern(Some(id), labels, props, _))) =>
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))

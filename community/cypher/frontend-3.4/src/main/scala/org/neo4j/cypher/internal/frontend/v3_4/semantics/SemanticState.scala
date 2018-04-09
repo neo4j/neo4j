@@ -426,7 +426,7 @@ case class SemanticState(currentScope: ScopeLocation,
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
           Left(SemanticError(
-            s"Type mismatch: ${variable.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
+            s"Type mismatch: ${variable.name} defined with conflicting type $existingTypes (expected $expectedTypes)",
             variable.position, symbol.positions.toSeq: _*))
         }
     }

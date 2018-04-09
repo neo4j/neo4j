@@ -54,7 +54,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
     }
 
     val clausePos = clause.position
-    val symbolNames = scope.selectSymbolNames(! _.graph) -- excludedNames
+    val symbolNames = scope.symbolNames -- excludedNames
     val expandedItems = symbolNames.toIndexedSeq.sorted.map { id =>
       val idPos = scope.symbolTable(id).definition.position
       val expr = Variable(id)(idPos)

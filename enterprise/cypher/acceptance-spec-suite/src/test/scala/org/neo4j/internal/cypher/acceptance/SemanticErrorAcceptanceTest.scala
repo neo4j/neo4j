@@ -26,9 +26,23 @@ import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
+  test("MATCH pattern with COPY OF is not allowed") {
+    executeAndEnsureError(
+      "MATCH (a) MATCH (n COPY OF a) RETURN n",
+      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 17 (offset: 16))"
+    )
+  }
+
+  test("MATCH pattern with COPY OF in relationship is not allowed") {
+    executeAndEnsureError(
+      "MATCH (a)-[r]->(b) MATCH ()-[r2 COPY OF r]->() RETURN r2",
+      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 41 (offset: 40))"
+    )
+  }
+
   test("return node that's not there") {
     executeAndEnsureError(
-      "match (n) where id(n) = 0 return bar",
+      "MATCH (n) WHERE id(n) = 0 RETURN bar",
       "Variable `bar` not defined (line 1, column 34 (offset: 33))"
     )
   }

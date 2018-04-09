@@ -49,8 +49,8 @@ object copyNodeWith {
       case EveryPath(elem) =>
         EveryPath(nc.ofSingle(elem))
 
-      case NodePattern(maybeVar, labels, maybeProps) =>
-        NodePattern(nc.ofOption(maybeVar), nc.ofSeq(labels), nc.ofOption(maybeProps))(node.position)
+      case NodePattern(maybeVar, labels, maybeProps, base) =>
+        NodePattern(nc.ofOption(maybeVar), nc.ofSeq(labels), nc.ofOption(maybeProps), base)(node.position)
 
       case Variable(_) => node
 
@@ -92,8 +92,8 @@ object copyNodeWith {
       case RelationshipChain(element, relationship, rightNode) =>
         RelationshipChain(nc.ofSingle(element), nc.ofSingle(relationship), nc.ofSingle(rightNode))(node.position)
 
-      case RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator) =>
-        RelationshipPattern(nc.ofOption(variable), nc.ofSeq(types), Option(nc.ofOption(length.flatten)), nc.ofOption(properties), direction, legacyTypeSeparator)(node.position)
+      case RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator, baseRel) =>
+        RelationshipPattern(nc.ofOption(variable), nc.ofSeq(types), Option(nc.ofOption(length.flatten)), nc.ofOption(properties), direction, legacyTypeSeparator, nc.ofOption(baseRel))(node.position)
 
       case FunctionInvocation(namespace, functionName, distinct, args) =>
         FunctionInvocation(nc.ofSingle(namespace), nc.ofSingle(functionName), distinct, nc.ofSeq(args).toIndexedSeq)(node.position)
