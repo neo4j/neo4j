@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.testing.Jobs;
-import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.function.Predicates;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -260,17 +258,21 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void createdWorkerThreadsShouldContainConnectorName() throws Exception
     {
-        AtomicInteger processNextBatchCount = new AtomicInteger();
+        AtomicInteger executeBatchCompletionCount = new AtomicInteger();
         AtomicReference<Thread> poolThread = new AtomicReference<>();
         AtomicReference<String> poolThreadName = new AtomicReference<>();
 
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
+        when ( connection.hasPendingJobs() ).thenAnswer( inv ->
+        {
+            executeBatchCompletionCount.incrementAndGet();
+            return false;
+        });
         when( connection.processNextBatch() ).thenAnswer( inv ->
         {
             poolThread.set( Thread.currentThread() );
             poolThreadName.set( Thread.currentThread().getName() );
-            processNextBatchCount.incrementAndGet();
             return true;
         } );
 
@@ -278,7 +280,7 @@ public class ExecutorBoltSchedulerTest
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, Jobs.noop() );
 
-        Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
+        Predicates.await( () -> executeBatchCompletionCount.get() > 0, 1, MINUTES );
 
         assertThat( poolThread.get().getName(), not( equalTo( poolThreadName.get() ) ) );
         assertThat( poolThread.get().getName(), containsString( String.format( "[%s]", CONNECTOR_KEY ) ) );
