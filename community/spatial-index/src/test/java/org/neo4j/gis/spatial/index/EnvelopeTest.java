@@ -24,6 +24,7 @@ import org.junit.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 public class EnvelopeTest
@@ -104,6 +105,49 @@ public class EnvelopeTest
         testOverlaps(left, new Envelope( -1.0, 0.0, 0.0, 1.0 ), true, 0.0, 0.0);       // touches left edge
         testOverlaps(left, new Envelope( 0.5, 1.5, 1.0, 2.0 ), true, 0.0, 0.0);        // touches top-right edge
         testOverlaps(left, new Envelope( 0.5, 1.5, 0.0, 1.0 ), true, 0.5, 0.5);        // overlaps right half
+    }
+
+    @Test
+    public void testWithSideRatioNotTooSmall2D()
+    {
+        // No change expected
+        double[] from = new double[] {0, 0};
+        double[] to = new double[] {1, 1};
+
+        Envelope envelope = new Envelope( from, to ).withSideRatioNotTooSmall();
+        double[] expectedFrom = new double[] {0, 0};
+        double[] expectedTo = new double[] {1, 1};
+        assertArrayEquals( expectedFrom, envelope.min , 0);
+        assertArrayEquals( expectedTo, envelope.max, 0 );
+
+        // Expected to change
+        to = new double[] {100, 0.1};
+        Envelope envelope2 = new Envelope( from, to ).withSideRatioNotTooSmall();
+        double[] expectedTo2 = new double[] {100, 1};
+        assertArrayEquals( expectedFrom, envelope2.min , 0);
+        assertArrayEquals( expectedTo2, envelope2.max, 0.00001 );
+    }
+
+    // Works for any number of dimensions, and 4 is more interesting than 3
+    @Test
+    public void testWithSideRatioNotTooSmall4D()
+    {
+        // No change expected
+        double[] from = new double[] {0, 0, 0, 0};
+        double[] to = new double[] {1, 1, 1, 1};
+
+        Envelope envelope = new Envelope( from, to ).withSideRatioNotTooSmall();
+        double[] expectedFrom = new double[] {0, 0, 0, 0};
+        double[] expectedTo = new double[] {1, 1, 1, 1};
+        assertArrayEquals( expectedFrom, envelope.min , 0);
+        assertArrayEquals( expectedTo, envelope.max, 0 );
+
+        // Expected to change
+        to = new double[] {100, 0.1, 12, 0.01};
+        Envelope envelope2 = new Envelope( from, to ).withSideRatioNotTooSmall();
+        double[] expectedTo2 = new double[] {100, 1, 12, 1};
+        assertArrayEquals( expectedFrom, envelope2.min , 0);
+        assertArrayEquals( expectedTo2, envelope2.max, 0.00001 );
     }
 
     private void makeAndTestEnvelope( double[] min, double[] max, double[] width )

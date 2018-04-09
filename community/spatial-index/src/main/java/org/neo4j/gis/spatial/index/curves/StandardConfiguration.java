@@ -64,7 +64,8 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
     @Override
     public int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel )
     {
-        double searchRatio = range.getArea() / referenceEnvelope.getArea();
+        Envelope paddedEnvelope = referenceEnvelope.withSideRatioNotTooSmall();
+        double searchRatio = range.getArea() / paddedEnvelope.getArea();
         if ( Double.isInfinite( searchRatio ) )
         {
             return maxLevel;

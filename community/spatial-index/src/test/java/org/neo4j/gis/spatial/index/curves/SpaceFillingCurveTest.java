@@ -1006,49 +1006,6 @@ public class SpaceFillingCurveTest
         }
     }
 
-    @Test
-    public void testEnsureSideRatioNotTooSmall2D()
-    {
-        // No change expected
-        double[] from = new double[] {0, 0};
-        double[] to = new double[] {1, 1};
-
-        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
-        double[] expectedFrom = new double[] {0, 0};
-        double[] expectedTo = new double[] {1, 1};
-        assertArrayEquals( expectedFrom, from , 0);
-        assertArrayEquals( expectedTo, to, 0 );
-
-        // Expected to change
-        to = new double[] {100, 0.1};
-        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
-        double[] expectedTo2 = new double[] {100, 1};
-        assertArrayEquals( expectedFrom, from , 0);
-        assertArrayEquals( expectedTo2, to, 0.00001 );
-    }
-
-    // Works for any number of dimensions, and 4 is more interesting than 3
-    @Test
-    public void testEnsureSideRatioNotTooSmall4D()
-    {
-        // No change expected
-        double[] from = new double[] {0, 0, 0, 0};
-        double[] to = new double[] {1, 1, 1, 1};
-
-        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
-        double[] expectedFrom = new double[] {0, 0, 0, 0};
-        double[] expectedTo = new double[] {1, 1, 1, 1};
-        assertArrayEquals( expectedFrom, from , 0);
-        assertArrayEquals( expectedTo, to, 0 );
-
-        // Expected to change
-        to = new double[] {100, 0.1, 12, 0.01};
-        SpaceFillingCurve.ensureSideRatioNotTooSmall( from, to );
-        double[] expectedTo2 = new double[] {100, 1, 12, 1};
-        assertArrayEquals( expectedFrom, from , 0);
-        assertArrayEquals( expectedTo2, to, 0.00001 );
-    }
-
     private void shouldNeverStepMoreThanDistanceOne( SpaceFillingCurve curve, int level, int badnessThresholdPercentage )
     {
         int badCount = 0;
