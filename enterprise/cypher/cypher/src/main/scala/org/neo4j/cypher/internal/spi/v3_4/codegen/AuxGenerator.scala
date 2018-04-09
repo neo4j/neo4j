@@ -154,7 +154,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
             codeGenType match {
               // TODO: Primitive nodes and relationships including correct ordering of nulls
               // TODO: Extract shared code between cases
-              case CypherCodeGenType(symbols.CTInteger, reprType) if (!reprType.isInstanceOf[AnyValueType]) => {
+              case CypherCodeGenType(symbols.CTInteger, reprType) if RepresentationType.isPrimitive(reprType) => {
                 /*
                 E.g.
                 long thisValue_a = this.a
@@ -175,7 +175,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(Expression.constant(greaterThanSortResult(sortOrder)))
                 }
               }
-              case CypherCodeGenType(symbols.CTFloat, reprType) if (!reprType.isInstanceOf[AnyValueType]) => {
+              case CypherCodeGenType(symbols.CTFloat, reprType) if RepresentationType.isPrimitive(reprType) => {
                 // We use Double.compare(double, double) which handles float equality properly
                 /*
                 E.g.
@@ -202,7 +202,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(compareResult)
                 }
               }
-              case CypherCodeGenType(symbols.CTBoolean, reprType) if (!reprType.isInstanceOf[AnyValueType]) => {
+              case CypherCodeGenType(symbols.CTBoolean, reprType) if RepresentationType.isPrimitive(reprType) => {
                 /*
                 E.g.
                 boolean thisValue_a = this.a
