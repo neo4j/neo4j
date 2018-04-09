@@ -31,7 +31,7 @@ import java.util.NoSuchElementException;
  * Queue capacity should always be power of two to be able to use
  * '&' mask operation with {@link #values} length.
  */
-public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
+public class PrimitiveLongArrayQueue
 {
     private static final int DEFAULT_CAPACITY = 16;
     private long[] values;
@@ -49,31 +49,26 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
         initValues( capacity );
     }
 
-    @Override
     public boolean isEmpty()
     {
         return head == tail;
     }
 
-    @Override
     public void clear()
     {
         initValues( DEFAULT_CAPACITY );
     }
 
-    @Override
     public int size()
     {
         return (tail - head) & (values.length - 1);
     }
 
-    @Override
     public void close()
     {
         values = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
     }
 
-    @Override
     public LongIterator longIterator()
     {
         return new PrimitiveLongArrayQueueIterator();

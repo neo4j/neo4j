@@ -64,10 +64,6 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-resource</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.collections</groupId>
-      <artifactId>eclipse-collections</artifactId>
-    </dependency>
 
       <dependency>
       <groupId>junit</groupId>
