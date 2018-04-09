@@ -46,8 +46,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: EveryPath =>
         (x.element, ctx) match {
           // single node variable is allowed to be already bound in MATCH and GRAPH OF
-          case (_: NodePattern, SemanticContext.Construct) =>
-            declareVariables(ctx, x.element)
+          case (n: NodePattern, SemanticContext.Construct) =>
+            n.variable.fold(SemanticCheckResult.success)(declareVariable(_, CTNode)) chain
+              declareVariables(ctx, n)
           case (_: NodePattern, SemanticContext.Match) =>
             declareVariables(ctx, x.element)
           case (n: NodePattern, _) =>
@@ -220,7 +221,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         val possibleType = if (x.length.isEmpty) CTRelationship else CTList(CTRelationship)
 
         ctx match {
-          case SemanticContext.Match | SemanticContext.Construct =>
+          case SemanticContext.Match =>
+            implicitVariable(variable, possibleType)
+          // In case of construct the variable could either be defined outside or may be defined once inside a new.
+          // This can only be checked on construct level, thus we use implicit semantics here.
+          case SemanticContext.Construct =>
             implicitVariable(variable, possibleType)
           case SemanticContext.Expression =>
             ensureDefined(variable) chain

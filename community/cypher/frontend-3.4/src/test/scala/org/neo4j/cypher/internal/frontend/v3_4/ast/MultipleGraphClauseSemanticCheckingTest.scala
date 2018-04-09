@@ -78,6 +78,17 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("fail on copy of with incompatible rel type chained") {
+    parsing(
+      """MATCH (a)
+        |CONSTRUCT
+        |   NEW ()-[r COPY OF a]->()-[r2:REL]->()
+        |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(Set("Type mismatch: a defined with conflicting type Node (expected Relationship)"))
+    }
+  }
+
   test("Do not require type for cloned relationships") {
     parsing(
       """MATCH (a)-[r]-(b)
@@ -115,17 +126,59 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("fpp") {
+
+  test("Require type for new relationships chained") {
     parsing(
-      """MATCH (a)-[r]->(b)
+      """MATCH (a), (b)
         |CONSTRUCT
         |   CLONE a, b
-        |   NEW (a)-[r2 COPY OF r]->(b)
-        |   NEW (b)-[r2 COPY OF r]->(a)
+        |   NEW (a)-[r]->(b)-[r2:REL]->(c)
         |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
 
       result.errorMessages should equal(
         Set("Exactly one relationship type must be specified for NEW. Did you forget to prefix your relationship type with a ':'?")
+      )
+    }
+  }
+
+  test("Allow multiple usages of a newly created nodes for connections") {
+    parsing(
+      """MATCH (a), (b)
+        |CONSTRUCT
+        |   NEW (a2)
+        |   NEW (a2)-[r1:REL]->(b)
+        |   NEW (a2)-[r2:REL]->(a)
+        |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errors shouldBe empty
+    }
+  }
+
+  test("Do not allow multiple usages of a newly created node") {
+    parsing(
+      """MATCH (a), (b)
+        |CONSTRUCT
+        |   NEW (a2)
+        |   NEW (a2)
+        |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("Variable `a2` already declared")
+      )
+    }
+  }
+
+  test("Do not allow multiple usages of a newly created relationship in NEW") {
+    parsing(
+      """MATCH (a)-[r]->(b)
+        |CONSTRUCT
+        |   CLONE a, b
+        |   NEW (a)-[r2:REL]->(b)
+        |   NEW (b)-[r2:REL]->(a)
+        |RETURN GRAPH""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("Relationship `r2` can only be declared once")
       )
     }
   }
