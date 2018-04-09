@@ -29,13 +29,14 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{ExecutionPlanDescription, Result}
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes, ProcedureSignature, QualifiedName}
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{ResourceTracker, Statement}
 import org.neo4j.procedure.Mode
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
+import scala.collection.mutable.ArrayBuffer
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
@@ -90,9 +91,13 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     override def apply(context: Context,
                        objects: Array[AnyRef],
                        resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
-      val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations = statement.readOperations
-      val nodes = readOperations.nodesGetAll()
+      val ktx = context.get(KERNEL_TRANSACTION)
+      val nodeBuffer = new ArrayBuffer[Long]()
+      val cursor = ktx.cursors().allocateNodeCursor()
+      ktx.dataRead().allNodesScan(cursor)
+      while (cursor.next()) nodeBuffer.append(cursor.nodeReference())
+      cursor.close()
+      val nodes = nodeBuffer.iterator
       var count = 0
       new RawIterator[Array[AnyRef], ProcedureException] {
         override def next(): Array[AnyRef] = {
@@ -101,7 +106,6 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
         }
 
         override def hasNext: Boolean = {
-          if (!nodes.hasNext) statement.close()
           nodes.hasNext
         }
       }

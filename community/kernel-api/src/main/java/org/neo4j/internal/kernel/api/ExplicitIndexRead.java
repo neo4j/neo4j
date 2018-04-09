@@ -75,6 +75,15 @@ public interface ExplicitIndexRead
     boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
     /**
+     * Return the configuration of the given index
+     * @param indexName the name of the index
+     * @return the configuration of the index with the given
+     * @throws ExplicitIndexNotFoundKernelException if the index is not there
+     */
+    Map<String, String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
+
+    /**
      * Finds item from explicit index
      *
      * @param cursor the cursor to use for consuming the result
@@ -138,4 +147,13 @@ public interface ExplicitIndexRead
      * @return the names of all relationship explicit indexes
      */
     String[] relationshipExplicitIndexesGetAll();
+
+    /**
+     * Return the configuration of the given index
+     * @param indexName the name of the index
+     * @return the configuration of the index with the given
+     * @throws ExplicitIndexNotFoundKernelException if the index doesn't exist
+     */
+    Map<String, String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
 }

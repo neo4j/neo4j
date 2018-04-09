@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -27,7 +26,7 @@ import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.StateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;

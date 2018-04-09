@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.Collection;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.storageengine.api.StorageCommand;
 

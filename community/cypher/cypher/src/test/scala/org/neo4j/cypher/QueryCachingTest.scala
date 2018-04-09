@@ -62,9 +62,8 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         cacheListener.clear()
 
         graph.inTx {
-          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-          statement.readOperations().schemaStateFlush()
-          statement.close()
+          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).getKernelTransactionBoundToThisThread(true)
+          statement.schemaRead().schemaStateFlush()
         }
 
         graph.execute(firstQuery).resultAsString()

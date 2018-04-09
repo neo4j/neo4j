@@ -27,7 +27,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
@@ -136,8 +137,9 @@ public class IndexPopulationFlipRaceIT
     private void verifyThatThereAreExactlyOneIndexEntryPerNodeInTheIndexes( int i, Pair<long[],long[]> data )
             throws Exception
     {
-        InwardKernel kernelAPI = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        try ( KernelTransaction tx = kernelAPI.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() ) )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() );
+              org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction( KernelTransaction.Type.implicit ) )
         {
             int labelAId = tx.tokenRead().nodeLabel( labelA( i ).name() );
             int keyAId = tx.tokenRead().propertyKey( keyA( i ) );

@@ -122,8 +122,6 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
@@ -226,7 +224,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                             idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
                     spi.autoIndexing().relationships() );
 
-            return new IndexManagerImpl( txBridge, idxProvider, nodeAutoIndexer, relAutoIndexer );
+            return new IndexManagerImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ), idxProvider,
+                    nodeAutoIndexer, relAutoIndexer );
         } );
 
         this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
@@ -704,7 +703,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         Statement statement = transaction.acquireStatement();
         Read read = transaction.dataRead();
 
-        if ( query.propertyKeyId() == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
+        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || labelId == TokenRead.NO_TOKEN )
         {
             statement.close();
             return emptyResourceIterator();
@@ -832,11 +831,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
     private boolean isInvalidQuery( int labelId, IndexQuery[] queries )
     {
-        boolean invalidQuery = labelId == NO_SUCH_LABEL;
+        boolean invalidQuery = labelId == TokenRead.NO_TOKEN;
         for ( IndexQuery query : queries )
         {
             int propertyKeyId = query.propertyKeyId();
-            invalidQuery = invalidQuery || propertyKeyId == NO_SUCH_PROPERTY_KEY;
+            invalidQuery = invalidQuery || propertyKeyId == TokenRead.NO_TOKEN;
         }
         return invalidQuery;
     }
@@ -884,7 +883,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         Statement statement = ktx.acquireStatement();
 
         int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
-        if ( labelId == NO_SUCH_LABEL )
+        if ( labelId == TokenRead.NO_TOKEN )
         {
             statement.close();
             return Iterators.emptyResourceIterator();

@@ -31,13 +31,14 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -97,16 +98,17 @@ public class CompositeUniquenessConstraintValidationIT
         numberOfProps = aValues.length;
     }
 
-    private KernelTransaction transaction;
+    private Transaction transaction;
     private GraphDatabaseAPI graphDatabaseAPI;
-    protected InwardKernel kernel;
+    protected Kernel kernel;
+    protected Session session;
 
     @Before
     public void setup() throws Exception
     {
-
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
-        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( InwardKernel.class );
+        kernel = graphDatabaseAPI.getDependencyResolver().resolveDependency( Kernel.class );
+        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
 
         newTransaction();
         transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( label, propertyIds() ) );
@@ -126,11 +128,13 @@ public class CompositeUniquenessConstraintValidationIT
                 .constraintDrop( ConstraintDescriptorFactory.uniqueForLabel( label, propertyIds() ) );
         commit();
 
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = session.beginTransaction( Transaction.Type.implicit );
+              NodeCursor node = tx.cursors().allocateNodeCursor() )
         {
-            for ( Node node : graphDatabaseAPI.getAllNodes() )
+            tx.dataRead().allNodesScan( node );
+            while ( node.next() )
             {
-                node.delete();
+                tx.dataWrite().nodeDelete( node.nodeReference() );
             }
             tx.success();
         }
@@ -316,7 +320,7 @@ public class CompositeUniquenessConstraintValidationIT
         {
             fail( "tx already opened" );
         }
-        transaction = kernel.newTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        transaction = session.beginTransaction( KernelTransaction.Type.implicit );
     }
 
     protected void commit() throws TransactionFailureException

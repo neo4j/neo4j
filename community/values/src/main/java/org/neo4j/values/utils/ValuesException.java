@@ -19,7 +19,10 @@
  */
 package org.neo4j.values.utils;
 
-
+/**
+ * {@code ValuesException} is the super class of the custom exceptions
+ * that can be thrown during usage of the Values module (org.neo4j.values).
+ */
 public class ValuesException extends RuntimeException
 {
     ValuesException( String errorMsg )
@@ -27,7 +30,7 @@ public class ValuesException extends RuntimeException
         super( errorMsg );
     }
 
-    public ValuesException( String errorMsg, Throwable cause )
+    ValuesException( String errorMsg, Throwable cause )
     {
         super( errorMsg, cause );
     }

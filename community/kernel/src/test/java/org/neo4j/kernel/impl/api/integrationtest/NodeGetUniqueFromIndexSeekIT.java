@@ -22,15 +22,14 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.test.DoubleLatch;
@@ -100,7 +99,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         createNodeWithValue( Values.of( "other_" + value ) );
 
         // when looking for it
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         long foundId = transaction.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
         commit();
 
@@ -118,7 +117,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         long nodeId = createNodeWithValues( value1, value2 );
 
         // when looking for it
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         long foundId = transaction.dataRead().nodeUniqueIndexSeek( index,
                 exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
@@ -138,7 +137,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
 
         // when looking for it
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         long foundId =  transaction.dataRead().nodeUniqueIndexSeek( index,
                 exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
@@ -181,11 +180,9 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Runnable runnableForThread2 = () ->
         {
             latch.waitForAllToStart();
-            try ( Transaction tx = db.beginTx();
-                  KernelTransaction transaction = statementContextSupplier
-                          .getKernelTransactionBoundToThisThread( true ) )
+            try ( Transaction tx = session.beginTransaction() )
             {
-                transaction.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
+                tx.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
                 tx.success();
             }
             catch ( KernelException e )
@@ -244,7 +241,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
     private CapableIndexReference createUniquenessConstraint( int labelId, int... propertyIds ) throws Exception
     {
-        KernelTransaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
+        Transaction transaction = newTransaction( LoginContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         transaction.schemaWrite().uniquePropertyConstraintCreate( descriptor );
         CapableIndexReference result = transaction.schemaRead().index( descriptor.getLabelId(), descriptor.getPropertyIds() );

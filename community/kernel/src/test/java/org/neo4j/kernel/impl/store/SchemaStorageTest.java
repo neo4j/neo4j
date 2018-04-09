@@ -39,10 +39,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -85,15 +85,14 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        try ( Transaction transaction = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL1 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL2 );
-            tokenWriteOperations.relationshipTypeGetOrCreateForName( TYPE1 );
+            TokenWrite tokenWrite = getTransaction().tokenWrite();
+            tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+            tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+            tokenWrite.labelGetOrCreateForName( LABEL1 );
+            tokenWrite.labelGetOrCreateForName( LABEL2 );
+            tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.success();
         }
         SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
@@ -388,34 +387,31 @@ public class SchemaStorageTest
 
     private static int labelId( String labelName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( labelName );
+            return getTransaction().tokenRead().nodeLabel( labelName );
         }
     }
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propName );
+            return getTransaction().tokenRead().propertyKey( propName );
         }
     }
 
     private static int typeId( String typeName )
     {
-        try ( Transaction ignore = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().relationshipTypeGetForName( typeName );
+            return getTransaction().tokenRead().relationshipType( typeName );
         }
     }
 
-    private static Statement getStatement()
+    private static KernelTransaction getTransaction()
     {
-        return resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     private static <T> T resolveDependency( Class<T> clazz )

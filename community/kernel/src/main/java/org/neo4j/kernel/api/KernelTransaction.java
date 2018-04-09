@@ -19,18 +19,14 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Optional;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.api.KernelImpl;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -102,52 +98,9 @@ public interface KernelTransaction extends Transaction, AssertOpen
     Statement acquireStatement();
 
     /**
-     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
-     * Otherwise its changes will be rolled back.
-     *
-     * @return id of the committed transaction or {@link #ROLLBACK} if transaction was rolled back or
-     * {@link #READ_ONLY} if transaction was read-only.
-     */
-    long closeTransaction() throws TransactionFailureException;
-
-    /**
-     * Closes this transaction, committing its changes if {@link #success()} has been called and neither
-     * {@link #failure()} nor {@link #markForTermination(Status)} has been called.
-     * Otherwise its changes will be rolled back.
-     */
-    @Override
-    default void close() throws TransactionFailureException
-    {
-        closeTransaction();
-    }
-
-    /**
-     * @return {@code true} if the transaction is still open, i.e. if {@link #close()} hasn't been called yet.
-     */
-    boolean isOpen();
-
-    /**
      * @return the security context this transaction is currently executing in.
      */
     SecurityContext securityContext();
-
-    /**
-     * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
-     */
-    Optional<Status> getReasonIfTerminated();
-
-    /**
-     * @return true if transaction was terminated, otherwise false
-     */
-    boolean isTerminated();
-
-    /**
-     * Marks this transaction for termination, such that it cannot commit successfully and will try to be
-     * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
-     * point where {@link #close()} will be invoked.
-     */
-    void markForTermination( Status reason );
 
     /**
      * @return The timestamp of the last transaction that was committed to the store when this transaction started.
@@ -161,7 +114,7 @@ public interface KernelTransaction extends Transaction, AssertOpen
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link Kernel#newTransaction(Type, LoginContext)}.
+     * {@link org.neo4j.internal.kernel.api.Session#beginTransaction(Type)}.
      */
     long startTime();
 

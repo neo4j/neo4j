@@ -24,17 +24,16 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.LogService;
 
-public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFactory
+public class DefaultBoltProtocolPipelineInstallerFactory implements BoltProtocolPipelineInstallerFactory
 {
     private final BoltConnectionFactory connectionFactory;
     private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
 
-    public DefaultBoltProtocolHandlerFactory( BoltConnectionFactory connectionFactory, TransportThrottleGroup throttleGroup,
+    public DefaultBoltProtocolPipelineInstallerFactory( BoltConnectionFactory connectionFactory, TransportThrottleGroup throttleGroup,
             LogService logService )
     {
         this.connectionFactory = connectionFactory;
@@ -43,15 +42,15 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
     }
 
     @Override
-    public BoltMessagingProtocolHandler create( long protocolVersion, BoltChannel channel )
+    public BoltProtocolPipelineInstaller create( long protocolVersion, BoltChannel channel )
     {
         if ( protocolVersion == Neo4jPackV1.VERSION )
         {
-            return newMessagingProtocolHandler( channel, new Neo4jPackV1() );
+            return newProtocolPipelineInstaller( channel, new Neo4jPackV1() );
         }
         else if ( protocolVersion == Neo4jPackV2.VERSION )
         {
-            return newMessagingProtocolHandler( channel, new Neo4jPackV2() );
+            return newProtocolPipelineInstaller( channel, new Neo4jPackV2() );
         }
         else
         {
@@ -59,9 +58,9 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
         }
     }
 
-    private BoltMessagingProtocolHandler newMessagingProtocolHandler( BoltChannel channel, Neo4jPack neo4jPack )
+    private BoltProtocolPipelineInstaller newProtocolPipelineInstaller( BoltChannel channel, Neo4jPack neo4jPack )
     {
-        return new BoltMessagingProtocolHandlerImpl( channel, newBoltConnection( channel ), neo4jPack, throttleGroup, logService );
+        return new DefaultBoltProtocolPipelineInstaller( channel, newBoltConnection( channel ), neo4jPack, throttleGroup, logService );
     }
 
     private BoltConnection newBoltConnection( BoltChannel channel )

@@ -79,7 +79,7 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.ValueGroup.GEOMETRY;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-abstract class Read implements TxStateHolder,
+public abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead,

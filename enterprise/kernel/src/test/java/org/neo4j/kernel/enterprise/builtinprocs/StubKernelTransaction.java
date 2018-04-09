@@ -24,6 +24,7 @@ import org.mockito.Answers;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
@@ -127,6 +128,12 @@ class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Procedures procedures()
+    {
+        return null;
+    }
+
+    @Override
+    public ExecutionStatistics executionStatistics()
     {
         return null;
     }

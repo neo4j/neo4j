@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -300,8 +301,9 @@ public class CatchupServerIT
 
     private List<String> getExpectedStoreFiles( NeoStoreDataSource neoStoreDataSource ) throws IOException
     {
-        try ( Stream<StoreFileMetadata> stream = neoStoreDataSource.getNeoStoreFileListing().builder()
-                .excludeLogFiles().excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().build().stream() )
+        NeoStoreFileListing.StoreFileListingBuilder builder = neoStoreDataSource.getNeoStoreFileListing().builder();
+        builder.excludeLogFiles().excludeExplicitIndexStoreFiles().excludeSchemaIndexStoreFiles().excludeAdditionalProviders();
+        try ( Stream<StoreFileMetadata> stream = builder.build().stream() )
         {
             return stream.filter( isCountFile().negate() ).map( sfm -> sfm.file().getName() ).collect( toList() );
         }

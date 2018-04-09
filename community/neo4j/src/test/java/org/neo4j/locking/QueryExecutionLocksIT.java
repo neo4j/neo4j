@@ -46,6 +46,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -85,7 +86,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
@@ -269,17 +270,6 @@ public class QueryExecutionLocksIT
         public ExecutingQuery executingQuery()
         {
             return delegate.executingQuery();
-        }
-
-        @Override
-        public ReadOperations readOperations()
-        {
-            if ( recordingReadOperationsWrapper == null )
-            {
-                recordingReadOperationsWrapper =
-                        new LockRecordingReadOperationsWrapper( delegate.readOperations(), recordedLocks, asList( listeners ) );
-            }
-            return recordingReadOperationsWrapper;
         }
 
         @Override
@@ -1280,6 +1270,12 @@ public class QueryExecutionLocksIT
         public Procedures procedures()
         {
             return internal.procedures();
+        }
+
+        @Override
+        public ExecutionStatistics executionStatistics()
+        {
+            return internal.executionStatistics();
         }
 
         @Override

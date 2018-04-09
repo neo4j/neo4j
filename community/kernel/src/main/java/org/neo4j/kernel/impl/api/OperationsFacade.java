@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
@@ -44,36 +43,26 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExecutionStatisticsOperations;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.proc.BasicContext;
-import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
@@ -82,13 +71,10 @@ import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
 import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
-import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -101,18 +87,15 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
 
 public class OperationsFacade
-        implements ReadOperations, DataWriteOperations, TokenWriteOperations,
-        QueryRegistryOperations, ProcedureCallOperations, ExecutionStatisticsOperations
+        implements ReadOperations, DataWriteOperations,
+        QueryRegistryOperations
 {
     private final KernelTransaction tx;
     private final KernelStatement statement;
@@ -131,12 +114,6 @@ public class OperationsFacade
     final KeyReadOperations tokenRead()
     {
         return operations.keyReadOperations();
-    }
-
-    final KeyWriteOperations tokenWrite()
-    {
-        statement.assertAllows( AccessMode::allowsTokenCreates, "Token create" );
-        return operations.keyWriteOperations();
     }
 
     final EntityReadOperations dataRead()
@@ -162,11 +139,6 @@ public class OperationsFacade
     final SchemaReadOperations schemaRead()
     {
         return operations.schemaReadOperations();
-    }
-
-    final org.neo4j.kernel.impl.api.operations.SchemaWriteOperations schemaWrite()
-    {
-        return operations.schemaWriteOperations();
     }
 
     final QueryRegistrationOperations queryRegistrationOperations()
@@ -734,74 +706,6 @@ public class OperationsFacade
 
     // </TokenRead>
 
-    // <TokenWrite>
-    @Override
-    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
-    {
-        statement.assertOpen();
-        int id = tokenRead().labelGetForName( statement, labelName );
-        if ( id != KeyReadOperations.NO_SUCH_LABEL )
-        {
-            return id;
-        }
-
-        return tokenWrite().labelGetOrCreateForName( statement, labelName );
-    }
-
-    @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
-    {
-        statement.assertOpen();
-        int id = tokenRead().propertyKeyGetForName( statement, propertyKeyName );
-        if ( id != KeyReadOperations.NO_SUCH_PROPERTY_KEY )
-        {
-            return id;
-        }
-        return tokenWrite().propertyKeyGetOrCreateForName( statement,
-                propertyKeyName );
-    }
-
-    @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
-    {
-        statement.assertOpen();
-        int id = tokenRead().relationshipTypeGetForName( statement, relationshipTypeName );
-        if ( id != KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE )
-        {
-            return id;
-        }
-        return tokenWrite().relationshipTypeGetOrCreateForName( statement, relationshipTypeName );
-    }
-
-    @Override
-    public void labelCreateForName( String labelName, int id ) throws
-            IllegalTokenNameException, TooManyLabelsException
-    {
-        statement.assertOpen();
-        tokenWrite().labelCreateForName( statement, labelName, id );
-    }
-
-    @Override
-    public void propertyKeyCreateForName( String propertyKeyName,
-            int id ) throws
-            IllegalTokenNameException
-    {
-        statement.assertOpen();
-        tokenWrite().propertyKeyCreateForName( statement, propertyKeyName, id );
-    }
-
-    @Override
-    public void relationshipTypeCreateForName( String relationshipTypeName,
-            int id ) throws
-            IllegalTokenNameException
-    {
-        statement.assertOpen();
-        tokenWrite().relationshipTypeCreateForName( statement,
-                relationshipTypeName, id );
-    }
-
-    // </TokenWrite>
-
     // <SchemaState>
     @Override
     public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
@@ -1284,189 +1188,4 @@ public class OperationsFacade
     }
 
     // query monitoring
-
-    // <Procedures>
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        AccessMode accessMode = tx.securityContext().mode();
-        if ( !accessMode.allowsReads() )
-        {
-            throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
-                    tx.securityContext().description() ) );
-        }
-        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static
-                .READ ) );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        return callProcedure( name, input,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        AccessMode accessMode = tx.securityContext().mode();
-        if ( !accessMode.allowsWrites() )
-        {
-            throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
-                    tx.securityContext().description() ) );
-        }
-        return callProcedure( name, input, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        return callProcedure( name, input, new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        AccessMode accessMode = tx.securityContext().mode();
-        if ( !accessMode.allowsSchemaWrites() )
-        {
-            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.",
-                    tx.securityContext().description() ) );
-        }
-        return callProcedure( name, input,
-                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.FULL ) );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] input )
-            throws ProcedureException
-    {
-        return callProcedure( name, input,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.FULL ) );
-    }
-
-    private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, final AccessMode override  )
-            throws ProcedureException
-    {
-        statement.assertOpen();
-
-        final SecurityContext procedureSecurityContext = tx.securityContext().withMode( override );
-        final RawIterator<Object[],ProcedureException> procedureCall;
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
-        {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, tx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            ctx.put( Context.SECURITY_CONTEXT, procedureSecurityContext );
-            procedureCall = procedures.callProcedure( ctx, name, input, statement );
-        }
-        return new RawIterator<Object[],ProcedureException>()
-        {
-            @Override
-            public boolean hasNext() throws ProcedureException
-            {
-                try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
-                {
-                    return procedureCall.hasNext();
-                }
-            }
-
-            @Override
-            public Object[] next() throws ProcedureException
-            {
-                try ( KernelTransaction.Revertable ignore = tx.overrideWith( procedureSecurityContext ) )
-                {
-                    return procedureCall.next();
-                }
-            }
-        };
-    }
-
-    @Override
-    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
-    {
-        if ( !tx.securityContext().mode().allowsReads() )
-        {
-            throw tx.securityContext().mode().onViolation(
-                    format( "Read operations are not allowed for %s.", tx.securityContext().description() ) );
-        }
-        return callFunction( name, arguments,
-                new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
-    {
-        return callFunction( name, arguments,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
-    {
-        if ( !tx.securityContext().mode().allowsReads() )
-        {
-            throw tx.securityContext().mode().onViolation(
-                    format( "Read operations are not allowed for %s.", tx.securityContext().description() ) );
-        }
-        return aggregationFunction( name, new RestrictedAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
-    {
-        return aggregationFunction( name,
-                new OverriddenAccessMode( tx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public ValueMapper<Object> valueMapper()
-    {
-        return procedures.valueMapper();
-    }
-
-    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode ) throws ProcedureException
-    {
-        statement.assertOpen();
-
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().withMode( mode ) ) )
-        {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, tx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            ClockContext clocks = statement.clocks();
-            ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
-            ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
-            ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
-            return procedures.callFunction( ctx, name, input );
-        }
-    }
-
-    private UserAggregator aggregationFunction( QualifiedName name, final AccessMode mode )
-            throws ProcedureException
-    {
-        statement.assertOpen();
-
-        try ( KernelTransaction.Revertable ignore = tx.overrideWith( tx.securityContext().withMode( mode ) ) )
-        {
-            BasicContext ctx = new BasicContext();
-            ctx.put( Context.KERNEL_TRANSACTION, tx );
-            ctx.put( Context.THREAD, Thread.currentThread() );
-            return procedures.createAggregationFunction( ctx, name );
-        }
-    }
-
-    @Override
-    public PageCursorTracer getPageCursorTracer()
-    {
-        return statement.getPageCursorTracer();
-    }
-    // </Procedures>
 }

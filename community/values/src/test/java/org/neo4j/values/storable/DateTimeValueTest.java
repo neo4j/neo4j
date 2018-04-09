@@ -23,13 +23,16 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.neo4j.values.utils.InvalidValuesArgumentException;
+import org.neo4j.values.utils.TemporalParseException;
+import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
 import static java.time.ZoneOffset.UTC;
 import static java.util.Collections.singletonList;
@@ -90,45 +93,45 @@ public class DateTimeValueTest
     public void shouldRejectInvalidDateTimeString()
     {
         // Wrong year
-        assertThrows( DateTimeException.class, () -> parse( "10000-12-17T17:14:35", inUTC ) );
-        assertThrows( DateTimeException.class, () -> parse( "10000-12-17T17:14:35Z", orFail ) );
+        assertThrows( TemporalParseException.class, () -> parse( "10000-12-17T17:14:35", inUTC ) );
+        assertThrows( TemporalParseException.class, () -> parse( "10000-12-17T17:14:35Z", orFail ) );
 
         // Wrong month
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-13-17T17:14:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-00-17T17:14:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-13-17T17:14:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-13-17T17:14:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for MonthOfYear" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-00-17T17:14:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-00-17T17:14:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for MonthOfYear" ) );
 
         // Wrong day of month
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-32T17:14:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-00T17:14:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-32T17:14:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-32T17:14:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for DayOfMonth" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-00T17:14:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-00T17:14:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for DayOfMonth" ) );
 
         // Wrong hour
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T24:14:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for HourOfDay" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T24:14:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T24:14:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for HourOfDay" ) );
 
         // Wrong minute
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:60:35", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for MinuteOfHour" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:60:35Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:60:35Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for MinuteOfHour" ) );
 
         // Wrong second
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:14:61", inUTC ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61", inUTC ) ).getMessage(),
                 startsWith( "Invalid value for SecondOfMinute" ) );
-        assertThat( assertThrows( DateTimeException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage(),
+        assertThat( assertThrows( TemporalParseException.class, () -> parse( "2017-12-17T17:14:61Z", orFail ) ).getMessage(),
                 startsWith( "Invalid value for SecondOfMinute" ) );
     }
 
@@ -306,17 +309,17 @@ public class DateTimeValueTest
                 .add( "year", 2018 )
                 .add( "month", 12 )
                 .add( "dayOfWeek", 5 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to calendar date." );
+                .assertThrows( UnsupportedTemporalUnitException.class, "Cannot assign dayOfWeek to calendar date." );
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
                 .add( "week", 12 )
                 .add( "day", 12 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign day to week date." );
+                .assertThrows( UnsupportedTemporalUnitException.class, "Cannot assign day to week date." );
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
                 .add( "ordinalDay", 12 )
                 .add( "dayOfWeek", 1 )
-                .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to ordinal date." );
+                .assertThrows( UnsupportedTemporalUnitException.class, "Cannot assign dayOfWeek to ordinal date." );
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -325,7 +328,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "nanosecond", 1000000000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -334,7 +337,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "microsecond", 1000000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -343,7 +346,7 @@ public class DateTimeValueTest
                 .add( "minute", 35 )
                 .add( "second", 57 )
                 .add( "millisecond", 1000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid millisecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid millisecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -353,7 +356,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "nanosecond", 1000000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -363,7 +366,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "microsecond", 1 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -373,7 +376,7 @@ public class DateTimeValueTest
                 .add( "second", 57 )
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -384,7 +387,7 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 1000 )
                 .add( "nanosecond", 999 )
-                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid microsecond: 1000" );
         asserting( fromValues( builder( clock ) ))
                 .add( "year", 2018 )
                 .add( "month", 1 )
@@ -395,16 +398,16 @@ public class DateTimeValueTest
                 .add( "millisecond", 1 )
                 .add( "microsecond", 999 )
                 .add( "nanosecond", 1000 )
-                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000" );
+                .assertThrows( InvalidValuesArgumentException.class, "Invalid nanosecond: 1000" );
     }
 
     @Test
     public void shouldRejectInvalidComponentValues()
     {
-        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( IllegalArgumentException.class,
+        asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( InvalidValuesArgumentException.class,
                 "No such field: moment" );
         asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "month", 12 ).add( "day", 5 ).add( "hour", 5 ).add( "minute", 5 ).add( "second",
-                5 ).add( "picosecond", 12 ).assertThrows( IllegalArgumentException.class, "No such field: picosecond" );
+                5 ).add( "picosecond", 12 ).assertThrows( InvalidValuesArgumentException.class, "No such field: picosecond" );
     }
 
     @Test

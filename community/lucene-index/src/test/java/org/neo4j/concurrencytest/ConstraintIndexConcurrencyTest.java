@@ -27,13 +27,17 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -58,8 +62,8 @@ public class ConstraintIndexConcurrencyTest
         // Given
         GraphDatabaseAPI graphDb = db.getGraphDatabaseAPI();
 
-        Supplier<Statement> statementSupplier = graphDb.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
+        Supplier<KernelTransaction> ktxSupplier = () -> graphDb.getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
 
         Label label = label( "Foo" );
         String propertyKey = "bar";
@@ -73,15 +77,20 @@ public class ConstraintIndexConcurrencyTest
         }
 
         // When
-        try ( Transaction tx = graphDb.beginTx();
-              Statement statement = statementSupplier.get() )
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            int labelId = statement.readOperations().labelGetForName( label.name() );
-            int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
+            KernelTransaction ktx = ktxSupplier.get();
+            int labelId = ktx.tokenRead().nodeLabel( label.name() );
+            int propertyKeyId = ktx.tokenRead().propertyKey( propertyKey );
             SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
-            statement.readOperations().indexQuery( index, IndexQuery.exact( index.schema().getPropertyId(),
-                    "The value is irrelevant, we just want to perform some sort of lookup against this index" ) );
-
+            Read read = ktx.dataRead();
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            {
+                read.nodeIndexSeek( DefaultIndexReference.unique( labelId, propertyKeyId ), cursor, IndexOrder.NONE,
+                        IndexQuery.exact( index.schema().getPropertyId(),
+                                "The value is irrelevant, we just want to perform some sort of lookup against this " +
+                                "index" ) );
+            }
             // then let another thread come in and create a node
             threads.execute( db ->
             {
@@ -95,11 +104,11 @@ public class ConstraintIndexConcurrencyTest
 
             // before we create a node with the same property ourselves - using the same statement that we have
             // already used for lookup against that very same index
-            long node = statement.dataWriteOperations().nodeCreate();
-            statement.dataWriteOperations().nodeAddLabel( node, labelId );
+            long node = ktx.dataWrite().nodeCreate();
+            ktx.dataWrite().nodeAddLabel( node, labelId );
             try
             {
-                statement.dataWriteOperations().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) );
+                ktx.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) );
 
                 fail( "exception expected" );
             }

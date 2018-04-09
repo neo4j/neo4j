@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.v1.packstream;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
  * This is where {@link PackStream} writes its output to.
  */
-public interface PackOutput
+public interface PackOutput extends Closeable
 {
     /**
      * Prepare this output to write a message. Later successful message should be signaled by {@link #messageSucceeded()}

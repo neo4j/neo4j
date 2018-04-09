@@ -25,9 +25,9 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -50,7 +50,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
 
         // WHEN
@@ -72,7 +72,7 @@ public class PropertyIT extends KernelIntegrationTest
     {
         // GIVEN
         Value value = Values.of( "bozo" );
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         long nodeId = transaction.dataWrite().nodeCreate();
 
@@ -96,7 +96,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRemoveSetNodeProperty() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
         long nodeId = transaction.dataWrite().nodeCreate();
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
@@ -124,14 +124,14 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyKeyId;
         long nodeId;
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
             nodeId = transaction.dataWrite().nodeCreate();
             propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
             transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
             commit();
         }
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // WHEN
             Value previous = transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId );
@@ -145,7 +145,7 @@ public class PropertyIT extends KernelIntegrationTest
         }
 
         // THEN
-        KernelTransaction transaction = newTransaction();
+        Transaction transaction = newTransaction();
         assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
         commit();
     }
@@ -159,7 +159,7 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyKeyId;
         long nodeId;
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
             nodeId = transaction.dataWrite().nodeCreate();
             propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
             transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
@@ -169,7 +169,7 @@ public class PropertyIT extends KernelIntegrationTest
         Value newValue = Values.stringValue( "ozob" );
 
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // WHEN
             transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId );
@@ -184,7 +184,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         {
-            KernelTransaction transaction = newTransaction();
+            Transaction transaction = newTransaction();
             assertThat( nodeGetProperty( transaction,  nodeId, propertyKeyId ), equalTo( newValue ) );
             assertThat( toList( nodeGetPropertyKeys( transaction,  nodeId ) ),
                     equalTo( Collections.singletonList( propertyKeyId ) ) );
@@ -199,7 +199,7 @@ public class PropertyIT extends KernelIntegrationTest
         int propertyId;
         long nodeId;
         {
-            KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
             nodeId = transaction.dataWrite().nodeCreate();
             propertyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
             commit();
@@ -220,7 +220,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasPropertyIfSet() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
 
         // WHEN
@@ -246,7 +246,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasNotPropertyIfUnset() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
 
         // WHEN
@@ -271,7 +271,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
         commit();
@@ -292,7 +292,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldUpdateNodePropertyValue() throws Exception
     {
         // GIVEN
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int propertyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
         transaction.dataWrite().nodeSetProperty( nodeId, propertyId, Values.stringValue( "bozo" ) );
@@ -315,7 +315,7 @@ public class PropertyIT extends KernelIntegrationTest
         // given
         dbWithNoCache();
 
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int prop2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop2" );
 
@@ -341,7 +341,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldNotAllowModifyingPropertiesOnDeletedNode() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         long node = transaction.dataWrite().nodeCreate();
 
@@ -365,7 +365,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
         long startNodeId = transaction.dataWrite().nodeCreate();
@@ -392,7 +392,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
 
         long node = transaction.dataWrite().nodeCreate();
@@ -419,7 +419,7 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnRelationship() throws Exception
     {
         // given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int type = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "RELATED" );
 

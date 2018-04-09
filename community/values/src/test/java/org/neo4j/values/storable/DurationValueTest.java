@@ -21,7 +21,6 @@ package org.neo4j.values.storable;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,17 +28,14 @@ import java.util.List;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.values.utils.TemporalParseException;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
-import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
-import static java.time.temporal.ChronoUnit.WEEKS;
-import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -216,7 +212,7 @@ public class DurationValueTest
         {
             parse( text );
         }
-        catch ( DateTimeParseException e )
+        catch ( TemporalParseException e )
         {
             return;
         }

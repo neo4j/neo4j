@@ -88,34 +88,40 @@ public class SpatialIndexSettings implements LoadableConfig
     public static final Setting<Integer> space_filling_curve_max_bits = setting(
             "unsupported.dbms.index.spatial.curve.max_bits", INTEGER, "60" );
 
-    public List<ConfigOptions> getConfigOptions()
+    public static Setting<Double> makeCRSRangeSetting( CoordinateReferenceSystem crs, int dim, String rangeKey )
     {
-        String prefix = "unsupported.dbms.db.spatial.crs";
-        ArrayList<ConfigOptions> crsSettings = (ArrayList) LoadableConfig.super.getConfigOptions();
         double defaultCartesianExtent = 1000000;
         double[] defaultGeographicExtents = new double[]{180, 90, defaultCartesianExtent};
+        String[] keyFields = new String[]{PREFIX, crs.getName().toLowerCase(), String.valueOf( COORDS[dim] ), rangeKey};
+        double defValue = crs.isGeographic() ? defaultGeographicExtents[dim] : defaultCartesianExtent;
+        defValue = rangeKey.equals( "min" ) ? -1 * defValue : defValue;
+        return setting( String.join( ".", keyFields ), DOUBLE, String.valueOf( defValue ) );
+    }
+
+    private static final String PREFIX = "unsupported.dbms.db.spatial.crs";
+    private static final char[] COORDS = new char[]{'x', 'y', 'z'};
+
+    @Override
+    public List<ConfigOptions> getConfigOptions()
+    {
+        ArrayList<ConfigOptions> crsSettings = (ArrayList<ConfigOptions>) LoadableConfig.super.getConfigOptions();
         for ( CoordinateReferenceSystem crs : CoordinateReferenceSystem.all() )
         {
-            char[] coords = ((crs.getDimension() == 2) ? "xy" : "xyz").toCharArray();
-            for ( int dim = 0; dim < coords.length; dim++ )
+            for ( int dim = 0; dim < crs.getDimension(); dim++ )
             {
                 for ( String rangeName : new String[]{"minimum", "maximum"} )
                 {
-                    String rangeKey = rangeName.substring( 0, 3 );
                     String descriptionHeader =
-                            String.format( "The %s %s value for the index extents for %dD %s spatial index", rangeName, coords[dim], crs.getDimension(),
+                            String.format( "The %s %s value for the index extents for %dD %s spatial index", rangeName, COORDS[dim], crs.getDimension(),
                                     crs.getName().replace( "_3D", "" ) );
                     String descriptionBody =
                             "The 2D to 1D mapping function divides all 2D space into discrete tiles, and orders these using a space filling curve designed " +
                             "to optimize the requirement that tiles that are close together in this ordered list are also close together in 2D space. " +
                             "This requires that the extents of the 2D space be known in advance and never changed. If you do change these settings, you " +
                             "need to recreate any affected index in order for the settings to apply, otherwise the index will retain the previous settings.";
-                    String[] keyFields = new String[]{prefix, crs.getName().toLowerCase(), String.valueOf( coords[dim] ), rangeKey};
-                    double defValue = crs.isGeographic() ? defaultGeographicExtents[dim] : defaultCartesianExtent;
-                    defValue = rangeKey.equals( "min" ) ? -1 * defValue : defValue;
-                    Setting setting = setting( String.join( ".", keyFields ), DOUBLE, String.valueOf( defValue ) );
-                    ((BaseSetting) setting).setInternal( true );
-                    ((BaseSetting) setting).setDescription(
+                    Setting<Double> setting = makeCRSRangeSetting( crs, dim, rangeName.substring( 0, 3 ) );
+                    ((BaseSetting<Double>) setting).setInternal( true );
+                    ((BaseSetting<Double>) setting).setDescription(
                             descriptionHeader + ". " + descriptionBody.replaceAll( " 2D ", String.format( " %dD", crs.getDimension() ) ) );
                     crsSettings.add( new ConfigOptions( setting ) );
                 }

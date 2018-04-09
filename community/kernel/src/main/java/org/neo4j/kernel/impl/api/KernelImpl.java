@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -29,7 +28,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
@@ -67,7 +66,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
  * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
  * the stores or caches.
  */
-public class Kernel extends LifecycleAdapter implements InwardKernel
+public class KernelImpl extends LifecycleAdapter implements InwardKernel
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
@@ -78,7 +77,7 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
 
     private final NewKernel newKernel;
 
-    public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
+    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
             TransactionMonitor transactionMonitor, Procedures procedures, Config config, StorageEngine engine )
     {
         this.transactions = transactionFactory;

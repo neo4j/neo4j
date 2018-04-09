@@ -67,14 +67,14 @@
       <artifactId>neo4j-kernel</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <!-- Neo4j test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-consistency-check</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- Neo4j test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -162,8 +162,6 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
-
-    <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel-api</artifactId>
@@ -171,6 +169,8 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

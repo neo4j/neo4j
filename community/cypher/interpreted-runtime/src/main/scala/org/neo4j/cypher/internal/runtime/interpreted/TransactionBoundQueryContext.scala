@@ -56,8 +56,8 @@ import org.neo4j.kernel.impl.api.store.{DefaultIndexReference, RelationshipItera
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
@@ -93,7 +93,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = context.copyFrom(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
+    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx, statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
 
@@ -364,13 +364,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else cursor.isDense
   }
 
-  override def asObject(value: AnyValue): Any = {
-    value match {
-      case node: NodeProxyWrappingNodeValue => node.nodeProxy
-      case edge: RelationshipProxyWrappingValue => edge.relationshipProxy
-      case _ => withAnyOpenQueryContext(_=>value.map(valueMapper))
-    }
-  }
+  override def asObject(value: AnyValue): Any = withAnyOpenQueryContext(_ => value.map(valueMapper))
 
   class NodeOperations extends BaseOperations[NodeValue] {
 

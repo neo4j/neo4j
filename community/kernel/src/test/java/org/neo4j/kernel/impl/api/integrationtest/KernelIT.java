@@ -516,7 +516,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.success();
 
@@ -531,7 +531,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.failure();
 
@@ -544,7 +544,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.markForTermination( Status.Transaction.Terminated );
 
@@ -557,7 +557,7 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction( AUTH_DISABLED );
         tx.dataWrite().nodeCreate();
         tx.failure();
         tx.markForTermination( Status.Transaction.Terminated );
@@ -571,10 +571,11 @@ public class KernelIT extends KernelIntegrationTest
     {
         executeDummyTxs( db, 42 );
 
-        KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-        try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
+        org.neo4j.internal.kernel.api.Transaction tx = newTransaction();
+        try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
         {
-            tx.dataRead().singleNode( 1L, cursor );
+            tx.dataRead().singleNode( 1, node );
+            node.next();
         }
         tx.success();
 
@@ -600,7 +601,7 @@ public class KernelIT extends KernelIntegrationTest
         return txIdStore.getLastCommittedTransactionId();
     }
 
-    private IndexReference createIndex( KernelTransaction transaction )
+    private IndexReference createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();

@@ -56,6 +56,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -93,7 +94,7 @@ public class ExecutorBoltSchedulerTest
     public void initShouldCreateThreadPool() throws Throwable
     {
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
-        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( Executors.newCachedThreadPool() );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
                         ForkJoinPool.commonPool() );
@@ -101,7 +102,7 @@ public class ExecutorBoltSchedulerTest
         scheduler.start();
 
         verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltWorker );
-        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) );
+        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
     }
 
     @Test
@@ -109,7 +110,7 @@ public class ExecutorBoltSchedulerTest
     {
         ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
         ExecutorFactory mockExecutorFactory = mock( ExecutorFactory.class );
-        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), any() ) ).thenReturn( cachedThreadPool );
+        when( mockExecutorFactory.create( anyInt(), anyInt(), any(), anyInt(), anyBoolean(), any() ) ).thenReturn( cachedThreadPool );
         ExecutorBoltScheduler scheduler =
                 new ExecutorBoltScheduler( CONNECTOR_KEY, mockExecutorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0,
                         ForkJoinPool.commonPool() );
@@ -234,7 +235,8 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicBoolean exitCondition = new AtomicBoolean();
-        when( connection.processNextBatch() ).thenAnswer( inv -> {
+        when( connection.processNextBatch() ).thenAnswer( inv ->
+        {
             processNextBatchCount.incrementAndGet();
             return awaitExit( exitCondition );
         } );
@@ -324,5 +326,4 @@ public class ExecutorBoltSchedulerTest
         Predicates.awaitForever( () -> Thread.currentThread().isInterrupted() || exitCondition.get(), 500, MILLISECONDS );
         return true;
     }
-
 }

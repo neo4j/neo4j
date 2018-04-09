@@ -19,14 +19,13 @@
  */
 package org.neo4j.bolt.runtime;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -35,6 +34,7 @@ import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.testing.Jobs;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
@@ -79,15 +79,19 @@ public class DefaultBoltConnectionTest
     public OtherThreadRule<Boolean> otherThread = new OtherThreadRule<>();
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
-        ChannelHandlerContext handlerContext = mock( ChannelHandlerContext.class );
-        when( handlerContext.channel() ).thenReturn( channel );
-        boltChannel = BoltChannel.open( connector, handlerContext, messageLogger );
-        stateMachine = mock( BoltStateMachine.class );
+        boltChannel = BoltChannel.open( connector, channel, messageLogger );
+        stateMachine = mock( BoltStateMachine.class ); // MachineRoom.newMachineWithOwner( BoltStateMachine.State.READY, "neo4j" );
         when( stateMachine.owner() ).thenReturn( "neo4j" );
         when( stateMachine.shouldStickOnThread() ).thenReturn( false );
         when( stateMachine.hasOpenStatement() ).thenReturn( false );
+    }
+
+    @After
+    public void cleanup()
+    {
+        channel.finishAndReleaseAll();
     }
 
     @Test
@@ -190,7 +194,7 @@ public class DefaultBoltConnectionTest
         List<Job> drainedJobs = new ArrayList<>();
         Job job = Jobs.noop();
         BoltConnection connection = newConnection();
-        doAnswer( inv -> drainedJobs.addAll( (Collection<Job>)inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
+        doAnswer( inv -> drainedJobs.addAll( inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
 
         connection.enqueue( job );
         connection.processNextBatch();
@@ -205,11 +209,10 @@ public class DefaultBoltConnectionTest
         List<Job> drainedJobs = new ArrayList<>();
         List<Job> pushedJobs = new ArrayList<>();
         BoltConnection connection = newConnection( 10 );
-        doAnswer( inv -> drainedJobs.addAll( (Collection<Job>)inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
+        doAnswer( inv -> drainedJobs.addAll( inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
 
         for ( int i = 0; i < 15; i++ )
         {
-            final int x = i;
             Job newJob = Jobs.noop();
             pushedJobs.add( newJob );
             connection.enqueue( newJob );
@@ -374,7 +377,7 @@ public class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize );
+        return new DefaultBoltConnection( boltChannel, mock( PackOutput.class ), stateMachine, logService, connectionListener, queueMonitor, maxBatchSize );
     }
 
 }

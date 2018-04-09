@@ -55,6 +55,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
@@ -255,9 +256,23 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         final FailureMsgMatcher failureMatcher = new FailureMsgMatcher();
 
         // When
-        while ( System.currentTimeMillis() < timeout && !failureMatcher.gotSpecialMessage() )
+        while ( !failureMatcher.gotSpecialMessage() )
         {
-            // Done in a loop because we're racing with the clock to get enough failed requests in 5 seconds
+            // Let's just fire up 3 connections (which is the default value for `unsupported.dbms.security.auth_max_failed_attempts`
+            // with wrong credentials but don't put any assertions on them. we're doing this because RateLimitedAuthenticationStrategy
+            // has a 5_000 ms expiry policy which is not configurable.
+            for ( int i = 0; i < 3; i++ )
+            {
+                newConnection().connect( address )
+                        .send( util.defaultAcceptedVersions() )
+                        .send( util.chunk(
+                                InitMessage.init( "TestClient/1.1",
+                                        map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN",
+                                                "scheme", "basic" ) ) ) )
+                        .disconnect();
+            }
+
+            // We're expecting this call to fail with a FAILURE message if the above block completed in 5_000 ms
             connection.connect( address )
                     .send( util.defaultAcceptedVersions() )
                     .send( util.chunk(
@@ -270,6 +285,11 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
 
             assertThat( connection, eventuallyDisconnects() );
             reconnect();
+
+            if ( System.currentTimeMillis() > timeout )
+            {
+                fail( "Timed out waiting for the authentication failure to occur." );
+            }
         }
 
         // Then

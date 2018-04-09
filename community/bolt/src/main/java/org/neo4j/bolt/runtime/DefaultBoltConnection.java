@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltKernelExtension;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -53,6 +54,7 @@ public class DefaultBoltConnection implements BoltConnection
     private final BoltStateMachine machine;
     private final BoltConnectionLifetimeListener listener;
     private final BoltConnectionQueueMonitor queueMonitor;
+    private final PackOutput output;
 
     private final Log log;
     private final Log userLog;
@@ -64,17 +66,20 @@ public class DefaultBoltConnection implements BoltConnection
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor )
     {
-        this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
+        this( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
     }
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
+            BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
     {
         this.id = channel.id();
         this.channel = channel;
+        this.output = output;
         this.machine = machine;
         this.listener = listener;
         this.queueMonitor = queueMonitor;
@@ -106,6 +111,12 @@ public class DefaultBoltConnection implements BoltConnection
     public Channel channel()
     {
         return channel.rawChannel();
+    }
+
+    @Override
+    public PackOutput output()
+    {
+        return output;
     }
 
     @Override
@@ -188,6 +199,12 @@ public class DefaultBoltConnection implements BoltConnection
                     loop = machine.shouldStickOnThread();
                     waitForMessage = loop;
                 }
+
+                // we processed all pending messages, let's flush underlying channel
+                if ( queue.size() == 0 || maxBatchSize == 1 )
+                {
+                    output.flush();
+                }
             }
             while ( loop );
 
@@ -237,7 +254,7 @@ public class DefaultBoltConnection implements BoltConnection
         {
             error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
             message = String.format( "Unable to schedule bolt session '%s' for execution since there are no available threads to " +
-                    "serve it at the moment. You can retry at a later time or consider increasing max pool / queue size for bolt connector(s).", id() );
+                    "serve it at the moment. You can retry at a later time or consider increasing max thread pool size for bolt connector(s).", id() );
         }
         else
         {
@@ -283,11 +300,20 @@ public class DefaultBoltConnection implements BoltConnection
         {
             try
             {
+                output.close();
+            }
+            catch ( Throwable t )
+            {
+                log.error( String.format( "Unable to close pack output of bolt session '%s'.", id() ), t );
+            }
+
+            try
+            {
                 machine.close();
             }
             catch ( Throwable t )
             {
-                log.error( String.format( "Unable to close bolt session '%s'.", id() ), t );
+                log.error( String.format( "Unable to close state machine of bolt session '%s'.", id() ), t );
             }
             finally
             {

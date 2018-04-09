@@ -32,8 +32,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
@@ -50,9 +52,9 @@ public class ExplicitIndexStore
     private final IndexConfigStore indexStore;
     private final Config config;
     private final Function<String,IndexImplementation> indexProviders;
-    private final Supplier<InwardKernel> kernel;
+    private final Supplier<Kernel> kernel;
 
-    public ExplicitIndexStore( @Nonnull Config config, IndexConfigStore indexStore, Supplier<InwardKernel> kernel,
+    public ExplicitIndexStore( @Nonnull Config config, IndexConfigStore indexStore, Supplier<Kernel> kernel,
             Function<String,IndexImplementation> indexProviders )
     {
         this.config = config;
@@ -174,18 +176,18 @@ public class ExplicitIndexStore
                 }
 
                 // We were the first one here, let's create this config
-                try ( KernelTransaction transaction =
-                              kernel.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
-                      Statement statement = transaction.acquireStatement() )
+                try ( Session session = kernel.get().beginSession( AUTH_DISABLED );
+                      Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
+                      Statement statement = ((KernelTransaction)transaction).acquireStatement() )
                 {
                     switch ( entityType )
                     {
                     case Node:
-                        statement.dataWriteOperations().nodeExplicitIndexCreate( indexName, config );
+                        transaction.indexWrite().nodeExplicitIndexCreate( indexName, config );
                         break;
 
                     case Relationship:
-                        statement.dataWriteOperations().relationshipExplicitIndexCreate( indexName, config );
+                        transaction.indexWrite().relationshipExplicitIndexCreate( indexName, config );
                         break;
 
                     default:

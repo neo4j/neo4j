@@ -58,13 +58,13 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -238,7 +238,7 @@ public class HighlyAvailableEditionModule
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
-        Supplier<InwardKernel> kernelProvider = dependencies.provideDependency( InwardKernel.class );
+        Supplier<Kernel> kernelProvider = dependencies.provideDependency( Kernel.class );
 
         transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
@@ -704,7 +704,7 @@ public class HighlyAvailableEditionModule
     private TokenCreator createRelationshipTypeCreator( Config config,
             ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterInvocationHandler, RequestContextFactory requestContextFactory,
-            Supplier<InwardKernel> kernelProvider )
+            Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -726,7 +726,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<InwardKernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -748,7 +748,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createLabelIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<InwardKernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {

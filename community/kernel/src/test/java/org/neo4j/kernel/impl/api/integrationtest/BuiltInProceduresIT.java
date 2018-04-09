@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
@@ -63,7 +63,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllLabels() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         long nodeId = transaction.dataWrite().nodeCreate();
         int labelId = transaction.tokenWrite().labelGetOrCreateForName( "MyLabel" );
         transaction.dataWrite().nodeAddLabel( nodeId, labelId );
@@ -98,7 +98,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listRelationshipTypes() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AnonymousContext.writeToken() );
+        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
         int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
@@ -304,7 +304,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllIndexes() throws Throwable
     {
         // Given
-        KernelTransaction transaction = newTransaction( AUTH_DISABLED );
+        Transaction transaction = newTransaction( AUTH_DISABLED );
         int labelId1 = transaction.tokenWrite().labelGetOrCreateForName( "Person" );
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
@@ -316,7 +316,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         //let indexes come online
-        try ( Transaction tx = db.beginTx() )
+        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 2, MINUTES );
             tx.success();

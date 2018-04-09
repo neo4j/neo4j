@@ -34,12 +34,11 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedure;
 import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedureTest;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -107,13 +106,12 @@ public class InstalledProtocolsProcedureIT
     private List<ProtocolInfo> installedProtocols( GraphDatabaseFacade db, String wantedOrientation )
             throws TransactionFailureException, ProcedureException
     {
-        InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
-        KernelTransaction transaction = kernel.newTransaction( Transaction.Type.implicit, AnonymousContext.read() );
         List<ProtocolInfo> infos = new LinkedList<>();
-        try ( Statement statement = transaction.acquireStatement() )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( Session session = kernel.beginSession( AnonymousContext.read() ); Transaction tx = session.beginTransaction( Transaction.Type.implicit ) )
         {
-            RawIterator<Object[],ProcedureException> itr = statement.procedureCallOperations().procedureCallRead(
-                    procedureName( "dbms", "cluster", InstalledProtocolsProcedure.PROCEDURE_NAME ), null );
+            RawIterator<Object[],ProcedureException> itr =
+                    tx.procedures().procedureCallRead( procedureName( "dbms", "cluster", InstalledProtocolsProcedure.PROCEDURE_NAME ), null );
 
             while ( itr.hasNext() )
             {
@@ -128,8 +126,8 @@ public class InstalledProtocolsProcedureIT
                     infos.add( new ProtocolInfo( orientation, address, protocol, version, modifiers ) );
                 }
             }
+            return infos;
         }
-        return infos;
     }
 
     private String localhost( String uri )

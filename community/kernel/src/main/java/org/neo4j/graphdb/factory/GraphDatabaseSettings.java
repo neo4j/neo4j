@@ -529,8 +529,23 @@ public class GraphDatabaseSettings implements LoadableConfig
         }
     }
 
-    @Description( "Index provider to use when creating new indexes." )
-    public static final Setting<String> default_schema_provider =
+    @Description( "Index provider to use for newly created schema indexes. " +
+            "An index provider may store different value types in separate physical indexes. " +
+            "lucene-1.0: Store spatial and temporal value types in native indexes, remaining value types in a Lucene index. " +
+            "lucene+native-1.0: Store numbers in a native index and remaining value types like lucene-1.0. " +
+            "This improves read and write performance for non-composite indexed numbers. " +
+            "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
+            "This improves write performance for non-composite indexed strings. " +
+            "This version of the native string index has a value limit of 4047B, such that byte-representation " +
+            "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
+            "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
+            "due to resorting to index scan+filter internally. " +
+            "Native indexes generally has these benefits over Lucene:\n" +
+            "- Faster writes\n" +
+            "- Less garbage and heap presence\n" +
+            "- Less CPU resources per operation\n" +
+            "- Controllable memory usage, due to being bound by the page cache" )
+            public static final Setting<String> default_schema_provider =
             setting( "dbms.index.default_schema_provider",
                     optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
                     null );
@@ -831,31 +846,49 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
 
-    @Description( "Whether to apply network level write throttling" )
+    @Description( "Whether to apply network level outbound network buffer based throttling" )
     @Internal
-    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+    public static final Setting<Boolean> bolt_outbound_buffer_throttle = setting( "unsupported.dbms.bolt.outbound_buffer_throttle", BOOLEAN, TRUE );
 
-    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
-            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
-            "threads will block until it becomes writable again." )
+    @Description( "When the size (in bytes) of outbound network buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and will block " +
+            "related processing thread until it becomes writable again." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
-            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Description( "When the size (in bytes) of outbound network buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked processing " +
+            "thread will resume execution." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
-            + " this to 0 will disable this behaviour." )
+    @Description( "When the total time outbound network buffer based throttle lock is held exceeds this value, " +
+            "the corresponding bolt channel will be aborted. Setting " +
+            "this to 0 will disable this behaviour." )
     @Internal
-    public static final Setting<Duration> bolt_write_throttle_max_duration =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, "15m" ).constraint(
                     min( Duration.ofSeconds( 30 ) ) ).build();
+
+    @Description( "When the number of queued inbound messages grows beyond this value, reading from underlying " +
+            "channel will be paused (no more inbound messages will be available) until queued number of " +
+            "messages drops below the configured low watermark value." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.high_watermark", INTEGER, String.valueOf( 300 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the number of queued inbound messages, previously reached configured high watermark value, " +
+            "drops below this value, reading from underlying channel will be enabled and any pending messages " +
+            "will start queuing again." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INTEGER, String.valueOf( 100 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

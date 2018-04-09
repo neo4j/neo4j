@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 

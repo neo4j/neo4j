@@ -65,7 +65,8 @@ import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.stream.Streams;
 import org.neo4j.test.assertion.Assert;
@@ -88,6 +89,7 @@ public class NettyInstalledProtocolsIT
     }
 
     private static final int TIMEOUT_SECONDS = 10;
+    private static final LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Parameters> data()
@@ -204,10 +206,8 @@ public class NettyInstalledProtocolsIT
 
         void start( final ApplicationProtocolRepository applicationProtocolRepository, final ModifierProtocolRepository modifierProtocolRepository )
         {
-            NullLogProvider log = NullLogProvider.getInstance();
-
             RaftProtocolServerInstaller.Factory raftFactory =
-                    new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, log );
+                    new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
                     new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allServerInstallers );
 
@@ -217,7 +217,7 @@ public class NettyInstalledProtocolsIT
                     .option( ChannelOption.SO_REUSEADDR, true )
                     .localAddress( PortAuthority.allocatePort() )
                     .childHandler( new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                            protocolInstallerRepository, pipelineBuilderFactory, log ).asChannelInitializer() );
+                            protocolInstallerRepository, pipelineBuilderFactory, logProvider ).asChannelInitializer() );
 
             channel = bootstrap.bind().syncUninterruptibly().channel();
         }
@@ -249,7 +249,6 @@ public class NettyInstalledProtocolsIT
         Client( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
                 NettyPipelineBuilderFactory pipelineBuilderFactory, Config config )
         {
-            NullLogProvider logProvider = NullLogProvider.getInstance();
             RaftProtocolClientInstaller.Factory raftFactory = new RaftProtocolClientInstaller.Factory( pipelineBuilderFactory, logProvider );
             ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
                     new ProtocolInstallerRepository<>( singletonList( raftFactory ), ModifierProtocolInstaller.allClientInstallers );

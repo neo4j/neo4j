@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.neo4j.values.utils.TemporalParseException;
+
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.util.Collections.singletonList;
@@ -228,13 +230,13 @@ public class TimeValueTest
     }
 
     @SuppressWarnings( "UnusedReturnValue" )
-    private DateTimeException assertCannotParse( String text )
+    private TemporalParseException assertCannotParse( String text )
     {
         try
         {
             parse( text, inUTC );
         }
-        catch ( DateTimeException e )
+        catch ( TemporalParseException e )
         {
             return e;
         }

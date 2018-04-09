@@ -252,7 +252,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
 
     def allLabels: Seq[Long] = {
-      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
+      tc.kernelTransaction.tokenRead().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
     }
 
     version match {

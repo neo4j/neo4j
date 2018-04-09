@@ -21,25 +21,25 @@ package org.neo4j.kernel.ha.cluster.modeswitch;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.SlavePropertyTokenCreator;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
 public class PropertyKeyCreatorSwitcher extends AbstractComponentSwitcher<TokenCreator>
 {
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final Supplier<InwardKernel> kernelSupplier;
+    private final Supplier<Kernel> kernelSupplier;
     private final IdGeneratorFactory idGeneratorFactory;
 
     public PropertyKeyCreatorSwitcher( DelegateInvocationHandler<TokenCreator> delegate,
             DelegateInvocationHandler<Master> master, RequestContextFactory requestContextFactory,
-            Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+            Supplier<Kernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( delegate );
         this.master = master;

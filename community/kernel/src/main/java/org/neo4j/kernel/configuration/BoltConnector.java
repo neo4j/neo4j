@@ -22,6 +22,7 @@ package org.neo4j.kernel.configuration;
 import java.time.Duration;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -57,7 +58,7 @@ public class BoltConnector extends Connector
     public final Setting<AdvertisedSocketAddress> advertised_address;
 
     @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
-    public final Setting<Integer> thread_pool_core_size;
+    public final Setting<Integer> thread_pool_min_size;
 
     @Description( "The maximum number of threads allowed in the thread pool bound to this connector." )
     public final Setting<Integer> thread_pool_max_size;
@@ -66,7 +67,8 @@ public class BoltConnector extends Connector
     public final Setting<Duration> thread_pool_keep_alive;
 
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
-    public final Setting<Integer> thread_pool_queue_size;
+    @Internal
+    public final Setting<Integer> unsupported_thread_pool_queue_size;
 
     // Used by config doc generator
     public BoltConnector()
@@ -86,10 +88,10 @@ public class BoltConnector extends Connector
         this.address = group.scope( legacyAddressSetting );
         this.listen_address = group.scope( listenAddressSetting );
         this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
-        this.thread_pool_core_size = group.scope( setting( "thread_pool_core_size", INTEGER, String.valueOf( 10 ) ) );
+        this.thread_pool_min_size = group.scope( setting( "thread_pool_min_size", INTEGER, String.valueOf( 5 ) ) );
         this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 400 ) ) );
         this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
-        this.thread_pool_queue_size = group.scope( setting( "thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
+        this.unsupported_thread_pool_queue_size = group.scope( setting( "unsupported_thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
     }
 
     public enum EncryptionLevel

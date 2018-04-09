@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.TokenWriteOperations;
 
 public class PropertyNameUtils
 {
@@ -121,28 +120,6 @@ public class PropertyNameUtils
     public static int[] getPropertyIds( TokenRead tokenRead, Iterable<String> propertyKeys )
     {
         return Iterables.stream( propertyKeys ).mapToInt( tokenRead::propertyKey ).toArray();
-    }
-
-    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, String... propertyKeys )
-            throws IllegalTokenNameException
-    {
-        int[] propertyKeyIds = new int[propertyKeys.length];
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
-            propertyKeyIds[i] = statement.propertyKeyGetOrCreateForName( propertyKeys[i] );
-        }
-        return propertyKeyIds;
-    }
-
-    public static int[] getOrCreatePropertyKeyIds( TokenWriteOperations statement, IndexDefinition indexDefinition )
-            throws IllegalTokenNameException
-    {
-        ArrayList<Integer> propertyKeyIds = new ArrayList<>();
-        for ( String s : indexDefinition.getPropertyKeys() )
-        {
-            propertyKeyIds.add( statement.propertyKeyGetOrCreateForName( s ) );
-        }
-        return propertyKeyIds.stream().mapToInt( i -> i ).toArray();
     }
 
     public static int[] getOrCreatePropertyKeyIds( TokenWrite tokenWrite, String... propertyKeys )

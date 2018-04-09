@@ -114,6 +114,11 @@ public class IndexRule extends SchemaRule implements SchemaIndexDescriptor.Suppl
         return owningConstraint;
     }
 
+    public boolean isIndexWithoutOwningConstraint()
+    {
+        return canSupportUniqueConstraint() && getOwningConstraint() == null;
+    }
+
     public IndexRule withOwningConstraint( long constraintId )
     {
         if ( !canSupportUniqueConstraint() )

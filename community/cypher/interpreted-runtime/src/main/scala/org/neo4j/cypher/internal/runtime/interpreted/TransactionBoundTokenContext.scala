@@ -20,21 +20,21 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.TokenContext
+import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.{PropertyKeyNotFoundException, RelationshipTypeNotFoundException}
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations
 
 abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) extends TokenContext {
   def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = {
     val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
-    if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY) None
+    if (propertyId == TokenRead.NO_TOKEN) None
     else Some(propertyId)
   }
 
   def getPropertyKeyId(propertyKeyName: String) = {
     val propertyId: Int = transaction.tokenRead().propertyKey(propertyKeyName)
-    if (propertyId == KeyReadOperations.NO_SUCH_PROPERTY_KEY)
+    if (propertyId ==TokenRead.NO_TOKEN)
       throw new PropertyKeyNotFoundException("No such property.", null)
     propertyId
   }
@@ -43,14 +43,14 @@ abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) e
 
   def getLabelId(labelName: String): Int = {
     val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
-    if (labelId == KeyReadOperations.NO_SUCH_LABEL)
+    if (labelId == TokenRead.NO_TOKEN)
       throw new LabelNotFoundKernelException("No such label", null)
     labelId
   }
 
   def getOptLabelId(labelName: String): Option[Int] = {
     val labelId: Int = transaction.tokenRead().nodeLabel(labelName)
-    if (labelId == KeyReadOperations.NO_SUCH_LABEL) None
+    if (labelId == TokenRead.NO_TOKEN) None
     else Some(labelId)
   }
 
@@ -58,13 +58,13 @@ abstract class TransactionBoundTokenContext(transaction: => KernelTransaction) e
 
   def getOptRelTypeId(relType: String): Option[Int] = {
     val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
-    if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE) None
+    if (relTypeId == TokenRead.NO_TOKEN) None
     else Some(relTypeId)
   }
 
   def getRelTypeId(relType: String): Int = {
     val relTypeId: Int = transaction.tokenRead().relationshipType(relType)
-    if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE)
+    if (relTypeId == TokenRead.NO_TOKEN)
       throw new RelationshipTypeNotFoundException("No such relationship.", null)
     relTypeId
   }

@@ -25,8 +25,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 /**
  * A statement which is a smaller coherent unit of work inside a {@link KernelTransaction}.
  * There are accessors for different types of operations. The operations are divided into
- * read and write operations. In both cases {@link #tokenWriteOperations()} are allowed though,
- * which is why it can be accessed separately.
+ * read and write operations.
  */
 public interface Statement extends Resource, ResourceManager
 {
@@ -34,11 +33,6 @@ public interface Statement extends Resource, ResourceManager
      * @return interface exposing all read operations.
      */
     ReadOperations readOperations();
-
-    /**
-     * @return interface exposing all write operations about tokens.
-     */
-    TokenWriteOperations tokenWriteOperations();
 
     /**
      * @return interface exposing all write operations about data such as nodes, relationships and properties.
@@ -51,11 +45,4 @@ public interface Statement extends Resource, ResourceManager
      * @return interface exposing operations for associating metadata with this statement
      */
     QueryRegistryOperations queryRegistration();
-
-    /**
-     * @return interface exposing all procedure call operations.
-     */
-    ProcedureCallOperations procedureCallOperations();
-
-    ExecutionStatisticsOperations executionStatisticsOperations();
 }
