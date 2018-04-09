@@ -51,7 +51,6 @@ final case class SymbolUse(name: String, position: InputPosition) {
 //
 final case class Symbol(name: String, positions: Set[InputPosition],
                         types: TypeSpec,
-                        graph: Boolean = false,
                         generated: Boolean = false) {
   if (positions.isEmpty)
     throw new InternalException(s"Cannot create empty symbol with name '$name'")
@@ -66,9 +65,6 @@ final case class Symbol(name: String, positions: Set[InputPosition],
     copy(positions = positions ++ additionalPositions)
 
   override def toString: String =
-    if (graph)
-      s"GRAPH ${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")})"
-    else
       s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
 }
 
@@ -83,13 +79,6 @@ final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSp
 final case class ContextGraphs(source: String, target: String) {
 
   override def toString: String = s"$source >> $target"
-
-  def format(allGraphs: Set[String]): String = {
-    val remainingGraphs = allGraphs -- graphs
-    if (remainingGraphs.isEmpty) toString else s"$toString, ${remainingGraphs.mkString(", ")}"
-  }
-
-  def graphs = Set(source, target)
 
   def updated(newSource: Option[String]): ContextGraphs =
     updated(newSource, newSource)
@@ -121,26 +110,10 @@ final case class Scope(symbolTable: Map[String, Symbol],
   def symbol(name: String): Option[Symbol] = symbolTable.get(name)
   def symbolNames: Set[String] = symbolTable.keySet
 
-  def variable(name: String): Option[Symbol] = symbolTable.get(name).filter(!_.graph)
-  def variableNames: Set[String] = selectSymbolNames(!_.graph)
-
-  def graph(name: String): Option[Symbol] = symbolTable.get(name).filter(_.graph)
-  def graphNames: Set[String] = selectSymbolNames(_.graph)
-
-  def selectSymbolNames(f: Symbol => Boolean): Set[String] = symbolTable.collect {
-    case ((k, symbol)) if f(symbol) => k
-  }.toSet
-
-  def valueSymbolTable: Map[String, Symbol] = symbolTable.collect { case entry if !entry._2.graph => entry }
-  def graphSymbolTable: Map[String, Symbol] = symbolTable.collect { case entry if entry._2.graph => entry }
+  def valueSymbolTable: Map[String, Symbol] = symbolTable
 
   def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
     val otherSymbols = other.valueSymbolTable -- exclude
-    copy(symbolTable = symbolTable ++ otherSymbols)
-  }
-
-  def importGraphsFromScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
-    val otherSymbols = other.graphSymbolTable -- exclude
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
@@ -150,19 +123,6 @@ final case class Scope(symbolTable: Map[String, Symbol],
       .map(_.asGenerated)
       .map(symbol => copy(symbolTable = symbolTable.updated(variable, symbol)))
       .getOrElse(this)
-
-  def removeContextGraphs(): Scope =
-    copy(contextGraphs = None)
-
-  def updateContextGraphs(initialContextGraphs: ContextGraphs): Scope =
-    copy(contextGraphs = Some(initialContextGraphs))
-
-  def updateGraphVariable(variable: String, positions: Set[InputPosition], generated: Boolean = false): Scope =
-    copy(
-      symbolTable = symbolTable.updated(
-        variable,
-        Symbol(variable, positions, CTGraphRef, graph = true, generated = generated)
-    ))
 
   def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): Scope =
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
@@ -230,7 +190,7 @@ final case class Scope(symbolTable: Map[String, Symbol],
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
       val generatedText = if (symbol.generated) " (generated)" else ""
-      val keyText = if (symbol.graph) s"GRAPH $key$generatedText" else s"$key$generatedText"
+      val keyText = s"$key$generatedText"
       val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$keyText: $symbolText$EOL")
     }
@@ -267,25 +227,8 @@ object SemanticState {
     def symbol(name: String): Option[Symbol] = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
     def symbolNames: Set[String] = scope.symbolNames
 
-    def localVariable(name: String): Option[Symbol] = scope.variable(name)
-    def variable(name: String): Option[Symbol] = localVariable(name) orElse location.up.flatMap(_.variable(name))
-    def variableNames: Set[String] = scope.variableNames
-
-    def localGraph(name: String): Option[Symbol] = scope.graph(name)
-    def graph(name: String): Option[Symbol] = localGraph(name) orElse location.up.flatMap(_.graph(name))
-    def graphNames: Set[String] = scope.graphNames
-
-    def localContextGraphs: Option[ContextGraphs] = scope.contextGraphs
-    def contextGraphs: Option[ContextGraphs] = localContextGraphs orElse location.up.flatMap(_.contextGraphs)
-
-    def sourceGraph: Option[Symbol] = contextGraphs.map(_.source).flatMap(graph)
-    def targetGraph: Option[Symbol] = contextGraphs.map(_.target).flatMap(graph)
-
     def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
       location.replace(scope.importValuesFromScope(other, exclude))
-
-    def importGraphsFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
-      location.replace(scope.importGraphsFromScope(other, exclude))
 
     def localMarkAsGenerated(name: String): ScopeLocation =
       location.replace(scope.markAsGenerated(name))
@@ -295,15 +238,6 @@ object SemanticState {
         case (loc, sym) if exclude(sym.name) => loc
         case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
       }
-
-    def removeContextGraphs(): ScopeLocation =
-      location.replace(scope.removeContextGraphs())
-
-    def updateContextGraphs(newContextGraphs: ContextGraphs): ScopeLocation =
-      location.replace(scope.updateContextGraphs(newContextGraphs))
-
-    def updateGraph(variable: String, positions: Set[InputPosition], generated: Boolean = false): ScopeLocation =
-      location.replace(scope.updateGraphVariable(variable, positions, generated))
 
     def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateVariable(variable, types, positions))
@@ -335,59 +269,19 @@ case class SemanticState(currentScope: ScopeLocation,
   def popScope: SemanticState = copy(currentScope = currentScope.parent.get)
 
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
-  def variable(name: String): Option[Symbol] = currentScope.variable(name)
-  def graph(name: String): Option[Symbol] = currentScope.graph(name)
 
   def symbolTypes(name: String): TypeSpec = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
   def importValuesFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.importValuesFromScope(scope, exclude))
 
-  def importGraphsFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
-    copy(currentScope = currentScope.importGraphsFromScope(scope, exclude))
-
   def mergeSymbolPositionsFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeSymbolPositionsFromScope(scope, exclude))
-
-  def updateContextGraphs(newContextGraphs: ContextGraphs): Either[SemanticError, SemanticState] = {
-    val newScope = currentScope.updateContextGraphs(newContextGraphs)
-    if (newScope.sourceGraph.isEmpty)
-      Left(SemanticError("No source graph is available in scope", InputPosition.NONE))
-    else if (newScope.targetGraph.isEmpty)
-      Left(SemanticError("No target graph is available in scope", InputPosition.NONE))
-    else
-      Right(copy(currentScope = newScope))
-  }
-
-  def removeContextGraphs(): Either[SemanticError, SemanticState] = {
-    val newScope = currentScope.removeContextGraphs()
-    Right(copy(currentScope = newScope))
-  }
-
-  def localMarkAsGenerated(variable: Variable): Either[SemanticError, SemanticState] =
-    currentScope.localSymbol(variable.name) match {
-      case None =>
-        Left(SemanticError(s"`${variable.name}` cannot be marked as generated - it has not been declared in the local scope", variable.position))
-      case Some(symbol) =>
-        Right(copy(currentScope = currentScope.localMarkAsGenerated(symbol.name)))
-    }
-
-  def declareGraph(variable: Variable, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
-    currentScope.localSymbol(variable.name) match {
-      case None =>
-        Right(updateGraph(variable, positions + variable.position))
-      case Some(symbol) if symbol.graph =>
-        Left(SemanticError(s"Graph `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
-      case Some(symbol) =>
-        Left(SemanticError(s"`${variable.name}` already declared as variable", variable.position, symbol.positions.toSeq: _*))
-    }
 
   def declareVariable(variable: LogicalVariable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case None =>
         Right(updateVariable(variable, possibleTypes, positions + variable.position))
-      case Some(symbol) if symbol.graph =>
-        Left(SemanticError(s"`${variable.name}` already declared as graph", variable.position, symbol.positions.toSeq: _*))
       case Some(symbol) =>
         Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
     }
@@ -395,29 +289,10 @@ case class SemanticState(currentScope: ScopeLocation,
   def addNotification(notification: InternalNotification): SemanticState =
     copy(notifications = notifications + notification)
 
-  def implicitContextGraph(variable: Option[String], position: InputPosition, contextGraphName: String)
-  : Either[SemanticError, SemanticState] =
-    variable match {
-      case Some(name) => implicitGraph(Variable(name)(position))
-      case None => Left(SemanticError(s"No $contextGraphName in scope", position))
-    }
-
-  def implicitGraph(variable: Variable): Either[SemanticError, SemanticState] =
-    this.symbol(variable.name) match {
-      case None =>
-        Right(updateGraph(variable, Set(variable.position)))
-      case Some(symbol) if symbol.graph =>
-        Right(updateGraph(variable, symbol.positions + variable.position, symbol.generated))
-      case Some(symbol) =>
-        Left(SemanticError(s"`${variable.name}` already declared as variable", variable.position, symbol.positions.toSeq: _*))
-    }
-
   def implicitVariable(variable: LogicalVariable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None =>
         Right(updateVariable(variable, possibleTypes, Set(variable.position)))
-      case Some(symbol) if symbol.graph =>
-        Left(SemanticError(s"`${variable.name}` already declared as graph", variable.position, symbol.positions.toSeq: _*))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
         if (inferredTypes.nonEmpty) {
@@ -435,29 +310,15 @@ case class SemanticState(currentScope: ScopeLocation,
     this.symbol(variable.name) match {
       case None  =>
         Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
-      case Some(symbol) if symbol.graph =>
-        Left(SemanticError(s"`${variable.name}` already declared as graph", variable.position, symbol.positions.toSeq: _*))
       case Some(symbol) =>
         Right(updateVariable(variable, symbol.types, symbol.positions + variable.position))
-    }
-
-  def ensureGraphDefined(variable: Variable): Either[SemanticError, SemanticState] =
-    this.symbol(variable.name) match {
-      case None if initialWith =>
-        Right(updateGraph(variable, Set(variable.position)))
-      case None         =>
-        Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
-      case Some(symbol) if symbol.graph =>
-        Right(updateGraph(variable, symbol.positions + variable.position))
-      case Some(symbol) =>
-        Left(SemanticError(s"`${variable.name}` already declared as variable", variable.position, symbol.positions.toSeq: _*))
     }
 
   def specifyType(expression: Expression, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     expression match {
       case variable: Variable =>
         implicitVariable(variable, possibleTypes)
-      case _                          =>
+      case _  =>
         Right(copy(typeTable = typeTable.updated(expression, ExpressionTypeInfo(possibleTypes))))
     }
 
@@ -471,12 +332,6 @@ case class SemanticState(currentScope: ScopeLocation,
     features.foldLeft(this)(_.withFeature(_))
 
   def expressionType(expression: Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
-
-  private def updateGraph(variable: LogicalVariable, locations: Set[InputPosition], generated: Boolean = false) =
-    copy(
-      currentScope = currentScope.updateGraph(variable.name, locations, generated),
-      typeTable = typeTable.updated(variable, ExpressionTypeInfo(CTGraphRef))
-    )
 
   private def updateVariable(variable: LogicalVariable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(
