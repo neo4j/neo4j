@@ -19,8 +19,6 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-
 import java.util.Arrays;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -223,23 +221,6 @@ public class PrimitiveArrays
 
         assert cursor == difference.length;
         return difference;
-    }
-
-    /**
-     * Copy PrimitiveLongCollection into new long array
-     * @param collection the collection to copy
-     * @return the new long array
-     */
-    public static long[] of( PrimitiveLongCollection collection )
-    {
-        int i = 0;
-        long[] result = new long[collection.size()];
-        final LongIterator iterator = collection.longIterator();
-        while ( iterator.hasNext() )
-        {
-            result[i++] = iterator.next();
-        }
-        return result;
     }
 
     /**
