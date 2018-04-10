@@ -276,7 +276,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  private def scan(index: IndexReference) = {
+  override def indexScan(index: IndexReference): Iterator[NodeValue] = {
+    val nodeCursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
+    new CursorIterator[NodeValue] {
+      override protected def fetchNext(): NodeValue = {
+        if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+        else null
+      }
+
+      override protected def close(): Unit = nodeCursor.close()
+    }
+  }
+
+  override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
     new PrimitiveCursorIterator {
@@ -286,11 +299,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override protected def close(): Unit = nodeCursor.close()
     }
   }
-
-  override def indexScan(index: IndexReference): Iterator[NodeValue] =
-    JavaConversionSupport.mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getByIdIfExists)
-
-  override def indexScanPrimitive(index: IndexReference): PrimitiveLongResourceIterator = scan(index)
 
   override def indexScanByContains(index: IndexReference, value: String): Iterator[NodeValue] =
     seek(index, IndexQuery.stringContains(index.properties()(0), value))

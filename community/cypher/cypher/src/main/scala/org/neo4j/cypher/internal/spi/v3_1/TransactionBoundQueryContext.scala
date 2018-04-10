@@ -349,8 +349,17 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
       }.getOrElse(Iterator.empty)
   }
 
-  override def indexScan(index: IndexDescriptor) =
-    JavaConversionSupport.mapToScalaENFXSafe(scan(DefaultIndexReference.general(index.labelId, index.propertyId)))(nodeOps.getByIdIfExists)
+  override def indexScan(index: IndexDescriptor) = {
+    val cursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexScan(DefaultIndexReference.general(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
+    new CursorIterator[Node] {
+      override protected def fetchNext(): Node = {
+        if (cursor.next()) entityAccessor.newNodeProxy(cursor.nodeReference())
+        else null
+      }
+      override protected def close(): Unit = cursor.close()
+    }
+  }
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
     seek(DefaultIndexReference.general(index.labelId, index.propertyId), IndexQuery.stringContains(index.propertyId, value))
