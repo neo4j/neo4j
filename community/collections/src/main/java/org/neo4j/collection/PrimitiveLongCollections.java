@@ -49,15 +49,6 @@ public class PrimitiveLongCollections
 {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
 
-    private static final LongIterator EMPTY = new PrimitiveLongBaseIterator()
-    {
-        @Override
-        protected boolean fetchNext()
-        {
-            return false;
-        }
-    };
-
     private PrimitiveLongCollections()
     {
         throw new AssertionError( "no instance" );
@@ -230,11 +221,6 @@ public class PrimitiveLongCollections
             array = copyOf( array, i );
         }
         return array;
-    }
-
-    public static LongIterator emptyIterator()
-    {
-        return EMPTY;
     }
 
     public static LongIterator toPrimitiveIterator( final Iterator<Long> iterator )

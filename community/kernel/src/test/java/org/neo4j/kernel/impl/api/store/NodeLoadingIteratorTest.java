@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.store;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -38,7 +39,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 
 public class NodeLoadingIteratorTest
 {
@@ -46,7 +46,7 @@ public class NodeLoadingIteratorTest
     public void shouldHandleAnEmptyIterator()
     {
         // given
-        NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), id ->
+        NodeLoadingIterator iterator = new NodeLoadingIterator( ImmutableEmptyLongIterator.INSTANCE, id ->
         {
             throw new IllegalStateException( "" );
         } );
