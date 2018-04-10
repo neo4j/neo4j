@@ -24,16 +24,24 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.messaging.StoreCopyRequest;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.TriggerInfo;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -41,7 +49,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class GetStoreFileRequestHandlerTest
+public class StoreCopyRequestHandlerTest
 {
     private static final StoreId STORE_ID_MISMATCHING = new StoreId( 1, 1, 1, 1 );
     private static final StoreId STORE_ID_MATCHING = new StoreId( 1, 2, 3, 4 );
@@ -58,11 +66,11 @@ public class GetStoreFileRequestHandlerTest
     {
         catchupServerProtocol = new CatchupServerProtocol();
         catchupServerProtocol.expect( CatchupServerProtocol.State.GET_STORE_FILE );
-        GetStoreFileRequestHandler getStoreFileRequestHandler =
-                new GetStoreFileRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+        StoreCopyRequestHandler storeCopyRequestHandler =
+                new NiceStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
                         pageCache, fileSystemAbstraction, NullLogProvider.getInstance() );
         when( neoStoreDataSource.getStoreId() ).thenReturn( new org.neo4j.kernel.impl.store.StoreId( 1, 2, 5, 3, 4 ) );
-        embeddedChannel = new EmbeddedChannel( getStoreFileRequestHandler );
+        embeddedChannel = new EmbeddedChannel( storeCopyRequestHandler );
     }
 
     @Test
@@ -108,6 +116,60 @@ public class GetStoreFileRequestHandlerTest
         assertEquals( expectedResponse, embeddedChannel.readOutbound() );
 
         assertTrue( catchupServerProtocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) );
+    }
+
+    @Test
+    public void shoulResetProtoclAndGiveErrorIfFilesThrowException()
+    {
+        EmbeddedChannel alternativeChannel = new EmbeddedChannel(
+                new EvilStoreCopyRequestHandler( catchupServerProtocol, () -> neoStoreDataSource, () -> checkPointer, new StoreFileStreamingProtocol(),
+                        pageCache, fileSystemAbstraction, NullLogProvider.getInstance() ) );
+        try
+        {
+            alternativeChannel.writeInbound( new GetStoreFileRequest( STORE_ID_MATCHING, new File( "some-file" ), 1 ) );
+            fail();
+        }
+        catch ( IllegalStateException ignore )
+        {
+
+        }
+        assertEquals( ResponseMessageType.STORE_COPY_FINISHED, alternativeChannel.readOutbound() );
+        StoreCopyFinishedResponse expectedResponse = new StoreCopyFinishedResponse( StoreCopyFinishedResponse.Status.E_UNKNOWN );
+        assertEquals( expectedResponse, alternativeChannel.readOutbound() );
+
+        assertTrue( catchupServerProtocol.isExpecting( CatchupServerProtocol.State.MESSAGE_TYPE ) );
+    }
+
+    private class NiceStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
+    {
+        private NiceStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
+                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                FileSystemAbstraction fs, LogProvider logProvider )
+        {
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+        }
+
+        @Override
+        ResourceIterator<StoreFileMetadata> files( StoreCopyRequest request, NeoStoreDataSource neoStoreDataSource ) throws IOException
+        {
+            return Iterators.emptyResourceIterator();
+        }
+    }
+
+    private class EvilStoreCopyRequestHandler extends StoreCopyRequestHandler<StoreCopyRequest>
+    {
+        private EvilStoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
+                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                FileSystemAbstraction fs, LogProvider logProvider )
+        {
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+        }
+
+        @Override
+        ResourceIterator<StoreFileMetadata> files( StoreCopyRequest request, NeoStoreDataSource neoStoreDataSource ) throws IOException
+        {
+            throw new IllegalStateException( "I am evil" );
+        }
     }
 
     private class FakeCheckPointer implements CheckPointer

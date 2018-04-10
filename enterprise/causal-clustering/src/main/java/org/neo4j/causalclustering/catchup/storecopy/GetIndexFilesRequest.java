@@ -30,15 +30,15 @@ import java.util.List;
 import org.neo4j.causalclustering.catchup.RequestMessageType;
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.NetworkFlushableByteBuf;
 import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4;
+import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.causalclustering.messaging.marshalling.storeid.StoreIdMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
 
-public class GetIndexFilesRequest implements CatchUpRequest
+public class GetIndexFilesRequest implements StoreCopyRequest
 {
     private final StoreId expectedStoreId;
     private final long indexId;
@@ -51,12 +51,14 @@ public class GetIndexFilesRequest implements CatchUpRequest
         this.requiredTransactionId = requiredTransactionId;
     }
 
+    @Override
     public StoreId expectedStoreId()
     {
         return expectedStoreId;
     }
 
-    long requiredTransactionId()
+    @Override
+    public long requiredTransactionId()
     {
         return requiredTransactionId;
     }

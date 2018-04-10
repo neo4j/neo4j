@@ -24,13 +24,16 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
+import org.neo4j.causalclustering.messaging.StoreCopyRequest;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -44,7 +47,7 @@ import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.hasS
 import static org.neo4j.causalclustering.catchup.storecopy.DataSourceChecks.isTransactionWithinReach;
 import static org.neo4j.io.fs.FileUtils.relativePath;
 
-public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetStoreFileRequest>
+public abstract class StoreCopyRequestHandler<T extends StoreCopyRequest> extends SimpleChannelInboundHandler<T>
 {
     private final CatchupServerProtocol protocol;
     private final Supplier<NeoStoreDataSource> dataSource;
@@ -54,7 +57,7 @@ public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetS
     private final FileSystemAbstraction fs;
     private final Log log;
 
-    public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
+    StoreCopyRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
             StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
     {
         this.protocol = protocol;
@@ -63,32 +66,38 @@ public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetS
         this.storeFileStreamingProtocol = storeFileStreamingProtocol;
         this.pageCache = pageCache;
         this.fs = fs;
-        this.log = logProvider.getLog( GetStoreFileRequestHandler.class );
+        this.log = logProvider.getLog( StoreCopyRequestHandler.class );
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetStoreFileRequest fileRequest ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, T request ) throws Exception
     {
-        log.debug( "Requesting file %s", fileRequest.file() );
+        log.debug( "Handling request %s", request );
         StoreCopyFinishedResponse.Status responseStatus = StoreCopyFinishedResponse.Status.E_UNKNOWN;
         try
         {
             NeoStoreDataSource neoStoreDataSource = dataSource.get();
-            if ( !hasSameStoreId( fileRequest.expectedStoreId(), neoStoreDataSource ) )
+            if ( !hasSameStoreId( request.expectedStoreId(), neoStoreDataSource ) )
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH;
             }
-            else if ( !isTransactionWithinReach( fileRequest.requiredTransactionId(), checkpointerSupplier.get() ) )
+            else if ( !isTransactionWithinReach( request.requiredTransactionId(), checkpointerSupplier.get() ) )
             {
                 responseStatus = StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND;
             }
             else
             {
                 File storeDir = neoStoreDataSource.getStoreDir();
-                StoreFileMetadata storeFileMetadata = findFile( fileRequest.file().getName() );
-                storeFileStreamingProtocol.stream( ctx,
-                        new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(),
-                                pageCache, fs ) );
+                try ( ResourceIterator<StoreFileMetadata> resourceIterator = files( request, neoStoreDataSource ) )
+                {
+                    while ( resourceIterator.hasNext() )
+                    {
+                        StoreFileMetadata storeFileMetadata = resourceIterator.next();
+                        storeFileStreamingProtocol.stream( ctx,
+                                new StoreResource( storeFileMetadata.file(), relativePath( storeDir, storeFileMetadata.file() ), storeFileMetadata.recordSize(),
+                                        pageCache, fs ) );
+                    }
+                }
                 responseStatus = StoreCopyFinishedResponse.Status.SUCCESS;
             }
         }
@@ -99,25 +108,55 @@ public class GetStoreFileRequestHandler extends SimpleChannelInboundHandler<GetS
         }
     }
 
-    private StoreFileMetadata findFile( String fileName ) throws IOException
-    {
-        try ( ResourceIterator<StoreFileMetadata> resourceIterator = dataSource.get().listStoreFiles( false ) )
-        {
-            return onlyOne( resourceIterator.stream().filter( matchesRequested( fileName ) ).collect( Collectors.toList() ), fileName );
-        }
-    }
+    abstract ResourceIterator<StoreFileMetadata> files( T request, NeoStoreDataSource neoStoreDataSource ) throws IOException;
 
-    private StoreFileMetadata onlyOne( List<StoreFileMetadata> files, String description )
+    private static Iterator<StoreFileMetadata> onlyOne( List<StoreFileMetadata> files, String description )
     {
         if ( files.size() != 1 )
         {
             throw new IllegalStateException( format( "Expected exactly one file '%s'. Got %d", description, files.size() ) );
         }
-        return files.get( 0 );
+        return files.iterator();
     }
 
     private static Predicate<StoreFileMetadata> matchesRequested( String fileName )
     {
         return f -> f.file().getName().equals( fileName );
+    }
+
+    public static class GetStoreFileRequestHandler extends StoreCopyRequestHandler<GetStoreFileRequest>
+    {
+        public GetStoreFileRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource, Supplier<CheckPointer> checkpointerSupplier,
+                StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
+        {
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+        }
+
+        @Override
+        ResourceIterator<StoreFileMetadata> files( GetStoreFileRequest request, NeoStoreDataSource neoStoreDataSource ) throws IOException
+        {
+            try ( ResourceIterator<StoreFileMetadata> resourceIterator = neoStoreDataSource.listStoreFiles( false ) )
+            {
+                String fileName = request.file().getName();
+                return Iterators.asResourceIterator(
+                        onlyOne( resourceIterator.stream().filter( matchesRequested( fileName ) ).collect( Collectors.toList() ), fileName ) );
+            }
+        }
+    }
+
+    public static class GetIndexSnapshotRequestHandler extends StoreCopyRequestHandler<GetIndexFilesRequest>
+    {
+        public GetIndexSnapshotRequestHandler( CatchupServerProtocol protocol, Supplier<NeoStoreDataSource> dataSource,
+                Supplier<CheckPointer> checkpointerSupplier, StoreFileStreamingProtocol storeFileStreamingProtocol, PageCache pageCache,
+                FileSystemAbstraction fs, LogProvider logProvider )
+        {
+            super( protocol, dataSource, checkpointerSupplier, storeFileStreamingProtocol, pageCache, fs, logProvider );
+        }
+
+        @Override
+        ResourceIterator<StoreFileMetadata> files( GetIndexFilesRequest request, NeoStoreDataSource neoStoreDataSource ) throws IOException
+        {
+            return neoStoreDataSource.getNeoStoreFileListing().getNeoStoreFileIndexListing().getSnapshot( request.indexId() );
+        }
     }
 }
