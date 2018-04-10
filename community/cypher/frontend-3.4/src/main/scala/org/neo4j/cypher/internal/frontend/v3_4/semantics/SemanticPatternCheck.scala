@@ -45,9 +45,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: EveryPath =>
         (x.element, ctx) match {
-          // single node variable is allowed to be already bound in MATCH and GRAPH OF
           case (n: NodePattern, SemanticContext.Construct) =>
-            n.variable.fold(SemanticCheckResult.success)(declareVariable(_, CTNode)) chain
+            n.variable.fold(SemanticCheckResult.success)(implicitVariable(_, CTNode)) chain
               declareVariables(ctx, n)
           case (_: NodePattern, SemanticContext.Match) =>
             declareVariables(ctx, x.element)
@@ -158,7 +157,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: NodePattern =>
         checkBaseVariable(ctx, x.baseNode, CTNode) chain
         checkNodeProperties(ctx, x.properties)
-
     }
 
   def check(ctx: SemanticContext, x: RelationshipPattern): SemanticCheck = {

@@ -87,12 +87,20 @@ final case class FromGraph(graphName: QualifiedGraphName)(val position: InputPos
 
 }
 
-final case class Clone(items: List[ReturnItem])(val position: InputPosition) extends MultipleGraphClause {
+final case class Clone(items: List[ReturnItem])(val position: InputPosition) extends MultipleGraphClause with SemanticAnalysisTooling {
   override def name: String = "CLONE"
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      items.semanticCheck
+      items.semanticCheck chain
+      declareVariables
+
+  private def declareVariables: SemanticCheck = (state) => {
+    items.foldSemanticCheck {
+      case AliasedReturnItem(expression, alias) => declareVariable(alias, state.typeTable(expression).actual)
+      case _ => success
+    }(state)
+  }
 }
 
 case class New(pattern: Pattern)(val position: InputPosition) extends MultipleGraphClause with SingleRelTypeCheck {
@@ -177,6 +185,7 @@ final case class ConstructGraph(
       SemanticState.recordCurrentScope(this) chain
       clones.semanticCheck chain
       checkDuplicatedRelationships chain
+      checkModificationOfClonedEntities chain
       checkBaseNodes chain
       news.semanticCheck
 
@@ -192,6 +201,31 @@ final case class ConstructGraph(
       .filter(x => x._2 > 1)
       .keySet
       .foldSemanticCheck { v => error(s"Relationship `${v.name}` can only be declared once", v.position) }(state)
+  }
+
+
+  def checkModificationOfClonedEntities: SemanticCheck = {
+    news.flatMap(_.pattern.patternParts).foldSemanticCheck {
+      case EveryPath(element) => checkModificationOfClonedEntities(element)
+      case _ => success
+    }
+  }
+
+  private def checkModificationOfClonedEntities(element: PatternElement): SemanticCheck = (state) => {
+    element match {
+      case NodePattern(Some(v), labels, properties, _) if state.symbol(v.name).isDefined && (labels.nonEmpty || properties.isDefined) =>
+        error("Modification of a cloned node is not allowed. Use COPY OF to manipulate the node", element.position)(state)
+
+      case RelationshipChain(e, rel, node) =>
+        val checks = checkModificationOfClonedEntities(e) chain checkModificationOfClonedEntities(node) chain (
+          if (rel.variable.isDefined && state.symbol(rel.variable.get.name).isDefined && (rel.types.nonEmpty || rel.properties.isDefined)) {
+            error("Modification of a cloned relationship is not allowed. Use COPY OF to manipulate the relationship", rel.position)
+          } else success
+        )
+        checks(state)
+
+      case _ => success(state)
+    }
   }
 
   private def checkBaseNodes: SemanticCheck = {
@@ -214,6 +248,13 @@ final case class ConstructGraph(
     case RelationshipChain(element, _, _) => collectRelationshipVars(element)
     case _ => Seq.empty
   }
+
+//  private def collectNodeVars(patternElement: PatternElement): Seq[LogicalVariable] = patternElement match {
+//    case RelationshipChain(element, _, node) => collectNodeVars(element) ++ collectNodeVars(node)
+//    case RelationshipChain(element, _, _) => collectNodeVars(element)
+//    case NodePattern(Some(v), _, _, _) => Seq(v)
+//    case _ => Seq.empty
+//  }
 
   private def nodeToBaseNodeMapping(patternElement: PatternElement): Seq[(LogicalVariable, LogicalVariable)] = patternElement match {
     case RelationshipChain(element, _, node) => nodeToBaseNodeMapping(element) ++ nodeToBaseNodeMapping(node)
