@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
-import org.neo4j.graphalgo.impl.util.DoubleComparator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -49,7 +48,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
         public TestDijkstra()
         {
             super( 0.0, null, null, CommonEvaluators.doubleCostEvaluator( "cost" ),
-                new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+                new DoubleAdder(), Double::compareTo, Direction.BOTH,
                 MyRelTypes.R1 );
         }
 

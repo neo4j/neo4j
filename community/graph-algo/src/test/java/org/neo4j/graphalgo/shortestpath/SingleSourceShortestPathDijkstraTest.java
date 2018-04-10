@@ -34,7 +34,7 @@ public class SingleSourceShortestPathDijkstraTest extends
         Node startNode )
     {
         return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction ) -> 1, new IntegerAdder(),
-                new org.neo4j.graphalgo.impl.util.IntegerComparator(), Direction.BOTH, MyRelTypes.R1 );
+                Integer::compareTo, Direction.BOTH, MyRelTypes.R1 );
     }
 
     @Override
@@ -42,6 +42,6 @@ public class SingleSourceShortestPathDijkstraTest extends
         Node startNode, Direction direction, RelationshipType... relTypes )
     {
         return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction1 ) -> 1, new IntegerAdder(),
-                new org.neo4j.graphalgo.impl.util.IntegerComparator(), direction, relTypes );
+                Integer::compareTo, direction, relTypes );
     }
 }
