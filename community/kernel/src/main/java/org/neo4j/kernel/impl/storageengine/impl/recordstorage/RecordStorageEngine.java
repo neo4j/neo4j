@@ -31,13 +31,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -420,7 +420,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         labelTokenHolder.setInitialTokens(
                 neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
 
-        neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
+        neoStores.startCountStore(); // TODO: move this to counts store lifecycle
         loadSchemaCache();
         indexingService.start();
         labelScanStore.start();

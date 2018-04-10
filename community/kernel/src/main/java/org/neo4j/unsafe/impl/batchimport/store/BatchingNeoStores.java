@@ -179,6 +179,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                 BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
                 initialIds.lastCommittedTransactionLogVersion() );
+        neoStores.startCountStore();
     }
 
     public void assertDatabaseIsEmptyOrNonExistent()
@@ -228,11 +229,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         life.add( labelScanStore );
     }
 
-    private void instantiateStores() throws IOException
+    private void instantiateStores()
     {
         neoStores = newStoreFactory( DEFAULT_NAME ).openAllNeoStores( true );
-        // TODO why do we need this counts store thing here?
-        neoStores.rebuildCountStoreIfNeeded();
         propertyKeyRepository = new BatchingPropertyKeyTokenRepository(
                 neoStores.getPropertyKeyTokenStore() );
         labelRepository = new BatchingLabelTokenRepository(
