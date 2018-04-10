@@ -26,7 +26,6 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.Address;
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,13 +50,6 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLUSTER_UUID_DB_NAME_MAP;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.DB_NAME_LEADER_TERM_PREFIX;
-import static org.neo4j.logging.AssertableLogProvider.inLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
@@ -67,8 +59,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLUSTER_UUID_DB_NAME_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.DB_NAME_LEADER_TERM_PREFIX;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributesForCore;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.toCoreMemberMap;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -228,10 +224,7 @@ public class HazelcastClusterTopologyTest
         // then
         assertThat( map.keySet(), hasItems( coreMembers.get( 0 ), coreMembers.get( 1 ), coreMembers.get( 3 ) ) );
         assertThat( map.keySet(), not( hasItems( coreMembers.get( 2 ) ) ) );
-        logProvider.assertExactly( inLog( this.getClass() )
-                .warn( equalTo("Incomplete member attributes supplied from Hazelcast"),
-                        CoreMatchers.instanceOf( IllegalArgumentException.class )) );
-
+        logProvider.assertContainsMessageContaining( "Missing member attribute" );
     }
 
     @Test
