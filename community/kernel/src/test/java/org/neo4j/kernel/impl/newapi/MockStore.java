@@ -101,7 +101,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+    IndexReader indexReader( IndexReference index, boolean fresh )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -83,7 +83,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         // when looking for it
         Read read = newTransaction().dataRead();
         int propertyId = index.properties()[0];
-        long foundId = read.nodeUniqueIndexSeek( index, exact( propertyId, value ) );
+        long foundId = read.lockingNodeUniqueIndexSeek( index, exact( propertyId, value ) );
         commit();
 
         // then
@@ -100,7 +100,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId = transaction.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
+        long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, exact( propertyId1, value ) );
         commit();
 
         // then
@@ -118,7 +118,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId = transaction.dataRead().nodeUniqueIndexSeek( index,
+        long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
                 exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
         commit();
@@ -138,7 +138,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId =  transaction.dataRead().nodeUniqueIndexSeek( index,
+        long foundId =  transaction.dataRead().lockingNodeUniqueIndexSeek( index,
                 exact( propertyId1, value1 ),
                                                                 exact( propertyId2, value2 ) );
         commit();
@@ -182,7 +182,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
             latch.waitForAllToStart();
             try ( Transaction tx = session.beginTransaction() )
             {
-                tx.dataRead().nodeUniqueIndexSeek( index, exact( propertyId1, value ) );
+                tx.dataRead().lockingNodeUniqueIndexSeek( index, exact( propertyId1, value ) );
                 tx.success();
             }
             catch ( KernelException e )

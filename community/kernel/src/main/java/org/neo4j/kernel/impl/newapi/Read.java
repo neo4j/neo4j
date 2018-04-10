@@ -109,9 +109,17 @@ public abstract class Read implements TxStateHolder,
             return;
         }
 
-        ((DefaultNodeValueIndexCursor) cursor).setRead( this );
-        IndexProgressor.NodeValueClient target = (DefaultNodeValueIndexCursor) cursor;
-        IndexReader reader = indexReader( index );
+        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
+        IndexReader reader = indexReader( index, false );
+        cursorImpl.setRead( this, null );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursorImpl, query, reader );
+        reader.query( target, indexOrder, query );
+    }
+
+    private IndexProgressor.NodeValueClient withFullValuePrecision( DefaultNodeValueIndexCursor cursor,
+            IndexQuery[] query, IndexReader reader )
+    {
+        IndexProgressor.NodeValueClient target = cursor;
         if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
@@ -148,10 +156,11 @@ public abstract class Read implements TxStateHolder,
                         cursors.allocatePropertyCursor(), this, filters );
             }
         }
-        reader.query( target, indexOrder, query );
+        return target;
     }
 
-    public final long nodeUniqueIndexSeek(
+    @Override
+    public final long lockingNodeUniqueIndexSeek(
             IndexReference index,
             IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
@@ -167,14 +176,14 @@ public abstract class Read implements TxStateHolder,
         //First try to find node under a shared lock
         //if not found upgrade to exclusive and try again
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-        try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
+        try ( DefaultNodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
-            nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+            nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
             if ( !cursor.next() )
             {
                 locks.releaseShared( INDEX_ENTRY, indexEntryId );
                 locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                nodeIndexSeek( index, cursor, IndexOrder.NONE, predicates );
+                nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
                 if ( cursor.next() ) // we found it under the exclusive lock
                 {
                     // downgrade to a shared lock
@@ -185,6 +194,17 @@ public abstract class Read implements TxStateHolder,
 
             return cursor.nodeReference();
         }
+    }
+
+    void nodeIndexSeekWithFreshIndexReader(
+            IndexReference index,
+            DefaultNodeValueIndexCursor cursor,
+            IndexQuery.ExactPredicate... query ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    {
+        IndexReader reader = indexReader( index, true );
+        cursor.setRead( this, reader );
+        IndexProgressor.NodeValueClient target = withFullValuePrecision( cursor, query, reader );
+        reader.query( target, IndexOrder.NONE, query );
     }
 
     @Override
@@ -202,8 +222,8 @@ public abstract class Read implements TxStateHolder,
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
-        ((DefaultNodeValueIndexCursor) cursor).setRead( this );
-        indexReader( index ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+        ((DefaultNodeValueIndexCursor) cursor).setRead( this, null );
+        indexReader( index, false ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )
@@ -541,7 +561,7 @@ public abstract class Read implements TxStateHolder,
         ktx.assertOpen();
     }
 
-    abstract IndexReader indexReader( IndexReference index ) throws IndexNotFoundKernelException;
+    abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
 

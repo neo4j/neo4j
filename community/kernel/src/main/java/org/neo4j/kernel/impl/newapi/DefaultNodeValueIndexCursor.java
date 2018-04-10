@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -47,6 +48,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeValueIndexCursor, NodeValueClient
 {
     private Read read;
+    private Resource resource;
     private long node;
     private IndexQuery[] query;
     private Value[] values;
@@ -142,9 +144,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
-    public void setRead( Read read )
+    public void setRead( Read read, Resource resource )
     {
         this.read = read;
+        this.resource = resource;
     }
 
     @Override
@@ -196,7 +199,18 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.added = emptyIterator();
             this.removed = PrimitiveLongCollections.emptySet();
 
-            pool.accept( this );
+            try
+            {
+                if ( resource != null )
+                {
+                    resource.close();
+                    resource = null;
+                }
+            }
+            finally
+            {
+                pool.accept( this );
+            }
         }
     }
 
