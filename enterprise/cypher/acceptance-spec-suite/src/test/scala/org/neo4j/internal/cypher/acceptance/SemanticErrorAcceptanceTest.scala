@@ -29,7 +29,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("MATCH pattern with COPY OF is not allowed") {
     executeAndEnsureError(
       "MATCH (a) MATCH (n COPY OF a) RETURN n",
-      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 17 (offset: 16))"
+      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 28 (offset: 27))"
     )
   }
 
@@ -78,13 +78,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("define node and treat it as a relationship") {
     executeAndEnsureError(
       "match (r) where id(r) = 0 match (a)-[r]-(b) return r",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
+      "Type mismatch: r defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
     )
   }
 
   test("redefine symbol in match") {
     executeAndEnsureError(
-      "match (a)-[r]-(r) return r", "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
+      "match (a)-[r]-(r) return r", "Type mismatch: r defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
     )
   }
 

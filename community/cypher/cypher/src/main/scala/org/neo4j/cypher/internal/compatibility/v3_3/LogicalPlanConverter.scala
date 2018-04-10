@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
-import org.neo4j.cypher.internal.v3_4.expressions.{LogicalVariable => LogicalVariableV3_4, Expression => ExpressionV3_4}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4, LogicalVariable => LogicalVariableV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
@@ -294,10 +294,8 @@ object LogicalPlanConverter {
       case Success(i) => i
       case Failure(e) =>
         throw new IllegalArgumentException(
-          s"""
-          |Could not construct ${thingClass.getSimpleName} with arguments ${ctorArgs.toList}
-          |Expected constructor argument types: ${constructor.getParameterTypes.map(_.getSimpleName).mkString(", ")}
-          |""".stripMargin,
+          s"""|Could not construct ${thingClass.getSimpleName} with arguments ${ctorArgs.toList}
+              | Expected constructor argument types: ${constructor.getParameterTypes.map(_.getSimpleName).mkString(", ")}""".stripMargin,
           e
         )
     }

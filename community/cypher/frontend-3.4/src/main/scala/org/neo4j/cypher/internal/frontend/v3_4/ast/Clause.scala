@@ -356,24 +356,24 @@ case class Match(
         if !containsLabelPredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             |Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
+             | Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
       case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
         if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             |Index hints are only supported for the following predicates in WHERE
-             |(either directly or as part of a top-level AND or OR):
-             |equality comparison, inequality (range) comparison, STARTS WITH,
-             |IN condition or checking property existence.
-             |The comparison cannot be performed between two property values.
-             |Note that the label and property comparison must be specified on a
-             |non-optional node""".stripLinesAndMargins, hint.position)
+             | Index hints are only supported for the following predicates in WHERE
+             | (either directly or as part of a top-level AND or OR):
+             | equality comparison, inequality (range) comparison, STARTS WITH,
+             | IN condition or checking property existence.
+             | The comparison cannot be performed between two property values.
+             | Note that the label and property comparison must be specified on a
+             | non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingScanHint(Variable(variable), LabelName(labelName))
         if !containsLabelPredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use label scan hint in this context.
-             |Label scan hints require using a simple label test in WHERE (either directly or as part of a
-             |top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
+             | Label scan hints require using a simple label test in WHERE (either directly or as part of a
+             | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
       case hint@UsingJoinHint(_)
         if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
@@ -569,7 +569,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
         error(_: SemanticState,
           SemanticError(
             """Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement.
-              |For example:
+              | For example:
               |    MATCH (n:Person) WITH collect(n.name) AS names CALL proc(names) YIELD value RETURN value""".stripMargin, position))
       case _ => success
     }.foldLeft(success)(_ chain _)).getOrElse(success)

@@ -118,7 +118,7 @@ trait Patterns extends Parser
     | group(Variable ~ MaybeNodeLabels ~ MaybeProperties)  ~~>> (ast.InvalidNodePattern(_, _, _)) // Here to give nice error messages
   )
 
-  private def MaybeVariableWithBase: Rule2[Option[ast.Variable], Option[ast.Variable]] = rule("optional variable with a base") {
+  private def MaybeVariableWithBase: Rule2[Option[ast.Variable], Option[ast.Variable]] = rule("a variable") {
     optional(!keyword("COPY OF") ~ Variable) ~~ optional(keyword("COPY OF") ~~ Variable)
   }
 
