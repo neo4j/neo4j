@@ -27,7 +27,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;

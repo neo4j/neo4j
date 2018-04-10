@@ -26,7 +26,7 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 

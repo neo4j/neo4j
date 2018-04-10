@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;

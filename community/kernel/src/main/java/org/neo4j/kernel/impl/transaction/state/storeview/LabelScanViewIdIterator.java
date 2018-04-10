@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**

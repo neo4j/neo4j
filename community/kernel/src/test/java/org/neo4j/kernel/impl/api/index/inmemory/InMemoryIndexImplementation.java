@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;

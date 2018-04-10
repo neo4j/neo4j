@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;

@@ -258,7 +258,7 @@
       </exclusions>
     </dependency>
 
-    <dependency>
+      <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-util-3.5</artifactId>
       <version>${project.version}</version>

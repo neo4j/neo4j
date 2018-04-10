@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.index.collector;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 
 /**
  * Document values iterators that are primitive long iterators that can access value by field from document

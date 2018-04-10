@@ -26,7 +26,7 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
