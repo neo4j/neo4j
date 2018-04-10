@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
@@ -55,9 +56,9 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     private ClusterId clusterId;
 
-    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, LogProvider logProvider, Clock clock,
-            ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts,
-            CoreTopologyService topologyService )
+    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, CoreTopologyService topologyService,
+            Clock clock, ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName,
+            int minCoreHosts, LogProvider logProvider )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.dbNameStorage = dbNameStorage;
@@ -113,19 +114,15 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
      */
     public BoundState bindToCluster() throws Throwable
     {
+        DatabaseName newName = new DatabaseName( dbName );
 
-        if ( dbNameStorage.exists() )
-        {
-            String storedName = dbNameStorage.readState().name();
-            if ( !dbName.equals( storedName ) )
+        dbNameStorage.writeOrVerify( newName, existing -> {
+            if ( !newName.equals( existing ) )
             {
-                throw new IllegalStateException( format("Your configured database name may have changed. Found %s, expected %s", dbName, storedName ) );
+                throw new IllegalStateException( format("Your configured database name has changed. Found %s but expected %s in %s.",
+                        dbName, existing.name(), CausalClusteringSettings.database.name() ) );
             }
-        }
-        else
-        {
-            dbNameStorage.writeState( new DatabaseName( dbName ) );
-        }
+        } );
 
         if ( clusterIdStorage.exists() )
         {

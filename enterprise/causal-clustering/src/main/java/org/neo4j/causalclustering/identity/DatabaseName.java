@@ -24,9 +24,9 @@ import java.util.Objects;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.storage.SafeStateMarshal;
+import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.WritableChannel;
-import org.neo4j.string.UTF8;
 
 /**
  * Simple wrapper class for database name strings. These values are provided using the
@@ -67,30 +67,18 @@ public class DatabaseName
         return Objects.hash( name );
     }
 
-    /**
-     * Format:
-     *
-     * nullMarker: 1 byte
-     * nameLength: 1 byte
-     * nameBytes: <= 127 bytes
-     */
     public static class Marshal extends SafeStateMarshal<DatabaseName>
     {
         @Override
         protected DatabaseName unmarshal0( ReadableChannel channel ) throws IOException
         {
-            byte nullMarker = channel.get();
-            if ( nullMarker == 0 )
-            {
-                return null;
-            }
-            else
-            {
-                int nameLength = (int) channel.get();
-                byte[] nameBytes = new byte[nameLength];
-                channel.get( nameBytes, nameLength );
-                return new DatabaseName( UTF8.decode( nameBytes ) );
-            }
+            return new DatabaseName( StringMarshal.unmarshal( channel ) );
+        }
+
+        @Override
+        public void marshal( DatabaseName databaseName, WritableChannel channel ) throws IOException
+        {
+            StringMarshal.marshal( channel, databaseName.name() );
         }
 
         @Override
@@ -103,25 +91,6 @@ public class DatabaseName
         public long ordinal( DatabaseName databaseName )
         {
             return databaseName == null ? 0 : 1;
-        }
-
-        @Override
-        public void marshal( DatabaseName databaseName, WritableChannel channel ) throws IOException
-        {
-            if ( databaseName == null )
-            {
-                channel.put( (byte) 0 );
-            }
-            else if ( databaseName.name().length() > 127 )
-            {
-                throw new IOException( "The database name is too large to be stored. It must be fewer than 128 UTF-8 characters." );
-            }
-            else
-            {
-                channel.put( (byte) 1 );
-                channel.put( (byte) databaseName.name().length() );
-                channel.put( UTF8.encode( databaseName.name() ), databaseName.name().length() );
-            }
         }
     }
 }

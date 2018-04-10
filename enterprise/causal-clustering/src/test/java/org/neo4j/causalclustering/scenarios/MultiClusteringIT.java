@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -233,15 +234,15 @@ public class MultiClusteringIT
     {
         CoreClusterMember member = cluster.coreMembers().stream().findFirst().orElseThrow( IllegalArgumentException::new );
 
-        cluster.shutdownCoreMembers( member );
+        cluster.shutdownCoreMember( member );
 
         //given
-        member.updateDbNameConfig( "new_name" );
+        member.updateConfig( CausalClusteringSettings.database, "new_name" );
 
         try
         {
             //when
-            cluster.startCoreMembers( member );
+            cluster.startCoreMember( member );
             fail( "Cluster member should fail to restart after database name change." );
         }
         catch ( ExecutionException e )

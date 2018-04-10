@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.core.consensus.log.segmented.FileNames;
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.RaftLogPruner;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -231,11 +232,6 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         {
             return new FileNames( logFilesDir ).getAllFiles( fileSystem, null );
         }
-    }
-
-    public void updateDbNameConfig( String dbName )
-    {
-        this.memberConfig.augment( CausalClusteringSettings.database, dbName );
     }
 
     @Override

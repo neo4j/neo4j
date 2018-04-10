@@ -31,7 +31,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface TopologyService extends Lifecycle
 {
-
     String localDBName();
 
     CoreTopology allCoreServers();

@@ -21,6 +21,8 @@ package org.neo4j.causalclustering.core.state.storage;
 
 import java.io.IOException;
 
+import org.neo4j.function.ThrowingConsumer;
+
 public interface SimpleStorage<T>
 {
     boolean exists();
@@ -28,4 +30,16 @@ public interface SimpleStorage<T>
     T readState() throws IOException;
 
     void writeState( T state ) throws IOException;
+
+    default <E extends Exception> void writeOrVerify( T state, ThrowingConsumer<T, E> verify ) throws E, IOException
+    {
+        if ( exists() )
+        {
+            verify.accept( readState() );
+        }
+        else
+        {
+            writeState( state );
+        }
+    }
 }
