@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -684,6 +685,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         result = 31 * result + (int) (seconds ^ (seconds >>> 32));
         result = 31 * result + nanos;
         return result;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        hash = hashFunction.update( hash, months );
+        hash = hashFunction.update( hash, days );
+        hash = hashFunction.update( hash, seconds );
+        hash = hashFunction.update( hash, nanos );
+        return hash;
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
@@ -69,6 +70,12 @@ public abstract class TextValue extends ScalarValue
     public abstract TextValue reverse();
 
     public abstract int compareTo( TextValue other );
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return stringValue().codePoints().asLongStream().reduce( hash, hashFunction::update );
+    }
 
     @Override
     int unsafeCompareTo( Value otherValue )

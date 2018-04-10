@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.hashing.HashFunction;
+
 public abstract class AnyValue
 {
     private int hash;
@@ -58,4 +60,6 @@ public abstract class AnyValue
     public abstract Boolean ternaryEquals( AnyValue other );
 
     public abstract <T> T map( ValueMapper<T> mapper );
+
+    public abstract long updateHash( HashFunction hashFunction, long hash );
 }

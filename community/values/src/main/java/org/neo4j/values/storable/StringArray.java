@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
@@ -70,6 +71,21 @@ public class StringArray extends TextArray
     public int computeHash()
     {
         return Arrays.hashCode( value );
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        hash = hashFunction.update( hash, value.length );
+        for ( String s : value )
+        {
+            int len = s.length();
+            for ( int i = 0; i < len; i++ )
+            {
+                hash = hashFunction.update( hash, s.charAt( i ) );
+            }
+        }
+        return hash;
     }
 
     @Override

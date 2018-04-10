@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.hashing.HashFunction;
+
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
  * serialization lazily when necessary.
@@ -170,6 +172,52 @@ public final class UTF8StringValue extends StringValue
             i += bytesNeeded;
 
             hash = 31 * hash + codePoint;
+        }
+
+        return hash;
+    }
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+
+        byte[] values = bytes;
+
+        if ( values.length == 0 || byteLength == 0 )
+        {
+            return 0;
+        }
+
+        int i = offset;
+        int len = offset + byteLength;
+        while ( i < len )
+        {
+            byte b = values[i];
+            //If high bit is zero (equivalent to the byte being positive in two's complement)
+            //we are dealing with an ascii value and use a single byte for storing the value.
+            if ( b >= 0 )
+            {
+                hash = hashFunction.update( hash, b );
+                i++;
+                continue;
+            }
+
+            //We can now have one of three situations.
+            //Byte1    Byte2    Byte3    Byte4
+            //110xxxxx 10xxxxxx
+            //1110xxxx 10xxxxxx 10xxxxxx
+            //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            //Figure out how many bytes we need by reading the number of leading bytes
+            int bytesNeeded = 0;
+            while ( b < 0 )
+            {
+                bytesNeeded++;
+                b = (byte) (b << 1);
+            }
+            int codePoint = codePoint( bytes, b, i, bytesNeeded );
+            i += bytesNeeded;
+
+            hash = hashFunction.update( hash, codePoint );
         }
 
         return hash;

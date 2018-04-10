@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 import java.util.Comparator;
 
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -69,4 +70,10 @@ public abstract class VirtualValue extends AnyValue
     public abstract VirtualValueGroup valueGroup();
 
     public abstract int compareTo( VirtualValue other, Comparator<AnyValue> comparator );
+
+    @Override
+    public long updateHash( HashFunction hashFunction, long hash )
+    {
+        return hashFunction.update( hash, hashCode() );
+    }
 }
