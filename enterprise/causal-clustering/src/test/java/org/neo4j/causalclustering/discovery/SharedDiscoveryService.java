@@ -169,7 +169,7 @@ public final class SharedDiscoveryService
         return coreMembers.keySet().stream().collect( Collectors.toMap( Function.identity(), roleMapper ) );
     }
 
-    private synchronized void notifyCoreClients()
+    private void notifyCoreClients()
     {
         listeningClients.forEach( c -> {
             c.onCoreTopologyChange( getCoreTopology( c ) );
