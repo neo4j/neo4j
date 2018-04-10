@@ -35,7 +35,7 @@ import org.neo4j.values.storable.ValueTuple;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 

@@ -69,7 +69,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
+import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 

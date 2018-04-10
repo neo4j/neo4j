@@ -26,7 +26,7 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.LabelSet;
 
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.asLongArray;
+import static org.neo4j.collection.PrimitiveIntCollections.asLongArray;
 
 public class Labels implements LabelSet
 {

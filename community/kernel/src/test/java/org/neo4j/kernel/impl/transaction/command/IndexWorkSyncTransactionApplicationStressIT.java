@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;

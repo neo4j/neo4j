@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;

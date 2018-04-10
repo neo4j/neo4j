@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 
 public abstract class HighIdAwareIterator<STORE extends CommonAbstractStore<?,?>>

@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.primitive.PrimitiveLongArrayQueue;
+import org.neo4j.collection.PrimitiveLongArrayQueue;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;

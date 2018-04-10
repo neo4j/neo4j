@@ -26,7 +26,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import java.io.Closeable;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;

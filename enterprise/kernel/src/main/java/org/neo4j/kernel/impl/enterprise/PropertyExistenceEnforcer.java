@@ -54,7 +54,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
-import static org.neo4j.collection.primitive.PrimitiveArrays.union;
+import static org.neo4j.collection.PrimitiveArrays.union;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 
 class PropertyExistenceEnforcer

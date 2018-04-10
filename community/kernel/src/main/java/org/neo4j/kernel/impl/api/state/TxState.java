@@ -82,7 +82,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.collection.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 

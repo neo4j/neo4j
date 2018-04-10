@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveArrays;
+import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;

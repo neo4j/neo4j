@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 import static java.lang.Long.max;
 import static java.lang.Long.min;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.range;
+import static org.neo4j.collection.PrimitiveLongCollections.range;
 
 /**
  * Returns ids either backwards or forwards. In both directions ids are returned batch-wise, sequentially forwards

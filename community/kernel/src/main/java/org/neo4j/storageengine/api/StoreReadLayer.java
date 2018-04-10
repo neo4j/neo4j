@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;

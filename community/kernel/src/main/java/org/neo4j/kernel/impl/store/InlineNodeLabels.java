@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.Bits;
 
 import static java.lang.Long.highestOneBit;
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;

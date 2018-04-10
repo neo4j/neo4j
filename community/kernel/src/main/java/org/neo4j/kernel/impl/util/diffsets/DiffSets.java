@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 

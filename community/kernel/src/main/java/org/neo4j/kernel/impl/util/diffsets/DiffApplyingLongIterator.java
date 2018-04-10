@@ -25,8 +25,8 @@ import java.util.Iterator;
 import java.util.Set;
 import javax.annotation.Nullable;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
 /**

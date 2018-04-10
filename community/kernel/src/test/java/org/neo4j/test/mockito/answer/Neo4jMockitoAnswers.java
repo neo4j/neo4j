@@ -25,11 +25,11 @@ import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveIntCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.Resource;
 
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
+import static org.neo4j.collection.PrimitiveLongCollections.toPrimitiveIterator;
 
 public class Neo4jMockitoAnswers
 {

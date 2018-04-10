@@ -54,6 +54,10 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
     </dependency>
+      <dependency>
+          <groupId>org.eclipse.collections</groupId>
+          <artifactId>eclipse-collections</artifactId>
+      </dependency>
 
     <!-- Test dependencies -->
     <dependency>

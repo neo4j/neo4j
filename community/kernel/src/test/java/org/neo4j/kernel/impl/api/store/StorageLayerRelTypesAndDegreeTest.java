@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.mapToSet;
+import static org.neo4j.collection.PrimitiveIntCollections.mapToSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.api.store.TestRelType.IN;
 import static org.neo4j.kernel.impl.api.store.TestRelType.LOOP;

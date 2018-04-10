@@ -51,11 +51,6 @@ the relevant Commercial Agreement.
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-primitive-collections</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>

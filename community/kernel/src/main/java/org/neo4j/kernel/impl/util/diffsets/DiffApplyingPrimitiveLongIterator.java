@@ -24,8 +24,8 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import javax.annotation.Nullable;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
 /**

@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;

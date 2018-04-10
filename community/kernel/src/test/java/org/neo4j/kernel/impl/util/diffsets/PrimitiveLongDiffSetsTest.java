@@ -25,7 +25,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
@@ -39,8 +39,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PrimitiveLongDiffSetsTest

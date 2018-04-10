@@ -23,31 +23,31 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
+import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.collection.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
+import static org.neo4j.collection.PrimitiveLongCollections.toSet;
 
 public class DiffApplyingPrimitiveLongIteratorTest
 {
     @Test
     public void iterateOnlyOverAddedElementsWhenSourceIsEmpty()
     {
-        LongIterator emptySource = emptyIterator();
+        LongIterator emptySource = ImmutableEmptyLongIterator.INSTANCE;
         LongSet added = LongHashSet.newSetWith( 1L, 2L );
         LongSet removed = LongHashSet.newSetWith( 3L );
 

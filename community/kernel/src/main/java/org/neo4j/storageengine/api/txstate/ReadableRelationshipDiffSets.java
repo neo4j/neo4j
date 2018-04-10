@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 
 /**
