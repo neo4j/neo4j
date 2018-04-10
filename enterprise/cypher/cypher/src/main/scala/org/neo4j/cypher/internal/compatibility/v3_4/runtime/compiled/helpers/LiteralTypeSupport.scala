@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.helpers
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType, ValueType}
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.IsList
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.util.v3_4.symbols._
@@ -51,6 +51,37 @@ object LiteralTypeSupport {
     case CTBoolean => BoolType
     case CTNode => LongType
     case CTRelationship => LongType
-    case _ => ReferenceType
+    case _ => ValueType
   }
+
+  def selectRepresentationType(ct: CypherType, reprTypes: Seq[RepresentationType]): RepresentationType =
+    // TODO: Handle ListReferenceType(_)?
+    reprTypes.reduce[RepresentationType]({
+      case (ReferenceType, _) =>
+        ReferenceType
+      case (_, ReferenceType) =>
+        ReferenceType
+      case (AnyValueType, _) =>
+        AnyValueType
+      case (_, AnyValueType) =>
+        AnyValueType
+      case (ValueType, _) =>
+        ValueType
+      case (_, ValueType) =>
+        ValueType
+      case (LongType, LongType) =>
+        ct match {
+          case CTNode | CTRelationship | CTInteger =>
+            LongType // All elements have the same
+          case _ =>
+            // We cannot mix longs from different value domains, so we have to fallback on ReferenceType
+            // e.g. literal list of [node, relationship, node]
+            ReferenceType
+        }
+      case (t1, t2) =>
+        if (t1 != t2)
+          toRepresentationType(ct)
+        else
+          t1
+    })
 }

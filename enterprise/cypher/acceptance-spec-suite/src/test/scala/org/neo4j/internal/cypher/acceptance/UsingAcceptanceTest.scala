@@ -81,7 +81,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | RETURN f
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.All, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"),
         expectPlansToFail = Configs.AllRulePlanners))
 

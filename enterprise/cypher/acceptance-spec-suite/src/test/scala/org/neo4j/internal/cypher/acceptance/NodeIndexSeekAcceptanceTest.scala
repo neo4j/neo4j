@@ -180,7 +180,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWith(Configs.Interpreted, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
+    val result = executeWith(Configs.All, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperators("NodeIndexSeek")
       }, Configs.AllRulePlanners))

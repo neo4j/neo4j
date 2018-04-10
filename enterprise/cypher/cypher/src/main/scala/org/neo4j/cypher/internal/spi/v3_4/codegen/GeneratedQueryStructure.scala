@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQu
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -251,12 +252,14 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     case CypherCodeGenType(symbols.ListType(_), ListReferenceType(FloatType)) => typeRef[DoubleStream]
     case CypherCodeGenType(symbols.ListType(_), ListReferenceType(BoolType)) => typeRef[IntStream]
     case CodeGenType.javaInt => typeRef[Int]
+    case CypherCodeGenType(_, _: AnyValueType) => typeRef[AnyValue]
     case _ => typeRef[Object]
   }
 
   def nullValue(cType: CodeGenType): Expression = cType match {
     case CypherCodeGenType(symbols.CTNode, LongType) => constant(-1L)
     case CypherCodeGenType(symbols.CTRelationship, LongType) => constant(-1L)
+    case CypherCodeGenType(_, _: AnyValueType) => Templates.noValue
     case _ => constant(null)
   }
 }

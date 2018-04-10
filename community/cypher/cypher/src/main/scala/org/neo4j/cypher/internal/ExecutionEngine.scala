@@ -106,6 +106,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    // TODO: Should we use ValueUtils.asMapValue here like in GraphDatabaseFacade
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
    execute(query, ValueConversion.asValues(scalaParams), context)
   }

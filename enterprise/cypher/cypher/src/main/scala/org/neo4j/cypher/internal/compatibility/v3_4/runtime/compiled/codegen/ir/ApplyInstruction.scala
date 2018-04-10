@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.util.v3_4.symbols._
 
-case class CastToCollection(expression: CodeGenExpression) extends CodeGenExpression {
+case class ApplyInstruction(id: String, instruction: Instruction) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = expression.init(generator)
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = super.init(generator)
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
-    structure.castToCollection(expression.generateExpression(structure))
+  override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
+    generator.trace(id) { body =>
+      body.incrementRows()
+      instruction.body(body)
+    }
 
-  override def nullable(implicit context: CodeGenContext) = expression.nullable
+  override def children = Seq(instruction)
 
-  override def codeGenType(implicit context: CodeGenContext) = CypherCodeGenType(CTList(CTAny), ReferenceType)
+  override protected def operatorId = Set(id)
 }

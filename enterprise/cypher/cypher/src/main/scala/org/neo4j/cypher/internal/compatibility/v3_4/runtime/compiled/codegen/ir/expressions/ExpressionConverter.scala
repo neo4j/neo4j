@@ -135,7 +135,8 @@ object ExpressionConverter {
         MapProperty(callback(mapExpression), propKeyName)
 
       case ast.Parameter(name, cypherType) =>
-        expressions.Parameter(name, context.namer.newVarName(), LiteralTypeSupport.deriveCodeGenType(cypherType))
+        // Parameters always comes as AnyValue
+        expressions.Parameter(name, context.namer.newVarName(), CypherCodeGenType(cypherType, AnyValueType))
 
       case lit: ast.IntegerLiteral => Literal(lit.value)
 
@@ -157,6 +158,21 @@ object ExpressionConverter {
         val leftOp = callback(lhs)
         val rightOp = callback(rhs)
         Subtraction(leftOp, rightOp)
+
+      case ast.Multiply(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Multiplication(leftOp, rightOp)
+
+      case ast.Divide(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Division(leftOp, rightOp)
+
+      case ast.Modulo(lhs, rhs) =>
+        val leftOp = callback(lhs)
+        val rightOp = callback(rhs)
+        Modulo(leftOp, rightOp)
 
       case ast.MapExpression(items) =>
         val map = items.map {

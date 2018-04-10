@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util
+import java.util.Comparator
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
@@ -34,16 +35,19 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods.{newNodeProxyById, newRelationshipProxyById}
 import org.neo4j.cypher.internal.util.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
-import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}
 import org.neo4j.kernel.api.SilentTokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.{AnyValue, AnyValues}
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual._
 
 /**
   * Contains common code generation constructs.
@@ -62,9 +66,21 @@ object Templates {
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
   val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
+  def createNewNodeValueFromPrimitive(proxySpi: Expression, expression: Expression) =
+    Expression.invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
+      Expression.invoke(proxySpi, newNodeProxyById, expression))
+
+  def createNewRelationshipValueFromPrimitive(proxySpi: Expression, expression: Expression) =
+    Expression.invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
+      Expression.invoke(proxySpi, newRelationshipProxyById, expression))
+
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
+
+  def asAnyValueList(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[VirtualValues], typeRef[ListValue], "list", typeRef[Array[AnyValue]]),
+    Expression.newArray(typeRef[AnyValue], values: _*))
 
   def asPrimitiveNodeStream(values: Seq[Expression]): Expression = Expression.invoke(
     methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Array[Long]]),
@@ -180,6 +196,8 @@ object Templates {
   val newRelationshipDataExtractor = Expression
     .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
+  val valueComparator = Expression.getStatic(staticField[Values, Comparator[Value]]("COMPARATOR"))
+  val anyValueComparator = Expression.getStatic(staticField[AnyValues, Comparator[AnyValue]]("COMPARATOR"))
 
   def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
     param[QueryContext]("queryContext"),

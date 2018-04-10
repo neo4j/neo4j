@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.common;
 
+import scala.AnyVal;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -35,6 +37,9 @@ import org.neo4j.cypher.internal.util.v3_4.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
 
 import static java.lang.String.format;
 
@@ -110,7 +115,16 @@ public class CypherOrderability
         {
             return -1;
         }
-
+        else if ( lhs instanceof AnyValue )
+        {
+            AnyValue rhsValue = (rhs instanceof AnyValue) ? (AnyValue) rhs : ValueUtils.of( rhs );
+            return AnyValues.COMPARATOR.compare( (AnyValue) lhs, rhsValue );
+        }
+        else if ( rhs instanceof AnyValue )
+        {
+            AnyValue lhsValue = (lhs instanceof AnyValue) ? (AnyValue) lhs : ValueUtils.of( lhs );
+            return AnyValues.COMPARATOR.compare( lhsValue, (AnyValue) rhs );
+        }
         // Compare the types
         // TODO: Test coverage for the Orderability CIP
         SuperType leftType = SuperType.ofValue( lhs );

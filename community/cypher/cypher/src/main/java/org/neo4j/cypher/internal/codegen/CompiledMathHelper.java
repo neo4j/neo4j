@@ -25,6 +25,16 @@ import java.util.List;
 
 import org.neo4j.cypher.internal.util.v3_4.ArithmeticException;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations
@@ -46,13 +56,48 @@ public final class CompiledMathHelper
      */
     public static Object add( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null )
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
         }
 
         //List addition
-        if ( lhs instanceof List<?> && rhs instanceof List<?> )
+        boolean lhsIsListValue = lhs instanceof ListValue;
+        if ( lhsIsListValue && rhs instanceof ListValue )
+        {
+            return VirtualValues.concat( (ListValue) lhs, (ListValue) rhs );
+        }
+        else if ( lhsIsListValue )
+        {
+            if ( rhs instanceof List<?> )
+            {
+                return VirtualValues.concat( (ListValue) lhs, ValueUtils.asListValue( (List<?>) rhs ) );
+            }
+            else if ( rhs instanceof AnyValue )
+            {
+                return VirtualValues.appendToList( (ListValue) lhs, (AnyValue) rhs );
+            }
+            else
+            {
+                return VirtualValues.appendToList( (ListValue) lhs, ValueUtils.of( rhs ) );
+            }
+        }
+        else if ( rhs instanceof ListValue )
+        {
+            if ( lhs instanceof List<?> )
+            {
+                return VirtualValues.concat( ValueUtils.asListValue( (List<?>) lhs ), (ListValue) rhs );
+            }
+            else if ( lhs instanceof AnyValue )
+            {
+                return VirtualValues.prependToList( (ListValue) rhs, (AnyValue) lhs );
+            }
+            else
+            {
+                return VirtualValues.prependToList( (ListValue) rhs, ValueUtils.of( lhs ) );
+            }
+        }
+        else if ( lhs instanceof List<?> && rhs instanceof List<?> )
         {
             List<?> lhsList = (List<?>) lhs;
             List<?> rhsList = (List<?>) rhs;
@@ -78,12 +123,50 @@ public final class CompiledMathHelper
             return result;
         }
 
-        if ( lhs instanceof String || rhs instanceof String )
+        // String addition
+        if ( lhs instanceof TextValue )
         {
-            return String.valueOf( lhs ) + String.valueOf( rhs );
+            lhs = ((TextValue) lhs).stringValue();
+        }
+        if ( rhs instanceof TextValue )
+        {
+            rhs = ((TextValue) rhs).stringValue();
+        }
+        if ( lhs instanceof String )
+        {
+            if ( rhs instanceof Value )
+            {
+                return String.valueOf( lhs ) + ((Value) rhs).prettyPrint();
+            }
+            else
+            {
+                return String.valueOf( lhs ) + String.valueOf( rhs );
+            }
+        }
+        if ( rhs instanceof String )
+        {
+            if ( lhs instanceof Value )
+            {
+                return ((Value) lhs).prettyPrint() + String.valueOf( rhs );
+            }
+            else
+            {
+                return lhs.toString() + String.valueOf( rhs );
+            }
         }
 
         // array addition
+
+        // Extract arrays from ArrayValues
+        if ( lhs instanceof ArrayValue )
+        {
+            lhs = ((ArrayValue) lhs).asObject();
+        }
+        if ( rhs instanceof ArrayValue )
+        {
+            rhs = ((ArrayValue) rhs).asObject();
+        }
+
         Class<?> lhsClass = lhs.getClass();
         Class<?> rhsClass = rhs.getClass();
         if ( lhsClass.isArray() && rhsClass.isArray() )
@@ -99,27 +182,42 @@ public final class CompiledMathHelper
             return addObjectWithArray( lhs, rhs );
         }
 
-        if ( lhs instanceof Number && rhs instanceof Number )
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
-            if ( lhs instanceof Double || rhs instanceof Double ||
-                 lhs instanceof Float || rhs instanceof Float )
+            return ((NumberValue) lhs).plus( (NumberValue) rhs);
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
+        }
+
+        if ( lhs instanceof Number )
+        {
+            if ( rhs instanceof Number )
             {
-                return ((Number) lhs).doubleValue() + ((Number) rhs).doubleValue();
-            }
-            if ( lhs instanceof Long || rhs instanceof Long ||
-                 lhs instanceof Integer || rhs instanceof Integer ||
-                 lhs instanceof Short || rhs instanceof Short ||
-                 lhs instanceof Byte || rhs instanceof Byte )
-            {
-                try
+                if ( lhs instanceof Double || rhs instanceof Double ||
+                     lhs instanceof Float || rhs instanceof Float )
+                {
+                    return ((Number) lhs).doubleValue() + ((Number) rhs).doubleValue();
+                }
+                if ( lhs instanceof Long || rhs instanceof Long ||
+                     lhs instanceof Integer || rhs instanceof Integer ||
+                     lhs instanceof Short || rhs instanceof Short ||
+                     lhs instanceof Byte || rhs instanceof Byte )
                 {
                     return Math.addExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
-                }
-                catch ( java.lang.ArithmeticException e )
-                {
-                    throw new ArithmeticException(
-                            String.format( "result of %d + %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
+                    // Remap java.lang.ArithmeticException later instead of:
+                    //catch ( java.lang.ArithmeticException e )
+                    //{
+                    //    throw new ArithmeticException(
+                    //            String.format( "result of %d + %d cannot be represented as an integer",
+                    //                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
+                    //}
                 }
             }
             // other numbers we cannot add
@@ -131,9 +229,23 @@ public final class CompiledMathHelper
 
     public static Object subtract( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null )
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).minus( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
         }
 
         if ( lhs instanceof Number && rhs instanceof Number )
@@ -148,29 +260,41 @@ public final class CompiledMathHelper
                  lhs instanceof Short || rhs instanceof Short ||
                  lhs instanceof Byte || rhs instanceof Byte )
             {
-                try
-                {
-                    return Math.subtractExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
-                }
-                catch ( java.lang.ArithmeticException e )
-                {
-                    throw new ArithmeticException(
-                            String.format( "result of %d - %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
-                }
+                return Math.subtractExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
+                // Remap java.lang.ArithmeticException later instead of:
+                //catch ( java.lang.ArithmeticException e )
+                //{
+                //    throw new ArithmeticException(
+                //            String.format( "result of %d - %d cannot be represented as an integer",
+                //                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
+                //}
             }
             // other numbers we cannot subtract
         }
 
-        throw new CypherTypeException( "Cannot add " + lhs.getClass().getSimpleName() +
+        throw new CypherTypeException( "Cannot subtract " + lhs.getClass().getSimpleName() +
                                        " and " + rhs.getClass().getSimpleName(), null );
     }
 
     public static Object multiply( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null )
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            return ((NumberValue) lhs).times( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
         }
 
         if ( lhs instanceof Number && rhs instanceof Number )
@@ -185,16 +309,14 @@ public final class CompiledMathHelper
                  lhs instanceof Short || rhs instanceof Short ||
                  lhs instanceof Byte || rhs instanceof Byte )
             {
-                try
-                {
-                    return Math.multiplyExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
-                }
-                catch ( java.lang.ArithmeticException e )
-                {
-                    throw new ArithmeticException(
-                            String.format( "result of %d * %d cannot be represented as an integer",
-                                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
-                }
+                return Math.multiplyExact( ((Number) lhs).longValue(), ((Number) rhs).longValue() );
+                // Remap java.lang.ArithmeticException later instead of:
+                //catch ( java.lang.ArithmeticException e )
+                //{
+                //    throw new ArithmeticException(
+                //            String.format( "result of %d * %d cannot be represented as an integer",
+                //                    ((Number) lhs).longValue(), ((Number) rhs).longValue() ), e );
+                //}
             }
             // other numbers we cannot multiply
         }
@@ -205,9 +327,31 @@ public final class CompiledMathHelper
 
     public static Object divide( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null )
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
+        }
+
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
+        {
+            if ( rhs instanceof IntegralValue )
+            {
+                long right = ((IntegralValue) rhs).longValue();
+                if ( right == 0 )
+                {
+                    throw new ArithmeticException( "/ by zero", null );
+                }
+            }
+            return ((NumberValue) lhs).divideBy( (NumberValue) rhs );
+        }
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
         }
 
         if ( lhs instanceof Number && rhs instanceof Number )
@@ -217,10 +361,6 @@ public final class CompiledMathHelper
             {
                 double left = ((Number) lhs).doubleValue();
                 double right = ((Number) rhs).doubleValue();
-                if ( Math.abs( right ) < EPSILON )
-                {
-                    throw new ArithmeticException( "/ by zero", null );
-                }
                 return left / right;
             }
             if ( lhs instanceof Long || rhs instanceof Long ||
@@ -245,25 +385,44 @@ public final class CompiledMathHelper
 
     public static Object modulo( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null )
+        if ( lhs == null || rhs == null || lhs == Values.NO_VALUE || rhs == Values.NO_VALUE )
         {
             return null;
         }
 
+        // Handle NumberValues
+        if ( lhs instanceof NumberValue )
+        {
+            lhs = ((NumberValue) lhs).asObject();
+        }
+        if ( rhs instanceof NumberValue )
+        {
+            rhs = ((NumberValue) rhs).asObject();
+        }
+
         if ( lhs instanceof Number && rhs instanceof Number )
         {
-            if ( lhs instanceof Double || rhs instanceof Double )
+            if ( lhs instanceof Double || rhs instanceof Double ||
+                    lhs instanceof Float || rhs instanceof Float )
             {
-                return ((Number) lhs).doubleValue() % ((Number) rhs).doubleValue();
+                double left = ((Number) lhs).doubleValue();
+                double right = ((Number) rhs).doubleValue();
+                return left % right;
             }
-            else if ( lhs instanceof Float || rhs instanceof Float )
+            if ( lhs instanceof Long || rhs instanceof Long ||
+                    lhs instanceof Integer || rhs instanceof Integer ||
+                    lhs instanceof Short || rhs instanceof Short ||
+                    lhs instanceof Byte || rhs instanceof Byte )
             {
-                return ((Number) lhs).floatValue() % ((Number) rhs).floatValue();
+                long left = ((Number) lhs).longValue();
+                long right = ((Number) rhs).longValue();
+                if ( right == 0 )
+                {
+                    throw new ArithmeticException( "/ by zero", null );
+                }
+                return left % right;
             }
-            else
-            {
-                return ((Number) lhs).longValue() % ((Number) rhs).longValue();
-            }
+            // other numbers we cannot divide
         }
 
         throw new CypherTypeException( "Cannot modulo " + lhs.getClass().getSimpleName() +
@@ -275,6 +434,10 @@ public final class CompiledMathHelper
         if ( value == null )
         {
             throw new CypherTypeException( "Expected a numeric value but got null", null );
+        }
+        if ( value instanceof NumberValue )
+        {
+            value = ((NumberValue) value).asObject();
         }
         if ( value instanceof Number )
         {
@@ -294,11 +457,17 @@ public final class CompiledMathHelper
         {
             throw new CypherTypeException( "Expected a numeric value but got null", null );
         }
+        if ( value instanceof NumberValue )
+        {
+            NumberValue number = (NumberValue) value;
+            return number.longValue();
+        }
         if ( value instanceof Number )
         {
             Number number = (Number) value;
             return number.longValue();
         }
+
         throw new CypherTypeException( String.format( "Expected a numeric value but got %s", value.toString() ), null );
     }
 

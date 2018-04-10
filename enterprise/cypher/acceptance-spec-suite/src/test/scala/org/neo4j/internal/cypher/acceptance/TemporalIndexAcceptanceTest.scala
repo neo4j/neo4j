@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{ZoneId, ZoneOffset}
+import java.time._
 
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 import org.neo4j.values.storable._
@@ -29,36 +29,44 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
   override val cypherComparisonSupport = true
 
   test("should seek") {
-    val conf =  Configs.Interpreted - Configs.OldAndRule
     createIndex()
-    assertSeek(DateValue.epochDate(10000), conf)
-    assertSeek(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC), conf)
-    assertSeek(LocalDateTimeValue.localDateTime(10000, 100), conf)
-    assertSeek(TimeValue.time(101010, ZoneOffset.UTC), conf)
-    assertSeek(LocalTimeValue.localTime(12345), conf)
-    assertSeek(DurationValue.duration(41, 32, 23, 14), Configs.All - Configs.OldAndRule)
+    assertSeek(DateValue.epochDate(10000))
+    assertSeek(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC))
+    assertSeek(LocalDateTimeValue.localDateTime(10000, 100))
+    assertSeek(TimeValue.time(101010, ZoneOffset.UTC))
+    assertSeek(LocalTimeValue.localTime(12345))
+    assertSeek(DurationValue.duration(41, 32, 23, 14))
   }
 
   test("should seek for arrays") {
-    val conf =  Configs.Interpreted - Configs.OldAndRule
     createIndex()
+
+    // Length 1
+    assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy())))
+    assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy())))
+    assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy())))
+    assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy())))
+    assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy())))
+
+    // Length 2
     assertSeek(Values.dateArray(Array(DateValue.epochDate(10000).asObjectCopy(),
-                                      DateValue.epochDate(20000).asObjectCopy())), conf)
+                                      DateValue.epochDate(20000).asObjectCopy())))
 
     assertSeek(Values.dateTimeArray(Array(DateTimeValue.datetime(10000, 100, ZoneOffset.UTC).asObjectCopy(),
-                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())), conf)
+                                           DateTimeValue.datetime(10000, 200, ZoneOffset.UTC).asObjectCopy())))
 
     assertSeek(Values.localDateTimeArray(Array(LocalDateTimeValue.localDateTime(10000, 100).asObjectCopy(),
-                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())), conf)
+                                               LocalDateTimeValue.localDateTime(10000, 200).asObjectCopy())))
 
     assertSeek(Values.timeArray(Array(TimeValue.time(101010, ZoneOffset.UTC).asObjectCopy(),
-                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())), conf)
+                                      TimeValue.time(202020, ZoneOffset.UTC).asObjectCopy())))
 
     assertSeek(Values.localTimeArray(Array(LocalTimeValue.localTime(12345).asObjectCopy(),
-                                           LocalTimeValue.localTime(23456).asObjectCopy())), conf)
+                                           LocalTimeValue.localTime(23456).asObjectCopy())))
 
     assertSeek(Values.durationArray(Array(DurationValue.duration(41, 32, 23, 14).asObjectCopy(),
-                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())), conf)
+                                          DurationValue.duration(12, 34, 56, 78).asObjectCopy())))
   }
 
   test("should distinguish between duration array and string array") {
@@ -143,13 +151,9 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     result.toList should equal(List(Map("n" -> node2)))
   }
 
-  def assertSeek(value: Value, config: TestConfiguration): Unit = {
+  def assertSeek(value: Value): Unit = {
     val node = createIndexedNode(value)
-    val query = s"MATCH (n:$LABEL) WHERE n.$PROPERTY = $$param RETURN n"
-    val result = executeWith(config, query, params = Map("param" -> value.asObject()),
-        planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"))
-      )
-    result.toList should equal(List(Map("n"-> node)))
+    assertSeekMatchFor(value, node)
   }
 
   def assertRangeScan(v1: Value, v2: Value, v3: Value, v4: Value): Unit = {

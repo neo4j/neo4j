@@ -92,9 +92,18 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         case e: InternalCypherException =>
           f(e)
           throw e.mapToPublic(exceptionHandler)
+
         case e: ValuesException =>
           f(e)
           throw mapToCypher(e)
+
+        // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
+        // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
+        //  which is not optimal but hopefully rare)
+        case e: java.lang.ArithmeticException =>
+          f(e)
+          throw exceptionHandler.arithmeticException(e.getMessage, e)
+
         case e: Throwable =>
           f(e)
           throw e
