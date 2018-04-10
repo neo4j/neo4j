@@ -59,7 +59,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Na
         return 0.1;
     }
 
-    abstract IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive );
+    abstract IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive );
 
     abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 

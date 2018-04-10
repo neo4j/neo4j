@@ -38,8 +38,8 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
 {
     private static final DurationValue[] ALL_EXTREME_VALUES = new DurationValue[]
     {
-            DurationValue.duration( -999999999L * 12, 0, 0, 0),
-            DurationValue.duration( 999999999L * 12, 0, 0, 0),
+            DurationValue.duration( -999999999L * 12 * 2, 0, 0, 0),
+            DurationValue.duration( 999999999L * 12 * 2, 0, 0, 0),
             DurationValue.duration( 0, -999999999L * 12 * 28, 0, 0),
             DurationValue.duration( 0, 999999999L * 12 * 28, 0, 0),
             DurationValue.duration( 0, 0, Long.MIN_VALUE, 0),
@@ -74,9 +74,9 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationSchemaKey, Na
     }
 
     @Override
-    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, (DurationValue) from, fromInclusive, (DurationValue) to, toInclusive );
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     @Override

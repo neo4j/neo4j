@@ -32,7 +32,7 @@ public class DurationUniqueSchemaIndexAccessorTest extends NativeSchemaIndexAcce
     @Override
     NativeSchemaIndexAccessor<DurationSchemaKey,NativeSchemaValue> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.LOCAL_DATE_TIME );
+        TemporalIndexFiles.FileLayout<DurationSchemaKey> fileLayout = new TemporalIndexFiles.FileLayout<>( getIndexFile(), layout, ValueGroup.DURATION );
         return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, IMMEDIATE, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 

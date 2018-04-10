@@ -121,9 +121,11 @@ public class EnvelopeTest
         assertArrayEquals( expectedTo, envelope.max, 0 );
 
         // Expected to change
-        to = new double[] {100, 0.1};
+        final double bigValue = 100;
+        final double smallValue = 0.000000000000000001;
+        to = new double[] {bigValue, smallValue};
         Envelope envelope2 = new Envelope( from, to ).withSideRatioNotTooSmall();
-        double[] expectedTo2 = new double[] {100, 1};
+        double[] expectedTo2 = new double[] {bigValue, bigValue / Envelope.MAXIMAL_ENVELOPE_SIDE_RATIO};
         assertArrayEquals( expectedFrom, envelope2.min , 0);
         assertArrayEquals( expectedTo2, envelope2.max, 0.00001 );
     }
@@ -143,9 +145,11 @@ public class EnvelopeTest
         assertArrayEquals( expectedTo, envelope.max, 0 );
 
         // Expected to change
-        to = new double[] {100, 0.1, 12, 0.01};
+        final double bigValue = 107;
+        final double smallValue = 0.00000000000000000123;
+        to = new double[] {bigValue, smallValue, 12, smallValue * 0.1};
         Envelope envelope2 = new Envelope( from, to ).withSideRatioNotTooSmall();
-        double[] expectedTo2 = new double[] {100, 1, 12, 1};
+        double[] expectedTo2 = new double[] {bigValue, bigValue / Envelope.MAXIMAL_ENVELOPE_SIDE_RATIO, 12, bigValue / Envelope.MAXIMAL_ENVELOPE_SIDE_RATIO};
         assertArrayEquals( expectedFrom, envelope2.min , 0);
         assertArrayEquals( expectedTo2, envelope2.max, 0.00001 );
     }

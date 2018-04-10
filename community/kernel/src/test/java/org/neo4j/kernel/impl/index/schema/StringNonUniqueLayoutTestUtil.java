@@ -42,10 +42,4 @@ class StringNonUniqueLayoutTestUtil extends StringLayoutTestUtil
     {
         return someUpdatesWithDuplicateValues();
     }
-
-    @Override
-    protected double fractionDuplicates()
-    {
-        return 0.1;
-    }
 }

@@ -53,7 +53,7 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     }
 
     @Override
-    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
         return delegate.rangeQuery( from, fromInclusive, to, toInclusive );
     }
@@ -85,6 +85,6 @@ class UniqueLayoutTestUtil<KEY extends NativeSchemaKey<KEY>, VALUE extends Nativ
     @Override
     protected double fractionDuplicates()
     {
-        return 0;
+        return 0.0;
     }
 }

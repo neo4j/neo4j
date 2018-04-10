@@ -70,9 +70,9 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
     }
 
     @Override
-    IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive )
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
     {
-        return IndexQuery.range( 0, (DateValue) from, fromInclusive, (DateValue) to, toInclusive );
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
     }
 
     @Override

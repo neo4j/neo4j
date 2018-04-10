@@ -42,10 +42,4 @@ class NumberNonUniqueLayoutTestUtil extends NumberLayoutTestUtil
     {
         return someUpdatesWithDuplicateValues();
     }
-
-    @Override
-    protected double fractionDuplicates()
-    {
-        return 0.1;
-    }
 }

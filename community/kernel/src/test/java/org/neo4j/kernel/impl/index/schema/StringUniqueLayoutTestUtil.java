@@ -46,6 +46,6 @@ class StringUniqueLayoutTestUtil extends StringLayoutTestUtil
     @Override
     protected double fractionDuplicates()
     {
-        return 0;
+        return 0.0;
     }
 }

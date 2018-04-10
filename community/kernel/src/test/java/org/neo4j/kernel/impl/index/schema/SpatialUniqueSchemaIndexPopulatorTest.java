@@ -39,7 +39,7 @@ public class SpatialUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInd
     @Override
     NativeSchemaIndexPopulator<SpatialSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        fileLayout = new SpatialIndexFiles.SpatialFileLayout( CoordinateReferenceSystem.WGS84, settings, super.getIndexFile() );
+        fileLayout = new SpatialIndexFiles.SpatialFileLayout( crs, settings, super.getIndexFile() );
         return new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, indexId, samplingConfig,
                 new StandardConfiguration() );
     }
