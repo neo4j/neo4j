@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -30,15 +29,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 
-class StoreResource implements Closeable
+class StoreResource
 {
     private final File file;
     private final String path;
     private final int recordSize;
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
-
-    private ReadableByteChannel channel;
 
     StoreResource( File file, String relativePath, int recordSize, PageCache pageCache, FileSystemAbstraction fs )
     {
@@ -64,16 +61,6 @@ class StoreResource implements Closeable
         }
 
         return fs.open( file, "r" );
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        if ( channel != null )
-        {
-            channel.close();
-            channel = null;
-        }
     }
 
     public String path()
@@ -110,6 +97,6 @@ class StoreResource implements Closeable
     @Override
     public String toString()
     {
-        return "StoreResource{" + "path='" + path + '\'' + ", channel=" + channel + ", recordSize=" + recordSize + '}';
+        return "StoreResource{" + "path='" + path + '\'' + ", recordSize=" + recordSize + '}';
     }
 }
