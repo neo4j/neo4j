@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan => LogicalPlanV3_3}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => plansV3_3}
-import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
+import org.neo4j.cypher.internal.v3_4.expressions.{LogicalVariable => LogicalVariableV3_4, Expression => ExpressionV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
@@ -89,6 +89,18 @@ object LogicalPlanConverter {
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
+
+        case (inp: astV3_3.NodePattern, children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3.ast", "v3_4.expressions", inp, children,
+            None, classOf[Option[LogicalVariableV3_4]],
+            helpers.as3_4(inp.position), classOf[InputPosition]
+          )
+        case (inp: astV3_3.RelationshipPattern, children: Seq[AnyRef]) =>
+          convertVersion("frontend.v3_3.ast", "v3_4.expressions", inp, children,
+            None, classOf[Option[LogicalVariableV3_4]],
+            helpers.as3_4(inp.position), classOf[InputPosition]
+          )
+
         case (mp: astV3_3.MapProjection, children: Seq[AnyRef]) =>
           expressionsV3_4.MapProjection(children(0).asInstanceOf[expressionsV3_4.Variable],
             children(1).asInstanceOf[Seq[expressionsV3_4.MapProjectionElement]])(helpers.as3_4(mp.position))
@@ -281,7 +293,13 @@ object LogicalPlanConverter {
     Try(constructor.newInstance(ctorArgs: _*).asInstanceOf[AnyRef]) match {
       case Success(i) => i
       case Failure(e) =>
-        throw new IllegalArgumentException(s"Could not construct ${thingClass.getSimpleName} with arguments ${ctorArgs.toList}", e)
+        throw new IllegalArgumentException(
+          s"""
+          |Could not construct ${thingClass.getSimpleName} with arguments ${ctorArgs.toList}
+          |Expected constructor argument types: ${constructor.getParameterTypes.map(_.getSimpleName).mkString(", ")}
+          |""".stripMargin,
+          e
+        )
     }
   }
 }
