@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 public class Envelope
 {
-    private static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100;
+    private static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 1000_000_000;
 
     protected final double[] min;
     protected final double[] max;
