@@ -264,11 +264,11 @@ public class ExecutorBoltSchedulerTest
 
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        when ( connection.hasPendingJobs() ).thenAnswer( inv ->
+        when( connection.hasPendingJobs() ).thenAnswer( inv ->
         {
             executeBatchCompletionCount.incrementAndGet();
             return false;
-        });
+        } );
         when( connection.processNextBatch() ).thenAnswer( inv ->
         {
             poolThread.set( Thread.currentThread() );
