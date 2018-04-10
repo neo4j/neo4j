@@ -23,7 +23,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,7 +31,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,9 +62,11 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.wrapWithNormalOutput;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 @RunWith( Parameterized.class )
@@ -204,6 +207,36 @@ public class OnlineBackupCommandHaIT
                         "--name=" + backupName ) );
     }
 
+    @Test
+    public void backupDoesNotDisplayExceptionWhenSuccessful() throws Exception
+    {
+        // given
+        String backupName = "customPort" + recordFormat;
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+
+        // and
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
+
+        // and
+        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
+        PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
+
+        // when
+        assertEquals(
+                0,
+                runBackupTool( outputStream, errorStream,
+                        "--from", "127.0.0.1:" + backupPort,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=" + backupName ) );
+
+        // then
+        assertFalse( byteArrayErrorStream.toString().toLowerCase().contains( "exception" ) );
+        assertFalse( byteArrayOutputStream.toString().toLowerCase().contains( "exception" ) );
+    }
+
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
     {
         while ( continueFlagReference.get() )
@@ -235,6 +268,11 @@ public class OnlineBackupCommandHaIT
         db.setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
         db.ensureStarted();
         createSomeData( db );
+    }
+
+    private static int runBackupTool( PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
+    {
+        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), outputStream, errorStream, false, args );
     }
 
     private static int runBackupTool( String... args )

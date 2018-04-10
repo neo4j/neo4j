@@ -63,7 +63,7 @@ class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupS
 
         try
         {
-            backupDelegator.copy( fromAddress,storeId, desiredBackupLocation );
+            backupDelegator.copy( fromAddress, storeId, desiredBackupLocation );
             return new Fallible<>( BackupStageOutcome.SUCCESS, null );
         }
         catch ( StoreCopyFailedException e )

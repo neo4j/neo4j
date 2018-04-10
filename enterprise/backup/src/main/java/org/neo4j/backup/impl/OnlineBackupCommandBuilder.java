@@ -64,6 +64,13 @@ public class OnlineBackupCommandBuilder
     private Boolean consistencyCheckLabel;
     private Boolean consistencyCheckOwners;
     private OutputStream output;
+    private Optional<String[]> rawArgs = Optional.empty();
+
+    public OnlineBackupCommandBuilder withRawArgs( String... args )
+    {
+        rawArgs = Optional.of( args );
+        return this;
+    }
 
     public OnlineBackupCommandBuilder withHost( String host )
     {
@@ -147,13 +154,20 @@ public class OnlineBackupCommandBuilder
     {
         File targetLocation = new File( neo4jHome, backupName );
         String[] args;
-        try
+        if ( rawArgs.isPresent() )
         {
-            args = resolveArgs( targetLocation );
+            args = rawArgs.get();
         }
-        catch ( IOException e )
+        else
         {
-            throw new CommandFailed( "Failed to resolve arguments", e );
+            try
+            {
+                args = resolveArgs( targetLocation );
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailed( "Failed to resolve arguments", e );
+            }
         }
         new OnlineBackupCommandProvider()
                 .create( neo4jHome.toPath(),
