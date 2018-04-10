@@ -21,6 +21,7 @@ package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Assert;
 import org.junit.Test;
@@ -117,7 +118,7 @@ public class PrimitiveLongCollectionsTest
     {
         AtomicInteger counter = new AtomicInteger();
         CountingPrimitiveLongIteratorResource itr = new CountingPrimitiveLongIteratorResource(
-                PrimitiveLongCollections.emptyIterator(), counter );
+                ImmutableEmptyLongIterator.INSTANCE, counter );
         assertEquals( PrimitiveLongCollections.single( itr, 2 ), 2 );
         assertEquals( 1, counter.get() );
     }

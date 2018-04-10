@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -41,7 +42,7 @@ public class NodeUpdatesIteratorTest
     public void iterateOverEmptyNodeIds()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
-        LongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
+        LongIterator emptyIterator = ImmutableEmptyLongIterator.INSTANCE;
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, emptyIterator );
         assertFalse( nodeUpdatesIterator.hasNext() );
     }

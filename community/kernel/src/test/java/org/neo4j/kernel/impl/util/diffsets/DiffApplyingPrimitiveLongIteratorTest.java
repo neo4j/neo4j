@@ -97,7 +97,7 @@ public class DiffApplyingPrimitiveLongIteratorTest
     public void closeResource()
     {
         Resource resource = Mockito.mock( Resource.class );
-        PrimitiveLongResourceIterator source = resourceIterator( emptyIterator(), resource );
+        PrimitiveLongResourceIterator source = resourceIterator( ImmutableEmptyLongIterator.INSTANCE, resource );
 
         PrimitiveLongResourceIterator iterator = DiffApplyingPrimitiveLongIterator.augment( source, LongSets.immutable.empty(), LongSets.immutable.empty() );
 

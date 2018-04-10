@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.state;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
@@ -138,7 +139,7 @@ public class RelationshipChangesForNode
                     {
                         if ( !diff.hasNext() )
                         {
-                            return PrimitiveLongCollections.emptyIterator();
+                            return ImmutableEmptyLongIterator.INSTANCE;
                         }
 
                         return new PrimitiveLongCollections.PrimitiveLongBaseIterator()
@@ -531,11 +532,11 @@ public class RelationshipChangesForNode
         switch ( direction )
         {
         case INCOMING:
-            return incoming != null ? primitiveIdsByType( incoming, type ) : emptyIterator();
+            return incoming != null ? primitiveIdsByType( incoming, type ) : ImmutableEmptyLongIterator.INSTANCE;
         case OUTGOING:
-            return outgoing != null ? primitiveIdsByType( outgoing, type ) : emptyIterator();
+            return outgoing != null ? primitiveIdsByType( outgoing, type ) : ImmutableEmptyLongIterator.INSTANCE;
         case LOOP:
-            return loops != null ? primitiveIdsByType( loops, type ) : emptyIterator();
+            return loops != null ? primitiveIdsByType( loops, type ) : ImmutableEmptyLongIterator.INSTANCE;
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }
@@ -543,14 +544,14 @@ public class RelationshipChangesForNode
 
     private LongIterator primitiveIds( Map<Integer, Set<Long>> map )
     {
-        return map == null ? emptyIterator() :
+        return map == null ? ImmutableEmptyLongIterator.INSTANCE :
                toPrimitiveIterator( Iterators.flatMap( Set::iterator, map.values().iterator() ) );
     }
 
     private LongIterator primitiveIdsByType( Map<Integer, Set<Long>> map, int type )
     {
         Set<Long> relationships = map.get( type );
-        return relationships == null ? emptyIterator() : toPrimitiveIterator( relationships.iterator() );
+        return relationships == null ? ImmutableEmptyLongIterator.INSTANCE : toPrimitiveIterator( relationships.iterator() );
     }
 
     private LongIterator getRelationships( Direction direction,
@@ -560,13 +561,13 @@ public class RelationshipChangesForNode
         {
         case INCOMING:
             return incoming != null || loops != null ? diffStrategy.getPrimitiveIterator(
-                    diffs( types, incoming, loops ) ) : emptyIterator();
+                    diffs( types, incoming, loops ) ) : ImmutableEmptyLongIterator.INSTANCE;
         case OUTGOING:
             return outgoing != null || loops != null ? diffStrategy.getPrimitiveIterator(
-                    diffs( types, outgoing, loops ) ) : emptyIterator();
+                    diffs( types, outgoing, loops ) ) : ImmutableEmptyLongIterator.INSTANCE;
         case BOTH:
             return outgoing != null || incoming != null || loops != null ? diffStrategy.getPrimitiveIterator(
-                    diffs( types, outgoing, incoming, loops ) ) : emptyIterator();
+                    diffs( types, outgoing, incoming, loops ) ) : ImmutableEmptyLongIterator.INSTANCE;
         default:
             throw new IllegalArgumentException( "Unknown direction: " + direction );
         }

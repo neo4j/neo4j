@@ -20,10 +20,10 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
@@ -94,7 +94,7 @@ public class IdMappers
         @Override
         public LongIterator leftOverDuplicateNodesIds()
         {
-            return PrimitiveLongCollections.emptyIterator();
+            return ImmutableEmptyLongIterator.INSTANCE;
         }
     }
 

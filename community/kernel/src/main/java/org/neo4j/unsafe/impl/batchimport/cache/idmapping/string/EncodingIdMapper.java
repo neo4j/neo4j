@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -886,7 +887,7 @@ public class EncodingIdMapper implements IdMapper
     {
         if ( numberOfCollisions == 0 )
         {
-            return PrimitiveLongCollections.emptyIterator();
+            return ImmutableEmptyLongIterator.INSTANCE;
         }
 
         // Scans duplicate marks in tracker cache. There is no bit left in dataCache to store this bit so we use
