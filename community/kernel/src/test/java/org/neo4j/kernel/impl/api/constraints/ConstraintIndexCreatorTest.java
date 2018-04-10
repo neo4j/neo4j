@@ -108,7 +108,6 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( INDEX_ID, indexId );
-        verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
         verifyNoMoreInteractions( schemaRead );
@@ -288,7 +287,6 @@ public class ConstraintIndexCreatorTest
         // then
         assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
                 kernel.transactions.size() );
-        verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( schemaRead ).index( LABEL_ID, PROPERTY_KEY_ID );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );

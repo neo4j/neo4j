@@ -489,6 +489,22 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public long nodesGetCount( )
+    {
+        ktx.assertOpen();
+        long base = storeReadLayer.nodesGetCount();
+        return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedNodes().delta() : base;
+    }
+
+    @Override
+    public long relationshipsGetCount( )
+    {
+        ktx.assertOpen();
+        long base = storeReadLayer.relationshipsGetCount();
+        return ktx.hasTxStateWithChanges() ? base + ktx.txState().addedAndRemovedRelationships().delta() : base;
+    }
+
+    @Override
     public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {

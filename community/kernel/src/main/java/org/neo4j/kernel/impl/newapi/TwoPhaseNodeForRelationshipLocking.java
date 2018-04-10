@@ -26,12 +26,13 @@ import org.neo4j.collection.primitive.PrimitiveArrays;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
@@ -43,15 +44,19 @@ class TwoPhaseNodeForRelationshipLocking
     private long firstRelId;
     private long[] sortedNodeIds;
     private static final long[] EMPTY = new long[0];
+    private final Locks.Client locks;
+    private final LockTracer lockTracer;
 
     TwoPhaseNodeForRelationshipLocking(
-            ThrowingConsumer<Long,KernelException> relIdAction )
+            ThrowingConsumer<Long,KernelException> relIdAction, Locks.Client locks,
+            LockTracer lockTracer )
     {
         this.relIdAction = relIdAction;
+        this.locks = locks;
+        this.lockTracer = lockTracer;
     }
 
-    void lockAllNodesAndConsumeRelationships( long nodeId, final KernelTransactionImplementation transaction )
-            throws KernelException
+    void lockAllNodesAndConsumeRelationships( long nodeId, final Transaction transaction, NodeCursor nodes ) throws KernelException
     {
         boolean retry;
         do
@@ -60,12 +65,11 @@ class TwoPhaseNodeForRelationshipLocking
             firstRelId = NO_SUCH_RELATIONSHIP;
 
             // lock all the nodes involved by following the node id ordering
-            collectAndSortNodeIds( nodeId, transaction );
-            lockAllNodes( transaction, sortedNodeIds );
+            collectAndSortNodeIds( nodeId, transaction, nodes );
+            lockAllNodes( sortedNodeIds );
 
             // perform the action on each relationship, we will retry if the the relationship iterator contains
             // new relationships
-            NodeCursor nodes = transaction.nodeCursor();
             org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
             read.singleNode( nodeId, nodes );
             //if the node is not there, someone else probably deleted it, just ignore
@@ -76,7 +80,7 @@ class TwoPhaseNodeForRelationshipLocking
                 boolean first = true;
                 while ( rels.next() && !retry )
                 {
-                    retry = performAction( transaction, rels.relationshipReference(), first );
+                    retry = performAction( rels.relationshipReference(), first );
                     first = false;
                 }
             }
@@ -84,12 +88,11 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry );
     }
 
-    private void collectAndSortNodeIds( long nodeId, KernelTransaction transaction ) throws EntityNotFoundException
+    private void collectAndSortNodeIds( long nodeId, Transaction transaction, NodeCursor nodes ) throws EntityNotFoundException
     {
         PrimitiveLongSet nodeIdSet = Primitive.longSet();
         nodeIdSet.add( nodeId );
 
-        NodeCursor nodes = transaction.nodeCursor();
         org.neo4j.internal.kernel.api.Read read = transaction.dataRead();
         read.singleNode( nodeId, nodes );
         if ( !nodes.next() )
@@ -115,21 +118,17 @@ class TwoPhaseNodeForRelationshipLocking
         this.sortedNodeIds = nodeIds;
     }
 
-    private void lockAllNodes( KernelTransactionImplementation transaction, long[] nodeIds )
+    private void lockAllNodes( long[] nodeIds )
     {
-        transaction.statementLocks().optimistic()
-                .acquireExclusive( transaction.lockTracer(), ResourceTypes.NODE, nodeIds );
+        locks.acquireExclusive( lockTracer, ResourceTypes.NODE, nodeIds );
     }
 
-    private void unlockAllNodes( KernelTransactionImplementation transaction, long[] nodeIds )
+    private void unlockAllNodes( long[] nodeIds )
     {
-        for ( long nodeId : nodeIds )
-        {
-            transaction.statementLocks().optimistic().releaseExclusive( ResourceTypes.NODE, nodeId );
-        }
+        locks.releaseExclusive( ResourceTypes.NODE, nodeIds );
     }
 
-    private boolean performAction( KernelTransactionImplementation transaction, long rel, boolean first )
+    private boolean performAction( long rel, boolean first )
             throws KernelException
     {
         if ( first )
@@ -138,7 +137,7 @@ class TwoPhaseNodeForRelationshipLocking
             {
                 // if the first relationship is not the same someone added some new rels, so we need to
                 // lock them all again
-                unlockAllNodes( transaction, sortedNodeIds );
+                unlockAllNodes( sortedNodeIds );
                 sortedNodeIds = null;
                 return true;
             }

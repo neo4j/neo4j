@@ -207,7 +207,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // we cannot have them go around and throw exceptions, because that could potentially break
             // recovery.
             // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-            // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
+            // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
                     add( 1L, descriptor.schema(), "a" ),
@@ -415,7 +415,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
             // we cannot have them go around and throw exceptions, because that could potentially break
             // recovery.
             // Conflicting data can happen because of faulty data coercion. These faults are resolved by
-            // the exact-match filtering we do on index seeks in StateHandlingStatementOperations.
+            // the exact-match filtering we do on index seeks.
 
             updateAndCommit( asList(
                     add( 1L, descriptor.schema(), "a" ),

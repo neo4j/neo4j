@@ -96,6 +96,19 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
+    public void shouldGetUndecidedVersionAndKeyFromIndexReference() throws Exception
+    {
+        try ( Transaction transaction = session.beginTransaction() )
+        {
+            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            CapableIndexReference index = transaction.schemaRead().index( label, prop1 );
+
+            assertThat( index.providerKey(), equalTo( "Undecided" ));
+            assertThat( index.providerVersion(), equalTo( "0" ));
+        }
+    }
+
+    @Test
     public void shouldDropIndex() throws Exception
     {
         IndexReference index;

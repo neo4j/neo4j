@@ -33,8 +33,8 @@ import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;

@@ -81,8 +81,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     }
 
     /**
-     * Matches indexes to a node. This implementation mirrors NodeSchemaMatcher.onMatchingSchema(...), but as all
-     * accessor methods are different, a shared implementation was hard to achieve.
+     * Matches indexes to a node.
      */
     private void matchIndexesToNode(
             NodeRecord record,

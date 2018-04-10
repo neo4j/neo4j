@@ -33,20 +33,27 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -74,6 +81,8 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForSchema;
+import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
@@ -90,6 +99,7 @@ public class OperationsLockTest
     private AllStoreHolder allStoreHolder;
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StoreReadLayer storeReadLayer;
+    private ConstraintIndexCreator constraintIndexCreator;
 
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
@@ -101,6 +111,8 @@ public class OperationsLockTest
         when( transaction.isOpen() ).thenReturn( true );
         when( transaction.lockTracer() ).thenReturn( LockTracer.NONE );
         when( transaction.txState() ).thenReturn( txState );
+        when( transaction.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
+
         DefaultCursors cursors = mock( DefaultCursors.class );
         nodeCursor = mock( DefaultNodeCursor.class );
         propertyCursor = mock( DefaultPropertyCursor.class );
@@ -111,18 +123,19 @@ public class OperationsLockTest
         AutoIndexing autoindexing = mock( AutoIndexing.class );
         when( autoindexing.nodes() ).thenReturn( mock( AutoIndexOperations.class ) );
         when( autoindexing.relationships() ).thenReturn( mock( AutoIndexOperations.class ) );
-        StorageStatement store = mock( StorageStatement.class );
+        StorageStatement storageStatement = mock( StorageStatement.class );
         StorageEngine engine = mock( StorageEngine.class );
         storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.nodeExists( anyLong() ) ).thenReturn( true );
         when( storeReadLayer.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storeReadLayer.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.storeReadLayer() ).thenReturn( storeReadLayer );
-        allStoreHolder = new AllStoreHolder( engine, store,  transaction, cursors, mock(
+        allStoreHolder = new AllStoreHolder( engine, storageStatement,  transaction, cursors, mock(
                 ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ) );
+        constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
-                store, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
-                mock( ConstraintIndexCreator.class ), mock( ConstraintSemantics.class ) );
+                storageStatement, transaction, new KernelToken( storeReadLayer, transaction ), cursors, autoindexing,
+                constraintIndexCreator, mock( ConstraintSemantics.class ) );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storeReadLayer );
@@ -427,6 +440,81 @@ public class OperationsLockTest
         order.verify( storeReadLayer ).constraintsGetAll();
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, labelId );
         order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
+    {
+        // given
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
+        when( storeReadLayer.indexGetForSchema( any() )).thenReturn( index );
+
+        // when
+        operations.indexDrop( DefaultIndexReference.fromDescriptor( index ) );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
+        order.verify( txState ).indexDoDrop( index );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
+    {
+        // given
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
+        when( storeReadLayer.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
+
+        // when
+        operations.uniquePropertyConstraintCreate( descriptor );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
+        order.verify( txState ).constraintDoAdd( ConstraintDescriptorFactory.uniqueForSchema( descriptor ), 42L );
+    }
+
+    @Test
+    public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
+    {
+        // given
+        UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
+        when( storeReadLayer.constraintExists( constraint ) ).thenReturn( true );
+
+        // when
+        operations.constraintDrop( constraint );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, descriptor.getLabelId() );
+        order.verify( txState ).constraintDoDrop( constraint );
+    }
+
+    @Test
+    public void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    {
+        long nodeId = 1L;
+        returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
+        when(transaction.nodeCursor()).thenReturn( new StubNodeCursor( false ) );
+
+        operations.nodeDetachDelete( nodeId );
+
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( txState ).nodeDoDelete( nodeId );
+    }
+
+    @Test
+    public void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    {
+        long nodeId = 1L;
+        returnRelationships( transaction, false,
+                new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
+        when( transaction.nodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        operations.nodeDetachDelete( nodeId );
+
+        order.verify( locks ).acquireExclusive(
+                LockTracer.NONE, ResourceTypes.NODE, nodeId, 2L );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, nodeId );
+        order.verify( locks, never() ).releaseExclusive( ResourceTypes.NODE, 2L );
+        order.verify( txState ).nodeDoDelete( nodeId );
     }
 
     private void setStoreRelationship( long relationshipId, long sourceNode, long targetNode, int relationshipLabel )

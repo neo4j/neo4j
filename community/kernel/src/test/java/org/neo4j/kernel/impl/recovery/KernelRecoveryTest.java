@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -75,11 +75,11 @@ public class KernelRecoveryTest
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
-                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),
+                    commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),
 
                     // Tx after recovery
                     startEntry( -1, -1 ), commandEntry( node2, NodeCommand.class ),
-                    commandEntry( ReadOperations.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 3 ),
+                    commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 3 ),
 
                     // checkpoint
                     checkPoint( new LogPosition( 0, 250 ) ) ) );

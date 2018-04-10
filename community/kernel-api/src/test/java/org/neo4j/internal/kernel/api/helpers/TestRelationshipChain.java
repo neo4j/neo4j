@@ -22,36 +22,41 @@ package org.neo4j.internal.kernel.api.helpers;
 import java.util.ArrayList;
 import java.util.List;
 
-class TestRelationshipChain
+public class TestRelationshipChain
 {
     private List<Data> data;
     private long originNodeId;
 
-    TestRelationshipChain()
+    public TestRelationshipChain( long originNodeId )
     {
-        this.originNodeId = 42;
-        this.data = new ArrayList<>();
+        this( originNodeId, new ArrayList<>() );
     }
 
-    TestRelationshipChain outgoing( long id, long targetNode, int type )
+    private TestRelationshipChain( long originNodeId, List<Data> data )
+    {
+        this.originNodeId = originNodeId;
+        this.data = data;
+    }
+
+    public TestRelationshipChain outgoing( long id, long targetNode, int type )
     {
         data.add( new Data( id, originNodeId, targetNode, type ) );
         return this;
     }
 
-    TestRelationshipChain incoming( long id, long sourceNode, int type )
+    public TestRelationshipChain incoming( long id, long sourceNode, int type )
     {
         data.add( new Data( id, sourceNode, originNodeId, type ) );
         return this;
     }
 
-    TestRelationshipChain loop( long id, int type )
+    public TestRelationshipChain loop( long id, int type )
     {
         data.add( new Data( id, originNodeId, originNodeId, type ) );
         return this;
     }
 
-    Data get( int offset )
+    public Data get( int offset )
     {
         return data.get( offset );
     }
@@ -64,6 +69,11 @@ class TestRelationshipChain
     long originNodeId()
     {
         return originNodeId;
+    }
+
+    public TestRelationshipChain tail()
+    {
+        return new TestRelationshipChain(  originNodeId, data.subList( 1, data.size() ) );
     }
 
     static class Data

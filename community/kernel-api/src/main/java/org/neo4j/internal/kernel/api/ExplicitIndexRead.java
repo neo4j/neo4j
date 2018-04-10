@@ -77,7 +77,7 @@ public interface ExplicitIndexRead
     /**
      * Return the configuration of the given index
      * @param indexName the name of the index
-     * @return the configuration of the index with the given
+     * @return the configuration of the index with the given name
      * @throws ExplicitIndexNotFoundKernelException if the index is not there
      */
     Map<String, String> nodeExplicitIndexGetConfiguration( String indexName )
@@ -151,7 +151,7 @@ public interface ExplicitIndexRead
     /**
      * Return the configuration of the given index
      * @param indexName the name of the index
-     * @return the configuration of the index with the given
+     * @return the configuration of the index with the given name
      * @throws ExplicitIndexNotFoundKernelException if the index doesn't exist
      */
     Map<String, String> relationshipExplicitIndexGetConfiguration( String indexName )

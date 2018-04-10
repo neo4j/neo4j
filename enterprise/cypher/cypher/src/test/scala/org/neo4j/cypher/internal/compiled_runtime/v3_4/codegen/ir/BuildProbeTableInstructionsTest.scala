@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -57,7 +56,6 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val entityAccessor = mock[EmbeddedProxySPI]
   private val queryContext = mock[QueryContext]
   private val transactionalContext = mock[TransactionalContextWrapper]
-  private val readOps = mock[ReadOperations]
   private val dataRead = mock[Read]
   private val cursors = mock[CursorFactory]
   private def nodeCursor = {
@@ -78,9 +76,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   when(transactionalContext.dataRead).thenReturn(dataRead)
   when(transactionalContext.cursors).thenReturn(cursors)
   when(queryContext.entityAccessor).thenReturn(entityAccessor)
-  when(readOps.nodesGetAll()).then(new Answer[PrimitiveLongIterator] {
-    def answer(invocation: InvocationOnMock) = allNodeIdsIterator()
-  })
+
 
   override protected def beforeEach() = allNodeIds.clear()
 

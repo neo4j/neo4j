@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -221,7 +221,7 @@ public class LabelCountsTest
         int labelId;
         if ( label == null )
         {
-            labelId = ReadOperations.ANY_LABEL;
+            labelId = StatementConstants.ANY_LABEL;
         }
         else
         {

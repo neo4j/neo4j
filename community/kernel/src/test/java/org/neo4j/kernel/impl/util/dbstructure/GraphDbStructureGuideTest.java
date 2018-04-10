@@ -46,8 +46,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
-import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.toDescriptor;
 
 public class GraphDbStructureGuideTest

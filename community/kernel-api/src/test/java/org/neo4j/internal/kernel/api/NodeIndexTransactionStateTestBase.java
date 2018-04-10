@@ -19,13 +19,16 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -34,6 +37,9 @@ import static org.junit.Assert.assertThat;
 public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Test
     public void shouldPerformStringSuffixSearch() throws Exception
     {
@@ -105,6 +111,24 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
             }
         }
     }
+
+    @Test
+    public void shouldThrowIfTransactionTerminated() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            // given
+            terminate( tx );
+
+            // expect
+            exception.expect( TransactionTerminatedException.class );
+
+            // when
+            tx.dataRead().nodeExists( 42 );
+        }
+    }
+
+    protected abstract void terminate( Transaction transaction );
 
     private long nodeWithProp( Transaction tx, Object value ) throws Exception
     {

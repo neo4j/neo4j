@@ -372,8 +372,7 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-
-            bridge.getKernelTransactionBoundToThisThread( true ).dataWrite().nodeDelete( nodeId );
+            db.getNodeById( nodeId ).delete();
             tx.success();
         }
     }
@@ -622,7 +621,7 @@ public class IndexStatisticsTest
                     deleteNode( nodeId );
                     updatesTracker.increaseDeleted( 1 );
                 }
-                catch ( EntityNotFoundException ex )
+                catch ( EntityNotFoundException | NotFoundException ex )
                 {
                     // ignore
                 }

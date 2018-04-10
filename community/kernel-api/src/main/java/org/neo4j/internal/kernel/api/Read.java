@@ -217,6 +217,20 @@ public interface Read
     long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId );
 
     /**
+     * Count of the total number of nodes in the database including changes in the current transaction.
+     *
+     * @return the total number of nodes in the database
+     */
+    long nodesGetCount( );
+
+    /**
+     * Count of the total number of relationships in the database including changes in the current transaction.
+     *
+     * @return the total number of relationships in the database
+     */
+    long relationshipsGetCount( );
+
+    /**
      * @param reference
      *         a reference from {@link RelationshipDataAccessor#relationshipReference()}.
      * @param cursor

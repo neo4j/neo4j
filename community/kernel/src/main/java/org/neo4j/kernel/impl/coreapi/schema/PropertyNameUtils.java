@@ -29,24 +29,11 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
 
 public class PropertyNameUtils
 {
     private PropertyNameUtils()
     {
-    }
-
-    public static String[] getPropertyKeys( ReadOperations readOperations, LabelSchemaDescriptor descriptor )
-            throws PropertyKeyIdNotFoundKernelException
-    {
-        int[] propertyKeyIds = descriptor.getPropertyIds();
-        String[] propertyKeys = new String[propertyKeyIds.length];
-        for ( int i = 0; i < propertyKeyIds.length; i++ )
-        {
-            propertyKeys[i] = readOperations.propertyKeyGetName( propertyKeyIds[i] );
-        }
-        return propertyKeys;
     }
 
     public static String[] getPropertyKeys( TokenRead tokenRead, int...properties )
@@ -71,17 +58,6 @@ public class PropertyNameUtils
         return propertyKeys;
     }
 
-    public static String[] getPropertyKeys( ReadOperations readOperations, int[] propertyIds )
-            throws PropertyKeyIdNotFoundKernelException
-    {
-        String[] propertyKeys = new String[propertyIds.length];
-        for ( int i = 0; i < propertyIds.length; i++ )
-        {
-            propertyKeys[i] = readOperations.propertyKeyGetName( propertyIds[i] );
-        }
-        return propertyKeys;
-    }
-
     public static String[] getPropertyKeys( TokenNameLookup tokenNameLookup, int[] propertyIds )
     {
         String[] propertyKeys = new String[propertyIds.length];
@@ -92,16 +68,6 @@ public class PropertyNameUtils
         return propertyKeys;
     }
 
-    public static int[] getPropertyIds( ReadOperations statement, String[] propertyKeys )
-    {
-        int[] propertyKeyIds = new int[propertyKeys.length];
-        for ( int i = 0; i < propertyKeys.length; i++ )
-        {
-            propertyKeyIds[i] = statement.propertyKeyGetForName( propertyKeys[i] );
-        }
-        return propertyKeyIds;
-    }
-
     public static int[] getPropertyIds( TokenRead tokenRead, String[] propertyKeys )
     {
         int[] propertyKeyIds = new int[propertyKeys.length];
@@ -110,11 +76,6 @@ public class PropertyNameUtils
             propertyKeyIds[i] = tokenRead.propertyKey( propertyKeys[i] );
         }
         return propertyKeyIds;
-    }
-
-    public static int[] getPropertyIds( ReadOperations statement, Iterable<String> propertyKeys )
-    {
-        return Iterables.stream( propertyKeys ).mapToInt( statement::propertyKeyGetForName ).toArray();
     }
 
     public static int[] getPropertyIds( TokenRead tokenRead, Iterable<String> propertyKeys )

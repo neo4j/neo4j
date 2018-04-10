@@ -35,9 +35,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -68,7 +66,7 @@ public abstract class StorageLayerTest
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.disk = resolver.resolveDependency( StorageEngine.class ).storeReadLayer();
-        this.state = new KernelStatement( null, null, disk.newStatement(), new Procedures(), new CanWrite(),
+        this.state = new KernelStatement( null, null, disk.newStatement(),
                 LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 

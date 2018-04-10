@@ -109,7 +109,7 @@ public class StubNodeCursor implements NodeCursor
     @Override
     public void allRelationships( RelationshipTraversalCursor relationships )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        ((StubRelationshipCursor) relationships).rewind();
     }
 
     @Override

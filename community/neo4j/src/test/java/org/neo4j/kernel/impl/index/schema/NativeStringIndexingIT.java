@@ -31,11 +31,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
@@ -45,7 +50,9 @@ import org.neo4j.test.rule.RandomRule;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.test.Randoms.CSA_LETTERS_AND_DIGITS;
 
@@ -123,7 +130,7 @@ public class NativeStringIndexingIT
     }
 
     @Test
-    public void shouldHandleCompositeSizesCloseToTheLimit() throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public void shouldHandleCompositeSizesCloseToTheLimit() throws KernelException
     {
         // given
         createIndex( KEY, KEY2 );
@@ -143,17 +150,21 @@ public class NativeStringIndexingIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            try ( Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
+            KernelTransaction ktx =
+                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                            .getKernelTransactionBoundToThisThread( true );
+            int labelId = ktx.tokenRead().nodeLabel( LABEL.name() );
+            int propertyKeyId1 = ktx.tokenRead().propertyKey( KEY );
+            int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                int labelId = statement.readOperations().labelGetForName( LABEL.name() );
-                int propertyKeyId1 = statement.readOperations().propertyKeyGetForName( KEY );
-                int propertyKeyId2 = statement.readOperations().propertyKeyGetForName( KEY2 );
-                try ( PrimitiveLongResourceIterator result = statement.readOperations().indexQuery(
-                        SchemaIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 ), IndexQuery.exact( propertyKeyId1, string1 ),
-                        IndexQuery.exact( propertyKeyId2, string2 ) ) )
-                {
-                    assertEquals( node.getId(), PrimitiveLongCollections.single( result, -1 ) );
-                }
+                ktx.dataRead().nodeIndexSeek( DefaultIndexReference.general( labelId, propertyKeyId1, propertyKeyId2 ),
+                        cursor, IndexOrder.NONE,
+                        IndexQuery.exact( propertyKeyId1, string1 ),
+                        IndexQuery.exact( propertyKeyId2, string2 ) );
+                assertTrue( cursor.next() );
+                assertEquals( node.getId(), cursor.nodeReference() );
+                assertFalse( cursor.next() );
             }
             tx.success();
         }

@@ -1,3 +1,4 @@
+package org.neo4j.kernel.impl.api;
 /*
  * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -33,18 +33,24 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -95,11 +101,12 @@ import static org.junit.Assert.assertThat;
  * Code navigation:
  */
 @RunWith( Parameterized.class )
-public class OperationsFacadeSchemaIndexIteratorTest
+public class MultipleOpenCursorsTest
 {
     private interface IndexCoordinatorFactory
     {
-        IndexCoordinator create( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 );
+        IndexCoordinator create( Label indexLabel, String numberProp1,
+                String numberProp2, String stringProp1, String stringProp2 );
     }
 
     private final DatabaseRule db = new EmbeddedDatabaseRule();
@@ -121,8 +128,10 @@ public class OperationsFacadeSchemaIndexIteratorTest
         return Arrays.asList(
                 new Object[]{"Single number non unique", (IndexCoordinatorFactory) NumberIndexCoordinator::new},
                 new Object[]{"Single string non unique", (IndexCoordinatorFactory) StringIndexCoordinator::new},
-                new Object[]{"Composite number non unique", (IndexCoordinatorFactory) NumberCompositeIndexCoordinator::new},
-                new Object[]{"Composite string non unique", (IndexCoordinatorFactory) StringCompositeIndexCoordinator::new}
+                new Object[]{"Composite number non unique",
+                        (IndexCoordinatorFactory) NumberCompositeIndexCoordinator::new},
+                new Object[]{"Composite string non unique",
+                        (IndexCoordinatorFactory) StringCompositeIndexCoordinator::new}
         );
     }
 
@@ -135,74 +144,88 @@ public class OperationsFacadeSchemaIndexIteratorTest
     private IndexCoordinator indexCoordinator;
 
     @Before
-    public void setupDb()
+    public void setupDb() throws InvalidTransactionTypeKernelException, RepeatedPropertyInCompositeSchemaException,
+            AlreadyIndexedException,
+            AlreadyConstrainedException, IndexNotFoundKernelException, InterruptedException
     {
-        indexCoordinator = indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
+        indexCoordinator =
+                indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         indexCoordinator.init( db );
         indexCoordinator.createIndex( db );
     }
 
     @Test
-    public void multipleIteratorsNotNestedExists() throws Exception
+    public void multipleCursorsNotNestedExists() throws Exception
     {
 
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
+        {
+            KernelTransaction ktx = db.transaction();
+            // when
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx );
+                  NodeValueIndexCursor cursor2 = indexCoordinator.queryExists( ktx ) )
+            {
+                List<Long> actual1 = asList( cursor1 );
+                List<Long> actual2 = asList( cursor2 );
+
+                // then
+                indexCoordinator.assertExistsResult( actual1 );
+                indexCoordinator.assertExistsResult( actual2 );
+            }
+
+            tx.success();
+        }
+    }
+
+    private List<Long> asList( NodeValueIndexCursor cursor )
+    {
+        List<Long> list = new ArrayList<>();
+        while ( cursor.next() )
+        {
+            list.add( cursor.nodeReference() );
+        }
+        return list;
+    }
+
+    @Test
+    public void multipleCursorsNotNestedExact() throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExists( readOperations );
-            List<Long> actual1 = PrimitiveLongCollections.asList( iter1 );
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx );
+                  NodeValueIndexCursor cursor2 = indexCoordinator.queryExact( ktx ) )
+            {
+                List<Long> actual1 = asList( cursor1 );
+                List<Long> actual2 = asList( cursor2 );
 
-            PrimitiveLongIterator iter2 = indexCoordinator.queryExists( readOperations );
-            List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-
-            // then
-            indexCoordinator.assertExistsResult( actual1 );
-            indexCoordinator.assertExistsResult( actual2 );
+                // then
+                indexCoordinator.assertExactResult( actual1 );
+                indexCoordinator.assertExactResult( actual2 );
+            }
             tx.success();
         }
     }
 
     @Test
-    public void multipleIteratorsNotNestedExact() throws Exception
-    {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
-        {
-            // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExact( readOperations );
-            List<Long> actual1 = PrimitiveLongCollections.asList( iter1 );
-
-            PrimitiveLongIterator iter2 = indexCoordinator.queryExact( readOperations );
-            List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-
-            // then
-            indexCoordinator.assertExactResult( actual1 );
-            indexCoordinator.assertExactResult( actual2 );
-            tx.success();
-        }
-    }
-
-    @Test
-    public void multipleIteratorsNotNestedRange() throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public void multipleIteratorsNotNestedRange() throws KernelException
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryRange( readOperations );
-            List<Long> actual1 = PrimitiveLongCollections.asList( iter1 );
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx );
+                  NodeValueIndexCursor cursor2 = indexCoordinator.queryRange( ktx ) )
+            {
+                List<Long> actual1 = asList( cursor1 );
+                List<Long> actual2 = asList( cursor2 );
 
-            PrimitiveLongIterator iter2 = indexCoordinator.queryRange( readOperations );
-            List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-
-            // then
-            indexCoordinator.assertRangeResult( actual1 );
-            indexCoordinator.assertRangeResult( actual2 );
+                // then
+                indexCoordinator.assertRangeResult( actual1 );
+                indexCoordinator.assertRangeResult( actual2 );
+            }
             tx.success();
         }
     }
@@ -210,22 +233,26 @@ public class OperationsFacadeSchemaIndexIteratorTest
     @Test
     public void multipleIteratorsNestedInnerNewExists() throws Exception
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExists( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            while ( iter1.hasNext() )
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx ) )
             {
-                actual1.add( iter1.next() );
-                PrimitiveLongIterator iter2 = indexCoordinator.queryExists( readOperations );
-                List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-                indexCoordinator.assertExistsResult( actual2 );
+                List<Long> actual1 = new ArrayList<>();
+                while ( cursor1.next() )
+                {
+                    actual1.add( cursor1.nodeReference() );
+
+                    try ( NodeValueIndexCursor cursor2 = indexCoordinator.queryExists( ktx ) )
+                    {
+                        List<Long> actual2 = asList( cursor2 );
+                        indexCoordinator.assertExistsResult( actual2 );
+                    }
+                }
+                // then
+                indexCoordinator.assertExistsResult( actual1 );
             }
-            // then
-            indexCoordinator.assertExistsResult( actual1 );
             tx.success();
         }
     }
@@ -233,22 +260,25 @@ public class OperationsFacadeSchemaIndexIteratorTest
     @Test
     public void multipleIteratorsNestedInnerNewExact() throws Exception
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExact( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            while ( iter1.hasNext() )
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx ) )
             {
-                actual1.add( iter1.next() );
-                PrimitiveLongIterator iter2 = indexCoordinator.queryExact( readOperations );
-                List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-                indexCoordinator.assertExactResult( actual2 );
+                List<Long> actual1 = new ArrayList<>();
+                while ( cursor1.next() )
+                {
+                    actual1.add( cursor1.nodeReference() );
+                    try ( NodeValueIndexCursor cursor2 = indexCoordinator.queryExact( ktx ) )
+                    {
+                        List<Long> actual2 = asList( cursor2 );
+                        indexCoordinator.assertExactResult( actual2 );
+                    }
+                }
+                // then
+                indexCoordinator.assertExactResult( actual1 );
             }
-            // then
-            indexCoordinator.assertExactResult( actual1 );
             tx.success();
         }
     }
@@ -257,22 +287,25 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInnerNewRange() throws Exception
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryRange( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            while ( iter1.hasNext() )
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx ) )
             {
-                actual1.add( iter1.next() );
-                PrimitiveLongIterator iter2 = indexCoordinator.queryRange( readOperations );
-                List<Long> actual2 = PrimitiveLongCollections.asList( iter2 );
-                indexCoordinator.assertRangeResult( actual2 );
+                List<Long> actual1 = new ArrayList<>();
+                while ( cursor1.next() )
+                {
+                    actual1.add( cursor1.nodeReference() );
+                    try ( NodeValueIndexCursor cursor2 = indexCoordinator.queryRange( ktx ) )
+                    {
+                        List<Long> actual2 = asList( cursor2 );
+                        indexCoordinator.assertRangeResult( actual2 );
+                    }
+                }
+                // then
+                indexCoordinator.assertRangeResult( actual1 );
             }
-            // then
-            indexCoordinator.assertRangeResult( actual1 );
             tx.success();
         }
     }
@@ -280,22 +313,25 @@ public class OperationsFacadeSchemaIndexIteratorTest
     @Test
     public void multipleIteratorsNestedInterleavedExists() throws Exception
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExists( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            PrimitiveLongIterator iter2 = indexCoordinator.queryExists( readOperations );
-            List<Long> actual2 = new ArrayList<>();
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExists( ktx ) )
+            {
+                List<Long> actual1 = new ArrayList<>();
+                try ( NodeValueIndexCursor cursor2 = indexCoordinator.queryExists( ktx ) )
+                {
+                    List<Long> actual2 = new ArrayList<>();
 
-            // Interleave
-            exhaustInterleaved( iter1, actual1, iter2, actual2 );
+                    // Interleave
+                    exhaustInterleaved( cursor1, actual1, cursor2, actual2 );
 
-            // then
-            indexCoordinator.assertExistsResult( actual1 );
-            indexCoordinator.assertExistsResult( actual2 );
+                    // then
+                    indexCoordinator.assertExistsResult( actual1 );
+                    indexCoordinator.assertExistsResult( actual2 );
+                }
+            }
             tx.success();
         }
     }
@@ -303,22 +339,25 @@ public class OperationsFacadeSchemaIndexIteratorTest
     @Test
     public void multipleIteratorsNestedInterleavedExact() throws Exception
     {
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryExact( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            PrimitiveLongIterator iter2 = indexCoordinator.queryExact( readOperations );
-            List<Long> actual2 = new ArrayList<>();
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryExact( ktx ) )
+            {
+                List<Long> actual1 = new ArrayList<>();
+                try ( NodeValueIndexCursor cursor2 = indexCoordinator.queryExact( ktx ) )
+                {
+                    List<Long> actual2 = new ArrayList<>();
 
-            // Interleave
-            exhaustInterleaved( iter1, actual1, iter2, actual2 );
+                    // Interleave
+                    exhaustInterleaved( cursor1, actual1, cursor2, actual2 );
 
-            // then
-            indexCoordinator.assertExactResult( actual1 );
-            indexCoordinator.assertExactResult( actual2 );
+                    // then
+                    indexCoordinator.assertExactResult( actual1 );
+                    indexCoordinator.assertExactResult( actual2 );
+                }
+            }
             tx.success();
         }
     }
@@ -327,54 +366,68 @@ public class OperationsFacadeSchemaIndexIteratorTest
     public void multipleIteratorsNestedInterleavedRange() throws Exception
     {
         Assume.assumeTrue( indexCoordinator.supportRangeQuery() );
-        try ( Transaction tx = db.beginTx();
-              Statement statement = db.statement() )
+        try ( Transaction tx = db.beginTx() )
         {
             // when
-            ReadOperations readOperations = statement.readOperations();
-            PrimitiveLongIterator iter1 = indexCoordinator.queryRange( readOperations );
-            List<Long> actual1 = new ArrayList<>();
-            PrimitiveLongIterator iter2 = indexCoordinator.queryRange( readOperations );
-            List<Long> actual2 = new ArrayList<>();
+            KernelTransaction ktx = db.transaction();
+            try ( NodeValueIndexCursor cursor1 = indexCoordinator.queryRange( ktx );
+                  NodeValueIndexCursor cursor2 = indexCoordinator.queryRange( ktx ) )
+            {
+                List<Long> actual1 = new ArrayList<>();
 
-            // Interleave
-            exhaustInterleaved( iter1, actual1, iter2, actual2 );
+                List<Long> actual2 = new ArrayList<>();
 
-            // then
-            indexCoordinator.assertRangeResult( actual1 );
-            indexCoordinator.assertRangeResult( actual2 );
+                // Interleave
+                exhaustInterleaved( cursor1, actual1, cursor2, actual2 );
+
+                // then
+                indexCoordinator.assertRangeResult( actual1 );
+                indexCoordinator.assertRangeResult( actual2 );
+            }
             tx.success();
         }
     }
 
-    private void exhaustInterleaved( PrimitiveLongIterator source1, List<Long> target1, PrimitiveLongIterator source2, List<Long> target2 )
+    private void exhaustInterleaved( NodeValueIndexCursor source1, List<Long> target1, NodeValueIndexCursor source2,
+            List<Long> target2 )
     {
-        while ( source1.hasNext() && source2.hasNext() )
+        boolean source1HasNext = true;
+        boolean source2HasNext = true;
+        while ( source1HasNext && source2HasNext )
         {
             if ( rnd.nextBoolean() )
             {
-                target1.add( source1.next() );
+                source1HasNext = source1.next();
+                if ( source1HasNext )
+                {
+                    target1.add( source1.nodeReference() );
+                }
             }
             else
             {
-                target2.add( source2.next() );
+                source2HasNext = source2.next();
+                if ( source2HasNext )
+                {
+                    target2.add( source2.nodeReference() );
+                }
             }
         }
 
         // Empty the rest
-        while ( source1.hasNext() )
+        while ( source1.next() )
         {
-            target1.add( source1.next() );
+            target1.add( source1.nodeReference() );
         }
-        while ( source2.hasNext() )
+        while ( source2.next() )
         {
-            target2.add( source2.next() );
+            target2.add( source2.nodeReference() );
         }
     }
 
     private static class StringCompositeIndexCoordinator extends IndexCoordinator
     {
-        StringCompositeIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
+        StringCompositeIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
+                String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         }
@@ -392,25 +445,25 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        PrimitiveLongIterator queryRange( ReadOperations readOperations )
+        NodeValueIndexCursor queryRange( KernelTransaction ktx )
+                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        PrimitiveLongIterator queryExists( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExists( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor,
-                    IndexQuery.exists( stringPropId1 ),
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( stringPropId1 ),
                     IndexQuery.exists( stringPropId2 ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExact( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExact( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor,
+            return indexQuery( ktx, indexDescriptor,
                     IndexQuery.exact( stringPropId1, stringProp1Values[0] ),
                     IndexQuery.exact( stringPropId2, stringProp2Values[0] ) );
         }
@@ -438,7 +491,8 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
     private static class NumberCompositeIndexCoordinator extends IndexCoordinator
     {
-        NumberCompositeIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
+        NumberCompositeIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
+                String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         }
@@ -456,25 +510,24 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        PrimitiveLongIterator queryRange( ReadOperations readOperations )
+        NodeValueIndexCursor queryRange( KernelTransaction ktx )
+                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        PrimitiveLongIterator queryExists( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExists( KernelTransaction ktx ) throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor,
-                    IndexQuery.exists( numberPropId1 ),
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( numberPropId1 ),
                     IndexQuery.exists( numberPropId2 ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExact( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExact( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor,
+            return indexQuery( ktx, indexDescriptor,
                     IndexQuery.exact( numberPropId1, numberProp1Values[0] ),
                     IndexQuery.exact( numberPropId2, numberProp2Values[0] ) );
         }
@@ -502,7 +555,8 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
     private static class StringIndexCoordinator extends IndexCoordinator
     {
-        StringIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
+        StringIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
+                String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         }
@@ -520,26 +574,28 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        PrimitiveLongIterator queryRange( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryRange( KernelTransaction ktx )
+                throws KernelException
         {
             // query for half the range
-            return readOperations.indexQuery( schemaIndexDescriptor,
-                    IndexQuery.range( numberPropId1, stringProp1Values[0], true, stringProp1Values[numberOfNodes / 2], false ) );
+            return indexQuery( ktx, indexDescriptor,
+                    IndexQuery
+                            .range( numberPropId1, stringProp1Values[0], true, stringProp1Values[numberOfNodes / 2],
+                                    false ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExists( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExists( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exists( stringPropId1 ) );
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( stringPropId1 ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExact( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExact( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exact( stringPropId1, stringProp1Values[0] ) );
         }
 
         @Override
@@ -570,7 +626,8 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
     private static class NumberIndexCoordinator extends IndexCoordinator
     {
-        NumberIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
+        NumberIndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
+                String stringProp2 )
         {
             super( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         }
@@ -588,26 +645,28 @@ public class OperationsFacadeSchemaIndexIteratorTest
         }
 
         @Override
-        PrimitiveLongIterator queryRange( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryRange( KernelTransaction ktx )
+                throws KernelException
         {
             // query for half the range
-            return readOperations.indexQuery( schemaIndexDescriptor,
-                    IndexQuery.range( numberPropId1, numberProp1Values[0], true, numberProp1Values[numberOfNodes / 2], false ) );
+            return indexQuery( ktx, indexDescriptor,
+                    IndexQuery
+                            .range( numberPropId1, numberProp1Values[0], true, numberProp1Values[numberOfNodes / 2],
+                                    false ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExists( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExists( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exists( numberPropId1 ) );
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exists( numberPropId1 ) );
         }
 
         @Override
-        PrimitiveLongIterator queryExact( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+        NodeValueIndexCursor queryExact( KernelTransaction ktx )
+                throws KernelException
         {
-            return readOperations.indexQuery( schemaIndexDescriptor, IndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
+            return indexQuery( ktx, indexDescriptor, IndexQuery.exact( numberPropId1, numberProp1Values[0] ) );
         }
 
         @Override
@@ -656,9 +715,10 @@ public class OperationsFacadeSchemaIndexIteratorTest
         int numberPropId2;
         int stringPropId1;
         int stringPropId2;
-        SchemaIndexDescriptor schemaIndexDescriptor;
+        SchemaIndexDescriptor indexDescriptor;
 
-        IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1, String stringProp2 )
+        IndexCoordinator( Label indexLabel, String numberProp1, String numberProp2, String stringProp1,
+                String stringProp2 )
         {
             this.indexLabel = indexLabel;
             this.numberProp1 = numberProp1;
@@ -701,18 +761,17 @@ public class OperationsFacadeSchemaIndexIteratorTest
                 tx.success();
             }
 
-            try ( Transaction tx = db.beginTx();
-                  Statement statement = db.statement() )
+            try ( Transaction tx = db.beginTx() )
             {
-                ReadOperations readOp = statement.readOperations();
-                indexedLabelId = readOp.labelGetForName( indexLabel.name() );
-                numberPropId1 = readOp.propertyKeyGetForName( numberProp1 );
-                numberPropId2 = readOp.propertyKeyGetForName( numberProp2 );
-                stringPropId1 = readOp.propertyKeyGetForName( stringProp1 );
-                stringPropId2 = readOp.propertyKeyGetForName( stringProp2 );
+                TokenRead tokenRead = db.transaction().tokenRead();
+                indexedLabelId = tokenRead.nodeLabel( indexLabel.name() );
+                numberPropId1 = tokenRead.propertyKey( numberProp1 );
+                numberPropId2 = tokenRead.propertyKey( numberProp2 );
+                stringPropId1 = tokenRead.propertyKey( stringProp1 );
+                stringPropId2 = tokenRead.propertyKey( stringProp2 );
                 tx.success();
             }
-            schemaIndexDescriptor = extractIndexDescriptor();
+            indexDescriptor = extractIndexDescriptor();
         }
 
         protected abstract SchemaIndexDescriptor extractIndexDescriptor();
@@ -733,14 +792,14 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
         abstract boolean supportRangeQuery();
 
-        abstract PrimitiveLongIterator queryRange( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException;
+        abstract NodeValueIndexCursor queryRange( KernelTransaction ktx )
+                throws KernelException;
 
-        abstract PrimitiveLongIterator queryExists( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException;
+        abstract NodeValueIndexCursor queryExists( KernelTransaction ktx )
+                throws KernelException;
 
-        abstract PrimitiveLongIterator queryExact( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException;
+        abstract NodeValueIndexCursor queryExact( KernelTransaction ktx )
+                throws KernelException;
 
         abstract void assertRangeResult( List<Long> result );
 
@@ -762,5 +821,16 @@ public class OperationsFacadeSchemaIndexIteratorTest
         abstract void assertExactResult( List<Long> result );
 
         abstract void doCreateIndex( DatabaseRule db );
+
+        NodeValueIndexCursor indexQuery( KernelTransaction ktx, SchemaIndexDescriptor indexDescriptor,
+                IndexQuery... indexQueries )
+
+                throws KernelException
+        {
+            NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
+            ktx.dataRead().nodeIndexSeek( DefaultIndexReference.fromDescriptor( indexDescriptor ),
+                    cursor, IndexOrder.NONE, indexQueries );
+            return cursor;
+        }
     }
 }

@@ -232,11 +232,22 @@ public class MockStore extends Read implements TestRule
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
         throw new UnsupportedOperationException();
-
     }
 
     @Override
     public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long relationshipsGetCount()
     {
         throw new UnsupportedOperationException();
     }

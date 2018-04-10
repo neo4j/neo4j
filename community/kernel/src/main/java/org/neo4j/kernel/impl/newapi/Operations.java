@@ -169,32 +169,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public boolean nodeDelete( long node ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-
-        if ( ktx.hasTxStateWithChanges() )
-        {
-            if ( ktx.txState().nodeIsAddedInThisTx( node ) )
-            {
-                autoIndexing.nodes().entityRemoved( this, node );
-                ktx.txState().nodeDoDelete( node );
-                return true;
-            }
-            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
-            {
-                // already deleted
-                return false;
-            }
-        }
-
-        ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
-        if ( allStoreHolder.nodeExistsInStore( node ) )
-        {
-            autoIndexing.nodes().entityRemoved( this, node );
-            ktx.txState().nodeDoDelete( node );
-            return true;
-        }
-
-        // tried to delete node that does not exist
-        return false;
+        return nodeDelete( node, true );
     }
 
     @Override
@@ -205,16 +180,17 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                 relId ->
                 {
                     ktx.assertOpen();
-                    if ( relationshipDelete( relId ) )
+                    if ( relationshipDelete( relId, false ) )
                     {
                         count.increment();
                     }
-                } );
+                }, ktx.statementLocks().optimistic(), ktx.lockTracer() );
 
-        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx );
+        locking.lockAllNodesAndConsumeRelationships( nodeId, ktx, ktx.nodeCursor() );
         ktx.assertOpen();
 
-        nodeDelete( nodeId );
+        //we are already holding the lock
+        nodeDelete( nodeId, false );
         return count.intValue();
     }
 
@@ -239,37 +215,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
-
-        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
-
-        if ( relationshipCursor.next() )
-        {
-            lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
-            acquireExclusiveRelationshipLock( relationship );
-            if ( !allStoreHolder.relationshipExists( relationship ) )
-            {
-                return false;
-            }
-
-            ktx.assertOpen();
-
-            autoIndexing.relationships().entityRemoved( this, relationship );
-
-            TransactionState txState = ktx.txState();
-            if ( txState.relationshipIsAddedInThisTx( relationship ) )
-            {
-                txState.relationshipDoDeleteAddedInThisTx( relationship );
-            }
-            else
-            {
-                txState.relationshipDoDelete( relationship, relationshipCursor.getType(),
-                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
-            }
-            return true;
-        }
-
-        // tried to delete relationship that does not exist
-        return false;
+        return relationshipDelete( relationship, true );
     }
 
     @Override
@@ -311,6 +257,78 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
         return true;
+    }
+
+    public boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
+    {
+        ktx.assertOpen();
+
+        if ( ktx.hasTxStateWithChanges() )
+        {
+            if ( ktx.txState().nodeIsAddedInThisTx( node ) )
+            {
+                autoIndexing.nodes().entityRemoved( this, node );
+                ktx.txState().nodeDoDelete( node );
+                return true;
+            }
+            if ( ktx.txState().nodeIsDeletedInThisTx( node ) )
+            {
+                // already deleted
+                return false;
+            }
+        }
+
+        if ( lock )
+        {
+            ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
+        }
+        if ( allStoreHolder.nodeExistsInStore( node ) )
+        {
+            autoIndexing.nodes().entityRemoved( this, node );
+            ktx.txState().nodeDoDelete( node );
+            return true;
+        }
+
+        // tried to delete node that does not exist
+        return false;
+    }
+
+    private boolean relationshipDelete( long relationship, boolean lock ) throws AutoIndexingKernelException
+    {
+        allStoreHolder.singleRelationship( relationship, relationshipCursor ); // tx-state aware
+
+        if ( relationshipCursor.next() )
+        {
+            if ( lock )
+            {
+                lockRelationshipNodes( relationshipCursor.sourceNodeReference(),
+                        relationshipCursor.targetNodeReference() );
+                acquireExclusiveRelationshipLock( relationship );
+            }
+            if ( !allStoreHolder.relationshipExists( relationship ) )
+            {
+                return false;
+            }
+
+            ktx.assertOpen();
+
+            autoIndexing.relationships().entityRemoved( this, relationship );
+
+            TransactionState txState = ktx.txState();
+            if ( txState.relationshipIsAddedInThisTx( relationship ) )
+            {
+                txState.relationshipDoDeleteAddedInThisTx( relationship );
+            }
+            else
+            {
+                txState.relationshipDoDelete( relationship, relationshipCursor.getType(),
+                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            }
+            return true;
+        }
+
+        // tried to delete relationship that does not exist
+        return false;
     }
 
     private void singleNode( long node ) throws EntityNotFoundException

@@ -56,15 +56,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
  *
  * Please refer to the {@link KernelTransaction} javadoc for details.
  *
- * The architecture of the kernel is based around a layered design, where one layer performs some task, and potentially
- * delegates down to a lower layer. For instance, writing to the database will pass through
- * {@link LockingStatementOperations}, which will grab locks and delegate to {@link StateHandlingStatementOperations}
- * which will store the change in the transaction state, to be applied later if the transaction is committed.
- *
- * A read will, similarly, pass through {@link LockingStatementOperations}. It then reaches
- * {@link StateHandlingStatementOperations}, which includes any changes that exist in the current transaction, and then
- * finally {@link org.neo4j.storageengine.api.StoreReadLayer} will read the current committed state from
- * the stores or caches.
  */
 public class KernelImpl extends LifecycleAdapter implements InwardKernel
 {
