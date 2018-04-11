@@ -96,7 +96,9 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
     };
 
-    IndexStoreView EMPTY = new IndexStoreView()
+    IndexStoreView EMPTY = new Adaptor();
+
+    class Adaptor implements IndexStoreView
     {
         @Override
         public void loadProperties( long nodeId, PrimitiveIntSet propertyIds, PropertyLoadSink sink )
