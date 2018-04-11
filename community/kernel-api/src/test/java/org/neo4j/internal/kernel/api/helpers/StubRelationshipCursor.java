@@ -151,12 +151,6 @@ public class StubRelationshipCursor implements RelationshipTraversalCursor
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         isClosed = true;

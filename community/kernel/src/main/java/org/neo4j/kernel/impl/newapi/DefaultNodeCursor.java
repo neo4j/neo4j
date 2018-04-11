@@ -237,12 +237,6 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         if ( !isClosed() )
