@@ -23,7 +23,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoop;
-import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Promise;
 
@@ -95,7 +94,9 @@ public class ReconnectingChannel implements Channel
         {
             if ( !f.isSuccess() )
             {
-                f.channel().eventLoop().schedule( this::tryConnect, connectionBackoff.getMillis(), MILLISECONDS );
+                long millis = connectionBackoff.getMillis();
+                log.warn( "Failed to connect to: %s. Retrying in %d ms", destination.socketAddress(), millis );
+                f.channel().eventLoop().schedule( this::tryConnect, millis, MILLISECONDS );
                 connectionBackoff.increment();
             }
             else

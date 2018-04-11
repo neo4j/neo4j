@@ -99,6 +99,7 @@ public class Server extends LifecycleAdapter
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
+            debugLog.info( serverName + ": bound to " + listenAddress );
         }
         catch ( Exception e )
         {
