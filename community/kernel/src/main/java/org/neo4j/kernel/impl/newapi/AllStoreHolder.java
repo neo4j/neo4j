@@ -246,12 +246,13 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    IndexReader indexReader( IndexReference index ) throws IndexNotFoundKernelException
+    IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
         SchemaIndexDescriptor schemaIndexDescriptor = index.isUnique() ?
                                                       SchemaIndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() ) :
                                                       SchemaIndexDescriptorFactory.forLabel( index.label(), index.properties() );
-        return statement.getIndexReader( schemaIndexDescriptor );
+        return fresh ? statement.getFreshIndexReader( schemaIndexDescriptor ) :
+               statement.getIndexReader( schemaIndexDescriptor );
     }
 
     @Override

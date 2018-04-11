@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Locks;
@@ -412,8 +411,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                     indexEntryResourceId( labelId, propertyValues )
             );
 
-            allStoreHolder.nodeIndexSeek( allStoreHolder.indexGetCapability( schemaIndexDescriptor ), valueCursor,
-                    IndexOrder.NONE, propertyValues );
+            allStoreHolder.nodeIndexSeekWithFreshIndexReader(
+                    allStoreHolder.indexGetCapability( schemaIndexDescriptor ), valueCursor, propertyValues );
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,

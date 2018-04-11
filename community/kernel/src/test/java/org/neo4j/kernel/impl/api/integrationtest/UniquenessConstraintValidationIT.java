@@ -308,7 +308,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( transaction, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+        assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                 equalTo( ourNode ) );
         commit();
     }
@@ -336,7 +336,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         createLabeledNode( transaction, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( transaction.dataRead().nodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
+        assertThat( transaction.dataRead().lockingNodeUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ),
                 equalTo( ourNode ) );
         commit();
     }
