@@ -88,7 +88,12 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
 
-    @Description( "The name of the database hosted by this server instance" )
+    @Description( "The name of the database being hosted by this server instance. This configuration setting may be safely ignored " +
+            "unless deploying a multicluster. Instances may be allocated to distinct sub-clusters by assigning them distinct database " +
+            "names using this setting. For instance if you had 6 instances you could form 2 sub-clusters by assigning half " +
+            "the database name \"foo\", half the name \"bar\". The setting value must match exactly between members of the same sub-cluster. " +
+            "This setting is a one-off: once an instance is configured with a database name it may not be changed in future without using " +
+            "neo4j-admin unbind." )
     public static final Setting<String> database =
             setting( "causal_clustering.database", STRING, "default" );
 
@@ -133,7 +138,9 @@ public class CausalClusteringSettings implements LoadableConfig
             "setting alone. If you have 5 machines then you can survive failures down to 3 remaining, e.g. with 2 dead members. The three remaining can " +
             "still vote another replacement member in successfully up to a total of 6 (2 of which are still dead) and then after this, one of the " +
             "superfluous dead members will be immediately and automatically voted out (so you are left with 5 members in the consensus group, 1 of which " +
-            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one." )
+            "is currently dead). Operationally you can now bring the last machine up by bringing in another replacement or repairing the dead one. " +
+            "When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used to define the minimum size " +
+            "of *each* sub-cluster at runtime." )
     public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
