@@ -117,8 +117,13 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             createIndexesAndData( db, LABEL0 );
 
             // then
-            verifyIndexes( db, LABEL1 );
             verifyIndexes( db, LABEL0 );
+
+            // when
+            additionalUpdates( db, LABEL1 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL1 );
         }
         finally
         {
@@ -144,9 +149,19 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             createIndexesAndData( db, LABEL0 );
 
             // then
-            verifyIndexes( db, LABEL1 );
-            verifyIndexes( db, LABEL2 );
             verifyIndexes( db, LABEL0 );
+
+            // when
+            additionalUpdates( db, LABEL1 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL1 );
+
+            // when
+            additionalUpdates( db, LABEL2 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL2 );
         }
         finally
         {
@@ -188,6 +203,11 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             tx.success();
         }
 
+        createData( db, label );
+    }
+
+    private void createData( GraphDatabaseService db, Label label )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 100; i++ )
@@ -204,6 +224,11 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
+    private void additionalUpdates( GraphDatabaseAPI db, Label label )
+    {
+        createData( db, label );
+    }
+
     private void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
     {
         // There should be an index for the label and KEY1 containing 100 nodes
@@ -213,6 +238,17 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         // There should be an index for the label and KEY1+KEY2 containing 34 nodes
         assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
         assertEquals( 34, countIndexedNodes( db, label, KEY1, KEY2 ) );
+    }
+
+    private void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
+    {
+        // There should be an index for the label and KEY1 containing 100 nodes
+        assertTrue( hasIndex( db, label, KEY1 ) );
+        assertEquals( 200, countIndexedNodes( db, label, KEY1 ) );
+
+        // There should be an index for the label and KEY1+KEY2 containing 34 nodes
+        assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
+        assertEquals( 68, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
     private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
