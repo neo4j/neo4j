@@ -78,7 +78,8 @@ public class StoreCopyClient
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
-            persistentCall( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ), addressProvider,
+            persistentCallToSecondary( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ),
+                    addressProvider,
                     terminationConditions.get() );
         }
     }
@@ -92,12 +93,14 @@ public class StoreCopyClient
         while ( indexIds.hasNext() )
         {
             long indexId = indexIds.next();
-            persistentCall( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ), addressProvider,
+            persistentCallToSecondary( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ),
+                    addressProvider,
                     terminationConditions.get() );
         }
     }
 
-    private void persistentCall( CatchUpRequest request, CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler, CatchupAddressProvider addressProvider,
+    private void persistentCallToSecondary( CatchUpRequest request, CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler,
+            CatchupAddressProvider addressProvider,
             TerminationCondition terminationCondition ) throws StoreCopyFailedException
     {
         TimeoutStrategy.Timeout timeout = backOffStrategy.newTimeout();
@@ -106,23 +109,19 @@ public class StoreCopyClient
         {
             try
             {
-                AdvertisedSocketAddress from = addressProvider.secondary();
-                log.info( format( "Sending request '%s' to '%s'", request, from ) );
-                StoreCopyFinishedResponse response = catchUpClient.makeBlockingRequest( from, request, copyHandler );
-                successful = successfulFileDownload( response );
+                AdvertisedSocketAddress address = addressProvider.secondary();
+                log.info( format( "Sending request '%s' to '%s'", request, address ) );
+                StoreCopyFinishedResponse response = catchUpClient.makeBlockingRequest( address, request, copyHandler );
+                successful = successfulRequest( response, request );
             }
             catch ( CatchUpClientException | CatchupAddressResolutionException e )
             {
+                log.warn( format( "Request failed exceptionally '%s'.", request ), e );
                 successful = false;
             }
             if ( !successful )
             {
-                log.error( format( "Request failed '%s'", request ) );
                 terminationCondition.assertContinue();
-            }
-            else
-            {
-                log.info( format( "Request was successful '%s'", request ) );
             }
             awaitAndIncrementTimeout( timeout );
         }
@@ -175,29 +174,23 @@ public class StoreCopyClient
         }
     }
 
-    private boolean successfulFileDownload( StoreCopyFinishedResponse response ) throws StoreCopyFailedException
+    private boolean successfulRequest( StoreCopyFinishedResponse response, CatchUpRequest request ) throws StoreCopyFailedException
     {
         StoreCopyFinishedResponse.Status responseStatus = response.status();
-        log.debug( "Request for individual file resulted in response type: %s", response.status() );
         if ( responseStatus == StoreCopyFinishedResponse.Status.SUCCESS )
         {
+            log.info( format( "Request was successful '%s'", request ) );
             return true;
         }
-        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND )
+        else if ( StoreCopyFinishedResponse.Status.E_TOO_FAR_BEHIND == responseStatus || StoreCopyFinishedResponse.Status.E_UNKNOWN == responseStatus ||
+                StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH == responseStatus )
         {
-            return false;
-        }
-        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_UNKNOWN )
-        {
-            return false;
-        }
-        else if ( responseStatus == StoreCopyFinishedResponse.Status.E_STORE_ID_MISMATCH )
-        {
+            log.warn( format( "Request failed '%s'. With response: %s", request, response.status() ) );
             return false;
         }
         else
         {
-            throw new StoreCopyFailedException( "Unknown response type: " + responseStatus );
+            throw new StoreCopyFailedException( format( "Request responded with an unknown response type: %s. '%s'", responseStatus, request ) );
         }
     }
 }
