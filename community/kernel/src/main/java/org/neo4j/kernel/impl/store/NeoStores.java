@@ -516,7 +516,7 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void rebuildCountStoreIfNeeded() throws IOException
+    public void startCountStore() throws IOException
     {
         // TODO: move this to LifeCycle
         getCounts().start();
