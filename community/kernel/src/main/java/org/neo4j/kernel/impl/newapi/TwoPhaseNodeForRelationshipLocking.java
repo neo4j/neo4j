@@ -27,7 +27,6 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
@@ -88,7 +87,7 @@ class TwoPhaseNodeForRelationshipLocking
         while ( retry );
     }
 
-    private void collectAndSortNodeIds( long nodeId, Transaction transaction, NodeCursor nodes ) throws EntityNotFoundException
+    private void collectAndSortNodeIds( long nodeId, Transaction transaction, NodeCursor nodes )
     {
         PrimitiveLongSet nodeIdSet = Primitive.longSet();
         nodeIdSet.add( nodeId );

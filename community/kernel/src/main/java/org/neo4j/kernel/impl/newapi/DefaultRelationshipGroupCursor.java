@@ -233,12 +233,6 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         if ( !isClosed() )

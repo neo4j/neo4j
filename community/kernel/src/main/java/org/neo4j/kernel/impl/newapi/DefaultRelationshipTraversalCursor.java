@@ -480,12 +480,6 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         if ( !isClosed() )

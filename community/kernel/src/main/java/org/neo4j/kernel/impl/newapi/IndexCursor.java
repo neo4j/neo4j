@@ -34,11 +34,6 @@ abstract class IndexCursor<T extends IndexProgressor>
         this.progressor = progressor;
     }
 
-    public final boolean shouldRetry()
-    {
-        return false;
-    }
-
     final boolean innerNext()
     {
         return progressor != null && progressor.next();

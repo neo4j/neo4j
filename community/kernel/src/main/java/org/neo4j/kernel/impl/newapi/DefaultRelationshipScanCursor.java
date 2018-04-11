@@ -140,12 +140,6 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     }
 
     @Override
-    public boolean shouldRetry()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         if ( !isClosed() )
