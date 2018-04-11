@@ -324,6 +324,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             return Values.intValue( getZoneOffset().getTotalSeconds() / 60 );
         }
+        if ( field == Field.offsetSeconds )
+        {
+            return Values.intValue( getZoneOffset().getTotalSeconds() );
+        }
         if ( field == null || field.field == null )
         {
             throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
@@ -605,6 +609,15 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
         },
         offsetMinutes//<pre>
+        { //</pre>
+
+            @Override
+            void assign( Builder<?> builder, AnyValue value )
+            {
+                throw new UnsupportedTemporalUnitException( "Not supported: " + name() );
+            }
+        },
+        offsetSeconds//<pre>
         { //</pre>
 
             @Override
