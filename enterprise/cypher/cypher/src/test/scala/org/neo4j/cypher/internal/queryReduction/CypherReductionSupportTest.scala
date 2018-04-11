@@ -69,7 +69,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
     val reduced = reduceQuery(query, Some(setup)) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>
-          if(e.getMessage == "/ by zero")
+          if(e.getMessage == "/ by zero" || e.getMessage == "divide by zero")
             Reproduced
           else
             NotReproduced
@@ -85,7 +85,7 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
     val reduced = reduceQuery(query, Some(setup), enterprise = true) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
         case Failure(e:ArithmeticException) =>
-          if(e.getMessage == "/ by zero")
+          if(e.getMessage == "/ by zero" || e.getMessage == "divide by zero")
             Reproduced
           else
             NotReproduced
