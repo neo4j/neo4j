@@ -32,7 +32,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -41,6 +43,7 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -56,12 +59,14 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
-public class Start3_2DbOn3_3AndCreateFusionIndexIT
+public class StartOldDbOn3_4AndCreateFusionIndexIT
 {
-    private static final String ZIP_FILE = "3_2-db.zip";
+    private static final String ZIP_FILE_3_2 = "3_2-db.zip";
+    private static final String ZIP_FILE_3_3 = "3_3-db.zip";
 
     private static final Label LABEL1 = Label.label( "Label1" );
     private static final Label LABEL2 = Label.label( "Label2" );
+    private static final Label LABEL0 = Label.label( "Label0" );
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
 
@@ -74,9 +79,46 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        createIndexDataAndShutdown( db, LABEL1 );
+    }
+
+    @Ignore( "Here as reference for how 3.3 db was created" )
+    @Test
+    public void create3_3Database() throws Exception
+    {
+        File storeDir = tempStoreDirectory();
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+
+        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
+        GraphDatabaseService db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, LABEL1 );
+
+        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
+        db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, LABEL2 );
+        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+    }
+
+    @Test
+    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    {
+        // given
+        File storeDir = unzip( getClass(), ZIP_FILE_3_2, directory.absolutePath() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .newGraphDatabase();
         try
         {
-            createIndexesAndData( db, LABEL1 );
+            verifyIndexes( db, LABEL1 );
+
+            // when
+            createIndexesAndData( db, LABEL0 );
+
+            // then
+            verifyIndexes( db, LABEL1 );
+            verifyIndexes( db, LABEL0 );
         }
         finally
         {
@@ -85,21 +127,38 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     }
 
     @Test
-    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    public void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        File storeDir = unzip( getClass(), ZIP_FILE, directory.absolutePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = unzip( getClass(), ZIP_FILE_3_3, directory.absolutePath() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .newGraphDatabase();
         try
         {
             verifyIndexes( db, LABEL1 );
+            verifyIndexes( db, LABEL2 );
 
             // when
-            createIndexesAndData( db, LABEL2 );
+            createIndexesAndData( db, LABEL0 );
 
             // then
             verifyIndexes( db, LABEL1 );
             verifyIndexes( db, LABEL2 );
+            verifyIndexes( db, LABEL0 );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
+    {
+        try
+        {
+            createIndexesAndData( db, label );
         }
         finally
         {
