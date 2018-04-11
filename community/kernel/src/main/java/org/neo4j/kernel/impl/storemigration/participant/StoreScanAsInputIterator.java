@@ -19,17 +19,13 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 import static java.lang.Long.min;
-
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 
 /**
@@ -51,11 +47,9 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         this.highId = store.getHighId();
     }
 
-    @Override
-    public InputChunk newChunk()
+    RecordCursor<RECORD> createCursor()
     {
-        RecordCursor<RECORD> cursor = store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
-        return new StoreScanChunk( cursor );
+        return store.newRecordCursor( store.newRecord() ).acquire( 0, CHECK );
     }
 
     @Override
@@ -75,46 +69,4 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         ((StoreScanChunk)chunk).initialize( startId, id );
         return true;
     }
-
-    private class StoreScanChunk implements InputChunk
-    {
-        private final RecordCursor<RECORD> cursor;
-        private long id;
-        private long endId;
-
-        StoreScanChunk( RecordCursor<RECORD> cursor )
-        {
-            this.cursor = cursor;
-        }
-
-        @Override
-        public boolean next( InputEntityVisitor visitor ) throws IOException
-        {
-            if ( id < endId )
-            {
-                if ( cursor.next( id ) )
-                {
-                    visitRecord( cursor.get(), visitor );
-                    visitor.endOfEntity();
-                }
-                id++;
-                return true;
-            }
-            return false;
-        }
-
-        public void initialize( long startId, long endId )
-        {
-            this.id = startId;
-            this.endId = endId;
-        }
-
-        @Override
-        public void close()
-        {
-            cursor.close();
-        }
-    }
-
-    protected abstract boolean visitRecord( RECORD record, InputEntityVisitor visitor );
 }
