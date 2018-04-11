@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -383,5 +384,34 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         {
             assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( 1337 ) );
         }
+    }
+
+    @Test
+    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    {
+        // Given
+        long relationshipId;
+        String propertyKey = "prop";
+        Value theValue = stringValue( "The Value" );
+
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+
+            r.setProperty( propertyKey, theValue.asObject() );
+            relationshipId = r.getId();
+            ctx.success();
+        }
+
+        // When
+        Transaction tx = session.beginTransaction();
+        int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+        assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, property, theValue ), equalTo( theValue ) );
+        tx.success();
+
+        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
     }
 }
