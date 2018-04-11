@@ -71,7 +71,7 @@ public class TransactionStatusResult
             Map<KernelTransactionHandle,List<QuerySnapshot>> handleSnapshotsMap, ZoneId zoneId ) throws InvalidArgumentsException
     {
         this.transactionId = transaction.getUserTransactionName();
-        this.username = transaction.securityContext().subject().username();
+        this.username = transaction.subject().username();
         this.startTime = ProceduresTimeFormatHelper.formatTime( transaction.startTime(), zoneId );
         Optional<Status> terminationReason = transaction.terminationReason();
         this.activeLockCount = transaction.activeLocks().count();

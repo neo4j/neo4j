@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -693,6 +694,12 @@ public class QueryExecutionLocksIT
         public SecurityContext securityContext()
         {
             return internal.securityContext();
+        }
+
+        @Override
+        public AuthSubject subject()
+        {
+            return internal.subject();
         }
 
         @Override

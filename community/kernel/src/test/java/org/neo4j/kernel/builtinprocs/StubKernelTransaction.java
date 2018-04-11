@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -172,6 +173,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public SecurityContext securityContext()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AuthSubject subject()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

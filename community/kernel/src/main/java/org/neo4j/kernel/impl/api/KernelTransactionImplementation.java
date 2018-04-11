@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
@@ -366,7 +367,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public SecurityContext securityContext()
     {
+        if ( securityContext == null )
+        {
+            throw new NotInTransactionException();
+        }
         return securityContext;
+    }
+
+    public AuthSubject subject()
+    {
+        return securityContext == null ? AuthSubject.ANONYMOUS : securityContext.subject();
     }
 
     public void setMetaData( Map<String, Object> data )
@@ -828,6 +838,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public StatementLocks statementLocks()
     {
+        assertOpen();
         return statementLocks;
     }
 

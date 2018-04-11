@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -48,7 +49,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SystemNanoClock clock;
-    private final SecurityContext securityContext;
+    private final AuthSubject subject;
     private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
     private final Map<String,Object> metaData;
@@ -61,7 +62,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
         this.timeoutMillis = tx.timeout();
-        this.securityContext = tx.securityContext();
+        this.subject = tx.subject();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
         this.metaData = tx.getMetaData();
@@ -107,9 +108,9 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     }
 
     @Override
-    public SecurityContext securityContext()
+    public AuthSubject subject()
     {
-        return securityContext;
+        return subject;
     }
 
     @Override
