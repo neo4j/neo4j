@@ -94,7 +94,6 @@ public class NanosecondTruncationTest
         assertEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 7, UTC ) );
     }
 
-
     @Test
     public void durationShouldEqualSameWithOtherNano()
     {
@@ -139,7 +138,7 @@ public class NanosecondTruncationTest
     }
 
     @Test
-    public void datetimeShouldTruncateOnTruncation ()
+    public void datetimeShouldTruncateOnTruncation()
     {
         Map<String,AnyValue> map = new HashMap<>(  );
         map.put( "nanosecond", Values.intValue( 1234 ) );
