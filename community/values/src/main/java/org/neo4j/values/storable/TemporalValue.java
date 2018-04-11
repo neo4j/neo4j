@@ -57,6 +57,7 @@ import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
@@ -1366,6 +1367,26 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }
 
+    static <TEMP extends Temporal> TEMP withTruncatedNano( TEMP value, int precision )
+    {
+        if ( precision < 0 || precision > 9 )
+        {
+            throw new InvalidValuesArgumentException( "The default_temporal_nanosecond_precision config must be an integer between 0 and 9, was " + precision );
+        }
+        int truncateFactor = (int) Math.pow( 10, 9 - precision );
+        TEMP newValue;
+        try
+        {
+            int truncatedNano = value.get( NANO_OF_SECOND ) / truncateFactor * truncateFactor;
+            newValue = (TEMP) value.with( NANO_OF_SECOND, truncatedNano );
+        }
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new IllegalStateException( e.getMessage(), e );
+        }
+        return newValue;
+    }
+
     static <TEMP extends Temporal> TEMP updateFieldMapWithConflictingSubseconds( Map<String,AnyValue> fields, TemporalUnit unit, TEMP truncated )
     {
         boolean conflictingMilliSeconds = false;
@@ -1389,14 +1410,14 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             AnyValue micros = fields.remove( "microsecond" );
             AnyValue nanos = fields.remove( "nanosecond" );
             int newNanos = validNano( millis, micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
+            truncated = (TEMP) truncated.with( NANO_OF_SECOND, newNanos );
         }
         else if ( conflictingMicroSeconds )
         {
             AnyValue micros = Values.intValue( truncated.get( ChronoField.MICRO_OF_SECOND ) );
             AnyValue nanos = fields.remove( "nanosecond" );
             int newNanos = validNano( null,  micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
+            truncated = (TEMP) truncated.with( NANO_OF_SECOND, newNanos );
         }
         return truncated;
     }

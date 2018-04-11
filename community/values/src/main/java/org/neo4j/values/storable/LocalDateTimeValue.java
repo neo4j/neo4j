@@ -56,6 +56,7 @@ import static org.neo4j.values.storable.DateValue.parseDate;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
+import static org.neo4j.values.storable.Values.nanoPrecision;
 
 public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalDateTimeValue>
 {
@@ -263,7 +264,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
     private LocalDateTimeValue( LocalDateTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value, nanoPrecision );
         this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
     }
 

@@ -59,6 +59,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
+import static org.neo4j.values.storable.Values.nanoPrecision;
 import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
@@ -212,6 +213,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
+        int truncateFactor = (int) Math.pow( 10, 9 - nanoPrecision );
+        nanos = nanos / truncateFactor * truncateFactor;
+
         seconds += nanos / NANOS_PER_SECOND;
         nanos %= NANOS_PER_SECOND;
         if ( seconds < 0 && nanos > 0 )

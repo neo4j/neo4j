@@ -45,6 +45,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.Values.nanoPrecision;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
@@ -175,7 +176,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     private LocalTimeValue( LocalTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value, nanoPrecision );
     }
 
     @Override
