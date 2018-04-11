@@ -66,7 +66,6 @@ object LogicalPlanConverter {
     case p: plans.UnwindCollection => unwindAsCodeGenPlan(p)
     case p: plans.Sort if hasStandaloneLimit(p) => throw new CantCompileQueryException(s"Not able to combine LIMIT and $p")
     case p: plans.Sort => sortAsCodeGenPlan(p)
-    case p: plans.Apply => applyAsCodeGenPlan(p)
 
     case _ =>
       throw new CantCompileQueryException(s"This logicalPlan is not yet supported: ${logicalPlan.getClass.getSimpleName}")
@@ -198,8 +197,16 @@ object LogicalPlanConverter {
             indexSeekFun(opName, context.namer.newVarName(), expression, nodeVar, actions)
 
           //collection, create set and for each element of the set do an index lookup
-          case plans.ManyQueryExpression(e) =>
+          case plans.ManyQueryExpression(e: ast.ListLiteral) =>
             val expression = ToSet(createExpression(e)(context))
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
+            ForEachExpression(expressionVar, expression,
+                              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
+                                           actions))
+
+          //Unknown, try to cast to collection and then same as above
+          case plans.ManyQueryExpression(e) =>
+            val expression = ToSet(CastToCollection(createExpression(e)(context)))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
                               indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
@@ -243,7 +250,7 @@ object LogicalPlanConverter {
             }
 
           case exp =>
-            val expression = ToSet(createExpression(exp)(context))
+            val expression = ToSet(CastToCollection(createExpression(exp)(context)))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
             ForEachExpression(expressionVar, expression,
                               SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
@@ -570,22 +577,19 @@ object LogicalPlanConverter {
 
       val opName = context.registerOperator(logicalPlan)
 
-      val elementCodeGenType = collectionCodeGenType match {
+      val (elementCodeGenType, loopDataGenerator) = collectionCodeGenType match {
+        case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
+          if RepresentationType.isPrimitive(innerReprType) =>
+          (CypherCodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
         case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType)) =>
-          CypherCodeGenType(innerType, innerReprType)
+          (CypherCodeGenType(innerType, innerReprType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.ListType(innerType), _) =>
-          CypherCodeGenType(innerType, ReferenceType)
+          (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.CTAny, _) =>
-          CypherCodeGenType(symbols.CTAny, ReferenceType)
+          (CypherCodeGenType(symbols.CTAny, ReferenceType), ir.UnwindCollection(opName, collection))
         case t =>
           throw new CantCompileQueryException(s"Unwind collection type $t not supported")
       }
-
-      val loopDataGenerator =
-        if (elementCodeGenType.isPrimitive)
-          UnwindPrimitiveCollection(opName, collection)
-        else
-          UnwindCollection(opName, collection, elementCodeGenType)
 
       val variableName = context.namer.newVarName()
       val variable = Variable(variableName, elementCodeGenType, nullable = elementCodeGenType.canBeNullable)
@@ -596,31 +600,6 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this, cardinalities)
 
       (methodHandle, WhileLoop(variable, loopDataGenerator, actions) :: tl)
-    }
-  }
-
-  private def applyAsCodeGenPlan(apply: plans.Apply) = new CodeGenPlan {
-    override val logicalPlan: plans.LogicalPlan = apply
-
-    override def produce(context: CodeGenContext, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction]) = {
-      context.pushParent(this)
-      asCodeGenPlan(apply.lhs.get).produce(context, cardinalities)
-    }
-
-    override def consume(context: CodeGenContext, child: CodeGenPlan, cardinalities: Cardinalities): (Option[JoinTableMethod], List[Instruction]) = {
-      if (child.logicalPlan eq apply.lhs.get) {
-        context.pushParent(this)
-        val (m, actions) = asCodeGenPlan(apply.rhs.get).produce(context, cardinalities)
-        if (actions.isEmpty) throw new InternalException("Illegal call chain")
-        (m, actions)
-      } else if (child.logicalPlan eq apply.rhs.get) {
-        val opName = context.registerOperator(apply)
-        val (m, instruction :: tl) = context.popParent().consume(context, this, cardinalities)
-        (m, ApplyInstruction(opName, instruction) :: tl)
-      }
-      else {
-        throw new InternalException(s"Unexpected consume call by $child")
-      }
     }
   }
 

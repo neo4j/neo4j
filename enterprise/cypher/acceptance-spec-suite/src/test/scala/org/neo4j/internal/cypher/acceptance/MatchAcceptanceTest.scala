@@ -415,7 +415,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWith(Configs.All,
+    val result = executeWith(Configs.Interpreted,
       "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions

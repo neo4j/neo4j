@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,21 +44,9 @@ import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.storable.ArrayValue;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.RelationshipValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 // Class with static methods used by compiled execution plans
 @SuppressWarnings( "unused" )
@@ -65,21 +54,13 @@ public abstract class CompiledConversionUtils
 {
     public static boolean coerceToPredicate( Object value )
     {
-        if ( value == null || value == Values.NO_VALUE )
+        if ( value == null )
         {
             return false;
-        }
-        if ( value instanceof BooleanValue )
-        {
-            return ((BooleanValue) value).booleanValue();
         }
         if ( value instanceof Boolean )
         {
             return (boolean) value;
-        }
-        if ( value instanceof ArrayValue )
-        {
-            return ((ArrayValue) value).length() > 0;
         }
         if ( value.getClass().isArray() )
         {
@@ -88,37 +69,51 @@ public abstract class CompiledConversionUtils
         throw new CypherTypeException( "Don't know how to treat that as a predicate: " + value.toString(), null );
     }
 
+    public static Collection<?> toCollection( Object value )
+    {
+        if ( value == null )
+        {
+            return Collections.emptyList();
+        }
+        else if ( value instanceof Collection<?> )
+        {
+            return (Collection<?>) value;
+        }
+        else if ( value instanceof LongStream )
+        {
+            LongStream stream = (LongStream) value;
+            return stream.boxed().collect( Collectors.toList() );
+        }
+        else if ( value instanceof IntStream )
+        {
+            IntStream stream = (IntStream) value;
+            return stream.boxed().collect( Collectors.toList() );
+        }
+        else if ( value instanceof DoubleStream )
+        {
+            DoubleStream stream = (DoubleStream) value;
+            return stream.boxed().collect( Collectors.toList() );
+        }
+        else if ( value.getClass().isArray() )
+        {
+            int len = Array.getLength( value );
+            ArrayList<Object> collection = new ArrayList<>( len );
+            for ( int i = 0; i < len; i++ )
+            {
+                collection.add( Array.get( value, i ) );
+            }
+            return collection;
+        }
+
+        throw new CypherTypeException(
+                "Don't know how to create an iterable out of " + value.getClass().getSimpleName(), null );
+    }
+
     public static Set<?> toSet( Object value )
     {
-        if ( value == null || value == NO_VALUE )
+        if ( value == null )
         {
             return Collections.emptySet();
-        }
-        else if ( value instanceof SequenceValue )
-        {
-            SequenceValue sequenceValue = (SequenceValue) value;
-            Iterator<AnyValue> iterator = sequenceValue.iterator();
-            Set<AnyValue> set;
-            if ( sequenceValue.iterationPreference() == RANDOM_ACCESS )
-            {
-                // If we have a random access sequence value length() should be cheap and we can optimize the initial capacity
-                int length = sequenceValue.length();
-                set = new HashSet<>( length );
-                for ( int i = 0; i < length; i++ )
-                {
-                    set.add( sequenceValue.value( i ) );
-                }
-            }
-            else
-            {
-                set = new HashSet<>();
-                while ( iterator.hasNext() )
-                {
-                    AnyValue element = iterator.next();
-                    set.add( element );
-                }
-            }
-            return set;
         }
         else if ( value instanceof Collection<?> )
         {
@@ -199,19 +194,19 @@ public abstract class CompiledConversionUtils
      */
     public static Boolean equals( Object lhs, Object rhs )
     {
-        if ( lhs == null || rhs == null || lhs == NO_VALUE || rhs == NO_VALUE )
+        if ( lhs == null || rhs == null )
         {
             return null;
         }
 
-        boolean lhsVirtualNodeValue = lhs instanceof VirtualNodeValue;
-        if ( lhsVirtualNodeValue || rhs instanceof VirtualNodeValue || lhs instanceof VirtualRelationshipValue ||
-             rhs instanceof VirtualRelationshipValue )
+        boolean lhsNodeIdWrapper = lhs instanceof NodeIdWrapper;
+        if ( lhsNodeIdWrapper || rhs instanceof NodeIdWrapper || lhs instanceof RelationshipIdWrapper ||
+             rhs instanceof RelationshipIdWrapper )
         {
-            if ( (lhsVirtualNodeValue && !(rhs instanceof VirtualNodeValue)) ||
-                 (rhs instanceof VirtualNodeValue && !lhsVirtualNodeValue) ||
-                 (lhs instanceof VirtualRelationshipValue && !(rhs instanceof VirtualRelationshipValue)) ||
-                 (rhs instanceof VirtualRelationshipValue && !(lhs instanceof VirtualRelationshipValue)) )
+            if ( (lhsNodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
+                 (rhs instanceof NodeIdWrapper && !lhsNodeIdWrapper) ||
+                 (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
+                 (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
             {
                 throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
             }
@@ -224,119 +219,106 @@ public abstract class CompiledConversionUtils
         return lhsValue.ternaryEquals( rhsValue );
     }
 
-    // Ternary OR
     public static Boolean or( Object lhs, Object rhs )
     {
-        Boolean l = toBooleanOrNull( lhs );
-        Boolean r = toBooleanOrNull( rhs );
-
-        if ( l == null && r == null )
+        if ( lhs == null && rhs == null )
         {
             return null;
         }
-        else if ( l == null )
+        else if ( lhs == null && rhs instanceof Boolean )
         {
-            return r ? true : null;
+            return (Boolean) rhs ? true : null;
         }
-        else if ( r == null )
+        else if ( rhs == null && lhs instanceof Boolean )
         {
-            return l ? true : null;
+            return (Boolean) lhs ? true : null;
         }
-        return l || r;
+        else if ( lhs instanceof Boolean && rhs instanceof Boolean )
+        {
+            return (Boolean) lhs || (Boolean) rhs;
+        }
+
+        throw new CypherTypeException(
+                "Don't know how to do or on: " + (lhs != null ? lhs.toString() : null) + " and " +
+                (rhs != null ? rhs.toString() : null), null );
     }
 
-    // Ternary NOT
     public static Boolean not( Object predicate )
     {
-        Boolean b = toBooleanOrNull( predicate );
-        if ( b == null )
+        if ( predicate == null )
         {
             return null;
         }
-        return !b;
+
+        if ( predicate instanceof Boolean )
+        {
+            return !(Boolean) predicate;
+        }
+
+        throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
 
-    private static Boolean toBooleanOrNull( Object o )
+    public static Object loadParameter( AnyValue value, EmbeddedProxySPI proxySpi )
     {
-        if ( o == null || o == NO_VALUE )
-        {
-            return null;
-        }
-        else if ( o instanceof Boolean )
-        {
-            return (Boolean) o;
-        }
-        else if ( o instanceof BooleanValue )
-        {
-            return ((BooleanValue) o).booleanValue();
-        }
-        throw new CypherTypeException( "Don't know how to treat that as a boolean: " + o.toString(), null );
+       ParameterConverter converter = new ParameterConverter( proxySpi );
+       value.writeTo( converter );
+       return converter.value();
     }
 
     @SuppressWarnings( {"unchecked", "WeakerAccess"} )
-    public static AnyValue materializeAnyResult( EmbeddedProxySPI proxySpi, Object anyValue )
+    public static Object materializeAnyResult( EmbeddedProxySPI proxySpi, Object anyValue )
     {
-        if ( anyValue == null || anyValue == NO_VALUE )
+        if ( anyValue == null )
         {
-            return NO_VALUE;
+            return null;
         }
-        else if ( anyValue instanceof VirtualNodeValue )
+        else if ( anyValue instanceof NodeIdWrapper )
         {
-            if ( anyValue instanceof NodeValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+            return proxySpi.newNodeProxy( ((NodeIdWrapper) anyValue).id() );
         }
-        else if ( anyValue instanceof VirtualRelationshipValue )
+        else if ( anyValue instanceof RelationshipIdWrapper )
         {
-            if ( anyValue instanceof RelationshipValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+            return proxySpi.newRelationshipProxy( ((RelationshipIdWrapper) anyValue).id() );
         }
         else if ( anyValue instanceof List )
         {
-            return VirtualValues.fromList( (List<AnyValue>) (((List) anyValue).stream()
-                    .map( v -> materializeAnyResult( proxySpi, v ) ).collect( Collectors.toList() ) ) );
+            return ((List) anyValue).stream()
+                    .map( v -> materializeAnyResult( proxySpi, v ) ).collect( Collectors.toList() );
         }
         else if ( anyValue instanceof Map )
         {
             Map<String,?> incoming = (Map<String,?>) anyValue;
-            HashMap<String,AnyValue> outgoing = new HashMap<>( incoming.size() );
+            HashMap<String,Object> outgoing = new HashMap<>( incoming.size() );
             for ( Map.Entry<String,?> entry : incoming.entrySet() )
             {
                 outgoing.put( entry.getKey(), materializeAnyResult( proxySpi, entry.getValue() ) );
             }
-            return VirtualValues.map( outgoing );
+            return outgoing;
         }
         else if ( anyValue instanceof PrimitiveNodeStream )
         {
-            return VirtualValues.fromList( ((PrimitiveNodeStream) anyValue).longStream()
-                    .mapToObj( id -> (AnyValue) ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( id ) ) )
-                    .collect( Collectors.toList() ) );
+            return ((PrimitiveNodeStream) anyValue).longStream()
+                    .mapToObj( proxySpi::newNodeProxy )
+                    .collect( Collectors.toList() );
         }
         else if ( anyValue instanceof PrimitiveRelationshipStream )
         {
-            return VirtualValues.fromList( ((PrimitiveRelationshipStream) anyValue).longStream()
-                    .mapToObj( id -> (AnyValue) ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( id ) ) )
-                    .collect( Collectors.toList() ) );
+            return ((PrimitiveRelationshipStream) anyValue).longStream()
+                    .mapToObj( proxySpi::newRelationshipProxy )
+                    .collect( Collectors.toList() );
         }
         else if ( anyValue instanceof LongStream )
         {
-            long[] array = ((LongStream) anyValue).toArray();
-            return Values.longArray( array );
+            return ((LongStream) anyValue).boxed().collect( Collectors.toList() );
         }
         else if ( anyValue instanceof DoubleStream )
         {
-            double[] array = ((DoubleStream) anyValue).toArray();
-            return Values.doubleArray( array );
+            return ((DoubleStream) anyValue).boxed().collect( Collectors.toList() );
         }
         else if ( anyValue instanceof IntStream )
         {
             // IntStream is only used for list of primitive booleans
-            return VirtualValues.fromList( ((IntStream) anyValue).mapToObj( i -> Values.booleanValue( i != 0 ) ).collect( Collectors.toList() ) );
+            return ((IntStream) anyValue).mapToObj( i -> i != 0 ).collect( Collectors.toList() );
         }
         else if ( anyValue.getClass().isArray() )
         {
@@ -348,67 +330,26 @@ public abstract class CompiledConversionUtils
                 Object copy = Array.newInstance( componentType, length );
                 //noinspection SuspiciousSystemArraycopy
                 System.arraycopy( anyValue, 0, copy, 0, length );
-                return ValueUtils.of( copy );
+                return copy;
             }
             else if ( anyValue instanceof String[] )
             {
-                return Values.stringArray( (String[]) anyValue );
+                return anyValue;
             }
             else
             {
-                AnyValue[] copy = new AnyValue[length];
+                Object[] copy = new Object[length];
                 for ( int i = 0; i < length; i++ )
                 {
                     copy[i] = materializeAnyResult( proxySpi, Array.get( anyValue, i ) );
                 }
-                return VirtualValues.list( copy );
+                return copy;
             }
-        }
-        else if ( anyValue instanceof AnyValue )
-        {
-            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities (storable arrays should
-            // TODO: This is expensive and will copy all the data even if no conversion is actually performed.
-            // Investigate if it pays off to (1) first do a dry run and return as is if no conversion is needed,
-            // or (2) always create proxy objects directly whenever we create values so we can skip this,
-            // or (3) wrap with TransformedListValue (existing) or TransformedMapValue (non-existing) that does the conversion lazily
-            if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
-            {
-                return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
-            }
-            return (AnyValue) anyValue;
         }
         else
         {
-            return ValueUtils.of( anyValue );
+            return anyValue;
         }
-    }
-
-    public static NodeValue materializeNodeValue( EmbeddedProxySPI proxySpi, Object anyValue )
-    {
-        // Null check has to be done outside by the generated code
-        if ( anyValue instanceof NodeValue )
-        {
-            return (NodeValue) anyValue;
-        }
-        else if ( anyValue instanceof VirtualNodeValue )
-        {
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
-        }
-        throw new IllegalArgumentException( "Do not know how to materialize node value from type " + anyValue.getClass().getName() );
-    }
-
-    public static RelationshipValue materializeRelationshipValue( EmbeddedProxySPI proxySpi, Object anyValue )
-    {
-        // Null check has to be done outside by the generated code
-        if ( anyValue instanceof RelationshipValue )
-        {
-            return (RelationshipValue) anyValue;
-        }
-        else if ( anyValue instanceof VirtualRelationshipValue )
-        {
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
-        }
-        throw new IllegalArgumentException( "Do not know how to materialize relationship value from type " + anyValue.getClass().getName() );
     }
 
     public static Iterator iteratorFrom( Object iterable )
@@ -454,10 +395,6 @@ public abstract class CompiledConversionUtils
         {
             return LongStream.empty();
         }
-        else if ( list instanceof SequenceValue )
-        {
-            throw new IllegalArgumentException( "Need to implement support for SequenceValue in CompiledConversionUtils.toLongStream" );
-        }
         else if ( list instanceof List )
         {
             return ((List) list).stream().mapToLong( n -> ((Number) n).longValue() );
@@ -494,10 +431,6 @@ public abstract class CompiledConversionUtils
         {
             return DoubleStream.empty();
         }
-        else if ( list instanceof SequenceValue )
-        {
-            throw new IllegalArgumentException( "Need to implement support for SequenceValue in CompiledConversionUtils.toDoubleStream" );
-        }
         else if ( list instanceof List )
         {
             return ((List) list).stream().mapToDouble( n -> ((Number) n).doubleValue() );
@@ -524,10 +457,6 @@ public abstract class CompiledConversionUtils
         if ( list == null )
         {
             return IntStream.empty();
-        }
-        else if ( list instanceof SequenceValue )
-        {
-            throw new IllegalArgumentException( "Need to implement support for SequenceValue in CompiledConversionUtils.toBooleanStream" );
         }
         else if ( list instanceof List )
         {
@@ -580,14 +509,6 @@ public abstract class CompiledConversionUtils
         {
             return ((RelationshipIdWrapper) obj).id();
         }
-        else if ( obj instanceof VirtualNodeValue )
-        {
-            return ((VirtualNodeValue) obj).id();
-        }
-        else if ( obj instanceof VirtualRelationshipValue )
-        {
-            return ((VirtualRelationshipValue) obj).id();
-        }
         else if ( obj instanceof Long )
         {
             return (Long) obj;
@@ -599,13 +520,180 @@ public abstract class CompiledConversionUtils
         }
     }
 
-    //In the store we only support storable Value types and arrays thereof.
+    //In the store we only support primitives, String, and arrays thereof.
     //In cypher we must make an effort to transform Cypher lists to appropriate arrays whenever
     //we are using sending values down to the store or to an index.
     public static Object makeValueNeoSafe( Object object )
     {
-        AnyValue value = object instanceof AnyValue ? ((AnyValue) object) : ValueUtils.of( object );
-        return org.neo4j.cypher.internal.runtime.interpreted.makeValueNeoSafe.apply( value );
+        if ( object == null )
+        {
+            return null;
+        }
+        if ( hasSafeType( object ) )
+        {
+            return object;
+        }
+        else if ( object instanceof Object[] )
+        {
+            return safeArray( (Object[]) object );
+        }
+        else if ( object instanceof List<?> )
+        {
+            return safeArray( (List<?>) object );
+        }
+        throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
+    }
+
+    private static Object safeArray( Object[] array )
+    {
+        if ( array.length == 0 )
+        {
+            return new String[0];
+        }
+        else
+        {
+            Class<?> type = array[0].getClass();
+            for ( int i = 1; i < array.length; i++ )
+            {
+                type = mergeType( type, array[i].getClass() );
+            }
+
+            Object safeArray = Array.newInstance( type, array.length );
+            for ( int i = 0; i < array.length; i++ )
+            {
+                Array.set( safeArray, i, castIt( array[i], type ) );
+            }
+            return safeArray;
+        }
+    }
+
+    private static Object safeArray( List<?> list )
+    {
+        if ( list.size() == 0 )
+        {
+            return new String[0];
+        }
+        else
+        {
+            Class<?> type = null;
+            for ( Object o : list )
+            {
+                if ( type == null )
+                {
+                    type = o.getClass();
+                }
+                else
+                {
+                    type = mergeType( type, o.getClass() );
+                }
+            }
+
+            Object safeArray = Array.newInstance( type, list.size() );
+            int i = 0;
+            for ( Object o : list )
+            {
+                Array.set( safeArray, i++, castIt( o, type ) );
+            }
+            return safeArray;
+        }
+    }
+
+    private static Object castIt( Object value, Class<?> type )
+    {
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            if ( type == Long.class )
+            {
+                return number.longValue();
+            }
+            else if ( type == Integer.class )
+            {
+                return number.intValue();
+            }
+            else if ( type == Short.class )
+            {
+                return number.shortValue();
+            }
+            else if ( type == Byte.class )
+            {
+                return number.byteValue();
+            }
+            else if ( type == Float.class )
+            {
+                return number.floatValue();
+            }
+            else if ( type == Double.class )
+            {
+                return number.doubleValue();
+            }
+            else
+            {
+                throw new CypherTypeException( "Cannot handle numbers of type " + type.getName(), null );
+            }
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    private static boolean hasSafeType( Object value )
+    {
+        return value instanceof Value ||
+                value instanceof String ||
+                value instanceof Long ||
+                value instanceof Integer ||
+                value instanceof Boolean ||
+                value instanceof Double ||
+                value instanceof Float ||
+                value instanceof Short ||
+                value instanceof Byte ||
+                (value.getClass().isArray() && value.getClass().getComponentType().isPrimitive());
+    }
+
+    static Class<?> mergeType( Class<?> type1, Class<?> type2 )
+    {
+        if ( type1 == String.class && type2 == String.class )
+        {
+            return String.class;
+        }
+        else if ( type1 == Boolean.class && type2 == Boolean.class )
+        {
+            return Boolean.class;
+        }
+        else if ( type1 == Character.class && type2 == Character.class )
+        {
+            return Character.class;
+        }
+        else if ( Number.class.isAssignableFrom( type1 ) && Number.class.isAssignableFrom( type2 ) )
+        {
+            if ( type1 == Double.class || type2 == Double.class )
+            {
+                return Double.class;
+            }
+            else if ( type1 == Float.class || type2 == Float.class )
+            {
+                return Float.class;
+            }
+            else if ( type1 == Long.class || type2 == Long.class )
+            {
+                return Long.class;
+            }
+            else if ( type1 == Integer.class || type2 == Integer.class )
+            {
+                return Integer.class;
+            }
+            else if ( type1 == Short.class || type2 == Short.class )
+            {
+                return Short.class;
+            }
+            else if ( type1 == Byte.class || type2 == Byte.class )
+            {
+                return Byte.class;
+            }
+        }
+        throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -613,7 +701,7 @@ public abstract class CompiledConversionUtils
     {
         try
         {
-            MapValue map = (MapValue) object;
+            Map<String,Object> map = (Map<String,Object>) object;
             return map.get( key );
         }
         catch ( ClassCastException e )

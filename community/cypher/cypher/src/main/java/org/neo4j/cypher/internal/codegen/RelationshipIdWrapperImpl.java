@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.codegen;
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
-import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
 
-public final class RelationshipIdWrapperImpl extends VirtualRelationshipValue implements RelationshipIdWrapper
+public final class RelationshipIdWrapperImpl implements RelationshipIdWrapper
 {
     private final long id;
 
@@ -39,13 +37,26 @@ public final class RelationshipIdWrapperImpl extends VirtualRelationshipValue im
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    public boolean equals( Object o )
     {
-        writer.writeRelationshipReference( id );
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        RelationshipIdWrapperImpl that = (RelationshipIdWrapperImpl) o;
+
+        return id == that.id;
+
     }
 
-    public String toString()
+    @Override
+    public int hashCode()
     {
-        return String.format( "Relationship[%d]", id );
+        return (int) (id ^ (id >>> 32));
     }
 }

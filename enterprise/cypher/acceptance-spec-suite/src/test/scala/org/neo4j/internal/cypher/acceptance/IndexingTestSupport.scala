@@ -62,7 +62,7 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
 
   protected def assertSeekMatchFor(value: Value, nodes: Node*): Unit = {
     val query = s"MATCH (n:$LABEL) WHERE n.$PROPERTY = $$param RETURN n"
-    testRead(query, Map("param" -> value.asObject()), "NodeIndexSeek", nodes, config = Configs.All - Configs.OldAndRule)
+    testRead(query, Map("param" -> value.asObject()), "NodeIndexSeek", nodes)
   }
 
   protected def assertScanMatch(nodes: Node*): Unit = {
@@ -89,12 +89,11 @@ trait IndexingTestSupport extends ExecutionEngineFunSuite with CypherComparisonS
     testRead(query, Map("param1" -> bound1.asObject(), "param2" -> bound2.asObject()), "NodeIndexSeekByRange", nodes)
   }
 
-  private def testRead(query: String, params: Map[String, AnyRef], wantedOperator: String, expected: Seq[Node],
-                       config: TestConfiguration = Configs.Interpreted - Configs.OldAndRule): Unit = {
+  private def testRead(query: String, params: Map[String, AnyRef], wantedOperator: String, expected: Seq[Node]): Unit = {
     if (cypherComparisonSupport) {
       val result =
         executeWith(
-          config,
+          Configs.Interpreted - Configs.OldAndRule,
           query,
           params = params,
           planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators(wantedOperator))

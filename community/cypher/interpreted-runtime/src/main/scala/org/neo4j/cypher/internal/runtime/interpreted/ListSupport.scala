@@ -55,7 +55,7 @@ trait ListSupport {
   protected def castToList: PartialFunction[AnyValue, ListValue] = {
     case x: ArrayValue => VirtualValues.fromArray(x)
     case x: ListValue => x
-    case x: MapValue => VirtualValues.list(x) // TODO: This is slightly peculiar. Excercise this in tests to clarify behavior
+    case x: MapValue => VirtualValues.list(x)
   }
 
   implicit class RichSeq[T](inner: Seq[T]) {

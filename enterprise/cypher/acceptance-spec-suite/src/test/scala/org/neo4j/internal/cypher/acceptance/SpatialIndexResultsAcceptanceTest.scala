@@ -94,7 +94,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
-  test("indexed point array of size 1 should be readable from parameterized node property") {
+  test("indexed point array should be readable from parameterized node property") {
     // Given
     graph.createIndex("Place", "location")
     createLabeledNode("Place")
@@ -113,72 +113,6 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // Then
     val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
     pointList should equal(List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
-    // And CRS names should equal
-    pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
-  }
-
-  test("indexed point array should be readable from parameterized node property") {
-    // Given
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
-    graph.execute(
-      """MATCH (p:Place) SET p.location =
-        |[point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}),
-        | point({y: 56.7, x: 13.78, crs: 'WGS-84'})]
-        |RETURN p.location as point""".stripMargin)
-
-    // When
-    val localConfig = Configs.All - Configs.OldAndRule
-    val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-        plan should useOperatorWithText("Projection", "point")
-        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" ->
-        Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-          Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
-
-    // Then
-    val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
-    pointList should equal(List(
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))
-    )
-
-    // And CRS names should equal
-    pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
-  }
-
-  test("indexed point array should be readable from parameterized (as list) node property") {
-    // Given
-    graph.createIndex("Place", "location")
-    createLabeledNode("Place")
-    graph.execute(
-      """MATCH (p:Place) SET p.location =
-        |[point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}),
-        | point({y: 56.7, x: 13.78, crs: 'WGS-84'})]
-        |RETURN p.location as point""".stripMargin)
-
-    // When
-    val localConfig = Configs.All - Configs.OldAndRule
-    val result = executeWith(localConfig,
-      "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
-        plan should useOperatorWithText("Projection", "point")
-        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3),
-      params = ImmutableMap("param" ->
-        List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-          Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
-
-    // Then
-    val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
-    pointList should equal(List(
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))
-    )
-
     // And CRS names should equal
     pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
