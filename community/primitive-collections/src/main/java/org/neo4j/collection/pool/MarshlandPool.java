@@ -120,40 +120,26 @@ public class MarshlandPool<T> implements Pool<T>
     {
         for ( LocalSlotReference slotReference : slotReferences )
         {
-            T object = (T) slotReference.object;
-            if ( object != null )
+            LocalSlot<T> slot = (LocalSlot) slotReference.get();
+            if ( slot != null )
             {
-                slotReference.object = null;
-                LocalSlot<T> slot = (LocalSlot<T>) slotReference.get();
-                if ( slot != null )
+                T obj = slot.object;
+                if ( obj != null )
                 {
                     slot.set( null );
+                    pool.release( obj );
                 }
-                slotReference.clear();
-                pool.release( object );
             }
         }
-        slotReferences.clear();
-    }
 
-    /**
-     * Container for the "puddle", the small local pool each thread keeps.
-     */
-    private static class LocalSlot<T>
-    {
-
-        private T object;
-        private final LocalSlotReference slotWeakReference;
-
-        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
+        for ( LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll(); reference != null;
+                reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
         {
-            slotWeakReference = new LocalSlotReference( this, referenceQueue );
-        }
-
-        public void set( T obj )
-        {
-            slotWeakReference.object = obj;
-            this.object = obj;
+            T instance = reference.object;
+            if ( instance != null )
+            {
+                pool.release( instance );
+            }
         }
     }
 
@@ -167,6 +153,26 @@ public class MarshlandPool<T> implements Pool<T>
         private LocalSlotReference( LocalSlot referent, ReferenceQueue<? super LocalSlot> q )
         {
             super( referent, q );
+        }
+    }
+
+    /**
+     * Container for the "puddle", the small local pool each thread keeps.
+     */
+    private static class LocalSlot<T>
+    {
+        private T object;
+        private final LocalSlotReference slotWeakReference;
+
+        LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
+        {
+            slotWeakReference = new LocalSlotReference( this, referenceQueue );
+        }
+
+        public void set( T obj )
+        {
+            slotWeakReference.object = obj;
+            this.object = obj;
         }
     }
 }
