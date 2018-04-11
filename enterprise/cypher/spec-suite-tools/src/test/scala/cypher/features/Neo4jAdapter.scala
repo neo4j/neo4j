@@ -23,6 +23,7 @@ import cypher.features.Neo4jExceptionToExecutionFailed._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.default_temporal_nanosecond_precision
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -34,7 +35,8 @@ import scala.util.{Failure, Success, Try}
 
 object Neo4jAdapter {
   def apply(executionPrefix: String,
-            dbConfig: collection.Map[Setting[_], String] = Map[Setting[_], String](cypher_hints_error -> "true")): Neo4jAdapter = {
+            dbConfig: collection.Map[Setting[_], String] = Map[Setting[_], String]
+              (cypher_hints_error -> "true", default_temporal_nanosecond_precision -> "9")): Neo4jAdapter = {
     val service = createGraphDatabase(dbConfig)
     new Neo4jAdapter(service, executionPrefix)
   }

@@ -21,12 +21,15 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time.{ZoneId, ZoneOffset}
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
 
   override val cypherComparisonSupport = true
+
+  override def databaseConfig() = Map(GraphDatabaseSettings.default_temporal_nanosecond_precision -> "9")
 
   test("should seek") {
     val conf =  Configs.Interpreted - Configs.OldAndRule
