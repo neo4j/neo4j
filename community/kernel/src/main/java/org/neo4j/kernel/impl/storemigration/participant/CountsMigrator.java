@@ -81,7 +81,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
 
     public CountsMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
-        super( "Count rebuilding" );
+        super( "Counts store" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
