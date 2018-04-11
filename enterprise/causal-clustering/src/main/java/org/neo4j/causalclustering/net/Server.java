@@ -109,8 +109,8 @@ public class Server extends LifecycleAdapter
                 String message = serverName + ": address is already bound: " + listenAddress;
                 userLog.error( message );
                 debugLog.error( message, e );
-                throw e;
             }
+            throw e;
         }
     }
 
