@@ -167,7 +167,8 @@ public class OnlineBackupCommandHaIT
 
         // then backup is successful
         String ip = ":" + backupPort;
-        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
+        String backupName = "usableState" + recordFormat;
+        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + backupName ) );
         db.shutdown();
     }
 
@@ -193,7 +194,7 @@ public class OnlineBackupCommandHaIT
     @Test
     public void backupFailsWithCatchupProtoOverride() throws Exception
     {
-        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
+        String backupName = "portOverride" + recordFormat; // due to ClassRule not cleaning between tests
 
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
@@ -211,7 +212,7 @@ public class OnlineBackupCommandHaIT
     public void backupDoesNotDisplayExceptionWhenSuccessful() throws Exception
     {
         // given
-        String backupName = "customPort" + recordFormat;
+        String backupName = "noExceptionTest_" + recordFormat;
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
