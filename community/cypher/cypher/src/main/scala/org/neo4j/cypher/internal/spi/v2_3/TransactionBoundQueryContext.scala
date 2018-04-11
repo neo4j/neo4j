@@ -349,8 +349,17 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
       }.getOrElse(Iterator.empty)
   }
 
-  def indexScan(index: SchemaTypes.IndexDescriptor) =
-    JavaConversionSupport.mapToScalaENFXSafe(scan(DefaultIndexReference.general(index.labelId, index.propertyId)))(nodeOps.getByIdIfExists)
+  def indexScan(index: SchemaTypes.IndexDescriptor) = {
+    val cursor = allocateAndTraceNodeValueIndexCursor()
+    reads().nodeIndexScan(DefaultIndexReference.general(index.labelId, index.propertyId), cursor, IndexOrder.NONE)
+    new CursorIterator[Node] {
+      override protected def fetchNext(): Node = {
+        if (cursor.next()) proxySpi.newNodeProxy(cursor.nodeReference())
+        else null
+      }
+      override protected def close(): Unit = cursor.close()
+    }
+  }
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
     val nodeId: Long = tc.dataRead.lockingNodeUniqueIndexSeek(DefaultIndexReference.general(index.labelId, index.propertyId),
