@@ -24,6 +24,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.function.Function;
 
@@ -46,32 +47,21 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 {
     private TestServerBuilder builder;
     private ServerControls controls;
-    private boolean dumpLogsOnFailure;
+    private PrintStream dumpLogsOnFailureTarget;
 
-    Neo4jRule( TestServerBuilder builder, boolean dumpLogsOnFailure )
+    Neo4jRule( TestServerBuilder builder )
     {
         this.builder = builder;
-        this.dumpLogsOnFailure = dumpLogsOnFailure;
     }
 
-    public Neo4jRule()
+    public Neo4jRule( )
     {
-        this( false );
-    }
-
-    public Neo4jRule( boolean dumpLogsOnFailure )
-    {
-        this( TestServerBuilders.newInProcessBuilder(), dumpLogsOnFailure );
+        this( TestServerBuilders.newInProcessBuilder() );
     }
 
     public Neo4jRule( File workingDirectory )
     {
-        this( workingDirectory, false );
-    }
-
-    public Neo4jRule( File workingDirectory, boolean dumpLogsOnFailure )
-    {
-        this( TestServerBuilders.newInProcessBuilder( workingDirectory ), dumpLogsOnFailure );
+        this( TestServerBuilders.newInProcessBuilder( workingDirectory ) );
     }
 
     @Override
@@ -90,9 +80,9 @@ public class Neo4jRule implements TestRule, TestServerBuilder
                     }
                     catch ( Throwable t )
                     {
-                        if ( dumpLogsOnFailure )
+                        if ( dumpLogsOnFailureTarget != null )
                         {
-                            sc.printLogs( System.out );
+                            sc.printLogs( dumpLogsOnFailureTarget );
                         }
 
                         throw t;
@@ -182,6 +172,12 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     public Neo4jRule withAggregationFunction( Class<?> functionClass )
     {
         builder = builder.withAggregationFunction( functionClass );
+        return this;
+    }
+
+    public Neo4jRule dumpLogsOnFailure( PrintStream out )
+    {
+        dumpLogsOnFailureTarget = out;
         return this;
     }
 

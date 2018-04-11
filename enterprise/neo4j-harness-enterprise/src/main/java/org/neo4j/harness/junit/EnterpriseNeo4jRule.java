@@ -27,21 +27,11 @@ public class EnterpriseNeo4jRule extends Neo4jRule
 {
     public EnterpriseNeo4jRule()
     {
-        this( false );
-    }
-
-    public EnterpriseNeo4jRule( boolean dumpLogsOnFailure )
-    {
-        super( EnterpriseTestServerBuilders.newInProcessBuilder(), dumpLogsOnFailure );
+        super( EnterpriseTestServerBuilders.newInProcessBuilder() );
     }
 
     public EnterpriseNeo4jRule( File workingDirectory )
     {
-        this( workingDirectory, false );
-    }
-
-    public EnterpriseNeo4jRule( File workingDirectory, boolean dumpLogsOnFailure )
-    {
-        super( EnterpriseTestServerBuilders.newInProcessBuilder( workingDirectory ), dumpLogsOnFailure );
+        super( EnterpriseTestServerBuilders.newInProcessBuilder( workingDirectory ) );
     }
 }
