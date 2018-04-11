@@ -26,14 +26,17 @@ import io.netty.channel.EventLoop;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Promise;
 
+import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.SocketAddress;
+import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -54,6 +57,7 @@ public class ReconnectingChannel implements Channel
     private volatile boolean disposed;
 
     private TimeoutStrategy.Timeout connectionBackoff;
+    private CappedLogger cappedLogger;
 
     ReconnectingChannel( Bootstrap bootstrap, EventLoop eventLoop, SocketAddress destination, final Log log )
     {
@@ -67,6 +71,7 @@ public class ReconnectingChannel implements Channel
         this.eventLoop = eventLoop;
         this.destination = destination;
         this.log = log;
+        this.cappedLogger = new CappedLogger( log ).setTimeLimit( 20, TimeUnit.SECONDS, Clock.systemUTC() );
         this.connectionBackoffStrategy = connectionBackoffStrategy;
         this.connectionBackoff = connectionBackoffStrategy.newTimeout();
     }
@@ -95,7 +100,7 @@ public class ReconnectingChannel implements Channel
             if ( !f.isSuccess() )
             {
                 long millis = connectionBackoff.getMillis();
-                log.warn( "Failed to connect to: %s. Retrying in %d ms", destination.socketAddress(), millis );
+                cappedLogger.warn( "Failed to connect to: " + destination.socketAddress() + ". Retrying in " + millis + " ms" );
                 f.channel().eventLoop().schedule( this::tryConnect, millis, MILLISECONDS );
                 connectionBackoff.increment();
             }
