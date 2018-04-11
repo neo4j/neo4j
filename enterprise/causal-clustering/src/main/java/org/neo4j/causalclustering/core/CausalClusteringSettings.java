@@ -40,6 +40,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
@@ -136,7 +137,8 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
-    @Description( "Network interface and port for the transaction shipping server to listen on." )
+    @Description( "Network interface and port for the transaction shipping server to listen on. Please note that it is also possible to run the backup " +
+            "client against this port so always limit access to it via the firewall and configure an ssl policy." )
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
