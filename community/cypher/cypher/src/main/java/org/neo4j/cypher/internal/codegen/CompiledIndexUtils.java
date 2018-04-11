@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
@@ -56,7 +57,7 @@ public final class CompiledIndexUtils
             throws KernelException
     {
         assert index.properties().length == 1;
-        if ( value == null )
+        if ( value == Values.NO_VALUE || value == null )
         {
             return NodeValueIndexCursor.EMPTY;
         }
