@@ -150,6 +150,8 @@ abstract class BaseHighLimitRecordFormatV3_0_6<RECORD extends AbstractBaseRecord
             record.setUseFixedReferences( isUseFixedReferences( headerByte ) );
             doReadInternal( record, primaryCursor, recordSize, headerByte, inUse );
         }
+
+        primaryCursor.setOffset( primaryStartOffset );
     }
 
     private boolean isUseFixedReferences( byte headerByte )

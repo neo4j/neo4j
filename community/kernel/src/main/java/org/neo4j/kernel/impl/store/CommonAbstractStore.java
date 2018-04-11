@@ -1066,6 +1066,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public void nextRecordByCursor( RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
     {
+        if ( cursor.getOffset() % recordSize != 0 )
+        {
+            System.out.println("hi");
+        }
         assert cursor.getOffset() % recordSize == 0 : "Cursor offset is record start";
         assert cursor.getCurrentPageId() >= -1 : "Pages are assumed to be positive or -1 if not initialized";
 
