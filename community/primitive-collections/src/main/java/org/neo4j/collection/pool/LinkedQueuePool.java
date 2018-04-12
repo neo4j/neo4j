@@ -79,12 +79,12 @@ public class LinkedQueuePool<R> implements Pool<R>
             private long lastCheckTime;
             private final LongSupplier clock;
 
-            public TimeoutCheckStrategy( long interval )
+            TimeoutCheckStrategy( long interval )
             {
                 this( interval, System::currentTimeMillis );
             }
 
-            public TimeoutCheckStrategy( long interval, LongSupplier clock )
+            TimeoutCheckStrategy( long interval, LongSupplier clock )
             {
                 this.interval = interval;
                 this.lastCheckTime = clock.getAsLong();
@@ -105,10 +105,10 @@ public class LinkedQueuePool<R> implements Pool<R>
         }
     }
 
-    public static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
+    private static final int DEFAULT_CHECK_INTERVAL = 60 * 1000;
 
     private final Queue<R> unused = new ConcurrentLinkedQueue<>();
-    private final Monitor monitor;
+    private final Monitor<R> monitor;
     private final int minSize;
     private final Factory<R> factory;
     private final CheckStrategy checkStrategy;
@@ -121,10 +121,10 @@ public class LinkedQueuePool<R> implements Pool<R>
     public LinkedQueuePool( int minSize, Factory<R> factory )
     {
         this( minSize, factory, new CheckStrategy.TimeoutCheckStrategy( DEFAULT_CHECK_INTERVAL ),
-                new Monitor.Adapter() );
+                new Monitor.Adapter<>() );
     }
 
-    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor monitor )
+    public LinkedQueuePool( int minSize, Factory<R> factory, CheckStrategy strategy, Monitor<R> monitor )
     {
         this.minSize = minSize;
         this.factory = factory;
