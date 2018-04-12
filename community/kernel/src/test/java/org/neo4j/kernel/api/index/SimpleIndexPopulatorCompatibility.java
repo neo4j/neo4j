@@ -76,19 +76,12 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
+        String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            String failure = "The contrived failure";
-            p.create();
-
-            // WHEN
-            p.markAsFailed( failure );
-            p.close( false );
-
-            // THEN
-            assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
-        } );
+        // WHEN (this will attempt to call close)
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.markAsFailed( failure ) );
+        // THEN
+        assertThat( indexProvider.getPopulationFailure( 17, descriptor ), containsString( failure ) );
     }
 
     @Test
@@ -99,7 +92,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
             String failure = "The contrived failure";
-            p.create();
 
             // WHEN
             p.markAsFailed( failure );
@@ -114,15 +106,13 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            p.close( false );
+        final IndexPopulator p = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        p.close( false );
 
-            // WHEN
-            p.drop();
+        // WHEN
+        p.drop();
 
-            // THEN - no exception should be thrown (it's been known to!)
-        } );
+        // THEN - no exception should be thrown (it's been known to!)
     }
 
     @Test
@@ -133,7 +123,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         final Value propertyValue = Values.of( "value1" );
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
-            p.create();
             long nodeId = 1;
 
             // update using populator...
@@ -144,8 +133,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             {
                 updater.process( update );
             }
-
-            p.close( true );
         } );
 
         // THEN
@@ -165,11 +152,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            p.create();
-            p.add( updates( valueSet1 ) );
-        } );
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
 
         // THEN
         assertHasAllValues( valueSet1 );
@@ -181,8 +164,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
-            p.create();
-
             try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup ) )
             {
                 for ( NodeAndValue entry : valueSet1 )
@@ -200,11 +181,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
-        {
-            p.create();
-            p.add( updates( valueSet1 ) );
-        } );
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p -> p.add( updates( valueSet1 ) ) );
 
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
         {
@@ -278,7 +255,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             long offset = valueSet1.size();
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
                 p.add( updates( valueSet1, 0 ) );
                 p.add( updates( valueSet1, offset ) );
             } );
@@ -322,7 +298,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
 
             withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                p.create();
                 try
                 {
                     p.add( Arrays.asList(

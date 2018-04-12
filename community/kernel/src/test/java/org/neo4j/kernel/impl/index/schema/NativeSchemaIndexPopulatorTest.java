@@ -74,14 +74,13 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     NativeSchemaIndexPopulator<KEY,VALUE> populator;
 
     @Before
-    public void setupPopulator()
+    public void setupPopulator() throws IOException
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        populator = createPopulator( pageCache, fs, indexFile, layout, samplingConfig );
+        populator = createPopulator( samplingConfig );
     }
 
-    abstract NativeSchemaIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig );
+    abstract NativeSchemaIndexPopulator<KEY,VALUE> createPopulator( IndexSamplingConfig samplingConfig ) throws IOException;
 
     @Test
     public void createShouldCreateFile() throws Exception
@@ -107,7 +106,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         populator.create();
 
         // then
-        try ( StoreChannel r = fs.open( indexFile, OpenMode.READ ) )
+        try ( StoreChannel r = fs.open( getIndexFile(), OpenMode.READ ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );
@@ -237,7 +236,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFile );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( getIndexFile() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -251,7 +250,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         populator.close( true );
 
         // then
-        existingMapping = pageCache.getExistingMapping( indexFile );
+        existingMapping = pageCache.getExistingMapping( getIndexFile() );
         assertFalse( existingMapping.isPresent() );
     }
 
@@ -283,7 +282,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFile );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( getIndexFile() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -297,7 +296,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
         populator.close( false );
 
         // then
-        existingMapping = pageCache.getExistingMapping( indexFile );
+        existingMapping = pageCache.getExistingMapping( getIndexFile() );
         assertFalse( existingMapping.isPresent() );
     }
 
@@ -514,7 +513,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
                 headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE ) )
         {
             if ( online )
@@ -599,7 +598,8 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends NativeSchemaKey
     private byte[] fileWithContent() throws IOException
     {
         int size = 1000;
-        try ( StoreChannel storeChannel = fs.create( indexFile ) )
+        fs.mkdirs( getIndexFile().getParentFile() );
+        try ( StoreChannel storeChannel = fs.create( getIndexFile() ) )
         {
             byte[] someBytes = new byte[size];
             random.nextBytes( someBytes );

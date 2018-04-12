@@ -67,7 +67,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
     SchemaIndexDescriptor schemaIndexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     Layout<KEY,VALUE> layout;
-    File indexFile;
+    private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
     long indexId = 1;
@@ -80,6 +80,11 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
+    }
+
+    public File getIndexFile()
+    {
+        return indexFile;
     }
 
     abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
@@ -120,7 +125,7 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
 
     GBPTree<KEY,VALUE> getTree() throws IOException
     {
-        return new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
+        return new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
@@ -182,11 +187,11 @@ public abstract class NativeSchemaIndexTestUtil<KEY extends NativeSchemaKey<KEY>
 
     void assertFilePresent()
     {
-        assertTrue( fs.fileExists( indexFile ) );
+        assertTrue( fs.fileExists( getIndexFile() ) );
     }
 
     void assertFileNotPresent()
     {
-        assertFalse( fs.fileExists( indexFile ) );
+        assertFalse( fs.fileExists( getIndexFile() ) );
     }
 }

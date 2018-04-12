@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 public class Envelope
 {
+    static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000;
+
     protected final double[] min;
     protected final double[] max;
 
@@ -53,6 +55,31 @@ public class Envelope
     public Envelope( double xmin, double xmax, double ymin, double ymax )
     {
         this( new double[] { xmin, ymin }, new double[] { xmax, ymax } );
+    }
+
+    /**
+     * @return a copy of the envelope where the ratio of smallest to largest side is not more than 1:100
+     */
+    public Envelope withSideRatioNotTooSmall( )
+    {
+        double[] from = Arrays.copyOf( this.min, min.length );
+        double[] to = Arrays.copyOf( this.max, max.length );
+        double highestDiff = -Double.MAX_VALUE;
+        double[] diffs = new double[from.length];
+        for ( int i = 0; i < from.length; i++ )
+        {
+            diffs[i] = to[i] - from[i];
+            highestDiff = Math.max( highestDiff, diffs[i] );
+        }
+        final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
+        for ( int i = 0; i < from.length; i++ )
+        {
+            if ( diffs[i] < mindiff )
+            {
+                to[i] = from[i] + mindiff;
+            }
+        }
+        return new Envelope( from, to );
     }
 
     public double[] getMin()

@@ -29,7 +29,7 @@ public abstract class StringSchemaIndexAccessorTest extends NativeSchemaIndexAcc
     @Override
     StringSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new StringSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor,
+        return new StringSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor,
                 schemaIndexDescriptor, indexId, samplingConfig );
     }
 

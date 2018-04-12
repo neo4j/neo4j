@@ -96,7 +96,7 @@ class SpatialIndexFiles
         private final CoordinateReferenceSystem crs;
         Layout<SpatialSchemaKey,NativeSchemaValue> layout;
 
-        private SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
+        SpatialFileLayout( CoordinateReferenceSystem crs, SpaceFillingCurveSettings settings, File indexDirectory )
         {
             this.crs = crs;
             this.settings = settings;

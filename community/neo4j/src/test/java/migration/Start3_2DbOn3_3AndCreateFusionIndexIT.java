@@ -36,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -174,6 +175,10 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
                 }
 
                 CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
+
+                // wait for index to come online
+                db.schema().awaitIndexesOnline(5, TimeUnit.SECONDS );
+
                 int count;
                 StorageStatement storeStatement = ((KernelStatement) statement).getStoreStatement();
                 IndexReader reader = storeStatement.getIndexReader( DefaultIndexReference.toDescriptor( index ) );

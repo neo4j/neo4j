@@ -582,7 +582,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // then
         assertTrue( files.hasNext() );
-        assertEquals( indexFile, files.next() );
+        assertEquals( getIndexFile(), files.next() );
         assertFalse( files.hasNext() );
     }
 
@@ -697,7 +697,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         NodeValueIterator iter = new NodeValueIterator();
-        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1] ) );
+        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1]) );
         IndexQuery rangeQuery = layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
         IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
         reader.query( filterClient, IndexOrder.NONE, rangeQuery );
@@ -728,9 +728,9 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         };
     }
 
-    private Object valueOf( IndexEntryUpdate<SchemaIndexDescriptor> update )
+    private Value valueOf( IndexEntryUpdate<SchemaIndexDescriptor> update )
     {
-        return update.values()[0].asObject();
+        return update.values()[0];
     }
 
     private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )

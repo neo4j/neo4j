@@ -322,6 +322,11 @@ public class Randoms
         return abs( random.nextLong() ) % bound;
     }
 
+    public long nextLong( long origin, long bound )
+    {
+        return nextLong( (bound - origin) + 1L ) + origin;
+    }
+
     public boolean nextBoolean()
     {
         return random.nextBoolean();

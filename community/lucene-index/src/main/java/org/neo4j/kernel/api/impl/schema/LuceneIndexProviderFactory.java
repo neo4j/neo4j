@@ -97,10 +97,10 @@ public class LuceneIndexProviderFactory extends
     {
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );
         boolean archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
-        IndexDirectoryStructure.Factory baseDirStructure = directoriesByProviderKey( storeDir );
-        IndexDirectoryStructure.Factory childDirectoryStructure = directoriesBySubProvider( baseDirStructure.forProvider( PROVIDER_DESCRIPTOR ) );
+        IndexDirectoryStructure.Factory luceneDirStructure = directoriesByProviderKey( storeDir );
+        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
 
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, baseDirStructure, monitor, config, operationalMode );
+        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, luceneDirStructure, monitor, config, operationalMode );
         TemporalIndexProvider temporal =
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         SpatialIndexProvider spatial =
@@ -114,6 +114,11 @@ public class LuceneIndexProviderFactory extends
         }
         return new FusionIndexProvider( EMPTY, EMPTY, spatial, temporal, lucene, new FusionSelector00(),
                 PROVIDER_DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs, archiveFailedIndex );
+    }
+
+    private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    {
+        return NativeLuceneFusionIndexProviderFactory.subProviderDirectoryStructure( storeDir, PROVIDER_DESCRIPTOR );
     }
 
 }
