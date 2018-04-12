@@ -42,6 +42,7 @@ import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -71,8 +72,10 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendO
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.store;
@@ -183,8 +186,9 @@ public class MemoryRecommendationsCommandTest
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
+        String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        File storeDir = Config.fromFile( configFile ).withHome( homeDir ).build().get( database_path );
+        File storeDir = Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
         createDatabaseWithNativeIndexes( storeDir );
         OutsideWorld outsideWorld = new RealOutsideWorld()
         {
@@ -197,7 +201,7 @@ public class MemoryRecommendationsCommandTest
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
 
         // when
-        command.execute( array( "--db" ) );
+        command.execute( array( "--database", databaseName ) );
 
         // then
         Map<String,String> stringMap = MapUtil.load( new StringReader( output.toString() ) );
@@ -225,7 +229,8 @@ public class MemoryRecommendationsCommandTest
             {
                 File file = path.toFile();
                 Path name = path.getName( path.getNameCount() - 3 );
-                boolean isLuceneFile = path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" );
+                boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
+                        (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
                 if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) && !isLuceneFile )
                 {
                     total.add( file.length() );
@@ -238,27 +243,34 @@ public class MemoryRecommendationsCommandTest
 
     private void createDatabaseWithNativeIndexes( File storeDir )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        try
+        // Create one index for every provider that we have
+        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
         {
-            try ( Transaction tx = db.beginTx() )
+            GraphDatabaseService db =
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir ).setConfig( default_schema_provider,
+                            schemaIndex.providerName() ).newGraphDatabase();
+            String key = "key-" + schemaIndex.name();
+            try
             {
-                db.schema().indexFor( LABEL_ONE ).on( "key" ).create();
-                tx.success();
-            }
-
-            try ( Transaction tx = db.beginTx() )
-            {
-                for ( int i = 0; i < 1_000; i++ )
+                try ( Transaction tx = db.beginTx() )
                 {
-                    db.createNode( LABEL_ONE ).setProperty( "key", randomIndexValue( i ) );
+                    db.schema().indexFor( LABEL_ONE ).on( key ).create();
+                    tx.success();
                 }
-                tx.success();
+
+                try ( Transaction tx = db.beginTx() )
+                {
+                    for ( int i = 0; i < 1_000; i++ )
+                    {
+                        db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i ) );
+                    }
+                    tx.success();
+                }
             }
-        }
-        finally
-        {
-            db.shutdown();
+            finally
+            {
+                db.shutdown();
+            }
         }
     }
 
