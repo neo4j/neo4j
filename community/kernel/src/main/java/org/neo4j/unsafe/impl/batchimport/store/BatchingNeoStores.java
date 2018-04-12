@@ -203,6 +203,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         deleteStoreFiles( TEMP_NEOSTORE_NAME, tempStoresToKeep );
         deleteStoreFiles( DEFAULT_NAME, mainStoresToKeep );
         instantiateStores();
+        neoStores.startCountStore();
     }
 
     private void deleteStoreFiles( String storeName, Predicate<StoreType> storesToKeep )
