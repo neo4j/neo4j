@@ -32,12 +32,14 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreType;
 
 import static java.lang.String.format;
+import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
@@ -76,7 +78,6 @@ public class MemoryRecommendationsCommand implements AdminCommand
             new Bracket( 1024.0, 30, 31 ),
     };
     private static final String ARG_MEMORY = "memory";
-    private static final String ARG_DB = "db";
     private final Path homeDir;
     private final OutsideWorld outsideWorld;
     private final Path configDir;
@@ -132,11 +133,11 @@ public class MemoryRecommendationsCommand implements AdminCommand
                 .withArgument( new OptionalNamedArg( ARG_MEMORY, memory, memory,
                         "Recommend memory settings with respect to the given amount of memory, " +
                         "instead of the total memory of the system running the command." ) )
-                .withArgument( new OptionalBooleanArg( ARG_DB, false,
-                        "Specific database to calculate page cache memory requirement for. " +
+                .withDatabase(
+                        "Name of specific database to calculate page cache memory requirement for. " +
                         "The generic calculation is still a good generic recommendation for this machine, " +
                         "but there will be an additional calculation for minimal required page cache memory " +
-                        "for mapping all store and index files that are managed by the page cache." ) );
+                        "for mapping all store and index files that are managed by the page cache." );
     }
 
     static String bytesToString( double bytes )
@@ -220,7 +221,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
 
-        boolean db = arguments.getBoolean( ARG_DB );
+        boolean db = arguments.getBoolean( ARG_DATABASE );
         if ( !db )
         {
             return;

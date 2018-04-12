@@ -33,6 +33,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class CheckConsistencyCommand implements AdminCommand
@@ -111,7 +113,7 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try
         {
-            database = arguments.parse( args ).get( "database" );
+            database = arguments.parse( args ).get( ARG_DATABASE );
             backupPath = arguments.getOptionalPath( "backup" );
             verbose = arguments.getBoolean( "verbose" );
             additionalConfigFile = arguments.getOptionalPath( "additional-config" );
@@ -125,9 +127,9 @@ public class CheckConsistencyCommand implements AdminCommand
 
         if ( backupPath.isPresent() )
         {
-            if ( arguments.has( "database" ) )
+            if ( arguments.has( ARG_DATABASE ) )
             {
-                throw new IncorrectUsage( "Only one of '--database' and '--backup' can be specified." );
+                throw new IncorrectUsage( "Only one of '--" + ARG_DATABASE + "' and '--backup' can be specified." );
             }
             if ( !backupPath.get().toFile().isDirectory() )
             {
