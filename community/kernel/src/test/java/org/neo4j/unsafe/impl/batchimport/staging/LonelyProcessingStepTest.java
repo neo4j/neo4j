@@ -19,11 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.test.rule.SuppressOutput;
@@ -36,6 +40,15 @@ public class LonelyProcessingStepTest
 {
     @ClassRule
     public static SuppressOutput mute = SuppressOutput.suppressAll();
+
+    private final ExecutorService executors = Executors.newCachedThreadPool();
+
+    @After
+    public void tearDown() throws Exception
+    {
+        executors.shutdown();
+        executors.awaitTermination( 1, TimeUnit.MINUTES );
+    }
 
     @Test
     public void issuePanicBeforeCompletionOnError()
@@ -73,6 +86,12 @@ public class LonelyProcessingStepTest
         protected void process()
         {
             throw new RuntimeException( "Process exception" );
+        }
+
+        @Override
+        protected void startProcessing( Runnable runnable )
+        {
+            executors.submit( runnable );
         }
 
         @Override

@@ -43,7 +43,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
     @Override
     public long receive( long ticket, Void nothing )
     {
-        new Thread( () -> {
+        startProcessing( () -> {
             assertHealthy();
             try
             {
@@ -75,8 +75,13 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                     throw e;
                 }
             }
-        } ).start();
+        } );
         return 0;
+    }
+
+    protected void startProcessing( Runnable runnable )
+    {
+        new Thread( runnable ).start();
     }
 
     /**
