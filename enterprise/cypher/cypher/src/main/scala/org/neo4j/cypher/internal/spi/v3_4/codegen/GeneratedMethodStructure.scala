@@ -483,8 +483,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def constantValueExpression(value: AnyRef, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive)
       invoke(method[Values,Value]("of", typeRef[AnyRef]), box(constant(value), codeGenType))
-    else
-      invoke(method[Values,Value]("of", typeRef[AnyRef]), constant(value))
+    else {
+      codeGenType match {
+        case CypherCodeGenType(symbols.CTString, _) =>
+          invoke(method[Values,TextValue]("stringValue", typeRef[String]), constant(value))
+        case _ =>
+          invoke(method[Values,Value]("of", typeRef[AnyRef]), constant(value))
+      }
+    }
 
   override def notExpression(value: Expression): Expression = not(value)
 

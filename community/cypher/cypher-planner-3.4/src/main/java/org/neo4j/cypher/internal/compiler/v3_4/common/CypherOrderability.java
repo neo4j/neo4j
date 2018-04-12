@@ -40,6 +40,7 @@ import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
@@ -107,11 +108,11 @@ public class CypherOrderability
             return 0;
         }
         // null is greater than any other type
-        else if ( lhs == null )
+        else if ( lhs == Values.NO_VALUE || lhs == null )
         {
             return 1;
         }
-        else if ( rhs == null )
+        else if ( rhs == Values.NO_VALUE || rhs == null )
         {
             return -1;
         }

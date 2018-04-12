@@ -433,7 +433,7 @@ public abstract class CompiledConversionUtils
         {
             return ((IntStream) iterable).iterator();
         }
-        else if ( iterable == null )
+        else if ( iterable == null || iterable == NO_VALUE )
         {
             return Collections.emptyIterator();
         }
@@ -568,7 +568,7 @@ public abstract class CompiledConversionUtils
     @SuppressWarnings( "unused" ) // called from compiled code
     public static long extractLong( Object obj )
     {
-        if ( obj == null )
+        if ( obj == null || obj == NO_VALUE )
         {
             return -1L;
         }
