@@ -148,6 +148,11 @@ public final class Values
         Values.nanoPrecision = nanoPrecision;
     }
 
+    public static int getNanoPrecision()
+    {
+        return nanoPrecision;
+    }
+
     // DIRECT FACTORY METHODS
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;

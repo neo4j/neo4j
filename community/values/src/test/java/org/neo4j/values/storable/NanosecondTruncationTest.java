@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -47,15 +48,20 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 public class NanosecondTruncationTest
 {
     static final Supplier<ZoneId> inUTC = () -> UTC;
-    static final Supplier<ZoneId> orFail = () ->
-    {
-        throw new AssertionError( "should not request timezone" );
-    };
+
+    private int prevPrecision;
 
     @Before
     public void setup()
     {
+        prevPrecision = Values.getNanoPrecision();
         Values.setNanoPrecision( 6 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        Values.setNanoPrecision( prevPrecision );
     }
 
     @Test

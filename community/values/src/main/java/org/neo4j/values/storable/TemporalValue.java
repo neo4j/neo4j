@@ -1371,7 +1371,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     {
         if ( precision < 0 || precision > 9 )
         {
-            throw new InvalidValuesArgumentException( "The unsupported.dbms.temporal.nanosecond_precision config " +
+            throw new InvalidValuesArgumentException( "The dbms.temporal.nanosecond_precision config " +
                     "must be an integer between 0 and 9, was " + precision );
         }
         if ( precision == 9 )

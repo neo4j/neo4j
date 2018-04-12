@@ -215,7 +215,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     {
         if ( nanoPrecision < 0 || nanoPrecision > 9 )
         {
-            throw new InvalidValuesArgumentException( "The unsupported.dbms.temporal.nanosecond_precision config " +
+            throw new InvalidValuesArgumentException( "The dbms.temporal.nanosecond_precision config " +
                     "must be an integer between 0 and 9, was " + nanoPrecision );
         }
         if ( nanoPrecision != 9 )
