@@ -84,41 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Label label = label( "labello" );
-        Node node = db.createNode( label );
-        tx.success();
-        tx.close();
-
-        tx = db.beginTx();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        // WHEN
-        ktx.dataWrite().nodeDelete( node.getId() );
-
-        // Then
-        int labelId = ktx.tokenRead().nodeLabel( label.name() );
-        try ( NodeCursor nodeCursor = ktx.cursors().allocateNodeCursor() )
-        {
-            ktx.dataRead().singleNode( node.getId(), nodeCursor );
-            assertFalse( nodeCursor.next() );
-        }
-
-        try ( NodeLabelIndexCursor nodeCursor = ktx.cursors().allocateNodeLabelIndexCursor() )
-        {
-            ktx.dataRead().nodeLabelScan( labelId, nodeCursor );
-            assertFalse( nodeCursor.next() );
-        }
-
-        ktx.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
     public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
     {
         // GIVEN
