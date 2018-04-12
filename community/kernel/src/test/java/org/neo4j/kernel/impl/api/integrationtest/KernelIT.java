@@ -84,39 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void transactionStateShouldRemovePreviouslyAddedLabel() throws Exception
-    {
-        Transaction tx = db.beginTx();
-
-        int labelId1;
-        int labelId2;
-        Node node = db.createNode();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        // WHEN
-        labelId1 = ktx.tokenWrite().labelGetOrCreateForName( "labello1" );
-        labelId2 = ktx.tokenWrite().labelGetOrCreateForName( "labello2" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId1 );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId2 );
-        ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId2 );
-        tx.success();
-        tx.close();
-
-        // THEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        try ( NodeCursor cursor = ktx.cursors().allocateNodeCursor() )
-        {
-            ktx.dataRead().singleNode( node.getId(), cursor );
-            assertTrue( cursor.next() );
-            LabelSet labels = cursor.labels();
-            assertThat( labels.numberOfLabels(), equalTo( 1 ) );
-            assertThat( labels.label( 0 ), equalTo( labelId1 ) );
-        }
-
-        tx.close();
-    }
-
-    @Test
     public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
     {
         Transaction tx = db.beginTx();
@@ -142,77 +109,6 @@ public class KernelIT extends KernelIntegrationTest
         }
 
         ktx.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
-    public void transactionStateShouldReflectRemovingLabelImmediately() throws Exception
-    {
-        // GIVEN
-
-        Transaction tx = db.beginTx();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        Node node = db.createNode();
-        int labelId1 = ktx.tokenWrite().labelGetOrCreateForName( "labello1" );
-        int labelId2 = ktx.tokenWrite().labelGetOrCreateForName( "labello2" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId1 );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId2 );
-        tx.success();
-        tx.close();
-
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        // WHEN
-        ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId2 );
-
-        // THEN
-        // THEN
-        try ( NodeCursor cursor = ktx.cursors().allocateNodeCursor() )
-        {
-            ktx.dataRead().singleNode( node.getId(), cursor );
-            assertTrue( cursor.next() );
-            LabelSet labels = cursor.labels();
-            assertThat( labels.numberOfLabels(), equalTo( 1 ) );
-            assertFalse( labels.contains( labelId2 ) );
-            assertTrue( labels.contains( labelId1 ) );
-        }
-
-        ktx.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
-    public void labelShouldBeRemovedAfterCommit() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        Node node = db.createNode();
-        int labelId1 = ktx.tokenWrite().labelGetOrCreateForName( "labello1" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId1 );
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId1 );
-        tx.success();
-        tx.close();
-
-        // THEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        try ( NodeCursor cursor = ktx.cursors().allocateNodeCursor() )
-        {
-            ktx.dataRead().singleNode( node.getId(), cursor );
-            assertTrue( cursor.next() );
-            assertThat( cursor.labels().numberOfLabels(), equalTo( 0 ) );
-        }
-
         tx.success();
         tx.close();
     }
