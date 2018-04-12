@@ -78,26 +78,9 @@ public class KernelIT extends KernelIntegrationTest
         int labelId = ktx.tokenWrite().labelGetOrCreateForName( "labello" );
         ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
 
-        // 4: Close the StatementContext
-        ktx.close();
-
         // 5: Commit through the beans API
         transaction.success();
         transaction.close();
-    }
-
-    @Test
-    public void mixingBeansApiWithKernelAPIForNestedTransaction() throws Exception
-    {
-        // GIVEN
-        Transaction outerTx = db.beginTx();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        // WHEN
-        Node node = db.createNode();
-        int labelId = ktx.tokenWrite().labelGetOrCreateForName( "labello" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
-        outerTx.close();
     }
 
     @Test
