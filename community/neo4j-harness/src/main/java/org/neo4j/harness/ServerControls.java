@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness;
 
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.Optional;
 
@@ -51,4 +52,7 @@ public interface ServerControls extends AutoCloseable
 
     /** Returns the server's configuration */
     Configuration config();
+
+    /** Prints logs to the specified print stream if log is available */
+    void printLogs( PrintStream out );
 }

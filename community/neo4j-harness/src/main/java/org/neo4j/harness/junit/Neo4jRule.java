@@ -24,6 +24,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.function.Function;
 
@@ -46,13 +47,14 @@ public class Neo4jRule implements TestRule, TestServerBuilder
 {
     private TestServerBuilder builder;
     private ServerControls controls;
+    private PrintStream dumpLogsOnFailureTarget;
 
     Neo4jRule( TestServerBuilder builder )
     {
         this.builder = builder;
     }
 
-    public Neo4jRule()
+    public Neo4jRule( )
     {
         this( TestServerBuilders.newInProcessBuilder() );
     }
@@ -72,7 +74,19 @@ public class Neo4jRule implements TestRule, TestServerBuilder
             {
                 try ( ServerControls sc = controls = builder.newServer() )
                 {
-                    base.evaluate();
+                    try
+                    {
+                        base.evaluate();
+                    }
+                    catch ( Throwable t )
+                    {
+                        if ( dumpLogsOnFailureTarget != null )
+                        {
+                            sc.printLogs( dumpLogsOnFailureTarget );
+                        }
+
+                        throw t;
+                    }
                 }
             }
         };
@@ -158,6 +172,12 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     public Neo4jRule withAggregationFunction( Class<?> functionClass )
     {
         builder = builder.withAggregationFunction( functionClass );
+        return this;
+    }
+
+    public Neo4jRule dumpLogsOnFailure( PrintStream out )
+    {
+        dumpLogsOnFailureTarget = out;
         return this;
     }
 

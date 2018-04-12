@@ -109,7 +109,8 @@ public class SessionResetIT
     private final Neo4jRule db = new EnterpriseNeo4jRule()
             .withConfig( GraphDatabaseSettings.load_csv_file_url_root, "import" )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
+            .dumpLogsOnFailure( System.out );
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( timeout ).around( db );
