@@ -36,7 +36,7 @@ public class CreateAndDeleteNodesIT
     }
 
     @Test
-    public void addingALabelUsingAValidIdentifierShouldSucceed()
+    public void creatingAndDeletingEntitiesShouldNotThrow()
     {
         // Given
         GraphDatabaseService dataBase = dbRule.getGraphDatabaseAPI();
