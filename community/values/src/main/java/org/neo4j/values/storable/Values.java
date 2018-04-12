@@ -84,7 +84,8 @@ public final class Values
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
-    protected static int nanoPrecision = 9;
+    public static boolean nanoPrecisionConfigAltered;
+    private static int nanoPrecision = 9;
 
     private Values()
     {

@@ -64,7 +64,6 @@ import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.optTime;
 import static org.neo4j.values.storable.TimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.TimeValue.parseOffset;
-import static org.neo4j.values.storable.Values.nanoPrecision;
 
 public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeValue>
 {
@@ -386,7 +385,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        this.value = withTruncatedNano( value, nanoPrecision );
+        this.value = withTruncatedNano( value );
         this.epochSeconds = this.value.toEpochSecond();
     }
 

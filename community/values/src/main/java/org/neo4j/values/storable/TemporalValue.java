@@ -1367,8 +1367,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return (int) (ms * 1000_000 + us * 1000 + ns);
     }
 
-    static <TEMP extends Temporal> TEMP withTruncatedNano( TEMP value, int precision )
+    static <TEMP extends Temporal> TEMP withTruncatedNano( TEMP value )
     {
+        int precision = Values.getNanoPrecision();
         if ( precision < 0 || precision > 9 )
         {
             throw new InvalidValuesArgumentException( "The dbms.temporal.nanosecond_precision config " +

@@ -51,7 +51,6 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
-import static org.neo4j.values.storable.Values.nanoPrecision;
 
 public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 {
@@ -261,7 +260,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value )
     {
-        this.value = withTruncatedNano( value, nanoPrecision );
+        this.value = withTruncatedNano( value );
         this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
     }
 

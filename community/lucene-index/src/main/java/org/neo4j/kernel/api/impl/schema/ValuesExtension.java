@@ -45,7 +45,15 @@ public class ValuesExtension implements Lifecycle
     public void start()
     {
         life.start();
-        Values.setNanoPrecision( configuration.get( GraphDatabaseSettings.temporal_nanosecond_precision ) );
+        int nanoPrecisionConfig = configuration.get( GraphDatabaseSettings.temporal_nanosecond_precision );
+
+        // If two db instances in the same JVM try to set this to different values, the last setting will override the previous one
+        if ( nanoPrecisionConfig != Values.getNanoPrecision() && Values.nanoPrecisionConfigAltered )
+        {
+            throw new IllegalArgumentException( "dbms.temporal.nanosecond_precision can only be set once" );
+        }
+        Values.setNanoPrecision( nanoPrecisionConfig );
+        Values.nanoPrecisionConfigAltered = true;
     }
 
     @Override
@@ -57,6 +65,7 @@ public class ValuesExtension implements Lifecycle
     @Override
     public void shutdown()
     {
+        Values.nanoPrecisionConfigAltered = false;
         life.shutdown();
     }
 }
