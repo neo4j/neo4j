@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
@@ -42,6 +43,7 @@ import static java.lang.String.format;
 public class ClusterBinder implements Supplier<Optional<ClusterId>>
 {
     private final SimpleStorage<ClusterId> clusterIdStorage;
+    private final SimpleStorage<DatabaseName> dbNameStorage;
     private final CoreTopologyService topologyService;
     private final CoreBootstrapper coreBootstrapper;
     private final Log log;
@@ -54,11 +56,12 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     private ClusterId clusterId;
 
-    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
-                            LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName, int minCoreHosts )
+    public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, SimpleStorage<DatabaseName> dbNameStorage, CoreTopologyService topologyService,
+            Clock clock, ThrowingAction<InterruptedException> retryWaiter, long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName,
+            int minCoreHosts, LogProvider logProvider )
     {
         this.clusterIdStorage = clusterIdStorage;
+        this.dbNameStorage = dbNameStorage;
         this.topologyService = topologyService;
         this.coreBootstrapper = coreBootstrapper;
         this.log = logProvider.getLog( getClass() );
@@ -111,6 +114,16 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
      */
     public BoundState bindToCluster() throws Throwable
     {
+        DatabaseName newName = new DatabaseName( dbName );
+
+        dbNameStorage.writeOrVerify( newName, existing -> {
+            if ( !newName.equals( existing ) )
+            {
+                throw new IllegalStateException( format("Your configured database name has changed. Found %s but expected %s in %s.",
+                        dbName, existing.name(), CausalClusteringSettings.database.name() ) );
+            }
+        } );
+
         if ( clusterIdStorage.exists() )
         {
             clusterId = clusterIdStorage.readState();

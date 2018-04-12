@@ -226,21 +226,31 @@ public class Cluster
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown cluster" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( coreMembers(), errorHandler );
             shutdownReadReplicas( errorHandler );
         }
     }
 
-    private void shutdownCoreMembers( ErrorHandler errorHandler )
+    private void shutdownCoreMembers( Collection<CoreClusterMember> members, ErrorHandler errorHandler )
     {
-        shutdownMembers( coreMembers(), errorHandler );
+        shutdownMembers( members, errorHandler );
     }
 
     public void shutdownCoreMembers()
     {
+        shutdownCoreMembers( coreMembers() );
+    }
+
+    public void shutdownCoreMember( CoreClusterMember member )
+    {
+        shutdownCoreMembers( Collections.singleton( member ) );
+    }
+
+    public void shutdownCoreMembers( Collection<CoreClusterMember> members )
+    {
         try ( ErrorHandler errorHandler = new ErrorHandler( "Error when trying to shutdown core members" ) )
         {
-            shutdownCoreMembers( errorHandler );
+            shutdownCoreMembers( members, errorHandler );
         }
     }
 
@@ -586,7 +596,16 @@ public class Cluster
 
     public void startCoreMembers() throws InterruptedException, ExecutionException
     {
-        Collection<CoreClusterMember> members = coreMembers.values();
+        startCoreMembers( coreMembers.values() );
+    }
+
+    public void startCoreMember( CoreClusterMember member ) throws InterruptedException, ExecutionException
+    {
+        startCoreMembers( Collections.singleton( member ) );
+    }
+
+    public void startCoreMembers( Collection<CoreClusterMember> members ) throws InterruptedException, ExecutionException
+    {
         List<Future<CoreGraphDatabase>> futures = invokeAll( "cluster-starter", members, cm ->
         {
             cm.start();

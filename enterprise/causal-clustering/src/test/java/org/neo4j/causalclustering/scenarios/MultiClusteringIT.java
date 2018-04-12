@@ -35,9 +35,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -49,7 +51,9 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.TestStoreId.getStoreIds;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
@@ -181,12 +185,8 @@ public class MultiClusteringIT
     @Test
     public void rejoiningFollowerShouldDownloadSnapshotFromCorrectDatabase() throws Exception
     {
-        String dbName = dbNames.stream()
-                .findFirst()
-                .orElseThrow( () -> new IllegalArgumentException( "The dbNames parameter must not be empty." ) );
-
+        String dbName = getFirstDbName( dbNames );
         int followerId = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER ).serverId();
-
         cluster.removeCoreMemberWithServerId( followerId );
 
         for ( int  i = 0; i < 100; i++ )
@@ -229,6 +229,34 @@ public class MultiClusteringIT
         assertEquals( message, 1, storeIds.size() );
     }
 
+    @Test
+    public void shouldNotBeAbleToChangeClusterMembersDatabaseName() throws Exception
+    {
+        CoreClusterMember member = cluster.coreMembers().stream().findFirst().orElseThrow( IllegalArgumentException::new );
+
+        cluster.shutdownCoreMember( member );
+
+        //given
+        member.updateConfig( CausalClusteringSettings.database, "new_name" );
+
+        try
+        {
+            //when
+            cluster.startCoreMember( member );
+            fail( "Cluster member should fail to restart after database name change." );
+        }
+        catch ( ExecutionException e )
+        {
+            //expected
+        }
+    }
+
     //TODO: Test that rejoining followers wait for majority of hosts *for each database* to be available before joining
 
+    private static String getFirstDbName( Set<String> dbNames ) throws Exception
+    {
+        return dbNames.stream()
+                .findFirst()
+                .orElseThrow( () -> new IllegalArgumentException( "The dbNames parameter must not be empty." ) );
+    }
 }
