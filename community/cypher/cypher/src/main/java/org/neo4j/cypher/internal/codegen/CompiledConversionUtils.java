@@ -283,21 +283,9 @@ public abstract class CompiledConversionUtils
         {
             return NO_VALUE;
         }
-        else if ( anyValue instanceof VirtualNodeValue )
+        else if ( anyValue instanceof AnyValue )
         {
-            if ( anyValue instanceof NodeValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
-        }
-        else if ( anyValue instanceof VirtualRelationshipValue )
-        {
-            if ( anyValue instanceof RelationshipValue )
-            {
-                return (AnyValue) anyValue;
-            }
-            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+            return materializeAnyValueResult( proxySpi, anyValue );
         }
         else if ( anyValue instanceof List )
         {
@@ -367,24 +355,42 @@ public abstract class CompiledConversionUtils
                 return VirtualValues.list( copy );
             }
         }
-        else if ( anyValue instanceof AnyValue )
-        {
-            // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities if needed.
-            // This will first do a dry run and return as it is if no conversion is needed.
-            // If in the future we will always create proxy objects directly whenever we create values we can skip this
-            // Doing this conversion lazily instead, by wrapping with TransformedListValue or TransformedMapValue is probably not a
-            // good idea because of the complexities involved (see TOMBSTONE in VirtualValues about why TransformedListValue was killed).
-            // NOTE: There is also a case where a ListValue can be storable (ArrayValueListValue) where no conversion is needed
-            if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
-            {
-                return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
-            }
-            return (AnyValue) anyValue;
-        }
         else
         {
             return ValueUtils.of( anyValue );
         }
+    }
+
+    // NOTE: This assumes anyValue is an instance of AnyValue
+    public static AnyValue materializeAnyValueResult( EmbeddedProxySPI proxySpi, Object anyValue )
+    {
+        if ( anyValue instanceof VirtualNodeValue )
+        {
+            if ( anyValue instanceof NodeValue )
+            {
+                return (AnyValue) anyValue;
+            }
+            return ValueUtils.fromNodeProxy( proxySpi.newNodeProxy( ((VirtualNodeValue) anyValue).id() ) );
+        }
+        if ( anyValue instanceof VirtualRelationshipValue )
+        {
+            if ( anyValue instanceof RelationshipValue )
+            {
+                return (AnyValue) anyValue;
+            }
+            return ValueUtils.fromRelationshipProxy( proxySpi.newRelationshipProxy( ((VirtualRelationshipValue) anyValue).id() ) );
+        }
+        // If it is a list or map, run it through a ValueMapper that will create proxy objects for entities if needed.
+        // This will first do a dry run and return as it is if no conversion is needed.
+        // If in the future we will always create proxy objects directly whenever we create values we can skip this
+        // Doing this conversion lazily instead, by wrapping with TransformedListValue or TransformedMapValue is probably not a
+        // good idea because of the complexities involved (see TOMBSTONE in VirtualValues about why TransformedListValue was killed).
+        // NOTE: There is also a case where a ListValue can be storable (ArrayValueListValue) where no conversion is needed
+        if ( (anyValue instanceof ListValue && !((ListValue) anyValue).storable()) || anyValue instanceof MapValue )
+        {
+            return CompiledMaterializeValueMapper.mapAnyValue( proxySpi, (AnyValue) anyValue );
+        }
+        return (AnyValue) anyValue;
     }
 
     public static NodeValue materializeNodeValue( EmbeddedProxySPI proxySpi, Object anyValue )

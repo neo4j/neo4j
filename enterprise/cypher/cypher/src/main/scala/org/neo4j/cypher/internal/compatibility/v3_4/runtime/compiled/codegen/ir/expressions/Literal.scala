@@ -29,19 +29,22 @@ case class Literal(value: Object) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     // When the literal value comes from the AST it should already have been converted
-    val convertedValue = value match {
-      case n: java.lang.Byte => n.longValue()
-      case n: java.lang.Short => n.longValue()
-      case n: java.lang.Character => n.toString
-      case n: java.lang.Integer => n.longValue()
-      case n: java.lang.Float => n.doubleValue()
-      case _ => value
-    }
+    assert({
+      val needsConverison = value match {
+        case n: java.lang.Byte => true // n.longValue()
+        case n: java.lang.Short => true // n.longValue()
+        case n: java.lang.Character => true // n.toString
+        case n: java.lang.Integer => true // n.longValue()
+        case n: java.lang.Float => true // n.doubleValue()
+        case _ => false
+      }
+      !needsConverison
+    })
     val ct = codeGenType
     if (value == null)
       structure.noValue()
     else if (ct.isPrimitive)
-      structure.constantExpression(convertedValue.asInstanceOf[AnyRef])
+      structure.constantExpression(value)
     else
       structure.constantValueExpression(value, ct)
   }

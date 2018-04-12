@@ -103,6 +103,7 @@ object Methods {
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
   val newRelationshipProxyById: MethodReference = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
   val materializeAnyResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeAnyValueResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyValueResult", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeNodeValue: MethodReference = method[CompiledConversionUtils, NodeValue]("materializeNodeValue", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeRelationshipValue: MethodReference =
     method[CompiledConversionUtils, RelationshipValue]("materializeRelationshipValue", typeRef[EmbeddedProxySPI], typeRef[Object])

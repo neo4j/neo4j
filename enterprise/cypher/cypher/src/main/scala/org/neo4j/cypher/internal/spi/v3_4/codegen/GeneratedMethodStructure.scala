@@ -416,8 +416,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def relationship(relIdVar: String, codeGenType: CodeGenType) =
     generator.load(relIdVar)
 
-  override def materializeAny(expression: Expression) =
-    invoke(materializeAnyResult, nodeManager, expression)
+  override def materializeAny(expression: Expression, codeGenType: CodeGenType) =
+    codeGenType match {
+      case CypherCodeGenType(_, _: AnyValueType) =>
+        invoke(materializeAnyValueResult, nodeManager, expression)
+      case _ =>
+        invoke(materializeAnyResult, nodeManager, expression)
+    }
 
   override def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[Expression] => V) = if (!tracing) block(this)
   else {
