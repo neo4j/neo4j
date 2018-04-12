@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Commons Text
   Caffeine cache
   ConcurrentLinkedHashMap
   FindBugs-jsr305
@@ -44,8 +45,8 @@ BSD - Scala License
   Scala Library
 
 BSD License
-  ASM Core
-  ASM Tree
+  asm
+  asm-tree
   JLine
   Scala Compiler
 
