@@ -128,6 +128,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             tx.dataWrite().nodeAddLabel( nodeId, toAdd );
             tx.dataWrite().nodeRemoveLabel( nodeId, toDelete );
 
+            int toRegret = tx.token().labelGetOrCreateForName( toAddName );
+            tx.dataWrite().nodeAddLabel( nodeId, toRegret );
+            tx.dataWrite().nodeRemoveLabel( nodeId, toRegret );
+
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );

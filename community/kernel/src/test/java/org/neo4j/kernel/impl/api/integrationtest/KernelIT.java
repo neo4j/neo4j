@@ -84,36 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void transactionStateShouldReflectRemovingAddedLabelImmediately() throws Exception
-    {
-        Transaction tx = db.beginTx();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        // WHEN
-        Node node = db.createNode();
-        int labelId1 = ktx.tokenWrite().labelGetOrCreateForName( "labello1" );
-        int labelId2 = ktx.tokenWrite().labelGetOrCreateForName( "labello2" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId1 );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId2 );
-        ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId2 );
-
-        // THEN
-        try ( NodeCursor cursor = ktx.cursors().allocateNodeCursor() )
-        {
-            ktx.dataRead().singleNode( node.getId(), cursor );
-            assertTrue( cursor.next() );
-            LabelSet labels = cursor.labels();
-            assertThat( labels.numberOfLabels(), equalTo( 1 ) );
-            assertFalse( labels.contains( labelId2 ) );
-            assertTrue( labels.contains( labelId1 ) );
-        }
-
-        ktx.close();
-        tx.success();
-        tx.close();
-    }
-
-    @Test
     public void addingNewLabelToNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
