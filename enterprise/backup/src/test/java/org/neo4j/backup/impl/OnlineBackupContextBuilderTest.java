@@ -53,7 +53,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.neo4j.backup.impl.SelectedBackupProtocol.ANY;
-import static org.neo4j.backup.impl.SelectedBackupProtocol.LEGACY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
@@ -313,8 +312,8 @@ public class OnlineBackupContextBuilderTest
     public void overrideWithLegacy() throws CommandFailed, IncorrectUsage
     {
         // with
-        List<String> input = Arrays.asList( "legacy", "catchup" );
-        List<SelectedBackupProtocol> expected = Arrays.asList( SelectedBackupProtocol.LEGACY, SelectedBackupProtocol.CATCHUP );
+        List<String> input = Arrays.asList( "common", "catchup" );
+        List<SelectedBackupProtocol> expected = Arrays.asList( SelectedBackupProtocol.COMMON, SelectedBackupProtocol.CATCHUP );
 
         for ( int useCase = 0; useCase < input.size(); useCase++ )
         {

@@ -54,7 +54,7 @@ public class StrategyResolverServiceTest
     @Test
     public void legacyProvidesBackupProtocol()
     {
-        List<BackupStrategyWrapper> result = subject.getStrategies( SelectedBackupProtocol.LEGACY );
+        List<BackupStrategyWrapper> result = subject.getStrategies( SelectedBackupProtocol.COMMON );
         Assert.assertEquals( Collections.singletonList( haBackupStrategy ), result );
     }
 

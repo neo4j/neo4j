@@ -40,7 +40,7 @@ class StrategyResolverService
         {
         case ANY:
             return Arrays.asList( ccBackupStrategy, haBackupStrategy );
-        case LEGACY:
+        case COMMON:
             return Collections.singletonList( haBackupStrategy );
         case CATCHUP:
             return Collections.singletonList( ccBackupStrategy );

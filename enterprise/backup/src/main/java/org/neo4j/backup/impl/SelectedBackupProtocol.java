@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public enum SelectedBackupProtocol
 {
     ANY( "any" ),
-    LEGACY( "common" ),
+    COMMON( "common" ),
     CATCHUP( "catchup" );
 
     public String getName()

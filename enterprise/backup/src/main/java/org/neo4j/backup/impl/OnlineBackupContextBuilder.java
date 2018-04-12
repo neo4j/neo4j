@@ -66,7 +66,7 @@ class OnlineBackupContextBuilder
     static final String ARG_DFLT_BACKUP_SOURCE = "localhost:6362";
 
     static final String ARG_NAME_PROTO_OVERRIDE = "protocol";
-    static final String ARG_DESC_PROTO_OVERRIDE = "Preferred protocol to use for communication";
+    static final String ARG_DESC_PROTO_OVERRIDE = "Preferred backup protocol";
     static final String ARG_DFLT_PROTO_OVERRIDE = "any";
 
     static final String ARG_NAME_TIMEOUT = "timeout";
@@ -119,8 +119,10 @@ class OnlineBackupContextBuilder
 
     public static Arguments arguments()
     {
-        String argExampleProtoOverride =
-                String.join( "|", Stream.of( SelectedBackupProtocol.values() ).map( SelectedBackupProtocol::getName ).sorted().collect( Collectors.toList() ) );
+        String argExampleProtoOverride = Stream.of( SelectedBackupProtocol.values() )
+                .map( SelectedBackupProtocol::getName )
+                .sorted()
+                .collect( Collectors.joining( "|" ) );
         return new Arguments()
                 .withArgument( new MandatoryCanonicalPath(
                         ARG_NAME_BACKUP_DIRECTORY, "backup-path", ARG_DESC_BACKUP_DIRECTORY ) )
