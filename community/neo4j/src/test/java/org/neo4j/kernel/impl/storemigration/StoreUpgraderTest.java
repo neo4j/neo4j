@@ -305,7 +305,7 @@ public class StoreUpgraderTest
         // Then
         logProvider.assertContainsLogCallContaining( "Store files" );
         logProvider.assertContainsLogCallContaining( "Indexes" );
-        logProvider.assertContainsLogCallContaining( "Count rebuilding" );
+        logProvider.assertContainsLogCallContaining( "Counts store" );
         logProvider.assertContainsLogCallContaining( "Successfully finished" );
     }
 
