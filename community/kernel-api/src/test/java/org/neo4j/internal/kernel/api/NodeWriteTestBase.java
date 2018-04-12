@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -430,5 +431,30 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             assertThat( graphDb.getNodeById( node ).getProperty( "prop" ), equalTo( 1337 ) );
         }
+    }
+
+    @Test
+    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propertyKey = "prop";
+        Value theValue = stringValue( "The Value" );
+
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            Node node = graphDb.createNode();
+            node.setProperty( propertyKey, theValue.asObject() );
+            nodeId = node.getId();
+            ctx.success();
+        }
+
+        // When
+        Transaction tx = session.beginTransaction();
+        int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+        assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ), equalTo( theValue ) );
+        tx.success();
+
+        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
     }
 }
