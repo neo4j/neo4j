@@ -84,29 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingNewLabelToNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        labelId = ktx.tokenWrite().labelGetOrCreateForName( "mylabel" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        boolean added = ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
-        tx.close();
-
-        // THEN
-        assertFalse( "Shouldn't have been added now", added );
-    }
-
-    @Test
     public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
     {
         // GIVEN

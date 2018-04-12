@@ -147,7 +147,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = session.beginTransaction() )
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
-            tx.dataWrite().nodeAddLabel( node, labelId );
+            assertTrue( tx.dataWrite().nodeAddLabel( node, labelId ) );
             tx.success();
         }
 
