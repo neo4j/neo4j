@@ -84,43 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Label label = label( "labello" );
-        Node node = db.createNode( label );
-        tx.success();
-        tx.close();
-
-        // AND GIVEN I DELETE IT
-        tx = db.beginTx();
-        node.delete();
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        Set<Long> nodeSet = new HashSet<>();
-        KernelTransaction ktx =
-                statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        try ( NodeLabelIndexCursor nodes = ktx.cursors().allocateNodeLabelIndexCursor() )
-        {
-            int labelId = ktx.tokenRead().nodeLabel( label.name() );
-            ktx.dataRead().nodeLabelScan( labelId, nodes );
-            while ( nodes.next() )
-            {
-                nodeSet.add( nodes.nodeReference() );
-            }
-        }
-        tx.success();
-        tx.close();
-
-        // THEN
-        assertThat( nodeSet, equalTo( Collections.<Long>emptySet() ) );
-    }
-
-    @Test
     public void schemaStateShouldBeEvictedOnIndexComingOnline() throws Exception
     {
         // GIVEN
