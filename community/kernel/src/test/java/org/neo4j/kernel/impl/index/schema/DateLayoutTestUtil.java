@@ -49,7 +49,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateSchemaKey, NativeSche
 
     public static DateValue randomDate( Randoms random )
     {
-        return DateValue.epochDate( random.nextLong( (-999_999_999L - 1970) * 365, (999_999_999L - 1970) * 365) );
+        return DateValue.date( random.randomDate() );
     }
 
     DateLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )

@@ -32,6 +32,7 @@ import org.neo4j.string.UTF8;
  * Utility for reading and writing property values from/into a channel. Supports neo4j property types,
  * including arrays.
  */
+// TODO does not know about new types!
 public abstract class ValueType
 {
     private static final Map<Class<?>,ValueType> byClass = new HashMap<>();

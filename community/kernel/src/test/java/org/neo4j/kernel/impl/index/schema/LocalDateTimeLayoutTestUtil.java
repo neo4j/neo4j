@@ -49,8 +49,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
 
     public static LocalDateTimeValue randomLocalDateTime( Randoms random )
     {
-        return LocalDateTimeValue.localDateTime(
-                random.nextLong( (-999_999_999L - 1970) * 365 * 24 * 60 * 60, (999_999_999L - 1970) * 365 * 24 * 60 * 60 ), 0 );
+        return LocalDateTimeValue.localDateTime( random.randomLocalDateTime() );
     }
 
     LocalDateTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )

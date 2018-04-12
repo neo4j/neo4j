@@ -71,6 +71,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -519,7 +520,7 @@ public class ParallelBatchImporterTest
         }
         else
         {
-            assertEquals( input + ", " + entity + " for key:" + key, expected, array );
+            assertEquals( input + ", " + entity + " for key:" + key, Values.of( expected ), Values.of( array ) );
         }
     }
 

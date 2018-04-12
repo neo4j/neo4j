@@ -54,7 +54,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeSchemaKey, Nativ
 
     public static TimeValue randomTime( Randoms random )
     {
-        return TimeValue.time( random.nextLong( 0, MAX_NANOS_PER_DAY ), UTC);
+        return TimeValue.time( random.randomTime() );
     }
 
     TimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
