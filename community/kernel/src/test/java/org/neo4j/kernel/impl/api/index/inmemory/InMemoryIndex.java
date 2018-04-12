@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -48,7 +48,7 @@ class InMemoryIndex
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
 
-    InMemoryIndex( IndexDescriptor descriptor )
+    InMemoryIndex( SchemaIndexDescriptor descriptor )
     {
         this( new HashBasedIndex( descriptor ) );
     }
@@ -117,7 +117,6 @@ class InMemoryIndex
 
         @Override
         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-                throws IndexEntryConflictException, IOException
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -126,25 +125,25 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             indexData.drop();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             if ( populationCompletedSuccessfully )
             {
@@ -178,14 +177,14 @@ class InMemoryIndex
         }
     }
 
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
     {
     }
 
     private class OnlineAccessor implements IndexAccessor
     {
         @Override
-        public void force()
+        public void force( IOLimiter ioLimiter )
         {
         }
 
@@ -231,9 +230,15 @@ class InMemoryIndex
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-                throws IndexEntryConflictException, IOException
+                throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return false;
         }
     }
 
@@ -252,7 +257,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+        public void process( IndexEntryUpdate<?> update )
         {
             switch ( update.updateMode() )
             {
@@ -272,7 +277,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close()
         {
         }
     }

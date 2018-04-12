@@ -62,18 +62,18 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltex
 
 public class BloomIT
 {
-    private static final String NODES = "CALL bloom.searchNodes([%s])";
-    private static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
-    private static final String RELS = "CALL bloom.searchRelationships([%s])";
-    private static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
-    private static final String ENTITYID = "entityid";
-    private static final String SCORE = "score";
-    private static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
-    private static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
-    private static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String GET_REL_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
-    private static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
-    private static final String STATUS = "CALL bloom.indexStatus";
+    static final String NODES = "CALL bloom.searchNodes([%s])";
+    static final String NODES_ADVANCED = "CALL bloom.searchNodes([%s], %b, %b)";
+    static final String RELS = "CALL bloom.searchRelationships([%s])";
+    static final String RELS_ADVANCED = "CALL bloom.searchRelationships([%s], %b, %b)";
+    static final String ENTITYID = "entityid";
+    static final String SCORE = "score";
+    static final String SET_NODE_KEYS = "CALL bloom.setIndexedNodePropertyKeys([%s])";
+    static final String SET_REL_KEYS = "CALL bloom.setIndexedRelationshipPropertyKeys([%s])";
+    static final String GET_NODE_KEYS = "CALL bloom.getIndexedNodePropertyKeys";
+    static final String GET_REL_KEYS = "CALL bloom.getIndexedRelationshipPropertyKeys";
+    static final String AWAIT_POPULATION = "CALL bloom.awaitPopulation";
+    static final String STATUS = "CALL bloom.indexStatus";
 
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
@@ -86,7 +86,7 @@ public class BloomIT
     private GraphDatabaseBuilder builder;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -94,7 +94,7 @@ public class BloomIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( db != null )
         {
@@ -212,6 +212,31 @@ public class BloomIT
         }
 
         Result result = db.execute( String.format( NODES, "\"integration\", \"test\", \"involves\", \"scoring\", \"needs\", \"sentence\"" ) );
+        assertTrue( result.hasNext() );
+        Map<String,Object> firstResult = result.next();
+        assertTrue( result.hasNext() );
+        Map<String,Object> secondResult = result.next();
+        assertFalse( result.hasNext() );
+        assertEquals( 0L, firstResult.get( ENTITYID ) );
+        assertEquals( 1L, secondResult.get( ENTITYID ) );
+        assertThat( (double) firstResult.get( SCORE ), greaterThan( (double) secondResult.get( SCORE ) * 10 ) );
+    }
+
+    @Test
+    public void unsplitTokensShouldNotBreakFuzzyQuery() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test that involves scoring and thus needs a longer sentence." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "tase" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration test involves scoring needs sentence\"" ) );
         assertTrue( result.hasNext() );
         Map<String,Object> firstResult = result.next();
         assertTrue( result.hasNext() );
@@ -491,8 +516,8 @@ public class BloomIT
     @Test
     public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
     {
-        String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
-        String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+        final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+        final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
         builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, ENGLISH );
 
@@ -608,11 +633,18 @@ public class BloomIT
         db = getDb();
 
         db.execute( String.format( SET_NODE_KEYS, "\"prop\", \"otherprop\", \"proppmatt\"" ) );
+        db.execute( String.format( SET_REL_KEYS, "\"ata\", \"mata\", \"matt\"" ) );
 
         Result result = db.execute( GET_NODE_KEYS );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
         assertEquals( "prop", result.next().get( "propertyKey" ) );
         assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
+        assertFalse( result.hasNext() );
+
+        result = db.execute( GET_REL_KEYS );
+        assertEquals( "mata", result.next().get( "propertyKey" ) );
+        assertEquals( "matt", result.next().get( "propertyKey" ) );
+        assertEquals( "ata", result.next().get( "propertyKey" ) );
         assertFalse( result.hasNext() );
     }
 
@@ -625,8 +657,12 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION );
         Result result = db.execute( STATUS );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
+        Map<String,Object> output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomNodes", output.get( "name" ) );
+        output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomRelationships", output.get( "name" ) );
         assertFalse( result.hasNext() );
     }
 

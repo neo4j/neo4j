@@ -19,13 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.time._
+import java.time.temporal.TemporalAmount
+
 import org.neo4j.cypher.internal.util.v3_4.Eagerly
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable._
 import org.neo4j.values.storable.Values.byteArray
 import org.neo4j.values.virtual.VirtualValues.fromArray
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
@@ -42,12 +45,18 @@ object ValueConversion {
       case CTInteger => l => Values.longValue(l.asInstanceOf[Long])
       case CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
       case CTString => l => Values.stringValue(l.asInstanceOf[String])
-      case CTPath => p => ValueUtils.asPathValue(p.asInstanceOf[Path])
+      case CTPath => p => ValueUtils.fromPath(p.asInstanceOf[Path])
       case CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
       case ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
       case CTAny => o => ValueUtils.of(o)
       case CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
       case CTGeometry => o => ValueUtils.asGeometryValue(o.asInstanceOf[Geometry])
+      case CTDateTime => o => DateTimeValue.datetime(o.asInstanceOf[ZonedDateTime])
+      case CTLocalDateTime => o => LocalDateTimeValue.localDateTime(o.asInstanceOf[LocalDateTime])
+      case CTDate => o => DateValue.date(o.asInstanceOf[LocalDate])
+      case CTTime => o => TimeValue.time(o.asInstanceOf[OffsetTime])
+      case CTLocalTime => o => LocalTimeValue.localTime(o.asInstanceOf[LocalTime])
+      case CTDuration => o => Values.durationValue(o.asInstanceOf[TemporalAmount])
     }
 
     (v) => if (v == null) Values.NO_VALUE else converter(v)
@@ -64,9 +73,15 @@ object ValueConversion {
     case b: Boolean => Values.booleanValue(b)
     case n: Node => ValueUtils.fromNodeProxy(n)
     case r: Relationship => ValueUtils.fromRelationshipProxy(r)
-    case p: Path => ValueUtils.asPathValue(p)
+    case p: Path => ValueUtils.fromPath(p)
     case p: Point => ValueUtils.asPointValue(p)
     case p: Geometry => ValueUtils.asGeometryValue(p)
+    case x: ZonedDateTime => DateTimeValue.datetime(x)
+    case x: LocalDateTime => LocalDateTimeValue.localDateTime(x)
+    case x: LocalDate => DateValue.date(x)
+    case x: OffsetTime => TimeValue.time(x)
+    case x: LocalTime => LocalTimeValue.localTime(x)
+    case x: TemporalAmount => Values.durationValue(x)
     case m: Map[_, _] => VirtualValues.map(Eagerly.immutableMapValues(m.asInstanceOf[Map[String, Any]], asValue).asJava)
     case m: java.util.Map[_, _] => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
     case a: TraversableOnce[_] => VirtualValues.list(a.map(asValue).toArray:_*)

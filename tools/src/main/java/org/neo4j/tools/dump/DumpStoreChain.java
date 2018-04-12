@@ -28,6 +28,7 @@ import java.util.Set;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -101,11 +102,11 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
         tool.dump( storeFile );
     }
 
-    long first;
+    long firstRecord;
 
-    private DumpStoreChain( long first )
+    private DumpStoreChain( long firstRecord )
     {
-        this.first = first;
+        this.firstRecord = firstRecord;
     }
 
     private static LogProvider logProvider()
@@ -121,13 +122,13 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Config config = Config.defaults();
             StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs,
-                    logProvider() );
+                    logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             try ( NeoStores neoStores = storeFactory.openNeoStores( getStoreTypes() ) )
             {
                 RecordStore<RECORD> store = store( neoStores );
                 RECORD record = store.newRecord();
-                for ( long next = first; next != -1; )
+                for ( long next = firstRecord; next != -1; )
                 {
                     store.getRecord( next, record, RecordLoad.FORCE );
                     System.out.println( record );
@@ -172,7 +173,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 RelationshipStore store( NeoStores neoStores )
                 {
                     NodeRecord nodeRecord = nodeRecord( neoStores, node );
-                    first = nodeRecord.isDense() ? -1 : nodeRecord.getNextRel();
+                    firstRecord = nodeRecord.isDense() ? -1 : nodeRecord.getNextRel();
                     return super.store( neoStores );
                 }
             };
@@ -184,7 +185,7 @@ public abstract class DumpStoreChain<RECORD extends AbstractBaseRecord>
                 @Override
                 PropertyStore store( NeoStores neoStores )
                 {
-                    first = nodeRecord( neoStores, node ).getNextProp();
+                    firstRecord = nodeRecord( neoStores, node ).getNextProp();
                     return super.store( neoStores );
                 }
             };

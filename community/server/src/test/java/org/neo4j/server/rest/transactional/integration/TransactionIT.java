@@ -117,7 +117,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__execute__rollback() throws Exception
+    public void begin__execute__rollback()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -226,7 +226,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit() throws Exception
+    public void begin_and_execute_and_commit()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
 
@@ -261,7 +261,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_and_commit_with_badly_escaped_statement() throws Exception
+    public void begin_and_execute_and_commit_with_badly_escaped_statement()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();
         String json = "{ \"statements\": [ { \"statement\": \"LOAD CSV WITH HEADERS FROM " +
@@ -395,7 +395,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_invalid_query_and_commit() throws Exception
+    public void begin_and_execute_invalid_query_and_commit()
     {
         // begin and execute and commit
         Response response = http.POST(
@@ -560,7 +560,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin__rollback__execute() throws Exception
+    public void begin__rollback__execute()
     {
         // begin
         Response begin = http.POST( "db/data/transaction" );
@@ -603,11 +603,11 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         final Future<Response> executeFuture = executors.submit( () ->
         {
-            Response response = http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
+            HTTP.Builder requestBuilder = HTTP.withBaseUri( server().baseUri() );
+            Response response = requestBuilder.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': '" +
                                                                         statement + "' } ] }" ) );
             assertThat( response.status(), equalTo( 200 ) );
             return response;
-
         } );
 
         // terminate
@@ -615,8 +615,8 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         {
             waitForStatementExecution( statement );
 
-            Response response = http.DELETE( begin.location() );
-            assertThat( response.status(), equalTo( 200 ) );
+            Response response = http.DELETE( executeResource );
+            assertThat( response.toString(), response.status(), equalTo( 200 ) );
             nodeReleaseLatch.countDown();
             return response;
         } );
@@ -627,13 +627,13 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
 
         Response execute2 =
-                http.POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+                http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
         assertThat( execute2.status(), equalTo( 404 ) );
         assertThat( execute2, hasErrors( Status.Transaction.TransactionNotFound ) );
     }
 
     @Test
-    public void status_codes_should_appear_in_response() throws Exception
+    public void status_codes_should_appear_in_response()
     {
         Response response = http.POST( "db/data/transaction/commit",
                 quotedJson( "{ 'statements': [ { 'statement': 'RETURN {n}' } ] }" ) );
@@ -892,7 +892,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void correctStatusCodeWhenUsingHintWithoutAnyIndex() throws Exception
+    public void correctStatusCodeWhenUsingHintWithoutAnyIndex()
     {
         // begin and execute and commit
         Response begin = http.POST( "db/data/transaction/commit",

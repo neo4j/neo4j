@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.unsafe.impl.batchimport.DataImporter.Monitor;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
-import org.neo4j.values.storable.Values;
 
 /**
  * Abstract class containing logic for importing properties for an entity (node/relationship).
@@ -119,8 +119,8 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
 
     private void encodeProperty( PropertyBlock block, int key, Object value )
     {
-        PropertyStore.encodeValue( block, key, Values.of( value ), dynamicStringRecordAllocator, dynamicArrayRecordAllocator,
-                propertyStore.allowStorePoints() );
+        PropertyStore.encodeValue( block, key, ValueUtils.asValue( value ), dynamicStringRecordAllocator, dynamicArrayRecordAllocator,
+                propertyStore.allowStorePointsAndTemporal() );
     }
 
     protected long createAndWritePropertyChain()

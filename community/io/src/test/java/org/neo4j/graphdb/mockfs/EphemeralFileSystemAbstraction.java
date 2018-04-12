@@ -256,7 +256,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileWatcher fileWatcher() throws IOException
+    public FileWatcher fileWatcher()
     {
         return FileWatcher.SILENT_WATCHER;
     }
@@ -307,8 +307,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                                              + "' (The system cannot find the path specified)" );
         }
 
-        EphemeralFileData data = new EphemeralFileData( clock );
-        Optional.ofNullable( files.put( canonicalFile( fileName ), data ) ).ifPresent( EphemeralFileData::free );
+        EphemeralFileData data = files.computeIfAbsent( canonicalFile( fileName ), key -> new EphemeralFileData( clock ) );
         return new StoreFileChannel(
                 new EphemeralFileChannel( data, new FileStillOpenException( fileName.getPath() ) ) );
     }
@@ -390,7 +389,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void deleteRecursively( File path ) throws IOException
+    public void deleteRecursively( File path )
     {
         if ( isDirectory( path ) )
         {
@@ -500,7 +499,8 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
         for ( String pathItem : pathItems )
         {
-            file = file == null ? new File( pathItem ) : new File( file, pathItem );
+            String pathItemName = pathItem + File.separator;
+            file = file == null ? new File( pathItemName ) : new File( file, pathItemName );
         }
         return file;
     }
@@ -649,11 +649,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
             Class<K> clazz, Function<Class<K>,K> creator )
     {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if ( fileSystem == null )
-        {
-            thirdPartyFileSystems.put( clazz, fileSystem = creator.apply( clazz ) );
-        }
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.computeIfAbsent( clazz, k -> creator.apply( clazz ) );
         return clazz.cast( fileSystem );
     }
 
@@ -669,12 +665,12 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long lastModifiedTime( File file ) throws IOException
+    public long lastModifiedTime( File file )
     {
         EphemeralFileData data = files.get( canonicalFile( file ) );
         if ( data == null )
         {
-            throw new FileNotFoundException( "File " + file + " not found" );
+            return 0;
         }
         return data.lastModified;
     }
@@ -833,7 +829,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
+        public long transferTo( long position, long count, WritableByteChannel target )
         {
             throw new UnsupportedOperationException();
         }
@@ -847,7 +843,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
             try
             {
                 long transferred = 0;
-                ByteBuffer intermediary = ByteBuffer.allocateDirect( (int) ByteUnit.mebiBytes( 8 ) );
+                ByteBuffer intermediary = ByteBuffer.allocate( (int) ByteUnit.mebiBytes( 8 ) );
                 while ( transferred < count )
                 {
                     intermediary.clear();
@@ -904,7 +900,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
+        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared )
         {
             synchronized ( data.channels )
             {
@@ -917,7 +913,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        protected void implCloseChannel() throws IOException
+        protected void implCloseChannel()
         {
             data.close( this );
         }
@@ -1136,7 +1132,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public void release() throws IOException
+        public void release()
         {
             synchronized ( file.channels )
             {
@@ -1200,22 +1196,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
         private ByteBuffer allocate( long capacity )
         {
-            try
-            {
-                return ByteBuffer.allocateDirect( Math.toIntExact( capacity ) );
-            }
-            catch ( OutOfMemoryError oom )
-            {
-                try
-                {
-                    return ByteBuffer.allocate( Math.toIntExact( capacity ) );
-                }
-                catch ( OutOfMemoryError secondOom )
-                {
-                    oom.addSuppressed( secondOom );
-                    throw oom;
-                }
-            }
+            return ByteBuffer.allocate( Math.toIntExact( capacity ) );
         }
 
         void free()

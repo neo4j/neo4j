@@ -44,16 +44,16 @@ public class FilteringIterable<T> implements Iterable<T>
     @Override
     public Iterator<T> iterator()
     {
-        return new FilteringIterator<T>( source.iterator(), predicate );
+        return new FilteringIterator<>( source.iterator(), predicate );
     }
 
     public static <T> Iterable<T> notNull( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.notNull() );
+        return new FilteringIterable<>( source, Predicates.notNull() );
     }
 
     public static <T> Iterable<T> noDuplicates( Iterable<T> source )
     {
-        return new FilteringIterable<T>( source, Predicates.noDuplicates() );
+        return new FilteringIterable<>( source, Predicates.noDuplicates() );
     }
 }

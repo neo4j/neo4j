@@ -34,16 +34,7 @@ import static java.lang.String.format;
  */
 public class AccessStatistics
 {
-    public static int LOCALITY = 500;
-
     private final Map<RecordStore<? extends AbstractBaseRecord>,AccessStats> stats = new HashMap<>();
-    private int proximity;
-
-    @SuppressWarnings( "unchecked" )
-    public AccessStats getAccessStats( RecordStore<? extends AbstractBaseRecord> store )
-    {
-        return stats.get( store );
-    }
 
     public void register( RecordStore<? extends AbstractBaseRecord> store, AccessStats accessStats )
     {
@@ -150,13 +141,9 @@ public class AccessStatistics
             }
         }
 
-        private boolean closeBy( long id1, long id2 )
+        private boolean notCloseBy( long id1, long id2 )
         {
-            if ( id1 < 0 || id2 < 0 )
-            {
-                return true;
-            }
-            return Math.abs( id2 - id1 ) < this.proximityValue;
+            return id1 >= 0 && id2 >= 0 && Math.abs( id2 - id1 ) >= this.proximityValue;
         }
 
         public void upWrite( long id )
@@ -164,7 +151,7 @@ public class AccessStatistics
             if ( prevWriteId != id )
             {
                 writes++;
-                if ( id > 0 && !closeBy( id, prevWriteId ) )
+                if ( id > 0 && notCloseBy( id, prevWriteId ) )
                 {
                     randomWrites++;
                 }
@@ -174,7 +161,7 @@ public class AccessStatistics
 
         public synchronized void incrementRandomReads( long id1, long id2 )
         {
-            if ( !closeBy( id1, id2 ) )
+            if ( notCloseBy( id1, id2 ) )
             {
                 randomReads++;
             }

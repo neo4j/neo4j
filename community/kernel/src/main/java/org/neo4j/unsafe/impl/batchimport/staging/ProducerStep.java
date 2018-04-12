@@ -74,7 +74,7 @@ public abstract class ProducerStep extends AbstractStep<Void> implements StatsPr
         return 0;
     }
 
-    protected abstract void process() throws Exception;
+    protected abstract void process();
 
     @SuppressWarnings( "unchecked" )
     protected void sendDownstream( Object batch )

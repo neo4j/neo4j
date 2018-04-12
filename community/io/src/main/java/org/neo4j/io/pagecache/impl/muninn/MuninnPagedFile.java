@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.PagedReadableByteChannel;
 import org.neo4j.io.pagecache.impl.PagedWritableByteChannel;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
@@ -40,6 +41,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 final class MuninnPagedFile extends PageList implements PagedFile, Flushable
@@ -69,7 +71,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     volatile int[][] translationTable;
 
     final PageSwapper swapper;
-    final int swapperId;
+    final short swapperId;
     private final CursorPool cursorPool;
 
     // Guarded by the monitor lock on MuninnPageCache (map and unmap)
@@ -77,6 +79,11 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
 
     // Used to trace the causes of any exceptions from getLastPageId.
     private volatile Exception closeStackTrace;
+
+    // max modifier transaction id among evicted pages for this file
+    private static final long evictedTransactionIdOffset = UnsafeUtil.getFieldOffset( MuninnPagedFile.class, "highestEvictedTransactionId" );
+    @SuppressWarnings( "unused" ) // accessed using unsafe
+    private volatile long highestEvictedTransactionId;
 
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
@@ -104,24 +111,20 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     * access to thread local version context
      * @param createIfNotExists should create file if it does not exists
      * @param truncateExisting should truncate file if it exists
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
-    MuninnPagedFile(
-            File file,
-            MuninnPageCache pageCache,
-            int filePageSize,
-            PageSwapperFactory swapperFactory,
-            PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier,
-            boolean createIfNotExists,
-            boolean truncateExisting ) throws IOException
+    MuninnPagedFile( File file, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory,
+            PageCacheTracer pageCacheTracer, PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier, boolean createIfNotExists, boolean truncateExisting ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
-        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer );
+        this.cursorPool = new CursorPool( this, pageCursorTracerSupplier, pageCacheTracer, versionContextSupplier );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap();
 
@@ -202,7 +205,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public long fileSize()
+    public long fileSize() throws FileIsNotMappedException
     {
         final long lastPageId = getLastPageId();
         if ( lastPageId < 0 )
@@ -212,13 +215,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return (lastPageId + 1) * pageSize();
     }
 
-    File file()
+    @Override
+    public File file()
     {
         return swapper.file();
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         pageCache.unmap( this );
     }
@@ -504,7 +508,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return success;
     }
 
-    private void syncDevice() throws IOException
+    private void syncDevice()
     {
         pageCache.syncDevice();
     }
@@ -516,13 +520,12 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public long getLastPageId()
+    public long getLastPageId() throws FileIsNotMappedException
     {
         long state = getHeaderState();
         if ( refCountOf( state ) == 0 )
         {
-            String msg = "File has been unmapped: " + file().getPath();
-            IllegalStateException exception = new IllegalStateException( msg );
+            FileIsNotMappedException exception = new FileIsNotMappedException( file() );
             Exception closedBy = closeStackTrace;
             if ( closedBy != null )
             {
@@ -653,7 +656,21 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         int chunkId = computeChunkId( filePageId );
         long chunkOffset = computeChunkOffset( filePageId );
         int[] chunk = translationTable[chunkId];
+
+        int mappedPageId = UnsafeUtil.getIntVolatile( chunk, chunkOffset );
+        long pageRef = deref( mappedPageId );
+        setHighestEvictedTransactionId( getAndResetLastModifiedTransactionId( pageRef ) );
         UnsafeUtil.putIntVolatile( chunk, chunkOffset, UNMAPPED_TTE );
+    }
+
+    private void setHighestEvictedTransactionId( long modifiedTransactionId )
+    {
+        UnsafeUtil.compareAndSetMaxLong( this, evictedTransactionIdOffset, modifiedTransactionId );
+    }
+
+    long getHighestEvictedTransactionId()
+    {
+        return UnsafeUtil.getLongVolatile( this, evictedTransactionIdOffset );
     }
 
     /**

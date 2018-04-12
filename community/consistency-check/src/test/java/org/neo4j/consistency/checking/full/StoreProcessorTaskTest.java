@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 public class StoreProcessorTaskTest
 {
     @Test
-    public void singlePassShouldOnlyProcessTheStoreOnce() throws Exception
+    public void singlePassShouldOnlyProcessTheStoreOnce()
     {
         // given
         StoreProcessor singlePassProcessor = mock( StoreProcessor.class );

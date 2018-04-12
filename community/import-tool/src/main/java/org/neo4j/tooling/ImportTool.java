@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
@@ -47,13 +48,14 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
@@ -71,15 +73,16 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
+import org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor;
 
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
@@ -260,7 +263,8 @@ public class ImportTool
                 "over the heap memory" ),
         HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
                 "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
-                "support parallel IO with high throughput." );
+                "support parallel IO with high throughput." ),
+        DETAILED_PROGRESS( "detailed-progress", false, "true/false", "Use the old detailed 'spectrum' progress printing" );
 
         private final String key;
         private final Object defaultValue;
@@ -411,7 +415,7 @@ public class ImportTool
         Config dbConfig;
         OutputStream badOutput = null;
         IdType idType;
-        org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration;
         File logsDir;
         File badFile = null;
         Long maxMemory;
@@ -424,7 +428,7 @@ public class ImportTool
             args = useArgumentsFromFileArgumentIfPresent( args );
 
             storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
-                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE, Validators.CONTAINS_NO_EXISTING_DATABASE );
+                    Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
             Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
@@ -474,9 +478,10 @@ public class ImportTool
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
+            boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
             doImport( out, err, in, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
-                    enableStacktrace, input, dbConfig, badOutput, configuration );
+                    enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;
         }
@@ -548,7 +553,7 @@ public class ImportTool
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
                                  Config dbConfig, OutputStream badOutput,
-                                 org.neo4j.unsafe.impl.batchimport.Configuration configuration ) throws IOException
+                                 org.neo4j.unsafe.impl.batchimport.Configuration configuration, boolean detailedProgress ) throws IOException
     {
         boolean success;
         LifeSupport life = new LifeSupport();
@@ -556,14 +561,17 @@ public class ImportTool
         dbConfig.augment( logs_directory, logsDir.getCanonicalPath() );
         File internalLogFile = dbConfig.get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
+        final CentralJobScheduler jobScheduler = life.add( new CentralJobScheduler() );
 
         life.start();
+        ExecutionMonitor executionMonitor = detailedProgress
+                        ? new SpectrumExecutionMonitor( 2, TimeUnit.SECONDS, out, SpectrumExecutionMonitor.DEFAULT_WIDTH )
+                        : ExecutionMonitors.defaultVisible( in, jobScheduler );
         BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( storeDir,
                 fs,
                 null, // no external page cache
                 configuration,
-                logService,
-                ExecutionMonitors.defaultVisible( in ),
+                logService, executionMonitor,
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
@@ -667,6 +675,7 @@ public class ImportTool
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
         printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
+        printIndented( "High-IO: " + configuration.highIO(), out );
         out.println();
     }
 
@@ -715,11 +724,11 @@ public class ImportTool
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir, Boolean defaultHighIO )
     {
         return importConfiguration(
                 processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
-                DEFAULT.allowCacheAllocationOnHeap(), (Boolean)Options.HIGH_IO.defaultValue() );
+                DEFAULT.allowCacheAllocationOnHeap(), defaultHighIO );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
@@ -753,7 +762,7 @@ public class ImportTool
             }
 
             @Override
-            public boolean parallelRecordReadsWhenWriting()
+            public boolean highIO()
             {
                 return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
             }
@@ -830,7 +839,8 @@ public class ImportTool
         {
             /* Shhhh */
         } );
-        return launderedException( e ); // throw in order to have process exit with !0
+        throwIfUnchecked( e );
+        return new RuntimeException( e ); // throw in order to have process exit with !0
     }
 
     private static void printErrorMessage( String string, Exception e, boolean stackTrace, PrintStream err )
@@ -944,7 +954,7 @@ public class ImportTool
             public char delimiter()
             {
                 return specificDelimiter != null
-                        ? specificDelimiter.charValue()
+                        ? specificDelimiter
                         : defaultConfiguration.delimiter();
             }
 
@@ -952,7 +962,7 @@ public class ImportTool
             public char arrayDelimiter()
             {
                 return specificArrayDelimiter != null
-                        ? specificArrayDelimiter.charValue()
+                        ? specificArrayDelimiter
                         : defaultConfiguration.arrayDelimiter();
             }
 
@@ -960,7 +970,7 @@ public class ImportTool
             public char quotationCharacter()
             {
                 return specificQuote != null
-                        ? specificQuote.charValue()
+                        ? specificQuote
                         : defaultConfiguration.quotationCharacter();
             }
 
@@ -968,7 +978,7 @@ public class ImportTool
             public boolean multilineFields()
             {
                 return multiLineFields != null
-                        ? multiLineFields.booleanValue()
+                        ? multiLineFields
                         : defaultConfiguration.multilineFields();
             }
 
@@ -976,7 +986,7 @@ public class ImportTool
             public boolean emptyQuotedStringsAsNull()
             {
                 return emptyStringsAsNull != null
-                        ? emptyStringsAsNull.booleanValue()
+                        ? emptyStringsAsNull
                         : defaultConfiguration.emptyQuotedStringsAsNull();
             }
 
@@ -992,7 +1002,7 @@ public class ImportTool
             public boolean trimStrings()
             {
                 return trimStrings != null
-                       ? trimStrings.booleanValue()
+                       ? trimStrings
                        : defaultConfiguration.trimStrings();
             }
 
@@ -1000,7 +1010,7 @@ public class ImportTool
             public boolean legacyStyleQuoting()
             {
                 return legacyStyleQuoting != null
-                        ? legacyStyleQuoting.booleanValue()
+                        ? legacyStyleQuoting
                         : defaultConfiguration.legacyStyleQuoting();
             }
         };

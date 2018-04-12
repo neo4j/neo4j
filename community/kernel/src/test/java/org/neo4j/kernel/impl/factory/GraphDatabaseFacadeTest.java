@@ -32,7 +32,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
@@ -46,14 +45,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class GraphDatabaseFacadeTest
 {
     private final GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
     private final GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
-    private ReadOperations readOperations;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -63,8 +61,8 @@ public class GraphDatabaseFacadeTest
     {
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
+        EditionModule editionModule = mock( EditionModule.class );
         Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
-        readOperations = mock( ReadOperations.class );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
@@ -75,13 +73,12 @@ public class GraphDatabaseFacadeTest
         when( contextBridge.get() ).thenReturn( statement );
         Config config = Config.defaults();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
-        when( statement.readOperations() ).thenReturn( readOperations );
 
-        graphDatabaseFacade.init( spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
+        graphDatabaseFacade.init( editionModule, spi, guard, contextBridge, config, mock( RelationshipTypeTokenHolder.class ) );
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout() throws Exception
+    public void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 

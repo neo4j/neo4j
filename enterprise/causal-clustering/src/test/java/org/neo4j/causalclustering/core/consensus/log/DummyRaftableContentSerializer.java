@@ -57,7 +57,7 @@ public class DummyRaftableContentSerializer extends SafeChannelMarshal<Replicate
     }
 
     @Override
-    protected ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+    protected ReplicatedContent unmarshal0( ReadableChannel channel ) throws IOException
     {
         byte type = channel.get();
         switch ( type )

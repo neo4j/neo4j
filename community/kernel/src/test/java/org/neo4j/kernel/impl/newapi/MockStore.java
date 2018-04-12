@@ -24,14 +24,30 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -44,8 +60,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
@@ -69,7 +89,7 @@ public class MockStore extends Read implements TestRule
         }
     };
 
-    MockStore( Cursors cursors )
+    MockStore( DefaultCursors cursors )
     {
         super( cursors, mock( KernelTransactionImplementation.class ) );
     }
@@ -81,7 +101,7 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    IndexReader indexReader( org.neo4j.internal.kernel.api.IndexReference index )
+    IndexReader indexReader( IndexReference index, boolean fresh )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -193,6 +213,251 @@ public class MockStore extends Read implements TestRule
     public boolean nodeExists( long id )
     {
         throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long countsForNode( int labelId )
+    {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public long countsForNodeWithoutTxState( int labelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long countsForRelationshipWithoutTxState( int startLabelId, int typeId, int endLabelId )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long nodesGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long relationshipsGetCount()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean relationshipExists( long reference )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public UserFunctionHandle functionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
+    public Set<ProcedureSignature> proceduresGetAll(  ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+            throws ProcedureException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
+    {
+       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunction( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] nodeExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String[] relationshipExplicitIndexesGetAll()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException();
     }
 
     private abstract static class Record<R extends AbstractBaseRecord>
@@ -324,6 +589,12 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
+    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
         initialize( record, reference, properties );
@@ -348,19 +619,88 @@ public class MockStore extends Read implements TestRule
     }
 
     @Override
-    TextValue string( PropertyCursor cursor, long reference, PageCursor page )
+    TextValue string( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
+    ArrayValue array( DefaultPropertyCursor cursor, long reference, PageCursor page )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
     public CapableIndexReference index( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<IndexReference> indexesGetForLabel( int labelId )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<IndexReference> indexesGetAll()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public InternalIndexState indexGetState( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public PopulationProgress indexGetPopulationProgress( IndexReference index )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long indexGetCommittedId( IndexReference index ) throws SchemaKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public String indexGetFailure( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public double indexUniqueValuesSelectivity( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long indexSize( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long nodesCountIndexed( IndexReference index, long nodeId, Value value ) throws KernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+            throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -385,6 +725,36 @@ public class MockStore extends Read implements TestRule
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType( int typeId )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public Long indexGetOwningUniquenessConstraintId( IndexReference index )
+    {
+        return null;
+    }
+
+    @Override
+    public <K, V> V schemaStateGetOrCreate( K key, Function<K,V> creator )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public <K, V> V schemaStateGet( K key )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void schemaStateFlush()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

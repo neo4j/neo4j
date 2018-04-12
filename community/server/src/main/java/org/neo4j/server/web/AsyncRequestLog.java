@@ -80,9 +80,9 @@ public class AsyncRequestLog
                 swallowExceptions( request, HttpServletRequest::getQueryString );
         int statusCode = response.getStatus();
         long length = response.getContentLength();
-        String referer = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "Referer" ) );
-        String userAgent = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "User-Agent" ) );
-        long requestTimeStamp = request.getTimeStamp();
+        String referer = swallowExceptions( request, r -> r.getHeader( "Referer" ) );
+        String userAgent = swallowExceptions( request, r -> r.getHeader( "User-Agent" ) );
+        long requestTimeStamp = request != null ? request.getTimeStamp() : -1;
         long now = System.currentTimeMillis();
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;
 
@@ -111,14 +111,14 @@ public class AsyncRequestLog
     }
 
     @Override
-    protected synchronized void doStart() throws Exception
+    protected synchronized void doStart()
     {
         asyncLogProcessingExecutor.submit( asyncEventProcessor );
         asyncEventProcessor.awaitStartup();
     }
 
     @Override
-    protected synchronized void doStop() throws Exception
+    protected synchronized void doStop()
     {
         asyncEventProcessor.shutdown();
     }

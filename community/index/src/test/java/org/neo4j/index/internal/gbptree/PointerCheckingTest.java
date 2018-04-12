@@ -39,7 +39,7 @@ public class PointerCheckingTest
     private final long thirdGeneration = 3;
 
     @Test
-    public void checkChildShouldThrowOnNoNode() throws Exception
+    public void checkChildShouldThrowOnNoNode()
     {
         // WHEN
         try
@@ -54,7 +54,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldThrowOnReadFailure() throws Exception
+    public void checkChildShouldThrowOnReadFailure()
     {
         // GIVEN
         long result = GenerationSafePointerPair.read( cursor, 0, 1, 123 );
@@ -72,7 +72,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldThrowOnWriteFailure() throws Exception
+    public void checkChildShouldThrowOnWriteFailure()
     {
         // GIVEN
         write( cursor, 123, 0, firstGeneration );
@@ -95,7 +95,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldPassOnReadSuccess() throws Exception
+    public void checkChildShouldPassOnReadSuccess()
     {
         // GIVEN
         PointerChecking.checkPointer( write( cursor, 123, 0, firstGeneration ), false );
@@ -109,7 +109,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkChildShouldPassOnWriteSuccess() throws Exception
+    public void checkChildShouldPassOnWriteSuccess()
     {
         // WHEN
         long result = write( cursor, 123, 0, firstGeneration );
@@ -119,7 +119,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldPassOnReadSuccessForNoNodePointer() throws Exception
+    public void checkSiblingShouldPassOnReadSuccessForNoNodePointer()
     {
         // GIVEN
         write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
@@ -133,7 +133,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldPassOnReadSuccessForNodePointer() throws Exception
+    public void checkSiblingShouldPassOnReadSuccessForNodePointer()
     {
         // GIVEN
         long pointer = 101;
@@ -148,7 +148,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldThrowOnReadFailure() throws Exception
+    public void checkSiblingShouldThrowOnReadFailure()
     {
         // WHEN
         long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
@@ -166,7 +166,7 @@ public class PointerCheckingTest
     }
 
     @Test
-    public void checkSiblingShouldThrowOnReadIllegalPointer() throws Exception
+    public void checkSiblingShouldThrowOnReadIllegalPointer()
     {
         // GIVEN
         long generation = IdSpace.STATE_PAGE_A;

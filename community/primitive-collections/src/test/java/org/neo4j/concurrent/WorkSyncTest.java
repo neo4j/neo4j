@@ -436,7 +436,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void asyncWorkThatThrowsMustRememberException() throws Exception
+    public void asyncWorkThatThrowsMustRememberException()
     {
         RuntimeException boo = new RuntimeException( "boo" );
         AsyncApply asyncApply = sync.applyAsync( new AddWork( 10 )

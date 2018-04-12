@@ -84,7 +84,7 @@ public class TransactionLogUtils
     public static LogVersionedStoreChannel openVersionedChannel( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
         StoreChannel fileChannel = fileSystem.open( file, OpenMode.READ );
-        LogHeader logHeader = readLogHeader( ByteBuffer.allocateDirect( LOG_HEADER_SIZE ), fileChannel, true, file );
+        LogHeader logHeader = readLogHeader( ByteBuffer.allocate( LOG_HEADER_SIZE ), fileChannel, true, file );
         PhysicalLogVersionedStoreChannel channel =
                 new PhysicalLogVersionedStoreChannel( fileChannel, logHeader.logVersion, logHeader.logFormatVersion );
         return channel;

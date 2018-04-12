@@ -29,15 +29,15 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 public class IdleChannelReaperHandler extends ChannelDuplexHandler
 {
-    private NonBlockingChannels nonBlockingChannels;
+    private ReconnectingChannels channels;
 
-    public IdleChannelReaperHandler( NonBlockingChannels nonBlockingChannels )
+    public IdleChannelReaperHandler( ReconnectingChannels channels )
     {
-        this.nonBlockingChannels = nonBlockingChannels;
+        this.channels = channels;
     }
 
     @Override
-    public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+    public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
     {
         if ( evt instanceof IdleStateEvent && evt == IdleStateEvent.ALL_IDLE_STATE_EVENT )
         {
@@ -45,7 +45,7 @@ public class IdleChannelReaperHandler extends ChannelDuplexHandler
             final AdvertisedSocketAddress address =
                     new AdvertisedSocketAddress( socketAddress.getHostName(), socketAddress.getPort() );
 
-            nonBlockingChannels.remove( address );
+            channels.remove( address );
         }
     }
 }

@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -43,7 +42,7 @@ public class NetworkReceiverTest
     static final int PORT = 1234;
 
     @Test
-    public void testGetURIWithWildCard() throws Exception
+    public void testGetURIWithWildCard()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -57,7 +56,7 @@ public class NetworkReceiverTest
     }
 
     @Test
-    public void testGetURIWithLocalHost() throws Exception
+    public void testGetURIWithLocalHost()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -94,13 +93,13 @@ public class NetworkReceiverTest
         when( messageEvent.getMessage() ).thenReturn( message );
         when( messageEvent.getChannel() ).thenReturn( channel );
 
-        // the original FROM header should be ignored
-        message.setHeader( Message.FROM, "cluster://someplace:1234" );
+        // the original HEADER_FROM header should be ignored
+        message.setHeader( Message.HEADER_FROM, "cluster://someplace:1234" );
 
         networkReceiver.new MessageReceiver().messageReceived( ctx, messageEvent );
 
         assertEquals(
-                "FROM header should have been changed to visible ip address: " + message.getHeader( Message.FROM ),
-                "cluster://127.0.0.1:1234", message.getHeader( Message.FROM ) );
+                "HEADER_FROM header should have been changed to visible ip address: " + message.getHeader( Message.HEADER_FROM ),
+                "cluster://127.0.0.1:1234", message.getHeader( Message.HEADER_FROM ) );
     }
 }

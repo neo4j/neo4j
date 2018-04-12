@@ -87,7 +87,7 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
         execute( new DieCommand() );
     }
 
-    public Future<Node> putIfAbsent( Node node, String key, Object value ) throws Exception
+    public Future<Node> putIfAbsent( Node node, String key, Object value )
     {
         return executeDontWait( new PutIfAbsentCommand( node, key, value ) );
     }
@@ -101,7 +101,7 @@ public class WorkThread extends OtherThreadExecutor<CommandState>
         } );
     }
 
-    public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue ) throws Exception
+    public Future<Node> getOrCreate( final String key, final Object value, final Object initialValue )
     {
         return executeDontWait( state ->
         {

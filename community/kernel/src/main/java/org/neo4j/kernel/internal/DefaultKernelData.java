@@ -50,17 +50,17 @@ public final class DefaultKernelData extends KernelData implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 }

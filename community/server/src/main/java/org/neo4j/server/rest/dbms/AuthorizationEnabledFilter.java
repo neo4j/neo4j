@@ -37,9 +37,9 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -107,7 +107,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
 
         try
         {
-            SecurityContext securityContext = authenticate( username, password );
+            LoginContext securityContext = authenticate( username, password );
             switch ( securityContext.subject().getAuthenticationResult() )
             {
             case PASSWORD_CHANGE_REQUIRED:
@@ -150,7 +150,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         }
     }
 
-    private SecurityContext authenticate( String username, String password ) throws InvalidAuthTokenException
+    private LoginContext authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
         Map<String,Object> authToken = newBasicAuthToken( username, password );

@@ -19,80 +19,16 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.operations.CountsOperations;
-import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
-import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
-import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
-import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
-import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
 
 public abstract class StatementOperationsTestHelper
 {
     public static StatementOperationParts mockedParts()
     {
         return new StatementOperationParts(
-            mock( KeyReadOperations.class ),
-            mock( KeyWriteOperations.class ),
-            mock( EntityReadOperations.class ),
-            mock( EntityWriteOperations.class ),
-            mock( SchemaReadOperations.class ),
-            mock( SchemaWriteOperations.class ),
-            mock( SchemaStateOperations.class ),
-            mock( LockOperations.class ),
-            mock( CountsOperations.class ),
-            mock( ExplicitIndexReadOperations.class ),
-            mock( ExplicitIndexWriteOperations.class ),
-            mock( QueryRegistrationOperations.class ) );
-    }
-
-    public static KernelStatement mockedState()
-    {
-        return mockedState( mock( TransactionState.class ) );
-    }
-
-    public static KernelStatement mockedState( final TransactionState txState )
-    {
-        KernelStatement state = mock( KernelStatement.class );
-        Locks.Client locks = mock( Locks.Client.class );
-        try
-        {
-            IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.query( isA( IndexQuery.ExactPredicate.class ) ) )
-                    .thenReturn( emptyIterator() );
-            StorageStatement storageStatement = mock( StorageStatement.class );
-            when( storageStatement.getIndexReader( any() ) ).thenReturn( indexReader );
-            when( state.getStoreStatement() ).thenReturn( storageStatement );
-        }
-        catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )
-        {
-            throw new Error( e );
-        }
-        when( state.txState() ).thenReturn( txState );
-        when( state.hasTxStateWithChanges() ).thenAnswer( invocation -> txState.hasChanges() );
-        when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
-        when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
-        return state;
+                mock( QueryRegistrationOperations.class ) );
     }
 
     private StatementOperationsTestHelper()

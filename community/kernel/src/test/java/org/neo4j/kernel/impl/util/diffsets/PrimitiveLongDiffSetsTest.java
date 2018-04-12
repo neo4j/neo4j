@@ -25,13 +25,20 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -154,7 +161,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void visitAddedAndRemovedElements() throws ConstraintValidationException, CreateConstraintFailureException
+    public void visitAddedAndRemovedElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
@@ -167,9 +174,27 @@ public class PrimitiveLongDiffSetsTest
         assertEquals( asSet( 1L, 2L ), toSet( visitor.getRemovedElements() ) );
     }
 
+    @Test
+    public void useCollectionsFactory()
+    {
+        final PrimitiveLongSet set1 = Primitive.longSet();
+        final PrimitiveLongSet set2 = Primitive.longSet();
+        final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
+        doReturn( set1, set2 ).when( collectionsFactory ).newLongSet();
+
+        final PrimitiveLongDiffSets diffSets = new PrimitiveLongDiffSets( emptySet(), emptySet(), collectionsFactory );
+        diffSets.add( 1L );
+        diffSets.remove( 2L );
+
+        assertSame( set1, diffSets.getAdded() );
+        assertSame( set2, diffSets.getRemoved() );
+        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verifyNoMoreInteractions( collectionsFactory );
+    }
+
     private static PrimitiveLongDiffSets createDiffSet()
     {
-        return new PrimitiveLongDiffSets();
+        return new PrimitiveLongDiffSets( emptySet(), emptySet(), OnHeapCollectionsFactory.INSTANCE );
     }
 
     private static class AggregatedPrimitiveLongDiffSetsVisitor implements PrimitiveLongDiffSetsVisitor

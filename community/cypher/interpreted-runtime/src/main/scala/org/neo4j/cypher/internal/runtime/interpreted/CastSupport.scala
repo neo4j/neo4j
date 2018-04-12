@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import java.time._
+import java.time.temporal.TemporalAmount
+
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.{ArrayValue, _}
@@ -100,6 +103,13 @@ object CastSupport {
           p1
         }
 
+      case (_:DateValue, _:DateValue) => a
+      case (_:DateTimeValue, _:DateTimeValue) => a
+      case (_:LocalDateTimeValue, _:LocalDateTimeValue) => a
+      case (_:TimeValue, _:TimeValue) => a
+      case (_:LocalTimeValue, _:LocalTimeValue) => a
+      case (_:DurationValue, _:DurationValue) => a
+
       case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
         "Collections containing null values can not be stored in properties.")
 
@@ -137,6 +147,18 @@ object CastSupport {
       transform(new ArrayConverterWriter(classOf[PointValue], a => Values.pointArray(a.asInstanceOf[Array[PointValue]]))))
     case _: Point => Converter(
       transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
+    case _: DurationValue => Converter(
+      transform(new ArrayConverterWriter(classOf[TemporalAmount], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
+    case _: DateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[ZonedDateTime], a => Values.dateTimeArray(a.asInstanceOf[Array[ZonedDateTime]]))))
+    case _: DateValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDate], a => Values.dateArray(a.asInstanceOf[Array[LocalDate]]))))
+    case _: LocalTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalTime], a => Values.localTimeArray(a.asInstanceOf[Array[LocalTime]]))))
+    case _: TimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[OffsetTime], a => Values.timeArray(a.asInstanceOf[Array[OffsetTime]]))))
+    case _: LocalDateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDateTime], a => Values.localDateTimeArray(a.asInstanceOf[Array[LocalDateTime]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -215,6 +237,24 @@ object CastSupport {
 
     override def writePoint(crs: CoordinateReferenceSystem, coordinate: Array[Double]): Unit =
       write(Values.pointValue(crs, coordinate: _*))
+
+    override def writeDuration(months: Long, days: Long, seconds: Long, nanos: Int): Unit =
+      write(DurationValue.duration(months, days, seconds, nanos))
+
+    override def writeDate(localDate: LocalDate): Unit =
+      write(localDate)
+
+    override def writeLocalTime(localTime: LocalTime): Unit =
+      write(localTime)
+
+    override def writeTime(offsetTime: OffsetTime): Unit =
+      write(offsetTime)
+
+    override def writeLocalDateTime(localDateTime: LocalDateTime): Unit =
+      write(localDateTime)
+
+    override def writeDateTime(zonedDateTime: ZonedDateTime): Unit =
+      write(zonedDateTime)
   }
 
 }

@@ -33,7 +33,7 @@ public class ReusableRecordsCompositeAllocatorTest
 {
 
     @Test
-    public void allocateReusableRecordsAndSwitchToDefaultWhenExhausted() throws Exception
+    public void allocateReusableRecordsAndSwitchToDefaultWhenExhausted()
     {
         DynamicRecord dynamicRecord1 = new DynamicRecord( 1 );
         DynamicRecord dynamicRecord2 = new DynamicRecord( 2 );

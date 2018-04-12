@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -39,8 +38,8 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityBootstrapper;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -59,7 +58,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldLogHelpfulStartupMessages() throws Throwable
+    public void shouldLogHelpfulStartupMessages()
     {
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();
@@ -80,7 +79,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         ) );
     }
 
-    private Map<String,String> getPropertyPairs() throws IOException
+    private Map<String,String> getPropertyPairs()
     {
         Map<String,String> properties = new HashMap<>();
 
@@ -88,21 +87,22 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         properties.put( GraphDatabaseSettings.logs_directory.name(), testDir.graphDbDir().toString() );
         properties.put( LegacySslPolicyConfig.certificates_directory.name(), testDir.graphDbDir().toString() );
         properties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE );
+        properties.put( ServerSettings.script_enabled.name(), Settings.TRUE );
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         properties.put( http.type.name(), "HTTP" );
-        properties.put( http.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( http.listen_address.name(), "localhost:0" );
         properties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
         properties.put( https.type.name(), "HTTP" );
-        properties.put( https.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( https.listen_address.name(), "localhost:0" );
         properties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
         properties.put( bolt.type.name(), "BOLT" );
         properties.put( bolt.enabled.name(), "true" );
-        properties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        properties.put( bolt.listen_address.name(), "localhost:0" );
 
         properties.put( GraphDatabaseSettings.database_path.name(), testDir.absolutePath().getAbsolutePath() );
         return properties;

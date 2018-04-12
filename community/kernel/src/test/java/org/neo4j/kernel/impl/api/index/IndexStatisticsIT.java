@@ -33,9 +33,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -51,10 +51,8 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-
 import static java.util.Arrays.asList;
-
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -100,7 +98,7 @@ public class IndexStatisticsIT
         awaitIndexOnline( indexAliensBySpecimen() );
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
-        IndexDescriptor index = IndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
+        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
         long indexId = storage.indexGetForSchema( index ).getId();
 
@@ -141,27 +139,25 @@ public class IndexStatisticsIT
 
     private int labelId( Label alien )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( alien.name() );
+            return ktx().tokenRead().nodeLabel( alien.name() );
         }
     }
 
     private int pkId( String propertyName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = statement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propertyName );
+            return ktx().tokenRead().propertyKey( propertyName );
         }
     }
 
-    private Statement statement()
+    private KernelTransaction ktx()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver()
-                                        .resolveDependency( ThreadToStatementContextBridge.class )
-                                        .get();
+        return ((GraphDatabaseAPI) db).getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
     }
 
     private void createAliens()

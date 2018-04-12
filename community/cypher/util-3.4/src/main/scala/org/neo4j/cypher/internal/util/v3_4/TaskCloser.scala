@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.util.v3_4
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 class TaskCloser {
 
-  private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
+  private val _tasks: ArrayBuffer[Boolean => Unit] = ArrayBuffer.empty
   private var closed = false
 
   /**
@@ -37,15 +37,17 @@ class TaskCloser {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None
-      _tasks foreach {
+      _tasks.reverse foreach {
         f =>
           try {
             f(success)
-            None
           } catch {
-            case e: Throwable => foundException = Some(e)
+            case e: Throwable =>
+              foundException match {
+                case Some(first) => first.addSuppressed(e)
+                case None => foundException = Some(e)
+              }
           }
-
       }
 
       foundException.forall(throwable => throw throwable)

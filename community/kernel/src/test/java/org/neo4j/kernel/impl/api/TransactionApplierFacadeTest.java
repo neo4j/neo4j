@@ -41,7 +41,7 @@ public class TransactionApplierFacadeTest
     private TransactionApplier txApplier3;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         txApplier1 = mock( TransactionApplier.class );
         txApplier2 = mock( TransactionApplier.class );

@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.SecureClassLoader;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import javax.tools.ToolProvider;
 
 import org.neo4j.helpers.collection.Visitable;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -131,10 +131,10 @@ public class DbStructureInvocationTracingAcceptanceTest
         visitor.apply( null ).visitPropertyKey( 1, "age" );
         visitor.apply( null ).visitRelationshipType( 0, "ACCEPTS" );
         visitor.apply( null ).visitRelationshipType( 1, "REJECTS" );
-        visitor.apply( null ).visitIndex( IndexDescriptorFactory.forLabel( 0, 1 ),
+        visitor.apply( null ).visitIndex( SchemaIndexDescriptorFactory.forLabel( 0, 1 ),
                 ":Person(age)", 0.5d, 1L );
         visitor.apply( null )
-                .visitIndex( IndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ),
+                .visitIndex( SchemaIndexDescriptorFactory.uniqueForLabel( 0, 0, 2 ),
                         ":Person(name, lastName)", 0.5d, 1L );
         visitor.apply( null )
                 .visitUniqueConstraint( ConstraintDescriptorFactory.uniqueForLabel( 1, 0 ), ":Party(name)" );
@@ -161,8 +161,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
     {
         return compile( className, inputSource,
-                ( success, manager, diagnostics ) ->
-                {
+                ( success, manager, diagnostics ) -> {
                     assertSuccessfullyCompiled( success, diagnostics, className );
                     Object instance;
                     try
@@ -203,8 +202,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     {
         JavaCompiler systemCompiler = ToolProvider.getSystemJavaCompiler();
         JavaFileManager manager = new InMemFileManager();
-        DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<JavaFileObject>();
-        Iterable<? extends JavaFileObject> sources = Arrays.asList( new InMemSource( className, source ) );
+        DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
+        Iterable<? extends JavaFileObject> sources = Collections.singletonList( new InMemSource( className, source ) );
         CompilationTask task = systemCompiler.getTask( null, manager, diagnosticsCollector, null, null, sources );
         Boolean success = task.call();
         return listener.compiled( success, manager, diagnosticsCollector.getDiagnostics() );
@@ -247,7 +246,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         }
 
         @Override
-        public OutputStream openOutputStream() throws IOException
+        public OutputStream openOutputStream()
         {
             return byteCodeStream;
         }
@@ -268,7 +267,7 @@ public class DbStructureInvocationTracingAcceptanceTest
             return new SecureClassLoader()
             {
                 @Override
-                protected Class<?> findClass( String name ) throws ClassNotFoundException
+                protected Class<?> findClass( String name )
                 {
                     byte[] byteCode = classes.get( name ).getBytes();
                     return super.defineClass( name, byteCode, 0, byteCode.length );

@@ -93,8 +93,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n:User) RETURN count(n) > 0"
 
     // Then
-    compareCount(query, false, Configs.All - Configs.Compiled)
-    compareCount(query, true, Configs.All - Configs.Compiled, executeBefore = executeBefore)
+    compareCount(query, false, Configs.Interpreted)
+    compareCount(query, true, Configs.Interpreted, executeBefore = executeBefore)
   }
 
   test("counts nodes using count store and projection expression with variable") {
@@ -103,8 +103,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n) RETURN count(n)/2.0*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.All - Configs.Compiled)
-    compareCount(query, 7.5, Configs.All - Configs.Compiled, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All)
+    compareCount(query, 7.5, Configs.All, executeBefore = executeBefore)
   }
 
   test("counts relationships with unspecified type using count store") {
@@ -319,9 +319,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n:User) RETURN count(n) > 1"
 
     // Then
-    compareCount(query, false, Configs.All - Configs.Compiled)
+    compareCount(query, false, Configs.Interpreted)
     setupBigModel(label1 = "Admin")
-    compareCount(query, true, Configs.All - Configs.Compiled, assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, true, Configs.Interpreted, assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts nodes using count store and projection expression with variable considering transaction state") {
@@ -330,9 +330,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (n) RETURN count(n)/3*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.All - Configs.Compiled)
+    compareCount(query, 0, Configs.All)
     setupBigModel()
-    compareCount(query, 5, Configs.All - Configs.Compiled, assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 5, Configs.All, assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships using count store considering transaction state") {
@@ -374,9 +374,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH ()-[r]->() RETURN count(r) > 2"
 
     // Then
-    compareCount(query, false, Configs.All - Configs.Compiled, expectedLogicalPlan = "RelationshipCountFromCountStore")
+    compareCount(query, false, Configs.Interpreted, expectedLogicalPlan = "RelationshipCountFromCountStore")
     setupBigModel()
-    compareCount(query, true, Configs.All - Configs.Compiled, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, true, Configs.Interpreted, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships using count store and projection with expression and variable considering transaction state") {
@@ -385,9 +385,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH ()-[r]->() RETURN count(r)/3*5 as someNum"
 
     // Then
-    compareCount(query, 0, Configs.All - Configs.Compiled, expectedLogicalPlan = "RelationshipCountFromCountStore")
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "RelationshipCountFromCountStore")
     setupBigModel()
-    compareCount(query, 5, Configs.All - Configs.Compiled, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 5, Configs.All, expectedLogicalPlan = "RelationshipCountFromCountStore", assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships using count store and horizon with further query") {
@@ -398,7 +398,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                   |MATCH (n)-[r:KNOWS]->() WITH count(r) as otherKnows, n, userKnows WHERE otherKnows <> userKnows
                   |RETURN userKnows, otherKnows
                 """.stripMargin
-    val expectSucceed = Configs.All - Configs.Compiled
+    val expectSucceed = Configs.Interpreted
 
     // Then
     val resultOnEmpty = executeWith(

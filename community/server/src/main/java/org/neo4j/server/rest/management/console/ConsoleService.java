@@ -131,14 +131,14 @@ public class ConsoleService implements AdvertisableService
         try
         {
             Pair<String, String> result = scriptSession.evaluate( (String) args.get( "command" ) );
-            List<Representation> list = new ArrayList<Representation>(
+            List<Representation> list = new ArrayList<>(
                     asList( ValueRepresentation.string( result.first() ), ValueRepresentation.string( result.other() ) ) );
 
             return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );
         }
         catch ( Exception e )
         {
-            List<Representation> list = new ArrayList<Representation>(
+            List<Representation> list = new ArrayList<>(
                     asList( ValueRepresentation.string( e.getClass() + " : " + e.getMessage() + "\n" ),
                             ValueRepresentation.string( null ) ) );
             return output.ok( new ListRepresentation( RepresentationType.STRING, list ) );

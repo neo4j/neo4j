@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfInstanceOf;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySanity.logEntryMakesSense;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVersion;
@@ -94,6 +94,10 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                         skipped = 0;
                     }
                 }
+                catch ( ReadPastEndException e )
+                {   // Make these exceptions slip by straight out to the outer handler
+                    throw e;
+                }
                 catch ( Exception e )
                 {   // Tag all other exceptions with log position and other useful information
                     LogPosition position = positionMarker.newPosition();
@@ -107,7 +111,8 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                         skipped++;
                         continue;
                     }
-                    throw launderedException( IOException.class, e );
+                    throwIfInstanceOf( e, UnsupportedLogVersionException.class );
+                    throw new IOException( e );
                 }
 
                 if ( !entryReader.skip() )

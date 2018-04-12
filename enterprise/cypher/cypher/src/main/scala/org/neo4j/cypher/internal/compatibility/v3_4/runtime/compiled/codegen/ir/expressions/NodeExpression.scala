@@ -24,7 +24,11 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{Co
 
 case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
-  assert(nodeIdVar.codeGenType == CodeGenType.primitiveNode)
+  assert(nodeIdVar.codeGenType == CodeGenType.primitiveNode || nodeIdVar.codeGenType == CodeGenType.Any)
+
+  private val _codeGenType =
+    if (nodeIdVar.codeGenType == CodeGenType.primitiveNode) CodeGenType.primitiveNode
+    else CodeGenType.Any
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
@@ -34,5 +38,5 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.primitiveNode
+  override def codeGenType(implicit context: CodeGenContext) = _codeGenType
 }

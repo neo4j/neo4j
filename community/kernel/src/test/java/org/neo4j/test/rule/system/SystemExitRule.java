@@ -46,7 +46,7 @@ public class SystemExitRule extends ExternalResource
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         originalSecurityManager = System.getSecurityManager();
         TestSecurityManager testSecurityManager = new TestSecurityManager( originalSecurityManager );

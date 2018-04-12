@@ -28,9 +28,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
+import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -126,7 +126,7 @@ public class NeoTransactionIndexApplierTest
 
     private IndexRule indexRule( long ruleId, int labelId, int propertyId, Descriptor descriptor )
     {
-        return IndexRule.indexRule( ruleId, IndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
+        return IndexRule.indexRule( ruleId, SchemaIndexDescriptorFactory.forLabel( labelId, propertyId ), descriptor );
     }
 
     @Test

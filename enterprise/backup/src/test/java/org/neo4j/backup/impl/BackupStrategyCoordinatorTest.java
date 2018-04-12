@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,7 +60,7 @@ public class BackupStrategyCoordinatorTest
     private final BackupStrategyWrapper firstStrategy = mock( BackupStrategyWrapper.class );
     private final BackupStrategyWrapper secondStrategy = mock( BackupStrategyWrapper.class );
 
-    BackupStrategyCoordinator subject;
+    private BackupStrategyCoordinator subject;
 
     // test method parameter mocks
     private final OnlineBackupContext onlineBackupContext = mock( OnlineBackupContext.class );
@@ -153,7 +152,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsRunIfSpecified() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
+    public void consistencyCheckIsRunIfSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -170,7 +169,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
+    public void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -208,24 +207,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void errorsDuringConsistencyCheckAreWrappedAsCommandFailed() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
-    {
-        // given
-        anyStrategyPasses();
-        when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), eq( progressMonitorFactory ), any( LogProvider.class ), any(), eq( false ), any(),
-                any() ) ).thenThrow( new IOException( "Predictable message" ) );
-
-        // then
-        expectedException.expect( CommandFailed.class );
-        expectedException.expectMessage( containsString( "Failed to do consistency check on backup: Predictable message" ) );
-
-        // when
-        subject.performBackup( onlineBackupContext );
-    }
-
-    @Test
-    public void commandFailedWhenConsistencyCheckFails() throws IOException, ConsistencyCheckIncompleteException, CommandFailed
+    public void commandFailedWhenConsistencyCheckFails() throws ConsistencyCheckIncompleteException, CommandFailed
     {
         // given
         anyStrategyPasses();

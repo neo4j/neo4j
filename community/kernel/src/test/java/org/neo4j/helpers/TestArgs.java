@@ -102,7 +102,7 @@ public class TestArgs
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void testEnumWithInvalidValue() throws Exception
+    public void testEnumWithInvalidValue()
     {
         String[] line = { "--myenum=something" };
         Args args = Args.parse( line );
@@ -110,7 +110,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOption() throws Exception
+    public void shouldInterpretOption()
     {
         // GIVEN
         int expectedValue = 42;
@@ -127,7 +127,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOrphan() throws Exception
+    public void shouldInterpretOrphan()
     {
         // GIVEN
         int expectedValue = 42;
@@ -144,7 +144,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretMultipleOptionValues() throws Exception
+    public void shouldInterpretMultipleOptionValues()
     {
         // GIVEN
         Collection<Integer> expectedValues = Arrays.asList( 12, 34, 56 );
@@ -175,7 +175,7 @@ public class TestArgs
     }
 
     @Test
-    public void testBooleanWithDefault() throws Exception
+    public void testBooleanWithDefault()
     {
         // Given
         Args args = Args.parse( "--no_value" );
@@ -193,7 +193,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldGetAsMap() throws Exception
+    public void shouldGetAsMap()
     {
         // GIVEN
         Args args = Args.parse( "--with-value", "value", "--without-value" );
@@ -206,7 +206,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldInterpretOptionMetadata() throws Exception
+    public void shouldInterpretOptionMetadata()
     {
         // GIVEN
         Args args = Args.parse( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
@@ -326,7 +326,7 @@ public class TestArgs
     }
 
     @Test
-    public void shouldReturnEmptyCollectionForOptionalMissingOption() throws Exception
+    public void shouldReturnEmptyCollectionForOptionalMissingOption()
     {
         // Given
         Args args = Args.withFlags().parse();

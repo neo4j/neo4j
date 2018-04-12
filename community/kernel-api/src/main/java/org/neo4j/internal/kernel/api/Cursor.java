@@ -40,14 +40,9 @@ package org.neo4j.internal.kernel.api;
  * }
  * </pre></code>
  */
-interface Cursor extends AutoCloseable
+interface Cursor extends AutoCloseablePlus
 {
     boolean next();
 
     boolean shouldRetry();
-
-    @Override
-    void close();
-
-    boolean isClosed();
 }

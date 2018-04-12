@@ -38,7 +38,7 @@ class IntegerTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    int[] convert( Object[] data ) throws BadInputException
+    int[] convert( Object[] data )
     {
         Integer[] incoming = (Integer[]) data;
         int[] result = new int[incoming.length];

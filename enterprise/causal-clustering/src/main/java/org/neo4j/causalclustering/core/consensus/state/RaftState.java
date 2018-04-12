@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
@@ -52,6 +53,7 @@ public class RaftState implements ReadableRaftState
     private VoteState voteState;
 
     private MemberId leader;
+    private LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private Set<MemberId> votesForMe = new HashSet<>();
     private Set<MemberId> preVotesForMe = new HashSet<>();
     private Set<MemberId> heartbeatResponses = new HashSet<>();
@@ -60,13 +62,16 @@ public class RaftState implements ReadableRaftState
     private long commitIndex = -1;
     private long lastLogIndexBeforeWeBecameLeader = -1;
     private boolean isPreElection;
+    private final boolean refuseToBeLeader;
 
     public RaftState( MemberId myself,
                       StateStorage<TermState> termStorage,
                       RaftMembership membership,
                       RaftLog entryLog,
                       StateStorage<VoteState> voteStorage,
-                      InFlightCache inFlightCache, LogProvider logProvider, boolean supportPreVoting )
+                      InFlightCache inFlightCache, LogProvider logProvider, boolean supportPreVoting,
+                      boolean refuseToBeLeader
+            )
     {
         this.myself = myself;
         this.termStorage = termStorage;
@@ -79,6 +84,7 @@ public class RaftState implements ReadableRaftState
 
         // Initial state
         this.isPreElection = supportPreVoting;
+        this.refuseToBeLeader = refuseToBeLeader;
     }
 
     @Override
@@ -118,6 +124,12 @@ public class RaftState implements ReadableRaftState
     public MemberId leader()
     {
         return leader;
+    }
+
+    @Override
+    public LeaderInfo leaderInfo()
+    {
+        return leaderInfo;
     }
 
     @Override
@@ -195,6 +207,12 @@ public class RaftState implements ReadableRaftState
         return preVotesForMe;
     }
 
+    @Override
+    public boolean refusesToBeLeader()
+    {
+        return refuseToBeLeader;
+    }
+
     public void update( Outcome outcome ) throws IOException
     {
         if ( termState().update( outcome.getTerm() ) )
@@ -208,6 +226,7 @@ public class RaftState implements ReadableRaftState
 
         logIfLeaderChanged( outcome.getLeader() );
         leader = outcome.getLeader();
+        leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
 
         leaderCommit = outcome.getLeaderCommit();
         votesForMe = outcome.getVotesForMe();

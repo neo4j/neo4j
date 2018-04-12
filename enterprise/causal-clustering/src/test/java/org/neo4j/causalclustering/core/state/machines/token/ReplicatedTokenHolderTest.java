@@ -55,7 +55,7 @@ public class ReplicatedTokenHolderTest
     private Dependencies dependencies = mock( Dependencies.class );
 
     @Test
-    public void shouldStoreInitialTokens() throws Exception
+    public void shouldStoreInitialTokens()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -70,7 +70,7 @@ public class ReplicatedTokenHolderTest
     }
 
     @Test
-    public void shouldReturnExistingTokenId() throws Exception
+    public void shouldReturnExistingTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );

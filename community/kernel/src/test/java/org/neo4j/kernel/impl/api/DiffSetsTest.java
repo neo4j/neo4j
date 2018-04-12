@@ -149,7 +149,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testReturnSourceFromApplyWithEmptyDiffSets() throws Exception
+    public void testReturnSourceFromApplyWithEmptyDiffSets()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets();
@@ -163,7 +163,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testAppendAddedToSourceInApply() throws Exception
+    public void testAppendAddedToSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -179,7 +179,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterRemovedFromSourceInApply() throws Exception
+    public void testFilterRemovedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -194,7 +194,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void testFilterAddedFromSourceInApply() throws Exception
+    public void testFilterAddedFromSourceInApply()
     {
         // GIVEN
         DiffSets<Long> diffSets = new DiffSets<>();
@@ -211,7 +211,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithAnInitialValue() throws Exception
+    public void replaceMultipleTimesWithAnInitialValue()
     {
         // GIVEN
         // an initial value, meaning an added value in "this transaction"
@@ -230,7 +230,7 @@ public class DiffSetsTest
     }
 
     @Test
-    public void replaceMultipleTimesWithNoInitialValue() throws Exception
+    public void replaceMultipleTimesWithNoInitialValue()
     {
         // GIVEN
         // no initial value, meaning a value existing before "this transaction"

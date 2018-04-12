@@ -68,25 +68,25 @@ public class CommunityLockClient implements Locks.Client
     {
         this.manager = manager;
 
-        readReleaser = ( long key, LockResource lockResource ) ->
+        readReleaser = ( key, lockResource ) ->
         {
             manager.releaseReadLock( lockResource, lockTransaction );
             return false;
         };
 
-        writeReleaser = ( long key, LockResource lockResource ) ->
+        writeReleaser = ( key, lockResource ) ->
         {
             manager.releaseWriteLock( lockResource, lockTransaction );
             return false;
         };
 
-        typeReadReleaser = ( int key, PrimitiveLongObjectMap<LockResource> value ) ->
+        typeReadReleaser = ( key, value ) ->
         {
             value.visitEntries( readReleaser );
             return false;
         };
 
-        typeWriteReleaser = ( int key, PrimitiveLongObjectMap<LockResource> value ) ->
+        typeWriteReleaser = ( key, value ) ->
         {
             value.visitEntries( writeReleaser );
             return false;
@@ -377,7 +377,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
         List<ActiveLock> locks = new ArrayList<>();
         exclusiveLocks.visitEntries( collectActiveLocks( locks, ActiveLock.Factory.EXCLUSIVE_LOCK ) );

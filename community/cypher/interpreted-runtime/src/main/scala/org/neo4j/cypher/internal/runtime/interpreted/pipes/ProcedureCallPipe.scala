@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ProcedureCallMode
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueConversion}
+import org.neo4j.cypher.internal.runtime.{ProcedureCallMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
-import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
@@ -65,7 +64,7 @@ case class ProcedureCallPipe(source: Pipe,
     builder.sizeHint(resultIndices.length)
     input flatMap { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
-      val results = callMode.callProcedure(qtx, signature.name, argValues)
+      val results = call(qtx, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
           val javaValue = maybeConverter.get(k)(resultValues(k))
@@ -79,11 +78,16 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
+  private def call(qtx: QueryContext,
+                   argValues: Seq[Any]) =
+    if (signature.id.nonEmpty) callMode.callProcedure(qtx, signature.id.get, argValues)
+    else callMode.callProcedure(qtx, signature.name, argValues)
+
   private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
-      val results = callMode.callProcedure(qtx, signature.name, argValues)
+      val results = call(qtx, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input

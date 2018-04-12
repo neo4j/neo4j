@@ -53,7 +53,7 @@ public class FieldVisitorTest
     }
 
     @Test
-    public void validates_visibility_of_fields() throws Exception
+    public void validates_visibility_of_fields()
     {
         Stream<VariableElement> fields = elementTestUtils.getFields( GoodContextUse.class );
 

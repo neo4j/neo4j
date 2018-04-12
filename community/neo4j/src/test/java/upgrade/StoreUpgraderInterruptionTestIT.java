@@ -37,7 +37,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -88,7 +88,7 @@ public class StoreUpgraderInterruptionTestIT
     public String version;
     private AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private SimpleLogService logService = new SimpleLogService( logProvider );
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final IndexProvider indexProvider = new InMemoryIndexProvider();
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Parameters( name = "{0}" )
@@ -167,7 +167,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private SchemaIndexMigrator createIndexMigrator()
     {
-        return new SchemaIndexMigrator( fs, schemaIndexProvider );
+        return new SchemaIndexMigrator( fs, indexProvider );
     }
 
     @Test

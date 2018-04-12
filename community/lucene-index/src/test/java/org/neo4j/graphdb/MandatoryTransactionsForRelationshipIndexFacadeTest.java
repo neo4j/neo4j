@@ -27,7 +27,7 @@ import static org.neo4j.graphdb.RelationshipIndexFacadeMethods.ALL_RELATIONSHIP_
 public class MandatoryTransactionsForRelationshipIndexFacadeTest extends AbstractMandatoryTransactionsTest<RelationshipIndex>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnRelationshipIndexFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_RELATIONSHIP_INDEX_FACADE_METHODS );
     }

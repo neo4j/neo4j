@@ -57,9 +57,9 @@ import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 {
     private final int pageSize = 256;
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
-    private final PageAwareByteArrayCursor readCursor = cursor.duplicate();
-    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
+    private PageAwareByteArrayCursor cursor;
+    private PageAwareByteArrayCursor readCursor;
+    private SimpleIdProvider id;
 
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
@@ -102,6 +102,10 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     @Before
     public void setUp() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( pageSize );
+        readCursor = cursor.duplicate();
+        id = new SimpleIdProvider( cursor::duplicate );
+
         id.reset();
         long newId = id.acquireNewId( stableGeneration, unstableGeneration );
         goTo( cursor, newId );
@@ -1164,7 +1168,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long middle = i / 2;
         KEY middleKey = key( middle ); // Should be located in middle leaf
         VALUE oldValue = value( middle );
-        VALUE newValue = value( middle * 100 );
+        VALUE newValue = value( middle * 11 );
         insert( middleKey, newValue );
 
         // THEN
@@ -1698,7 +1702,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         goTo( readCursor, currentPageId );
     }
 
-    private KEY keyAt( long nodeId, int pos, TreeNode.Type type ) throws IOException
+    private KEY keyAt( long nodeId, int pos, TreeNode.Type type )
     {
         KEY readKey = layout.newKey();
         long prevId = readCursor.getCurrentPageId();

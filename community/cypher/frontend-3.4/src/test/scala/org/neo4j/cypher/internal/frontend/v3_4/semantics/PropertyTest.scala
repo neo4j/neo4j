@@ -65,6 +65,28 @@ class PropertyTest extends SemanticFunSuite {
     result.errors shouldBe empty
   }
 
+  test("accepts property access on a Point") {
+    val mapExpr: Variable = variable("map")
+    val propertyKey: PropertyKeyName = propertyKeyName("prop")
+
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTPoint).right.get
+
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+
+    result.errors shouldBe empty
+  }
+
+  test("accepts property access on an Date") {
+    val mapExpr: Variable = variable("map")
+    val propertyKey: PropertyKeyName = propertyKeyName("prop")
+
+    val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTDate).right.get
+
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+
+    result.errors shouldBe empty
+  }
+
   test("refuses property access on an Integer") {
     val mapExpr: Variable = variable("map")
     val propertyKey: PropertyKeyName = propertyKeyName("prop")
@@ -73,6 +95,6 @@ class PropertyTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
-    result.errors should equal(List(SemanticError("Type mismatch: expected Any, Map, Node or Relationship but was Integer", pos)))
+    result.errors should equal(Seq(SemanticError("Type mismatch: expected Any, Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Integer", pos)))
   }
 }

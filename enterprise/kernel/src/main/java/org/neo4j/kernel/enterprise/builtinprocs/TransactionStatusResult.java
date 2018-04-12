@@ -62,6 +62,7 @@ public class TransactionStatusResult
     public final long waitTimeMillis;
     public final Long idleTimeMillis;
     public final Long allocatedBytes;
+    public final Long allocatedDirectBytes;
     public final long pageHits;
     public final long pageFaults;
 
@@ -78,7 +79,8 @@ public class TransactionStatusResult
         TransactionExecutionStatistic statistic = transaction.transactionStatistic();
         elapsedTimeMillis = statistic.getElapsedTimeMillis();
         cpuTimeMillis = statistic.getCpuTimeMillis();
-        allocatedBytes = statistic.getHeapAllocateBytes();
+        allocatedBytes = statistic.getHeapAllocatedBytes();
+        allocatedDirectBytes = statistic.getDirectAllocatedBytes();
         waitTimeMillis = statistic.getWaitTimeMillis();
         idleTimeMillis = statistic.getIdleTimeMillis();
         pageHits = statistic.getPageHits();

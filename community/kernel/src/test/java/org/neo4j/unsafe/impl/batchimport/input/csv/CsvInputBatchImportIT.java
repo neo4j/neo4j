@@ -26,6 +26,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalQueries;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,10 +45,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -45,7 +59,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -54,6 +68,7 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.util.AutoCreatingHashMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.LogTimeZone;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -62,19 +77,20 @@ import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.charset.Charset.defaultCharset;
-
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -97,6 +113,10 @@ public class CsvInputBatchImportIT
     {
         return (String) node.properties()[1];
     }
+    private int indexOf( InputEntity node )
+    {
+        return Integer.parseInt(((String) node.properties()[1]).split( "\\s" )[1] ) ;
+    }
 
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
@@ -105,11 +125,13 @@ public class CsvInputBatchImportIT
     private final long seed = currentTimeMillis();
     private final Random random = new Random( seed );
 
+    private static final Supplier<ZoneId> testDefaultTimeZone = () -> ZoneId.of( "Asia/Shanghai" );
+
     @Test
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.defaults();
+        Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(), null,
                 smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), AdditionalInitialIds.EMPTY, dbConfig,
                 RecordFormatSelector.defaultFormat(), NO_MONITOR );
@@ -139,9 +161,12 @@ public class CsvInputBatchImportIT
             org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration, Collector badCollector )
     {
         return new CsvInput(
-                datas( data( NO_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
+                datas( data( NO_DECORATOR, defaultCharset(), nodes ) ),
+                defaultFormatNodeFileHeader( testDefaultTimeZone ),
                 datas( data( NO_DECORATOR, defaultCharset(), relationships ) ),
-                defaultFormatRelationshipFileHeader(), idType, configuration,
+                defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
+                idType,
+                configuration,
                 badCollector );
     }
 
@@ -170,6 +195,17 @@ public class CsvInputBatchImportIT
             InputEntity node = new InputEntity();
             node.id( UUID.randomUUID().toString(), Group.GLOBAL );
             node.property( "name", "Node " + i );
+            node.property( "pointA", "\"   { x : -4.2, y : " + i + ", crs: WGS-84 } \"" );
+            node.property( "pointB", "\" { x : -8, y : " + i + " } \"" );
+            node.property( "date", LocalDate.of( 2018, i % 12 + 1, i % 28 + 1 ) );
+            node.property( "time", OffsetTime.of( 1, i % 60, 0, 0, ZoneOffset.ofHours( 9 ) ) );
+            node.property( "dateTime",
+                    ZonedDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0, ZoneId.of( "Europe/Stockholm" ) ) );
+            node.property( "dateTime2",
+                    LocalDateTime.of( 2011, 9, 11, 8, i % 60, 0, 0 ) ); // No zone specified
+            node.property( "localTime", LocalTime.of( 1, i % 60, 0 ) );
+            node.property( "localDateTime", LocalDateTime.of( 2011, 9, 11, 8, i % 60 ) );
+            node.property( "duration", Period.of( 2, -3, i % 30 ) );
             node.labels( randomLabels( random ) );
             nodes.add( node );
         }
@@ -227,14 +263,20 @@ public class CsvInputBatchImportIT
         try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
-            println( writer, "id:ID,name,some-labels:LABEL" );
+            println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
+                             "localDateTime:LocalDateTime,duration:Duration,some-labels:LABEL" );
 
             // Data
             for ( InputEntity node : nodeData )
             {
                 String csvLabels = csvLabels( node.labels() );
-                println( writer, node.id() + "," + node.properties()[1] + "," +
-                        (csvLabels != null && csvLabels.length() > 0 ? csvLabels : "") );
+                StringBuilder sb = new StringBuilder( node.id() + "," );
+                for ( int i = 0; i < node.propertyCount(); i++ )
+                {
+                    sb.append( node.propertyValue( i ) + "," );
+                }
+                sb.append( csvLabels != null && csvLabels.length() > 0 ? csvLabels : "" );
+                println( writer, sb.toString() );
             }
         }
         return file;
@@ -283,13 +325,14 @@ public class CsvInputBatchImportIT
         // Build up expected data for the verification below
         Map<String/*id*/, InputEntity> expectedNodes = new HashMap<>();
         Map<String,String[]> expectedNodeNames = new HashMap<>();
+        Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
         Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
         Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
                 new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
-        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedRelationships,
-                expectedNodeCounts, expectedRelationshipCounts );
+        buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedNodePropertyVerifiers,
+                expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
@@ -301,6 +344,19 @@ public class CsvInputBatchImportIT
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
                 assertEquals( asSet( labels ), names( node.getLabels() ) );
+
+                // Verify node properties
+                Map<String,Consumer<Object>> expectedPropertyVerifiers = expectedNodePropertyVerifiers.remove( name );
+                Map<String,Object> actualProperties = node.getAllProperties();
+                actualProperties.remove( "id" ); // The id does not exist in expected properties
+                for ( Map.Entry actualProperty : actualProperties.entrySet() )
+                {
+                    Consumer v = expectedPropertyVerifiers.get( actualProperty.getKey() );
+                    if ( v != null )
+                    {
+                        v.accept( actualProperty.getValue() );
+                    }
+                }
             }
             assertEquals( 0, expectedNodeNames.size() );
 
@@ -333,7 +389,7 @@ public class CsvInputBatchImportIT
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
                     RecordStorageEngine.class ).testAccessNeoStores();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
+                    translationTable( neoStores.getLabelTokenStore(), StatementConstants.ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
@@ -344,7 +400,7 @@ public class CsvInputBatchImportIT
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStores.getRelationshipTypeTokenStore(), StatementConstants.ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
@@ -444,6 +500,7 @@ public class CsvInputBatchImportIT
             List<InputEntity> relationshipData,
             Map<String, InputEntity> expectedNodes,
             Map<String, String[]> expectedNodeNames,
+            Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers,
             Map<String, Map<String, Map<String, AtomicInteger>>> expectedRelationships,
             Map<String, AtomicLong> nodeCounts,
             Map<String, Map<String, Map<String, AtomicLong>>> relationshipCounts )
@@ -452,6 +509,94 @@ public class CsvInputBatchImportIT
         {
             expectedNodes.put( (String) node.id(), node );
             expectedNodeNames.put( nameOf( node ), node.labels() );
+
+            // Build default verifiers for all the properties that compares the property value using equals
+            assert node.hasIntPropertyKeyIds == false;
+            Map<String,Consumer<Object>> propertyVerifiers = new TreeMap<>();
+            for ( int i = 0; i < node.propertyCount(); i++ )
+            {
+                final Object expectedValue = node.propertyValue( i );
+                Consumer verify;
+                if ( expectedValue instanceof TemporalAmount )
+                {
+                    // Since there is no straightforward comparison for TemporalAmount we add it to a reference
+                    // point in time and compare the result
+                    verify = actualValue ->
+                    {
+                        LocalDateTime referenceTemporal = LocalDateTime.of( 0, 1, 1, 0, 0 );
+                        LocalDateTime expected = referenceTemporal.plus( (TemporalAmount) expectedValue );
+                        LocalDateTime actual = referenceTemporal.plus( (TemporalAmount) actualValue );
+                        assertEquals( expected, actual );
+                    };
+                }
+                else if ( expectedValue instanceof Temporal )
+                {
+                    final LocalDate expectedDate = ((Temporal) expectedValue).query( TemporalQueries.localDate() );
+                    final LocalTime expectedTime = ((Temporal) expectedValue).query( TemporalQueries.localTime() );
+                    final ZoneId expectedZoneId = ((Temporal) expectedValue).query( TemporalQueries.zone() );
+
+                    verify = actualValue ->
+                    {
+                        LocalDate actualDate = ((Temporal) actualValue).query( TemporalQueries.localDate() );
+                        LocalTime actualTime = ((Temporal) actualValue).query( TemporalQueries.localTime() );
+                        ZoneId actualZoneId = ((Temporal) actualValue).query( TemporalQueries.zone() );
+
+                        assertEquals( expectedDate, actualDate );
+                        assertEquals( expectedTime, actualTime );
+                        if ( expectedZoneId == null )
+                        {
+                            if ( actualZoneId != null )
+                            {
+                                // If the actual value is zoned it should have the default zone
+                                assertEquals( testDefaultTimeZone.get(), actualZoneId );
+                            }
+                        }
+                        else
+                        {
+                            assertEquals( expectedZoneId, actualZoneId );
+                        }
+                    };
+                }
+                else
+                {
+                    verify = actualValue ->
+                    {
+                        assertEquals( expectedValue, actualValue );
+                    };
+                }
+                propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
+            }
+
+            // Special verifier for pointA property
+            Consumer verifyPointA = actualValue ->
+            {
+                // The y-coordinate should match the node number
+                PointValue v = (PointValue) actualValue;
+                double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
+                double expectedY = indexOf( node );
+                String message = actualValue.toString() + " does not have y=" + expectedY;
+                assertEquals( message, expectedY, actualY, 0.1 );
+                message = actualValue.toString() + " does not have crs=wgs-84";
+                assertEquals( message, CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName() );
+            };
+            propertyVerifiers.put( "pointA", verifyPointA );
+
+            // Special verifier for pointB property
+            Consumer verifyPointB = actualValue ->
+            {
+                // The y-coordinate should match the node number
+                PointValue v = (PointValue) actualValue;
+                double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
+                double expectedY = indexOf( node );
+                String message = actualValue.toString() + " does not have y=" + expectedY;
+                assertEquals( message, expectedY, actualY, 0.1 );
+                message = actualValue.toString() + " does not have crs=cartesian";
+                assertEquals( message, CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName() );
+            };
+            propertyVerifiers.put( "pointB", verifyPointB );
+
+            expectedNodePropertyVerifiers.put( nameOf( node ), propertyVerifiers );
+
             countNodeLabels( nodeCounts, node.labels() );
         }
         for ( InputEntity relationship : relationshipData )

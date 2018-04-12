@@ -21,27 +21,34 @@ package org.neo4j.causalclustering.core;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCacheFactory;
+import org.neo4j.causalclustering.discovery.DnsHostnameResolver;
+import org.neo4j.causalclustering.discovery.DomainNameResolverImpl;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
+import org.neo4j.causalclustering.discovery.NoOpHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvHostnameResolver;
+import org.neo4j.causalclustering.discovery.SrvRecordResolverImpl;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
-import org.neo4j.graphdb.config.BaseSetting;
-import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4_HIGH_COMPRESSION_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ_VALIDATING;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY;
+import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.SNAPPY_VALIDATING;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -52,15 +59,16 @@ import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.prefixSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
@@ -79,6 +87,10 @@ public class CausalClusteringSettings implements LoadableConfig
             "availability for the cluster." )
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
+
+    @Description( "The name of the database hosted by this server instance" )
+    public static final Setting<String> database =
+            setting( "causal_clustering.database", STRING, "default" );
 
     @Description( "Enable pre-voting extension to the Raft protocol (this is breaking and must match between the core cluster members)" )
     public static final Setting<Boolean> enable_pre_voting =
@@ -104,13 +116,14 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Expected number of Core machines in the cluster before startup" )
     @Deprecated
-    @ReplacedBy( "minimum_core_cluster_size_at_startup and minimum_core_cluster_size_at_runtime" )
+    @ReplacedBy( "causal_clustering.minimum_core_cluster_size_at_formation and causal_clustering.minimum_core_cluster_size_at_runtime" )
     public static final Setting<Integer> expected_core_cluster_size =
             setting( "causal_clustering.expected_core_cluster_size", INTEGER, "3" );
 
     @Description( "Minimum number of Core machines in the cluster at formation. The expected_core_cluster size setting is used when bootstrapping the " +
             "cluster on first formation. A cluster will not form without the configured amount of cores and this should in general be configured to the" +
-            " full and fixed amount." )
+            " full and fixed amount. When using multi-clustering (configuring multiple distinct database names across core hosts), this setting is used " +
+            "to define the minimum size of *each* sub-cluster at formation." )
     public static final Setting<Integer> minimum_core_cluster_size_at_formation =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_formation", INTEGER, expected_core_cluster_size.getDefaultValue() )
                     .constraint( min( 2 ) ).build();
@@ -124,7 +137,8 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> minimum_core_cluster_size_at_runtime =
             buildSetting( "causal_clustering.minimum_core_cluster_size_at_runtime", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
-    @Description( "Network interface and port for the transaction shipping server to listen on." )
+    @Description( "Network interface and port for the transaction shipping server to listen on. Please note that it is also possible to run the backup " +
+            "client against this port so always limit access to it via the firewall and configure an ssl policy." )
     public static final Setting<ListenSocketAddress> transaction_listen_address =
             listenAddress( "causal_clustering.transaction_listen_address", 6000 );
 
@@ -168,8 +182,23 @@ public class CausalClusteringSettings implements LoadableConfig
 
     public enum DiscoveryType
     {
-        DNS,
-        LIST
+        DNS( ( logProvider, userLogProvider ) -> new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() ) ),
+
+        LIST( ( logProvider, userLogProvider ) -> new NoOpHostnameResolver() ),
+
+        SRV( ( logProvider, userLogProvider ) -> new SrvHostnameResolver( logProvider, userLogProvider, new SrvRecordResolverImpl() ) );
+
+        private final BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier;
+
+        DiscoveryType( BiFunction<LogProvider,LogProvider,HostnameResolver> resolverSupplier )
+        {
+            this.resolverSupplier = resolverSupplier;
+        }
+
+        public HostnameResolver getHostnameResolver( LogProvider logProvider, LogProvider userLogProvider )
+        {
+            return this.resolverSupplier.apply( logProvider, userLogProvider );
+        }
     }
 
     @Description( "Configure the discovery type used for cluster name resolution" )
@@ -280,6 +309,15 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Duration> catch_up_client_inactivity_timeout =
             setting( "causal_clustering.catch_up_client_inactivity_timeout", DURATION, "20s" );
 
+    @Description( "Maximum retry time per request during store copy. Regular store files and indexes are downloaded in separate requests during store copy." +
+            " This configures the maximum time failed requests are allowed to resend. " )
+    public static final Setting<Duration> store_copy_max_retry_time_per_request =
+            setting( "causal_clustering.store_copy_max_retry_time_per_request", DURATION, "20m" );
+
+    @Description( "Maximum backoff timeout for store copy requests" )
+    @Internal
+    public static final Setting<Duration> store_copy_backoff_max_wait = setting( "causal_clustering.store_copy_backoff_max_wait", DURATION, "5s" );
+
     @Description( "Throttle limit for logging unknown cluster member address" )
     public static final Setting<Duration> unknown_address_logging_throttle =
             setting( "causal_clustering.unknown_address_logging_throttle", DURATION, "10000ms" );
@@ -287,7 +325,7 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Maximum transaction batch size for read replicas when applying transactions pulled from core " +
             "servers." )
     @Internal
-    public static Setting<Integer> read_replica_transaction_applier_batch_size =
+    public static final Setting<Integer> read_replica_transaction_applier_batch_size =
             setting( "causal_clustering.read_replica_transaction_applier_batch_size", INTEGER, "64" );
 
     @Description( "Time To Live before read replica is considered unavailable" )
@@ -424,40 +462,9 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
-    static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
-                                              final String defaultValue )
-    {
-        BiFunction<String, Function<String, String>, String> valueLookup = ( n, settings ) -> settings.apply( n );
-        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
-                valueLookup );
-
-        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
-        {
-            @Override
-            public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )
-                    throws InvalidSettingException
-            {
-                // Validate setting, if present or default value otherwise
-                try
-                {
-                    apply( rawConfig::get );
-                    // only return if it was present though
-
-                    Map<String, String> validConfig = new HashMap<>();
-
-                    rawConfig.keySet().stream()
-                            .filter( key -> key.startsWith( name() ) )
-                            .forEach( key -> validConfig.put( key, rawConfig.get( key ) ) );
-
-                    return validConfig;
-                }
-                catch ( RuntimeException e )
-                {
-                    throw new InvalidSettingException( e.getMessage(), e );
-                }
-            }
-        };
-    }
+    @Description( "Time out for protocol negotiation handshake" )
+    public static final Setting<Duration> handshake_timeout =
+            setting( "causal_clustering.handshake_timeout", DURATION, "5000ms" );
 
     @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +
@@ -481,4 +488,23 @@ public class CausalClusteringSettings implements LoadableConfig
                   " If no policy is configured then the communication will not be secured." )
     public static final Setting<String> ssl_policy =
             prefixSetting( "causal_clustering.ssl_policy", STRING, NO_DEFAULT );
+
+    @Description( "Raft protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
+            " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
+    public static final Setting<List<Integer>> raft_implementations =
+            setting( "causal_clustering.protocol_implementations.raft", list( ",", INTEGER ), "" );
+
+    @Description( "Catchup protocol implementation versions that this instance will allow in negotiation as a comma-separated list." +
+            " Order is not relevant: the greatest value will be preferred. An empty list will allow all supported versions" )
+    public static final Setting<List<Integer>> catchup_implementations =
+            setting( "causal_clustering.protocol_implementations.catchup", list( ",", INTEGER ), "" );
+
+    @Description( "Network compression algorithms that this instance will allow in negotiation as a comma-separated list." +
+            " Listed in descending order of preference for incoming connections. An empty list implies no compression." +
+            " For outgoing connections this merely specifies the allowed set of algorithms and the preference of the " +
+            " remote peer will be used for making the decision." +
+            " Allowable values: [" + GZIP + "," + SNAPPY + "," + SNAPPY_VALIDATING + "," +
+            LZ4 + "," + LZ4_HIGH_COMPRESSION + "," + LZ_VALIDATING + "," + LZ4_HIGH_COMPRESSION_VALIDATING + "]" )
+    public static final Setting<List<String>> compression_implementations =
+            setting( "causal_clustering.protocol_implementations.compression", STRING_LIST, "");
 }

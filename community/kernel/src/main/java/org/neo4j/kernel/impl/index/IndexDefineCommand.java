@@ -58,8 +58,8 @@ public class IndexDefineCommand extends Command
 
     public IndexDefineCommand()
     {
-        setIndexNameIdRange( new HashMap<String,Integer>() );
-        setKeyIdRange( new HashMap<String,Integer>() );
+        setIndexNameIdRange( new HashMap<>() );
+        setKeyIdRange( new HashMap<>() );
         idToIndexName = intObjectMap( 16 );
         idToKey = intObjectMap( 16 );
     }
@@ -77,7 +77,7 @@ public class IndexDefineCommand extends Command
         PrimitiveIntObjectMap<String> result = Primitive.intObjectMap( map.size() );
         for ( Map.Entry<String,Integer> entry : map.entrySet() )
         {
-            result.put( entry.getValue().intValue(), entry.getKey() );
+            result.put( entry.getValue(), entry.getKey() );
         }
         return result;
     }
@@ -186,7 +186,7 @@ public class IndexDefineCommand extends Command
         return indexNameIdRange;
     }
 
-    public void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
+    private void setIndexNameIdRange( Map<String,Integer> indexNameIdRange )
     {
         this.indexNameIdRange = indexNameIdRange;
     }
@@ -196,7 +196,7 @@ public class IndexDefineCommand extends Command
         return keyIdRange;
     }
 
-    public void setKeyIdRange( Map<String,Integer> keyIdRange )
+    private void setKeyIdRange( Map<String,Integer> keyIdRange )
     {
         this.keyIdRange = keyIdRange;
     }

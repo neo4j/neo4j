@@ -33,7 +33,7 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 public class ManagementSupport
 {
-    public static final ManagementSupport load()
+    public static ManagementSupport load()
     {
         ManagementSupport support = new ManagementSupport();
         for ( ManagementSupport candidate : Service.load( ManagementSupport.class ) )

@@ -26,4 +26,22 @@ public class NodeValueIndexCursorInMemoryTest extends AbstractNodeValueIndexCurs
     {
         return new ReadTestSupport();
     }
+
+    @Override
+    protected String providerKey()
+    {
+        return "in-memory-index";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "1.0";
+    }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return false;
+    }
 }

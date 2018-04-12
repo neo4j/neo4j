@@ -28,11 +28,9 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.MultipleUnderlyingStorageExceptions;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
@@ -49,7 +47,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
-    private final Map<LabelSchemaDescriptor, IndexUpdater> updaterMap;
+    private final Map<SchemaDescriptor,IndexUpdater> updaterMap;
 
     IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
@@ -58,7 +56,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
         this.updaterMap = new HashMap<>();
     }
 
-    IndexUpdater getUpdater( LabelSchemaDescriptor descriptor )
+    IndexUpdater getUpdater( SchemaDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -76,9 +74,9 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
+        Set<Pair<SchemaDescriptor,UnderlyingStorageException>> exceptions = null;
 
-        for ( Map.Entry<LabelSchemaDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
+        for ( Map.Entry<SchemaDescriptor,IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
             IndexUpdater updater = updaterEntry.getValue();
             try
@@ -91,7 +89,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
                 {
                     exceptions = new HashSet<>();
                 }
-                exceptions.add( Pair.of( IndexDescriptorFactory.forSchema( updaterEntry.getKey() ),
+                exceptions.add( Pair.of( updaterEntry.getKey(),
                         new UnderlyingStorageException( e ) ) );
             }
         }
@@ -124,7 +122,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         return new PrefetchingIterator<IndexUpdater>()
         {
-            Iterator<LabelSchemaDescriptor> descriptors = indexMap.descriptors();
+            private Iterator<SchemaDescriptor> descriptors = indexMap.descriptors();
             @Override
             protected IndexUpdater fetchNextOrNull()
             {

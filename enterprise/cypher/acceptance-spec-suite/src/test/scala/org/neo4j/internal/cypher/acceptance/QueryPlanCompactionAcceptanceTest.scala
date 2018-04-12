@@ -21,7 +21,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
@@ -769,6 +768,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Optional             |              1 | line, u2                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
+        || | +ActiveRead           |              1 | line, u2                  |                       |
+        || | |                     +----------------+---------------------------+-----------------------+
         || | +Filter               |              0 | line, u2                  | u2.login = line.user2 |
         || | |                     +----------------+---------------------------+-----------------------+
         || | +NodeByLabelScan      |              1 | u2 -- line                | :User                 |
@@ -784,6 +785,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || | | +Argument           |              1 | line                      |                       |
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Optional             |              1 | line, u1                  |                       |
+        || | |                     +----------------+---------------------------+-----------------------+
+        || | +ActiveRead           |              1 | line, u1                  |                       |
         || | |                     +----------------+---------------------------+-----------------------+
         || | +Filter               |              0 | line, u1                  | u1.login = line.user1 |
         || | |                     +----------------+---------------------------+-----------------------+
@@ -826,7 +829,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || +NodeByLabelScan |              5 | n                                    | :Actor                      |
         |+------------------+----------------+--------------------------------------+-----------------------------+
         |""".stripMargin
-    val ignoreConfiguration = TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes.all ) + Configs.AllRulePlanners + Configs.SlottedInterpreted
+    val ignoreConfiguration = Configs.Version2_3 + Configs.Version3_1 + Configs.AllRulePlanners + Configs.SlottedInterpreted
     executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = ignoreConfiguration))
   }
 

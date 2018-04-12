@@ -29,6 +29,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -140,7 +141,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logProvider );
+                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException
@@ -160,7 +161,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         return new File( new File( new File( storeRootDir, "schema" ), "label" ), "lucene" );
     }
 
-    private class MonitoredFullLabelStream extends FullLabelStream
+    private static class MonitoredFullLabelStream extends FullLabelStream
     {
 
         private final ProgressReporter progressReporter;

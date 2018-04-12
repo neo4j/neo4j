@@ -26,7 +26,8 @@ import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -41,7 +42,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 public class CommitProcessStateMachineCollaborationTest
 {
     @Test
-    public void shouldFailTransactionIfLockSessionChanges() throws Exception
+    public void shouldFailTransactionIfLockSessionChanges()
     {
         // given
         int initialLockSessionId = 23;
@@ -52,7 +53,7 @@ public class CommitProcessStateMachineCollaborationTest
         ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( mock( CommandIndexTracker.class ),
                         lockState( finalLockSessionId ), 16, NullLogProvider.getInstance(),
-                        PageCursorTracerSupplier.NULL );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );

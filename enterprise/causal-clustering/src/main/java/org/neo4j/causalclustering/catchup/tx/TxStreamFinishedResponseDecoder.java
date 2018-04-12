@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.catchup.CatchupResult;
 public class TxStreamFinishedResponseDecoder extends ByteToMessageDecoder
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out )
     {
         int ordinal = msg.readInt();
         long latestTxid = msg.readLong();

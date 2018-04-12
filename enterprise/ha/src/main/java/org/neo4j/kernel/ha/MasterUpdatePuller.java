@@ -44,20 +44,19 @@ public class MasterUpdatePuller implements UpdatePuller
     }
 
     @Override
-    public void pullUpdates() throws InterruptedException
+    public void pullUpdates()
     {
         // no-op
     }
 
     @Override
-    public boolean tryPullUpdates() throws InterruptedException
+    public boolean tryPullUpdates()
     {
         return false;
     }
 
     @Override
     public void pullUpdates( Condition condition, boolean assertPullerActive )
-            throws InterruptedException
     {
         // no-op
     }

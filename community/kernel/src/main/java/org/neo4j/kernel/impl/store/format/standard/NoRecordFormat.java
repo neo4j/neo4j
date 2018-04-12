@@ -57,7 +57,6 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
 
     @Override
     public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
-            throws IOException
     {
         record.clear();
     }
@@ -68,7 +67,7 @@ public class NoRecordFormat<RECORD extends AbstractBaseRecord> implements Record
     }
 
     @Override
-    public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
+    public void write( RECORD record, PageCursor cursor, int recordSize )
     {
     }
 

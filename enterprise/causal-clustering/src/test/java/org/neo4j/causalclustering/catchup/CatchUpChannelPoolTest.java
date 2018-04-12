@@ -21,11 +21,17 @@ package org.neo4j.causalclustering.catchup;
 
 import org.junit.Test;
 
+import java.net.ConnectException;
+import java.util.function.Function;
+
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class CatchUpChannelPoolTest
 {
@@ -102,20 +108,104 @@ public class CatchUpChannelPoolTest
         assertTrue( channelF.closed );
     }
 
+    @Test
+    public void shouldFailWithExceptionIsChannelIsNotActive()
+    {
+        CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( advertisedSocketAddress -> new TestChannel( advertisedSocketAddress, false ) );
+
+        try
+        {
+            pool.acquire( localAddress( 1 ) );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( ConnectException.class, e.getClass() );
+            assertEquals( "Unable to connect to localhost:1", e.getMessage() );
+            return;
+        }
+        fail();
+    }
+
+    @Test
+    public void shouldCheckConnectionOnIdleChannelFirst()
+    {
+        // given
+        CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( new Function<AdvertisedSocketAddress,TestChannel>()
+        {
+            boolean firstIsActive = true;
+
+            @Override
+            public TestChannel apply( AdvertisedSocketAddress address )
+            {
+                TestChannel testChannel = new TestChannel( address, firstIsActive );
+                firstIsActive = false;
+                return testChannel;
+            }
+        } );
+
+        TestChannel channel = null;
+        try
+        {
+            channel = pool.acquire( localAddress( 1 ) );
+            assertNotNull( channel );
+        }
+        catch ( Exception e )
+        {
+            fail( "Not expected exception" );
+        }
+
+        // when channel loses connection in idle
+        channel.isActive = false;
+        pool.release( channel );
+
+        try
+        {
+            // then
+            pool.acquire( localAddress( 1 ) );
+        }
+        catch ( Exception e )
+        {
+            assertEquals( ConnectException.class, e.getClass() );
+            assertEquals( "Unable to connect to localhost:1", e.getMessage() );
+            return;
+        }
+        fail();
+    }
+
     private static class TestChannel implements CatchUpChannelPool.Channel
     {
         private final AdvertisedSocketAddress address;
+        private boolean isActive;
         private boolean closed;
+
+        TestChannel( AdvertisedSocketAddress address, boolean isActive )
+        {
+
+            this.address = address;
+            this.isActive = isActive;
+        }
 
         TestChannel( AdvertisedSocketAddress address )
         {
-            this.address = address;
+            this( address, true );
         }
 
         @Override
         public AdvertisedSocketAddress destination()
         {
             return address;
+        }
+
+        @Override
+        public void connect()
+        {
+            // do nothing
+        }
+
+        @Override
+        public boolean isActive()
+        {
+            return isActive;
         }
 
         @Override

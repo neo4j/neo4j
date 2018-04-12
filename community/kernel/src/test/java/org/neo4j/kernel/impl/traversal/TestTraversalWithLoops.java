@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.traversal;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
@@ -32,7 +31,7 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 public class TestTraversalWithLoops extends TraversalTestBase
 {
     @Test
-    public void traverseThroughNodeWithLoop() throws Exception
+    public void traverseThroughNodeWithLoop()
     {
         /*
          * (a)-->(b)-->(c)-->(d)-->(e)

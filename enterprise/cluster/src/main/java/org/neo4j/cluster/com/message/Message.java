@@ -42,15 +42,14 @@ public class Message<MESSAGETYPE extends MessageType>
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> to( MESSAGETYPE messageType, URI to,
                                                                              Object payload )
     {
-        return new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, to.toString() );
+        return new Message<>( messageType, payload ).setHeader( HEADER_TO, to.toString() );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> respond( MESSAGETYPE messageType,
-                                                                                  Message<?> message, Object payload )
+            Message<?> message, Object payload )
     {
-        return message.hasHeader( Message.FROM ) ?
-                new Message<MESSAGETYPE>( messageType, payload ).setHeader( TO, message.getHeader( Message.FROM ) ) :
-                internal( messageType, payload );
+        return message.hasHeader( Message.HEADER_FROM ) ? new Message<>( messageType, payload )
+                .setHeader( HEADER_TO, message.getHeader( Message.HEADER_FROM ) ) : internal( messageType, payload );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message )
@@ -60,7 +59,7 @@ public class Message<MESSAGETYPE extends MessageType>
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> internal( MESSAGETYPE message, Object payload )
     {
-        return new Message<MESSAGETYPE>( message, payload );
+        return new Message<>( message, payload );
     }
 
     public static <MESSAGETYPE extends MessageType> Message<MESSAGETYPE> timeout( MESSAGETYPE message,
@@ -73,30 +72,30 @@ public class Message<MESSAGETYPE extends MessageType>
                                                                                   Message<?> causedBy, Object payload )
     {
         Message<MESSAGETYPE> timeout = causedBy.copyHeadersTo( new Message<>( message, payload ),
-                Message.CONVERSATION_ID, Message.CREATED_BY );
+                Message.HEADER_CONVERSATION_ID, Message.HEADER_CREATED_BY );
         int timeoutCount = 0;
-        if ( causedBy.hasHeader( TIMEOUT_COUNT ) )
+        if ( causedBy.hasHeader( HEADER_TIMEOUT_COUNT ) )
         {
-            timeoutCount = Integer.parseInt( causedBy.getHeader( TIMEOUT_COUNT ) ) + 1;
+            timeoutCount = Integer.parseInt( causedBy.getHeader( HEADER_TIMEOUT_COUNT ) ) + 1;
         }
-        timeout.setHeader( TIMEOUT_COUNT, "" + timeoutCount );
+        timeout.setHeader( HEADER_TIMEOUT_COUNT, "" + timeoutCount );
         return timeout;
     }
 
     // Standard headers
-    public static final String CONVERSATION_ID = "conversation-id";
-    public static final String CREATED_BY = "created-by";
-    public static final String TIMEOUT_COUNT = "timeout-count";
-    public static final String FROM = "from";
-    public static final String TO = "to";
-    public static final String INSTANCE_ID = "instance-id";
+    public static final String HEADER_CONVERSATION_ID = "conversation-id";
+    public static final String HEADER_CREATED_BY = "created-by";
+    public static final String HEADER_TIMEOUT_COUNT = "timeout-count";
+    public static final String HEADER_FROM = "from";
+    public static final String HEADER_TO = "to";
+    public static final String HEADER_INSTANCE_ID = "instance-id";
     // Should be present only in configurationRequest messages. Value is a comma separated list of instance ids.
     // Added in 3.0.9.
     public static final String DISCOVERED = "discovered";
 
     private MESSAGETYPE messageType;
     private Object payload;
-    private Map<String, String> headers = new HashMap<String, String>();
+    private Map<String, String> headers = new HashMap<>();
 
     protected Message( MESSAGETYPE messageType, Object payload )
     {
@@ -109,6 +108,7 @@ public class Message<MESSAGETYPE extends MessageType>
         return messageType;
     }
 
+    @SuppressWarnings( "unchecked" )
     public <T> T getPayload()
     {
         return (T) payload;
@@ -132,7 +132,7 @@ public class Message<MESSAGETYPE extends MessageType>
 
     public boolean isInternal()
     {
-        return !headers.containsKey( Message.TO );
+        return !headers.containsKey( Message.HEADER_TO );
     }
 
     public String getHeader( String name )
@@ -195,7 +195,7 @@ public class Message<MESSAGETYPE extends MessageType>
             return false;
         }
 
-        Message message = (Message) o;
+        Message<?> message = (Message<?>) o;
 
         if ( headers != null ? !headers.equals( message.headers ) : message.headers != null )
         {
@@ -220,6 +220,6 @@ public class Message<MESSAGETYPE extends MessageType>
     @Override
     public String toString()
     {
-        return messageType.name() + headers + (payload != null && payload instanceof String ? ": " + payload : "");
+        return messageType.name() + headers + (payload instanceof String ? ": " + payload : "");
     }
 }

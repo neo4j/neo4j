@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
+import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -68,14 +71,17 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     {
     };
 
+    @Rule
+    public final RandomRule random = new RandomRule();
+
     private TestLayout<KEY,VALUE> layout;
     private TreeNode<KEY,VALUE> node;
     private InternalTreeLogic<KEY,VALUE> treeLogic;
     private StructurePropagation<KEY> structurePropagation;
 
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final PageAwareByteArrayCursor utilCursor = cursor.duplicate();
-    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
+    private PageAwareByteArrayCursor cursor;
+    private PageAwareByteArrayCursor utilCursor;
+    private SimpleIdProvider id;
 
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
@@ -86,6 +92,10 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     @Before
     public void setUp() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+        utilCursor = cursor.duplicate();
+        id = new SimpleIdProvider( cursor::duplicate );
+
         layout = getLayout();
         node = getTreeNode( PAGE_SIZE, layout );
         treeLogic = new InternalTreeLogic<>( id, node, layout );
@@ -1195,7 +1205,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator ) )
+                unstableGeneration, exceptionDecorator, 1 ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1865,7 +1875,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1899,22 +1909,15 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         // a root catchup that records usage
         Supplier<Root> rootCatchup = () ->
         {
-            try
-            {
-                triggered.setTrue();
+            triggered.setTrue();
 
-                // and set child generation to match pointer
-                cursor.next( leftChild );
-                cursor.zapPage();
-                node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            // and set child generation to match pointer
+            cursor.next( leftChild );
+            cursor.zapPage();
+            node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
 
-                cursor.next( rootId );
-                return new Root( rootId, generation );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            cursor.next( rootId );
+            return new Root( rootId, generation );
         };
 
         // when
@@ -1923,7 +1926,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1946,17 +1949,10 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
         Supplier<Root> rootCatchup = () ->
         {
-            try
-            {
-                // Use right child as new start over root to terminate test
-                cursor.next( rightChild );
-                triggered.setTrue();
-                return new Root( cursor.getCurrentPageId(), TreeNode.generation( cursor ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            // Use right child as new start over root to terminate test
+            cursor.next( rightChild );
+            triggered.setTrue();
+            return new Root( cursor.getCurrentPageId(), TreeNode.generation( cursor ) );
         };
 
         // a left leaf
@@ -1979,7 +1975,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             while ( seek.next() )
             {
@@ -2128,7 +2124,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         unstableGeneration++;
     }
 
-    private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
+    private void newRootFromSplit( StructurePropagation<KEY> split )
     {
         assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
@@ -2173,7 +2169,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         handleAfterChange();
     }
 
-    private void handleAfterChange() throws IOException
+    private void handleAfterChange()
     {
         if ( structurePropagation.hasRightKeyInsert )
         {
@@ -2201,7 +2197,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
             PageCursor pageCursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator );
+                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ) );
     }
 
     /**

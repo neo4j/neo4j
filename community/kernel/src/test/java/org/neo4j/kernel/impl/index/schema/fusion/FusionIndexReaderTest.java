@@ -21,6 +21,10 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -28,110 +32,175 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.INSTANCE_COUNT;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v20;
 
+@RunWith( Parameterized.class )
 public class FusionIndexReaderTest
 {
-    private IndexReader nativeReader;
-    private IndexReader luceneReader;
+    private IndexReader[] aliveReaders;
+    private IndexReader[] readers;
     private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
 
+    @Parameterized.Parameters( name = "{0}" )
+    public static FusionVersion[] versions()
+    {
+        return new FusionVersion[]
+                {
+                        v00, v10, v20
+                };
+    }
+
+    @Parameterized.Parameter
+    public static FusionVersion fusionVersion;
+
     @Before
     public void setup()
     {
-        nativeReader = mock( IndexReader.class );
-        luceneReader = mock( IndexReader.class );
-        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector(),
-                IndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
+        initiateMocks();
+    }
+
+    private void initiateMocks()
+    {
+        int[] activeSlots = fusionVersion.aliveSlots();
+        readers = new IndexReader[INSTANCE_COUNT];
+        Arrays.fill( readers, IndexReader.EMPTY );
+        aliveReaders = new IndexReader[activeSlots.length];
+        for ( int i = 0; i < activeSlots.length; i++ )
+        {
+            IndexReader mock = mock( IndexReader.class );
+            aliveReaders[i] = mock;
+            switch ( activeSlots[i] )
+            {
+            case STRING:
+                readers[STRING] = mock;
+                break;
+            case NUMBER:
+                readers[NUMBER] = mock;
+                break;
+            case SPATIAL:
+                readers[SPATIAL] = mock;
+                break;
+            case TEMPORAL:
+                readers[TEMPORAL] = mock;
+                break;
+            case LUCENE:
+                readers[LUCENE] = mock;
+                break;
+            default:
+                throw new RuntimeException();
+            }
+        }
+        fusionIndexReader = new FusionIndexReader( readers, fusionVersion.selector(), SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 
     /* close */
 
     @Test
-    public void closeMustCloseBothNativeAndLucene() throws Exception
+    public void closeMustCloseBothNativeAndLucene()
     {
         // when
         fusionIndexReader.close();
 
         // then
-        verify( nativeReader, times( 1 ) ).close();
-        verify( luceneReader, times( 1 ) ).close();
+        for ( IndexReader reader : aliveReaders )
+        {
+            verify( reader, times( 1 ) ).close();
+        }
     }
 
     // close iterator
 
     @Test
-    public void closeIteratorMustCloseNativeAndLucene() throws Exception
+    public void closeIteratorMustCloseAll() throws Exception
     {
         // given
-        PrimitiveLongResourceIterator nativeIter = mock( PrimitiveLongResourceIterator.class );
-        PrimitiveLongResourceIterator luceneIter = mock( PrimitiveLongResourceIterator.class );
-        when( nativeReader.query( any( IndexQuery.class ) ) ).thenReturn( nativeIter );
-        when( luceneReader.query( any( IndexQuery.class ) ) ).thenReturn( luceneIter );
+        PrimitiveLongResourceIterator[] iterators = new PrimitiveLongResourceIterator[aliveReaders.length];
+        for ( int i = 0; i < aliveReaders.length; i++ )
+        {
+            PrimitiveLongResourceIterator iterator = mock( PrimitiveLongResourceIterator.class );
+            when( aliveReaders[i].query( any( IndexQuery.class ) ) ).thenReturn( iterator );
+            iterators[i] = iterator;
+        }
 
         // when
         fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
 
         // then
-        verify( nativeIter, times( 1 ) ).close();
-        verify( luceneIter, times( 1 ) ).close();
+        for ( PrimitiveLongResourceIterator iterator : iterators )
+        {
+            verify( iterator, times( 1 ) ).close();
+        }
     }
 
     /* countIndexedNodes */
 
     @Test
-    public void countIndexedNodesMustSelectCorrectReader() throws Exception
+    public void countIndexedNodesMustSelectCorrectReader()
     {
         // given
-        Value[] nativeValues = FusionIndexTestHelp.valuesSupportedByNative();
-        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
         Value[] allValues = FusionIndexTestHelp.allValues();
 
-        // when
-        for ( Value nativeValue : nativeValues )
+        for ( int i = 0; i < readers.length; i++ )
         {
-            verifyCountIndexedNodesWithCorrectReader( nativeReader, luceneReader, nativeValue );
+            for ( Value value : values[i] )
+            {
+                verifyCountIndexedNodesWithCorrectReader( orLucene( readers[i] ), value );
+            }
         }
 
-        for ( Value otherValue : otherValues )
-        {
-            verifyCountIndexedNodesWithCorrectReader( luceneReader, nativeReader, otherValue );
-        }
-
+        // When passing composite keys, they are only handled by lucene
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyCountIndexedNodesWithCorrectReader( luceneReader, nativeReader, firstValue, secondValue );
+                verifyCountIndexedNodesWithCorrectReader( readers[LUCENE], firstValue, secondValue );
             }
         }
     }
 
-    private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, IndexReader wrong, Value... nativeValue )
+    private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
     {
         fusionIndexReader.countIndexedNodes( 0, nativeValue );
         verify( correct, times( 1 ) ).countIndexedNodes( 0, nativeValue );
-        verify( wrong, times( 0 ) ).countIndexedNodes( 0, nativeValue );
+        for ( IndexReader reader : aliveReaders )
+        {
+            if ( reader != correct )
+            {
+                verify( reader, never() ).countIndexedNodes( 0, nativeValue );
+            }
+        }
     }
 
     /* query */
@@ -140,83 +209,137 @@ public class FusionIndexReaderTest
     public void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
-        verifyQueryWithCorrectReader( luceneReader, nativeReader, any( IndexQuery.class ), any( IndexQuery.class ) );
+        verifyQueryWithCorrectReader( readers[LUCENE], any( IndexQuery.class ), any( IndexQuery.class ) );
     }
 
     @Test
-    public void mustSelectNativeForExactPredicateWithNumberValue() throws Exception
+    public void mustSelectStringForExactPredicateWithNumberValue() throws Exception
     {
         // given
-        for ( Object numberValue : FusionIndexTestHelp.valuesSupportedByNative() )
+        for ( Object value : FusionIndexTestHelp.valuesSupportedByString() )
         {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, numberValue );
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
 
             // then
-            verifyQueryWithCorrectReader( nativeReader, luceneReader, indexQuery );
+            verifyQueryWithCorrectReader( expectedForStrings(), indexQuery );
         }
     }
 
     @Test
-    public void mustSelectLuceneForExactPredicateWithNonNumberValue() throws Exception
+    public void mustSelectNumberForExactPredicateWithNumberValue() throws Exception
     {
         // given
-        for ( Object nonNumberValue : FusionIndexTestHelp.valuesNotSupportedByNative() )
+        for ( Object value : FusionIndexTestHelp.valuesSupportedByNumber() )
         {
-            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, nonNumberValue );
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
 
             // then
-            verifyQueryWithCorrectReader( luceneReader, nativeReader, indexQuery );
+            verifyQueryWithCorrectReader( expectedForNumbers(), indexQuery );
         }
     }
 
     @Test
-    public void mustSelectLuceneForRangeStringPredicate() throws Exception
+    public void mustSelectSpatialForExactPredicateWithSpatialValue() throws Exception
     {
         // given
-        StringRangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
+        assumeTrue( hasSpatialSupport() );
+        for ( Object value : FusionIndexTestHelp.valuesSupportedBySpatial() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
 
-        // then
-        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringRange );
+            // then
+            verifyQueryWithCorrectReader( readers[SPATIAL], indexQuery );
+        }
     }
 
     @Test
-    public void mustSelectNativeForRangeNumericPredicate() throws Exception
+    public void mustSelectTemporalForExactPredicateWithTemporalValue() throws Exception
     {
         // given
-        NumberRangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+        assumeTrue( hasTemporalSupport() );
+        for ( Object temporalValue : FusionIndexTestHelp.valuesSupportedByTemporal() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, temporalValue );
 
-        // then
-        verifyQueryWithCorrectReader( nativeReader, luceneReader, numberRange );
+            // then
+            verifyQueryWithCorrectReader( readers[TEMPORAL], indexQuery );
+        }
     }
 
     @Test
-    public void mustSelectLuceneForStringPrefixPredicate() throws Exception
+    public void mustSelectLuceneForExactPredicateWithOtherValue() throws Exception
+    {
+        // given
+        for ( Object value : FusionIndexTestHelp.valuesNotSupportedBySpecificIndex() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, value );
+
+            // then
+            verifyQueryWithCorrectReader( readers[LUCENE], indexQuery );
+        }
+    }
+
+    @Test
+    public void mustSelectStringForRangeStringPredicate() throws Exception
+    {
+        // given
+        RangePredicate<?> stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
+
+        // then
+        verifyQueryWithCorrectReader( expectedForStrings(), stringRange );
+    }
+
+    @Test
+    public void mustSelectNumberForRangeNumericPredicate() throws Exception
+    {
+        // given
+        RangePredicate<?> numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+
+        // then
+        verifyQueryWithCorrectReader( expectedForNumbers(), numberRange );
+    }
+
+    @Test
+    public void mustSelectSpatialForRangeGeometricPredicate() throws Exception
+    {
+        // given
+        assumeTrue( hasSpatialSupport() );
+        PointValue from = Values.pointValue( CoordinateReferenceSystem.Cartesian, 1.0, 1.0);
+        PointValue to = Values.pointValue( CoordinateReferenceSystem.Cartesian, 2.0, 2.0);
+        RangePredicate<?> geometryRange = IndexQuery.range( PROP_KEY, from, true, to, false );
+
+        // then
+        verifyQueryWithCorrectReader( readers[SPATIAL], geometryRange );
+    }
+
+    @Test
+    public void mustSelectStringForStringPrefixPredicate() throws Exception
     {
         // given
         StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringPrefix );
+        verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
     }
 
     @Test
-    public void mustSelectLuceneForStringSuffixPredicate() throws Exception
+    public void mustSelectStringForStringSuffixPredicate() throws Exception
     {
         // given
         StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringPrefix );
+        verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
     }
 
     @Test
-    public void mustSelectLuceneForStringContainsPredicate() throws Exception
+    public void mustSelectStringForStringContainsPredicate() throws Exception
     {
         // given
         StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringContains );
+        verifyQueryWithCorrectReader( expectedForStrings(), stringContains );
     }
 
     @Test
@@ -224,21 +347,24 @@ public class FusionIndexReaderTest
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
-        when( nativeReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 0L, 1L, 3L, 4L, 7L ) );
-        when( luceneReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, 2L, 5L, 6L ) );
+        long lastId = 0;
+        for ( IndexReader aliveReader : aliveReaders )
+        {
+            when( aliveReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, lastId++, lastId++ ) );
+        }
 
         // when
         PrimitiveLongIterator result = fusionIndexReader.query( exists );
 
         // then
         PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
-        for ( long i = 0L; i < 8L; i++ )
+        for ( long i = 0L; i < lastId; i++ )
         {
             assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
         }
     }
 
-    private void verifyQueryWithCorrectReader( IndexReader expectedReader, IndexReader unexpectedReader, IndexQuery... indexQuery )
+    private void verifyQueryWithCorrectReader( IndexReader expectedReader, IndexQuery... indexQuery )
             throws IndexNotApplicableKernelException
     {
         // when
@@ -246,6 +372,37 @@ public class FusionIndexReaderTest
 
         // then
         verify( expectedReader, times( 1 ) ).query( indexQuery );
-        verifyNoMoreInteractions( unexpectedReader );
+        for ( IndexReader reader : aliveReaders )
+        {
+            if ( reader != expectedReader )
+            {
+                verifyNoMoreInteractions( reader );
+            }
+        }
+    }
+
+    private IndexReader expectedForStrings()
+    {
+        return orLucene( readers[STRING] );
+    }
+
+    private IndexReader expectedForNumbers()
+    {
+        return orLucene( readers[NUMBER] );
+    }
+
+    private boolean hasSpatialSupport()
+    {
+        return readers[SPATIAL] != IndexReader.EMPTY;
+    }
+
+    private boolean hasTemporalSupport()
+    {
+        return readers[TEMPORAL] != IndexReader.EMPTY;
+    }
+
+    private IndexReader orLucene( IndexReader reader )
+    {
+        return reader != IndexReader.EMPTY ? reader : readers[LUCENE];
     }
 }

@@ -96,3 +96,47 @@ Feature: ReturnAcceptance
       | result |
       | null   |
     And no side effects
+
+  Scenario: Return a nested list with null
+    Given any graph
+    When executing query:
+      """
+      RETURN [[1], [null], null] AS result
+      """
+    Then the result should be:
+      | result      |
+      | [[1], [null], null] |
+    And no side effects
+
+  Scenario: Return a map with null
+    Given any graph
+    When executing query:
+      """
+      RETURN {foo: null} AS result
+      """
+    Then the result should be:
+      | result      |
+      | {foo: null} |
+    And no side effects
+
+  Scenario: Return null in list with nested lists and maps
+    Given any graph
+    When executing query:
+      """
+      RETURN [null, [null, {a: null}], {b: [null, {c: [null]}]}] AS result
+      """
+    Then the result should be:
+      | result      |
+      | [null, [null, {a: null}], {b: [null, {c: [null]}]}] |
+    And no side effects
+
+  Scenario: Return null in map with nested lists and maps
+    Given any graph
+    When executing query:
+      """
+      RETURN {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} as result
+      """
+    Then the result should be:
+      | result      |
+      | {a: null, b: {c: null, d: {e: null}, f: [null, {g: null, h: [null], i: {j: null}}]}} |
+    And no side effects

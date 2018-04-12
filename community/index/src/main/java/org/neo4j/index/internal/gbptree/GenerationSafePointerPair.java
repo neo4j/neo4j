@@ -409,14 +409,12 @@ class GenerationSafePointerPair
      */
     static String failureDescription( long result )
     {
-        StringBuilder builder =
-                new StringBuilder( "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" );
-        builder.append( format( "%n  Pointer state A: %s",
-                pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ) ) );
-        builder.append( format( "%n  Pointer state B: %s",
-                pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ) ) );
-        builder.append( format( "%n  Generations: " + generationComparisonFromResult( result ) ) );
-        return builder.toString();
+        return "GSPP " + (isRead( result ) ? "READ" : "WRITE") + " failure" +
+                format( "%n  Pointer state A: %s",
+                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_A ) ) ) +
+                format( "%n  Pointer state B: %s",
+                        pointerStateName( pointerStateFromResult( result, SHIFT_STATE_B ) ) ) +
+                format( "%n  Generations: " + generationComparisonFromResult( result ) );
     }
 
     /**

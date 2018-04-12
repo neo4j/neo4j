@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, TaskCloser}
+import org.neo4j.cypher.result.QueryResult
 import org.neo4j.values.AnyValue
 
-import scala.collection.immutable
-
-trait ResultIterator extends Iterator[immutable.Map[String, AnyValue]] {
+trait ResultIterator extends Iterator[collection.Map[String, AnyValue]] {
   def toEager: EagerResultIterator
   def wasMaterialized: Boolean
   def close()
+  def recordIterator: Option[Iterator[QueryResult.Record]] = None
 }
 
 class EagerResultIterator(result: ResultIterator) extends ResultIterator {
@@ -53,46 +53,63 @@ class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
 
   override def wasMaterialized = isEmpty
 
-  override def hasNext: Boolean = failIfThrows {
+  override def hasNext: Boolean = {
     if (closer.isClosed) false
     else {
-      val innerHasNext = inner.hasNext
-      if (!innerHasNext) {
-        close(success = true)
+      try {
+        val innerHasNext = inner.hasNext
+        if (!innerHasNext) {
+          close(success = true)
+        }
+        innerHasNext
+      } catch {
+        case t: Throwable => safeClose(t)
       }
-      innerHasNext
     }
   }
 
-  override def next(): Map[String, AnyValue] = failIfThrows {
+  override def next(): collection.Map[String, AnyValue] = {
     if (closer.isClosed) Iterator.empty.next()
+    try {
+      inner.next()
+    } catch {
+      case t: Throwable => safeClose(t)
+    }
+  }
 
-    val value = inner.next()
-    value.toMap
+  private def safeClose(t: Throwable) = {
+    try {
+      close(success = false)
+    } catch {
+      case thrownDuringClose: Throwable =>
+        try {
+          t.addSuppressed(thrownDuringClose)
+        } catch {
+          case _: Throwable => // Ignore
+        }
+    }
+    throw t
   }
 
   override def close() {
     close(success = true)
   }
 
-  private def close(success: Boolean) = decoratedCypherException({
-    closer.close(success)
-  })
-
-  private def failIfThrows[U](f: => U): U = decoratedCypherException({
+  private def close(success: Boolean) = {
     try {
-      f
+      closer.close(success)
     } catch {
-      case t: Throwable =>
-        close(success = false)
-        throw t
+      case e: CypherException =>
+        throw exceptionDecorator(e)
     }
-  })
-
-  private def decoratedCypherException[U](f: => U): U = try {
-    f
-  } catch {
-    case e: CypherException =>
-      throw exceptionDecorator(e)
   }
+}
+
+class ClosingQueryResultRecordIterator(inner: Iterator[collection.Map[String, AnyValue]],
+                                       closer: TaskCloser,
+                                       exceptionDecorator: CypherException => CypherException)
+  extends ClosingIterator(inner, closer, exceptionDecorator) {
+
+  override def recordIterator =
+    Some(this.asInstanceOf[Iterator[QueryResult.Record]])
 }

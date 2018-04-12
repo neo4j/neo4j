@@ -30,12 +30,10 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -44,7 +42,7 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
-public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexAccessor
 {
     private final NativeSchemaIndexUpdater<KEY,VALUE> singleUpdater;
@@ -56,8 +54,8 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
             File storeFile,
             Layout<KEY,VALUE> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            SchemaIndexProvider.Monitor monitor,
-            IndexDescriptor descriptor,
+            IndexProvider.Monitor monitor,
+            SchemaIndexDescriptor descriptor,
             long indexId,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
@@ -75,12 +73,12 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public IndexUpdater newUpdater( IndexUpdateMode mode )
+    public NativeSchemaIndexUpdater<KEY, VALUE> newUpdater( IndexUpdateMode mode )
     {
         assertOpen();
         try
         {
-            return singleUpdater.initialize( tree.writer(), true );
+            return singleUpdater.initialize( tree.writer() );
         }
         catch ( IOException e )
         {
@@ -89,10 +87,9 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        // TODO add IOLimiter arg
-        tree.checkpoint( IOLimiter.unlimited() );
+        tree.checkpoint( ioLimiter );
     }
 
     @Override
@@ -108,6 +105,12 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
+    public boolean isDirty()
+    {
+        return tree.wasDirtyOnStartup();
+    }
+
+    @Override
     public abstract IndexReader newReader();
 
     @Override
@@ -117,14 +120,13 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
         return asResourceIterator( iterator( storeFile ) );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-            throws IndexEntryConflictException, IOException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }

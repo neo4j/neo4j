@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import java.io.Closeable;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -37,23 +38,23 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
  * which elements need to actually be added and removed at minimum from some
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
- *
- * @param <T> type of augmented elements iterator
  */
-public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements PrimitiveLongReadableDiffSets
+public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Closeable
 {
+    private final CollectionsFactory collectionsFactory;
     private PrimitiveLongSet addedElements;
     private PrimitiveLongSet removedElements;
 
     public PrimitiveLongDiffSets()
     {
-        this( emptySet(), emptySet() );
+        this( emptySet(), emptySet(), OnHeapCollectionsFactory.INSTANCE );
     }
 
-    public PrimitiveLongDiffSets( PrimitiveLongSet addedElements, PrimitiveLongSet removedElements )
+    public PrimitiveLongDiffSets( PrimitiveLongSet addedElements, PrimitiveLongSet removedElements, CollectionsFactory collectionsFactory )
     {
         this.addedElements = addedElements;
         this.removedElements = removedElements;
+        this.collectionsFactory = collectionsFactory;
     }
 
     @Override
@@ -99,7 +100,6 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     }
 
     public void visit( PrimitiveLongDiffSetsVisitor visitor )
-            throws ConstraintValidationException, CreateConstraintFailureException
     {
         PrimitiveLongIterator addedItems = addedElements.iterator();
         while ( addedItems.hasNext() )
@@ -116,7 +116,13 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     @Override
     public PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
-        return (T) new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+        return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
+    }
+
+    @Override
+    public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source )
+    {
+        return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
     }
 
     @Override
@@ -160,7 +166,7 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
         {
             return false;
         }
-        PrimitiveLongDiffSets<?> diffSets = (PrimitiveLongDiffSets<?>) o;
+        PrimitiveLongDiffSets diffSets = (PrimitiveLongDiffSets) o;
         return Objects.equals( addedElements, diffSets.addedElements ) &&
                 Objects.equals( removedElements, diffSets.removedElements );
     }
@@ -190,7 +196,7 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     {
         if ( emptySet() == addedElements )
         {
-            addedElements = Primitive.longSet();
+            addedElements = collectionsFactory.newLongSet();
         }
     }
 
@@ -198,8 +204,14 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     {
         if ( emptySet() == removedElements )
         {
-            removedElements = Primitive.longSet();
+            removedElements = collectionsFactory.newLongSet();
         }
     }
 
+    @Override
+    public void close()
+    {
+        removedElements.close();
+        addedElements.close();
+    }
 }

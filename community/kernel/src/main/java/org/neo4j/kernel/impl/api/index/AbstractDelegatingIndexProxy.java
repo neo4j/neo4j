@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -34,10 +34,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
 public abstract class AbstractDelegatingIndexProxy implements IndexProxy
 {
@@ -56,9 +57,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
-        return getDelegate().drop();
+        getDelegate().drop();
     }
 
     @Override
@@ -74,27 +75,27 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return getDelegate().getDescriptor();
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return getDelegate().schema();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         return getDelegate().getProviderDescriptor();
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        getDelegate().force();
+        getDelegate().force( ioLimiter );
     }
 
     @Override
@@ -104,9 +105,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
-        return getDelegate().close();
+        getDelegate().close();
     }
 
     @Override
@@ -134,6 +135,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        getDelegate().validateBeforeCommit( tuple );
+    }
+
+    @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException
     {
         return getDelegate().getPopulationFailure();
@@ -149,6 +156,12 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     public String toString()
     {
         return String.format( "%s -> %s", getClass().getSimpleName(), getDelegate().toString() );
+    }
+
+    @Override
+    public long getIndexId()
+    {
+        return getDelegate().getIndexId();
     }
 
     @Override

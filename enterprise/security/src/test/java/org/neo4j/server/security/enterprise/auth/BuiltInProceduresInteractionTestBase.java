@@ -134,7 +134,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     private void waitTransactionToStartWaitingForTheLock() throws InterruptedException
     {
-        while ( !Thread.getAllStackTraces().keySet().stream().anyMatch(
+        while ( Thread.getAllStackTraces().keySet().stream().noneMatch(
                 ThreadingRule.waitingWhileIn( Operations.class, "acquireExclusiveNodeLock" ) ) )
         {
             TimeUnit.MILLISECONDS.sleep( 10 );
@@ -580,7 +580,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldSelfKillQuery() throws Throwable
+    public void shouldSelfKillQuery()
     {
         String result = neo.executeQuery(
                 readSubject,
@@ -754,7 +754,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- set tx meta data -----------
 
     @Test
-    public void shouldHaveSetTXMetaDataProcedure() throws Throwable
+    public void shouldHaveSetTXMetaDataProcedure()
     {
         assertEmpty( writeSubject, "CALL dbms.setTXMetaData( { aKey: 'aValue' } )" );
     }
@@ -793,7 +793,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     //---------- config manipulation -----------
 
     @Test
-    public void setConfigValueShouldBeAccessibleOnlyToAdmins() throws Exception
+    public void setConfigValueShouldBeAccessibleOnlyToAdmins()
     {
         String call = "CALL dbms.setConfigValue('dbms.logs.query.enabled', 'false')";
         assertFail( writeSubject, call, PERMISSION_DENIED );
@@ -1043,7 +1043,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldClearQueryCachesIfAdmin()
     {
-        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", r -> r.close());
+        assertSuccess( adminSubject,"CALL dbms.clearQueryCaches()", ResourceIterator::close );
         // any answer is okay, as long as it isn't denied. That is why we don't care about the actual result here
     }
 
@@ -1128,7 +1128,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTerminationTransaction() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTerminationTransaction()
     {
         assertSuccess( adminSubject, "CALL dbms.terminateTransactionsForUser( 'adminSubject' )",
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "adminSubject", "0" ) ) );
@@ -1168,7 +1168,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     //@Test
-    public void shouldNotTerminateTransactionsIfNonExistentUser() throws InterruptedException, ExecutionException
+    public void shouldNotTerminateTransactionsIfNonExistentUser()
     {
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( 'Petra' )", "User 'Petra' does not exist" );
         assertFail( adminSubject, "CALL dbms.terminateTransactionsForUser( '' )", "User '' does not exist" );

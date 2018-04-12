@@ -46,15 +46,15 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 public abstract class TreeNodeTestBase<KEY,VALUE>
 {
-    private static final int STABLE_GENERATION = 1;
-    private static final int UNSTABLE_GENERATION = 3;
+    static final int STABLE_GENERATION = 1;
+    static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
 
-    private static final int PAGE_SIZE = 512;
-    final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    static final int PAGE_SIZE = 512;
+    PageCursor cursor;
 
     private TestLayout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
+    TreeNode<KEY,VALUE> node;
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -62,6 +62,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     @Before
     public void prepareCursor() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         cursor.next();
         layout = getLayout();
         node = getNode( PAGE_SIZE, layout );
@@ -84,7 +85,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldInitializeLeaf() throws Exception
+    public void shouldInitializeLeaf()
     {
         // WHEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -102,7 +103,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldInitializeInternal() throws Exception
+    public void shouldInitializeInternal()
     {
         // WHEN
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -120,7 +121,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldWriteAndReadMaxGeneration() throws Exception
+    public void shouldWriteAndReadMaxGeneration()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -134,7 +135,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldThrowIfWriteTooLargeGeneration() throws Exception
+    public void shouldThrowIfWriteTooLargeGeneration()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -152,7 +153,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldThrowIfWriteTooSmallGeneration() throws Exception
+    public void shouldThrowIfWriteTooSmallGeneration()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -170,7 +171,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void keyValueOperationsInLeaf() throws Exception
+    public void keyValueOperationsInLeaf()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -236,7 +237,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void keyChildOperationsInInternal() throws Exception
+    public void keyChildOperationsInInternal()
     {
         // GIVEN
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -300,7 +301,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldFillInternal() throws Exception
+    public void shouldFillInternal()
     {
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         long stable = 3;
@@ -332,7 +333,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldSetAndGetKeyCount() throws Exception
+    public void shouldSetAndGetKeyCount()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -347,7 +348,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldSetAndGetSiblings() throws Exception
+    public void shouldSetAndGetSiblings()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -362,7 +363,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldSetAndGetSuccessor() throws Exception
+    public void shouldSetAndGetSuccessor()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -375,7 +376,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDefragLeafWithTombstoneOnLast() throws Exception
+    public void shouldDefragLeafWithTombstoneOnLast()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -398,7 +399,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDefragLeafWithTombstoneOnFirst() throws Exception
+    public void shouldDefragLeafWithTombstoneOnFirst()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -421,7 +422,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDefragLeafWithTombstoneInterleaved() throws Exception
+    public void shouldDefragLeafWithTombstoneInterleaved()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -448,7 +449,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDefragLeafWithMultipleTombstonesInterleavedOdd() throws Exception
+    public void shouldDefragLeafWithMultipleTombstonesInterleavedOdd()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -483,7 +484,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldDefragLeafWithMultipleTombstonesInterleavedEven() throws Exception
+    public void shouldDefragLeafWithMultipleTombstonesInterleavedEven()
     {
         // GIVEN
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -518,7 +519,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldInsertAndRemoveRandomKeysAndValues() throws Exception
+    public void shouldInsertAndRemoveRandomKeysAndValues()
     {
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
 
@@ -604,7 +605,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldAssertPageSizeBigEnoughForAtLeastTwoKeys() throws Exception
+    public void shouldAssertPageSizeBigEnoughForAtLeastTwoKeys()
     {
         // WHEN
         try
@@ -619,7 +620,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromAbsoluteOffsetSlotA() throws Exception
+    public void shouldReadPointerGenerationFromAbsoluteOffsetSlotA()
     {
         // GIVEN
         long generation = UNSTABLE_GENERATION;
@@ -637,7 +638,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromAbsoluteOffsetSlotB() throws Exception
+    public void shouldReadPointerGenerationFromAbsoluteOffsetSlotB()
     {
         // GIVEN
         long generation = HIGH_GENERATION;
@@ -657,7 +658,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromLogicalPosSlotA() throws Exception
+    public void shouldReadPointerGenerationFromLogicalPosSlotA()
     {
         // GIVEN
         long generation = UNSTABLE_GENERATION;
@@ -676,7 +677,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromLogicalPosZeroSlotA() throws Exception
+    public void shouldReadPointerGenerationFromLogicalPosZeroSlotA()
     {
         // GIVEN
         long generation = UNSTABLE_GENERATION;
@@ -695,7 +696,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromLogicalPosZeroSlotB() throws Exception
+    public void shouldReadPointerGenerationFromLogicalPosZeroSlotB()
     {
         // GIVEN
         long generation = HIGH_GENERATION;
@@ -716,7 +717,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadPointerGenerationFromLogicalPosSlotB() throws Exception
+    public void shouldReadPointerGenerationFromLogicalPosSlotB()
     {
         // GIVEN
         long generation = HIGH_GENERATION;
@@ -737,7 +738,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldThrowIfReadingPointerGenerationOnWriteResult() throws Exception
+    public void shouldThrowIfReadingPointerGenerationOnWriteResult()
     {
         // GIVEN
         long writeResult = GenerationSafePointerPair.write( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
@@ -755,7 +756,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldThrowIfReadingPointerGenerationOnZeroReadResultHeader() throws Exception
+    public void shouldThrowIfReadingPointerGenerationOnZeroReadResultHeader()
     {
         // GIVEN
         long pointer = 123;
@@ -773,7 +774,7 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldUseLogicalGenerationPosWhenReadingChild() throws Exception
+    public void shouldUseLogicalGenerationPosWhenReadingChild()
     {
         // GIVEN
         long child = 101;

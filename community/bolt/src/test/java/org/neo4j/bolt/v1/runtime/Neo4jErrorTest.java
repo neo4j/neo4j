@@ -47,7 +47,7 @@ public class Neo4jErrorTest
     }
 
     @Test
-    public void shouldConvertDeadlockException() throws Throwable
+    public void shouldConvertDeadlockException()
     {
         // When
         Neo4jError error = Neo4jError.from( new DeadlockDetectedException( null ) );

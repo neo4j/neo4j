@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -41,7 +40,6 @@ import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Collections.sort;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
@@ -50,7 +48,7 @@ public class TestTimeline
     private GraphDatabaseService db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
@@ -131,11 +129,10 @@ public class TestTimeline
 
     private List<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
     {
-        List<Pair<PropertyContainer, Long>> sorted = new ArrayList<Pair<PropertyContainer,Long>>( timestamps );
-        sort( sorted,
-                ( o1, o2 ) -> !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() ) );
+        List<Pair<PropertyContainer, Long>> sorted = new ArrayList<>( timestamps );
+        sorted.sort( ( o1, o2 ) -> !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() ) );
 
-        List<PropertyContainer> result = new ArrayList<PropertyContainer>();
+        List<PropertyContainer> result = new ArrayList<>();
         for ( Pair<PropertyContainer, Long> timestamp : sorted )
         {
             result.add( timestamp.first() );
@@ -147,7 +144,7 @@ public class TestTimeline
     // ======== one for nodes and one for relationships
 
     private void makeSureFirstAndLastAreReturnedCorrectly( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline, 223456, 12345, 432234 );
         try ( Transaction tx = db.beginTx() )
@@ -159,7 +156,7 @@ public class TestTimeline
     }
 
     private void makeSureRangesAreReturnedInCorrectOrder( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
@@ -172,7 +169,7 @@ public class TestTimeline
     }
 
     private void makeSureRangesAreReturnedInCorrectReversedOrder( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
@@ -185,7 +182,7 @@ public class TestTimeline
     }
 
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer,Long>> timestamps = createTimestamps( creator, timeline, -10000, 0, 10000 );
         try ( Transaction tx = db.beginTx() )
@@ -197,7 +194,7 @@ public class TestTimeline
     }
 
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 100000, 500000, 900000, 800000 );
@@ -220,60 +217,60 @@ public class TestTimeline
     // ======== The tests
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyNode() throws Exception
+    public void makeSureFirstAndLastAreReturnedCorrectlyNode()
     {
         makeSureFirstAndLastAreReturnedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyRelationship() throws Exception
+    public void makeSureFirstAndLastAreReturnedCorrectlyRelationship()
     {
         makeSureFirstAndLastAreReturnedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderNode() throws Exception
+    public void makeSureRangesAreReturnedInCorrectOrderNode()
     {
         makeSureRangesAreReturnedInCorrectOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderRelationship() throws Exception
+    public void makeSureRangesAreReturnedInCorrectOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderNode() throws Exception
+    public void makeSureRangesAreReturnedInCorrectReversedOrderNode()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship() throws Exception
+    public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyNode() throws Exception
+    public void makeSureUncommittedChangesAreSortedCorrectlyNode()
     {
         makeSureUncommittedChangesAreSortedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship() throws Exception
+    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship()
     {
         makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Node() throws Exception
+    public void makeSureWeCanQueryLowerDefaultThan1970Node()
     {
         makeSureWeCanQueryLowerDefaultThan1970( nodeCreator, nodeTimeline() );
     }
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Relationship() throws Exception
+    public void makeSureWeCanQueryLowerDefaultThan1970Relationship()
     {
         makeSureWeCanQueryLowerDefaultThan1970( relationshipCreator, relationshipTimeline() );
     }

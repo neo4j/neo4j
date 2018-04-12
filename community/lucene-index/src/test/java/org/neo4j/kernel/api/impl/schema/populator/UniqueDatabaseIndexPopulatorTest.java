@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -47,8 +48,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -84,7 +85,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private static final int PROPERTY_KEY_ID = 2;
 
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private static final IndexDescriptor descriptor = IndexDescriptorFactory
+    private static final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory
             .forLabel( LABEL_ID, PROPERTY_KEY_ID );
 
     private final PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
@@ -92,13 +93,13 @@ public class UniqueDatabaseIndexPopulatorTest
     private PartitionedIndexStorage indexStorage;
     private SchemaIndex index;
     private UniqueLuceneIndexPopulator populator;
-    private LabelSchemaDescriptor schemaDescriptor;
+    private SchemaDescriptor schemaDescriptor;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder );
         index = LuceneSchemaIndexBuilder.create( descriptor, Config.defaults() )
                 .withIndexStorage( indexStorage )
                 .build();
@@ -553,7 +554,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
-            throws IOException, IndexEntryConflictException
+            throws IOException
     {
         IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
         populator.add( asList( update ) );

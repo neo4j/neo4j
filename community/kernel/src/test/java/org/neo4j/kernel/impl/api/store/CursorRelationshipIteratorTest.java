@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public class CursorRelationshipIteratorTest
 {
     @Test
-    public void shouldLazilyGoToNext() throws Exception
+    public void shouldLazilyGoToNext()
     {
         // GIVEN
         Cursor<RelationshipItem> cursor = spy( new ContinuableArrayCursor<>( new Supplier<RelationshipItem[]>()

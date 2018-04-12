@@ -19,56 +19,45 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import static org.junit.Assert.assertTrue;
-
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
-import org.neo4j.graphalgo.CostEvaluator;
+
 import org.neo4j.graphalgo.impl.centrality.ClosenessCentrality;
 import org.neo4j.graphalgo.impl.centrality.CostDivider;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertTrue;
 
 public class ClosenessCentralityTest extends Neo4jAlgoTestCase
 {
-    protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
+    private SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0,
+                new org.neo4j.graphalgo.impl.util.DoubleAdder(), new org.neo4j.graphalgo.impl.util.DoubleComparator(),
+                Direction.BOTH, MyRelTypes.R1 );
     }
 
-    // protected SingleSourceShortestPath<Integer> getSingleSourceShortestPath()
-    // {
-    // return new SingleSourceShortestPathBFS( null, MyRelTypes.R1,
-    // Direction.BOTH );
-    // }
-    ClosenessCentrality<Double> getCentralityAlgorithm()
+    private ClosenessCentrality<Double> getCentralityAlgorithm()
     {
-        return new ClosenessCentrality<Double>( getSingleSourceShortestPath(),
-            new DoubleAdder(), 0.0, graph.getAllNodes(),
-            new CostDivider<Double>()
-            {
-                public Double divideByCost( Double d, Double c )
+        return new ClosenessCentrality<>( getSingleSourceShortestPath(), new DoubleAdder(), 0.0, graph.getAllNodes(),
+                new CostDivider<Double>()
                 {
-                    return d / c;
-                }
+                    public Double divideByCost( Double d, Double c )
+                    {
+                        return d / c;
+                    }
 
-                public Double divideCost( Double c, Double d )
-                {
-                    return c / d;
-                }
-            } );
+                    public Double divideCost( Double c, Double d )
+                    {
+                        return c / d;
+                    }
+                } );
     }
 
-    protected void assertCentrality(
-        ClosenessCentrality<Double> closenessCentrality, String nodeId,
-        Double value )
+    private void assertCentrality( ClosenessCentrality<Double> closenessCentrality, String nodeId, Double value )
     {
         assertTrue( closenessCentrality.getCentrality( graph.getNode( nodeId ) )
             .equals( value ) );

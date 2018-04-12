@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.web;
 
+import org.apache.http.HttpHeaders;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +31,12 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.web.HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER;
+import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
+import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
 
 public class HttpHeaderUtilsTest
 {
@@ -45,11 +51,11 @@ public class HttpHeaderUtilsTest
     }
 
     @Test
-    public void retrieveCustomTransactionTimeout() throws Exception
+    public void retrieveCustomTransactionTimeout()
     {
-        when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
+        when( request.getHeader( MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
         Log log = logProvider.getLog( HttpServletRequest.class );
-        long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( "Transaction timeout should be retrieved.", 100, transactionTimeout );
         logProvider.assertNoLoggingOccurred();
     }
@@ -58,7 +64,7 @@ public class HttpHeaderUtilsTest
     public void defaultValueWhenCustomTransactionTimeoutNotSpecified()
     {
         Log log = logProvider.getLog( HttpServletRequest.class );
-        long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
         logProvider.assertNoLoggingOccurred();
     }
@@ -66,11 +72,35 @@ public class HttpHeaderUtilsTest
     @Test
     public void defaultValueWhenCustomTransactionTimeoutNotANumber()
     {
-        when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
+        when( request.getHeader( MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
         Log log = logProvider.getLog( HttpServletRequest.class );
-        long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        long transactionTimeout = getTransactionTimeout( request, log );
         assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
         logProvider.assertContainsMessageContaining("Fail to parse `max-execution-time` " +
                 "header with value: 'aa'. Should be a positive number.");
+    }
+
+    @Test
+    public void shouldCheckHttpHeaders()
+    {
+        assertFalse( isValidHttpHeaderName( null ) );
+        assertFalse( isValidHttpHeaderName( "" ) );
+        assertFalse( isValidHttpHeaderName( " " ) );
+        assertFalse( isValidHttpHeaderName( "      " ) );
+        assertFalse( isValidHttpHeaderName( " \r " ) );
+        assertFalse( isValidHttpHeaderName( " \r\n\t " ) );
+
+        assertTrue( isValidHttpHeaderName( HttpHeaders.ACCEPT ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.ACCEPT_ENCODING ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.AGE ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.CONTENT_ENCODING ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.EXPIRES ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.IF_MATCH ) );
+        assertTrue( isValidHttpHeaderName( HttpHeaders.TRANSFER_ENCODING ) );
+        assertTrue( isValidHttpHeaderName( "Weird Header With Spaces" ) );
+
+        assertFalse( isValidHttpHeaderName( "My\nHeader" ) );
+        assertFalse( isValidHttpHeaderName( "Other\rStrange-Header" ) );
+        assertFalse( isValidHttpHeaderName( "Header-With-Tab\t" ) );
     }
 }

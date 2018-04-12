@@ -19,15 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements ByteArray
 {
     private final byte[] defaultValue;
 
-    protected OffHeapByteArray( long length, byte[] defaultValue, long base )
+    protected OffHeapByteArray( long length, byte[] defaultValue, long base, MemoryAllocationTracker allocationTracker )
     {
-        super( length, defaultValue.length, base );
+        super( length, defaultValue.length, base, allocationTracker );
         this.defaultValue = defaultValue;
         clear();
     }
@@ -86,7 +87,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
         }
         else
         {
-            long intermediary = UnsafeUtil.allocateMemory( itemSize );
+            long intermediary = UnsafeUtil.allocateMemory( itemSize, allocationTracker );
             for ( int i = 0; i < defaultValue.length; i++ )
             {
                 UnsafeUtil.putByte( intermediary + i, defaultValue[i] );
@@ -96,7 +97,7 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
             {
                 UnsafeUtil.copyMemory( intermediary, adr, itemSize );
             }
-            UnsafeUtil.free( intermediary );
+            UnsafeUtil.free( intermediary, itemSize, allocationTracker );
         }
     }
 

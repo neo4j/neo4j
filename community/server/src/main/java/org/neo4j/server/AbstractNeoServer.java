@@ -77,6 +77,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
@@ -229,7 +230,7 @@ public abstract class AbstractNeoServer implements NeoServer
     {
         return new DatabaseActions(
                 new LeaseManager( Clocks.systemClock() ),
-                config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
+                ScriptExecutionMode.getConfiguredMode( config ), database.getGraph() );
     }
 
     private TransactionFacade createTransactionalActions()
@@ -296,7 +297,7 @@ public abstract class AbstractNeoServer implements NeoServer
         return config;
     }
 
-    private void configureWebServer() throws Exception
+    private void configureWebServer()
     {
         webServer.setAddress( httpListenAddress );
         webServer.setHttpsAddress( httpsListenAddress );
@@ -430,14 +431,12 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public PluginManager getExtensionManager()
     {
-        if ( hasModule( RESTApiModule.class ) )
+        RESTApiModule module = getModule( RESTApiModule.class );
+        if ( module != null )
         {
-            return getModule( RESTApiModule.class ).getPlugins();
+            return module.getPlugins();
         }
-        else
-        {
-            return null;
-        }
+        return null;
     }
 
     protected Collection<InjectableProvider<?>> createDefaultInjectables()
@@ -473,18 +472,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
-    }
-
-    private boolean hasModule( Class<? extends ServerModule> clazz )
-    {
-        for ( ServerModule sm : serverModules )
-        {
-            if ( sm.getClass() == clazz )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -544,7 +531,6 @@ public abstract class AbstractNeoServer implements NeoServer
 
         @Override
         public void stop()
-                throws Throwable
         {
             stopWebServer();
             stopModules();

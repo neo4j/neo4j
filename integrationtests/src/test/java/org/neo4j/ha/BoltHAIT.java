@@ -104,7 +104,7 @@ public class BoltHAIT
     }
 
     private static <T> T inExpirableSession( Driver driver, Function<Driver,Session> acquirer, Function<Session,T> op )
-            throws TimeoutException, InterruptedException
+            throws TimeoutException
     {
         long endTime = System.currentTimeMillis() + 15_000;
 

@@ -29,13 +29,13 @@ public class MandatoryTransactionsForIndexDefinitionTest
     extends AbstractMandatoryTransactionsTest<IndexDefinition>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexDefinitions()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_DEFINITION_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnIndexDefinitions()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_DEFINITION_FACADE_METHODS );
     }

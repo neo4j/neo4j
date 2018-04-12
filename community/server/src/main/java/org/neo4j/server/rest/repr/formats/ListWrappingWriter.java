@@ -46,7 +46,7 @@ public class ListWrappingWriter extends ListWriter
     @Override
     protected ListWriter newList( String type )
     {
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         data.add( list );
         return new ListWrappingWriter( list, interactive );
     }
@@ -54,7 +54,7 @@ public class ListWrappingWriter extends ListWriter
     @Override
     protected MappingWriter newMapping( String type )
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         data.add( map );
         return new MapWrappingWriter( map, interactive );
     }

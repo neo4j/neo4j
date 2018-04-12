@@ -21,6 +21,7 @@ package org.neo4j.backup;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -63,12 +64,12 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class BackupToolTest
 {
+    private SystemExitRule systemExitRule = SystemExitRule.none();
+    private TestDirectory testDirectory = TestDirectory.testDirectory();
+    private SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Rule
-    public SystemExitRule systemExitRule = SystemExitRule.none();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    public RuleChain chain = RuleChain.outerRule( suppressOutput ).around( testDirectory ).around( systemExitRule );
 
     @Test
     public void shouldToolFailureExceptionCauseExitCode()
@@ -203,7 +204,7 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
+    public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist()
     {
         // given
         File configFile = testDirectory.file( "nonexistent_file" );
@@ -229,7 +230,7 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfNoSourceSpecified() throws Exception
+    public void exitWithFailureIfNoSourceSpecified()
     {
         // given
         String[] args = new String[]{"-to", "my_backup"};
@@ -253,7 +254,7 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfInvalidSourceSpecified() throws Exception
+    public void exitWithFailureIfInvalidSourceSpecified()
     {
         // given
         String[] args = new String[]{"-host", "foo:localhost", "-port", "123", "-to", "my_backup"};
@@ -277,7 +278,7 @@ public class BackupToolTest
     }
 
     @Test
-    public void exitWithFailureIfNoDestinationSpecified() throws Exception
+    public void exitWithFailureIfNoDestinationSpecified()
     {
         // given
         String[] args = new String[]{"-host", "localhost"};
@@ -301,7 +302,7 @@ public class BackupToolTest
     }
 
     @Test
-    public void helpMessageForWrongUriShouldNotContainSchema() throws BackupTool.ToolFailureException
+    public void helpMessageForWrongUriShouldNotContainSchema()
     {
         // given
         String[] args = new String[]{"-host", ":VeryWrongURI:", "-to", "/var/backup/graph"};

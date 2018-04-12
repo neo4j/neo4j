@@ -44,6 +44,8 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
@@ -54,10 +56,10 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
 {
-    private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private RandomRule randomRule = new RandomRule();
+    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public RuleChain ruleChain = RuleChain
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
@@ -66,7 +68,7 @@ public class CrashGenerationCleanerTest
     private static final int PAGE_SIZE = 256;
 
     private PagedFile pagedFile;
-    private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private final Layout<MutableLong,MutableLong> layout = longLayout().build();
     private final CorruptibleTreeNode corruptibleTreeNode = new CorruptibleTreeNode( PAGE_SIZE, layout );
     private final int oldStableGeneration = 9;
     private final int stableGeneration = 10;
@@ -321,7 +323,7 @@ public class CrashGenerationCleanerTest
         }
 
         private void write( PageCursor cursor, CorruptibleTreeNode node, Layout<MutableLong,MutableLong> layout, int stableGeneration, int unstableGeneration,
-                int crashGeneration ) throws IOException
+                int crashGeneration )
         {
             type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
             Arrays.stream( pageCorruptions )

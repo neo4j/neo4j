@@ -36,7 +36,7 @@ public class CreateAndDeleteNodesIT
     }
 
     @Test
-    public void addingALabelUsingAValidIdentifierShouldSucceed() throws Exception
+    public void addingALabelUsingAValidIdentifierShouldSucceed()
     {
         // Given
         GraphDatabaseService dataBase = dbRule.getGraphDatabaseAPI();

@@ -200,16 +200,24 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
                         propertyKeys: Seq[PropertyKeyToken],
                         valueExpr: QueryExpression[Expression],
                         solvedPredicates: Seq[Expression] = Seq.empty,
+                        solvedPredicatesForCardinalityEstimation: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
                         context: LogicalPlanningContext): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
+    val queryGraph = QueryGraph.empty
       .addPatternNodes(idName)
       .addPredicates(solvedPredicates: _*)
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
-    )
-    annotate(NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds), solved, context)
+    // We know solvedPredicates is a subset of solvedPredicatesForCardinalityEstimation
+    val solved = RegularPlannerQuery(queryGraph = queryGraph)
+    val solvedForCardinalityEstimation = RegularPlannerQuery(queryGraph.addPredicates(solvedPredicatesForCardinalityEstimation: _*))
+
+    val plan = NodeIndexSeek(idName, label, propertyKeys, valueExpr, argumentIds)
+    val cardinality = cardinalityModel(solvedForCardinalityEstimation, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
+    cardinalities.set(plan.id, cardinality)
+    plan
   }
 
   def planNodeIndexScan(idName: String,
@@ -262,7 +270,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(NodeIndexEndsWithScan(idName, label, propertyKey, valueExpr, argumentIds), solved, context)
   }
 
-  def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+  def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
 
     val plannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
     val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
@@ -318,12 +326,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(Optional(inputPlan, ids), solved, context)
   }
 
-  def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+  def planActiveRead(inputPlan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inputPlan.id)
+    annotate(ActiveRead(inputPlan), solved, context)
+  }
+
+  def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).queryGraph.addHints(hints)))
     annotate(LeftOuterHashJoin(nodes, left, right), solved, context)
   }
 
-  def planRightOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
+  def planRightOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(right.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(left.id).queryGraph.addHints(hints)))
     annotate(RightOuterHashJoin(nodes, left, right), solved, context)
   }
@@ -437,8 +450,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping), solved, context)
   }
 
-  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
+  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, reported: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, reported)))
     annotate(UnwindCollection(inner, name, expression), solved, context)
   }
 
@@ -686,9 +699,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     produceResult
   }
 
-  private def annotate(plan: LogicalPlan, plannerQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-    solveds.set(plan.id, plannerQuery)
+  private def annotate(plan: LogicalPlan, solved: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val cardinality = cardinalityModel(solved, context.input, context.semanticTable)
+    solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
     plan
   }

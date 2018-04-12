@@ -48,20 +48,20 @@ class RawBits
         switch ( type )
         {
         case BYTE:
-            return (NumberValue) Values.byteValue( (byte) rawBits );
+            return Values.byteValue( (byte) rawBits );
         case SHORT:
-            return (NumberValue) Values.shortValue( (short) rawBits );
+            return Values.shortValue( (short) rawBits );
         case INT:
-            return (NumberValue) Values.intValue( (int) rawBits );
+            return Values.intValue( (int) rawBits );
         case LONG:
-            return (NumberValue) Values.longValue( rawBits );
+            return Values.longValue( rawBits );
         case FLOAT:
-            return (NumberValue) Values.floatValue( Float.intBitsToFloat( (int) rawBits ) );
+            return Values.floatValue( Float.intBitsToFloat( (int) rawBits ) );
         case DOUBLE:
-            return (NumberValue) Values.doubleValue( Double.longBitsToDouble( rawBits ) );
+            return Values.doubleValue( Double.longBitsToDouble( rawBits ) );
         default:
             // If type is not recognized, interpret as long.
-            return (NumberValue) Values.longValue( rawBits );
+            return Values.longValue( rawBits );
         }
     }
 

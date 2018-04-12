@@ -35,7 +35,7 @@ public class HazelcastClientConnector implements HazelcastConnector
     private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
 
-    HazelcastClientConnector( Config config, LogProvider logProvider, HostnameResolver hostnameResolver )
+    public HazelcastClientConnector( Config config, LogProvider logProvider, HostnameResolver hostnameResolver )
     {
         this.config = config;
         this.logProvider = logProvider;

@@ -91,10 +91,9 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         {
             environment.put( JMXConnector.CREDENTIALS, new String[]{username, password} );
         }
-        else if ( username != password )
+        else if ( username != null || password != null )
         {
-            throw new IllegalArgumentException(
-                    "User name and password must either both be specified, or both be null." );
+            throw new IllegalArgumentException( "User name and password must either both be specified, or both be null." );
         }
         try
         {
@@ -117,7 +116,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
 
     public static Neo4jManager get( MBeanServerConnection server )
     {
-        server.getClass();
         try
         {
             return get( server, server.queryNames( createObjectName( "*", Kernel.class ), null ) );
@@ -130,8 +128,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
 
     public static Neo4jManager get( MBeanServerConnection server, String kernelIdentifier )
     {
-        server.getClass();
-        kernelIdentifier.getClass();
         try
         {
             return get( server, server.queryNames( createObjectName( kernelIdentifier, Kernel.class ),
@@ -226,11 +222,6 @@ public final class Neo4jManager extends KernelProxy implements Kernel
         super( server, kernel );
         this.config = createObjectName( ConfigurationBean.CONFIGURATION_MBEAN_NAME );
         this.proxy = getBean( Kernel.class );
-    }
-
-    public Collection<Cache> getCacheBeans()
-    {
-        return getBeans( Cache.class );
     }
 
     public LockManager getLockManagerBean()

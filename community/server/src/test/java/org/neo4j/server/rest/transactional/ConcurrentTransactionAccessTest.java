@@ -25,15 +25,15 @@ import java.net.URI;
 import java.time.Clock;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.rest.transactional.error.InvalidConcurrentTransactionAccess;
 import org.neo4j.server.rest.web.TransactionUriScheme;
 import org.neo4j.test.DoubleLatch;
 
-import static javax.xml.bind.DatatypeConverter.parseLong;
+import static java.lang.Long.parseLong;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -50,12 +50,12 @@ public class ConcurrentTransactionAccessTest
                 new TransactionHandleRegistry( mock( Clock.class), 0, NullLogProvider.getInstance() );
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( SecurityContext.class ), anyLong() ) )
+        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), anyLong() ) )
                 .thenReturn( mock(TransitionalTxManagementKernelTransaction.class) );
         TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle =
-                actions.newTransactionHandle( new DisgustingUriScheme(), true, SecurityContext.AUTH_DISABLED, -1 );
+                actions.newTransactionHandle( new DisgustingUriScheme(), true, LoginContext.AUTH_DISABLED, -1 );
 
         final DoubleLatch latch = new DoubleLatch();
 

@@ -37,15 +37,10 @@ public class CountingTimerService extends TimerService
     @Override
     public Timer create( TimerName name, JobScheduler.Group group, TimeoutHandler handler )
     {
-        TimeoutHandler countingHandler = new TimeoutHandler()
-        {
-            @Override
-            public void onTimeout( Timer timer ) throws Exception
-            {
-                long count = counts.getOrDefault( name.name(), 0L );
-                counts.put( name.name(), count + 1 );
-                handler.onTimeout( timer );
-            }
+        TimeoutHandler countingHandler = timer -> {
+            long count = counts.getOrDefault( name.name(), 0L );
+            counts.put( name.name(), count + 1 );
+            handler.onTimeout( timer );
         };
         return super.create( name, group, countingHandler );
     }

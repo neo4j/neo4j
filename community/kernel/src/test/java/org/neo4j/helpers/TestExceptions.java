@@ -23,16 +23,14 @@ import org.junit.Test;
 
 import org.neo4j.function.Predicates;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class TestExceptions
 {
     @Test
-    public void canPeelExceptions() throws Exception
+    public void canPeelExceptions()
     {
         // given
         Throwable expected;
@@ -52,7 +50,7 @@ public class TestExceptions
     }
 
     @Test
-    public void canPeelUsingConveniencePredicate() throws Exception
+    public void canPeelUsingConveniencePredicate()
     {
         // given
         Throwable expected;
@@ -72,7 +70,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldDetectContainsOneOfSome() throws Exception
+    public void shouldDetectContainsOneOfSome()
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
@@ -84,7 +82,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldSetMessage() throws Exception
+    public void shouldSetMessage()
     {
         // GIVEN
         String initialMessage = "Initial message";
@@ -96,23 +94,6 @@ public class TestExceptions
 
         // THEN
         assertEquals( prependedMessage, exception.getMessage() );
-    }
-
-    @Test
-    public void shouldAddSuppressedExceptions()
-    {
-        // Given
-        RuntimeException exception = new RuntimeException();
-
-        RuntimeException suppressed1 = new RuntimeException();
-        RuntimeException suppressed2 = new RuntimeException();
-
-        // When
-        RuntimeException result = Exceptions.withSuppressed( exception, suppressed1, suppressed2 );
-
-        // Then
-        assertSame( exception, result );
-        assertArrayEquals( new Throwable[]{suppressed1, suppressed2}, result.getSuppressed() );
     }
 
     private static class LevelOneException extends Exception

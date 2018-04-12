@@ -29,6 +29,8 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -58,7 +60,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private volatile boolean stopped;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
-            RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
+            RotationTimerFactory timerFactory, VersionContextSupplier versionContextSupplier, int keySize,
+            int valueSize, HeaderField<?>... headerFields )
     {
         this.fs = fs;
         this.keySize = keySize;
@@ -71,7 +74,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         this.format = new Format( headerFields );
         this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, base, rotation.parameters() );
         this.rotationTimerFactory = timerFactory;
-        this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value() );
+        this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value(),
+                versionContextSupplier );
     }
 
     protected final void setEntryUpdaterInitializer( DataInitializer<EntryUpdater<Key>> stateInitializer )
@@ -95,8 +99,10 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             {
                 return lookup.value( !originalState.lookup( key, lookup ) );
             }
-            catch ( IllegalStateException e )
+            catch ( FileIsNotMappedException e )
             {
+                // if the state has changed we think the exception is caused by a rotation event. In this
+                // case we simply retry the lookup on the rotated state. Otherwise we rethrow.
                 if ( originalState == this.state )
                 {
                     throw e;
@@ -364,7 +370,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         protected abstract boolean visitKeyValuePair( Key key, ReadableBuffer value );
     }
 
-    protected HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
+    private HeaderField<?>[] headerFieldsForFormat( ReadableBuffer formatSpecifier )
     {
         return format.defaultHeaderFieldsForFormat( formatSpecifier );
     }

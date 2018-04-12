@@ -45,7 +45,7 @@
   </licenses>
 
   <properties>
-    <opencypher.version>1.0.0-M06</opencypher.version>
+    <moduleName>org.neo4j.internal.cypher.spec.suite.tools</moduleName>
   </properties>
   
   <build>
@@ -63,28 +63,8 @@
 
     <dependency>
       <groupId>org.opencypher</groupId>
-      <artifactId>tck</artifactId>
+      <artifactId>tck-api</artifactId>
       <version>${opencypher.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>grammar</artifactId>
-      <version>${opencypher.version}</version>
-    </dependency>
-
-    <!-- Visualization -->
-
-    <dependency>
-      <groupId>org.jfree</groupId>
-      <artifactId>jfreechart</artifactId>
-      <version>1.0.19</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.xmlgraphics</groupId>
-      <artifactId>batik-svggen</artifactId>
-      <version>1.9.1</version>
     </dependency>
 
     <!-- scala -->

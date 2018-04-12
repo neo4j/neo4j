@@ -38,7 +38,7 @@ class FloatTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    float[] convert( Object[] data ) throws BadInputException
+    float[] convert( Object[] data )
     {
         Float[] incoming = (Float[]) data;
         float[] result = new float[incoming.length];

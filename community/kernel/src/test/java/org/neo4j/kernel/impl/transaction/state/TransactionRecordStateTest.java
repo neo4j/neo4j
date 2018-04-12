@@ -37,9 +37,8 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
@@ -105,8 +104,8 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -274,7 +273,7 @@ public class TransactionRecordStateTest
         representation.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
-            public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+            public boolean visitPropertyCommand( PropertyCommand command )
             {
                 // THEN
                 verifyPropertyRecord( command.getBefore() );
@@ -608,30 +607,30 @@ public class TransactionRecordStateTest
          */
         // Given:
         // - dense node threshold of 5
-        // - node with 4 rels of type A and 1 rel of type B
+        // - node with 4 rels of type relationshipB and 1 rel of type relationshipB
         NeoStores neoStore = neoStoresRule.builder()
                 .with( GraphDatabaseSettings.dense_node_threshold.name(), "5" ).build();
-        int A = 0;
-        int B = 1;
+        int relationshipA = 0;
+        int relationshipB = 1;
         TransactionRecordState state = newTransactionRecordState( neoStore );
         state.nodeCreate( 0 );
-        state.relCreate( 0, A, 0, 0 );
-        state.relCreate( 1, A, 0, 0 );
-        state.relCreate( 2, A, 0, 0 );
-        state.relCreate( 3, A, 0, 0 );
-        state.relCreate( 4, B, 0, 0 );
+        state.relCreate( 0, relationshipA, 0, 0 );
+        state.relCreate( 1, relationshipA, 0, 0 );
+        state.relCreate( 2, relationshipA, 0, 0 );
+        state.relCreate( 3, relationshipA, 0, 0 );
+        state.relCreate( 4, relationshipB, 0, 0 );
         apply( neoStore, state );
 
-        // When doing a tx where a relationship of type A for the node is create and rel of type B is deleted
+        // When doing a tx where a relationship of type A for the node is create and rel of type relationshipB is deleted
         state = newTransactionRecordState( neoStore );
-        state.relCreate( 5, A, 0, 0 ); // here this node should be converted to dense and the groups should be created
-        state.relDelete( 4 ); // here the group B should be delete
+        state.relCreate( 5, relationshipA, 0, 0 ); // here this node should be converted to dense and the groups should be created
+        state.relDelete( 4 ); // here the group relationshipB should be delete
 
         // Then
         Collection<StorageCommand> commands = new ArrayList<>();
         state.extractCommands( commands );
         RelationshipGroupCommand group = singleRelationshipGroupCommand( commands );
-        assertEquals( A, group.getAfter().getType() );
+        assertEquals( relationshipA, group.getAfter().getType() );
     }
 
     @Test
@@ -755,13 +754,13 @@ public class TransactionRecordStateTest
         LockService locks = mock( LockService.class, new Answer<Object>()
         {
             @Override
-            public synchronized Object answer( final InvocationOnMock invocation ) throws Throwable
+            public synchronized Object answer( final InvocationOnMock invocation )
             {
                 // This is necessary because finalize() will also be called
                 String name = invocation.getMethod().getName();
                 if ( name.equals( "acquireNodeLock" ) || name.equals( "acquireRelationshipLock" ) )
                 {
-                    return mock( Lock.class, (Answer) invocationOnMock -> null );
+                    return mock( Lock.class, invocationOnMock -> null );
                 }
                 return null;
             }
@@ -863,7 +862,7 @@ public class TransactionRecordStateTest
         ptx.accept( command -> ((Command)command).handle( new CommandVisitor.Adapter()
         {
             @Override
-            public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+            public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
             {
                 if ( command.getAfter().inUse() )
                 {
@@ -1405,12 +1404,12 @@ public class TransactionRecordStateTest
         final List<NodeUpdates> nodeUpdatesList = new ArrayList<>();
 
         @Override
-        public void apply( IndexUpdates updates ) throws IOException, IndexEntryConflictException
+        public void apply( IndexUpdates updates )
         {
         }
 
         @Override
-        public Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+        public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
         {
             nodeUpdatesList.add( nodeUpdates );
             return Iterables.empty();

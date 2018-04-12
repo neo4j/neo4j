@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
@@ -46,18 +45,14 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RecordCursors;
-import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
@@ -72,7 +67,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
@@ -95,13 +89,13 @@ import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
+import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
@@ -209,7 +203,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return !oldFormat.hasSameCapabilities( newFormat, CapabilityType.FORMAT );
+        return !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT );
     }
 
     void writeLastTxInformation( File migrationDir, TransactionId txInfo ) throws IOException
@@ -355,16 +349,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
         File badFile = new File( storeDir, Configuration.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, storeDir );
-                RecordCursors nodeInputCursors = new RecordCursors( legacyStore );
-                RecordCursors relationshipInputCursors = new RecordCursors( legacyStore );
-                OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
+              OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
             Configuration importConfig = new Configuration.Overridden( config )
             {
                 @Override
-                public boolean parallelRecordReadsWhenWriting()
+                public boolean highIO()
                 {
-                    return FileUtils.highIODevice( storeDir.toPath(), super.parallelRecordReadsWhenWriting() );
+                    return FileUtils.highIODevice( storeDir.toPath(), super.highIO() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =
@@ -375,9 +367,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR );
-            InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors ) );
+            InputIterable nodes = replayable( () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration ) );
             InputIterable relationships = replayable( () ->
-                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration, relationshipInputCursors ) );
+                    legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration ) );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
@@ -445,7 +437,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
         return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
@@ -514,7 +506,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory(
-                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider );
+                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider,
+                EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();
@@ -528,7 +521,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
-            final long lastTxLogVersion, final long lastTxLogByteOffset ) throws IOException
+            final long lastTxLogVersion, final long lastTxLogByteOffset )
     {
         return new AdditionalInitialIds()
         {
@@ -566,67 +559,27 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 config, progressReporter );
     }
 
-    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+    private InputIterator legacyRelationshipsAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        RelationshipStore store = legacyStore.getRelationshipStore();
-        final BiConsumer<InputEntityVisitor,RelationshipRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
-        return new StoreScanAsInputIterator<RelationshipRecord>( store )
+        return new StoreScanAsInputIterator<RelationshipRecord>( legacyStore.getRelationshipStore() )
         {
             @Override
-            protected boolean visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
+            public InputChunk newChunk()
             {
-                visitor.startId( record.getFirstNode() );
-                visitor.endId( record.getSecondNode() );
-                visitor.type( record.getType() );
-                propertyDecorator.accept( visitor, record );
-                return true;
+                return new RelationshipRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
             }
         };
     }
 
-    private InputIterator legacyNodesAsInput( NeoStores legacyStore,
-            boolean requiresPropertyMigration, RecordCursors cursors )
+    private InputIterator legacyNodesAsInput( NeoStores legacyStore, boolean requiresPropertyMigration )
     {
-        NodeStore store = legacyStore.getNodeStore();
-        final BiConsumer<InputEntityVisitor,NodeRecord> propertyDecorator =
-                propertyDecorator( requiresPropertyMigration, cursors );
-
-        return new StoreScanAsInputIterator<NodeRecord>( store )
+        return new StoreScanAsInputIterator<NodeRecord>( legacyStore.getNodeStore() )
         {
             @Override
-            protected boolean visitRecord( NodeRecord record, InputEntityVisitor visitor )
+            public InputChunk newChunk()
             {
-                visitor.id( record.getId() );
-                visitor.labelField( record.getLabelField() );
-                propertyDecorator.accept( visitor, record );
-                return true;
+                return new NodeRecordChunk( createCursor(), legacyStore, requiresPropertyMigration );
             }
-        };
-    }
-
-    private <RECORD extends PrimitiveRecord> BiConsumer<InputEntityVisitor,RECORD> propertyDecorator(
-            boolean requiresPropertyMigration, RecordCursors cursors )
-    {
-        if ( !requiresPropertyMigration )
-        {
-            return ( entity, record ) ->
-            {
-                entity.propertyId( record.getNextProp() );
-            };
-        }
-
-        final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        return ( InputEntityVisitor entity, RECORD record ) ->
-        {
-            cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
-            while ( cursor.next() )
-            {
-                // add key as int here as to have the importer use the token id
-                entity.property( cursor.propertyKeyId(), cursor.value().asObject() );
-            }
-            cursor.close();
         };
     }
 
@@ -745,7 +698,40 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
+    private static class NodeRecordChunk extends StoreScanChunk<NodeRecord>
+    {
+        NodeRecordChunk( RecordCursor<NodeRecord> recordCursor, NeoStores neoStores, boolean requiresPropertyMigration )
+        {
+            super( recordCursor, neoStores, requiresPropertyMigration );
+        }
+
+        @Override
+        protected void visitRecord( NodeRecord record, InputEntityVisitor visitor )
+        {
+            visitor.id( record.getId() );
+            visitor.labelField( record.getLabelField() );
+            visitProperties( record, visitor );
+        }
+    }
+
+    private static class RelationshipRecordChunk extends StoreScanChunk<RelationshipRecord>
+    {
+        RelationshipRecordChunk( RecordCursor<RelationshipRecord> recordCursor, NeoStores neoStore, boolean requiresPropertyMigration )
+        {
+            super( recordCursor, neoStore, requiresPropertyMigration );
+        }
+
+        @Override
+        protected void visitRecord( RelationshipRecord record, InputEntityVisitor visitor )
+        {
+            visitor.startId( record.getFirstNode() );
+            visitor.endId( record.getSecondNode() );
+            visitor.type( record.getType() );
+            visitProperties( record, visitor );
+        }
+    }
+
+    private static class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
     {
         private final ProgressReporter progressReporter;
 

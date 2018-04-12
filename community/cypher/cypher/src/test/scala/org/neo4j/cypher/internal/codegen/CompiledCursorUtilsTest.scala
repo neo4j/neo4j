@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.codegen
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel}
+import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read}
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
+import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
 import org.neo4j.kernel.impl.newapi.Labels
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
@@ -44,7 +44,7 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     value should equal(stringValue("hello"))
   }
 
-  test("should return NO_VALUE if the property not there") {
+  test("should return NO_VALUE if the node doesn't have property") {
     val nodeCursor = mock[NodeCursor]
     val propertyCursor = mock[PropertyCursor]
     when(nodeCursor.next()).thenReturn(true)
@@ -67,6 +67,46 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
 
     // Expect
     an [EntityNotFoundException] shouldBe thrownBy(nodeGetProperty(read, nodeCursor, 42L, mock[PropertyCursor], 1337))
+  }
+
+  test("should find a property from a relationship cursor") {
+    val relationshipCursor = mock[RelationshipScanCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(relationshipCursor.next()).thenReturn(true)
+    when(propertyCursor.next()).thenReturn(true, true, true, false)
+    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
+    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+
+    // When
+    val value = relationshipGetProperty(mock[Read], relationshipCursor, 42L, propertyCursor, 1337)
+
+    // Then
+    value should equal(stringValue("hello"))
+  }
+
+  test("should return NO_VALUE if the relationship doesn't have property") {
+    val relationshipCursor = mock[RelationshipScanCursor]
+    val propertyCursor = mock[PropertyCursor]
+    when(relationshipCursor.next()).thenReturn(true)
+    when(propertyCursor.next()).thenReturn(true, true, true, false)
+    when(propertyCursor.propertyKey()).thenReturn(1336, 1337, 1338)
+    when(propertyCursor.propertyValue()).thenReturn(stringValue("hello"))
+
+    // When
+    val value = relationshipGetProperty(mock[Read], relationshipCursor, 42L, propertyCursor, 1339)
+
+    // Then
+    value should equal(NO_VALUE)
+  }
+
+  test("should throw if relationship is missing when querying for property") {
+    // Given
+    val read = mock[Read]
+    val relationshipCursor = mock[RelationshipScanCursor]
+    when(relationshipCursor.next()).thenReturn(false)
+
+    // Expect
+    an [EntityNotFoundException] shouldBe thrownBy(relationshipGetProperty(read, relationshipCursor, 42L, mock[PropertyCursor], 1337))
   }
 
   test("should find if a node has a label") {

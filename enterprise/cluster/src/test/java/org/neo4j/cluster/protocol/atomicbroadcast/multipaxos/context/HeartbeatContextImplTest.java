@@ -45,7 +45,7 @@ import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProto
 public class HeartbeatContextImplTest
 {
     @Test
-    public void shouldFailAndAliveBothNotifyHeartbeatListenerInDelayedDirectExecutor() throws Throwable
+    public void shouldFailAndAliveBothNotifyHeartbeatListenerInDelayedDirectExecutor()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -82,7 +82,7 @@ public class HeartbeatContextImplTest
     }
 
     @Test
-    public void shouldFailAllInstancesIfAllOtherInstancesAreSuspected() throws Exception
+    public void shouldFailAllInstancesIfAllOtherInstancesAreSuspected()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -149,7 +149,7 @@ public class HeartbeatContextImplTest
     }
 
     @Test
-    public void majorityOfNonSuspectedInstancesShouldBeEnoughToMarkAnInstanceAsFailed() throws Exception
+    public void majorityOfNonSuspectedInstancesShouldBeEnoughToMarkAnInstanceAsFailed()
     {
         // Given
         InstanceId me = new InstanceId( 1 );

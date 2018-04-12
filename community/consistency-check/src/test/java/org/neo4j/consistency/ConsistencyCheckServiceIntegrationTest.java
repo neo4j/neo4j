@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,7 +45,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -68,6 +67,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -187,7 +188,7 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     @Test
-    public void shouldAllowGraphCheckDisabled() throws IOException, ConsistencyCheckIncompleteException
+    public void shouldAllowGraphCheckDisabled() throws ConsistencyCheckIncompleteException
     {
         GraphDatabaseService gds = getGraphDatabaseService();
 
@@ -246,12 +247,12 @@ public class ConsistencyCheckServiceIntegrationTest
     public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
     {
         File storeDir = testDirectory.graphDbDir();
-        String enableNativeIndex = GraphDatabaseSettings.enable_native_schema_index.name();
+        String defaultSchemaProvider = GraphDatabaseSettings.default_schema_provider.name();
         Label label = Label.label( "label" );
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( storeDir, enableNativeIndex, Settings.FALSE );
+        GraphDatabaseService db = getGraphDatabaseService( storeDir, defaultSchemaProvider, LUCENE10.providerName() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -263,7 +264,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
-                Config.defaults( settings( enableNativeIndex, Settings.TRUE ) );
+                Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerName() ) );
         Result result = runFullConsistencyCheck( service, configuration, storeDir );
         assertTrue( result.isSuccessful() );
     }
@@ -374,13 +375,13 @@ public class ConsistencyCheckServiceIntegrationTest
     }
 
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( service, configuration, fixture.directory() );
     }
 
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return service.runFullConsistencyCheck( storeDir,
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );

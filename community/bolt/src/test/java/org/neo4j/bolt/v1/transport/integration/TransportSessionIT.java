@@ -20,24 +20,17 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.function.Factory;
+import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -48,12 +41,12 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -66,91 +59,67 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@SuppressWarnings( "unchecked" )
-@RunWith( Parameterized.class )
-public class TransportSessionIT
+public class TransportSessionIT extends AbstractBoltTransportsTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
-    @Parameterized.Parameter( 0 )
-    public Factory<TransportConnection> cf;
-
     private HostnamePort address;
-
-    private TransportConnection client;
-
-    @Parameterized.Parameters
-    public static Collection<Factory<TransportConnection>> transports()
-    {
-        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
-                SecureWebSocketConnection::new );
-    }
 
     @Before
     public void setup()
     {
-        this.client = cf.newInstance();
-        this.address = server.lookupDefaultConnector();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
+        address = server.lookupDefaultConnector();
     }
 
     @Test
     public void shouldNegotiateProtocolVersion() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @Test
     public void shouldReturnNilOnNoApplicableVersion() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1337, 0, 0, 0 ) );
+        connection.connect( address )
+                .send( util.acceptedVersions( 1337, 0, 0, 0 ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 0} ) );
     }
 
     @Test
     public void shouldRunSimpleStatement() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
+        Matcher<Map<? extends String,?>> entryFieldMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ),
-                        equalTo( asList( "a", "a_squared" ) ) ), hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldMatcher, hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                msgSuccess( CoreMatchers.allOf( entryTypeMatcher,
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -158,37 +127,36 @@ public class TransportSessionIT
     public void shouldRespondWithMetadataToDiscardAll() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         discardAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) );
+        Matcher<Map<? extends String,?>> entryTypeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess(
-                        CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
-                                hasKey( "result_available_after" ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
-                        hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher, hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryTypeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
     public void shouldBeAbleToRunQueryAfterAckFailure() throws Throwable
     {
         // Given
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "QINVALID" ),
                         pullAll() ) );
 
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
                         String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
@@ -196,10 +164,10 @@ public class TransportSessionIT
                                        " ^" ) ), msgIgnored() ) );
 
         // When
-        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+        connection.send( util.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
@@ -210,29 +178,30 @@ public class TransportSessionIT
     public void shouldRunProcedure() throws Throwable
     {
         // Given
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
                         pullAll() ) );
 
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> ageMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
+                msgSuccess( CoreMatchers.allOf( ageMatcher, hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
 
         // When
-        client.send( TransportTestUtil.chunk(
+        connection.send( util.chunk(
                 run( "CALL db.labels() YIELD label" ),
                 pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) );
+        assertThat( connection, util.eventuallyReceives(
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
@@ -243,18 +212,19 @@ public class TransportSessionIT
     public void shouldHandleDeletedNodes() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test) DELETE n RETURN n" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -264,28 +234,29 @@ public class TransportSessionIT
         //                 labels: [] (90)
         //                  props: {} (A)]
         //}
-        assertThat( client,
+        assertThat( connection,
                 eventuallyReceives( bytes( 0x00, 0x08, 0xB1, 0x71, 0x91,
                         0xB3, 0x4E, 0x00, 0x90, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
     public void shouldHandleDeletedRelationships() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> entryFieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
+                msgSuccess( CoreMatchers.allOf( entryFieldsMatcher,
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -297,56 +268,56 @@ public class TransportSessionIT
         //                 type: "T" (81 54)
         //                 props: {} (A0)]
         //}
-        assertThat( client,
+        assertThat( connection,
                 eventuallyReceives( bytes( 0x00, 0x0B, 0xB1, 0x71, 0x91,
                         0xB5, 0x52, 0x00, 0x00, 0x01, 0x81, 0x54, 0xA0, 0x00, 0x00 ) ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
     @Test
     public void shouldNotLeakStatsToNextStatement() throws Throwable
     {
         // Given
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgSuccess() ) );
 
         // When
-        client.send(
-                TransportTestUtil.chunk(
+        connection.send(
+                util.chunk(
                         run( "RETURN 1" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        Matcher<Map<? extends String,?>> typeMatcher = hasEntry( is( "type" ), equalTo( "r" ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
-                        hasKey( "result_consumed_after" ) ) ) ) );
+                msgSuccess( CoreMatchers.allOf( typeMatcher, hasKey( "result_consumed_after" ) ) ) ) );
     }
 
     @Test
     public void shouldSendNotifications() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 hasNotification(
@@ -361,23 +332,25 @@ public class TransportSessionIT
     }
 
     @Test
-    public void shouldFailNicelyOnPoints() throws Throwable
+    public void shouldFailNicelyOnPointsWhenProtocolDoesNotSupportThem() throws Throwable
     {
+        // only V1 protocol does not support points
+        assumeThat( neo4jPack.version(), equalTo( Neo4jPackV1.VERSION ) );
+
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        Matcher<Map<? extends String,?>> fieldsMatcher = hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
-                        hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( equalTo( NO_VALUE ) ) ),
+                msgSuccess( CoreMatchers.allOf( fieldsMatcher, hasKey( "result_available_after" ) ) ),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
     }
 
@@ -402,25 +375,25 @@ public class TransportSessionIT
         params.put( "p", inner );
 
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN {p}", ValueUtils.asMapValue( params ) ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid,
                         "Value `null` is not supported as key in maps, must be a non-nullable string." ),
                 msgIgnored() ) );
 
-        client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
+        connection.send( util.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
@@ -431,16 +404,16 @@ public class TransportSessionIT
     public void shouldFailNicelyWhenDroppingUnknownIndex() throws Throwable
     {
         // When
-        client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "DROP INDEX on :Movie12345(id)" ),
                         pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
                         "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),

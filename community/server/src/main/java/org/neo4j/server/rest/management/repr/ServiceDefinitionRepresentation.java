@@ -35,8 +35,8 @@ public class ServiceDefinitionRepresentation extends MappingRepresentation
     {
         super( "service-definition" );
         this.basePath = basePath;
-        uris = new HashMap<String, String>();
-        templates = new HashMap<String, String>();
+        uris = new HashMap<>();
+        templates = new HashMap<>();
     }
 
     public void resourceUri( String name, String subPath )

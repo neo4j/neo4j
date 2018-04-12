@@ -81,7 +81,7 @@ public class DummyRequest implements CoreReplicatedContent
         }
 
         @Override
-        protected DummyRequest unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+        protected DummyRequest unmarshal0( ReadableChannel channel ) throws IOException
         {
             int length = channel.getInt();
             byte[] data;

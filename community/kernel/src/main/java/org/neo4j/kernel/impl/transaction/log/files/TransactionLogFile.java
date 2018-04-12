@@ -98,7 +98,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public boolean rotationNeeded() throws IOException
+    public boolean rotationNeeded()
     {
         /*
          * Whereas channel.size() should be fine, we're safer calling position() due to possibility

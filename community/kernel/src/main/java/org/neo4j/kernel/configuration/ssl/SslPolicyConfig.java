@@ -24,12 +24,14 @@ import java.util.List;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.ssl.ClientAuth;
 
 import static java.lang.String.join;
+import static java.util.Arrays.asList;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
@@ -42,9 +44,10 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Group( "dbms.ssl.policy" )
-public class SslPolicyConfig
+public class SslPolicyConfig implements LoadableConfig
 {
-    private static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2"} );
+    public static final List<String> TLS_VERSION_DEFAULTS = asList( "TLSv1.2" );
+    public static final List<String> CIPHER_SUITES_DEFAULTS = null;
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
                   " It is also possible to override each individual configuration with absolute paths." )
@@ -83,6 +86,11 @@ public class SslPolicyConfig
     @Description( "Restrict allowed ciphers." )
     public final Setting<List<String>> ciphers;
 
+    public SslPolicyConfig()
+    {
+        this( "<policyname>" );
+    }
+
     public SslPolicyConfig( String policyName )
     {
         GroupSettingSupport group = new GroupSettingSupport( SslPolicyConfig.class, policyName );
@@ -98,13 +106,25 @@ public class SslPolicyConfig
 
         this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
         this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ) );
-        this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, TLS_VERSION_DEFAULTS ) );
-        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, NO_DEFAULT ) );
+        this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
+        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
     }
 
     // TODO: can we make this handle relative paths?
     private Setting<File> derivedDefault( String settingName, Setting<File> baseDirectory, String defaultFilename )
     {
         return derivedSetting( settingName, baseDirectory, base -> new File( base, defaultFilename ), PATH );
+    }
+
+    private String joinList( List<String> list )
+    {
+        if ( list == null )
+        {
+            return null;
+        }
+        else
+        {
+            return join( ",", list );
+        }
     }
 }

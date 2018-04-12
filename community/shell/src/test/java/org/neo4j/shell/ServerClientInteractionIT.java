@@ -31,7 +31,7 @@ public class ServerClientInteractionIT extends AbstractShellIT
     private SilentLocalOutput out = new SilentLocalOutput();
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         makeServerRemotelyAvailable();
     }

@@ -223,7 +223,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedNodeHeaderType() throws Exception
+    public void shouldFailOnUnexpectedNodeHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":ID,:START_ID" );
@@ -243,7 +243,7 @@ public class DataFactoriesTest
     }
 
     @Test
-    public void shouldFailOnUnexpectedRelationshipHeaderType() throws Exception
+    public void shouldFailOnUnexpectedRelationshipHeaderType()
     {
         // GIVEN
         CharSeeker seeker = seeker( ":LABEL,:START_ID,:END_ID,:TYPE" );

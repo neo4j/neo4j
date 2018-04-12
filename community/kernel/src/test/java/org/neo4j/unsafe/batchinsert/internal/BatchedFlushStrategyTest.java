@@ -26,7 +26,7 @@ public class BatchedFlushStrategyTest
 {
 
     @Test
-    public void testFlush() throws Exception
+    public void testFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
@@ -48,7 +48,7 @@ public class BatchedFlushStrategyTest
     }
 
     @Test
-    public void testForceFlush() throws Exception
+    public void testForceFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );

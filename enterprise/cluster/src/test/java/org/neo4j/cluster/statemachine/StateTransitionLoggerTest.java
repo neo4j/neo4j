@@ -33,7 +33,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class StateTransitionLoggerTest
 {
     @Test
-    public void shouldThrottle() throws Exception
+    public void shouldThrottle()
     {
         // Given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );

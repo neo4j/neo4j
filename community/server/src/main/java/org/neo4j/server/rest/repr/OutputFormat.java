@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -73,7 +71,6 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation )
-            throws BadInputException
     {
         if ( representation.isEmpty() )
         {
@@ -83,7 +80,6 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response created( REPR representation )
-            throws BadInputException
     {
         return response( Response.created( uri( representation ) ), representation );
     }
@@ -132,7 +128,6 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response conflict( REPR representation )
-            throws BadInputException
     {
         return response( Response.status( Status.CONFLICT ), representation );
     }
@@ -150,7 +145,7 @@ public class OutputFormat
         return response( Response.status( Status.INTERNAL_SERVER_ERROR ), new ExceptionRepresentation( exception ) );
     }
 
-    private URI uri( EntityRepresentation representation ) throws BadInputException
+    private URI uri( EntityRepresentation representation )
     {
         return URI.create( assemble( representation.selfUri() ) );
     }

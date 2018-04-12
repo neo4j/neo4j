@@ -24,15 +24,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
@@ -51,7 +48,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIReadTestSupport testSupport;
     protected Session session;
-    private Transaction tx;
+    protected Transaction tx;
     protected Read read;
     protected ExplicitIndexRead indexRead;
     protected SchemaRead schemaRead;
@@ -81,13 +78,13 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
             testSupport.setup( folder.getRoot(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
-        cursors = new ManagedTestCursors( kernel.cursors() );
+        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
         tx = session.beginTransaction( Transaction.Type.explicit );
-        token = session.token();
+        token = tx.token();
         read = tx.dataRead();
         indexRead = tx.indexRead();
         schemaRead = tx.schemaRead();
+        cursors = new ManagedTestCursors( tx.cursors() );
     }
 
     @Rule
@@ -102,7 +99,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         if ( testSupport != null )
         {

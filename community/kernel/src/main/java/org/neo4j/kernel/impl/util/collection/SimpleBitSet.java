@@ -151,9 +151,9 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     public int size()
     {
         int size = 0;
-        for ( int i = 0; i < data.length; i++ )
+        for ( long s : data )
         {
-            size += Long.bitCount( data[i] );
+            size += Long.bitCount( s );
         }
         return size;
     }

@@ -106,7 +106,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => solveds.get(p.id).queryGraph) should beLike {
-        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Seq(hint) => ()
       }
     }
   }
@@ -128,7 +128,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => solveds.get(p.id).queryGraph) should beLike {
-        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Seq(hint) => ()
       }
     }
   }
@@ -289,7 +289,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => solveds.get(p.id).queryGraph) should beLike {
-        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Seq(hint) => ()
       }
     }
   }
@@ -311,7 +311,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
       resultPlans.map(p => solveds.get(p.id).queryGraph) should beLike {
-        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Seq(hint) => ()
       }
     }
   }

@@ -20,24 +20,31 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * This is the coordinating service for procedures in the database. It loads procedures from a specified
@@ -47,7 +54,7 @@ import org.neo4j.logging.NullLog;
 public class Procedures extends LifecycleAdapter
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
-    private final TypeMappers typeMappers = new TypeMappers();
+    private final TypeMappers typeMappers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler;
@@ -55,17 +62,25 @@ public class Procedures extends LifecycleAdapter
     private final File pluginDir;
     private final Log log;
 
+    /**
+     * Used by testing.
+     */
     public Procedures()
     {
-        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
+        this( null, new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
-    public Procedures( ThrowingConsumer<Procedures,ProcedureException> builtin, File pluginDir, Log log,
+    public Procedures(
+            EmbeddedProxySPI proxySPI,
+            ThrowingConsumer<Procedures,ProcedureException> builtin,
+            File pluginDir,
+            Log log,
             ProcedureConfig config )
     {
         this.builtin = builtin;
         this.pluginDir = pluginDir;
         this.log = log;
+        this.typeMappers = new TypeMappers( proxySPI );
         this.compiler = new ReflectiveProcedureCompiler( typeMappers, safeComponents, allComponents, log, config );
     }
 
@@ -139,7 +154,7 @@ public class Procedures extends LifecycleAdapter
      */
     public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation ) throws KernelException
     {
-        registerProcedure( proc, overrideCurrentImplementation, Optional.empty() );
+        registerProcedure( proc, overrideCurrentImplementation, null );
     }
 
     /**
@@ -148,13 +163,23 @@ public class Procedures extends LifecycleAdapter
      * @param overrideCurrentImplementation set to true if procedures within this class should override older procedures with the same name
      * @param warning the warning the procedure should generate when called
      */
-    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, Optional<String> warning )
-            throws
-            KernelException
+    public void registerProcedure( Class<?> proc, boolean overrideCurrentImplementation, String warning ) throws KernelException
     {
         for ( CallableProcedure procedure : compiler.compileProcedure( proc, warning, true ) )
         {
             register( procedure, overrideCurrentImplementation );
+        }
+    }
+
+    /**
+     * Register a new function defined with annotations on a java class.
+     * @param func the function class
+     */
+    public void registerBuiltInFunctions( Class<?> func ) throws KernelException
+    {
+        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func ) )
+        {
+            register( function, false );
         }
     }
 
@@ -201,13 +226,16 @@ public class Procedures extends LifecycleAdapter
     }
 
     /**
-     * Registers a type and how to convert it to a Neo4jType
-     * @param javaClass the class of the native type
-     * @param toNeo the conversion to Neo4jTypes
+     * Registers a type and its mapping to Neo4jTypes
+     *
+     * @param javaClass
+     *         the class of the native type
+     * @param type
+     *         the mapping to Neo4jTypes
      */
-    public void registerType( Class<?> javaClass, TypeMappers.NeoValueConverter toNeo )
+    public void registerType( Class<?> javaClass, Neo4jTypes.AnyType type )
     {
-        typeMappers.registerType( javaClass, toNeo );
+        typeMappers.registerType( javaClass, new TypeMappers.DefaultValueConverter( type, javaClass ) );
     }
 
     /**
@@ -225,17 +253,17 @@ public class Procedures extends LifecycleAdapter
         allComponents.register( cls, provider );
     }
 
-    public ProcedureSignature procedure( QualifiedName name ) throws ProcedureException
+    public ProcedureHandle procedure( QualifiedName name ) throws ProcedureException
     {
         return registry.procedure( name );
     }
 
-    public Optional<UserFunctionSignature> function( QualifiedName name )
+    public UserFunctionHandle function( QualifiedName name )
     {
         return registry.function( name );
     }
 
-    public Optional<UserFunctionSignature> aggregationFunction( QualifiedName name )
+    public UserFunctionHandle aggregationFunction( QualifiedName name )
     {
         return registry.aggregationFunction( name );
     }
@@ -251,20 +279,40 @@ public class Procedures extends LifecycleAdapter
     }
 
     public RawIterator<Object[], ProcedureException> callProcedure( Context ctx, QualifiedName name,
-                                                           Object[] input ) throws ProcedureException
+                                                           Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        return registry.callProcedure( ctx, name, input );
+        return registry.callProcedure( ctx, name, input, resourceTracker );
     }
 
-    public Object callFunction( Context ctx, QualifiedName name,
-            Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> callProcedure( Context ctx, int id,
+            Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+    {
+        return registry.callProcedure( ctx, id, input, resourceTracker );
+    }
+
+    public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input ) throws ProcedureException
     {
         return registry.callFunction( ctx, name, input );
     }
 
-    public CallableUserAggregationFunction.Aggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
+    public AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException
+    {
+        return registry.callFunction( ctx, id, input );
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
     {
         return registry.createAggregationFunction( ctx, name );
+    }
+
+    public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
+    {
+        return registry.createAggregationFunction( ctx, id );
+    }
+
+    public ValueMapper<Object> valueMapper()
+    {
+        return typeMappers;
     }
 
     @Override

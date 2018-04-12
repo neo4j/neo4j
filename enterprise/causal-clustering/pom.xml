@@ -19,6 +19,10 @@
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
     <packaging>jar</packaging>
 
+    <properties>
+        <moduleName>org.neo4j.causalclustering</moduleName>
+    </properties>
+
     <scm>
         <url>https://github.com/neo4j/neo4j/tree/3.1/enterprise/causal-clustering</url>
     </scm>
@@ -89,6 +93,12 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.jpountz.lz4</groupId>
+            <artifactId>lz4</artifactId>
+            <version>1.3.0</version>
         </dependency>
 
         <dependency>

@@ -19,7 +19,6 @@
  */
 package org.neo4j.scheduler;
 
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -28,22 +27,22 @@ import java.util.concurrent.TimeUnit;
 public class JobSchedulerAdapter implements JobScheduler
 {
     @Override
-    public void init() throws Throwable
+    public void init()
     {   // no-op
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {   // no-op
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {   // no-op
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {   // no-op
     }
 
@@ -61,12 +60,6 @@ public class JobSchedulerAdapter implements JobScheduler
 
     @Override
     public JobHandle schedule( Group group, Runnable job )
-    {
-        return null;
-    }
-
-    @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
     {
         return null;
     }

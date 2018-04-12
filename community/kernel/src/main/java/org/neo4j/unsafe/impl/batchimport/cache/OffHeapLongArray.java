@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 /**
@@ -29,9 +30,9 @@ public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> imple
 {
     private final long defaultValue;
 
-    public OffHeapLongArray( long length, long defaultValue, long base )
+    public OffHeapLongArray( long length, long defaultValue, long base, MemoryAllocationTracker allocationTracker )
     {
-        super( length, 3, base );
+        super( length, 3, base, allocationTracker );
         this.defaultValue = defaultValue;
         clear();
     }

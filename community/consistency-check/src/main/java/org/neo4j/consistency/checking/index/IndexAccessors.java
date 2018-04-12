@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -44,7 +44,7 @@ public class IndexAccessors implements Closeable
     private final List<IndexRule> onlineIndexRules = new ArrayList<>();
     private final List<IndexRule> notOnlineIndexRules = new ArrayList<>();
 
-    public IndexAccessors( SchemaIndexProviderMap providers,
+    public IndexAccessors( IndexProviderMap providers,
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
@@ -59,14 +59,21 @@ public class IndexAccessors implements Closeable
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
                     IndexRule indexRule = rules.next();
-                    if ( InternalIndexState.ONLINE == provider( providers, indexRule )
-                            .getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() ) )
+                    if ( indexRule.isIndexWithoutOwningConstraint() )
                     {
-                        onlineIndexRules.add( indexRule );
+                        notOnlineIndexRules.add( indexRule );
                     }
                     else
                     {
-                        notOnlineIndexRules.add( indexRule );
+                        if ( InternalIndexState.ONLINE ==
+                                provider( providers, indexRule ).getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() ) )
+                        {
+                            onlineIndexRules.add( indexRule );
+                        }
+                        else
+                        {
+                            notOnlineIndexRules.add( indexRule );
+                        }
                     }
                 }
                 else
@@ -88,7 +95,7 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private SchemaIndexProvider provider( SchemaIndexProviderMap providers, IndexRule indexRule )
+    private IndexProvider provider( IndexProviderMap providers, IndexRule indexRule )
     {
         return providers.apply( indexRule.getProviderDescriptor() );
     }

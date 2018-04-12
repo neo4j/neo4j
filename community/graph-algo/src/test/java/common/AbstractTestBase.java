@@ -92,8 +92,7 @@ public abstract class AbstractTestBase
     protected static <T> void expect( Iterable<? extends T> items,
             Representation<T> representation, String... expected )
     {
-        expect( items, representation, new HashSet<String>(
-                Arrays.asList( expected ) ) );
+        expect( items, representation, new HashSet<>( Arrays.asList( expected ) ) );
     }
 
     protected static <T> void expect( Iterable<? extends T> items,

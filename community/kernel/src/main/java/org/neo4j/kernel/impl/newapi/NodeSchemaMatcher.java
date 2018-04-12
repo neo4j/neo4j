@@ -25,19 +25,19 @@ import java.util.Iterator;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes
  */
 public class NodeSchemaMatcher
 {
-    private final Read read;
-
-    public NodeSchemaMatcher( Read read )
+    private NodeSchemaMatcher()
     {
-        this.read = read;
+        throw new AssertionError( "no instance" );
     }
 
     /**
@@ -48,7 +48,7 @@ public class NodeSchemaMatcher
      * To avoid unnecessary store lookups, this implementation only gets propertyKeyIds for the node if some
      * descriptor has a valid label.
      *
-     * @param <SUPPLIER> the type to match. Must implement LabelSchemaDescriptor.Supplier
+     * @param <SUPPLIER> the type to match. Must implement SchemaDescriptorSupplier
      * @param <EXCEPTION> The type of exception that can be thrown when taking the action
      * @param schemaSuppliers The suppliers to match
      * @param node The node cursor
@@ -58,10 +58,10 @@ public class NodeSchemaMatcher
      * @param callback The action to take on match
      * @throws EXCEPTION This exception is propagated from the action
      */
-    <SUPPLIER extends LabelSchemaSupplier, EXCEPTION extends Exception> void onMatchingSchema(
+    static <SUPPLIER extends SchemaDescriptorSupplier, EXCEPTION extends Exception> void onMatchingSchema(
             Iterator<SUPPLIER> schemaSuppliers,
-            org.neo4j.internal.kernel.api.NodeCursor node,
-            org.neo4j.internal.kernel.api.PropertyCursor property,
+            NodeCursor node,
+            PropertyCursor property,
             int specialPropertyId,
             ThrowingBiConsumer<SUPPLIER,PrimitiveIntSet,EXCEPTION> callback
     ) throws EXCEPTION
@@ -70,8 +70,8 @@ public class NodeSchemaMatcher
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
-            LabelSchemaDescriptor schema = schemaSupplier.schema();
-            if ( node.labels().contains( schema.getLabelId() ) )
+            SchemaDescriptor schema = schemaSupplier.schema();
+            if ( node.labels().contains( schema.keyId() ) )
             {
                 if ( nodePropertyIds == null )
                 {

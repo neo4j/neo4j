@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
@@ -47,6 +48,7 @@ public class ComparableRaftState implements ReadableRaftState
     private final Log log;
     protected long term;
     protected MemberId leader;
+    private LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private long leaderCommit = -1;
     private MemberId votedFor;
     private Set<MemberId> votesForMe = new HashSet<>();
@@ -58,8 +60,9 @@ public class ComparableRaftState implements ReadableRaftState
     private final InFlightCache inFlightCache;
     private long commitIndex = -1;
     private boolean isPreElection;
+    private final boolean refusesToBeLeader;
 
-    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
+    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers, boolean refusesToBeLeader,
                          RaftLog entryLog, InFlightCache inFlightCache, LogProvider logProvider )
     {
         this.myself = myself;
@@ -68,11 +71,12 @@ public class ComparableRaftState implements ReadableRaftState
         this.entryLog = entryLog;
         this.inFlightCache = inFlightCache;
         this.log = logProvider.getLog( getClass() );
+        this.refusesToBeLeader = refusesToBeLeader;
     }
 
     ComparableRaftState( ReadableRaftState original ) throws IOException
     {
-        this( original.myself(), original.votingMembers(), original.replicationMembers(),
+        this( original.myself(), original.votingMembers(), original.replicationMembers(), original.refusesToBeLeader(),
                 new ComparableRaftLog( original.entryLog() ), new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
     }
 
@@ -104,6 +108,12 @@ public class ComparableRaftState implements ReadableRaftState
     public MemberId leader()
     {
         return leader;
+    }
+
+    @Override
+    public LeaderInfo leaderInfo()
+    {
+        return leaderInfo;
     }
 
     @Override
@@ -170,6 +180,12 @@ public class ComparableRaftState implements ReadableRaftState
     public Set<MemberId> preVotesForMe()
     {
         return preVotesForMe;
+    }
+
+    @Override
+    public boolean refusesToBeLeader()
+    {
+        return refusesToBeLeader;
     }
 
     public void update( Outcome outcome ) throws IOException

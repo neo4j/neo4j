@@ -34,6 +34,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -142,7 +143,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -182,7 +183,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider() );
+                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
         logProvider.assertNoLogCallContaining( "ERROR" );
     }
@@ -221,7 +222,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                        logService.getInternalLogProvider() );
+                        logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
 

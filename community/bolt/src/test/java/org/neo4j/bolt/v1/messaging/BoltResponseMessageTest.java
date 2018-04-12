@@ -35,11 +35,12 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
@@ -47,7 +48,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
@@ -62,13 +62,15 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 public class BoltResponseMessageTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final Neo4jPack neo4jPack = new Neo4jPackV1();
 
     @Test
     public void shouldHandleCommonMessages() throws Throwable
@@ -213,9 +215,8 @@ public class BoltResponseMessageTest
 
     private String serialized( AnyValue object ) throws IOException
     {
-        RecordMessage message =
-                new RecordMessage( record( object ) );
-        return HexPrinter.hex( serialize( message ), 4, " " );
+        RecordMessage message = new RecordMessage( record( object ) );
+        return HexPrinter.hex( serialize( neo4jPack, message ), 4, " " );
     }
 
     private void assertSerializes( ResponseMessage msg ) throws IOException
@@ -226,12 +227,11 @@ public class BoltResponseMessageTest
     private <T extends ResponseMessage> T serializeAndDeserialize( T msg ) throws IOException
     {
         RecordingByteChannel channel = new RecordingByteChannel();
-        Neo4jPack neo4jPack = new Neo4jPackV1();
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
                 neo4jPack.newUnpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
-        BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                neo4jPack.newPacker( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK,
-                NullBoltMessageLogger.getInstance() );
+        BufferedChannelOutput output = new BufferedChannelOutput( channel );
+        BoltResponseMessageWriter writer = new BoltResponseMessageWriter( neo4jPack, output,
+                NullLogService.getInstance(), NullBoltMessageLogger.getInstance() );
 
         msg.dispatch( writer );
         writer.flush();

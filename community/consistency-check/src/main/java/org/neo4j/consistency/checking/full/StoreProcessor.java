@@ -209,7 +209,6 @@ public class StoreProcessor extends AbstractStoreProcessor
     public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
             final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
             final QueueDistributor<R> distributor )
-            throws Exception
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
         RecordProcessor<R> processor = new RecordProcessor.Adapter<R>()

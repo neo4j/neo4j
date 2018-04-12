@@ -125,7 +125,7 @@ public class ThreadAheadReadableTest
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             throw new UnsupportedOperationException();
         }
@@ -137,7 +137,7 @@ public class ThreadAheadReadableTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
 

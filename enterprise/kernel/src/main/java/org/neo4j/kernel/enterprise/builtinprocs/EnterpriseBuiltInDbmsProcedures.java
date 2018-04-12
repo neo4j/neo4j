@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +35,8 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -44,8 +45,6 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.configuration.Config;
@@ -131,7 +130,6 @@ public class EnterpriseBuiltInDbmsProcedures
      */
     //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
     {
         assertAdminOrSelf( username );
 
@@ -155,7 +153,6 @@ public class EnterpriseBuiltInDbmsProcedures
 
     //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException
     {
         assertAdminOrSelf( username );
 
@@ -216,12 +213,14 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final List<String> roles;
+        public final String mode;
 
         public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
             roles = new ArrayList<>();
             switch ( signature.mode() )
             {
@@ -258,8 +257,9 @@ public class EnterpriseBuiltInDbmsProcedures
         private boolean isAdminProcedure( String procedureName )
         {
             return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                   name.equals( "dbms.listConfig" ) ||
-                   name.equals( "dbms.setConfigValue" );
+                    name.equals( "dbms.listConfig" ) ||
+                    name.equals( "dbms.setConfigValue" ) ||
+                    name.equals( "dbms.clearQueryCaches" );
         }
     }
 
@@ -281,7 +281,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
-    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
+    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
 
@@ -361,7 +361,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -385,7 +385,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -401,7 +401,7 @@ public class EnterpriseBuiltInDbmsProcedures
             {
                 for ( String id : idTexts )
                 {
-                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    if ( terminatedQuerys.stream().noneMatch( query -> query.queryId.equals( id ) ) )
                     {
                         terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
                     }

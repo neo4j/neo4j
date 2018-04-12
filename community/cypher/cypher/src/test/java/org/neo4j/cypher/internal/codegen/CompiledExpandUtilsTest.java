@@ -19,78 +19,123 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.connectingRelationships;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegreeIfDense;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 
 public class CompiledExpandUtilsTest
 {
-    @Test
-    public void shouldUseGivenOrderIfItHasLowerDegree() throws EntityNotFoundException
+    @Rule
+    public DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
+
+    private Session session()
     {
-        // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 1 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 3 );
-
-        // WHEN
-       connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L );
-
-        // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 1L, Direction.OUTGOING );
+        DependencyResolver resolver = this.db.getDependencyResolver();
+        return resolver.resolveDependency( Kernel.class ).beginSession( LoginContext.AUTH_DISABLED );
     }
 
     @Test
-    public void shouldSwitchOrderIfItHasLowerDegree() throws EntityNotFoundException
+    public void shouldComputeDegreeWithoutType() throws Exception
     {
         // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 3 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 1 );
+        Session session = session();
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            node = write.nodeCreate();
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R1" ),
+                    write.nodeCreate() );
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R2" ),
+                    write.nodeCreate() );
+            write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R3" ),
+                    node );
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R4" ), node );
 
-        // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L );
+            tx.success();
+        }
 
-        // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 2L, Direction.INCOMING );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Read read = tx.dataRead();
+            CursorFactory cursors = tx.cursors();
+            try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+            {
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING ), equalTo( 3 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING ), equalTo( 2 ) );
+                assertThat( CompiledExpandUtils.nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH ), equalTo( 4 ) );
+            }
+        }
     }
 
     @Test
-    public void shouldUseGivenOrderIfItHasLowerDegreeWithTypes() throws EntityNotFoundException
+    public void shouldComputeDegreeWithType() throws Exception
     {
         // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 1 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 3 );
+        Session session = session();
+        long node;
+        int in, out, loop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            node = write.nodeCreate();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            out = tokenWrite.relationshipTypeGetOrCreateForName( "OUT" );
+            in = tokenWrite.relationshipTypeGetOrCreateForName( "IN" );
+            loop = tokenWrite.relationshipTypeGetOrCreateForName( "LOOP" );
+            write.relationshipCreate( node,
+                    out,
+                    write.nodeCreate() );
+            write.relationshipCreate( node, out, write.nodeCreate() );
+            write.relationshipCreate( write.nodeCreate(), in, node );
+            write.relationshipCreate( node, loop, node );
 
-        // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L, new int[]{1} );
+            tx.success();
+        }
 
-        // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 1L, Direction.OUTGOING, new int[]{1} );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Read read = tx.dataRead();
+            CursorFactory cursors = tx.cursors();
+            try ( NodeCursor nodes = cursors.allocateNodeCursor() )
+            {
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, in ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, OUTGOING, loop ), equalTo( 1 ) );
+
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, out ), equalTo( 0 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, INCOMING, loop ), equalTo( 1 ) );
+
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegreeIfDense( read, node, nodes, cursors, BOTH, loop ), equalTo( 1 ) );
+            }
+        }
     }
-
-    @Test
-    public void shouldSwitchOrderIfItHasLowerDegreeWithTypes() throws EntityNotFoundException
-    {
-        // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 3 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 1 );
-
-        // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L, new int[]{1} );
-
-        // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 2L, Direction.INCOMING, new int[]{1} );
-    }
-
 }

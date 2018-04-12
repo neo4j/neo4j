@@ -33,7 +33,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
@@ -55,10 +54,10 @@ public class LongCollisionValuesTest
     public NumberArrayFactory factory;
 
     @Test
-    public void shouldStoreAndLoadLongs() throws Exception
+    public void shouldStoreAndLoadLongs()
     {
         // given
-        try ( LongCollisionValues values = new LongCollisionValues( factory, 100 ); )
+        try ( LongCollisionValues values = new LongCollisionValues( factory, 100 ) )
         {
             // when
             long[] offsets = new long[100];

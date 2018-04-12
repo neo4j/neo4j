@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Iterator;
+
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -31,6 +33,14 @@ public interface TokenRead
     int NO_TOKEN = -1;
 
     /**
+     * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
+     *
+     * @param name The label name.
+     * @return the label id, or NO_TOKEN
+     */
+    int nodeLabel( String name );
+
+    /**
      * Returns the name of a label given its label id
      *
      * @param labelId The label id
@@ -38,14 +48,6 @@ public interface TokenRead
      * @throws LabelNotFoundKernelException if no label is associates with this id
      */
     String nodeLabelName( int labelId ) throws LabelNotFoundKernelException;
-
-    /**
-     * Return the id of the provided label, or NO_TOKEN if the label isn't known to the graph.
-     *
-     * @param name The label name.
-     * @return the label id, or NO_TOKEN
-     */
-    int nodeLabel( String name );
 
     /**
      * Return the id of the provided relationship type, or NO_TOKEN if the type isn't known to the graph.
@@ -79,4 +81,40 @@ public interface TokenRead
      * @throws PropertyKeyIdNotFoundKernelException if no key is associated with the id
      */
     String propertyKeyName( int propertyKeyId ) throws PropertyKeyIdNotFoundKernelException;
+
+    /**
+     * Returns all label tokens
+     * @return an iterator over all label tokens in the database
+     */
+    Iterator<NamedToken> labelsGetAllTokens();
+
+    /**
+     * Returns all property tokens
+     * @return an iterator over all property tokens in the database
+     */
+    Iterator<NamedToken> propertyKeyGetAllTokens();
+
+    /**
+     * Returns all relationship type tokens
+     * @return an iterator over all relationship type tokens in the database
+     */
+    Iterator<NamedToken> relationshipTypesGetAllTokens();
+
+    /**
+     * Returns the number of labels in the database
+     * @return the number of labels in the database
+     */
+    int labelCount( );
+
+    /**
+     * Returns the number of properties in the database
+     * @return the number of properties in the database
+     */
+    int propertyKeyCount( );
+
+    /**
+     * Returns the number of relationship types in the database
+     * @return the number of relationship types in the database
+     */
+    int relationshipTypeCount( );
 }

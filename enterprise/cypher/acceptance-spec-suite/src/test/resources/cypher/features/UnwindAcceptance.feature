@@ -30,7 +30,7 @@ Feature: UnwindAcceptance
       """
       MATCH (n:A {prop: 'a'})-[r:R {prop: 'r'}]->()
       WITH *
-      UNWIND [42, 0.7, true, 's', n, r] as i
+      UNWIND [42, 0.7, true, 's', n, r, null] as i
       RETURN i
       ORDER BY "no order"
       """
@@ -42,6 +42,7 @@ Feature: UnwindAcceptance
       | 's'               |
       | (:A {prop: 'a'})  |
       | [:R {prop: 'r'}]  |
+      | null              |
     And no side effects
 
   Scenario: Nested type support in list literal
@@ -54,7 +55,7 @@ Feature: UnwindAcceptance
       """
       MATCH (n:A {prop: 'a'})-[r:R {prop: 'r'}]->()
       WITH *
-      UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42]] as i
+      UNWIND [[42],[0.7],[true],[n],[r],[n,42],[r,42],[null]] as i
       RETURN i
       ORDER BY "no order"
       """
@@ -67,6 +68,7 @@ Feature: UnwindAcceptance
       | [[:R {prop: 'r'}]]     |
       | [(:A {prop: 'a'}), 42] |
       | [[:R {prop: 'r'}], 42] |
+      | [null]                 |
     And no side effects
 
   Scenario: Nested type support in map literal
@@ -108,7 +110,7 @@ Feature: UnwindAcceptance
       UNWIND [ {k: [n]},
                {k: [r]},
                {k: [n, r], l: 42},
-               {k: [r], l: 's'},
+               {k: [r, null], l: 's'},
                [ {k: [n, r]} ]
              ] as i
       RETURN i
@@ -119,7 +121,7 @@ Feature: UnwindAcceptance
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
       | {k: [(:A), [:R]], l: 42} |
-      | {k: [[:R]], l: 's'}      |
+      | {k: [[:R], null], l: 's'}|
       | [{k: [(:A), [:R]]}]      |
     And no side effects
 
@@ -136,7 +138,7 @@ Feature: UnwindAcceptance
       UNWIND [ {k: [n]},
                {k: [r]},
                {k: [n, r], l: 42},
-               {k: [r], l: 's'},
+               {k: [r, null], l: 's'},
                [ {k: [n, r]} ]
              ] as i
       WITH i as j
@@ -148,7 +150,7 @@ Feature: UnwindAcceptance
       | {k: [(:A)]}              |
       | {k: [[:R]]}              |
       | {k: [(:A), [:R]], l: 42} |
-      | {k: [[:R]], l: 's'}     |
+      | {k: [[:R], null], l: 's'}|
       | [{k: [(:A), [:R]]}]      |
     And no side effects
 
@@ -286,7 +288,7 @@ Feature: UnwindAcceptance
     Given an empty graph
     When executing query:
       """
-      WITH [['a', 'b'], ['1.5', 'c'], '2', 'd' ] AS nested
+      WITH [['a', 'b'], ['1.5', null, 'c'], '2', 'd' ] AS nested
           UNWIND nested AS x
           UNWIND x AS y
           RETURN y
@@ -296,8 +298,40 @@ Feature: UnwindAcceptance
       | 'a'   |
       | 'b'   |
       | '1.5' |
+      | null  |
       | 'c'   |
       | '2'   |
       | 'd'   |
     And no side effects
 
+  Scenario: Pattern comprehension in unwind with empty db
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with hits
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A)
+      CREATE (b:B)
+      CREATE (c:C)
+      CREATE (a)-[:T]->(b),
+             (b)-[:T]->(c)
+      """
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c     |
+      | (:B)  |
+      | (:C)  |
+    And no side effects

@@ -869,7 +869,7 @@ public class CodeGenerationTest
 
         // then
         verify( runner1, times( 3 ) ).run();
-        verify( runner2, times( 0 ) ).run();
+        verify( runner2, never() ).run();
     }
 
     @Test
@@ -1057,6 +1057,150 @@ public class CodeGenerationTest
         assertThat( conditional.invoke( true, false ), equalTo( false ) );
         assertThat( conditional.invoke( false, true ), equalTo( false ) );
         assertThat( conditional.invoke( false, false ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingMultipleAnds() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ),
+                    param( boolean.class, "test2" ),
+                    param( boolean.class, "test3" ) ) )
+            {
+                conditional.returns( and(
+                        conditional.load( "test1" ),
+                        and( conditional.load( "test2" ),
+                                conditional.load( "test3" ) ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, true ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true, true ), equalTo( false ) );
+        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingMultipleAnds2() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ),
+                    param( boolean.class, "test2" ),
+                    param( boolean.class, "test3" ) ) )
+            {
+                conditional.returns( and(
+                        and( conditional.load( "test1" ),
+                                conditional.load( "test2" ) ),
+                        conditional.load( "test3" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, true ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true, true ), equalTo( false ) );
+        assertThat( conditional.invoke( false, false, true ), equalTo( false ) );
+        assertThat( conditional.invoke( true, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( true, false, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, true, false ), equalTo( false ) );
+        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingMultipleOrs() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ),
+                    param( boolean.class, "test2" ),
+                    param( boolean.class, "test3" ) ) )
+            {
+                conditional.returns( or(
+                        conditional.load( "test1" ),
+                        or( conditional.load( "test2" ),
+                                conditional.load( "test3" ) ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, true, false ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, false ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true, false ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
+    }
+
+    @Test
+    public void shouldGenerateMethodUsingMultipleOrs2() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "conditional",
+                    param( boolean.class, "test1" ),
+                    param( boolean.class, "test2" ),
+                    param( boolean.class, "test3" ) ) )
+            {
+                conditional.returns( or(
+                        or( conditional.load( "test1" ),
+                                conditional.load( "test2" ) ),
+                        conditional.load( "test3" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional =
+                instanceMethod( handle.newInstance(), "conditional", boolean.class, boolean.class, boolean.class );
+
+        // then
+        assertThat( conditional.invoke( true, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true, true ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false, true ), equalTo( true ) );
+        assertThat( conditional.invoke( true, true, false ), equalTo( true ) );
+        assertThat( conditional.invoke( true, false, false ), equalTo( true ) );
+        assertThat( conditional.invoke( false, true, false ), equalTo( true ) );
+        assertThat( conditional.invoke( false, false, false ), equalTo( false ) );
     }
 
     @Test

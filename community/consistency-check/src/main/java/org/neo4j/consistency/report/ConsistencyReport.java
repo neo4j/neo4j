@@ -492,6 +492,10 @@ public interface ConsistencyReport
         @Override
         @Documented( "This node record has a label that is not found in the label scan store entry for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
+
+        @Warning
+        @Documented( "Label index was not properly shutdown and rebuild is required." )
+        void dirtyIndex();
     }
 
     interface IndexConsistencyReport extends NodeInUseWithCorrectLabelsReport
@@ -507,6 +511,10 @@ public interface ConsistencyReport
         @Override
         @Documented( "This node record has a label that is not found in the index for this node" )
         void nodeLabelNotInIndex( NodeRecord referredNodeRecord, long missingLabelId );
+
+        @Warning
+        @Documented( "Index was not properly shutdown and rebuild is required." )
+        void dirtyIndex();
     }
 
     interface CountsConsistencyReport extends ConsistencyReport

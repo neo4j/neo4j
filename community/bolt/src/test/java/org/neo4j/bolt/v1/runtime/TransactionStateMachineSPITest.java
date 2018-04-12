@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -54,7 +54,7 @@ public class TransactionStateMachineSPITest
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
-    public void throwsWhenTxAwaitDurationExpires() throws Exception
+    public void throwsWhenTxAwaitDurationExpires()
     {
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );

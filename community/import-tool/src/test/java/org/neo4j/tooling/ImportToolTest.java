@@ -1237,7 +1237,7 @@ public class ImportToolTest
     }
 
     @Test
-    public void shouldPrintReferenceLinkOnDataImportErrors() throws Exception
+    public void shouldPrintReferenceLinkOnDataImportErrors()
     {
         String[] versionParts = Version.getNeo4jVersion().split("-");
         versionParts[0] = versionParts[0].substring(0, 3);
@@ -1287,7 +1287,7 @@ public class ImportToolTest
     }
 
     private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
-            Iterator<RelationshipDataLine> relationshipDataLines, String message ) throws Exception
+            Iterator<RelationshipDataLine> relationshipDataLines, String message )
     {
         Configuration config = Configuration.COMMAS;
         try

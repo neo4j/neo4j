@@ -10,6 +10,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.csv</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -61,6 +62,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-collections</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
     </dependency>
 

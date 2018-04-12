@@ -43,7 +43,7 @@ public class StreamingBatchOperationResults
 {
     public static final int HEAD_BUFFER = 10;
     public static final int IS_ERROR = -1;
-    private final Map<Integer,String> locations = new HashMap<Integer,String>();
+    private final Map<Integer,String> locations = new HashMap<>();
     private final JsonGenerator g;
     private final ServletOutputStream output;
     private ByteArrayOutputStream errorStream;
@@ -178,7 +178,7 @@ public class StreamingBatchOperationResults
 
     private boolean isJson( char[] head )
     {
-        return String.valueOf( head ).matches( "\\s*([\\[\"\\{]|true|false).*" );
+        return String.valueOf( head ).matches( "\\s*([\\[\"{]|true|false).*" );
     }
 
     public Map<Integer,String> getLocations()

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 public enum DeadlockStrategies implements ForsetiLockManager.DeadlockResolutionStrategy
 {
@@ -137,7 +137,7 @@ public enum DeadlockStrategies implements ForsetiLockManager.DeadlockResolutionS
     /**
      * To aid in experimental testing of strategies on different real workloads, allow toggling which strategy to use.
      */
-    public static ForsetiLockManager.DeadlockResolutionStrategy DEFAULT =
+    public static final ForsetiLockManager.DeadlockResolutionStrategy DEFAULT =
             FeatureToggles.flag( DeadlockStrategies.class, "strategy", ABORT_YOUNG );
 
     private static boolean isSameClient( ForsetiClient a, ForsetiClient b )

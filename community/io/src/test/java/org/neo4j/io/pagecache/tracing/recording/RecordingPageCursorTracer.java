@@ -180,7 +180,7 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     @Override
     public void reportEvents()
     {
-        Objects.nonNull( tracer );
+        Objects.requireNonNull( tracer );
         tracer.pins( pins );
         tracer.faults( faults );
     }

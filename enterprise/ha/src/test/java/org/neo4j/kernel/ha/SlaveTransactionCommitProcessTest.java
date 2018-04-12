@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,21 +29,17 @@ import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.ConstantRequestContextFactory;
 import org.neo4j.test.LongResponse;
-import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +48,6 @@ public class SlaveTransactionCommitProcessTest
     private AtomicInteger lastSeenEventIdentifier;
     private Master master;
     private RequestContext requestContext;
-    private RequestContextFactory reqFactory;
     private Response<Long> response;
     private PhysicalTransactionRepresentation tx;
     private SlaveTransactionCommitProcess commitProcess;
@@ -64,7 +58,7 @@ public class SlaveTransactionCommitProcessTest
         lastSeenEventIdentifier = new AtomicInteger( -1 );
         master = mock( Master.class );
         requestContext = new RequestContext( 10, 11, 12, 13, 14 );
-        reqFactory = new ConstantRequestContextFactory( requestContext )
+        RequestContextFactory reqFactory = new ConstantRequestContextFactory( requestContext )
         {
             @Override
             public RequestContext newRequestContext( int eventIdentifier )
@@ -102,21 +96,5 @@ public class SlaveTransactionCommitProcessTest
         // When
         commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
         // Then we assert that the right exception is thrown
-    }
-
-    @Test
-    public void mustTranslateIOExceptionsToKernelTransactionFailures() throws Exception
-    {
-        when( master.commit( requestContext, tx ) ).thenThrow( new IOException() );
-
-        try
-        {
-            commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
-            fail( "commit should have thrown" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertThat( e.status(), is( Status.Transaction.TransactionCommitFailed ) );
-        }
     }
 }

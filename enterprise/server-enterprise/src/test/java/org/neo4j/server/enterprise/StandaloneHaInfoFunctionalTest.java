@@ -66,7 +66,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testHaDiscoveryOnStandaloneReturns403() throws Exception
+    public void testHaDiscoveryOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
@@ -80,7 +80,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testIsMasterOnStandaloneReturns403() throws Exception
+    public void testIsMasterOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 
@@ -89,7 +89,7 @@ public class StandaloneHaInfoFunctionalTest
     }
 
     @Test
-    public void testIsSlaveOnStandaloneReturns403() throws Exception
+    public void testIsSlaveOnStandaloneReturns403()
     {
         FunctionalTestHelper helper = new FunctionalTestHelper( server );
 

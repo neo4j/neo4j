@@ -57,11 +57,11 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         shutdown = true;
     }
 
-    public synchronized void recoverCopiedStore( File tempStore ) throws StoreCopyFailedException
+    public synchronized void recoverCopiedStore( File tempStore ) throws DatabaseShutdownException
     {
         if ( shutdown )
         {
-            throw new StoreCopyFailedException( "Abort store-copied store recovery due to database shutdown" );
+            throw new DatabaseShutdownException( "Abort store-copied store recovery due to database shutdown" );
         }
 
         try
@@ -100,6 +100,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
                 .setUserLogProvider( NullLogProvider.getInstance() )
                 .newEmbeddedDatabaseBuilder( tempStore )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.pagecache_warmup_enabled, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.allow_upgrade,
                         config.get( GraphDatabaseSettings.allow_upgrade ).toString() )

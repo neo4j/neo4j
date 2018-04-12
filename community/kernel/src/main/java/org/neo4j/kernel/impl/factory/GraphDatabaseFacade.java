@@ -21,15 +21,14 @@ package org.neo4j.kernel.impl.factory;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -41,11 +40,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.ResourceUtils;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.KernelEventHandler;
@@ -55,28 +53,33 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
@@ -110,18 +113,15 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Implementation of the GraphDatabaseService/GraphDatabaseService interfaces - the "Core API". Given an {@link SPI}
@@ -135,6 +135,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private Schema schema;
     private Supplier<IndexManager> indexManager;
     private ThreadToStatementContextBridge statementContext;
+    protected EditionModule editionModule;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
     private Config config;
@@ -167,13 +168,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         /**
          * Begin a new kernel transaction with specified timeout in milliseconds.
-         * If a transaction is already associated to the current context, this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
-         * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
+         * @see GraphDatabaseAPI#beginTransaction(KernelTransaction.Type, LoginContext)
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
-                long timeout );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout );
 
         /** Execute a cypher statement */
         Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context );
@@ -194,6 +193,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
         GraphDatabaseQueryService queryService();
+
+        Kernel kernel();
     }
 
     public GraphDatabaseFacade()
@@ -203,17 +204,18 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     /**
      * Create a new Core API facade, backed by the given SPI and using pre-resolved dependencies
      */
-    public void init( SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config,
+    public void init( EditionModule editionModule, SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder )
     {
+        this.editionModule = editionModule;
         this.spi = spi;
         this.config = config;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.schema = new SchemaImpl( txBridge );
+        this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.indexManager = Suppliers.lazySingleton( () ->
         {
-            IndexProviderImpl idxProvider = new IndexProviderImpl( this, txBridge );
+            IndexProviderImpl idxProvider = new IndexProviderImpl( this, () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
             AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
                     () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
                     spi.autoIndexing().nodes() );
@@ -222,7 +224,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                             idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
                     spi.autoIndexing().relationships() );
 
-            return new IndexManagerImpl( txBridge, idxProvider, nodeAutoIndexer, relAutoIndexer );
+            return new IndexManagerImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ), idxProvider,
+                    nodeAutoIndexer, relAutoIndexer );
         } );
 
         this.contextFactory = Neo4jTransactionalContextFactory.create( spi, guard, txBridge, locker );
@@ -322,18 +325,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             throw new NotFoundException( format( "Relationship %d not found", id ),
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
-        try ( Statement statement = statementContext.get() )
+
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        assertTransactionOpen( ktx );
+        try ( Statement ignore = statementContext.get() )
         {
-            try
+            if ( !ktx.dataRead().relationshipExists( id ) )
             {
-                RelationshipProxy relationship = newRelationshipProxy( id );
-                statement.readOperations().relationshipVisit( id, relationship );
-                return relationship;
+                throw new NotFoundException( format( "Relationship %d not found", id ),
+                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
             }
-            catch ( EntityNotFoundException e )
-            {
-                throw new NotFoundException( format( "Relationship %d not found", id ), e );
-            }
+            return newRelationshipProxy( id );
         }
     }
 
@@ -375,16 +377,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return beginTransactionInternal( type, securityContext, config.get( transaction_timeout ).toMillis() );
+        return beginTransactionInternal( type, loginContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
             long timeout, TimeUnit unit )
     {
-        return beginTransactionInternal( type, securityContext, unit.toMillis( timeout ) );
+        return beginTransactionInternal( type, loginContext, unit.toMillis( timeout ) );
     }
 
     @Override
@@ -465,31 +467,38 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        assertTransactionOpen();
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        assertTransactionOpen( ktx );
         return () ->
         {
-            final Statement statement = statementContext.get();
-            final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+            Statement statement = ktx.acquireStatement();
+            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
+            ktx.dataRead().allRelationshipsScan( cursor );
             return new PrefetchingResourceIterator<Relationship>()
             {
                 @Override
-                public void close()
-                {
-                    statement.close();
-                }
-
-                @Override
                 protected Relationship fetchNextOrNull()
                 {
-                    if ( ids.hasNext() )
+                    if ( cursor.next() )
                     {
-                        return newRelationshipProxy( ids.next() );
+                        return newRelationshipProxy(
+                                cursor.relationshipReference(),
+                                cursor.sourceNodeReference(),
+                                cursor.type(),
+                                cursor.targetNodeReference() );
                     }
                     else
                     {
                         close();
                         return null;
                     }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                    statement.close();
                 }
             };
         };
@@ -510,7 +519,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private <T> ResourceIterable<T> allInUse( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.inUse( statementContext.get() );
+        return () -> tokens.inUse( statementContext.getTopLevelTransactionBoundToThisThread( true ) );
     }
 
     @Override
@@ -534,7 +543,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private <T> ResourceIterable<T> all( final TokenAccess<T> tokens )
     {
         assertTransactionOpen();
-        return () -> tokens.all( statementContext.get() );
+        return () ->
+        {
+            KernelTransaction transaction =
+                    statementContext.getKernelTransactionBoundToThisThread( true );
+            return tokens.all( transaction );
+        };
     }
 
     @Override
@@ -572,7 +586,79 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterator<Node> findNodes( final Label myLabel, final String key, final Object value )
     {
-        return nodesByLabelAndProperty( myLabel, key, Values.of( value ) );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        return nodesByLabelAndProperty( transaction, labelId, IndexQuery.exact( propertyId, Values.of( value ) ) );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2 )
+    {
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        return nodesByLabelAndProperties( transaction, labelId,
+                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ) );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3 )
+    {
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        return nodesByLabelAndProperties( transaction, labelId,
+                                          IndexQuery.exact( tokenRead.propertyKey( key1 ), Values.of( value1 ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key2 ), Values.of( value2 ) ),
+                                          IndexQuery.exact( tokenRead.propertyKey( key3 ), Values.of( value3 ) ) );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes( Label label, Map<String,Object> propertyValues )
+    {
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( label.name() );
+        IndexQuery.ExactPredicate[] queries = new IndexQuery.ExactPredicate[propertyValues.size()];
+        int i = 0;
+        for ( Map.Entry<String,Object> entry : propertyValues.entrySet() )
+        {
+            queries[i++] = IndexQuery.exact( tokenRead.propertyKey( entry.getKey() ), Values.of( entry.getValue() ) );
+        }
+        return nodesByLabelAndProperties( transaction, labelId, queries );
+    }
+
+    @Override
+    public ResourceIterator<Node> findNodes(
+            final Label myLabel, final String key, final String value, final StringSearchMode searchMode )
+    {
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+        TokenRead tokenRead = transaction.tokenRead();
+        int labelId = tokenRead.nodeLabel( myLabel.name() );
+        int propertyId = tokenRead.propertyKey( key );
+        IndexQuery query;
+        switch ( searchMode )
+        {
+        case EXACT:
+            query = IndexQuery.exact( propertyId, Values.stringValue( value ) );
+            break;
+        case PREFIX:
+            query = IndexQuery.stringPrefix( propertyId, value );
+            break;
+        case SUFFIX:
+            query = IndexQuery.stringSuffix( propertyId, value );
+            break;
+        case CONTAINS:
+            query = IndexQuery.stringContains( propertyId, value );
+            break;
+        default:
+            throw new IllegalStateException( "Unknown string search mode: " + searchMode );
+        }
+        return nodesByLabelAndProperty( transaction, labelId, query );
     }
 
     @Override
@@ -601,42 +687,37 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return allNodesWithLabel( myLabel );
     }
 
-    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, SecurityContext securityContext,
+    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext,
             long timeoutMillis )
     {
         if ( statementContext.hasTransaction() )
         {
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
-            return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ), statementContext );
+            return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, securityContext, timeoutMillis ), statementContext );
+        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ), statementContext );
     }
 
-    private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Value value )
+    private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )
     {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
         Statement statement = transaction.acquireStatement();
         Read read = transaction.dataRead();
-        TokenRead tokenRead = transaction.tokenRead();
-        int propertyId = tokenRead.propertyKey( key );
-        int labelId = tokenRead.nodeLabel( myLabel.name() );
 
-        if ( propertyId == NO_SUCH_PROPERTY_KEY || labelId == NO_SUCH_LABEL )
+        if ( query.propertyKeyId() == TokenRead.NO_TOKEN || labelId == TokenRead.NO_TOKEN )
         {
             statement.close();
             return emptyResourceIterator();
         }
-        CapableIndexReference index = transaction.schemaRead().index( labelId, propertyId );
+        CapableIndexReference index = transaction.schemaRead().index( labelId, query.propertyKeyId() );
         if ( index != CapableIndexReference.NO_INDEX )
         {
             // Ha! We found an index - let's use it to find matching nodes
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                IndexQuery.ExactPredicate query = IndexQuery.exact( propertyId, value );
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
 
-                return new NodeCursorResourceIterator<>( cursor, statement );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -644,15 +725,156 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             }
         }
 
-        return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, query );
     }
 
-    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
-            Statement statement, int labelId )
+    private ResourceIterator<Node> nodesByLabelAndProperties(
+            KernelTransaction transaction, int labelId, IndexQuery.ExactPredicate... queries )
     {
-        PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return map2nodes( new PropertyValueFilteringNodeIdIterator( nodeIds, statement.readOperations(), propertyId, value ),
-                statement, nodeIds );
+        Statement statement = transaction.acquireStatement();
+        Read read = transaction.dataRead();
+
+        if ( isInvalidQuery( labelId, queries ) )
+        {
+            statement.close();
+            return emptyResourceIterator();
+        }
+
+        int[] propertyIds = getPropertyIds( queries );
+        IndexReference index = findMatchingIndex( transaction, labelId, propertyIds );
+
+        if ( index != CapableIndexReference.NO_INDEX )
+        {
+            try
+            {
+                NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, getReorderedIndexQueries( index.properties(), queries ) );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
+            }
+            catch ( KernelException e )
+            {
+                // weird at this point but ignore and fallback to a label scan
+            }
+        }
+        return getNodesByLabelAndPropertyWithoutIndex( statement, labelId, queries );
+    }
+
+    private IndexReference findMatchingIndex( KernelTransaction transaction, int labelId, int[] propertyIds )
+    {
+        IndexReference index = transaction.schemaRead().index( labelId, propertyIds );
+        if ( index != CapableIndexReference.NO_INDEX )
+        {
+            // index found with property order matching the query
+            return index;
+        }
+        else
+        {
+            // attempt to find matching index with different property order
+            Arrays.sort( propertyIds );
+            assertNoDuplicates( propertyIds, transaction.tokenRead() );
+
+            int[] workingCopy = new int[propertyIds.length];
+
+            Iterator<IndexReference> indexes = transaction.schemaRead().indexesGetForLabel( labelId );
+            while ( indexes.hasNext() )
+            {
+                index = indexes.next();
+                int[] original = index.properties();
+                if ( hasSamePropertyIds( original, workingCopy, propertyIds ) )
+                {
+                    // Ha! We found an index with the same properties in another order
+                    return index;
+                }
+            }
+            return CapableIndexReference.NO_INDEX;
+        }
+    }
+
+    private IndexQuery[] getReorderedIndexQueries( int[] indexPropertyIds, IndexQuery[] queries )
+    {
+        IndexQuery[] orderedQueries = new IndexQuery[queries.length];
+        for ( int i = 0; i < indexPropertyIds.length; i++ )
+        {
+            int propertyKeyId = indexPropertyIds[i];
+            for ( IndexQuery query : queries )
+            {
+                if ( query.propertyKeyId() == propertyKeyId )
+                {
+                    orderedQueries[i] = query;
+                    break;
+                }
+            }
+        }
+        return orderedQueries;
+    }
+
+    private boolean hasSamePropertyIds( int[] original, int[] workingCopy, int[] propertyIds )
+    {
+        if ( original.length == propertyIds.length )
+        {
+            System.arraycopy( original, 0, workingCopy, 0, original.length );
+            Arrays.sort( workingCopy );
+            return Arrays.equals( propertyIds, workingCopy );
+        }
+        return false;
+    }
+
+    private int[] getPropertyIds( IndexQuery[] queries )
+    {
+        int[] propertyIds = new int[queries.length];
+        for ( int i = 0; i < queries.length; i++ )
+        {
+            propertyIds[i] = queries[i].propertyKeyId();
+        }
+        return propertyIds;
+    }
+
+    private boolean isInvalidQuery( int labelId, IndexQuery[] queries )
+    {
+        boolean invalidQuery = labelId == TokenRead.NO_TOKEN;
+        for ( IndexQuery query : queries )
+        {
+            int propertyKeyId = query.propertyKeyId();
+            invalidQuery = invalidQuery || propertyKeyId == TokenRead.NO_TOKEN;
+        }
+        return invalidQuery;
+    }
+
+    private void assertNoDuplicates( int[] propertyIds, TokenRead tokenRead )
+    {
+        int prev = propertyIds[0];
+        for ( int i = 1; i < propertyIds.length; i++ )
+        {
+            int curr = propertyIds[i];
+            if ( curr == prev )
+            {
+                SilentTokenNameLookup tokenLookup = new SilentTokenNameLookup( tokenRead );
+                throw new IllegalArgumentException(
+                        format( "Provided two queries for property %s. Only one query per property key can be performed",
+                                tokenLookup.propertyKeyGetName( curr ) ) );
+            }
+            prev = curr;
+        }
+    }
+
+    private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex(
+            Statement statement, int labelId, IndexQuery... queries )
+    {
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+
+        NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
+        NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor();
+
+        transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
+
+        return new NodeLabelPropertyIterator( transaction.dataRead(),
+                                                nodeLabelCursor,
+                                                nodeCursor,
+                                                propertyCursor,
+                                                statement,
+                                                this::newNodeProxy,
+                                                queries );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -661,58 +883,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         Statement statement = ktx.acquireStatement();
 
         int labelId = ktx.tokenRead().nodeLabel( myLabel.name() );
-        if ( labelId == NO_SUCH_LABEL )
+        if ( labelId == TokenRead.NO_TOKEN )
         {
             statement.close();
-            return ResourceIterator.empty();
+            return Iterators.emptyResourceIterator();
         }
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator<>( cursor, statement );
-    }
-
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
-    {
-       return new ResourceIterator<Node>()
-       {
-           private boolean closed;
-
-           @Override
-           public void close()
-           {
-               if ( !closed && resources != null )
-               {
-                   ResourceUtils.closeAll( resources );
-                   closed = true;
-               }
-           }
-
-           @Override
-           public boolean hasNext()
-           {
-               boolean hasNext = input.hasNext();
-               if ( !hasNext )
-               {
-                   close();
-               }
-               return hasNext;
-           }
-
-           @Override
-           public Node next()
-           {
-               try
-               {
-                   return newNodeProxy( input.next() );
-               }
-               catch ( NoSuchElementException e )
-               {
-                   close();
-                   throw e;
-               }
-           }
-       };
+        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
     }
 
     @Override
@@ -756,62 +935,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public String toString()
     {
         return spi.name() + " [" + getStoreDir() + "]";
-    }
-
-    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-    {
-        private final PrimitiveLongIterator nodesWithLabel;
-        private final ReadOperations statement;
-        private final int propertyKeyId;
-        private final Value value;
-
-        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                int propertyKeyId, Value value )
-        {
-            this.nodesWithLabel = nodesWithLabel;
-            this.statement = statement;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
-            {
-                long nextValue = nodesWithLabel.next();
-                try
-                {
-                    Value propertyValue = statement.nodeGetProperty( nextValue, propertyKeyId );
-                    if ( propertyValue != null )
-                    {
-                        if ( propertyValue.equals( value ) )
-                        {
-                            return next( nextValue );
-                        }
-                    }
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    // continue to the next node
-                }
-            }
-            return false;
-        }
-    }
-
-    private void assertTransactionOpen()
-    {
-        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
-    }
-
-    private void assertTransactionOpen( KernelTransaction transaction )
-    {
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
     }
 
     @Override
@@ -876,26 +999,160 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
+    public int getRelationshipTypeIdByName( String typeName )
+    {
+        return relationshipTypeTokenHolder.getIdByName( typeName );
+    }
+
+    @Override
     public GraphPropertiesProxy newGraphPropertiesProxy()
     {
         return new GraphPropertiesProxy( this );
     }
-    private static final long UNINITIALIZED = -2L;
-    private static final long NO_ID = -1L;
 
-    private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> implements ResourceIterator<Node>
+    private static class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
     {
+        private final Read read;
+        private final NodeLabelIndexCursor nodeLabelCursor;
+        private final NodeCursor nodeCursor;
+        private final PropertyCursor propertyCursor;
+        private final IndexQuery[] queries;
 
+        NodeLabelPropertyIterator(
+                Read read,
+                NodeLabelIndexCursor nodeLabelCursor,
+                NodeCursor nodeCursor,
+                PropertyCursor propertyCursor,
+                Statement statement,
+                NodeFactory nodeFactory,
+                IndexQuery... queries )
+        {
+            super( statement, nodeFactory );
+            this.read = read;
+            this.nodeLabelCursor = nodeLabelCursor;
+            this.nodeCursor = nodeCursor;
+            this.propertyCursor = propertyCursor;
+            this.queries = queries;
+        }
+
+        @Override
+        protected long fetchNext()
+        {
+            boolean hasNext;
+            do
+            {
+                hasNext = nodeLabelCursor.next();
+
+            } while ( hasNext && !hasPropertiesWithValues() );
+
+            if ( hasNext )
+            {
+                return nodeLabelCursor.nodeReference();
+            }
+            else
+            {
+                close();
+                return NO_ID;
+            }
+        }
+
+        @Override
+        void closeResources( Statement statement )
+        {
+            IOUtils.closeAllSilently( statement, nodeLabelCursor, nodeCursor, propertyCursor );
+        }
+
+        private boolean hasPropertiesWithValues()
+        {
+            int targetCount = queries.length;
+            read.singleNode( nodeLabelCursor.nodeReference(), nodeCursor );
+            if ( nodeCursor.next() )
+            {
+                nodeCursor.properties( propertyCursor );
+                while ( propertyCursor.next() )
+                {
+                    for ( IndexQuery query : queries )
+                    {
+                        if ( propertyCursor.propertyKey() == query.propertyKeyId() )
+                        {
+                            if ( query.acceptsValueAt( propertyCursor ) )
+                            {
+                                targetCount--;
+                                if ( targetCount == 0 )
+                                {
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    private void assertTransactionOpen()
+    {
+        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
+    }
+
+    private void assertTransactionOpen( KernelTransaction transaction )
+    {
+        if ( transaction.isTerminated() )
+        {
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
+        }
+    }
+
+    private static final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingNodeResourceIterator
+    {
         private final CURSOR cursor;
+
+        NodeCursorResourceIterator( CURSOR cursor, Statement statement, NodeFactory nodeFactory )
+        {
+            super( statement, nodeFactory );
+            this.cursor = cursor;
+        }
+
+        long fetchNext()
+        {
+            if ( cursor.next() )
+            {
+                return cursor.nodeReference();
+            }
+            else
+            {
+                close();
+                return NO_ID;
+            }
+        }
+
+        @Override
+        void closeResources( Statement statement )
+        {
+            IOUtils.closeAllSilently( statement, cursor );
+        }
+    }
+
+    private abstract static class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
+    {
         private final Statement statement;
+        private final NodeFactory nodeFactory;
         private long next;
         private boolean closed;
-        private static final long NOT_INITIALIZED = -2L;
 
-        NodeCursorResourceIterator( CURSOR cursor, Statement statement )
+        private static final long NOT_INITIALIZED = -2L;
+        protected static final long NO_ID = -1L;
+
+        PrefetchingNodeResourceIterator( Statement statement, NodeFactory nodeFactory )
         {
-            this.cursor = cursor;
             this.statement = statement;
+            this.nodeFactory = nodeFactory;
             this.next = NOT_INITIALIZED;
         }
 
@@ -904,7 +1161,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             if ( next == NOT_INITIALIZED )
             {
-                fetchNext();
+                next = fetchNext();
             }
             return next != NO_ID;
         }
@@ -917,32 +1174,28 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 close();
                 throw new NoSuchElementException(  );
             }
-            Node nodeProxy = newNodeProxy( next );
-            fetchNext();
+            Node nodeProxy = nodeFactory.make( next );
+            next = fetchNext();
             return nodeProxy;
         }
 
-        private void fetchNext()
-        {
-            if ( cursor.next() )
-            {
-                next = cursor.nodeReference();
-            }
-            else
-            {
-                close();
-            }
-        }
-
-        @Override
         public void close()
         {
             if ( !closed )
             {
                 next = NO_ID;
-                IOUtils.closeAllSilently( statement, cursor );
+                closeResources( statement );
                 closed = true;
             }
         }
+
+        abstract long fetchNext();
+
+        abstract void closeResources( Statement statement );
+    }
+
+    private interface NodeFactory
+    {
+        NodeProxy make( long id );
     }
 }

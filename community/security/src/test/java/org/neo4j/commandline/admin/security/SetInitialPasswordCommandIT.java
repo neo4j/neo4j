@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -106,7 +107,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         assertNoAuthIniFile();
@@ -123,11 +124,11 @@ public class SetInitialPasswordCommandIT
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();
@@ -145,7 +146,7 @@ public class SetInitialPasswordCommandIT
         verify( out ).stdErrLine( "Sets the initial password of the initial admin user ('neo4j')." );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
@@ -164,7 +165,7 @@ public class SetInitialPasswordCommandIT
         verify( out, times( 1 ) )
                 .stdErrLine( "command failed: initial password was not set because live Neo4j-users were detected." );
         verify( out ).exit( 1 );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     private void assertAuthIniFile( String password ) throws Throwable

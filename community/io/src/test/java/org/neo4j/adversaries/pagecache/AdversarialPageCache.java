@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -78,6 +79,18 @@ public class AdversarialPageCache implements PageCache
     }
 
     @Override
+    public List<PagedFile> listExistingMappings() throws IOException
+    {
+        adversary.injectFailure( IOException.class, SecurityException.class );
+        List<PagedFile> list = delegate.listExistingMappings();
+        for ( int i = 0; i < list.size(); i++ )
+        {
+            list.set( i, new AdversarialPagedFile( list.get( i ), adversary ) );
+        }
+        return list;
+    }
+
+    @Override
     public void flushAndForce() throws IOException
     {
         adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
@@ -114,5 +127,17 @@ public class AdversarialPageCache implements PageCache
     public FileSystemAbstraction getCachedFileSystem()
     {
         return delegate.getCachedFileSystem();
+    }
+
+    @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        return delegate.fileSystemSupportsFileOperations();
     }
 }

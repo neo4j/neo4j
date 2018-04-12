@@ -52,7 +52,7 @@ public class SecurityContextDescriptionTest
         manager.init();
         manager.start();
         manager.newUser( "johan", "bar", false );
-        context = manager.login( authToken( "johan", "bar" ) );
+        context = manager.login( authToken( "johan", "bar" ) ).authorize( s -> -1 );
     }
 
     @After
@@ -63,27 +63,20 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescription() throws Throwable
+    public void shouldMakeNiceDescription()
     {
         assertThat( context.description(), equalTo( "user 'johan' with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionFrozen() throws Throwable
-    {
-        SecurityContext frozen = context.freeze();
-        assertThat( frozen.description(), equalTo( "user 'johan' with FULL" ) );
-    }
-
-    @Test
-    public void shouldMakeNiceDescriptionWithMode() throws Throwable
+    public void shouldMakeNiceDescriptionWithMode()
     {
         SecurityContext modified = context.withMode( AccessMode.Static.WRITE );
         assertThat( modified.description(), equalTo( "user 'johan' with WRITE" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionRestricted()
     {
         SecurityContext restricted =
                 context.withMode( new RestrictedAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -91,7 +84,7 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionOverridden() throws Throwable
+    public void shouldMakeNiceDescriptionOverridden()
     {
         SecurityContext overridden =
                 context.withMode( new OverriddenAccessMode( context.mode(), AccessMode.Static.READ ) );
@@ -99,14 +92,14 @@ public class SecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabled()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         SecurityContext disabled = SecurityContext.AUTH_DISABLED;
         SecurityContext restricted =

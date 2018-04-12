@@ -28,13 +28,13 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.
@@ -45,10 +45,10 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 public final class IndexMap implements Cloneable
 {
     private final PrimitiveLongObjectMap<IndexProxy> indexesById;
-    private final Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor;
-    private final Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor;
-    private final PrimitiveIntObjectMap<Set<LabelSchemaDescriptor>> descriptorsByLabel;
-    private final PrimitiveIntObjectMap<Set<LabelSchemaDescriptor>> descriptorsByProperty;
+    private final Map<SchemaDescriptor,IndexProxy> indexesByDescriptor;
+    private final Map<SchemaDescriptor,Long> indexIdsByDescriptor;
+    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
+    private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
 
     public IndexMap()
     {
@@ -62,15 +62,15 @@ public final class IndexMap implements Cloneable
 
     private IndexMap(
             PrimitiveLongObjectMap<IndexProxy> indexesById,
-            Map<LabelSchemaDescriptor,IndexProxy> indexesByDescriptor,
-            Map<LabelSchemaDescriptor,Long> indexIdsByDescriptor )
+            Map<SchemaDescriptor,IndexProxy> indexesByDescriptor,
+            Map<SchemaDescriptor,Long> indexIdsByDescriptor )
     {
         this.indexesById = indexesById;
         this.indexesByDescriptor = indexesByDescriptor;
         this.indexIdsByDescriptor = indexIdsByDescriptor;
         this.descriptorsByLabel = Primitive.intObjectMap();
         this.descriptorsByProperty = Primitive.intObjectMap();
-        for ( LabelSchemaDescriptor schema : indexesByDescriptor.keySet() )
+        for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
         }
@@ -81,19 +81,19 @@ public final class IndexMap implements Cloneable
         return indexesById.get( indexId );
     }
 
-    public IndexProxy getIndexProxy( LabelSchemaDescriptor descriptor )
+    public IndexProxy getIndexProxy( SchemaDescriptor descriptor )
     {
         return indexesByDescriptor.get( descriptor );
     }
 
-    public long getIndexId( LabelSchemaDescriptor descriptor )
+    public long getIndexId( SchemaDescriptor descriptor )
     {
         return indexIdsByDescriptor.get( descriptor );
     }
 
     public void putIndexProxy( long indexId, IndexProxy indexProxy )
     {
-        LabelSchemaDescriptor schema = indexProxy.getDescriptor().schema();
+        SchemaDescriptor schema = indexProxy.getDescriptor().schema();
         indexesById.put( indexId, indexProxy );
         indexesByDescriptor.put( schema, indexProxy );
         indexIdsByDescriptor.put( schema, indexId );
@@ -108,10 +108,10 @@ public final class IndexMap implements Cloneable
             return null;
         }
 
-        LabelSchemaDescriptor schema = removedProxy.getDescriptor().schema();
+        SchemaDescriptor schema = removedProxy.getDescriptor().schema();
         indexesByDescriptor.remove( schema );
 
-        removeFromLookup( schema.getLabelId(), schema, descriptorsByLabel );
+        removeFromLookup( schema.keyId(), schema, descriptorsByLabel );
         for ( int propertyId : schema.getPropertyIds() )
         {
             removeFromLookup( propertyId, schema, descriptorsByProperty );
@@ -142,14 +142,14 @@ public final class IndexMap implements Cloneable
      * @param changedLabels set of labels that have changed
      * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties
-     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
+     * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    public Set<LabelSchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+    public Set<SchemaDescriptor> getRelatedIndexes(
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
     {
         if ( changedLabels.length == 1 && properties.isEmpty() )
         {
-            Set<LabelSchemaDescriptor> descriptors = descriptorsByLabel.get( (int)changedLabels[0] );
+            Set<SchemaDescriptor> descriptors = descriptorsByLabel.get( (int)changedLabels[0] );
             return descriptors == null ? Collections.emptySet() : descriptors;
         }
 
@@ -158,7 +158,7 @@ public final class IndexMap implements Cloneable
             return getDescriptorsByProperties( unchangedLabels, properties );
         }
 
-        Set<LabelSchemaDescriptor> descriptors = extractIndexesByLabels( changedLabels );
+        Set<SchemaDescriptor> descriptors = extractIndexesByLabels( changedLabels );
         descriptors.addAll( getDescriptorsByProperties( unchangedLabels, properties ) );
 
         return descriptors;
@@ -171,7 +171,7 @@ public final class IndexMap implements Cloneable
                 cloneMap( indexIdsByDescriptor ) );
     }
 
-    public Iterator<LabelSchemaDescriptor> descriptors()
+    public Iterator<SchemaDescriptor> descriptors()
     {
         return indexesByDescriptor.keySet().iterator();
     }
@@ -200,9 +200,9 @@ public final class IndexMap implements Cloneable
         return PrimitiveLongCollections.copy( indexesById );
     }
 
-    private void addDescriptorToLookups( LabelSchemaDescriptor schema )
+    private void addDescriptorToLookups( SchemaDescriptor schema )
     {
-        addToLookup( schema.getLabelId(), schema, descriptorsByLabel );
+        addToLookup( schema.keyId(), schema, descriptorsByLabel );
 
         for ( int propertyId : schema.getPropertyIds() )
         {
@@ -212,10 +212,10 @@ public final class IndexMap implements Cloneable
 
     private void addToLookup(
             int key,
-            LabelSchemaDescriptor schema,
-            PrimitiveIntObjectMap<Set<LabelSchemaDescriptor>> lookup )
+            SchemaDescriptor schema,
+            PrimitiveIntObjectMap<Set<SchemaDescriptor>> lookup )
     {
-        Set<LabelSchemaDescriptor> descriptors = lookup.get( key );
+        Set<SchemaDescriptor> descriptors = lookup.get( key );
         if ( descriptors == null )
         {
             descriptors = new HashSet<>();
@@ -226,10 +226,10 @@ public final class IndexMap implements Cloneable
 
     private void removeFromLookup(
             int key,
-            LabelSchemaDescriptor schema,
-            PrimitiveIntObjectMap<Set<LabelSchemaDescriptor>> lookup )
+            SchemaDescriptor schema,
+            PrimitiveIntObjectMap<Set<SchemaDescriptor>> lookup )
     {
-        Set<LabelSchemaDescriptor> descriptors = lookup.get( key );
+        Set<SchemaDescriptor> descriptors = lookup.get( key );
         descriptors.remove( schema );
         if ( descriptors.isEmpty() )
         {
@@ -237,9 +237,9 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private static Map<LabelSchemaDescriptor, IndexProxy> indexesByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    private static Map<SchemaDescriptor, IndexProxy> indexesByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
     {
-        Map<LabelSchemaDescriptor, IndexProxy> map = new HashMap<>();
+        Map<SchemaDescriptor, IndexProxy> map = new HashMap<>();
         for ( IndexProxy proxy : indexesById.values() )
         {
             map.put( proxy.schema(), proxy );
@@ -247,9 +247,9 @@ public final class IndexMap implements Cloneable
         return map;
     }
 
-    private static Map<LabelSchemaDescriptor, Long> indexIdsByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
+    private static Map<SchemaDescriptor, Long> indexIdsByDescriptor( PrimitiveLongObjectMap<IndexProxy> indexesById )
     {
-        Map<LabelSchemaDescriptor, Long> map = new HashMap<>();
+        Map<SchemaDescriptor, Long> map = new HashMap<>();
         indexesById.visitEntries( ( key, indexProxy ) ->
         {
             map.put( indexProxy.schema(), key );
@@ -265,11 +265,11 @@ public final class IndexMap implements Cloneable
      *
      * @param unchangedLabels set of labels that are unchanged
      * @param properties set of properties that have changed
-     * @return set of LabelSchemaDescriptors describing the potentially affected indexes
+     * @return set of SchemaDescriptors describing the potentially affected indexes
      */
-    private Set<LabelSchemaDescriptor> getDescriptorsByProperties(
+    private Set<SchemaDescriptor> getDescriptorsByProperties(
             long[] unchangedLabels,
-            PrimitiveIntCollection properties )
+            PrimitiveIntSet properties )
     {
         int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
         int nIndexesForProperties = countIndexesByProperties( properties );
@@ -288,12 +288,12 @@ public final class IndexMap implements Cloneable
         }
     }
 
-    private Set<LabelSchemaDescriptor> extractIndexesByLabels( long[] labels )
+    private Set<SchemaDescriptor> extractIndexesByLabels( long[] labels )
     {
-        Set<LabelSchemaDescriptor> set = new HashSet<>();
+        Set<SchemaDescriptor> set = new HashSet<>();
         for ( long label : labels )
         {
-            Set<LabelSchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            Set<SchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
             if ( forLabel != null )
             {
                 set.addAll( forLabel );
@@ -307,7 +307,7 @@ public final class IndexMap implements Cloneable
         int count = 0;
         for ( long label : labels )
         {
-            Set<LabelSchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
+            Set<SchemaDescriptor> forLabel = descriptorsByLabel.get( (int) label );
             if ( forLabel != null )
             {
                 count += forLabel.size();
@@ -316,12 +316,12 @@ public final class IndexMap implements Cloneable
         return count;
     }
 
-    private Set<LabelSchemaDescriptor> extractIndexesByProperties( PrimitiveIntCollection properties )
+    private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
     {
-        Set<LabelSchemaDescriptor> set = new HashSet<>();
+        Set<SchemaDescriptor> set = new HashSet<>();
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
         {
-            Set<LabelSchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
+            Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
             if ( forProperty != null )
             {
                 set.addAll( forProperty );
@@ -330,12 +330,12 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private int countIndexesByProperties( PrimitiveIntCollection properties )
+    private int countIndexesByProperties( PrimitiveIntSet properties )
     {
         int count = 0;
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
         {
-            Set<LabelSchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
+            Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
             if ( forProperty != null )
             {
                 count += forProperty.size();

@@ -100,7 +100,7 @@ public class DumpClusterStateTest
         createDurableState( RAFT_VOTE_NAME, new VoteState.Marshal( new MemberId.Marshal() ) );
     }
 
-    private <T> void createDurableState( String name, StateMarshal<T> marshal ) throws IOException
+    private <T> void createDurableState( String name, StateMarshal<T> marshal )
     {
         DurableStateStorage<T> storage = new DurableStateStorage<>(
                 fsa.get(), clusterStateDirectory.get(), name, marshal, 1024, NullLogProvider.getInstance() );

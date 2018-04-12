@@ -19,13 +19,16 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Implementation of StringValue that wraps a `java.lang.String` and
  * delegates methods to that instance.
  */
 final class StringWrappingStringValue extends StringValue
 {
-    final String value;
+    private final String value;
 
     StringWrappingStringValue( String value )
     {
@@ -100,6 +103,12 @@ final class StringWrappingStringValue extends StringValue
     {
         StringBuilder stringBuilder = new StringBuilder( value() );
         return Values.stringValue( stringBuilder.reverse().toString() );
+    }
+
+    @Override
+    Matcher matcher( Pattern pattern )
+    {
+        return pattern.matcher( value );
     }
 
     private int ltrimIndex( String value )

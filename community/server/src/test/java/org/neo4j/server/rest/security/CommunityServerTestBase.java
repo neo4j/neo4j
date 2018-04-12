@@ -19,15 +19,14 @@
  */
 package org.neo4j.server.rest.security;
 
-import com.sun.jersey.core.util.Base64;
 import org.junit.After;
 
 import java.io.IOException;
+import java.util.Base64;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 public class CommunityServerTestBase extends ExclusiveServerTestBase
@@ -51,9 +50,10 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         server.start();
     }
 
-    protected String challengeResponse( String username, String password )
+    protected String basicAuthHeader( String username, String password )
     {
-        return "Basic " + base64( username + ":" + password );
+        String usernamePassword = username + ':' + password;
+        return "Basic " + Base64.getEncoder().encodeToString( usernamePassword.getBytes() );
     }
 
     protected String dataURL()
@@ -71,8 +71,8 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         return server.baseUri().resolve( "user/" + username + "/password" ).toString();
     }
 
-    protected String base64( String value )
+    protected String txCommitURL()
     {
-        return UTF8.decode( Base64.encode( value ) );
+        return server.baseUri().resolve( "db/data/transaction/commit" ).toString();
     }
 }

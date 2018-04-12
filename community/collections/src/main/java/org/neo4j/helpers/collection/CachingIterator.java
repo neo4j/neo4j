@@ -36,7 +36,7 @@ import java.util.NoSuchElementException;
 public class CachingIterator<T> implements ListIterator<T>
 {
     private final Iterator<T> source;
-    private final List<T> visited = new ArrayList<T>();
+    private final List<T> visited = new ArrayList<>();
     private int position;
     private T current;
 

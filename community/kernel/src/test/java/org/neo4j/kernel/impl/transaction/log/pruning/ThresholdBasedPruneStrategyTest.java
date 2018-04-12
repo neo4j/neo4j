@@ -85,11 +85,11 @@ public class ThresholdBasedPruneStrategyTest
 
         // Then
         verify( threshold, times( 1 ) ).init();
-        verify( fileSystem, times( 0 ) ).deleteFile( any() );
+        verify( fileSystem, never() ).deleteFile( any() );
     }
 
     @Test
-    public void shouldDeleteJustWhatTheThresholdSays() throws Exception
+    public void shouldDeleteJustWhatTheThresholdSays()
     {
         // Given
         when( threshold.reached( any(), eq( 6L ), any() ) )

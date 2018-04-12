@@ -25,13 +25,13 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,7 +47,7 @@ public class LabelScanValueIndexProgressorTest
         Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFrom = new HashSet<>();
         LabelScanValueIndexProgressor iterator = new LabelScanValueIndexProgressor( cursor, toRemoveFrom, mock(
                 IndexProgressor.NodeLabelClient.class ) );
-        verify( cursor, times( 0 ) ).close();
+        verify( cursor, never() ).close();
 
         // WHEN
         exhaust( iterator );

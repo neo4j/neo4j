@@ -29,6 +29,8 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlan
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
+  private val expectPlansToFailConfig1 =  Configs.Cost2_3 + Configs.AllRulePlanners
+
   test("should handle OR when using index") {
     // Given
     graph.createIndex("L", "prop")
@@ -38,7 +40,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = expectPlansToFailConfig1))
 
     // Then
     result.toList should equal(List(Map("n" -> node1), Map("n" -> node2)))
@@ -53,7 +55,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = expectPlansToFailConfig1))
 
     // Then
     result.toList shouldBe empty
@@ -74,7 +76,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeek", 2)
         plan should useOperators("Union")
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+    }, expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -94,7 +96,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -114,7 +116,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexSeekByRange", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -134,7 +136,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -152,7 +154,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperatorTimes("NodeIndexScan", 2)
         plan should useOperators("Union")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.OldAndRule))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -178,7 +180,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWith(Configs.All - Configs.Compiled, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
+    val result = executeWith(Configs.All, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should useOperators("NodeIndexSeek")
       }, Configs.AllRulePlanners))
@@ -225,7 +227,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
    graph.createIndex("Place", "name")
 
     // When
-    val result = executeWith(Configs.All - Configs.Compiled,
+    val result = executeWith(Configs.Interpreted,
       """
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName
@@ -254,7 +256,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWith(Configs.All - Configs.Compiled, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
         planDescription.toString() shouldNot include("index")
       }))
@@ -281,7 +283,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWith(Configs.All - Configs.Compiled, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
         planDescription.toString() shouldNot include("index")
       }))
@@ -304,7 +306,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.OldAndRule),
       params = Map("uuids" -> Array("a", "b", "c")))
 
     //Then
@@ -322,7 +324,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.OldAndRule),
       params = Map("uuids" -> Array(1, 2, 3)))
 
     //Then
@@ -337,7 +339,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = expectPlansToFailConfig1))
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
@@ -351,14 +353,14 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeUniqueIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeUniqueIndexSeek", 1), expectPlansToFail = expectPlansToFailConfig1))
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
   }
 
   private def setUpDatabaseForTests() {
-    executeWith(Configs.All - Configs.Compiled - Configs.Cost2_3,
+    executeWith(Configs.Interpreted - Configs.Cost2_3,
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),

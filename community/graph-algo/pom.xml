@@ -13,6 +13,7 @@
     <test.runner.jvm.settings.additional>
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
     </test.runner.jvm.settings.additional>
+    <moduleName>org.neo4j.graphalgo</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>

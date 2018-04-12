@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
@@ -33,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregatingIndexSamplerTest
 {
     @Test
-    public void samplePartitionedIndex() throws IndexNotFoundKernelException
+    public void samplePartitionedIndex()
     {
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
@@ -58,7 +57,7 @@ public class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex() throws IndexNotFoundKernelException
+        public IndexSample sampleIndex()
         {
             return new IndexSample( value, value, value * 2 );
         }

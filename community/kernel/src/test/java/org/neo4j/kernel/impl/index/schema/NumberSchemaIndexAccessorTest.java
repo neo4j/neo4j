@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,40 +28,40 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
-public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue>
-        extends NativeSchemaIndexAccessorTest<KEY,VALUE>
+public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<NumberSchemaKey,NativeSchemaValue>
 {
-    NativeSchemaIndexAccessor<KEY,VALUE> makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
+    @Override
+    NumberSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
+        return new NumberSchemaIndexAccessor( pageCache, fs, getIndexFile(), layout, IMMEDIATE, monitor,
+                schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Test
     public void respectIndexOrder() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<SchemaIndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
         processAll( someUpdates );
         Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
 
         // when
         IndexReader reader = accessor.newReader();
-        IndexQuery.NumberRangePredicate supportedQuery =
+        IndexQuery.RangePredicate<?> supportedQuery =
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
 
-        for ( IndexOrder supportedOrder : NumberSchemaIndexProvider.CAPABILITY.orderCapability( ValueGroup.NUMBER ) )
+        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueCategory.NUMBER ) )
         {
             if ( supportedOrder == IndexOrder.ASCENDING )
             {
@@ -78,7 +79,31 @@ public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey,
             {
                 assertEquals( "values in order", expectedValues[i++], client.values[0] );
             }
-            assertTrue( "found all values", i == expectedValues.length );
+            assertEquals( "found all values", i, expectedValues.length );
         }
     }
+
+    // <READER ordering>
+
+    @Test
+    public void throwForUnsupportedIndexOrder() throws Exception
+    {
+        // given
+        // Unsupported index order for query
+        IndexReader reader = accessor.newReader();
+        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
+        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
+
+        // then
+        expected.expect( UnsupportedOperationException.class );
+        expected.expectMessage( CoreMatchers.allOf(
+                CoreMatchers.containsString( "unsupported order" ),
+                CoreMatchers.containsString( unsupportedOrder.toString() ),
+                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
+
+        // when
+        reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
+    }
+
+    // </READER ordering>
 }

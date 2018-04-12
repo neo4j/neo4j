@@ -77,6 +77,7 @@ class BackupStrategyWrapper
         Path backupLocation = onlineBackupContext.getResolvedLocationFromName();
         Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
+        log.debug( "User specified address is %s:%s", userSpecifiedAddress.getHostname().toString(), userSpecifiedAddress.getPort().toString() );
         Config config = onlineBackupContext.getConfig();
 
         boolean previousBackupExists = backupCopyService.backupExists( backupLocation );
@@ -136,15 +137,7 @@ class BackupStrategyWrapper
             OnlineBackupContext onlineBackupContext )
     {
         Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
-        Path temporaryFullBackupLocation;
-        try
-        {
-            temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
-        }
-        catch ( IOException e )
-        {
-            return new Fallible<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, e );
-        }
+        Path temporaryFullBackupLocation = backupCopyService.findAnAvailableLocationForNewFullBackup( userSpecifiedBackupLocation );
 
         OptionalHostnamePort address = onlineBackupContext.getRequiredArguments().getAddress();
         Fallible<BackupStageOutcome> state = backupStrategy.performFullBackup( temporaryFullBackupLocation, config, address );

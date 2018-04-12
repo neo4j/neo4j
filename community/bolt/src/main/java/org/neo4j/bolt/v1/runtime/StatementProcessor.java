@@ -22,7 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
@@ -36,6 +36,8 @@ public interface StatementProcessor
     void markCurrentTransactionForTermination();
 
     boolean hasTransaction();
+
+    boolean hasOpenStatement();
 
     void validateTransaction() throws KernelException;
 

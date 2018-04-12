@@ -46,6 +46,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -67,8 +68,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
@@ -99,7 +100,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromSingleRecordDynamicLongArray() throws Exception
+    public void shouldReadFirstFromSingleRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -115,7 +116,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstAsNullFromEmptyDynamicLongArray() throws Exception
+    public void shouldReadFirstAsNullFromEmptyDynamicLongArray()
     {
         // GIVEN
         Long expectedId = null;
@@ -131,7 +132,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldReadFirstFromTwoRecordDynamicLongArray() throws Exception
+    public void shouldReadFirstFromTwoRecordDynamicLongArray()
     {
         // GIVEN
         Long expectedId = 12L;
@@ -174,7 +175,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords() throws Exception
+    public void shouldKeepRecordLightWhenSettingLabelFieldWithoutDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -187,7 +188,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords() throws Exception
+    public void shouldMarkRecordHeavyWhenSettingLabelFieldWithDynamicRecords()
     {
         // GIVEN
         NodeRecord record = new NodeRecord( 0, false, NO_NEXT_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() );
@@ -264,7 +265,7 @@ public class NodeStoreTest
     }
 
     @Test
-    public void shouldCloseStoreFileOnFailureToOpen() throws Exception
+    public void shouldCloseStoreFileOnFailureToOpen()
     {
         // GIVEN
         final MutableBoolean fired = new MutableBoolean();
@@ -341,13 +342,13 @@ public class NodeStoreTest
 
         // THEN
         IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
-        verify( idGenerator, times( 0 ) ).freeId( 5L );
+        verify( idGenerator, never() ).freeId( 5L );
         verify( idGenerator ).freeId( 10L );
     }
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void ensureHeavy() throws IOException
+    public void ensureHeavy()
     {
         long[] labels = LongStream.range( 1, 1000 ).toArray();
         NodeRecord node = new NodeRecord( 5 );
@@ -382,7 +383,7 @@ public class NodeStoreTest
             }
         } );
         StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

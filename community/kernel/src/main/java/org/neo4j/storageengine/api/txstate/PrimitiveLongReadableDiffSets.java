@@ -20,7 +20,10 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 
 /**
  * Read only variant of specialised primitive longs collection that with given a sequence of add
@@ -30,6 +33,63 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
  */
 public interface PrimitiveLongReadableDiffSets
 {
+    PrimitiveLongReadableDiffSets EMPTY = new PrimitiveLongReadableDiffSets()
+    {
+        @Override
+        public boolean isAdded( long element )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isRemoved( long element )
+        {
+            return false;
+        }
+
+        @Override
+        public PrimitiveLongSet getAdded()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public PrimitiveLongSet getAddedSnapshot()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public PrimitiveLongSet getRemoved()
+        {
+            return emptySet();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return true;
+        }
+
+        @Override
+        public int delta()
+        {
+            return 0;
+        }
+
+        @Override
+        public PrimitiveLongIterator augment( PrimitiveLongIterator elements )
+        {
+            return elements;
+        }
+
+        @Override
+        public PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements )
+        {
+            return elements;
+        }
+    };
+
     /**
      * Check if provided element added in this collection
      * @param element element to check
@@ -81,4 +141,13 @@ public interface PrimitiveLongReadableDiffSets
      * @return iterator that will iterate over augmented elements as well as over diff set
      */
     PrimitiveLongIterator augment( PrimitiveLongIterator elements );
+
+    /**
+     * Augment current diff sets with elements. Provided element will be augmented if diffset
+     * does not remove and add that specific element.
+     *
+     * @param elements elements to augment with
+     * @return iterator that will iterate over augmented elements as well as over diff set
+     */
+    PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator elements );
 }

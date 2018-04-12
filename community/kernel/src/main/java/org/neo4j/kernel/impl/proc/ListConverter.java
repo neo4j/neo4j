@@ -22,13 +22,14 @@ package org.neo4j.kernel.impl.proc;
 import java.lang.reflect.Type;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.proc.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntList;
+import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntList;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseList;
 
 
-public class ListConverter implements Function<String,Neo4jValue>
+public class ListConverter implements Function<String,DefaultParameterValue>
 {
     private final Type type;
     private final Neo4jTypes.AnyType neoType;
@@ -40,7 +41,7 @@ public class ListConverter implements Function<String,Neo4jValue>
     }
 
     @Override
-    public Neo4jValue apply( String s )
+    public DefaultParameterValue apply( String s )
     {
         String value = s.trim();
         if ( value.equalsIgnoreCase( "null" ) )

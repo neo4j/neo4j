@@ -168,5 +168,5 @@ public final class Suppliers
 
     public interface Lazy<T> extends Supplier<T>
     {
-    };
+    }
 }

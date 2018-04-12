@@ -24,7 +24,7 @@ import java.io.Serializable;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
- * An object that can be returned as the result of successful authentication by an <tt>AuthenticationPlugin</tt>.
+ * An object that can be returned as the result of successful authentication by an {@link AuthenticationPlugin}.
  *
  * @see AuthenticationPlugin#authenticate(AuthToken)
  */

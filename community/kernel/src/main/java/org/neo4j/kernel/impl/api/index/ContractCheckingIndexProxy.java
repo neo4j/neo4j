@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
@@ -119,12 +119,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         openCall( "force" );
         try
         {
-            super.force();
+            super.force( ioLimiter );
         }
         finally
         {
@@ -133,14 +133,15 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            return super.drop();
+            super.drop();
+            return;
         }
 
-        if ( State.STARTING.equals( state.get() ) )
+        if ( State.STARTING == state.get() )
         {
             throw new IllegalStateException( "Concurrent drop while creating index" );
         }
@@ -148,18 +149,20 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            return super.drop();
+            super.drop();
+            return;
         }
 
         throw new IllegalStateException( "IndexProxy already closed" );
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
         if ( state.compareAndSet( State.INIT, State.CLOSED ) )
         {
-            return super.close();
+            super.close();
+            return;
         }
 
         if ( state.compareAndSet( State.STARTING, State.CLOSED ) )
@@ -170,7 +173,8 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
             waitOpenCallsToClose();
-            return super.close();
+            super.close();
+            return;
         }
 
         throw new IllegalStateException( "IndexProxy already closed" );
@@ -187,12 +191,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     private void openCall( String name )
     {
         // do not open call unless we are in STARTED
-        if ( State.STARTED.equals( state.get() ) )
+        if ( State.STARTED == state.get() )
         {
             // increment openCalls for closers to see
             openCalls.incrementAndGet();
             // ensure that the previous increment actually gets seen by closers
-            if ( State.CLOSED.equals( state.get() ) )
+            if ( State.CLOSED == state.get() )
             {
                 throw new IllegalStateException( "Cannot call " + name + "() after index has been closed" );
             }

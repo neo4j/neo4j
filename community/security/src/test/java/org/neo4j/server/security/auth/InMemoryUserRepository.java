@@ -27,19 +27,19 @@ import org.neo4j.kernel.impl.security.User;
 public class InMemoryUserRepository extends AbstractUserRepository
 {
     @Override
-    protected void persistUsers() throws IOException
+    protected void persistUsers()
     {
         // Nothing to do
     }
 
     @Override
-    protected ListSnapshot<User> readPersistedUsers() throws IOException
+    protected ListSnapshot<User> readPersistedUsers()
     {
         return null;
     }
 
     @Override
-    public ListSnapshot<User> getPersistedSnapshot() throws IOException
+    public ListSnapshot<User> getPersistedSnapshot()
     {
         return null;
     }

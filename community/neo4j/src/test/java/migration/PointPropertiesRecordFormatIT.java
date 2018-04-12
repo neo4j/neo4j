@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
@@ -39,15 +38,13 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.PointValue;
 
+import static migration.RecordFormatMigrationIT.startDatabaseWithFormat;
+import static migration.RecordFormatMigrationIT.startNonUpgradableDatabaseWithFormat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.Values.pointValue;
 
@@ -57,7 +54,7 @@ public class PointPropertiesRecordFormatIT
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void failToCreatePointOnOldDatabase() throws Exception
+    public void failToCreatePointOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -85,7 +82,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToCreatePointArrayOnOldDatabase() throws Exception
+    public void failToCreatePointArrayOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -189,19 +186,5 @@ public class PointPropertiesRecordFormatIT
         {
             assertSame( StoreUpgrader.AttemptedDowngradeException.class, Exceptions.rootCause( t ).getClass() );
         }
-    }
-
-    private GraphDatabaseService startNonUpgradableDatabaseWithFormat( File storeDir, String formatName )
-    {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, FALSE ).newGraphDatabase();
-    }
-
-    private GraphDatabaseService startDatabaseWithFormat( File storeDir, String formatName )
-    {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, TRUE ).newGraphDatabase();
     }
 }

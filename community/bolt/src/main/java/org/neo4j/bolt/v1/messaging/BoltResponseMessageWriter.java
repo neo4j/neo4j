@@ -22,8 +22,12 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -37,80 +41,73 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
  */
 public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
 {
-    public static final BoltResponseMessageBoundaryHook NO_BOUNDARY_HOOK = () ->
-    {
-    };
-
+    private final PackOutput output;
     private final Neo4jPack.Packer packer;
-    private final BoltResponseMessageBoundaryHook onMessageComplete;
     private final BoltMessageLogger messageLogger;
+    private final Log log;
 
-    /**
-     * @param packer            serializer to output channel
-     * @param onMessageComplete invoked for each message, after it's done writing to the output
-     * @param messageLogger     logger for Bolt messages
-     */
-    public BoltResponseMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete,
-                                      BoltMessageLogger messageLogger )
+    public BoltResponseMessageWriter( Neo4jPack neo4jPack, PackOutput output, LogService logService, BoltMessageLogger messageLogger )
     {
-        this.packer = packer;
-        this.onMessageComplete = onMessageComplete;
+        this.output = output;
+        this.packer = neo4jPack.newPacker( output );
         this.messageLogger = messageLogger;
+        this.log = logService.getInternalLog( getClass() );
     }
 
     @Override
     public void onRecord( QueryResult.Record item ) throws IOException
     {
-        AnyValue[] fields = item.fields();
-        packer.packStructHeader( 1, RECORD.signature() );
-        packer.packListHeader( fields.length );
-        for ( AnyValue field : fields )
+        packCompleteMessageOrFail( RECORD, () ->
         {
-            packer.pack( field );
-        }
-        onMessageComplete.onMessageComplete();
-
-        //The record might contain unpackable values,
-        //hence we must consume any errors that might
-        //have occurred.
-        IOException error = packer.consumeError();
-        if ( error != null )
-        {
-            throw error;
-        }
+            AnyValue[] fields = item.fields();
+            packer.packStructHeader( 1, RECORD.signature() );
+            packer.packListHeader( fields.length );
+            for ( AnyValue field : fields )
+            {
+                packer.pack( field );
+            }
+        } );
     }
 
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
+        packCompleteMessageOrFail( SUCCESS, () ->
+        {
+            packer.packStructHeader( 1, SUCCESS.signature() );
+            packer.pack( metadata );
+        } );
+
         messageLogger.logSuccess( () -> metadata );
-        packer.packStructHeader( 1, SUCCESS.signature() );
-        packer.pack( metadata );
-        onMessageComplete.onMessageComplete();
     }
 
     @Override
     public void onIgnored() throws IOException
     {
+        packCompleteMessageOrFail( IGNORED, () ->
+        {
+            packer.packStructHeader( 0, IGNORED.signature() );
+        } );
+
         messageLogger.logIgnored();
-        packer.packStructHeader( 0, IGNORED.signature() );
-        onMessageComplete.onMessageComplete();
     }
 
     @Override
     public void onFailure( Status status, String errorMessage ) throws IOException
     {
+        packCompleteMessageOrFail( FAILURE, () ->
+        {
+            packer.packStructHeader( 1, FAILURE.signature() );
+            packer.packMapHeader( 2 );
+
+            packer.pack( "code" );
+            packer.pack( status.code().serialize() );
+
+            packer.pack( "message" );
+            packer.pack( errorMessage );
+        } );
+
         messageLogger.logFailure( status );
-        packer.packStructHeader( 1, FAILURE.signature() );
-        packer.packMapHeader( 2 );
-
-        packer.pack( "code" );
-        packer.pack( status.code().serialize() );
-
-        packer.pack( "message" );
-        packer.pack( errorMessage );
-
-        onMessageComplete.onMessageComplete();
     }
 
     @Override
@@ -124,5 +121,28 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     public void flush() throws IOException
     {
         packer.flush();
+    }
+
+    private void packCompleteMessageOrFail( BoltResponseMessage message, ThrowingAction<IOException> action ) throws IOException
+    {
+        boolean packingFailed = true;
+        output.beginMessage();
+        try
+        {
+            action.apply();
+            packingFailed = false;
+            output.messageSucceeded();
+        }
+        catch ( Throwable error )
+        {
+            if ( packingFailed )
+            {
+                // packing failed, there might be some half-written data in the output buffer right now
+                // notify output about the failure so that it cleans up the buffer
+                output.messageFailed();
+                log.error( "Failed to write full %s message because: %s", message, error.getMessage() );
+            }
+            throw error;
+        }
     }
 }

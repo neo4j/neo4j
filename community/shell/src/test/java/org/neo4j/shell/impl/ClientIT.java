@@ -57,7 +57,6 @@ public class ClientIT
 
                         @Override
                         public Response interpretLine( Serializable clientId, String line, Output out )
-                                throws ShellException
                         {
                             try
                             {
@@ -112,7 +111,6 @@ public class ClientIT
 
                         @Override
                         public Response interpretLine( Serializable clientId, String line, Output out )
-                                throws ShellException
                         {
                             try
                             {

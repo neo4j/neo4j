@@ -106,7 +106,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3,
+    val result = executeWith(Configs.UpdateConf,
       """
         |MATCH (start:Start),(end:End)
         |OPTIONAL MATCH (start)-[rel]->(end)
@@ -282,22 +282,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN paths""".stripMargin
 
     val result = executeWith(Configs.Interpreted, query,
-      //      expectedDifferentPlans = Configs.AbsolutelyAll,
       params = Map("0" -> node1.getId, "1" -> node2.getId))
     graph.inTx(
       result.toSet should equal(
         Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
     )
-  }
-
-  // -- End of shortest path
-
-  // Not TCK material -- filter()
-  test("length on filter") {
-    val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
-
-    executeWith(Configs.Interpreted, q)
-      .toList should equal(List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
@@ -365,7 +354,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(node1, node2, "prop" -> 10)
     val r2 = relate(node1, node2, "prop" -> 0)
 
-    val result = executeWith(Configs.All - Configs.Compiled + Configs.Morsel, query)
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, query)
 
     result.toList should equal(List(Map("r" -> r1)))
   }
@@ -388,8 +377,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("should be able to set properties with a literal map twice in the same transaction") {
     val node = createLabeledNode("FOO")
 
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { first: 'value' }")
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { second: 'value' }")
+    executeWith(Configs.UpdateConf, "MATCH (n:FOO) SET n = { first: 'value' }")
+    executeWith(Configs.UpdateConf, "MATCH (n:FOO) SET n = { second: 'value' }")
 
     graph.inTx {
       node.getProperty("first", null) should equal(null)
@@ -426,7 +415,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     graph.createIndex("Label", "property")
 
     // when
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.All,
       "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
@@ -572,8 +561,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
-    val second = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
+    val first = executeWith(Configs.UpdateConf, query).length
+    val second = executeWith(Configs.UpdateConf, query).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -607,8 +596,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     //WHEN
 
-    val first = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
-    val second = executeWith(Configs.Interpreted - Configs.Cost2_3, query).length
+    val first = executeWith(Configs.UpdateConf, query).length
+    val second = executeWith(Configs.UpdateConf, query).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -654,7 +643,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = "MATCH (a) MERGE (b) WITH * OPTIONAL MATCH (a)--(b) RETURN count(*)"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     result.columnAs[Long]("count(*)").next shouldBe 6
   }
@@ -755,7 +744,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.All + Configs.Morsel - Configs.Compiled, query)
+    val res = executeWith(Configs.Interpreted + Configs.Morsel, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
@@ -772,7 +761,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.All + Configs.Morsel - Configs.Compiled, query)
+    val res = executeWith(Configs.Interpreted + Configs.Morsel, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
@@ -942,10 +931,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |    ))
       """.stripMargin
 
-
-    val configuration = Configs.Interpreted - Configs.Version2_3
-    val result = executeWith(configuration, query, params = Map("position" -> "2", "folderId" -> 0, "videoId" -> 0))
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("position" -> "2", "folderId" -> 0, "videoId" -> 0))
 
     result.toList should equal(List.empty)
+  }
+
+  test("Reduce and concat gh #10978") {
+    val result = executeWith(Configs.Interpreted, "RETURN REDUCE(s = 0, p in [5,8,2,9] + [1,2] | s + p) as num")
+    result.toList should be(List(Map("num" -> 27)))
   }
 }

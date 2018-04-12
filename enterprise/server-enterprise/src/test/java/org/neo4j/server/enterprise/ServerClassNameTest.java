@@ -43,7 +43,6 @@ public class ServerClassNameTest
 {
     @Test
     public void shouldMaintainNamingOfCommunityNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
-            throws Exception
     {
         assertEquals( getErrorMessage( CommunityNeoServer.class ), "communityneoserver",
                 CommunityNeoServer.class.getSimpleName().toLowerCase() );
@@ -51,7 +50,6 @@ public class ServerClassNameTest
 
     @Test
     public void shouldMaintainNamingOfEnterpriseNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
-            throws Exception
     {
         assertEquals( getErrorMessage( OpenEnterpriseNeoServer.class ), "openenterpriseneoserver",
                 OpenEnterpriseNeoServer.class.getSimpleName().toLowerCase() );

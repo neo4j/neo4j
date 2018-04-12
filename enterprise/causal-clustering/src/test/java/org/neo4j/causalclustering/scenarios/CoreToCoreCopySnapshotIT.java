@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
@@ -192,12 +191,12 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
+    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws IOException
     {
         return clusterMember.getLogFileNames().firstKey().intValue();
     }
 
-    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
+    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws IOException
     {
         return clusterMember.getLogFileNames().lastKey().intValue();
     }

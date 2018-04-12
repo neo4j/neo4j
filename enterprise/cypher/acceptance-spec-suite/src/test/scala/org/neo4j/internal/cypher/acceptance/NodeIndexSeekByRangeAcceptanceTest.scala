@@ -102,7 +102,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     result.toList should equal(List(Map("NAME" -> "LONDON")))
   }
@@ -164,7 +164,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners), params = Map("apa" -> 43))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
     result.executionPlanDescription().toString should include("prop STARTS WITH \"www\"")
   }
 
@@ -190,7 +190,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should plan a UniqueIndexSeek when constraint exists") {
@@ -216,7 +216,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(UniqueIndexSeekByRange.name)
       }, Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
+    result.toSet should equal(Set(Map("a" -> a1), Map("a" -> a2)))
   }
 
   test("should be able to plan index seek for numerical less than") {
@@ -1007,7 +1007,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     result.executionPlanDescription().toString should include(IndexSeekByRange.name)
   }
 
-  test("should refuse to execute index seeks using inequalities over different types") {
+  // TODO: re-enable linting for these queries where some predicates can be statically determined to always be false.
+  ignore("should refuse to execute index seeks using inequalities over different types") {
     // Given
     createLabeledNode(Map("prop" -> 15), "Label")
     createLabeledNode(Map("prop" -> "1"), "Label")
@@ -1038,7 +1039,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     }
   }
 
-  test("should refuse to execute index seeks using inequalities over incomparable types (detected at runtime)") {
+  test("should yield empty results for index seeks using inequalities over incomparable types detected at runtime") {
     // Given
     (1 to 405).foreach { _ =>
       createLabeledNode("Label")
@@ -1047,16 +1048,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWith(Configs.Interpreted, s"EXPLAIN $query",
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)
-      }, Configs.AllRulePlanners), params = Map("param" -> Array[Int](1, 2, 3)))
+      }), params = Map("param" -> Array[Int](1, 2, 3)))
     result.toList should be(empty)
-
-    an[IllegalArgumentException] should be thrownBy {
-      executeWith(Configs.Empty, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
-    }
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
@@ -1134,7 +1131,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+    val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)

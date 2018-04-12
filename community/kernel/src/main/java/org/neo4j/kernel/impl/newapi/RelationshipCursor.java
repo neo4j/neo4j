@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -26,7 +28,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 abstract class RelationshipCursor extends RelationshipRecord implements RelationshipDataAccessor, RelationshipVisitor<RuntimeException>
 {
     Read read;
-    private HasChanges hasChanges = HasChanges.MAYBE;
+    private boolean hasChanges;
+    private boolean checkHasChanges;
 
     RelationshipCursor()
     {
@@ -36,7 +39,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     protected void init( Read read )
     {
         this.read = read;
-        this.hasChanges = HasChanges.MAYBE;
+        this.checkHasChanges = true;
     }
 
     @Override
@@ -46,7 +49,7 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     }
 
     @Override
-    public int label()
+    public int type()
     {
         return getType();
     }
@@ -54,23 +57,23 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        return nextProp != PropertyCursor.NO_ID;
+        return nextProp != DefaultPropertyCursor.NO_ID;
     }
 
     @Override
-    public void source( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void source( NodeCursor cursor )
     {
         read.singleNode( sourceNodeReference(), cursor );
     }
 
     @Override
-    public void target( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void target( NodeCursor cursor )
     {
         read.singleNode( targetNodeReference(), cursor );
     }
 
     @Override
-    public void properties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public void properties( PropertyCursor cursor )
     {
         read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
     }
@@ -101,27 +104,17 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
      */
     protected boolean hasChanges()
     {
-        switch ( hasChanges )
+        if ( checkHasChanges )
         {
-        case MAYBE:
-            boolean changes = read.hasTxStateWithChanges();
-            if ( changes )
+            hasChanges = read.hasTxStateWithChanges();
+            if ( hasChanges )
             {
                 collectAddedTxStateSnapshot();
-                hasChanges = HasChanges.YES;
             }
-            else
-            {
-                hasChanges = HasChanges.NO;
-            }
-            return changes;
-        case YES:
-            return true;
-        case NO:
-            return false;
-        default:
-            throw new IllegalStateException( "Style guide, why are you making me do this" );
+            checkHasChanges = false;
         }
+
+        return hasChanges;
     }
 
     // Load transaction state using RelationshipVisitor

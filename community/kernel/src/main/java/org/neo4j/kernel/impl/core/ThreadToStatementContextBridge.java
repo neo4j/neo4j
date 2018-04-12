@@ -72,10 +72,10 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new BridgeNotInTransactionException();
         }
-        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        if ( terminationReason.isPresent() )
+        if ( transaction.isTerminated() )
         {
-            throw new TransactionTerminatedException( terminationReason.get() );
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
         }
     }
 
@@ -86,7 +86,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         isShutdown = true;
     }

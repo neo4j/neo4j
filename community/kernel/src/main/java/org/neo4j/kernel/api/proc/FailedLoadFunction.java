@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
 
 public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction
 {
@@ -31,9 +32,9 @@ public class FailedLoadFunction extends CallableUserFunction.BasicUserFunction
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

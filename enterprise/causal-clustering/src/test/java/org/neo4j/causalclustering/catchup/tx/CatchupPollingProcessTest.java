@@ -29,15 +29,16 @@ import java.util.concurrent.Future;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.core.consensus.schedule.CountingTimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -53,6 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,6 +82,7 @@ public class CatchupPollingProcessTest
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final TopologyService topologyService = mock( TopologyService.class );
     private final AdvertisedSocketAddress coreMemberAddress = new AdvertisedSocketAddress( "hostname", 1234 );
+    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( coreMemberAddress );
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
@@ -179,7 +182,7 @@ public class CatchupPollingProcessTest
         // then
         verify( localDatabase ).stopForStoreCopy();
         verify( startStopOnStoreCopy ).stop();
-        verify( storeCopyProcess ).replaceWithStoreFrom( any( AdvertisedSocketAddress.class ), eq( storeId ) );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any( CatchupAddressProvider.class ), eq( storeId ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
@@ -189,7 +192,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldNotRenewTheTimeoutIfInPanicState() throws Throwable
+    public void shouldNotRenewTheTimeoutIfInPanicState()
     {
         // given
         txPuller.start();
@@ -204,7 +207,7 @@ public class CatchupPollingProcessTest
 
         // then
         assertEquals( PANIC, txPuller.state() );
-        verify( timer, times( 0 ) ).reset();
+        verify( timer, never() ).reset();
     }
 
     @Test

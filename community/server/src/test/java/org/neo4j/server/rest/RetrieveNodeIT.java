@@ -106,7 +106,7 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
                  "Note that the response contains URI/templates for the available\n" +
                  "operations for getting properties and relationships." )
     @Test
-    public void shouldGet200WhenRetrievingNode() throws Exception
+    public void shouldGet200WhenRetrievingNode()
     {
         String uri = nodeUri.toString();
         gen.get()
@@ -131,7 +131,7 @@ public class RetrieveNodeIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingNode() throws Exception
+    public void shouldGetContentLengthHeaderWhenRetrievingNode()
     {
         JaxRsResponse response = retrieveNodeFromService( nodeUri.toString() );
         assertNotNull( response.getHeaders()

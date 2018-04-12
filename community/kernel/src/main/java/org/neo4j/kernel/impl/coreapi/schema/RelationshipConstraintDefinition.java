@@ -62,7 +62,6 @@ abstract class RelationshipConstraintDefinition extends SinglePropertyConstraint
         }
         RelationshipConstraintDefinition that = (RelationshipConstraintDefinition) o;
         return relationshipType.name().equals( that.relationshipType.name() ) && propertyKey.equals( that.propertyKey );
-
     }
 
     @Override

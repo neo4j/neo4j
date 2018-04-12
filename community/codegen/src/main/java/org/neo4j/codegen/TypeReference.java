@@ -23,6 +23,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.values.AnyValue;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
@@ -180,6 +182,8 @@ public class TypeReference
             new TypeReference( "", "long", false, true, false, "", long.class.getModifiers() );
     public static final TypeReference DOUBLE_ARRAY =
             new TypeReference( "", "double", false, true, false, "", double.class.getModifiers() );
+    public static final TypeReference VALUE =
+            new TypeReference( "org.neo4j.values", "AnyValue", false, false, false, "", AnyValue.class.getModifiers() );
     static final TypeReference[] NO_TYPES = new TypeReference[0];
 
     TypeReference( String packageName, String name, boolean isPrimitive, boolean isArray,

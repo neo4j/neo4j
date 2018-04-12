@@ -78,7 +78,7 @@ public class HeartbeatContextTest
     @Before
     public void setup()
     {
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>(  );
+        Map<InstanceId, URI> members = new HashMap<>();
         for ( int i = 0; i < instanceIds.length; i++ )
         {
             members.put( instanceIds[i], URI.create( initialHosts[i] ) );
@@ -119,7 +119,7 @@ public class HeartbeatContextTest
 
         for ( InstanceId initialHost : instanceIds )
         {
-            assertFalse( toTest.isFailed( initialHost ) );
+            assertFalse( toTest.isFailedBasedOnSuspicions( initialHost ) );
         }
     }
 
@@ -131,7 +131,7 @@ public class HeartbeatContextTest
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
         // Being suspected by just one (us) is not enough
-        assertFalse( toTest.isFailed( suspect ) );
+        assertFalse( toTest.isFailedBasedOnSuspicions( suspect ) );
         assertTrue( toTest.alive( suspect ) ); // This resets the suspicion above
 
         // If we suspect an instance twice in a row, it shouldn't change its status in any way.
@@ -139,7 +139,7 @@ public class HeartbeatContextTest
         toTest.suspect( suspect );
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singletonList( context.getMyId() ), toTest.getSuspicionsOf( suspect ) );
-        assertFalse( toTest.isFailed( suspect ) );
+        assertFalse( toTest.isFailedBasedOnSuspicions( suspect ) );
         assertTrue( toTest.alive( suspect ) );
 
         // The other one sends suspicions too
@@ -149,11 +149,11 @@ public class HeartbeatContextTest
         // Now two instances suspect it, it should be reported failed
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( context.getMyId() ) );
         assertEquals( Collections.singleton( suspect ), toTest.getSuspicionsFor( newSuspiciousBastard ) );
-        List<InstanceId> suspiciousBastards = new ArrayList<InstanceId>( 2 );
+        List<InstanceId> suspiciousBastards = new ArrayList<>( 2 );
         suspiciousBastards.add( context.getMyId() );
         suspiciousBastards.add( newSuspiciousBastard );
         assertEquals( suspiciousBastards, toTest.getSuspicionsOf( suspect ) );
-        assertTrue( toTest.isFailed( suspect ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( suspect ) );
         assertTrue( toTest.alive( suspect ) );
     }
 
@@ -166,7 +166,7 @@ public class HeartbeatContextTest
         toTest.suspect( suspect );
 
         // Just make sure
-        assertTrue( toTest.isFailed( suspect ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( suspect ) );
 
         // Suspicions of a failed instance should be ignored
         toTest.suspicions( suspect, Collections.singleton( newSuspiciousBastard ) );
@@ -182,20 +182,20 @@ public class HeartbeatContextTest
         toTest.suspect( suspect );
 
         // Just make sure
-        assertTrue( toTest.isFailed( suspect ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( suspect ) );
 
         // Ok, here it is. We received a heartbeat, so it is alive.
         toTest.alive( suspect );
         // It must no longer be failed
-        assertFalse( toTest.isFailed( suspect ) );
+        assertFalse( toTest.isFailedBasedOnSuspicions( suspect ) );
 
         // Simulate us stopping receiving heartbeats again
         toTest.suspect( suspect );
-        assertTrue( toTest.isFailed( suspect ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( suspect ) );
 
         // Assume the other guy started receiving heartbeats first
         toTest.suspicions( newSuspiciousBastard, Collections.emptySet() );
-        assertFalse( toTest.isFailed( suspect ) );
+        assertFalse( toTest.isFailedBasedOnSuspicions( suspect ) );
     }
 
     /**
@@ -214,19 +214,19 @@ public class HeartbeatContextTest
         // Both A and B consider C down
         toTest.suspect( instanceC );
         toTest.suspicions( instanceB, Collections.singleton( instanceC ) );
-        assertTrue( toTest.isFailed( instanceC ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( instanceC ) );
 
         // A sees B as down
         toTest.suspect( instanceB );
-        assertTrue( toTest.isFailed( instanceB ) );
+        assertTrue( toTest.isFailedBasedOnSuspicions( instanceB ) );
 
         // C starts responding again
         assertTrue( toTest.alive( instanceC ) );
 
-        assertFalse( toTest.isFailed( instanceC ) );
+        assertFalse( toTest.isFailedBasedOnSuspicions( instanceC ) );
     }
     @Test
-    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers() throws Exception
+    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers()
     {
         // Given
         InstanceId notInCluster = new InstanceId( -1 ); // backup, for example

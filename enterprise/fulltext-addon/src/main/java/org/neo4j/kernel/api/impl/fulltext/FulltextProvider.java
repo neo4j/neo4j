@@ -25,13 +25,14 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 
 public interface FulltextProvider extends AutoCloseable
 {
     FulltextProvider NULL_PROVIDER = new FulltextProvider()
     {
         @Override
-        public void registerTransactionEventHandler() throws IOException
+        public void registerTransactionEventHandler()
         {
             throw noProvider();
         }
@@ -43,19 +44,19 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void openIndex( String identifier, FulltextIndexType type ) throws IOException
+        public void openIndex( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
 
         @Override
-        public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
+        public void createIndex( String identifier, FulltextIndexType type, List<String> properties )
         {
             throw noProvider();
         }
 
         @Override
-        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
+        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
@@ -74,13 +75,18 @@ public interface FulltextProvider extends AutoCloseable
 
         @Override
         public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys )
-                throws IOException, InvalidArgumentsException
         {
             throw noProvider();
         }
 
         @Override
-        public void close() throws Exception
+        public void registerFileListing( NeoStoreFileListing fileListing )
+        {
+            throw noProvider();
+        }
+
+        @Override
+        public void close()
         {
             throw noProvider();
         }
@@ -94,7 +100,7 @@ public interface FulltextProvider extends AutoCloseable
     String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
 
-    void registerTransactionEventHandler() throws IOException;
+    void registerTransactionEventHandler();
 
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.
@@ -125,4 +131,6 @@ public interface FulltextProvider extends AutoCloseable
     InternalIndexState getState( String identifier, FulltextIndexType type );
 
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
+
+    void registerFileListing( NeoStoreFileListing fileListing );
 }

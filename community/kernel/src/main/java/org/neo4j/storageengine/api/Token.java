@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+
 public class Token
 {
     private final String name;
@@ -49,11 +50,7 @@ public class Token
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof Token) )
-        {
-            return false;
-        }
-        return id == ((Token) obj).id;
+        return obj instanceof Token && id == ((Token) obj).id;
     }
 
     @Override

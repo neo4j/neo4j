@@ -30,7 +30,7 @@ public class RecordingByteChannelTest
 {
 
     @Test
-    public void shouldBeAbleToWriteToThenReadFromChannel() throws Throwable
+    public void shouldBeAbleToWriteToThenReadFromChannel()
     {
         // Given
         RecordingByteChannel channel = new RecordingByteChannel();

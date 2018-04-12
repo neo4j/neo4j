@@ -89,7 +89,7 @@ public class SchemaWithPECAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraintsByLabel() throws Exception
+    public void shouldListAddedConstraintsByLabel()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );
@@ -103,7 +103,7 @@ public class SchemaWithPECAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraintsByRelationshipType() throws Exception
+    public void shouldListAddedConstraintsByRelationshipType()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createRelationshipPropertyExistenceConstraint( Types.MY_TYPE, propertyKey );
@@ -114,7 +114,7 @@ public class SchemaWithPECAcceptanceTest
     }
 
     @Test
-    public void shouldListAddedConstraints() throws Exception
+    public void shouldListAddedConstraints()
     {
         // GIVEN
         ConstraintDefinition constraint1 = createUniquenessConstraint( label, propertyKey );

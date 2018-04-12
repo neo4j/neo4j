@@ -61,7 +61,6 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
 
     @Override
     public Lifecycle newInstance( KernelContext kernelContext, UdcKernelExtensionFactory.Dependencies dependencies )
-            throws Throwable
     {
         Config config = dependencies.config();
         return new UdcKernelExtension(

@@ -23,8 +23,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -32,10 +32,10 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 /**
  * Adds change listener features to a {@link NeoStoreDataSource}.
  * <p/>
- * TODO This being a {@link InwardKernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
- * where {@link NeoStoreDataSource} and {@link InwardKernel} are needed before they exist.
+ * TODO This being a {@link Kernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
+ * where {@link NeoStoreDataSource} and {@link Kernel} are needed before they exist.
  */
-public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
+public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 {
     public interface Listener
     {
@@ -88,14 +88,14 @@ public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life = new LifeSupport();
         life.add( dataSource );
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
 
@@ -115,20 +115,20 @@ public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
         dataSource = null;
     }
 
     @Override
-    public InwardKernel get()
+    public Kernel get()
     {
         return dataSource.getKernel();
     }

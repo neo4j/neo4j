@@ -78,7 +78,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWith(Configs.All - Configs.Compiled, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
+    val result = executeWith(Configs.All, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
         planDescription.toString should include("NodeUniqueIndexSeek")
       }, expectPlansToFail))

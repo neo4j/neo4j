@@ -27,6 +27,7 @@ import org.neo4j.harness.extensionpackage.MyEnterpriseUnmanagedExtension;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
 
@@ -41,14 +42,16 @@ public class EnterpriseNeo4jRuleTest
     public Neo4jRule neo4j = new EnterpriseNeo4jRule()
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE )
             .withExtension( "/test", MyEnterpriseUnmanagedExtension.class )
-            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .withConfig( ServerSettings.script_enabled, Settings.TRUE );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void shouldExtensionWork() throws Exception
+    public void shouldExtensionWork()
     {
         // Given running enterprise server
         String doSomethingUri = neo4j.httpURI().resolve( "test/myExtension/doSomething" ).toString();
@@ -61,7 +64,7 @@ public class EnterpriseNeo4jRuleTest
     }
 
     @Test
-    public void testPropertyExistenceConstraintCanBeCreated() throws Exception
+    public void testPropertyExistenceConstraintCanBeCreated()
     {
         // Given running enterprise server
         String createConstraintUri = neo4j.httpURI().resolve( "test/myExtension/createConstraint" ).toString();

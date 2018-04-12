@@ -51,11 +51,12 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
                 logProvider, config, myself, topologyServiceRetryStrategy );
     }
 
-    static void configureHazelcast( Config config, LogProvider logProvider )
+    public static void configureHazelcast( Config config, LogProvider logProvider )
     {
         // tell hazelcast to not phone home
         GroupProperty.PHONE_HOME_ENABLED.setSystemProperty( "false" );
         GroupProperty.SOCKET_BIND_ANY.setSystemProperty( "false" );
+        GroupProperty.SHUTDOWNHOOK_ENABLED.setSystemProperty( "false" );
 
         String licenseKey = config.get( CausalClusteringSettings.hazelcast_license_key );
         if ( licenseKey != null )

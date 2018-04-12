@@ -80,7 +80,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
             // THEN
             assertThat( constraints, hasSize( 1 ) );
-            assertThat( constraints.get( 0 ).schema().getPropertyIds()[0], equalTo( prop ) );
+            assertThat( constraints.get( 0 ).schema().getPropertyId(), equalTo( prop ) );
         }
     }
 
@@ -190,7 +190,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
         //Verify
         try ( Transaction tx = session.beginTransaction();
-              NodeCursor nodeCursor = cursors.allocateNodeCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor() )
         {
             //Node without conflict
             tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );
@@ -248,8 +248,8 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
 
         //Verify
         try ( Transaction tx = session.beginTransaction();
-              NodeCursor nodeCursor = cursors.allocateNodeCursor();
-              PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor() )
         {
             //Node without conflict
             tx.dataRead().singleNode( nodeNotConflicting, nodeCursor );

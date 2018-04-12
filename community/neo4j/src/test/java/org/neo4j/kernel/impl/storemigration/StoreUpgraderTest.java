@@ -38,7 +38,8 @@ import java.util.List;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
@@ -106,7 +107,7 @@ public class StoreUpgraderTest
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = fileSystemRule.get();
     private final RecordFormats formats;
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
+    private final IndexProvider indexProvider = new InMemoryIndexProvider();
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
@@ -237,7 +238,7 @@ public class StoreUpgraderTest
             upgrader.migrateIfNeeded( dbDirectory );
 
             // THEN
-            verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ),
+            verify( observingParticipant, Mockito.never() ).migrate( any( File.class ), any( File.class ),
                     any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant, Mockito.times( 1 ) ).
                     moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ),
@@ -261,7 +262,7 @@ public class StoreUpgraderTest
         // Then
         StoreFactory factory = new StoreFactory(
                 dbDirectory, allowMigrateConfig, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             assertThat( neoStores.getMetaDataStore().getUpgradeTransaction(),
@@ -367,12 +368,11 @@ public class StoreUpgraderTest
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, Config config, PageCache pageCache )
-            throws IOException
     {
         return newUpgrader( upgradableDatabase, pageCache, config );
     }
 
-    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache ) throws IOException
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache )
     {
         return newUpgrader( upgradableDatabase, pageCache, allowMigrateConfig );
     }
@@ -390,7 +390,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
         CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig() );
-        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, indexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );

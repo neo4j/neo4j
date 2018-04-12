@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
@@ -107,7 +106,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 public class HighAvailabilityMemberStateMachineTest
 {
     @Test
-    public void shouldStartFromPending() throws Exception
+    public void shouldStartFromPending()
     {
         // Given
         HighAvailabilityMemberStateMachine memberStateMachine = buildMockedStateMachine();
@@ -116,7 +115,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldMoveToToMasterFromPendingOnMasterElectedForItself() throws Throwable
+    public void shouldMoveToToMasterFromPendingOnMasterElectedForItself()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -136,7 +135,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldRemainToPendingOnMasterElectedForSomeoneElse() throws Throwable
+    public void shouldRemainToPendingOnMasterElectedForSomeoneElse()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -156,7 +155,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void shouldSwitchToToSlaveOnMasterAvailableForSomeoneElse() throws Throwable
+    public void shouldSwitchToToSlaveOnMasterAvailableForSomeoneElse()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -180,7 +179,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInMasterStateLosingQuorumFromTwoInstancesShouldRemainMaster() throws Throwable
+    public void whenInMasterStateLosingQuorumFromTwoInstancesShouldRemainMaster()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -216,7 +215,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInMasterStateLosingQuorumFromThreeInstancesShouldGoToPending() throws Throwable
+    public void whenInMasterStateLosingQuorumFromThreeInstancesShouldGoToPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -257,7 +256,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateLosingOtherSlaveShouldNotPutInPending() throws Throwable
+    public void whenInSlaveStateLosingOtherSlaveShouldNotPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -293,7 +292,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateWith3MemberClusterLosingMasterShouldPutInPending() throws Throwable
+    public void whenInSlaveStateWith3MemberClusterLosingMasterShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -332,7 +331,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInSlaveStateWith2MemberClusterLosingMasterShouldPutInPending() throws Throwable
+    public void whenInSlaveStateWith2MemberClusterLosingMasterShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -369,7 +368,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInToMasterStateLosingQuorumShouldPutInPending() throws Throwable
+    public void whenInToMasterStateLosingQuorumShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -404,7 +403,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenInToSlaveStateLosingQuorumShouldPutInPending() throws Throwable
+    public void whenInToSlaveStateLosingQuorumShouldPutInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -438,7 +437,7 @@ public class HighAvailabilityMemberStateMachineTest
     }
 
     @Test
-    public void whenSlaveOnlyIsElectedStayInPending() throws Throwable
+    public void whenSlaveOnlyIsElectedStayInPending()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -515,7 +514,7 @@ public class HighAvailabilityMemberStateMachineTest
                 new Response<HandshakeResult>( new HandshakeResult( 0, 42 ), storeId, mock( ResourceReleaser.class ) )
                 {
                     @Override
-                    public void accept( Handler handler ) throws IOException
+                    public void accept( Handler handler )
                     {
                     }
 

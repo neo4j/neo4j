@@ -19,12 +19,13 @@
  */
 package org.neo4j.causalclustering.core.state.machines.token;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -40,10 +41,8 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static java.util.Collections.singletonList;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenRequestSerializer.commandBytes;
 import static org.neo4j.causalclustering.core.state.machines.token.TokenType.LABEL;
 import static org.neo4j.causalclustering.core.state.machines.tx.LogIndexTxHeaderEncoding.decodeLogIndexFromTxHeader;
@@ -54,12 +53,12 @@ public class ReplicatedTokenStateMachineTest
     private final int UNEXPECTED_TOKEN_ID = 1024;
 
     @Test
-    public void shouldCreateTokenId() throws Exception
+    public void shouldCreateTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance() );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         // when
@@ -71,12 +70,12 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldAllocateTokenIdToFirstReplicateRequest() throws Exception
+    public void shouldAllocateTokenIdToFirstReplicateRequest()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance() );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
@@ -94,7 +93,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldStoreRaftLogIndexInTransactionHeader() throws Exception
+    public void shouldStoreRaftLogIndexInTransactionHeader()
     {
         // given
         int logIndex = 1;
@@ -102,7 +101,7 @@ public class ReplicatedTokenStateMachineTest
         StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>(
                 new TokenRegistry<>( "Token" ), new Token.Factory(),
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( commitProcess, -1 );
 
         // when

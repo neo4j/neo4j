@@ -41,7 +41,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 public class ReadGroupsFromCacheStepTest
 {
     @Test
-    public void shouldProduceCompleteBatchesPerOwner() throws Exception
+    public void shouldProduceCompleteBatchesPerOwner()
     {
         // GIVEN
         Configuration config = Configuration.withBatchSize( DEFAULT, 10 );
@@ -109,7 +109,7 @@ public class ReadGroupsFromCacheStepTest
         }
 
         @Override
-        protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+        protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
         {
             long lastOwningNode = lastBatchLastOwningNode;
             for ( RelationshipGroupRecord record : batch )

@@ -27,11 +27,14 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
@@ -48,13 +51,11 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.helpers.TimeUtil;
+import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.ByteUnit;
 
 import static java.lang.Character.isDigit;
-import static java.lang.Double.parseDouble;
-import static java.lang.Float.parseFloat;
-import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
@@ -377,7 +378,7 @@ public class Settings
         {
             try
             {
-                return parseInt( value );
+                return Integer.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -399,7 +400,7 @@ public class Settings
         {
             try
             {
-                return parseLong( value );
+                return Long.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -421,11 +422,11 @@ public class Settings
         {
             if ( value.equalsIgnoreCase( "true" ) )
             {
-                return true;
+                return Boolean.TRUE;
             }
             else if ( value.equalsIgnoreCase( "false" ) )
             {
-                return false;
+                return Boolean.FALSE;
             }
             else
             {
@@ -447,7 +448,7 @@ public class Settings
         {
             try
             {
-                return parseFloat( value );
+                return Float.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -469,7 +470,7 @@ public class Settings
         {
             try
             {
-                return parseDouble( value );
+                return Double.valueOf( value );
             }
             catch ( NumberFormatException e )
             {
@@ -818,10 +819,10 @@ public class Settings
         String comma = "";
         for ( Object optionValue : optionValues )
         {
-            builder.append( comma ).append( optionValue.toString() );
+            builder.append( comma ).append( optionValue );
             comma = "`, `";
         }
-        builder.append( "`" );
+        builder.append( '`' );
         return builder.toString();
     }
 
@@ -848,7 +849,7 @@ public class Settings
             @Override
             public String toString()
             {
-                return "a list separated by \"" + separator + "\" where items are " + itemParser.toString();
+                return "a list separated by \"" + separator + "\" where items are " + itemParser;
             }
         };
     }
@@ -879,7 +880,7 @@ public class Settings
         };
     }
 
-    public static BiFunction<List<String>,Function<String,String>,List<String>> nonEmptyList =
+    public static final BiFunction<List<String>,Function<String,String>,List<String>> nonEmptyList =
             new BiFunction<List<String>,Function<String,String>,List<String>>()
             {
                 @Override
@@ -1018,7 +1019,7 @@ public class Settings
                      && !format( MATCHES_PATTERN_MESSAGE, ANY ).equals(
                              valueFunction.toString() ) )
                 {
-                    description += " (" + valueFunction.toString() + ")";
+                    description += " (" + valueFunction + ")";
                 }
                 return description;
             }
@@ -1289,7 +1290,7 @@ public class Settings
         public String valueDescription()
         {
             StringBuilder builder = new StringBuilder(  );
-            builder.append( name() ).append( " is " ).append( parser.toString() );
+            builder.append( name() ).append( " is " ).append( parser );
 
             if ( valueConverters != null && valueConverters.size() > 0 )
             {
@@ -1377,5 +1378,31 @@ public class Settings
         {
             return "A filesystem path; relative paths are resolved against the root, _<" + relativeRoot.name() + ">_";
         }
+    }
+
+    public static BaseSetting<String> prefixSetting( final String name, final Function<String,String> parser, final String defaultValue )
+    {
+        BiFunction<String,Function<String,String>,String> valueLookup = ( n, settings ) -> settings.apply( n );
+        BiFunction<String,Function<String,String>,String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+
+        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
+        {
+            @Override
+            public Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer ) throws InvalidSettingException
+            {
+                // Validate setting, if present or default value otherwise
+                try
+                {
+                    apply( rawConfig::get );
+                    // only return if it was present though
+
+                    return rawConfig.entrySet().stream().filter( entry -> entry.getKey().startsWith( name() ) ).collect( CollectorsUtil.entriesToMap() );
+                }
+                catch ( RuntimeException e )
+                {
+                    throw new InvalidSettingException( e.getMessage(), e );
+                }
+            }
+        };
     }
 }

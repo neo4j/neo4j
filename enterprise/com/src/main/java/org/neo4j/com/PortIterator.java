@@ -20,6 +20,7 @@
 package org.neo4j.com;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class PortIterator implements Iterator<Integer>
 {
@@ -43,6 +44,10 @@ public class PortIterator implements Iterator<Integer>
     @Override
     public Integer next()
     {
+        if ( !hasNext() )
+        {
+            throw new NoSuchElementException();
+        }
         return start < end ? next++ : next--;
     }
 

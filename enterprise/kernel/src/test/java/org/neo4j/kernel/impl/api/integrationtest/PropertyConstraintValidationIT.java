@@ -27,21 +27,18 @@ import org.junit.runners.Suite.SuiteClasses;
 import java.util.UUID;
 
 import org.neo4j.SchemaHelper;
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.assertion.Assert;
@@ -73,18 +70,18 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int label = tokenWriteOperations.labelGetOrCreateForName( key );
-            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int label = tokenWrite.labelGetOrCreateForName( key );
+            int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.nodeKeyConstraintCreate( forLabel( label, propertyKey ) );
             commit();
         }
 
         @Test
-        public void requirePropertyFromMultipleNodeKeys() throws Exception
+        public void requirePropertyFromMultipleNodeKeys()
         {
             Label label = Label.label( "multiNodeKeyLabel" );
             SchemaHelper.createNodeKeyConstraint( db, label,  "property1", "property2" );
@@ -93,7 +90,7 @@ public class PropertyConstraintValidationIT
 
             Assert.assertException( () ->
             {
-                try ( Transaction transaction = db.beginTx() )
+                try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( "property1", "1" );
@@ -105,7 +102,7 @@ public class PropertyConstraintValidationIT
 
             Assert.assertException( () ->
             {
-                try ( Transaction transaction = db.beginTx() )
+                try ( org.neo4j.graphdb.Transaction transaction = db.beginTx() )
                 {
                     Node node = db.createNode( label );
                     node.setProperty( "property1", "1" );
@@ -127,11 +124,11 @@ public class PropertyConstraintValidationIT
             // given
             long entityId = createConstraintAndEntity( "Label1", "key1", "value1" );
 
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            int label = statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" );
-            statement.dataWriteOperations().nodeAddLabel( entityId, label );
+            int label = transaction.tokenWrite().labelGetOrCreateForName( "Label1" );
+            transaction.dataWrite().nodeAddLabel( entityId, label );
 
             // then should not throw exception
         }
@@ -139,52 +136,52 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int label = tokenWriteOperations.labelGetOrCreateForName( key );
-            int propertyKey = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int label = tokenWrite.labelGetOrCreateForName( key );
+            int propertyKey = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.nodePropertyExistenceConstraintCreate( forLabel( label, propertyKey ) );
             commit();
         }
 
         @Override
-        long createEntity( Statement statement, String type ) throws Exception
+        long createEntity( Transaction transaction, String type ) throws Exception
         {
-            long node = statement.dataWriteOperations().nodeCreate();
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( type );
-            statement.dataWriteOperations().nodeAddLabel( node, labelId );
+            long node = transaction.dataWrite().nodeCreate();
+            int labelId = transaction.tokenWrite().labelGetOrCreateForName( type );
+            transaction.dataWrite().nodeAddLabel( node, labelId );
             return node;
         }
 
         @Override
-        long createEntity( Statement statement, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String property, String value ) throws Exception
         {
-            long node = statement.dataWriteOperations().nodeCreate();
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
+            long node = transaction.dataWrite().nodeCreate();
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().nodeSetProperty( node, propertyKey, Values.of( value ) );
             return node;
         }
 
         @Override
-        long createEntity( Statement statement, String type, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String type, String property, String value ) throws Exception
         {
-            long node = createEntity( statement, type );
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
+            long node = createEntity( transaction, type );
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().nodeSetProperty( node, propertyKey, Values.of( value ) );
             return node;
         }
 
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-            int label = statement.tokenWriteOperations().labelGetOrCreateForName( type );
-            long node = statement.dataWriteOperations().nodeCreate();
-            statement.dataWriteOperations().nodeAddLabel( node, label );
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().nodeSetProperty( node, propertyKey, Values.of( value ) );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+            int label = transaction.tokenWrite().labelGetOrCreateForName( type );
+            long node = transaction.dataWrite().nodeCreate();
+            transaction.dataWrite().nodeAddLabel( node, label );
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().nodeSetProperty( node, propertyKey, Values.of( value ) );
             commit();
 
             createConstraint( type, property );
@@ -193,13 +190,13 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
+        void setProperty( Write writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
         {
             writeOps.nodeSetProperty( entityId, propertyKeyId, value );
         }
 
         @Override
-        void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception
+        void removeProperty( Write writeOps, long entityId, int propertyKey ) throws Exception
         {
             writeOps.nodeRemoveProperty( entityId, propertyKey );
         }
@@ -207,8 +204,8 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-            ReadOperations readOps = readOperationsInNewTransaction();
-            int result = PrimitiveLongCollections.count( readOps.nodesGetAll() );
+           Transaction transaction = newTransaction();
+            int result = countNodes( transaction );
             rollback();
             return result;
         }
@@ -220,58 +217,58 @@ public class PropertyConstraintValidationIT
         @Override
         void createConstraint( String key, String property ) throws KernelException
         {
-            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-            int relTypeId = tokenWriteOperations.relationshipTypeGetOrCreateForName( key );
-            int propertyKeyId = tokenWriteOperations.propertyKeyGetOrCreateForName( property );
+            TokenWrite tokenWrite = tokenWriteInNewTransaction();
+            int relTypeId = tokenWrite.relationshipTypeGetOrCreateForName( key );
+            int propertyKeyId = tokenWrite.propertyKeyGetOrCreateForName( property );
             commit();
 
-            SchemaWriteOperations schemaWrite = schemaWriteOperationsInNewTransaction();
+            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
             schemaWrite.relationshipPropertyExistenceConstraintCreate( forRelType( relTypeId, propertyKeyId ) );
             commit();
         }
 
         @Override
-        long createEntity( Statement statement, String type ) throws Exception
+        long createEntity( Transaction transaction, String type ) throws Exception
         {
-            long start = statement.dataWriteOperations().nodeCreate();
-            long end = statement.dataWriteOperations().nodeCreate();
-            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type );
-            return statement.dataWriteOperations().relationshipCreate( relType, start, end );
+            long start = transaction.dataWrite().nodeCreate();
+            long end = transaction.dataWrite().nodeCreate();
+            int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type );
+            return transaction.dataWrite().relationshipCreate(  start, relType, end );
         }
 
         @Override
-        long createEntity( Statement statement, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String property, String value ) throws Exception
         {
-            long start = statement.dataWriteOperations().nodeCreate();
-            long end = statement.dataWriteOperations().nodeCreate();
+            long start = transaction.dataWrite().nodeCreate();
+            long end = transaction.dataWrite().nodeCreate();
             String relationshipTypeName = UUID.randomUUID().toString();
-            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( relationshipTypeName );
-            long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
+            int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( relationshipTypeName );
+            long relationship = transaction.dataWrite().relationshipCreate( start, relType, end );
 
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             return relationship;
         }
 
         @Override
-        long createEntity( Statement statement, String type, String property, String value ) throws Exception
+        long createEntity( Transaction transaction, String type, String property, String value ) throws Exception
         {
-            long relationship = createEntity( statement, type );
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
+            long relationship = createEntity( transaction, type );
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             return relationship;
         }
 
         @Override
         long createConstraintAndEntity( String type, String property, String value ) throws Exception
         {
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
-            int relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName( type );
-            long start = statement.dataWriteOperations().nodeCreate();
-            long end = statement.dataWriteOperations().nodeCreate();
-            long relationship = statement.dataWriteOperations().relationshipCreate( relType, start, end );
-            int propertyKey = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( property );
-            statement.dataWriteOperations().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
+            int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type );
+            long start = transaction.dataWrite().nodeCreate();
+            long end = transaction.dataWrite().nodeCreate();
+            long relationship = transaction.dataWrite().relationshipCreate( start, relType, end );
+            int propertyKey = transaction.tokenWrite().propertyKeyGetOrCreateForName( property );
+            transaction.dataWrite().relationshipSetProperty( relationship, propertyKey, Values.of( value ) );
             commit();
 
             createConstraint( type, property );
@@ -280,13 +277,13 @@ public class PropertyConstraintValidationIT
         }
 
         @Override
-        void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
+        void setProperty( Write writeOps, long entityId, int propertyKeyId, Value value ) throws Exception
         {
             writeOps.relationshipSetProperty( entityId, propertyKeyId, value );
         }
 
         @Override
-        void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception
+        void removeProperty( Write writeOps, long entityId, int propertyKey ) throws Exception
         {
             writeOps.relationshipRemoveProperty( entityId, propertyKey );
         }
@@ -294,8 +291,8 @@ public class PropertyConstraintValidationIT
         @Override
         int entityCount() throws TransactionFailureException
         {
-            ReadOperations readOps = readOperationsInNewTransaction();
-            int result = PrimitiveLongCollections.count( readOps.relationshipsGetAll() );
+            Transaction transaction = newTransaction();
+            int result = countRelationships( transaction );
             rollback();
             return result;
         }
@@ -305,19 +302,19 @@ public class PropertyConstraintValidationIT
     {
         abstract void createConstraint( String key, String property ) throws KernelException;
 
-        abstract long createEntity( Statement statement, String type ) throws Exception;
+        abstract long createEntity( Transaction transaction, String type ) throws Exception;
 
-        abstract long createEntity( Statement statement, String property, String value ) throws Exception;
+        abstract long createEntity( Transaction transaction, String property, String value ) throws Exception;
 
-        abstract long createEntity( Statement statement, String type, String property, String value )
+        abstract long createEntity( Transaction transaction, String type, String property, String value )
                 throws Exception;
 
         abstract long createConstraintAndEntity( String type, String property, String value ) throws Exception;
 
-        abstract void setProperty( DataWriteOperations writeOps, long entityId, int propertyKeyId, Value value )
+        abstract void setProperty( Write writeOps, long entityId, int propertyKeyId, Value value )
                 throws Exception;
 
-        abstract void removeProperty( DataWriteOperations writeOps, long entityId, int propertyKey ) throws Exception;
+        abstract void removeProperty( Write writeOps, long entityId, int propertyKey ) throws Exception;
 
         abstract int entityCount() throws TransactionFailureException;
 
@@ -335,10 +332,10 @@ public class PropertyConstraintValidationIT
             // given
             createConstraint( "Type1", "key1" );
 
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            createEntity( statement, "Type1" );
+            createEntity( transaction, "Type1" );
             try
             {
                 commit();
@@ -357,11 +354,11 @@ public class PropertyConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-            removeProperty( statement.dataWriteOperations(), entity, key );
+            int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+            removeProperty( transaction.dataWrite(), entity, key );
             try
             {
                 commit();
@@ -380,13 +377,13 @@ public class PropertyConstraintValidationIT
         {
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
+            int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
             //remove and put back
-            removeProperty( statement.dataWriteOperations(), entity, key );
-            setProperty( statement.dataWriteOperations(), entity, key, Values.of( "value2" ) );
+            removeProperty( transaction.dataWrite(), entity, key );
+            setProperty( transaction.dataWrite(), entity, key, Values.of( "value2" ) );
 
             commit();
         }
@@ -397,11 +394,11 @@ public class PropertyConstraintValidationIT
             // given
             long entity = createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            int key = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "key1" );
-            setProperty( statement.dataWriteOperations(), entity, key, Values.of( "value1" ) );
+            int key = transaction.tokenWrite().propertyKeyGetOrCreateForName( "key1" );
+            setProperty( transaction.dataWrite(), entity, key, Values.of( "value1" ) );
 
             // then should not throw exception
         }
@@ -412,13 +409,13 @@ public class PropertyConstraintValidationIT
             // given
             createConstraintAndEntity( "Type1", "key1", "value1" );
 
-            Statement statement = statementInNewTransaction( AnonymousContext.writeToken() );
+            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
 
             // when
-            createEntity( statement, "key1", "value1" );
-            createEntity( statement, "Type2" );
-            createEntity( statement, "Type1", "key1", "value2" );
-            createEntity( statement, "Type1", "key1", "value3" );
+            createEntity( transaction, "key1", "value1" );
+            createEntity( transaction, "Type2" );
+            createEntity( transaction, "Type1", "key1", "value2" );
+            createEntity( transaction, "Type1", "key1", "value3" );
 
             commit();
 

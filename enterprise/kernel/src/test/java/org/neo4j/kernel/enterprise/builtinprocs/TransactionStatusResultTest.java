@@ -29,20 +29,42 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
+import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
+import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.VirtualValues;
@@ -53,8 +75,9 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class TransactionStatusResultTest
 {
@@ -123,6 +146,7 @@ public class TransactionStatusResultTest
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
         assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
         assertEquals( 0L, statusResult.pageHits );
         assertEquals( 0L, statusResult.pageFaults );
     }
@@ -147,6 +171,7 @@ public class TransactionStatusResultTest
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
         assertEquals( Long.valueOf( 1 ), statusResult.allocatedBytes );
+        assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
         assertEquals( 0, statusResult.pageHits );
         assertEquals( 0, statusResult.pageFaults );
     }
@@ -162,7 +187,7 @@ public class TransactionStatusResultTest
         return new ExecutingQuery( queryId, getTestConnectionInfo(), "testUser", "testQuery", VirtualValues.EMPTY_MAP,
                 Collections.emptyMap(), () -> 1L, PageCursorTracer.NULL,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
-                new CountingSystemNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
+                new CountingNanoClock(), new CountingCpuClock(), new CountingHeapAllocation() );
     }
 
     private HttpConnectionInfo getTestConnectionInfo()
@@ -180,7 +205,7 @@ public class TransactionStatusResultTest
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
             return Stream.of( ActiveLock.sharedLock( ResourceTypes.NODE, 3 ) );
         }
@@ -188,14 +213,29 @@ public class TransactionStatusResultTest
         @Override
         public TransactionExecutionStatistic transactionStatistic()
         {
-            KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-            TestStatistics statistics =
-                    new TestStatistics( transaction, new AtomicReference<>( new CountingCpuClock() ),
-                            new AtomicReference<>( new CountingHeapAllocation() ) );
-            statistics.init( Thread.currentThread().getId(), PageCursorTracer.NULL );
-            when( transaction.getStatistics() ).thenReturn( statistics );
-            return new TransactionExecutionStatistic( transaction, Clocks.fakeClock().forward( 2010, MILLISECONDS ),
-                    200 );
+            KernelTransactionImplementation transaction = new KernelTransactionImplementation(
+                        mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
+                        mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT,
+                        mock( TransactionCommitProcess.class ), new TransactionStats(), () -> mock( ExplicitIndexTransactionState.class ),
+                        mock( Pool.class ), Clocks.fakeClock(),
+                        new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
+                        TransactionTracer.NULL,
+                        LockTracer.NONE, PageCursorTracerSupplier.NULL,
+                        mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
+                        mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
+                        EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
+                        mock( IndexingService.class ) )
+            {
+                @Override
+                public Statistics getStatistics()
+                {
+                    TestStatistics statistics = new TestStatistics( this, new AtomicReference<>( new CountingCpuClock() ),
+                                    new AtomicReference<>( new CountingHeapAllocation() ) );
+                    statistics.init( Thread.currentThread().getId(), PageCursorTracer.NULL );
+                    return statistics;
+                }
+            };
+            return new TransactionExecutionStatistic( transaction, Clocks.fakeClock().forward( 2010, MILLISECONDS ), 200 );
         }
     }
 
@@ -211,11 +251,10 @@ public class TransactionStatusResultTest
                 AtomicReference<HeapAllocation> heapAllocationRef )
         {
             super( transaction, cpuClockRef, heapAllocationRef );
-
         }
     }
 
-    private static class CountingSystemNanoClock extends SystemNanoClock
+    private static class CountingNanoClock extends SystemNanoClock
     {
         private long time;
 

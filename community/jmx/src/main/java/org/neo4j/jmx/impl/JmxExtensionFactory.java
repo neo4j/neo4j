@@ -44,7 +44,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new JmxKernelExtension(
                 dependencies.getKernelData(), dependencies.getLogService().getInternalLogProvider() );

@@ -117,7 +117,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         end.set( true );
 
         // THEN (assertions as part of the workers applying transactions)
-        workers.awaitAndThrowOnError( RuntimeException.class );
+        workers.awaitAndThrowOnError();
     }
 
     private void awaitOnline( IndexProxy index ) throws InterruptedException
@@ -234,7 +234,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         long nodeId;
 
         @Override
-        public boolean visit( StorageCommand element ) throws IOException
+        public boolean visit( StorageCommand element )
         {
             if ( element instanceof NodeCommand )
             {

@@ -26,8 +26,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class TxStreamFinishedResponseEncoder extends MessageToByteEncoder<TxStreamFinishedResponse>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, TxStreamFinishedResponse response, ByteBuf out ) throws
-            Exception
+    protected void encode( ChannelHandlerContext ctx, TxStreamFinishedResponse response, ByteBuf out )
     {
         out.writeInt( response.status().ordinal() );
         out.writeLong( response.latestTxId() );

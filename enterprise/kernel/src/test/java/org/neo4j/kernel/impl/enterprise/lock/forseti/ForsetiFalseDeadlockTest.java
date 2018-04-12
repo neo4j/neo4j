@@ -278,20 +278,20 @@ public class ForsetiFalseDeadlockTest
      */
     @Ignore
     @Test
-    public void testAggressivelyForFalseDeadlocks() throws Exception
+    public void testAggressivelyForFalseDeadlocks()
     {
         int testRuns = 2000;
         loopRunTest( testRuns );
     }
 
     @Test
-    public void testMildlyForFalseDeadlocks() throws Exception
+    public void testMildlyForFalseDeadlocks()
     {
         int testRuns = 10;
         loopRunTest( testRuns );
     }
 
-    private void loopRunTest( int testRuns ) throws InterruptedException, java.util.concurrent.ExecutionException
+    private void loopRunTest( int testRuns )
     {
         List<Throwable> exceptionList = new ArrayList<>();
         loopRun( testRuns, exceptionList );

@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class RecordChangeSetTest
 {
     @Test
-    public void shouldStartWithSetsInitializedAndEmpty() throws Exception
+    public void shouldStartWithSetsInitializedAndEmpty()
     {
         // GIVEN
         RecordChangeSet changeSet = new RecordChangeSet( mock( Loaders.class ) );
@@ -52,7 +52,7 @@ public class RecordChangeSetTest
     }
 
     @Test
-    public void shouldClearStateOnClose() throws Exception
+    public void shouldClearStateOnClose()
     {
         // GIVEN
         NeoStores mockStore = mock( NeoStores.class );

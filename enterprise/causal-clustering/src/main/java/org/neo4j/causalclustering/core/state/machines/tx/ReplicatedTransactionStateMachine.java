@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.machines.tx;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.Result;
@@ -27,7 +26,8 @@ import org.neo4j.causalclustering.core.state.machines.StateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -49,6 +49,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     private final int maxBatchSize;
     private final Log log;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
 
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
@@ -56,13 +57,15 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
                                               ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize,
                                               LogProvider logProvider,
-                                              PageCursorTracerSupplier pageCursorTracerSupplier )
+                                              PageCursorTracerSupplier pageCursorTracerSupplier,
+                                              VersionContextSupplier versionContextSupplier )
     {
         this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
@@ -103,9 +106,15 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
         {
             try
             {
-                TransactionToApply transaction = new TransactionToApply( tx );
+                TransactionToApply transaction = new TransactionToApply( tx, versionContextSupplier.getVersionContext() );
                 transaction.onClose( txId ->
                 {
+                    if ( tx.getLatestCommittedTxWhenStarted() >= txId )
+                    {
+                        throw new IllegalStateException(
+                                format( "Out of order transaction. Expected that %d < %d", tx.getLatestCommittedTxWhenStarted(), txId ) );
+                    }
+
                     callback.accept( Result.of( txId ) );
                     commandIndexTracker.setAppliedCommandIndex( commandIndex );
                 } );
@@ -119,7 +128,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
         // implicitly flushed
     }

@@ -105,7 +105,7 @@ public class RaftMessageEncodingDecodingTest
 
         // When
         MemberId sender = new MemberId( UUID.randomUUID() );
-        RaftMessages.ClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, clusterId,
+        RaftMessages.ClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, clusterId,
         new RaftMessages.Heartbeat( sender, 1, 2, 3 ) );
         ChannelHandlerContext ctx = setupContext();
         ByteBuf buffer = null;
@@ -168,7 +168,7 @@ public class RaftMessageEncodingDecodingTest
         ArrayList<Object> thingsRead = new ArrayList<>( 1 );
 
         // When
-        RaftMessages.ClusterIdAwareMessage decoratedMessage =
+        RaftMessages.ClusterIdAwareMessage<?> decoratedMessage =
                 RaftMessages.ReceivedInstantClusterIdAwareMessage.of( now, clusterId, message );
         ChannelHandlerContext ctx = setupContext();
         ByteBuf buffer = null;

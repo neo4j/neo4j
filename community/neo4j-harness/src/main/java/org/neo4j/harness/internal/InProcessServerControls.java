@@ -19,16 +19,18 @@
  */
 package org.neo4j.harness.internal;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
@@ -37,13 +39,17 @@ import org.neo4j.server.AbstractNeoServer;
 public class InProcessServerControls implements ServerControls
 {
     private final File serverFolder;
+    private final File userLogFile;
+    private final File internalLogFile;
     private final AbstractNeoServer server;
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
 
-    public InProcessServerControls( File serverFolder, AbstractNeoServer server, Closeable additionalClosable )
+    public InProcessServerControls( File serverFolder, File userLogFile, File internalLogFile, AbstractNeoServer server, Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
+        this.userLogFile = userLogFile;
+        this.internalLogFile = internalLogFile;
         this.server = server;
         this.additionalClosable = additionalClosable;
     }
@@ -82,9 +88,9 @@ public class InProcessServerControls implements ServerControls
         {
             additionalClosable.close();
         }
-        catch ( Throwable e )
+        catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         try
         {
@@ -96,6 +102,35 @@ public class InProcessServerControls implements ServerControls
         catch ( IOException e )
         {
             throw new RuntimeException( "Failed to clean up test server directory.", e );
+        }
+    }
+
+    @Override
+    public void printLogs( PrintStream out )
+    {
+        printLog( "User Log File", userLogFile, out );
+        printLog( "Internal Log File", internalLogFile, out );
+    }
+
+    private static void printLog( String description, File file, PrintStream out )
+    {
+        if ( file != null && file.exists() )
+        {
+            out.println( String.format( "---------- BEGIN %s ----------", description ) );
+
+            try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
+            {
+                reader.lines().forEach( out::println );
+            }
+            catch ( IOException ex )
+            {
+                out.println( "Unable to collect log files: " + ex.getMessage() );
+                ex.printStackTrace( out );
+            }
+            finally
+            {
+                out.println( String.format( "---------- END %s ----------", description ) );
+            }
         }
     }
 

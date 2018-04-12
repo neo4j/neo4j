@@ -20,6 +20,7 @@
 package org.neo4j.util;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.StreamConsumer;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
@@ -62,6 +64,12 @@ public class TestHelpers
 
     public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args ) throws Exception
     {
+        return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, System.out, System.err, true, args );
+    }
+
+    public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, PrintStream outPrintStream, PrintStream errPrintStream,
+            boolean debug, String... args ) throws Exception
+    {
         List<String> allArgs =
                 new ArrayList<>( Arrays.asList( ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(), AdminTool.class.getName() ) );
         allArgs.add( "backup" );
@@ -69,15 +77,20 @@ public class TestHelpers
 
         ProcessBuilder processBuilder = new ProcessBuilder().command( allArgs.toArray( new String[allArgs.size()]));
         processBuilder.environment().put( "NEO4J_HOME", neo4jHome.getAbsolutePath() );
-        processBuilder.environment().put( "NEO4J_DEBUG", "anything_works" );
+        if ( debug )
+        {
+            processBuilder.environment().put( "NEO4J_DEBUG", "anything_works" );
+        }
         Process process = processBuilder.start();
-        return new ProcessStreamHandler( process, false ).waitForResult();
+        ProcessStreamHandler processStreamHandler =
+                new ProcessStreamHandler( process, false, "", StreamConsumer.IGNORE_FAILURES, outPrintStream, errPrintStream );
+        return processStreamHandler.waitForResult();
     }
 
     public static String backupAddressCc( GraphDatabaseAPI graphDatabase )
     {
         ListenSocketAddress hostnamePort = graphDatabase.getDependencyResolver().resolveDependency( Config.class ).get(
-                listenAddress( "causal_clustering.transaction_listen_address", 6000 ) );
+                listenAddress( "dbms.backup.address", 6000 ) );
 
         return hostnamePort.toString();
     }

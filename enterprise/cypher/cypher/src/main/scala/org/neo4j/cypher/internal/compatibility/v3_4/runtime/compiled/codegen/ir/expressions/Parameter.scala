@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 
-case class Parameter(key: String, variableName: String, cType: CypherCodeGenType = CodeGenType.Any) extends CodeGenExpression {
+case class Parameter(key: String, variableName: String, cType: CypherCodeGenType = CodeGenType.AnyValue) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.expectParameter(key, variableName, cType)

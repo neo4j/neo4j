@@ -36,7 +36,7 @@ public class HighIdBatchTransactionApplier extends BatchTransactionApplier.Adapt
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         return new HighIdTransactionApplier( neoStores );
     }

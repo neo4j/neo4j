@@ -21,7 +21,9 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -66,9 +68,41 @@ public class CoreTopology implements Topology<CoreServerInfo>
         return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
     }
 
-    public Optional<MemberId> anyCoreMemberId()
+    public Optional<MemberId> randomCoreMemberId()
     {
-            return coreMembers.keySet().stream().findAny();
+        if ( coreMembers.isEmpty() )
+        {
+            return Optional.empty();
+        }
+        return coreMembers.keySet().stream().skip( ThreadLocalRandom.current().nextInt( coreMembers.size() ) ).findFirst();
     }
 
+    @Override
+    public CoreTopology filterTopologyByDb( String dbName )
+    {
+        Map<MemberId, CoreServerInfo> filteredMembers = filterHostsByDb( members(), dbName );
+
+        return new CoreTopology( clusterId(), canBeBootstrapped(), filteredMembers );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        CoreTopology that = (CoreTopology) o;
+        return Objects.equals( coreMembers, that.coreMembers );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( coreMembers );
+    }
 }

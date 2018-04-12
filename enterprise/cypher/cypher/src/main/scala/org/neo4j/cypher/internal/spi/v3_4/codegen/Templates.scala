@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util
+import java.util.Comparator
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
@@ -34,17 +35,19 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, TaskCloser}
+import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods.{newNodeProxyById, newRelationshipProxyById}
+import org.neo4j.cypher.internal.util.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
-import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup}
+import org.neo4j.internal.kernel.api.exceptions.{EntityNotFoundException, KernelException}
+import org.neo4j.kernel.api.SilentTokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.{AnyValue, AnyValues}
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual._
 
 /**
   * Contains common code generation constructs.
@@ -63,9 +66,21 @@ object Templates {
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
   val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
+  def createNewNodeValueFromPrimitive(proxySpi: Expression, expression: Expression) =
+    Expression.invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
+      Expression.invoke(proxySpi, newNodeProxyById, expression))
+
+  def createNewRelationshipValueFromPrimitive(proxySpi: Expression, expression: Expression) =
+    Expression.invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
+      Expression.invoke(proxySpi, newRelationshipProxyById, expression))
+
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
     methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
     Expression.newArray(typeRef[T], values: _*))
+
+  def asAnyValueList(values: Seq[Expression]): Expression = Expression.invoke(
+    methodReference(typeRef[VirtualValues], typeRef[ListValue], "list", typeRef[Array[AnyValue]]),
+    Expression.newArray(typeRef[AnyValue], values: _*))
 
   def asPrimitiveNodeStream(values: Seq[Expression]): Expression = Expression.invoke(
     methodReference(typeRef[PrimitiveNodeStream], typeRef[PrimitiveNodeStream], "of", typeRef[Array[Long]]),
@@ -125,10 +140,10 @@ object Templates {
           Expression
             .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), fields.ro))), handle.load("e")
+                        .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
         ))
       }
     }, param[KernelException]("e"))
@@ -152,10 +167,10 @@ object Templates {
           Expression
             .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), fields.ro))), handle.load("e")
+                        .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
         ))
       }
     }, param[KernelException]("e"))
@@ -181,9 +196,10 @@ object Templates {
   val newRelationshipDataExtractor = Expression
     .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
+  val valueComparator = Expression.getStatic(staticField[Values, Comparator[Value]]("COMPARATOR"))
+  val anyValueComparator = Expression.getStatic(staticField[AnyValues, Comparator[AnyValue]]("COMPARATOR"))
 
   def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
-    param[TaskCloser]("closer"),
     param[QueryContext]("queryContext"),
     param[ExecutionMode]("executionMode"),
     param[Provider[InternalPlanDescription]]("description"),
@@ -191,7 +207,6 @@ object Templates {
 
     param[MapValue]("params")).
     invokeSuper().
-    put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
     put(self(classHandle), typeRef[QueryContext], "queryContext", load("queryContext", typeRef[QueryContext])).
     put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
@@ -201,21 +216,6 @@ object Templates {
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, EmbeddedProxySPI]("entityAccessor"))).
     put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
-
-  def getOrLoadReadOperations(clazz: ClassGenerator, fields: Fields) = {
-    val methodBuilder: Builder = MethodDeclaration.method(typeRef[ReadOperations], "getOrLoadReadOperations")
-    using(clazz.generate(methodBuilder)) { generate =>
-      val ro = Expression.get(generate.self(), fields.ro)
-      using(generate.ifStatement(Expression.isNull(ro))) { block =>
-        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
-        val readOperations: MethodReference = method[QueryTransactionalContext, ReadOperations]("readOperations")
-        val queryContext = Expression.get(block.self(), fields.queryContext)
-        block.put(block.self(), fields.ro,
-            Expression.invoke(Expression.invoke(queryContext, transactionalContext), readOperations))
-      }
-      generate.returns(ro)
-    }
-  }
 
   def getOrLoadCursors(clazz: ClassGenerator, fields: Fields) = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[CursorFactory], "getOrLoadCursors")
@@ -231,6 +231,7 @@ object Templates {
       generate.returns(cursors)
     }
   }
+
   def getOrLoadDataRead(clazz: ClassGenerator, fields: Fields) = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[Read], "getOrLoadDataRead")
     using(clazz.generate(methodBuilder)) { generate =>
@@ -243,6 +244,36 @@ object Templates {
                   Expression.invoke(Expression.invoke(queryContext, transactionalContext), dataRead))
       }
       generate.returns(dataRead)
+    }
+  }
+
+  def getOrLoadTokenRead(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[TokenRead], "getOrLoadTokenRead")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val tokenRead = Expression.get(generate.self(), fields.tokenRead)
+      using(generate.ifStatement(Expression.isNull(tokenRead))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val tokenRead: MethodReference = method[QueryTransactionalContext, TokenRead]("tokenRead")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.tokenRead,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), tokenRead))
+      }
+      generate.returns(tokenRead)
+    }
+  }
+
+  def getOrLoadSchemaRead(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[SchemaRead], "getOrLoadSchemaRead")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val schemaRead = Expression.get(generate.self(), fields.schemaRead)
+      using(generate.ifStatement(Expression.isNull(schemaRead))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val schemaRead: MethodReference = method[QueryTransactionalContext, SchemaRead]("schemaRead")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.schemaRead,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), schemaRead))
+      }
+      generate.returns(schemaRead)
     }
   }
 
@@ -277,12 +308,32 @@ object Templates {
     }
   }
 
+  def relationshipScanCursor(clazz: ClassGenerator,  fields: Fields): Unit = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[RelationshipScanCursor], "relationshipScanCursor")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val relationshipCursor = Expression.get(generate.self(), fields.relationshipScanCursor)
+      Expression.get(generate.self(), fields.cursors)
+      val cursors = Expression.invoke(generate.self(),
+                                      methodReference(generate.owner(), typeRef[CursorFactory], "getOrLoadCursors" ))
+      using(generate.ifStatement(Expression.isNull(relationshipCursor))) { block =>
+        block.put(block.self(), fields.relationshipScanCursor,
+                  Expression.invoke(cursors, method[CursorFactory, RelationshipScanCursor]("allocateRelationshipScanCursor")))
+
+      }
+      generate.returns(relationshipCursor)
+    }
+  }
+
   def closeCursors(clazz: ClassGenerator, fields: Fields): Unit = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[Unit], "closeCursors")
     using(clazz.generate(methodBuilder)) { generate =>
       val nodeCursor = Expression.get(generate.self(), fields.nodeCursor)
       using(generate.ifStatement(Expression.notNull(nodeCursor))) { block =>
         block.expression(Expression.invoke(nodeCursor, method[NodeCursor, Unit]("close")))
+      }
+      val relationshipCursor = Expression.get(generate.self(), fields.relationshipScanCursor)
+      using(generate.ifStatement(Expression.notNull(relationshipCursor))) { block =>
+        block.expression(Expression.invoke(relationshipCursor, method[RelationshipScanCursor, Unit]("close")))
       }
       val propertyCursor = Expression.get(generate.self(), fields.propertyCursor)
       using(generate.ifStatement(Expression.notNull(propertyCursor))) { block =>

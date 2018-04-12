@@ -28,10 +28,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
+import org.neo4j.bolt.runtime.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
+import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
-import org.neo4j.bolt.transport.DefaultBoltProtocolHandlerFactory;
+import org.neo4j.bolt.transport.BoltProtocolPipelineInstallerFactory;
+import org.neo4j.bolt.transport.DefaultBoltProtocolPipelineInstallerFactory;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
@@ -39,9 +45,6 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
-import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -84,7 +87,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     public static class Settings implements LoadableConfig
     {
         @Description( "Specify the SSL policy to use" )
-        public static Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
+        public static final Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
     }
 
     public interface Dependencies
@@ -124,7 +127,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         Config config = dependencies.config();
         GraphDatabaseService gdb = dependencies.db();
@@ -132,7 +135,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         LogService logService = dependencies.logService();
         Clock clock = dependencies.clock();
         SslPolicyLoader sslPolicyFactory = dependencies.sslPolicyFactory();
-        Log log = logService.getInternalLog( WorkerFactory.class );
+        Log log = logService.getInternalLog( BoltKernelExtension.class );
+        Log userLog = logService.getUserLog( BoltKernelExtension.class );
 
         LifeSupport life = new LifeSupport();
 
@@ -143,16 +147,45 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
+        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
+
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
-        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
+        BoltSchedulerProvider boltSchedulerProvider =
+                life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
+        BoltConnectionFactory boltConnectionFactory =
+                createConnectionFactory( config, boltFactory, boltSchedulerProvider, throttleGroup, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
-        TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
-        BoltProtocolHandlerFactory handlerFactory = createHandlerFactory( workerFactory, throttleGroup, logService );
+        BoltProtocolPipelineInstallerFactory handlerFactory = createHandlerFactory( boltConnectionFactory, throttleGroup, logService );
 
-        Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
-                .collect( Collectors.toMap( Function.identity(), connConfig ->
+        if ( !config.enabledBoltConnectors().isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
+        {
+            NettyServer server = new NettyServer( scheduler.threadFactory( boltNetworkIO ),
+                    createConnectors( config, sslPolicyFactory, logService, log, boltLogging, throttleGroup, handlerFactory ), connectionRegister,
+                    userLog );
+            life.add( server );
+            log.info( "Bolt Server extension loaded." );
+        }
+
+        return life;
+    }
+
+    private BoltConnectionFactory createConnectionFactory( Config config, BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
+            TransportThrottleGroup throttleGroup,
+            Dependencies dependencies, LogService logService, Clock clock )
+    {
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, logService, clock,
+                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ),
+                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark ),
+                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), dependencies.monitors() );
+    }
+
+    private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,
+            BoltMessageLogging boltLogging, TransportThrottleGroup throttleGroup, BoltProtocolPipelineInstallerFactory handlerFactory )
+    {
+        Map<BoltConnector,ProtocolInitializer> connectors =
+                config.enabledBoltConnectors().stream().collect( Collectors.toMap( Function.identity(), connConfig ->
                 {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
                     SslContext sslCtx;
@@ -186,28 +219,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                         break;
                     }
 
-                    return new SocketTransport( listenAddress, sslCtx, requireEncryption,
-                            logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
+                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
+                            throttleGroup, handlerFactory );
                 } ) );
 
-        if ( !connectors.isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
-        {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
-            log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors.values() )
-            {
-                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
-            }
-        }
-
-        return life;
-    }
-
-    protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-            Dependencies dependencies, LogService logService, Clock clock )
-    {
-        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService, clock );
-        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
+        return connectors;
     }
 
     private SslContext createSslContext( SslPolicyLoader sslPolicyFactory, Config config )
@@ -233,9 +249,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return new BasicAuthentication( authManager, userManagerSupplier );
     }
 
-    private static BoltProtocolHandlerFactory createHandlerFactory( WorkerFactory workerFactory,
+    private static BoltProtocolPipelineInstallerFactory createHandlerFactory( BoltConnectionFactory connectionFactory,
             TransportThrottleGroup throttleGroup, LogService logService )
     {
-        return new DefaultBoltProtocolHandlerFactory( workerFactory, throttleGroup, logService );
+        return new DefaultBoltProtocolPipelineInstallerFactory( connectionFactory, throttleGroup, logService );
     }
 }

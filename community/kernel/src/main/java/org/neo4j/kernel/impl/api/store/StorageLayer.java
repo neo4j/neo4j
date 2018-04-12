@@ -31,25 +31,25 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -184,31 +184,31 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    public SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
     {
         return schemaCache.indexDescriptor( descriptor );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetAll()
+    public Iterator<SchemaIndexDescriptor> indexesGetAll()
     {
         return toIndexDescriptors( schemaCache.indexRules() );
     }
 
     @Override
-    public Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
     {
         return schemaCache.indexesByProperty( propertyId );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index )
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
@@ -219,7 +219,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long indexGetCommittedId( IndexDescriptor index )
+    public long indexGetCommittedId( SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
         IndexRule rule = indexRule( index );
@@ -231,45 +231,50 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getState();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor.schema() ).getProviderDescriptor();
     }
 
-    @Override
-    public IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        return indexService.getIndexProxy( descriptor.schema() ).getIndexCapability();
+        boolean unique = descriptor.type() == SchemaIndexDescriptor.Type.UNIQUE;
+        SchemaDescriptor schema = descriptor.schema();
+        IndexProxy indexProxy = indexService.getIndexProxy( schema );
+
+        return new DefaultCapableIndexReference( unique, indexProxy.getIndexCapability(),
+                indexProxy.getProviderDescriptor(), schema.keyId(),
+                schema.getPropertyIds() );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getIndexPopulationProgress();
     }
 
     @Override
-    public long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
         return result.readSecond();
     }
 
     @Override
-    public double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
-    public String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    public String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexProxy( descriptor ).getPopulationFailure().asString();
     }
@@ -483,7 +488,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        if ( !(startLabelId == ReadOperations.ANY_LABEL || endLabelId == ReadOperations.ANY_LABEL) )
+        if ( !(startLabelId == StatementConstants.ANY_LABEL || endLabelId == StatementConstants.ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -521,20 +526,20 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
     }
 
     @Override
-    public DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    public DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         return counts.indexSample( tryGetIndexId( descriptor ), target );
     }
 
-    private long tryGetIndexId( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    private long tryGetIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         return indexService.getIndexId( descriptor );
     }
@@ -543,6 +548,12 @@ public class StorageLayer implements StoreReadLayer
     public boolean nodeExists( long id )
     {
         return nodeStore.isInUse( id );
+    }
+
+    @Override
+    public boolean relationshipExists( long id )
+    {
+        return relationshipStore.isInUse( id );
     }
 
     @Override
@@ -582,7 +593,7 @@ public class StorageLayer implements StoreReadLayer
         }
     }
 
-    private IndexRule indexRule( IndexDescriptor index )
+    private IndexRule indexRule( SchemaIndexDescriptor index )
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
@@ -684,7 +695,7 @@ public class StorageLayer implements StoreReadLayer
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
+    private static Iterator<SchemaIndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
         return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
     }

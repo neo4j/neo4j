@@ -37,7 +37,7 @@ import static org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat.RECOR
 public class TestJumpingIdGenerator
 {
     @Test
-    public void testIt() throws Exception
+    public void testIt()
     {
         int sizePerJump = 1000;
         IdGeneratorFactory factory = new JumpingIdGeneratorFactory( sizePerJump );

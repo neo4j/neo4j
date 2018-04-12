@@ -45,7 +45,7 @@ public final class MemoryMappingBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new MemoryMappingImpl( management, true );
     }

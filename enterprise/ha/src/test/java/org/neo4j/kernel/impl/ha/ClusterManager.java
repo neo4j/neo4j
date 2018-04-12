@@ -567,13 +567,13 @@ public class ClusterManager
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
     }
@@ -1041,7 +1041,7 @@ public class ClusterManager
          * @param db the {@link HighlyAvailableGraphDatabase} to fail.
          * @return a {@link RepairKit} which can repair the failure.
          */
-        public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
+        public RepairKit fail( HighlyAvailableGraphDatabase db )
         {
             return fail( db, NetworkFlag.values() );
         }
@@ -1056,7 +1056,7 @@ public class ClusterManager
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
-        public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags ) throws Throwable
+        public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags )
         {
             return fail( db, true, flags );
         }
@@ -1075,7 +1075,6 @@ public class ClusterManager
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
         public RepairKit fail( HighlyAvailableGraphDatabase db, boolean waitUntilDown, NetworkFlag... flags )
-                throws Throwable
         {
             assertMember( db );
 
@@ -1187,7 +1186,7 @@ public class ClusterManager
                     }
 
                     @Override
-                    public void stop() throws Throwable
+                    public void stop()
                     {
                         HighlyAvailableGraphDatabase db = members.remove( serverId );
                         if ( db != null )
@@ -1389,7 +1388,7 @@ public class ClusterManager
         }
 
         @Override
-        public HighlyAvailableGraphDatabase repair() throws Throwable
+        public HighlyAvailableGraphDatabase repair()
         {
             if ( contains( flags, NetworkFlag.OUT ) )
             {

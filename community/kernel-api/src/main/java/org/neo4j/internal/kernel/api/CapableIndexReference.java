@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
@@ -27,18 +27,22 @@ import org.neo4j.values.storable.ValueGroup;
  */
 public interface CapableIndexReference extends IndexReference, IndexCapability
 {
+    String providerKey();
+
+    String providerVersion();
+
     CapableIndexReference NO_INDEX = new CapableIndexReference()
     {
         @Override
-        public IndexOrder[] orderCapability( ValueGroup... valueGroups )
+        public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            return NO_CAPABILITY.orderCapability( valueGroups );
+            return NO_CAPABILITY.orderCapability( valueCategories );
         }
 
         @Override
-        public IndexValueCapability valueCapability( ValueGroup... valueGroups )
+        public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            return NO_CAPABILITY.valueCapability( valueGroups );
+            return NO_CAPABILITY.valueCapability( valueCategories );
         }
 
         @Override
@@ -57,6 +61,18 @@ public interface CapableIndexReference extends IndexReference, IndexCapability
         public int[] properties()
         {
             return new int[0];
+        }
+
+        @Override
+        public String providerKey()
+        {
+            return null;
+        }
+
+        @Override
+        public String providerVersion()
+        {
+            return null;
         }
     };
 }

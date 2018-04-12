@@ -23,13 +23,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 public class ProcedureSignatureTest
 {
@@ -39,7 +39,7 @@ public class ProcedureSignatureTest
             .in( "a", Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable() throws Throwable
+    public void inputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -49,7 +49,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void outputSignatureShouldNotBeModifiable() throws Throwable
+    public void outputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -70,7 +70,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax() throws Throwable
+    public void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = procedureSignature( "org", "myProcedure" )
@@ -84,7 +84,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringForVoidProcedureShouldMatchCypherSyntax() throws Throwable
+    public void toStringForVoidProcedureShouldMatchCypherSyntax()
     {
         // Given
         ProcedureSignature proc = procedureSignature( "org", "myProcedure" )

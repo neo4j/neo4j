@@ -47,7 +47,7 @@ public class ChunkedTransactionStreamTest
         StoreId storeId = StoreId.DEFAULT;
         @SuppressWarnings( "unchecked" )
         IOCursor<CommittedTransactionRepresentation> cursor = mock( IOCursor.class );
-        ChunkedTransactionStream txStream = new ChunkedTransactionStream( storeId, cursor, mock( CatchupServerProtocol.class ) );
+        ChunkedTransactionStream txStream = new ChunkedTransactionStream( storeId, BASE_TX_ID + 1, cursor, mock( CatchupServerProtocol.class ) );
         ByteBufAllocator allocator = mock( ByteBufAllocator.class );
 
         CommittedTransactionRepresentation tx1 = tx( BASE_TX_ID + 1 );

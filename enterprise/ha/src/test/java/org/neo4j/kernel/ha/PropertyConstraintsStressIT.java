@@ -27,13 +27,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntFunction;
 
 import org.neo4j.com.ComException;
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -61,6 +64,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterators.loop;
 
 /**
@@ -69,8 +73,39 @@ import static org.neo4j.helpers.collection.Iterators.loop;
 @RunWith( Parameterized.class )
 public class PropertyConstraintsStressIT
 {
+    private static final IntFunction<String> STRING_VALUE_GENERATOR = new IntFunction<String>()
+    {
+        @Override
+        public String apply( int value )
+        {
+            return "value" + value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "STRING";
+        }
+    };
+    private static final IntFunction<Number> NUMBER_VALUE_GENERATOR = new IntFunction<Number>()
+    {
+        @Override
+        public Number apply( int value )
+        {
+            return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "NUMBER";
+        }
+    };
+
     @Parameter
     public ConstraintOperations constraintOps;
+    @Parameter( 1 )
+    public IntFunction<Object> valueGenerator;
 
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -102,14 +137,22 @@ public class PropertyConstraintsStressIT
     private final AtomicInteger roundNo = new AtomicInteger( 0 );
 
     @Parameterized.Parameters( name = "{0}:{1}" )
-    public static Iterable<ConstraintOperations> params()
+    public static Iterable<Object[]> params()
     {
-        return Arrays.asList( UNIQUE_PROPERTY_CONSTRAINT_OPS, UNIQUE_PROPERTY_CONSTRAINT_OPS,
-                NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS );
+        List<Object[]> data = new ArrayList<>();
+        for ( IntFunction<?> values : array( STRING_VALUE_GENERATOR, NUMBER_VALUE_GENERATOR ) )
+        {
+            for ( ConstraintOperations operations : array( UNIQUE_PROPERTY_CONSTRAINT_OPS, UNIQUE_PROPERTY_CONSTRAINT_OPS,
+                    NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS ) )
+            {
+                data.add( array( operations, values ) );
+            }
+        }
+        return data;
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )
@@ -117,7 +160,7 @@ public class PropertyConstraintsStressIT
         clearData();
     }
 
-    private void clearData() throws InterruptedException
+    private void clearData()
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
@@ -171,7 +214,7 @@ public class PropertyConstraintsStressIT
 
                 try
                 {
-                    Thread.sleep( 10 );
+                    Thread.sleep( ThreadLocalRandom.current().nextInt( 100 ) );
                 }
                 catch ( InterruptedException ignore )
                 {
@@ -195,7 +238,7 @@ public class PropertyConstraintsStressIT
 
                 try
                 {
-                    Thread.sleep( 10 );
+                    Thread.sleep( ThreadLocalRandom.current().nextInt( 100 ) );
                 }
                 catch ( InterruptedException ignore )
                 {
@@ -363,27 +406,26 @@ public class PropertyConstraintsStressIT
                 {
                     try ( Transaction tx = slave.beginTx() )
                     {
-                        constraintOps.createEntity( slave, labelOrRelType, property, "value" + i,
+                        constraintOps.createEntity( slave, labelOrRelType, property, valueGenerator.apply( i ),
                                 constraintCompliant );
                         tx.success();
                     }
                 }
             }
-            catch ( TransactionFailureException | TransientTransactionFailureException e )
+            catch ( TransactionFailureException | TransientTransactionFailureException | ComException | ConstraintViolationException e )
             {
-                // Swallowed on purpose, we except it to fail sometimes due to either
-                //  - constraint violation on master
-                //  - concurrent schema operation on master
-            }
-            catch ( ConstraintViolationException e )
-            {
-                // Constraint violation detected on slave while building transaction
-            }
-            catch ( ComException e )
-            {
-                // Happens sometimes, cause:
-                // - The lock session requested to start is already in use.
-                //   Please retry your request in a few seconds.
+                // TransactionFailureException and TransientTransactionFailureException
+                //   Swallowed on purpose, we except it to fail sometimes due to either
+                //    - constraint violation on master
+                //    - concurrent schema operation on master
+
+                // ConstraintViolationException
+                //   Constraint violation detected on slave while building transaction
+
+                // ComException
+                //   Happens sometimes, cause:
+                //   - The lock session requested to start is already in use.
+                //     Please retry your request in a few seconds.
             }
             return i;
         };
@@ -589,7 +631,6 @@ public class PropertyConstraintsStressIT
             }
             catch ( QueryExecutionException e )
             {
-                System.out.println( "Constraint failed: " + e.getMessage() );
                 if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
                 {
                     // Unable to create constraint since it is not consistent with existing data
@@ -599,11 +640,6 @@ public class PropertyConstraintsStressIT
                 {
                     throw e;
                 }
-            }
-
-            if ( !constraintCreationFailed )
-            {
-                System.out.println( "Constraint created: " + query );
             }
 
             return constraintCreationFailed;

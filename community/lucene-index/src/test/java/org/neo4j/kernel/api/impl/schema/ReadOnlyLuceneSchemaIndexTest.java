@@ -31,7 +31,7 @@ import java.io.IOException;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.test.rule.TestDirectory;
@@ -55,10 +55,10 @@ public class ReadOnlyLuceneSchemaIndexTest
     public void setUp()
     {
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( DirectoryFactory.PERSISTENT,
-                fileSystemRule.get(), testDirectory.directory(), false );
+                fileSystemRule.get(), testDirectory.directory() );
         Config config = Config.defaults();
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
-        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, IndexDescriptorFactory.forLabel( 0, 0 ),
+        luceneSchemaIndex = new ReadOnlyDatabaseSchemaIndex( indexStorage, SchemaIndexDescriptorFactory.forLabel( 0, 0 ),
                 samplingConfig, new ReadOnlyIndexPartitionFactory() );
     }
 
@@ -69,34 +69,34 @@ public class ReadOnlyLuceneSchemaIndexTest
     }
 
     @Test
-    public void indexDeletionIndReadOnlyModeIsNotSupported() throws Exception
+    public void indexDeletionIndReadOnlyModeIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.drop();
     }
 
     @Test
-    public void indexCreationInReadOnlyModeIsNotSupported() throws Exception
+    public void indexCreationInReadOnlyModeIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.create();
     }
 
     @Test
-    public void readOnlyIndexMarkingIsNotSupported() throws Exception
+    public void readOnlyIndexMarkingIsNotSupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.markAsOnline();
     }
 
     @Test
-    public void readOnlyIndexMode() throws Exception
+    public void readOnlyIndexMode()
     {
         assertTrue( luceneSchemaIndex.isReadOnly() );
     }
 
     @Test
-    public void writerIsNotAccessibleInReadOnlyMode() throws Exception
+    public void writerIsNotAccessibleInReadOnlyMode()
     {
         expectedException.expect( UnsupportedOperationException.class );
         luceneSchemaIndex.getIndexWriter();

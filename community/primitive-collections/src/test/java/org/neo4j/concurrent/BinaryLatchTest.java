@@ -43,7 +43,7 @@ public class BinaryLatchTest
     }
 
     @Test( timeout = 3000 )
-    public void releaseThenAwaitDoesNotBlock() throws Exception
+    public void releaseThenAwaitDoesNotBlock()
     {
         BinaryLatch latch = new BinaryLatch();
         latch.release();

@@ -10,6 +10,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.unsafe</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -43,6 +44,11 @@ the relevant Commercial Agreement.
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

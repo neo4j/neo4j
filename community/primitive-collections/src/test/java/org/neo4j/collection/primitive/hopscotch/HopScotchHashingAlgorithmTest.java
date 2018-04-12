@@ -38,7 +38,7 @@ import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm
 public class HopScotchHashingAlgorithmTest
 {
     @Test
-    public void shouldSupportIteratingThroughResize() throws Exception
+    public void shouldSupportIteratingThroughResize()
     {
         // GIVEN
         int threshold = figureOutGrowthThreshold();

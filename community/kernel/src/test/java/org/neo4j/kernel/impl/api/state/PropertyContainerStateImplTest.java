@@ -36,13 +36,13 @@ import static org.junit.Assert.assertThat;
 public class PropertyContainerStateImplTest
 {
     @Test
-    public void shouldListAddedProperties() throws Exception
+    public void shouldListAddedProperties()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
         state.addProperty( 1, Values.of( "Hello" ) );
         state.addProperty( 2, Values.of( "Hello" ) );
-        state.removeProperty( 1, Values.of( "Hello" ) );
+        state.removeProperty( 1 );
 
         // When
         Iterator<StorageProperty> added = state.addedProperties();
@@ -53,7 +53,7 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced() throws Exception
+    public void shouldListAddedPropertiesEvenIfPropertiesHaveBeenReplaced()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
@@ -73,13 +73,13 @@ public class PropertyContainerStateImplTest
     }
 
     @Test
-    public void shouldConvertAddRemoveToChange() throws Exception
+    public void shouldConvertAddRemoveToChange()
     {
         // Given
         PropertyContainerStateImpl state = new PropertyContainerStateImpl( 1 );
 
         // When
-        state.removeProperty( 4, Values.of( "a value" ) );
+        state.removeProperty( 4 );
         state.addProperty( 4, Values.of( "another value" ) );
 
         // Then

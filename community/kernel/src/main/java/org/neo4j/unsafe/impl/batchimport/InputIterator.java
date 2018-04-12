@@ -38,7 +38,7 @@ public interface InputIterator extends Closeable
     abstract class Adapter implements InputIterator
     {
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
     }

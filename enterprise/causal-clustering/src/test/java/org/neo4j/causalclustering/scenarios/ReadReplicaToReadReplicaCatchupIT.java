@@ -28,11 +28,9 @@ import java.util.UUID;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -60,7 +58,7 @@ public class ReadReplicaToReadReplicaCatchupIT
                     .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" )
                     .withSharedReadReplicaParam( CausalClusteringSettings.multi_dc_license, "true" )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+                    .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST );
 
     @Test
     public void shouldEventuallyPullTransactionAcrossReadReplicas() throws Throwable
@@ -181,7 +179,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             ReadReplica current = upstreamFactory.current();
             if ( current == null )

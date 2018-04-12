@@ -77,7 +77,7 @@ public class LoadCommandTest
     private Loader loader;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         homeDir = testDirectory.directory( "home-dir" ).toPath();
         configDir = testDirectory.directory( "config-dir" ).toPath();

@@ -56,7 +56,7 @@ public class ReadReplicaMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         monitors.addMonitorListener( pullRequestMetric );
 
@@ -66,7 +66,7 @@ public class ReadReplicaMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         registry.remove( PULL_UPDATES );
         registry.remove( PULL_UPDATE_HIGHEST_TX_ID_REQUESTED );

@@ -40,7 +40,7 @@ public class CatchupGoalTrackerTest
     private static final long CATCHUP_TIMEOUT = 1_000;
 
     @Test
-    public void shouldAchieveGoalIfWithinRoundTimeout() throws Exception
+    public void shouldAchieveGoalIfWithinRoundTimeout()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -56,7 +56,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldNotAchieveGoalIfBeyondRoundTimeout() throws Exception
+    public void shouldNotAchieveGoalIfBeyondRoundTimeout()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -72,7 +72,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiring() throws Exception
+    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiring()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -90,7 +90,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiringEvenThoughWeDoEventuallyAchieveTarget() throws Exception
+    public void shouldFailToAchieveGoalDueToCatchupTimeoutExpiringEvenThoughWeDoEventuallyAchieveTarget()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -108,7 +108,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldFailToAchieveGoalDueToRoundExhaustion() throws Exception
+    public void shouldFailToAchieveGoalDueToRoundExhaustion()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -131,7 +131,7 @@ public class CatchupGoalTrackerTest
     }
 
     @Test
-    public void shouldNotFinishIfRoundsNotExhausted() throws Exception
+    public void shouldNotFinishIfRoundsNotExhausted()
     {
         FakeClock clock = Clocks.fakeClock();
         StubLog log = new StubLog();
@@ -175,13 +175,13 @@ public class CatchupGoalTrackerTest
         }
 
         @Override
-        public long readEntryTerm( long logIndex ) throws IOException
+        public long readEntryTerm( long logIndex )
         {
             return 0;
         }
 
         @Override
-        public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+        public RaftLogCursor getEntryCursor( long fromIndex )
         {
             return RaftLogCursor.empty();
         }

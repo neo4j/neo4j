@@ -45,6 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -110,8 +111,9 @@ public class GraphDatabaseFacadeFactoryTest
         catch ( RuntimeException exception )
         {
             // Then
-            assertEquals( shutdownError, exception );
-            assertEquals( startupError, Exceptions.rootCause( exception.getSuppressed()[0] ) );
+            assertTrue( exception.getMessage().startsWith( "Error starting " ) );
+            assertEquals( startupError, exception.getCause() );
+            assertEquals( shutdownError, exception.getSuppressed()[0] );
         }
     }
 

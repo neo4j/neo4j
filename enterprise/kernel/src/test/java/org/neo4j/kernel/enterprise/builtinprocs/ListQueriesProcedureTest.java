@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
@@ -95,7 +94,7 @@ public class ListQueriesProcedureTest
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
 
     @Test
-    public void shouldContainTheQueryItself() throws Exception
+    public void shouldContainTheQueryItself()
     {
         // given
         String query = "CALL dbms.listQueries";
@@ -110,7 +109,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldNotIncludeDeprecatedFields() throws Exception
+    public void shouldNotIncludeDeprecatedFields()
     {
         // when
         Result result = db.execute( "CALL dbms.listQueries" );
@@ -310,7 +309,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldContainSpecificConnectionDetails() throws Exception
+    public void shouldContainSpecificConnectionDetails()
     {
         // when
         Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
@@ -380,7 +379,7 @@ public class ListQueriesProcedureTest
     public void shouldListIndexesUsedForScans() throws Exception
     {
         // given
-        String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
+        final String QUERY = "MATCH (n:Node) USING INDEX n:Node(value) WHERE 1 < n.value < 10 SET n.value = 2";
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
@@ -518,7 +517,7 @@ public class ListQueriesProcedureTest
     private void shouldListUsedIndexes( String label, String property ) throws Exception
     {
         // given
-        String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
+        final String QUERY1 = "MATCH (n:" + label + "{" + property + ":5}) USING INDEX n:" + label + "(" + property +
                 ") SET n." + property + " = 3";
         try ( Resource<Node> test = test( () ->
         {
@@ -542,7 +541,7 @@ public class ListQueriesProcedureTest
         }
 
         // given
-        String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
+        final String QUERY2 = "MATCH (n:" + label + "{" + property + ":3}) USING INDEX n:" + label + "(" + property +
                 ") MATCH (u:" + label + "{" + property + ":4}) USING INDEX u:" + label + "(" + property +
                 ") CREATE (n)-[:KNOWS]->(u)";
         try ( Resource<Node> test = test( () ->
@@ -616,7 +615,7 @@ public class ListQueriesProcedureTest
     }
 
     private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String... queries )
-            throws TimeoutException, InterruptedException, ExecutionException
+            throws InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatch = new CountDownLatch( 1 );

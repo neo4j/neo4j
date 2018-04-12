@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.proc;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**

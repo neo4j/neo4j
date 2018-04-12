@@ -41,10 +41,7 @@ class CommandBatcher
 
     void add( long index, DistributedOperation operation ) throws Exception
     {
-        if ( batch.size() > 0 )
-        {
-            assert index == (lastIndex + 1);
-        }
+        assert batch.size() <= 0 || index == (lastIndex + 1);
 
         batch.add( operation );
         lastIndex = index;

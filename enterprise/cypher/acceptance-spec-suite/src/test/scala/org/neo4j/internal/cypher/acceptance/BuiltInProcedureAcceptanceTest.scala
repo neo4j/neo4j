@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20
 
 import scala.collection.JavaConversions._
 
@@ -269,6 +269,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     //When
     val result = executeWith(Configs.Procs, "CALL db.indexes")
 
+
     // Then
     result.toList should equal(
       List(Map("description" -> "INDEX ON :A(prop)",
@@ -276,15 +277,14 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "properties" -> List("prop"),
         "state" -> "ONLINE",
         "type" -> "node_label_property",
-        "provider" -> Map("version" -> "1.0", "key" -> "lucene+native"))))
+        "provider" -> Map(
+          "version" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getVersion,
+          "key" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getKey))))
   }
 
   test("yield from void procedure should return correct error msg") {
-
-    val thrown = intercept[SyntaxException]{
-      executeWith(Configs.Procs, "CALL db.createLabel('Label') yield node")
-    }
-
-    thrown.getMessage should include("Cannot yield value from void procedure.")
+    failWithError(Configs.Procs + Configs.Version3_4 + Configs.Version3_3 - Configs.AllRulePlanners,
+      "CALL db.createLabel('Label') yield node",
+      List("Cannot yield value from void procedure."))
   }
 }

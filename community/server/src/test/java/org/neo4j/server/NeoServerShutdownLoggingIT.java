@@ -52,7 +52,7 @@ public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldLogShutdown() throws Exception
+    public void shouldLogShutdown()
     {
         server.stop();
         logProvider.assertContainsMessageContaining( "Stopped." );

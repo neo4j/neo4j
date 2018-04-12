@@ -29,6 +29,7 @@ import java.io.File;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -56,13 +57,13 @@ public class TestGrowingFileMemoryMapping
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
 
     @Test
-    public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() throws Exception
+    public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
     {
         // don't run on windows because memory mapping doesn't work properly there
         assumeTrue( !SystemUtils.IS_OS_WINDOWS );
 
         // given
-        int NUMBER_OF_RECORDS = 1000000;
+        final int NUMBER_OF_RECORDS = 1000000;
 
         File storeDir = testDirectory.graphDbDir();
         Config config = Config.defaults( pagecache_memory, mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) );
@@ -70,7 +71,7 @@ public class TestGrowingFileMemoryMapping
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, NullLogProvider.getInstance() );
+                fileSystemAbstraction, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         NodeStore nodeStore = neoStores.getNodeStore();

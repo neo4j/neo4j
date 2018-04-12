@@ -42,13 +42,14 @@
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
 
     <neo4j.version>${project.version}</neo4j.version>
-    <neo4j-browser.version>3.1.4</neo4j-browser.version>
+    <neo4j-browser.version>3.1.7</neo4j-browser.version>
 
     <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
 
     <test.runner.jvm.settings.additional>
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
     </test.runner.jvm.settings.additional>
+    <moduleName>org.neo4j.server</moduleName>
   </properties>
 
   <scm>
@@ -216,12 +217,6 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
-    </dependency>
-
-    <!-- File uploads -->
-    <dependency>
-      <groupId>com.sun.jersey.contribs</groupId>
-      <artifactId>jersey-multipart</artifactId>
     </dependency>
 
     <!-- Test dependencies -->

@@ -82,7 +82,7 @@ public class OnlineBackupCommandTest
         when( fileSystemAbstraction.isDirectory( backupDirectory.toFile() ) ).thenReturn( true );
         when( fileSystemAbstraction.isDirectory( reportDirectory.toFile() ) ).thenReturn( true );
 
-        when( requiredArguments.getFolder() ).thenReturn( backupDirectory );
+        when( requiredArguments.getDirectory() ).thenReturn( backupDirectory );
         when( requiredArguments.getReportDir() ).thenReturn( reportDirectory );
         when( requiredArguments.getName() ).thenReturn( "backup name" );
         when( backupStrategyCoordinatorFactory.backupStrategyCoordinator( any(), any(), any(), any() ) ).thenReturn( backupStrategyCoordinator );
@@ -129,9 +129,17 @@ public class OnlineBackupCommandTest
             Usage usage = new Usage( "neo4j-admin", mock( CommandLocator.class ) );
             usage.printUsageForCommand( new OnlineBackupCommandProvider(), ps::println );
 
+            /*
+
+usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>
+                          [--from=<address>] [--protocol=<catchup>]
+                          [--fallback-to-full[=<true|false>]]
+                          [--timeout=<timeout>] [--pagecache=<8m>]
+             */
             assertEquals(
                     format( "usage: neo4j-admin backup --backup-dir=<backup-path> --name=<graph.db-backup>%n" +
-                            "                          [--from=<address>] [--fallback-to-full[=<true|false>]]%n" +
+                            "                          [--from=<address>] [--protocol=<catchup>]%n" +
+                            "                          [--fallback-to-full[=<true|false>]]%n" +
                             "                          [--timeout=<timeout>] [--pagecache=<8m>]%n" +
                             "                          [--check-consistency[=<true|false>]]%n" +
                             "                          [--cc-report-dir=<directory>]%n" +
@@ -165,6 +173,8 @@ public class OnlineBackupCommandTest
                             "                                           backup will be attempted.%n" +
                             "  --from=<address>                         Host and port of Neo4j.%n" +
                             "                                           [default:localhost:6362]%n" +
+                            "  --protocol=<catchup>                     Preferred protocol to use for%n" +
+                            "                                           communication [default:any]%n" +
                             "  --fallback-to-full=<true|false>          If an incremental backup fails backup%n" +
                             "                                           will move the old backup to%n" +
                             "                                           <name>.err.<N> and fallback to a full%n" +

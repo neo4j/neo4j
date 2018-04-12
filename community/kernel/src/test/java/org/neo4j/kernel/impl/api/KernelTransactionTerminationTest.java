@@ -32,19 +32,21 @@ import java.util.function.Consumer;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.newapi.Cursors;
-import org.neo4j.kernel.impl.newapi.KernelToken;
+import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -65,6 +67,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class KernelTransactionTerminationTest
 {
@@ -332,7 +335,7 @@ public class KernelTransactionTerminationTest
         }
     }
 
-    private static class TestKernelTransaction extends KernelTransactionImplementation
+    private static class  TestKernelTransaction extends KernelTransactionImplementation
     {
         final CommitTrackingMonitor monitor;
 
@@ -345,8 +348,10 @@ public class KernelTransactionTerminationTest
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
-                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( KernelToken.class ), mock( Cursors.class ),
-                    AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
+                    mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
+                    mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
+                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class),
+                    mock( IndexingService.class ) );
 
             this.monitor = monitor;
         }

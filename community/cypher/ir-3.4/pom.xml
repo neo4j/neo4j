@@ -22,6 +22,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.ir.v3_4</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>
@@ -59,7 +63,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
     </dependency>
 

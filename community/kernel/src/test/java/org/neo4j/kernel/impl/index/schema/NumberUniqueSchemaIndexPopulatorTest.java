@@ -19,115 +19,19 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Test;
-
-import java.io.File;
-import java.util.Arrays;
-
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator( IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new NumberSchemaIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, schemaIndexDescriptor, indexId, samplingConfig );
     }
 
     @Override
     protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
         return new NumberUniqueLayoutTestUtil();
-    }
-
-    @Test
-    public void addShouldThrowOnDuplicateValues() throws Exception
-    {
-        // given
-        populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-
-        // when
-        try
-        {
-            populator.add( Arrays.asList( updates ) );
-            fail( "Updates should have conflicted" );
-        }
-        catch ( Throwable e )
-        {
-            // then
-            assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ) );
-        }
-        finally
-        {
-            populator.close( true );
-        }
-    }
-
-    @Test
-    public void updaterShouldThrowOnDuplicateValues() throws Exception
-    {
-        // given
-        populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
-
-        // when
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            updater.process( update );
-        }
-        try
-        {
-            updater.close();
-            fail( "Updates should have conflicted" );
-        }
-        catch ( Throwable e )
-        {
-            // then
-            assertTrue( e.getMessage(), Exceptions.contains( e, IndexEntryConflictException.class ) );
-        }
-        finally
-        {
-            populator.close( true );
-        }
-    }
-
-    @Test
-    public void shouldSampleUpdates() throws Exception
-    {
-        // GIVEN
-        populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
-
-        // WHEN
-        populator.add( asList( updates ) );
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-        {
-            populator.includeSample( update );
-        }
-        IndexSample sample = populator.sampleResult();
-
-        // THEN
-        assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( updates.length, sample.uniqueValues() );
-        assertEquals( updates.length, sample.indexSize() );
-        populator.close( true );
     }
 }

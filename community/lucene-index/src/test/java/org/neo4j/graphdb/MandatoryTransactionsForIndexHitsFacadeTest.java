@@ -37,14 +37,14 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     private IndexHits<Node> indexHits;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         Index<Node> index = createIndex();
         indexHits = queryIndex( index );
     }
 
     @Test
-    public void shouldMandateTransactionsForUsingIterator() throws Exception
+    public void shouldMandateTransactionsForUsingIterator()
     {
         try ( ResourceIterator<Node> iterator = indexHits.iterator() )
         {
@@ -71,7 +71,7 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     }
 
     @Test
-    public void shouldMandateTransactionsForGetSingle() throws Exception
+    public void shouldMandateTransactionsForGetSingle()
     {
         try
         {

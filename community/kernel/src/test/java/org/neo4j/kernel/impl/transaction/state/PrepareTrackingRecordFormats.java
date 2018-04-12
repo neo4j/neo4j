@@ -153,9 +153,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
-        return actual.hasSameCapabilities( other, type );
+        return actual.hasCompatibleCapabilities( other, type );
     }
 
     @Override

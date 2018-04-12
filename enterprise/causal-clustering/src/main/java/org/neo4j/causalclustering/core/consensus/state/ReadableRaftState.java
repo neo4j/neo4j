@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.consensus.state;
 
 import java.util.Set;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
 import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerStates;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -36,6 +37,8 @@ public interface ReadableRaftState
     long term();
 
     MemberId leader();
+
+    LeaderInfo leaderInfo();
 
     long leaderCommit();
 
@@ -58,4 +61,6 @@ public interface ReadableRaftState
     boolean isPreElection();
 
     Set<MemberId> preVotesForMe();
+
+    boolean refusesToBeLeader();
 }

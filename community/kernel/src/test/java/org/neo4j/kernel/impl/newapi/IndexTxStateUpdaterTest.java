@@ -26,13 +26,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.StubNodeCursor;
-import org.neo4j.internal.kernel.api.StubPropertyCursor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
+import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -68,18 +70,19 @@ public class IndexTxStateUpdaterTest
     private TransactionState txState;
     private IndexTxStateUpdater indexTxUpdater;
 
-    private IndexDescriptor indexOn1_1 = IndexDescriptorFactory.forLabel( labelId1, propId1 );
-    private IndexDescriptor indexOn2_new = IndexDescriptorFactory.forLabel( labelId2, newPropId );
-    private IndexDescriptor uniqueOn1_2 = IndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
-    private IndexDescriptor indexOn1_1_new = IndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
-    private IndexDescriptor uniqueOn2_2_3 = IndexDescriptorFactory.uniqueForLabel( labelId2, propId2, propId3 );
-    private List<IndexDescriptor> indexes =
+    private SchemaIndexDescriptor indexOn1_1 = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1 );
+    private SchemaIndexDescriptor indexOn2_new = SchemaIndexDescriptorFactory.forLabel( labelId2, newPropId );
+    private SchemaIndexDescriptor uniqueOn1_2 = SchemaIndexDescriptorFactory.uniqueForLabel( labelId1, propId2 );
+    private SchemaIndexDescriptor indexOn1_1_new = SchemaIndexDescriptorFactory.forLabel( labelId1, propId1, newPropId );
+    private SchemaIndexDescriptor uniqueOn2_2_3 = SchemaIndexDescriptorFactory
+            .uniqueForLabel( labelId2, propId2, propId3 );
+    private List<SchemaIndexDescriptor> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;
 
     @Before
-    public void setup()
+    public void setup() throws IndexNotFoundKernelException
     {
         txState = mock( TransactionState.class );
 
@@ -111,14 +114,16 @@ public class IndexTxStateUpdaterTest
         Read readOps = mock( Read.class );
         when( readOps.txState() ).thenReturn( txState );
 
-        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, new NodeSchemaMatcher( readOps ) );
+        IndexingService indexingService = mock( IndexingService.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( mock( IndexProxy.class ) );
+        indexTxUpdater = new IndexTxStateUpdater( storeReadLayer, readOps, indexingService );
 
     }
 
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( unIndexedLabelId, node, propertyCursor, ADDED_LABEL );
@@ -129,7 +134,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId1, node, propertyCursor, ADDED_LABEL );
@@ -141,7 +146,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId2, node, propertyCursor, REMOVED_LABEL );
@@ -152,7 +157,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
@@ -160,11 +165,11 @@ public class IndexTxStateUpdaterTest
         indexTxUpdater.onPropertyChange( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
-        verify( txState, times( 0 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
@@ -176,7 +181,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
@@ -188,7 +193,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );
@@ -205,7 +210,7 @@ public class IndexTxStateUpdaterTest
     }
 
     private void verifyIndexUpdate(
-            LabelSchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
+            SchemaDescriptor schema, long nodeId, ValueTuple before, ValueTuple after )
     {
         verify( txState ).indexDoUpdateEntry( eq( schema ), eq( nodeId ), eq( before ), eq( after ) );
     }

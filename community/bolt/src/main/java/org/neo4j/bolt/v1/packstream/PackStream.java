@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.bolt.messaging.StructType;
 import org.neo4j.bolt.v1.packstream.utf8.UTF8Encoder;
 
 /**
@@ -232,8 +233,9 @@ public class PackStream
         private static final char PACKED_CHAR_START_CHAR = (char) 32;
         private static final char PACKED_CHAR_END_CHAR = (char) 126;
         private static final String[] PACKED_CHARS = prePackChars();
-        private PackOutput out;
         private UTF8Encoder utf8 = UTF8Encoder.fastestAvailableEncoder();
+
+        protected PackOutput out;
 
         public Packer( PackOutput out )
         {
@@ -464,7 +466,7 @@ public class PackStream
     {
         private static final byte[] EMPTY_BYTE_ARRAY = {};
 
-        private PackInput in;
+        protected PackInput in;
 
         public Unpacker( PackInput in )
         {
@@ -763,6 +765,16 @@ public class PackStream
             final byte markerByte = in.peekByte();
             return type( markerByte );
         }
+
+        public static void ensureCorrectStructSize( StructType structType, int expected, long actual ) throws IOException
+        {
+            if ( expected != actual )
+            {
+                throw new PackStreamException(
+                        String.format( "Invalid message received, serialized %s structures should have %d fields, " + "received %s structure has %d fields.",
+                                structType.description(), expected, structType.description(), actual ) );
+            }
+        }
     }
 
     public static class PackStreamException extends IOException
@@ -794,21 +806,7 @@ public class PackStream
         public Unexpected( PackType expectedType, byte unexpectedMarkerByte )
         {
             super( "Wrong type received. Expected " + expectedType + ", received: " + type( unexpectedMarkerByte ) +
-                   " " + "(" + toHexString( unexpectedMarkerByte ) + ")." );
-        }
-
-        private static String toHexString( byte unexpectedMarkerByte )
-        {
-            String s = Integer.toHexString( unexpectedMarkerByte );
-            if ( s.length() > 2 )
-            {
-                s = s.substring( 0, 2 );
-            }
-            else if ( s.length() < 2 )
-            {
-                return "0" + s;
-            }
-            return "0x" + s;
+                   " (0x" + Integer.toHexString( unexpectedMarkerByte ) + ")." );
         }
     }
 }

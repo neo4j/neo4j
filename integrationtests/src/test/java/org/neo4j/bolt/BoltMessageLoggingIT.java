@@ -92,7 +92,7 @@ public class BoltMessageLoggingIT
     private Driver driver;
 
     @After
-    public void closeDriver() throws Exception
+    public void closeDriver()
     {
         if ( driver != null )
         {

@@ -58,7 +58,7 @@ public class LabelRecoveryTest
      * next time that record would be ensured heavy.
      */
     @Test
-    public void shouldRecoverNodeWithDynamicLabelRecords() throws Exception
+    public void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
         database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();

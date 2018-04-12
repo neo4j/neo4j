@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.TypeSafeMathSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList}
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.values._
@@ -29,15 +28,14 @@ import org.neo4j.values.storable.{UTF8StringValue, _}
 import org.neo4j.values.utils.UTF8Utils
 import org.neo4j.values.virtual.VirtualValues
 
-case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
+case class Add(a: Expression, b: Expression) extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val aVal = a(ctx, state)
     val bVal = b(ctx, state)
 
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
-      case (x: IntegralValue, y: IntegralValue) => Values.longValue(StrictMath.addExact(x.longValue(),y.longValue()))
-      case (x: NumberValue, y: NumberValue) => Values.doubleValue(x.doubleValue() + y.doubleValue())
+      case (x: NumberValue, y: NumberValue) => x.plus(y)
       case (x: UTF8StringValue, y: UTF8StringValue) => UTF8Utils.add(x, y)
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
@@ -47,6 +45,9 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
       case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())
       case (x: FloatValue, y: TextValue) => Values.stringValue(x.doubleValue() + y.stringValue())
+      case (x: TemporalValue[_,_], y: DurationValue) => x.plus(y)
+      case (x: DurationValue, y: TemporalValue[_,_]) => y.plus(x)
+      case (x: DurationValue, y: DurationValue) => x.add(y)
       case _                      => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
     }
   }

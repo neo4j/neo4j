@@ -19,24 +19,27 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.time.Clock;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.time.Clock;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.function.BiConsumer;
+
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -46,25 +49,22 @@ import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
 public class CatchUpClient extends LifecycleAdapter
 {
-    private final LogProvider logProvider;
     private final Log log;
     private final Clock clock;
-    private final Monitors monitors;
-    private final PipelineHandlerAppender pipelineAppender;
     private final long inactivityTimeoutMillis;
+    private final Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer;
+
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
-                          PipelineHandlerAppender pipelineAppender )
+    public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis,
+            Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer )
     {
-        this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
-        this.monitors = monitors;
-        this.pipelineAppender = pipelineAppender;
+        this.channelInitializer = channelInitializer;
     }
 
     public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
@@ -72,27 +72,47 @@ public class CatchUpClient extends LifecycleAdapter
     {
         CompletableFuture<T> future = new CompletableFuture<>();
 
-        CatchUpChannel channel = pool.acquire( upstream );
-
-        future.whenComplete( ( result, e ) ->
+        CatchUpChannel channel = null;
+        try
         {
-            if ( e == null )
-            {
-                pool.release( channel );
-            }
-            else
+            channel = pool.acquire( upstream );
+            channel.setResponseHandler( responseHandler, future );
+            future.whenComplete( new ReleaseOnComplete( channel ) );
+            channel.send( request );
+        }
+        catch ( Exception e )
+        {
+            if ( channel != null )
             {
                 pool.dispose( channel );
             }
-        } );
-
-        channel.setResponseHandler( responseHandler, future );
-        channel.send( request );
-
-        String operation = format( "Timed out executing operation %s on %s ",
-                request, upstream );
-
+            throw new CatchUpClientException( "Failed to send request", e );
+        }
+        String operation = format( "Completed exceptionally when executing operation %s on %s ", request, upstream );
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
+    }
+
+    private class ReleaseOnComplete implements BiConsumer<Object,Throwable>
+    {
+        private CatchUpChannel catchUpChannel;
+
+        ReleaseOnComplete( CatchUpChannel catchUpChannel )
+        {
+            this.catchUpChannel = catchUpChannel;
+        }
+
+        @Override
+        public void accept( Object o, Throwable throwable )
+        {
+            if ( throwable == null )
+            {
+                pool.release( catchUpChannel );
+            }
+            else
+            {
+                pool.dispose( catchUpChannel );
+            }
+        }
     }
 
     private class CatchUpChannel implements CatchUpChannelPool.Channel
@@ -100,22 +120,16 @@ public class CatchUpClient extends LifecycleAdapter
         private final TrackingResponseHandler handler;
         private final AdvertisedSocketAddress destination;
         private Channel nettyChannel;
+        private final Bootstrap bootstrap;
 
         CatchUpChannel( AdvertisedSocketAddress destination )
         {
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
-            Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
-            {
-                @Override
-                protected void initChannel( SocketChannel ch ) throws Exception
-                {
-                    CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineAppender );
-                }
-            } );
-
-            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
-            nettyChannel = channelFuture.awaitUninterruptibly().channel();
+            bootstrap = new Bootstrap()
+                    .group( eventLoopGroup )
+                    .channel( NioSocketChannel.class )
+                    .handler( channelInitializer.apply( handler ) );
         }
 
         void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?> requestOutcomeSignal )
@@ -123,10 +137,14 @@ public class CatchUpClient extends LifecycleAdapter
             handler.setResponseHandler( responseHandler, requestOutcomeSignal );
         }
 
-        void send( CatchUpRequest request )
+        void send( CatchUpRequest request ) throws ConnectException
         {
+            if ( !isActive() )
+            {
+                throw new ConnectException( "Channel is not connected" );
+            }
             nettyChannel.write( request.messageType() );
-            nettyChannel.writeAndFlush( request );
+            nettyChannel.writeAndFlush( request ).addListener( ChannelFutureListener.CLOSE_ON_FAILURE );
         }
 
         Optional<Long> millisSinceLastResponse()
@@ -141,9 +159,25 @@ public class CatchUpClient extends LifecycleAdapter
         }
 
         @Override
+        public void connect() throws Exception
+        {
+            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
+            nettyChannel = channelFuture.sync().channel();
+        }
+
+        @Override
+        public boolean isActive()
+        {
+            return nettyChannel.isActive();
+        }
+
+        @Override
         public void close()
         {
-            nettyChannel.close();
+            if ( nettyChannel != null )
+            {
+                nettyChannel.close();
+            }
         }
     }
 

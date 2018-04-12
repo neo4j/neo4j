@@ -41,6 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 
@@ -67,7 +68,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateIndexedNodeProperties() throws Exception
+    public void validateIndexedNodeProperties()
     {
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";
@@ -80,8 +81,7 @@ public class IndexValuesValidationTest
         }
 
         expectedException.expect( IllegalArgumentException.class );
-        expectedException.expectMessage( "Property value bytes length: 32767 is longer than 32766, " +
-                "which is maximum supported length of indexed property value." );
+        expectedException.expectMessage( containsString( "Property value bytes length: 32767 is longer than" ) );
 
         try ( Transaction transaction = database.beginTx() )
         {
@@ -117,9 +117,7 @@ public class IndexValuesValidationTest
             try ( Transaction ignored = database.beginTx() )
             {
                 String indexFailure = database.schema().getIndexFailure( indexDefinition );
-                assertThat( "", indexFailure, Matchers.startsWith( "java.lang.IllegalArgumentException: " +
-                        "Property value bytes length: 32767 is longer than 32766, " +
-                        "which is maximum supported length of indexed property value." ) );
+                assertThat( "", indexFailure, Matchers.containsString( "java.lang.IllegalArgumentException: Max supported key size" ) );
             }
         }
     }

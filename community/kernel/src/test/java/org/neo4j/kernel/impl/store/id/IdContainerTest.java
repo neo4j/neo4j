@@ -54,14 +54,14 @@ public class IdContainerTest
     private File file;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         fs = fileSystemRule.get();
         file = testDirectory.file( "ids" );
     }
 
     @Test
-    public void shouldDeleteIfOpen() throws Exception
+    public void shouldDeleteIfOpen()
     {
         // GIVEN
         createEmptyFile();
@@ -78,7 +78,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldDeleteIfClosed() throws Exception
+    public void shouldDeleteIfClosed()
     {
         // GIVEN
         createEmptyFile();
@@ -147,7 +147,7 @@ public class IdContainerTest
     }
 
     @Test
-    public void shouldReturnFalseOnInitIfTheFileWasCreated() throws Exception
+    public void shouldReturnFalseOnInitIfTheFileWasCreated()
     {
         // When
         // An IdContainer is created with no underlying file
@@ -156,10 +156,11 @@ public class IdContainerTest
         // Then
         // Init should return false
         assertFalse( idContainer.init() );
+        idContainer.close( 100 );
     }
 
     @Test
-    public void shouldReturnTrueOnInitIfAProperFileWasThere() throws Exception
+    public void shouldReturnTrueOnInitIfAProperFileWasThere()
     {
         // Given
         // A properly created and closed id file
@@ -174,6 +175,7 @@ public class IdContainerTest
         // Then
         // init() should return true
         assertTrue( idContainer.init() );
+        idContainer.close( 100 );
     }
 
     @Test
@@ -188,6 +190,7 @@ public class IdContainerTest
         idContainer.init();
         assertEquals( 100, idContainer.getInitialHighId() );
         fileSystem.close();
+        idContainer.close( 100 );
     }
 
     private void createEmptyFile()

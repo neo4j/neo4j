@@ -30,13 +30,10 @@ import scala.collection.JavaConverters._
 
 class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  val createConf = Configs.Interpreted - Configs.Cost2_3
-  val deleteConf = Configs.Interpreted - Configs.Cost2_3
-
   test("create a single node") {
     val before = graph.inTx(graph.getAllNodes.asScala.size)
 
-    val result = executeWith(createConf, "create (a)")
+    val result = executeWith(Configs.UpdateConf, "create (a)")
 
     assertStats(result, nodesCreated = 1)
     graph.inTx {
@@ -47,7 +44,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   test("create a single node with props and return it") {
     val before = graph.inTx(graph.getAllNodes.asScala.size)
 
-    val result = executeWith(createConf, "create (a {name : 'Andres'}) return a.name")
+    val result = executeWith(Configs.UpdateConf, "create (a {name : 'Andres'}) return a.name")
 
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     graph.inTx {
@@ -60,7 +57,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   test("start with a node and create a new node with the same properties") {
     createNode("age" -> 15)
 
-    val result = executeWith(createConf, "match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 with a create (b {age : a.age * 2}) return b.age")
 
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
 
@@ -68,13 +65,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("create two nodes and a relationship between them") {
-    val result = executeWith(createConf - Configs.Cost2_3, "create (a), (b), (a)-[r:REL]->(b)")
+    val result = executeWith(Configs.UpdateConf - Configs.Cost2_3, "create (a), (b), (a)-[r:REL]->(b)")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
 
   test("create one node and dumpToString") {
-    val result = executeWith(createConf, "create (a {name:'Cypher'})")
+    val result = executeWith(Configs.UpdateConf, "create (a {name:'Cypher'})")
 
     assertStats(result,
       nodesCreated = 1,
@@ -85,17 +82,17 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   test("deletes single node") {
     val a = createNode().getId
 
-    val result = executeWith(deleteConf, "match (a) where id(a) = 0 delete a")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
-    intercept[NotFoundException](graph.inTx(graph.getNodeById(a)))
+    intercept[NotFoundException](graph.inTx(graphOps.getNodeById(a)))
   }
 
   test("multiple deletes should not break anything") {
     (1 to 4).foreach(i => createNode())
 
-    val result = executeWith(deleteConf, "match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
+    val result = executeWith(Configs.UpdateConf, "match (a), (b) where id(a) = 0 AND id(b) IN [1, 2, 3] delete a")
     assertStats(result, nodesDeleted = 1)
 
     result.toList shouldBe empty
@@ -111,7 +108,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     relate(a, c)
     relate(a, d)
 
-    val result = executeWith(deleteConf, "match (a) where id(a) = 0 match (a)-[r]->() delete r")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 match (a)-[r]->() delete r")
     assertStats( result, relationshipsDeleted = 3  )
 
     graph.inTx {
@@ -124,7 +121,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     val b = createNode()
     val c = createNode()
 
-    val result = executeWith(createConf, "create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
+    val result = executeWith(Configs.UpdateConf, "create (n) with n MATCH (x) WHERE id(x) IN [0, 1, 2] create (n)-[:REL]->(x)")
     assertStats(result,
       nodesCreated = 1,
       relationshipsCreated = 3
@@ -142,7 +139,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     createNode("Michael")
     createNode("Peter")
 
-    val result = executeWith(createConf, "MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
+    val result = executeWith(Configs.UpdateConf, "MATCH (n) with collect(n.name) as names create (m {name : names}) RETURN m.name")
     assertStats(result,
       propertiesWritten = 1,
       nodesCreated = 1
@@ -152,7 +149,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("set a property to an empty collection") {
-    val result = executeWith(createConf, "create (n {x : []}) return n.x")
+    val result = executeWith(Configs.UpdateConf, "create (n {x : []}) return n.x")
     assertStats(result,
       propertiesWritten = 1,
       nodesCreated = 1
@@ -161,7 +158,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("create node from map values") {
-    val result = executeWith(createConf, "create (n {a}) return n.age, n.name", params = Map("a" -> Map("name" -> "Andres", "age" -> 66)))
+    val result = executeWith(Configs.UpdateConf, "create (n {a}) return n.age, n.name", params = Map("a" -> Map("name" -> "Andres", "age" -> 66)))
 
     result.toList should equal(List(Map("n.age" -> 66, "n.name" -> "Andres")))
   }
@@ -171,7 +168,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     createNode()
 
 
-    val result = executeWith(createConf, "match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r.name, r.age", params = Map("param" -> Map("name" -> "Andres", "age" -> 66)))
+    val result = executeWith(Configs.UpdateConf, "match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[r:REL {param}]->(b) return r.name, r.age", params = Map("param" -> Map("name" -> "Andres", "age" -> 66)))
 
     result.toList should equal(List(Map("r.name" -> "Andres", "r.age" -> 66)))
   }
@@ -184,13 +181,13 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     relate(a, b, "LOVES")
 
     val msg = "Cannot delete node<0>, because it still has relationships. To delete this node, you must first delete its relationships."
-    failWithError(deleteConf + Configs.Procs, "match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r", List(msg))
+    failWithError(Configs.UpdateConf + Configs.Procs, "match (n) where id(n) = 0 match (n)-[r:HATES]->() delete n,r", List(msg))
   }
 
   test("delete and return") {
     val a = createNode()
 
-    val result = executeWith(deleteConf, "match (n) where id(n) = 0 delete n return n")
+    val result = executeWith(Configs.UpdateConf, "match (n) where id(n) = 0 delete n return n")
 
     result.toList should equal(List(Map("n" -> a)))
   }
@@ -201,7 +198,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Michael", "prefers" -> "Java"),
       Map("name" -> "Peter", "prefers" -> "Java"))
 
-    val result = executeWith(createConf, "unwind {params} as m create (x) set x = m ", params = Map("params" -> maps))
+    val result = executeWith(Configs.UpdateConf, "unwind {params} as m create (x) set x = m ", params = Map("params" -> maps))
 
     assertStats(result,
       nodesCreated = 3,
@@ -216,7 +213,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Peter", "prefers" -> "Java"))
 
     val errorMessages = List("If you want to create multiple nodes, please use UNWIND.", "Parameter provided for node creation is not a Map")
-    failWithError(createConf - Configs.Rule2_3 + Configs.Procs, "create ({params})", params = "params" -> maps, message = errorMessages)
+    failWithError(Configs.UpdateConf - Configs.Rule2_3 + Configs.Procs, "create ({params})", params = Map("params" -> maps), message = errorMessages)
   }
 
   test("fail to create from two iterables") {
@@ -230,7 +227,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
       Map("name" -> "Peter"))
     val query = "create (a {params1}), (b {params2})"
     val errorMessages = List("If you want to create multiple nodes, please use UNWIND.", "Parameter provided for node creation is not a Map", "If you create multiple elements, you can only create one of each.")
-    failWithError(createConf + Configs.Procs, query, message = errorMessages, params = "params1" -> maps1, "params2" -> maps2)
+    failWithError(Configs.UpdateConf + Configs.Procs, query, message = errorMessages, params = Map("params1" -> maps1, "params2" -> maps2))
   }
 
   test("first read then write") {
@@ -243,14 +240,14 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     relate(root, b)
     relate(root, c)
 
-    executeWith(createConf, "match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
+    executeWith(Configs.UpdateConf, "match (root) where id(root) = 0 match (root)-->(other) create (new {name:other.name}), (root)-[:REL]->(new)")
 
     val result = executeWith(Configs.All, "match (root) where id(root) = 0 match (root)-->(other) return other.name order by other.name").columnAs[String]("other.name").toList
     result should equal(List("Alfa", "Alfa", "Beta", "Beta", "Gamma", "Gamma"))
   }
 
   test("create node and rel in foreach") {
-    executeWith(createConf, """
+    executeWith(Configs.UpdateConf, """
       |create (center {name: "center"})
       |foreach(x in range(1,10) |
       |  create (leaf1 {number : x}) , (center)-[:X]->(leaf1)
@@ -264,7 +261,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     val b = createNode()
     relate(a,b)
 
-    executeWith(deleteConf, """match (n) optional match (n)-[r]-() delete n,r""")
+    executeWith(Configs.UpdateConf, """match (n) optional match (n)-[r]-() delete n,r""")
 
     graph.inTx {
       graph.getAllNodes.asScala shouldBe empty
@@ -276,7 +273,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     val b = createNode()
     relate(a,b)
 
-    executeWith(deleteConf, """match (n) where id(n) = 0 match p=(n)-->() delete p""")
+    executeWith(Configs.UpdateConf, """match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
       graph.getAllNodes().asScala shouldBe empty
@@ -285,7 +282,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("string literals should not be mistaken for variables") {
     //https://github.com/neo4j/community/issues/523
-    executeWith(createConf, "EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
+    executeWith(Configs.UpdateConf, "EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     val result = executeScalar[Seq[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     result should have size 2
   }
@@ -301,7 +298,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     val q = "create (a{param}) return a.arrayProp"
     val result =  executeScalar[Array[String]](q, "param" -> map)
 
-    assertStats(executeWith(createConf, q, params = Map("param"->map)), nodesCreated = 1, propertiesWritten = 1)
+    assertStats(executeWith(Configs.UpdateConf, q, params = Map("param"->map)), nodesCreated = 1, propertiesWritten = 1)
     result.toList should equal(List("foo","bar"))
   }
 
@@ -315,14 +312,14 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   test("full path in one create") {
     createNode()
     createNode()
-    val result = executeWith(createConf, "match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
+    val result = executeWith(Configs.UpdateConf, "match (a), (b) where id(a) = 0 AND id(b) = 1 create (a)-[:KNOWS]->()-[:LOVES]->(b)")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
   }
 
   test("delete and delete again") {
     createNode()
-    val result = executeWith(deleteConf, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
+    val result = executeWith(Configs.UpdateConf, "match (a) where id(a) = 0 delete a foreach( x in [1] | delete a)")
 
     assertStats(result, nodesDeleted = 1)
   }
@@ -332,7 +329,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     val b = createNode(Map("prop" -> "end"))
 
     val query = "match (a), (b) where a.prop = 'start' AND b.prop = 'end' create p = (a)<-[:X]-(b) with p unwind nodes(p) as x return x.prop"
-    val result = executeWith(createConf, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     result.toList should equal(List(Map("x.prop" -> "start"), Map("x.prop" -> "end")))
   }
@@ -345,7 +342,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   test("failure_only_fails_inner_transaction") {
     val tx = graph.beginTransaction( Type.explicit, AnonymousContext.write() )
     try {
-      executeWith(createConf, "match (a) where id(a) = {id} set a.foo = 'bar' return a", params = Map("id"->"0"))
+      executeWith(Configs.UpdateConf, "match (a) where id(a) = {id} set a.foo = 'bar' return a", params = Map("id"->"0"))
     } catch {
       case _: Throwable => tx.failure()
     }
@@ -353,7 +350,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("create two rels in one command should work") {
-    val result = executeWith(createConf, "create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
+    val result = executeWith(Configs.UpdateConf, "create (a{name:'a'})-[:test]->(b), (a)-[:test2]->(c)")
 
     assertStats(result, nodesCreated = 3, relationshipsCreated = 2, propertiesWritten = 1)
   }
@@ -365,20 +362,20 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("can create anonymous nodes inside foreach") {
     createNode()
-    val result = executeWith(createConf, "match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
+    val result = executeWith(Configs.UpdateConf, "match (me) where id(me) = 0 foreach (i in range(1,10) | create (me)-[:FRIEND]->())")
 
     result.toList shouldBe empty
   }
 
   test("should be able to use external variables inside foreach") {
     createNode()
-    val result = executeWith(createConf, "match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
+    val result = executeWith(Configs.UpdateConf, "match (a), (b) where id(a) = 0 AND id(b) = 0 foreach(x in [b] | create (x)-[:FOO]->(a)) ")
 
     result.toList shouldBe empty
   }
 
   test("should be able to create node with labels") {
-    val result = executeWith(createConf, "create (n:FOO:BAR) return labels(n) as l")
+    val result = executeWith(Configs.UpdateConf, "create (n:FOO:BAR) return labels(n) as l")
 
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
     result.toList should equal(List(Map("l" -> List("FOO", "BAR"))))
@@ -386,7 +383,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("complete graph") {
     val result =
-      executeWith(createConf, """CREATE (center { count:0 })
+      executeWith(Configs.UpdateConf, """CREATE (center { count:0 })
                  FOREACH (x IN range(1,6) | CREATE (leaf { count : x }),(center)-[:X]->(leaf))
                  WITH center
                  MATCH (leaf1)<--(center)-->(leaf2)
@@ -400,19 +397,19 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("for each applied to null should never execute") {
-    val result = executeWith(createConf, "foreach(x in null| create ())")
+    val result = executeWith(Configs.UpdateConf, "foreach(x in null| create ())")
 
     assertStats(result, nodesCreated = 0)
   }
 
   test("should execute when null is contained in a collection") {
-    val result = executeWith(createConf, "foreach(x in [null]| create ())")
+    val result = executeWith(Configs.UpdateConf, "foreach(x in [null]| create ())")
 
     assertStats(result, nodesCreated = 1)
   }
 
   test("should be possible to remove nodes created in the same query") {
-    val result = executeWith(deleteConf,
+    val result = executeWith(Configs.UpdateConf,
       """CREATE (a)-[:FOO]->(b)
          WITH *
          MATCH (x)-[r]-(y)
@@ -428,7 +425,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
     createNode("prop" -> 42)
     val query = "UNWIND range(0, 1) as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN count(*) as count"
 
-    val result = executeWith(createConf, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.UpdateConf, query, expectedDifferentResults = Configs.Rule2_3)
 
     assertStats(result, nodesCreated = 8)
     val unwind = 2

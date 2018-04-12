@@ -57,7 +57,7 @@ public class HaConfigurationValidatorTest
     }
 
     @Test
-    public void validateOnlyIfModeIsHA() throws Exception
+    public void validateOnlyIfModeIsHA()
     {
         // when
         Config config = Config.fromSettings(
@@ -72,7 +72,7 @@ public class HaConfigurationValidatorTest
     }
 
     @Test
-    public void validateSuccess() throws Exception
+    public void validateSuccess()
     {
         // when
         Config config = Config.fromSettings(
@@ -89,7 +89,7 @@ public class HaConfigurationValidatorTest
     }
 
     @Test
-    public void missingServerId() throws Exception
+    public void missingServerId()
     {
         // then
         expected.expect( InvalidSettingException.class );
@@ -102,7 +102,7 @@ public class HaConfigurationValidatorTest
     }
 
     @Test
-    public void missingInitialHosts() throws Exception
+    public void missingInitialHosts()
     {
         // then
         expected.expect( InvalidSettingException.class );
@@ -116,7 +116,7 @@ public class HaConfigurationValidatorTest
     }
 
     @Test
-    public void initialHostsEmpty() throws Exception
+    public void initialHostsEmpty()
     {
         // then
         expected.expect( InvalidSettingException.class );

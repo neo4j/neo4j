@@ -56,7 +56,7 @@ public class SlaveStatementLocksFactoryIT
     private ClusterManager.ManagedCluster managedCluster;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         managedCluster = clusterRule.startCluster();
     }

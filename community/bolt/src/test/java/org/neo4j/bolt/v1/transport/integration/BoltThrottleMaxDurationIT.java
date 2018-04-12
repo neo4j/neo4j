@@ -37,19 +37,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -57,6 +56,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -71,8 +71,7 @@ public class BoltThrottleMaxDurationIT
 {
     private AssertableLogProvider logProvider;
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            fsRule::get, getSettingsFunction() );
+    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
@@ -83,6 +82,7 @@ public class BoltThrottleMaxDurationIT
 
     private HostnamePort address;
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -107,15 +107,16 @@ public class BoltThrottleMaxDurationIT
         return settings ->
         {
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
-            settings.put( GraphDatabaseSettings.bolt_write_throttle_max_duration.name(), "30s" );
+            settings.put( GraphDatabaseSettings.bolt_outbound_buffer_throttle_max_duration.name(), "30s" );
         };
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         client = cf.newInstance();
         address = server.lookupDefaultConnector();
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -134,18 +135,18 @@ public class BoltThrottleMaxDurationIT
         String largeString = StringUtils.repeat( " ", 8 * 1024  );
 
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
 
         Future sender = otherThread.execute( state ->
         {
             for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
             {
-                client.send( TransportTestUtil.chunk(
+                client.send( util.chunk(
                         run( "RETURN $data as data", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
                         pullAll()
                 ) );
@@ -162,12 +163,12 @@ public class BoltThrottleMaxDurationIT
         }
         catch ( ExecutionException e )
         {
-            assertThat( e.getCause(), Matchers.instanceOf( SocketException.class ) );
+            assertThat( Exceptions.rootCause( e ), Matchers.instanceOf( SocketException.class ) );
         }
 
-        logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( Matchers.containsString( WorkerFactory.class.getPackage().getName() ) ).error( containsString( "crashed" ),
-                        matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
+                startsWith( "Unexpected error detected in bolt session" ),
+                matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
     }
 
 }

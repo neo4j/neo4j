@@ -21,17 +21,17 @@ package org.neo4j.server.rest.dbms;
 
 import java.security.Principal;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 public class DelegatingPrincipal implements Principal
 {
     private String username;
-    private final SecurityContext securityContext;
+    private final LoginContext loginContext;
 
-    DelegatingPrincipal( String username, SecurityContext securityContext )
+    DelegatingPrincipal( String username, LoginContext loginContext )
     {
         this.username = username;
-        this.securityContext = securityContext;
+        this.loginContext = loginContext;
     }
 
     @Override
@@ -40,9 +40,9 @@ public class DelegatingPrincipal implements Principal
         return username;
     }
 
-    public SecurityContext getSecurityContext()
+    public LoginContext getLoginContext()
     {
-        return securityContext;
+        return loginContext;
     }
 
     @Override

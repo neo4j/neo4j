@@ -20,6 +20,11 @@
 package org.neo4j.values.storable;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 
 /**
  * Writer of values.
@@ -30,7 +35,6 @@ import java.nio.charset.StandardCharsets;
  */
 public interface ValueWriter<E extends Exception>
 {
-
     enum ArrayType
     {
         BYTE,
@@ -42,7 +46,13 @@ public interface ValueWriter<E extends Exception>
         BOOLEAN,
         STRING,
         CHAR,
-        POINT
+        POINT,
+        ZONED_DATE_TIME,
+        LOCAL_DATE_TIME,
+        DATE,
+        ZONED_TIME,
+        LOCAL_TIME,
+        DURATION
     }
 
     void writeNull() throws E;
@@ -77,6 +87,18 @@ public interface ValueWriter<E extends Exception>
     void writeByteArray( byte[] value ) throws E;
 
     void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E;
+
+    void writeDuration( long months, long days, long seconds, int nanos ) throws E;
+
+    void writeDate( LocalDate localDate ) throws E;
+
+    void writeLocalTime( LocalTime localTime ) throws E;
+
+    void writeTime( OffsetTime offsetTime ) throws E;
+
+    void writeLocalDateTime( LocalDateTime localDateTime ) throws E;
+
+    void writeDateTime( ZonedDateTime zonedDateTime ) throws E;
 
     class Adapter<E extends Exception> implements ValueWriter<E>
     {
@@ -147,6 +169,36 @@ public interface ValueWriter<E extends Exception>
 
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeDuration( long months, long days, long seconds, int nanos )
+        {   // no-op
+        }
+
+        @Override
+        public void writeDate( LocalDate localDate ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeLocalTime( LocalTime localTime ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeTime( OffsetTime offsetTime ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeLocalDateTime( LocalDateTime localDateTime ) throws E
+        {   // no-op
+        }
+
+        @Override
+        public void writeDateTime( ZonedDateTime zonedDateTime ) throws E
         {   // no-op
         }
     }

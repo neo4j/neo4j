@@ -19,52 +19,33 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Manages user-facing locks.
  */
 public class PropertyContainerLocker
 {
-    public Lock exclusiveLock( Supplier<Statement> stmtSupplier, PropertyContainer container )
+    public Lock exclusiveLock( KernelTransaction ktx, PropertyContainer container )
     {
-        try ( Statement statement = stmtSupplier.get() )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( container instanceof Node )
             {
                 long id = ((Node) container).getId();
-                ResourceTypes resourceType = ResourceTypes.NODE;
-                statement.readOperations().acquireExclusive( resourceType, id );
-                return new CoreAPILock( stmtSupplier, resourceType, id )
-                {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseExclusive( type, resourceId );
-                    }
-                };
+                ktx.locks().acquireExclusiveNodeLock( id );
+                return new CoreAPILock( () -> ktx.locks().releaseExclusiveNodeLock( id ) );
             }
             else if ( container instanceof Relationship )
             {
                 long id = ((Relationship) container).getId();
-                ResourceTypes resourceType = ResourceTypes.RELATIONSHIP;
-                statement.readOperations().acquireExclusive( resourceType, id );
-                return new CoreAPILock( stmtSupplier, resourceType, id )
-                {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseExclusive( type, resourceId );
-                    }
-                };
+                ktx.locks().acquireExclusiveRelationshipLock( id );
+                return new CoreAPILock( () -> ktx.locks().releaseExclusiveRelationshipLock( id ) );
             }
             else
             {
@@ -73,67 +54,21 @@ public class PropertyContainerLocker
         }
     }
 
-    /**
-     * The Cypher runtime keeps statements open for longer, so this method does not close the statement after itself
-     */
-    public Lock exclusiveLock( Statement statement, PropertyContainer container )
+    public Lock sharedLock( KernelTransaction ktx, PropertyContainer container )
     {
-        if ( container instanceof Node )
-        {
-            statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-            return () ->
-            {
-                long id = ((Node) container).getId();
-                statement.readOperations().releaseExclusive( ResourceTypes.NODE, id );
-            };
-        }
-        else if ( container instanceof Relationship )
-        {
-            statement.readOperations()
-                    .acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-            return () ->
-            {
-                long id = ((Relationship) container).getId();
-                statement.readOperations().releaseExclusive( ResourceTypes.RELATIONSHIP, id );
-            };
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Only relationships and nodes can be locked." );
-        }
-    }
-
-    public Lock sharedLock( Supplier<Statement> stmtProvider, PropertyContainer container )
-    {
-        try ( Statement statement = stmtProvider.get() )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( container instanceof Node )
             {
                 long id = ((Node) container).getId();
-                ResourceTypes resourceType = ResourceTypes.NODE;
-                statement.readOperations().acquireShared( resourceType, id );
-                return new CoreAPILock( stmtProvider, resourceType, id )
-                {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseShared( type, resourceId );
-                    }
-                };
+                ktx.locks().acquireSharedNodeLock( id );
+                return new CoreAPILock( () -> ktx.locks().releaseSharedNodeLock( id ) );
             }
             else if ( container instanceof Relationship )
             {
                 long id = ((Relationship) container).getId();
-                ResourceTypes resourceType = ResourceTypes.RELATIONSHIP;
-                statement.readOperations().acquireShared( resourceType, id );
-                return new CoreAPILock( stmtProvider, resourceType, id )
-                {
-                    @Override
-                    void release( Statement statement, ResourceType type, long resourceId )
-                    {
-                        statement.readOperations().releaseShared( type, resourceId );
-                    }
-                };
+                ktx.locks().acquireSharedRelationshipLock( id );
+                return new CoreAPILock( () -> ktx.locks().releaseSharedRelationshipLock( id ) );
             }
             else
             {
@@ -142,18 +77,14 @@ public class PropertyContainerLocker
         }
     }
 
-    private abstract static class CoreAPILock implements Lock
+    private static class CoreAPILock implements Lock
     {
-        private final Supplier<Statement> stmtProvider;
-        private final ResourceType type;
-        private final long resourceId;
         private boolean released;
+        private final Runnable release;
 
-        CoreAPILock( Supplier<Statement> stmtProvider, ResourceType type, long resourceId )
+        CoreAPILock( Runnable release )
         {
-            this.stmtProvider = stmtProvider;
-            this.type = type;
-            this.resourceId = resourceId;
+            this.release = release;
         }
 
         @Override
@@ -164,13 +95,8 @@ public class PropertyContainerLocker
                 throw new IllegalStateException( "Already released" );
             }
             released = true;
-            try ( Statement statement = stmtProvider.get() )
-            {
-                release( statement, type, resourceId );
-            }
+            release.run();
         }
-
-        abstract void release( Statement statement, ResourceType type, long resourceId );
     }
 
 }

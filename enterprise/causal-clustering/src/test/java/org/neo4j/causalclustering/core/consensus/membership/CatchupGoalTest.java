@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class CatchupGoalTest
 {
     @Test
-    public void goalAchievedWhenCatchupRoundDurationLessThanTarget() throws Exception
+    public void goalAchievedWhenCatchupRoundDurationLessThanTarget()
     {
         FakeClock clock = Clocks.fakeClock();
         long electionTimeout = 15;
@@ -80,13 +80,13 @@ public class CatchupGoalTest
         }
 
         @Override
-        public long readEntryTerm( long logIndex ) throws IOException
+        public long readEntryTerm( long logIndex )
         {
             return 0;
         }
 
         @Override
-        public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+        public RaftLogCursor getEntryCursor( long fromIndex )
         {
             return RaftLogCursor.empty();
         }

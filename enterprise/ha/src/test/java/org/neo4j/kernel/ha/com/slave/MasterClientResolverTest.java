@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 public class MasterClientResolverTest
 {
     @Test
-    public void shouldResolveMasterClientFactory() throws Exception
+    public void shouldResolveMasterClientFactory()
     {
         // Given
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

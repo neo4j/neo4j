@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -45,7 +44,7 @@ public class StubPageCursor extends PageCursor
 
     public StubPageCursor( long initialPageId, int pageSize )
     {
-        this( initialPageId, ByteBuffer.allocateDirect( pageSize ) );
+        this( initialPageId, ByteBuffer.allocate( pageSize ) );
     }
 
     public StubPageCursor( long initialPageId, ByteBuffer buffer )
@@ -81,13 +80,13 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         return true;
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         return true;
     }
@@ -109,7 +108,7 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
+    public boolean shouldRetry()
     {
         if ( needsRetry )
         {
@@ -125,6 +124,12 @@ public class StubPageCursor extends PageCursor
 
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        return 0;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
     {
         return 0;
     }

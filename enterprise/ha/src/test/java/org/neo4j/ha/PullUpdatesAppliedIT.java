@@ -97,7 +97,7 @@ public class PullUpdatesAppliedIT
     }
 
     @Before
-    public void doBefore() throws Exception
+    public void doBefore()
     {
         configurations = createConfigurations();
         databases = startDatabases();
@@ -147,7 +147,7 @@ public class PullUpdatesAppliedIT
     }
 
     @After
-    public void doAfter() throws Exception
+    public void doAfter()
     {
         if ( databases != null )
         {
@@ -332,7 +332,7 @@ public class PullUpdatesAppliedIT
         }
     }
 
-    private int getCurrentMaster() throws Exception
+    private int getCurrentMaster()
     {
         return databases.entrySet().stream()
                 .filter( entry -> entry.getValue().isMaster() )

@@ -41,7 +41,7 @@ public class SecureSocketConnection extends SocketConnection
     {
         try
         {
-            SSLContext context = SSLContext.getInstance( "SSL" );
+            SSLContext context = SSLContext.getInstance( "TLS" );
             context.init( new KeyManager[0], new TrustManager[]{new NaiveTrustManager( serverCertificatesSeen::add )}, new SecureRandom() );
 
             return context.getSocketFactory().createSocket();

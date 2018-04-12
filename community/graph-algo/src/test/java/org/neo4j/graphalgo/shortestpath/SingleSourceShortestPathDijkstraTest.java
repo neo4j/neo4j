@@ -21,6 +21,7 @@ package org.neo4j.graphalgo.shortestpath;
 
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
+import org.neo4j.graphalgo.impl.util.IntegerAdder;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -32,19 +33,15 @@ public class SingleSourceShortestPathDijkstraTest extends
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode )
     {
-        return new SingleSourceShortestPathDijkstra<Integer>( 0, startNode,
-                ( relationship, direction ) -> 1, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
-            new org.neo4j.graphalgo.impl.util.IntegerComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction ) -> 1, new IntegerAdder(),
+                new org.neo4j.graphalgo.impl.util.IntegerComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     @Override
     protected SingleSourceShortestPath<Integer> getSingleSourceAlgorithm(
         Node startNode, Direction direction, RelationshipType... relTypes )
     {
-        return new SingleSourceShortestPathDijkstra<Integer>( 0, startNode,
-                ( relationship, direction1 ) -> 1, new org.neo4j.graphalgo.impl.util.IntegerAdder(),
-            new org.neo4j.graphalgo.impl.util.IntegerComparator(), direction,
-            relTypes );
+        return new SingleSourceShortestPathDijkstra<>( 0, startNode, ( relationship, direction1 ) -> 1, new IntegerAdder(),
+                new org.neo4j.graphalgo.impl.util.IntegerComparator(), direction, relTypes );
     }
 }

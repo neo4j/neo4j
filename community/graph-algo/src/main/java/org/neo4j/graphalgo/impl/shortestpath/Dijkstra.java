@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphalgo.CostAccumulator;
@@ -82,13 +83,8 @@ public class Dijkstra<CostType> implements
      */
     protected boolean limitReached()
     {
-        if ( maxRelationShipsToTraverse >= 0
-             && numberOfTraversedRelationShips >= maxRelationShipsToTraverse )
-        {
-            return true;
-        }
-        return maxNodesToTraverse >= 0
-               && numberOfNodesTraversed >= maxNodesToTraverse;
+        return maxRelationShipsToTraverse >= 0 && numberOfTraversedRelationShips >= maxRelationShipsToTraverse ||
+                maxNodesToTraverse >= 0 && numberOfNodesTraversed >= maxNodesToTraverse;
     }
 
     protected boolean limitReached( CostType cost1, CostType cost2 )
@@ -111,8 +107,8 @@ public class Dijkstra<CostType> implements
     protected boolean doneCalculation;
     protected Set<Node> foundPathsMiddleNodes;
     protected CostType foundPathsCost;
-    protected HashMap<Node, List<Relationship>> predecessors1 = new HashMap<Node, List<Relationship>>();
-    protected HashMap<Node, List<Relationship>> predecessors2 = new HashMap<Node, List<Relationship>>();
+    protected HashMap<Node, List<Relationship>> predecessors1 = new HashMap<>();
+    protected HashMap<Node, List<Relationship>> predecessors2 = new HashMap<>();
 
     /**
      * Resets the result data to force the computation to be run again when some
@@ -123,8 +119,8 @@ public class Dijkstra<CostType> implements
     {
         doneCalculation = false;
         foundPathsMiddleNodes = null;
-        predecessors1 = new HashMap<Node, List<Relationship>>();
-        predecessors2 = new HashMap<Node, List<Relationship>>();
+        predecessors1 = new HashMap<>();
+        predecessors2 = new HashMap<>();
         // Limits
         numberOfTraversedRelationShips = 0;
         numberOfNodesTraversed = 0;
@@ -226,8 +222,7 @@ public class Dijkstra<CostType> implements
         // This puts the start node into the queue
         protected void InitQueue()
         {
-            queue = new DijkstraPriorityQueueFibonacciImpl<CostType>(
-                    costComparator );
+            queue = new DijkstraPriorityQueueFibonacciImpl<>( costComparator );
             queue.insertValue( startNode, startCost );
             mySeen.put( startNode, startCost );
         }
@@ -269,7 +264,7 @@ public class Dijkstra<CostType> implements
                         otherCost );
                 if ( foundPathsMiddleNodes == null )
                 {
-                    foundPathsMiddleNodes = new HashSet<Node>();
+                    foundPathsMiddleNodes = new HashSet<>();
                 }
                 // No previous path found, or equally good one found?
                 if ( foundPathsMiddleNodes.size() == 0
@@ -292,6 +287,11 @@ public class Dijkstra<CostType> implements
         @Override
         public Node next()
         {
+            if ( !hasNext() )
+            {
+                throw new NoSuchElementException();
+            }
+
             Node currentNode = queue.extractMin();
             CostType currentCost = mySeen.get( currentNode );
             // Already done with this node?
@@ -392,7 +392,7 @@ public class Dijkstra<CostType> implements
                                 // Update it
                                 mySeen.put( target, newCost );
                                 // Put it in predecessors
-                                List<Relationship> predList = new LinkedList<Relationship>();
+                                List<Relationship> predList = new LinkedList<>();
                                 predList.add( relationship );
                                 predecessors.put( target, predList );
                             }
@@ -475,15 +475,15 @@ public class Dijkstra<CostType> implements
         // Special case when path length is zero
         if ( startNode.equals( endNode ) )
         {
-            foundPathsMiddleNodes = new HashSet<Node>();
+            foundPathsMiddleNodes = new HashSet<>();
             foundPathsMiddleNodes.add( startNode );
             foundPathsCost = costAccumulator.addCosts( startCost, startCost );
             return true;
         }
-        HashMap<Node, CostType> seen1 = new HashMap<Node, CostType>();
-        HashMap<Node, CostType> seen2 = new HashMap<Node, CostType>();
-        HashMap<Node, CostType> dists1 = new HashMap<Node, CostType>();
-        HashMap<Node, CostType> dists2 = new HashMap<Node, CostType>();
+        HashMap<Node, CostType> seen1 = new HashMap<>();
+        HashMap<Node, CostType> seen2 = new HashMap<>();
+        HashMap<Node, CostType> dists1 = new HashMap<>();
+        HashMap<Node, CostType> dists2 = new HashMap<>();
         DijstraIterator iter1 = new DijstraIterator( startNode, predecessors1,
                 seen1, seen2, dists1, dists2, false );
         DijstraIterator iter2 = new DijstraIterator( endNode, predecessors2,
@@ -560,7 +560,7 @@ public class Dijkstra<CostType> implements
         }
         // Currently we use a set to avoid duplicate paths
         // TODO: can this be done smarter?
-        Set<List<PropertyContainer>> paths = new HashSet<List<PropertyContainer>>();
+        Set<List<PropertyContainer>> paths = new HashSet<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<PropertyContainer>> paths1 = Util.constructAllPathsToNode(
@@ -573,7 +573,7 @@ public class Dijkstra<CostType> implements
                 for ( List<PropertyContainer> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<PropertyContainer> path = new LinkedList<PropertyContainer>();
+                    LinkedList<PropertyContainer> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -581,7 +581,7 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<List<PropertyContainer>>( paths );
+        return new LinkedList<>( paths );
     }
 
     /**
@@ -601,7 +601,7 @@ public class Dijkstra<CostType> implements
         }
         // Currently we use a set to avoid duplicate paths
         // TODO: can this be done smarter?
-        Set<List<Node>> paths = new HashSet<List<Node>>();
+        Set<List<Node>> paths = new HashSet<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<Node>> paths1 = Util.constructAllPathsToNodeAsNodes(
@@ -614,7 +614,7 @@ public class Dijkstra<CostType> implements
                 for ( List<Node> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<Node> path = new LinkedList<Node>();
+                    LinkedList<Node> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -622,7 +622,7 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<List<Node>>( paths );
+        return new LinkedList<>( paths );
     }
 
     /**
@@ -642,7 +642,7 @@ public class Dijkstra<CostType> implements
         }
         // Currently we use a set to avoid duplicate paths
         // TODO: can this be done smarter?
-        Set<List<Relationship>> paths = new HashSet<List<Relationship>>();
+        Set<List<Relationship>> paths = new HashSet<>();
         for ( Node middleNode : foundPathsMiddleNodes )
         {
             List<List<Relationship>> paths1 = Util.constructAllPathsToNodeAsRelationships(
@@ -655,7 +655,7 @@ public class Dijkstra<CostType> implements
                 for ( List<Relationship> part2 : paths2 )
                 {
                     // Combine them
-                    LinkedList<Relationship> path = new LinkedList<Relationship>();
+                    LinkedList<Relationship> path = new LinkedList<>();
                     path.addAll( part1 );
                     path.addAll( part2 );
                     // Add to collection
@@ -663,7 +663,7 @@ public class Dijkstra<CostType> implements
                 }
             }
         }
-        return new LinkedList<List<Relationship>>( paths );
+        return new LinkedList<>( paths );
     }
 
     /**
@@ -682,7 +682,7 @@ public class Dijkstra<CostType> implements
             return null;
         }
         Node middleNode = foundPathsMiddleNodes.iterator().next();
-        LinkedList<PropertyContainer> path = new LinkedList<PropertyContainer>();
+        LinkedList<PropertyContainer> path = new LinkedList<>();
         path.addAll( Util.constructSinglePathToNode( middleNode, predecessors1,
                 true, false ) );
         path.addAll( Util.constructSinglePathToNode( middleNode, predecessors2,
@@ -706,7 +706,7 @@ public class Dijkstra<CostType> implements
             return null;
         }
         Node middleNode = foundPathsMiddleNodes.iterator().next();
-        LinkedList<Node> pathNodes = new LinkedList<Node>();
+        LinkedList<Node> pathNodes = new LinkedList<>();
         pathNodes.addAll( Util.constructSinglePathToNodeAsNodes( middleNode,
                 predecessors1, true, false ) );
         pathNodes.addAll( Util.constructSinglePathToNodeAsNodes( middleNode,
@@ -730,7 +730,7 @@ public class Dijkstra<CostType> implements
             return null;
         }
         Node middleNode = foundPathsMiddleNodes.iterator().next();
-        List<Relationship> path = new LinkedList<Relationship>();
+        List<Relationship> path = new LinkedList<>();
         path.addAll( Util.constructSinglePathToNodeAsRelationships( middleNode,
                 predecessors1, false ) );
         path.addAll( Util.constructSinglePathToNodeAsRelationships( middleNode,

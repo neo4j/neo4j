@@ -46,14 +46,12 @@ class CypherAdapterStream extends BoltResult
 {
     private final QueryResult delegate;
     private final String[] fieldNames;
-    private CypherAdapterRecord currentRecord;
     private final Clock clock;
 
     CypherAdapterStream( QueryResult delegate, Clock clock )
     {
         this.delegate = delegate;
         this.fieldNames = delegate.fieldNames();
-        this.currentRecord = new CypherAdapterRecord( fieldNames.length );
         this.clock = clock;
     }
 
@@ -75,7 +73,7 @@ class CypherAdapterStream extends BoltResult
         long start = clock.millis();
         delegate.accept( row ->
         {
-            visitor.visit( currentRecord.reset( row ) );
+            visitor.visit( row );
             return true;
         } );
         visitor.addMetadata( "result_consumed_after", longValue( clock.millis() - start ) );
@@ -144,29 +142,6 @@ class CypherAdapterStream extends BoltResult
 
         default:
             return queryType.name();
-        }
-    }
-
-    //TODO is this copy necessary
-    private static class CypherAdapterRecord implements QueryResult.Record
-    {
-        private final AnyValue[] fields; // This exists solely to avoid re-creating a new array for each record
-
-        private CypherAdapterRecord( int size )
-        {
-            this.fields = new AnyValue[size];
-        }
-
-        @Override
-        public AnyValue[] fields()
-        {
-            return fields;
-        }
-
-        public CypherAdapterRecord reset( QueryResult.Record cypherRecord ) throws BoltIOException
-        {
-            System.arraycopy( cypherRecord.fields(), 0, this.fields, 0, this.fields.length );
-            return this;
         }
     }
 

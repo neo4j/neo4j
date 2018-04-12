@@ -142,9 +142,9 @@ public class JSONObject
     public JSONObject( JSONObject jo, String[] names ) throws JSONException
     {
         this();
-        for ( int i = 0; i < names.length; i += 1 )
+        for ( String name : names )
         {
-            putOnce( names[i], jo.opt( names[i] ) );
+            putOnce( name, jo.opt( name ) );
         }
     }
 
@@ -322,9 +322,8 @@ public class JSONObject
     {
         this();
         Class c = object.getClass();
-        for ( int i = 0; i < names.length; i += 1 )
+        for ( String name : names )
         {
-            String name = names[i];
             try
             {
                 putOpt( name, c.getField( name ).get( object ) );
@@ -492,7 +491,7 @@ public class JSONObject
         char c = 0;
         int i;
         int len = string.length();
-        StringBuffer sb = new StringBuffer( len + 4 );
+        StringBuilder sb = new StringBuilder( len + 4 );
         String t;
 
         sb.append( '"' );
@@ -588,7 +587,7 @@ public class JSONObject
                 {
                     try
                     {
-                        return new Integer( Integer.parseInt( s.substring( 2 ), 16 ) );
+                        return Integer.parseInt( s.substring( 2 ), 16 );
                     }
                     catch ( Exception e )
                     {
@@ -599,7 +598,7 @@ public class JSONObject
                 {
                     try
                     {
-                        return new Integer( Integer.parseInt( s, 8 ) );
+                        return Integer.parseInt( s, 8 );
                     }
                     catch ( Exception e )
                     {
@@ -615,10 +614,10 @@ public class JSONObject
                 }
                 else
                 {
-                    Long myLong = new Long( s );
-                    if ( myLong.longValue() == myLong.intValue() )
+                    Long myLong = Long.valueOf( s );
+                    if ( myLong == myLong.intValue() )
                     {
-                        return new Integer( myLong.intValue() );
+                        return myLong.intValue();
                     }
                     else
                     {
@@ -813,11 +812,10 @@ public class JSONObject
         }
 
         Method[] methods = includeSuperClass ? klass.getMethods() : klass.getDeclaredMethods();
-        for ( int i = 0; i < methods.length; i += 1 )
+        for ( Method method : methods )
         {
             try
             {
-                Method method = methods[i];
                 if ( Modifier.isPublic( method.getModifiers() ) )
                 {
                     String name = method.getName();
@@ -1236,7 +1234,7 @@ public class JSONObject
         try
         {
             Object o = opt( key );
-            return o instanceof Number ? ((Number) o).doubleValue() : new Double( (String) o ).doubleValue();
+            return o instanceof Number ? ((Number) o).doubleValue() : new Double( (String) o );
         }
         catch ( Exception e )
         {
@@ -1409,7 +1407,7 @@ public class JSONObject
      */
     public JSONObject put( String key, int value ) throws JSONException
     {
-        put( key, new Integer( value ) );
+        put( key, Integer.valueOf( value ) );
         return this;
     }
 
@@ -1423,7 +1421,7 @@ public class JSONObject
      */
     public JSONObject put( String key, long value ) throws JSONException
     {
-        put( key, new Long( value ) );
+        put( key, Long.valueOf( value ) );
         return this;
     }
 
@@ -1579,7 +1577,7 @@ public class JSONObject
         try
         {
             Iterator keys = keys();
-            StringBuffer sb = new StringBuffer( "{" );
+            StringBuilder sb = new StringBuilder( "{" );
 
             while ( keys.hasNext() )
             {
@@ -1642,7 +1640,7 @@ public class JSONObject
             return "{}";
         }
         Iterator keys = sortedKeys();
-        StringBuffer sb = new StringBuffer( "{" );
+        StringBuilder sb = new StringBuilder( "{" );
         int newindent = indent + indentFactor;
         Object o;
         if ( n == 1 )

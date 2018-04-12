@@ -44,9 +44,6 @@ import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -357,6 +354,36 @@ public class RelationshipChangesForNode
         return degree;
     }
 
+    public int augmentDegree( RelationshipDirection direction, int degree, int typeId )
+    {
+        switch ( direction )
+        {
+        case INCOMING:
+            if ( incoming != null && incoming.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, incoming.get( typeId ).size() );
+            }
+            break;
+        case OUTGOING:
+            if ( outgoing != null && outgoing.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, outgoing.get( typeId ).size() );
+            }
+            break;
+        case LOOP:
+            if ( loops != null && loops.containsKey( typeId ) )
+            {
+                return diffStrategy.augmentDegree( degree, loops.get( typeId ).size() );
+            }
+            break;
+
+        default:
+            throw new IllegalArgumentException( "Unknown direction: " + direction );
+        }
+
+        return degree;
+    }
+
     public PrimitiveIntSet relationshipTypes()
     {
         PrimitiveIntSet types = Primitive.intSet();
@@ -467,9 +494,8 @@ public class RelationshipChangesForNode
             Map<Integer,Set<Long>>... maps )
     {
         Collection<Set<Long>> result = new ArrayList<>();
-        for ( int i = 0; i < maps.length; i++ )
+        for ( Map<Integer,Set<Long>> map : maps )
         {
-            Map<Integer,Set<Long>> map = maps[i];
             if ( map != null )
             {
                 Iterator<Set<Long>> diffSet = filter.apply( map );

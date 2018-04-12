@@ -45,6 +45,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.test.rule.RepeatRule;
 
 import static org.junit.Assert.assertThat;
@@ -111,9 +113,10 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                       PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+                                       PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
+                                       VersionContextSupplier versionContextSupplier )
     {
-        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
+        T pageCache = fixture.createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
         pageCachePageSize = pageCache.pageSize();
         recordsPerFilePage = pageCachePageSize / recordSize;
         recordCount = 5 * maxPages * recordsPerFilePage;
@@ -123,30 +126,36 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                 PageCursorTracerSupplier cursorTracerSupplier )
+                                 PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier versionContextSupplier )
     {
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs, Configuration.EMPTY );
-        return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
+        return createPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier, versionContextSupplier );
+    }
+
+    protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
+            PageCursorTracerSupplier cursorTracerSupplier )
+    {
+        return createPageCache( fs, maxPages, tracer, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
     }
 
     protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                    PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
+                                    PageCursorTracerSupplier cursorTracerSupplier )
     {
         if ( pageCache != null )
         {
             tearDownPageCache( pageCache );
         }
-        pageCache = createPageCache( fs, maxPages, tracer, cursorTracerSupplier );
+        pageCache = createPageCache( fs, maxPages, tracer, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
         return pageCache;
     }
 
-    protected void configureStandardPageCache() throws IOException
+    protected void configureStandardPageCache()
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
-    protected final void tearDownPageCache( T pageCache ) throws IOException
+    protected final void tearDownPageCache( T pageCache )
     {
         fixture.tearDownPageCache( pageCache );
     }
@@ -174,7 +183,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return file;
     }
 
-    protected void ensureDirectoryExists( File dir ) throws IOException
+    protected void ensureDirectoryExists( File dir )
     {
         fs.mkdir( dir );
     }
@@ -201,7 +210,9 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         {
             long recordId = (pageId * recordsPerFilePage) + i;
             expectedPageContents.position( recordSize * i );
-            generateRecordForId( recordId, expectedPageContents.slice() );
+            ByteBuffer slice = expectedPageContents.slice();
+            slice.limit( recordSize );
+            generateRecordForId( recordId, slice );
             do
             {
                 cursor.setOffset( recordSize * i );
@@ -211,13 +222,43 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             actualPageContents.position( recordSize * i );
             actualPageContents.put( record );
         }
-        assertRecord( pageId, actualPageContents, expectedPageContents );
+        assertRecords( pageId, actualPageContents, expectedPageContents );
     }
 
-    protected void assertRecord( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
+    /**
+     * Verifies the records in the current buffer assuming the given page id.
+     * <p>
+     * This does the do-while-retry loop internally.
+     */
+    protected void verifyRecordsMatchExpected( long pageId, int offset, ByteBuffer actualPageContents ) throws IOException
+    {
+        ByteBuffer expectedPageContents = ByteBuffer.allocate( filePageSize );
+        for ( int i = 0; i < recordsPerFilePage; i++ )
+        {
+            long recordId = (pageId * recordsPerFilePage) + i;
+            expectedPageContents.position( recordSize * i );
+            ByteBuffer slice = expectedPageContents.slice();
+            slice.limit( recordSize );
+            generateRecordForId( recordId, slice );
+        }
+        int len = actualPageContents.limit() - actualPageContents.position();
+        byte[] actual = new byte[len];
+        byte[] expected = new byte[len];
+        actualPageContents.get( actual );
+        expectedPageContents.position( offset );
+        expectedPageContents.get( expected );
+        assertRecords( pageId, actual, expected );
+    }
+
+    protected void assertRecords( long pageId, ByteBuffer actualPageContents, ByteBuffer expectedPageContents )
     {
         byte[] actualBytes = actualPageContents.array();
         byte[] expectedBytes = expectedPageContents.array();
+        assertRecords( pageId, actualBytes, expectedBytes );
+    }
+
+    protected void assertRecords( long pageId, byte[] actualBytes, byte[] expectedBytes )
+    {
         int estimatedPageId = estimateId( actualBytes );
         assertThat(
                 "Page id: " + pageId + " " +
@@ -305,7 +346,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             generateRecordForId( i, buf );
             observation.position( 0 );
             channel.read( observation );
-            assertRecord( i, observation, buf );
+            assertRecords( i, observation, buf );
         }
     }
 
@@ -327,9 +368,10 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     public abstract static class Fixture<T extends PageCache>
     {
         public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
-                                           PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier );
+                                           PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier,
+                                           VersionContextSupplier contextSupplier );
 
-        public abstract void tearDownPageCache( T pageCache ) throws IOException;
+        public abstract void tearDownPageCache( T pageCache );
 
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,File> fileConstructor = File::new;

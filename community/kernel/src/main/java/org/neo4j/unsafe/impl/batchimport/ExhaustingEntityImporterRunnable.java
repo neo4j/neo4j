@@ -19,12 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Allocates its own {@link InputChunk} and loops, getting input data, importing input data into store
@@ -62,10 +61,15 @@ class ExhaustingEntityImporterRunnable implements Runnable
                 roughEntityCountProgress.add( count );
             }
         }
+        catch ( IOException e )
+        {
+            control.panic( e );
+            throw new RuntimeException( e );
+        }
         catch ( Throwable e )
         {
             control.panic( e );
-            throw launderedException( e );
+            throw e;
         }
         finally
         {

@@ -75,7 +75,7 @@ public class CoreEdgeMetricsIT
     private Cluster cluster;
 
     @After
-    public void shutdown() throws ExecutionException, InterruptedException
+    public void shutdown()
     {
         if ( cluster != null )
         {
@@ -158,14 +158,6 @@ public class CoreEdgeMetricsIT
         assertEventually( "pull update response received",
                 () -> readLongValue( metricsCsv( readReplicaMetricsDir, PULL_UPDATE_HIGHEST_TX_ID_RECEIVED ) ),
                 greaterThan( 0L ), TIMEOUT, TimeUnit.SECONDS );
-
-        assertEventually( "dropped messages eventually accurate",
-                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.DROPPED_MESSAGES ) ),
-                greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
-
-        assertEventually( "queue size eventually accurate",
-                () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.QUEUE_SIZE ) ),
-                greaterThanOrEqualTo( 0L ), TIMEOUT, TimeUnit.SECONDS );
     }
 
     private void assertAllNodesVisible( GraphDatabaseAPI db ) throws Exception

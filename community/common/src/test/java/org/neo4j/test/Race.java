@@ -28,8 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.helpers.Exceptions;
-
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -118,7 +116,7 @@ public class Race
             }
             catch ( Throwable e )
             {
-                throw Exceptions.launderedException( e );
+                throw new RuntimeException( e );
             }
         };
     }

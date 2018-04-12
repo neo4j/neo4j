@@ -23,12 +23,23 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.net.URI;
+import java.util.function.Supplier;
 
 public class SecureWebSocketConnection extends WebSocketConnection
 {
     public SecureWebSocketConnection()
     {
-        super( () -> new WebSocketClient( new SslContextFactory( /* trustall= */ true ) ),
-                address -> URI.create( "wss://" + address.getHost() + ":" + address.getPort() ) );
+        super( createTestClientSupplier(), address -> URI.create( "wss://" + address.getHost() + ":" + address.getPort() ) );
+    }
+
+    private static Supplier<WebSocketClient> createTestClientSupplier()
+    {
+        return () ->
+        {
+            SslContextFactory sslContextFactory = new SslContextFactory( /* trustall= */ true );
+            /* remove extra filters added by jetty on cipher suites */
+            sslContextFactory.setExcludeCipherSuites();
+            return new WebSocketClient( sslContextFactory );
+        };
     }
 }

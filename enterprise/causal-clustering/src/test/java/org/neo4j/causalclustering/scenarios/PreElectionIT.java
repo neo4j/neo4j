@@ -19,14 +19,10 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,8 +30,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.test.Race;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -49,58 +43,30 @@ public class PreElectionIT
     public ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
-            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "10s" )
+            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
             .withSharedCoreParam( CausalClusteringSettings.enable_pre_voting, "true" );
-
-    private Cluster cluster;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        cluster = clusterRule.startCluster();
-    }
 
     @Test
     public void shouldActuallyStartAClusterWithPreVoting() throws Exception
     {
+        clusterRule.startCluster();
         // pass
     }
 
     @Test
-    public void shouldStartAnElectionIfAllServersHaveTimedOutOnHeartbeats() throws Exception
+    public void shouldActuallyStartAClusterWithPreVotingAndARefuseToBeLeader() throws Throwable
     {
-        Collection<CompletableFuture<Void>> futures = new ArrayList<>( cluster.coreMembers().size() );
-
-        // given
-        long initialTerm = cluster.awaitLeader().raft().term();
-
-        // when
-        for ( CoreClusterMember member : cluster.coreMembers() )
-        {
-            if ( Role.FOLLOWER == member.raft().currentRole() )
-            {
-                futures.add( CompletableFuture.runAsync( Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) ) ) );
-            }
-        }
-
-        // then
-        Assert.assertEventually(
-                "Should be on a new term following an election",
-                () -> cluster.awaitLeader().raft().term(), not( equalTo( initialTerm ) ),
-                1,
-                TimeUnit.MINUTES );
-
-        // cleanup
-        for ( CompletableFuture<Void> future : futures )
-        {
-            future.cancel( false );
-        }
+        clusterRule
+                .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
+                .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
+        clusterRule.startCluster();
     }
 
     @Test
     public void shouldNotStartAnElectionIfAMinorityOfServersHaveTimedOutOnHeartbeats() throws Exception
     {
         // given
+        Cluster cluster = clusterRule.startCluster();
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 1, TimeUnit.MINUTES );
 
         // when
@@ -122,6 +88,7 @@ public class PreElectionIT
     public void shouldStartElectionIfLeaderRemoved() throws Exception
     {
         // given
+        Cluster cluster = clusterRule.startCluster();
         CoreClusterMember oldLeader = cluster.awaitLeader();
 
         // when
@@ -131,5 +98,29 @@ public class PreElectionIT
         CoreClusterMember newLeader = cluster.awaitLeader();
 
         assertThat( newLeader.serverId(), not( equalTo( oldLeader.serverId() ) ) );
+    }
+
+    @Test
+    public void shouldElectANewLeaderIfAServerRefusesToBeLeader() throws Exception
+    {
+        // given
+        clusterRule
+                .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
+                .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
+        Cluster cluster = clusterRule.startCluster();
+        CoreClusterMember oldLeader = cluster.awaitLeader();
+
+        // when
+        cluster.removeCoreMember( oldLeader );
+
+        // then
+        CoreClusterMember newLeader = cluster.awaitLeader();
+
+        assertThat( newLeader.serverId(), not( equalTo( oldLeader.serverId() ) ) );
+    }
+
+    private String firstServerRefusesToBeLeader( int id )
+    {
+        return id == 0 ? "true" : "false";
     }
 }

@@ -22,9 +22,12 @@ package org.neo4j.csv.reader;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 
 import org.neo4j.csv.reader.Source.Chunk;
+import org.neo4j.values.storable.CSVHeaderInformation;
 
+import static java.lang.Character.isWhitespace;
 import static java.lang.String.format;
 
 import static org.neo4j.csv.reader.Mark.END_OF_LINE_CHARACTER;
@@ -38,7 +41,6 @@ public class BufferedCharSeeker implements CharSeeker
     private static final char EOL_CHAR_2 = '\r';
     private static final char EOF_CHAR = (char) -1;
     private static final char BACK_SLASH = '\\';
-    private static final char WHITESPACE = ' ';
 
     private char[] buffer;
     private int dataLength;
@@ -101,11 +103,14 @@ public class BufferedCharSeeker implements CharSeeker
             ch = nextChar( skippedChars );
             if ( quoteDepth == 0 )
             {   // In normal mode, i.e. not within quotes
-                if ( isWhitespace( ch ) && trim )
-                {
+                if ( ch == untilChar )
+                {   // We found a delimiter, set marker and return true
+                    return setMark( mark, endOffset, skippedChars, ch, isQuoted );
+                }
+                else if ( trim && isWhitespace( ch ) )
+                {   // Only check for left+trim whitespace as long as we haven't found a non-whitespace character
                     if ( seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
-                    {
-                        // We found a whitespace, which was the first of the value and we've been told to trim that off
+                    {   // We found a whitespace, which is before the first non-whitespace of the value and we've been told to trim that off
                         seekStartPos++;
                     }
                 }
@@ -126,18 +131,12 @@ public class BufferedCharSeeker implements CharSeeker
                     }
                     break;
                 }
-                else if ( ch == untilChar )
-                {   // We found a delimiter, set marker and return true
-                    return setMark( mark, endOffset, skippedChars, ch, isQuoted );
+                else if ( isQuoted )
+                {   // This value is quoted, i.e. started with a quote and has also seen a quote
+                    throw new DataAfterQuoteException( this,
+                            new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
                 }
-                else
-                {   // This is a character to include as part of the current value
-                    if ( isQuoted )
-                    {   // This value is quoted, i.e. started with a quote and has also seen a quote
-                        throw new DataAfterQuoteException( this,
-                                new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
-                    }
-                }
+                // else this is a character to include as part of the current value
             }
             else
             {   // In quoted mode, i.e. within quotes
@@ -194,17 +193,29 @@ public class BufferedCharSeeker implements CharSeeker
         return setMark( mark, endOffset, skippedChars, END_OF_LINE_CHARACTER, isQuoted );
     }
 
+    @Override
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    {
+        return extract( mark, extractor, null );
+    }
+
     private boolean setMark( Mark mark, int endOffset, int skippedChars, int ch, boolean isQuoted )
     {
-        int pos = (trim ? rtrim( bufferPos ) : bufferPos) - endOffset - skippedChars;
+        int pos = (trim ? rtrim() : bufferPos) - endOffset - skippedChars;
         mark.set( seekStartPos, pos, ch, isQuoted );
         return true;
     }
 
-    private int rtrim( int start )
+    /**
+     * Starting from the current position, {@link #bufferPos}, scan backwards as long as whitespace is found.
+     * Although it cannot scan further back than the start of this field is, i.e. {@link #seekStartPos}.
+     *
+     * @return the right index of the value to pass into {@link Mark}. This is only called if {@link Configuration#trimStrings()} is {@code true}.
+     */
+    private int rtrim()
     {
-        int index = start;
-        while ( isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
+        int index = bufferPos;
+        while ( index - 1 > seekStartPos && isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
         {
             index--;
         }
@@ -213,7 +224,18 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean isWhitespace( int ch )
     {
-        return ch == WHITESPACE;
+        return ch == ' ' |
+                ch == Character.SPACE_SEPARATOR |
+                ch == Character.PARAGRAPH_SEPARATOR |
+                ch == '\u00A0' |
+                ch == '\u001C' |
+                ch == '\u001D' |
+                ch == '\u001E' |
+                ch == '\u001F' |
+                ch == '\u2007' |
+                ch == '\u202F' |
+                ch == '\t';
+
     }
 
     private void repositionChar( int offset, int stepsBack )
@@ -267,9 +289,9 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor )
+    public <EXTRACTOR extends Extractor<?>> EXTRACTOR extract( Mark mark, EXTRACTOR extractor, CSVHeaderInformation optionalData )
     {
-        if ( !tryExtract( mark, extractor ) )
+        if ( !tryExtract( mark, extractor, optionalData ) )
         {
             throw new IllegalStateException( extractor + " didn't extract value for " + mark +
                     ". For values which are optional please use tryExtract method instead" );
@@ -278,11 +300,17 @@ public class BufferedCharSeeker implements CharSeeker
     }
 
     @Override
-    public boolean tryExtract( Mark mark, Extractor<?> extractor )
+    public boolean tryExtract( Mark mark, Extractor<?> extractor, CSVHeaderInformation optionalData )
     {
         int from = mark.startPosition();
         int to = mark.position();
-        return extractor.extract( buffer, from, to - from, mark.isQuoted() );
+        return extractor.extract( buffer, from, to - from, mark.isQuoted(), optionalData );
+    }
+
+    @Override
+    public boolean tryExtract( Mark mark, Extractor<?> extractor )
+    {
+        return tryExtract( mark, extractor, null );
     }
 
     private int nextChar( int skippedChars ) throws IOException

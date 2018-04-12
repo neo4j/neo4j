@@ -44,7 +44,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
      * {@inheritDoc}
      */
     @Override
-    public void create() throws IOException
+    public void create()
     {
         throw new UnsupportedOperationException( "Index creation in read only mode is not supported." );
     }
@@ -98,7 +98,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
      * {@inheritDoc}
      */
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         throw new UnsupportedOperationException( "Index drop is not supported in read only mode." );
     }
@@ -107,7 +107,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
      * {@inheritDoc}
      */
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
         // nothing to flush in read only mode
     }
@@ -143,7 +143,7 @@ public abstract class ReadOnlyAbstractDatabaseIndex<T extends AbstractLuceneInde
      * {@inheritDoc}
      */
     @Override
-    public void maybeRefreshBlocking() throws IOException
+    public void maybeRefreshBlocking()
     {
         //nothing to refresh in read only mode
     }

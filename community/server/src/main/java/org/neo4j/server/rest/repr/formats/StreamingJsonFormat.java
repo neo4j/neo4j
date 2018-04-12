@@ -68,7 +68,7 @@ public class StreamingJsonFormat extends RepresentationFormat implements Streami
         JsonFactory factory = new JsonFactory( objectMapper )
         {
             @Override
-            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt ) throws IOException
+            protected JsonGenerator _createUTF8JsonGenerator( OutputStream out, IOContext ctxt )
             {
                 final int bufferSize = 1024 * 8;
                 Utf8Generator gen = new Utf8Generator( ctxt, _generatorFeatures, _objectCodec, out,

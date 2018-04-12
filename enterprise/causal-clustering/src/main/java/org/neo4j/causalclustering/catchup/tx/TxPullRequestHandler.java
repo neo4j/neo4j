@@ -40,11 +40,12 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_INVALID_REQUEST;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
@@ -74,16 +75,35 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     {
         monitor.increment();
 
-        long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
+        if ( msg.previousTxId() <= 0 )
+        {
+            log.error( "Illegal tx pull request" );
+            endInteraction( ctx, E_INVALID_REQUEST, -1 );
+            return;
+        }
+
         StoreId localStoreId = storeIdSupplier.get();
         StoreId expectedStoreId = msg.expectedStoreId();
 
+        long firstTxId = msg.previousTxId() + 1;
         IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, firstTxId, localStoreId, expectedStoreId );
 
         if ( txCursor != null )
         {
-            ctx.writeAndFlush( new ChunkedTransactionStream( localStoreId, txCursor, protocol ) );
+            ChunkedTransactionStream txStream = new ChunkedTransactionStream( localStoreId, firstTxId, txCursor, protocol );
             // chunked transaction stream ends the interaction internally and closes the cursor
+            ctx.writeAndFlush( txStream ).addListener( f ->
+            {
+                String message = format( "Streamed transactions [%d--%d] to %s", firstTxId, txStream.lastTxId(), ctx.channel().remoteAddress() );
+                if ( f.isSuccess() )
+                {
+                    log.info( message );
+                }
+                else
+                {
+                    log.warn( message, f.cause() );
+                }
+            } );
         }
     }
 

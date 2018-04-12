@@ -36,6 +36,7 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
@@ -79,7 +80,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class MasterImplTest
 {
     @Test
-    public void givenStartedAndInaccessibleWhenNewLockSessionThrowException() throws Throwable
+    public void givenStartedAndInaccessibleWhenNewLockSessionThrowException()
     {
         // Given
         MasterImpl.SPI spi = mock( MasterImpl.SPI.class );
@@ -97,7 +98,7 @@ public class MasterImplTest
             instance.newLockSession( new RequestContext( 0, 1, 2, 0, 0 ) );
             fail();
         }
-        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
+        catch ( TransactionFailureException e )
         {
             // Ok
         }
@@ -239,7 +240,7 @@ public class MasterImplTest
         }
     }
 
-    private MasterImpl newMasterWithLocksClient( Client client ) throws Throwable
+    private MasterImpl newMasterWithLocksClient( Client client )
     {
         SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -315,7 +316,7 @@ public class MasterImplTest
         master.start();
         HandshakeResult handshake = master.handshake( 1, newStoreIdForCurrentVersion() ).response();
 
-        int no_lock_session = -1;
+        final int no_lock_session = -1;
         RequestContext ctx = new RequestContext( handshake.epoch(), 1, no_lock_session, 0, 0 );
         TransactionRepresentation tx = mock( TransactionRepresentation.class );
 
@@ -358,7 +359,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void shouldStartStopConversationManager() throws Throwable
+    public void shouldStartStopConversationManager()
     {
         MasterImpl.SPI spi = mockedSpi();
         ConversationManager conversationManager = mock( ConversationManager.class );
@@ -409,7 +410,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -431,7 +432,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -453,7 +454,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -475,7 +476,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();

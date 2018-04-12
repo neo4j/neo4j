@@ -82,10 +82,10 @@ Feature: ProcedureCallAcceptance
     RETURN *
     """
     Then the result should be, in order:
-      | label | c |
-      | 'A'   | 3 |
-      | 'B'   | 3 |
-      | 'C'   | 3 |
+      | c | label |
+      | 3 | 'A'   |
+      | 3 | 'B'   |
+      | 3 | 'C'   |
     And no side effects
 
   Scenario: Standalone call to VOID procedure that takes no arguments
@@ -107,7 +107,8 @@ Feature: ProcedureCallAcceptance
     CALL test.doNothing()
     RETURN n
     """
-    Then the result should be empty
+    Then the result should be:
+      | n |
     And no side effects
 
   Scenario: In-query call to VOID procedure does not consume rows
@@ -179,7 +180,7 @@ Feature: ProcedureCallAcceptance
       | 'Berlin' | 49           |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: Standalone call to procedure with implicit arguments
     Given this scenario is pending on: decision to change semantics to be in line with the explicit argument form of standalone calls
     And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
@@ -287,7 +288,7 @@ Feature: ProcedureCallAcceptance
       | 'close enough' |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
     Given this scenario is pending on: decision on number type coercion rules
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):
@@ -302,7 +303,7 @@ Feature: ProcedureCallAcceptance
       | 'close enough' |
     And no side effects
 
-  @pending
+  @ignore
   Scenario: In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
     Given this scenario is pending on: decision on number type coercion rules
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: STRING?):

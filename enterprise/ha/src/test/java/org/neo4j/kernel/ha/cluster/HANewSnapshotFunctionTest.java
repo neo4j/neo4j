@@ -39,7 +39,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 public class HANewSnapshotFunctionTest
 {
     @Test
-    public void normalClusterCreationShouldBePassedUnchanged() throws Exception
+    public void normalClusterCreationShouldBePassedUnchanged()
     {
         // GIVEN
         // This is what the end result should look like
@@ -60,7 +60,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void duplicateSlaveEventsShouldBeFilteredOut() throws Exception
+    public void duplicateSlaveEventsShouldBeFilteredOut()
     {
         // GIVEN
         // This is the list of events
@@ -88,7 +88,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingMasterReappearsAsSlaveShouldBeTreatedAsSlave() throws Exception
+    public void instanceBeingMasterReappearsAsSlaveShouldBeTreatedAsSlave()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -114,7 +114,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingSlaveReappearsAsMasterShouldBeTreatedAsMaster() throws Exception
+    public void instanceBeingSlaveReappearsAsMasterShouldBeTreatedAsMaster()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -140,7 +140,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingMasterReplacedByAnotherInstanceShouldNotRemainMaster() throws Exception
+    public void instanceBeingMasterReplacedByAnotherInstanceShouldNotRemainMaster()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -164,7 +164,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingBackupReplacedByAnotherInstanceShouldNotRemainBackup() throws Exception
+    public void instanceBeingBackupReplacedByAnotherInstanceShouldNotRemainBackup()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();
@@ -190,7 +190,7 @@ public class HANewSnapshotFunctionTest
     }
 
     @Test
-    public void instanceBeingBackupRepeatedlyShouldRemainBackupOnceOnly() throws Exception
+    public void instanceBeingBackupRepeatedlyShouldRemainBackupOnceOnly()
     {
         // GIVEN these events
         List<MemberIsAvailable> events = new LinkedList<>();

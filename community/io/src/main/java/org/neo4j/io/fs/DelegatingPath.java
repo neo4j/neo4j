@@ -185,13 +185,13 @@ public abstract class DelegatingPath implements Path
     }
 
     @Override
-    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers ) throws IOException
+    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>... events ) throws IOException
+    public WatchKey register( WatchService watcher, WatchEvent.Kind<?>... events )
     {
         throw new UnsupportedOperationException();
     }

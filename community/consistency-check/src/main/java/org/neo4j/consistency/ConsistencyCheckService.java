@@ -25,8 +25,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -43,11 +43,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
@@ -63,10 +64,10 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.RECOVERY_PREVENTING_COLLECTOR;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadIndexProviders;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
@@ -87,7 +88,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
                 new ConsistencyFlags( tuningConfiguration ) );
@@ -95,7 +96,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, boolean verbose, ConsistencyFlags consistencyFlags )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
@@ -120,7 +121,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, new ConsistencyFlags( tuningConfiguration ) );
@@ -128,7 +129,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
                 verbose, defaultReportDir( config, storeDir ), consistencyFlags );
@@ -137,7 +138,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
@@ -145,12 +146,12 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                logProvider.getLog( PageCache.class ) );
+                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
@@ -207,9 +208,10 @@ public class ConsistencyCheckService
     {
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
+        config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
@@ -217,7 +219,7 @@ public class ConsistencyCheckService
         {
             try
             {
-                return new PrintWriter( createOrOpenAsOuputStream( fileSystem, reportFile, true ) );
+                return new PrintWriter( createOrOpenAsOutputStream( fileSystem, reportFile, true ) );
             }
             catch ( IOException e )
             {
@@ -230,7 +232,7 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
-                RECOVERY_PREVENTING_COLLECTOR,
+                RecoveryCleanupWorkCollector.IGNORE,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
                 COMMUNITY,
                 monitors ) );
@@ -239,11 +241,11 @@ public class ConsistencyCheckService
         {
             life.start();
 
-            SchemaIndexProviderMap indexes = loadSchemaIndexProviders( extensions );
+            IndexProviderMap indexes = loadIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
-                            RecoveryCleanupWorkCollector.IMMEDIATE );
+                            RecoveryCleanupWorkCollector.IGNORE );
             life.add( labelScanStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

@@ -1,595 +1,576 @@
-Support multiple divisions in aggregate function
-Aggregates inside normal functions
-Handle aggregates inside non-aggregate expressions
-Count nodes
-Sort on aggregate function and normal property
-Aggregate on property
-Sum non-null values
-Handle aggregation on functions
-Distinct on unbound node
-Collect distinct nulls
-Collect distinct values mixed with nulls
-Aggregate on list values
-Aggregates in aggregates
-Aggregates with arithmetics
-Aggregates ordered by arithmetics
-Multiple aggregates on same variable
-Aggregation of named paths
-Aggregation with `min()`
-Handle subexpression in aggregation also occurring as standalone expression with nested aggregation in a literal map
-Projection during aggregation in WITH before MERGE and after WITH with predicate
-No overflow during summation
-`max()` should aggregate strings
-`min()` should aggregate strings
-Keeping used expression 2
-Keeping used expression 3
-Keeping used expression 4
-Handling numerical ranges 1
-Handling numerical ranges 2
-Handling numerical ranges 3
-Handling numerical ranges 4
-Handling string ranges 1
-Handling string ranges 2
-Handling string ranges 3
-Handling string ranges 4
-Handling empty range
-Handling long chains of operators
-Number-typed integer comparison
-Number-typed float comparison
-Any-typed string comparison
-Comparing nodes to nodes
-Comparing relationships to relationships
-IN should work with nested list subscripting
-IN should work with nested literal list subscripting
-IN should work with list slices
-IN should work with literal list slices
-Execute n[0]
-Execute n['name'] in read queries
-Execute n['name'] in update queries
-Use dynamic property lookup based on parameters when there is no type information
-Use dynamic property lookup based on parameters when there is lhs type information
-Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is no type information
-Use collection lookup based on parameters when there is lhs type information
-Use collection lookup based on parameters when there is rhs type information
-Fail at runtime when attempting to index with an Int into a Map
-Fail at runtime when trying to index into a map with a non-string
-Fail at runtime when attempting to index with a String into a Collection
-Fail at runtime when trying to index into a list with a list
-Fail at runtime when trying to index something which is not a map or collection
-Run coalesce
-Functions should return null if they get path containing unbound
-`split()`
-`properties()` on a node
-`properties()` on a relationship
-`properties()` on a map
-`properties()` on null
-`reverse()`
-`exists()` with dynamic property lookup
-`exists()` with literal maps
-IS NOT NULL with literal maps
-`percentileDisc()`
-`percentileCont()`
-`percentileCont()` failing on bad arguments
-`percentileDisc()` failing on bad arguments
-`percentileDisc()` failing in more involved query
-`type()` handling Any type
-`type()` failing on invalid arguments
-`labels()` should accept type Any
-`exists()` is case insensitive
-Find friends of others
-Should only join when matching
-Using `keys()` on a single node, non-empty result
-Using `keys()` on multiple nodes, non-empty result
-Using `keys()` on a single node, empty result
-Using `keys()` on an optionally matched node
-Using `keys()` on a relationship, non-empty result
-Using `keys()` on a relationship, empty result
-Using `keys()` on an optionally matched relationship
-Using `keys()` on a literal map
-Using `keys()` on a parameter map
-Adding a single label
-Ignore space before colon
-Adding multiple labels
-Ignoring intermediate whitespace 1
-Ignoring intermediate whitespace 2
-Creating node without label
-Creating node with two labels
-Ignore space when creating node with labels
-Create node with label in pattern
-Using `labels()` in return clauses
-Removing a label
-Removing a non-existent label
-Returning a list comprehension
-Using a list comprehension in a WITH
-Using a list comprehension in a WHERE
-Path query should return results in written order
-Longer path query should return results in written order
-Walk alternative relationships
-Handle OR in the WHERE clause
-Return a simple path
-Return a three node path
-Do not return anything because path length does not match
-Pass the path length test
-Return relationships by fetching them from the path - starting from the end
-Return relationships by fetching them from the path
-Return relationships by collecting them as a list - wrong way
-Return relationships by collecting them as a list - undirected
-Return relationships by collecting them as a list
-Return a var length path
-Return a var length path of length zero
-Return a named var length path of length zero
-Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false
-Do not fail when evaluating predicates with illegal operations if the OR'd predicate evaluates to true
-Aggregation with named paths
-Zero-length variable length pattern in the middle of the pattern
-Simple variable length pattern
-Variable length relationship without lower bound
-Variable length relationship without bounds
-MATCH with OPTIONAL MATCH in longer pattern
-Optionally matching named paths
-Optionally matching named paths with single and variable length patterns
-Optionally matching named paths with variable length patterns
-Matching variable length patterns from a bound node
-Excluding connected nodes
-Variable length relationship in OPTIONAL MATCH
-ORDER BY with LIMIT
-Handling direction of named paths
-Simple OPTIONAL MATCH on empty graph
-`collect()` filtering nulls
-Handling fixed-length variable length pattern
-Matching from null nodes should return no results owing to finding no matches
-Matching from null nodes should return no results owing to matches being filtered out
-Optionally matching from null nodes should return null
-OPTIONAL MATCH returns null
-Zero-length named path
-Variable-length named path
-Matching using a relationship that is already bound
-Matching using a relationship that is already bound, in conjunction with aggregation
-Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY
-Matching with LIMIT and optionally matching using a relationship that is already bound
-Matching with LIMIT and optionally matching using a relationship and node that are both already bound
-Matching with LIMIT, then matching again using a relationship and node that are both already bound along with an additional predicate
-Matching with LIMIT and predicates, then matching again using a relationship and node that are both already bound along with a duplicate predicate
-Matching twice with conflicting relationship types on same relationship
-Matching twice with duplicate relationship types on same relationship
-Matching relationships into a list and matching variable length using the list
-Matching relationships into a list and matching variable length using the list, with bound nodes
-Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction
-Matching and optionally matching with bound nodes in reverse direction
-Matching and optionally matching with unbound nodes and equality predicate in reverse direction
-Counting an empty graph
-Matching variable length pattern with property predicate
-Variable length pattern checking labels on endnodes
-Variable length pattern with label predicate on both sides
-Undirected named path
-Named path with WITH
-Named path with alternating directed/undirected relationships
-Named path with multiple alternating directed/undirected relationships
-Named path with undirected fixed variable length pattern
-Variable length relationship variables are lists of relationships
-Variable length patterns and nulls
-Respecting direction when matching existing path
-Respecting direction when matching non-existent path
-Respecting direction when matching non-existent path with multiple directions
-Matching path with both directions should respect other directions
-Matching path with multiple bidirectional relationships
-Matching longer variable length paths
-Counting rows after MATCH, MERGE, OPTIONAL MATCH
-Failing on merging relationship with null property
-Failing on merging node with null property
-Failing when setting a list of maps as a property
-Ignore null when setting property
-Ignore null when removing property
-Ignore null when setting properties using an appending map
-Ignore null when setting properties using an overriding map
-Ignore null when setting label
-Ignore null when removing label
-Ignore null when deleting node
-Ignore null when deleting relationship
-Satisfies the open world assumption, relationships between same nodes
-Satisfies the open world assumption, single relationship
-Satisfies the open world assumption, relationships between different nodes
-Return null when no matches due to inline label predicate
-Return null when no matches due to label predicate in WHERE
-MATCH after OPTIONAL MATCH
-WITH after OPTIONAL MATCH
-Named paths in optional matches
-Named paths inside optional matches with node predicates
-Variable length optional relationships
-Variable length optional relationships with length predicates
-Variable length optional relationships with bound nodes
-Variable length optional relationships with bound nodes, no matches
-Longer pattern with bound nodes
-Longer pattern with bound nodes without matches
-Handling optional matches between optionally matched entities
-Handling optional matches between nulls
-OPTIONAL MATCH and `collect()`
-ORDER BY of a column introduced in RETURN should return salient results in ascending order
-Pattern comprehension and ORDER BY
-Returning a pattern comprehension
-Returning a pattern comprehension with label predicate
-Returning a pattern comprehension with bound nodes
-Using a pattern comprehension in a WITH
-Using a variable-length pattern comprehension in a WITH
-Using pattern comprehension in RETURN
-Aggregating on pattern comprehension
-Using pattern comprehension to test existence
-Pattern comprehension inside list comprehension
-Get node degree via size of pattern comprehension
-Get node degree via size of pattern comprehension that specifies a relationship type
-Get node degree via size of pattern comprehension that specifies multiple relationship types
-Introducing new node variable in pattern comprehension
-Introducing new relationship variable in pattern comprehension
-Should ignore nulls
-Remove a single label
-Remove multiple labels
-Remove a single node property
-Remove multiple node properties
-Remove a single relationship property
-Remove multiple relationship properties
-Remove a missing property should be a valid operation
-Sort on aggregated function
-Count star should count everything in scope
-Absolute function
-Return collection size
-Fail when returning properties of deleted nodes
-Fail when returning labels of deleted nodes
-Fail when returning properties of deleted relationships
-Do not fail when returning type of deleted relationships
-Fail when sorting on variable removed by DISTINCT
-Ordering with aggregation
-Return all variables
-Setting and returning the size of a list property
-`sqrt()` returning float values
-Arithmetic expressions inside aggregation
-Matching and disregarding output, then matching again
-Returning an expression
-Concatenating and returning the size of literal lists
-`substring()` with default second argument
-Arithmetic expressions should propagate null values
-Indexing into nested literal lists
-Multiple aliasing and backreferencing
-Aggregating by a list property has a correct definition of equality
-Reusing variable names
-Handling DISTINCT with lists in maps
-Handling property access on the Any type
-Failing when performing property access on a non-map 1
-Failing when performing property access on a non-map 2
-Bad arguments for `range()`
-SKIP with an expression that does not depend on variables
-LIMIT with an expression that does not depend on variables
-Finding exact matches
-Finding beginning of string
-Finding end of string 1
-Finding end of string 2
-Finding middle of string
-Finding the empty string
-Finding when the middle is known
-Finding strings starting with whitespace
-Finding strings starting with newline
-Finding strings ending with newline
-Finding strings ending with whitespace
-Finding strings containing whitespace
-Finding strings containing newline
-No string starts with null
-No string does not start with null
-No string ends with null
-No string does not end with null
-No string contains null
-No string does not contain null
-Combining string operators
-NOT with CONTAINS
-Using `rand()` in aggregations
-A literal null IS null
-A literal null is not IS NOT null
-Using null in AND
-Using null in OR
-Using null in XOR
-Using null in IN
-Handling triadic friend of a friend that is not a friend
-Handling triadic friend of a friend that is not a friend with different relationship type
-Handling triadic friend of a friend that is not a friend with superset of relationship type
-Handling triadic friend of a friend that is not a friend with implicit subset of relationship type
-Handling triadic friend of a friend that is not a friend with explicit subset of relationship type
-Handling triadic friend of a friend that is not a friend with same labels
-Handling triadic friend of a friend that is not a friend with different labels
-Handling triadic friend of a friend that is not a friend with implicit subset of labels
-Handling triadic friend of a friend that is not a friend with implicit superset of labels
-Handling triadic friend of a friend that is a friend
-Handling triadic friend of a friend that is a friend with different relationship type
-Handling triadic friend of a friend that is a friend with superset of relationship type
-Handling triadic friend of a friend that is a friend with implicit subset of relationship type
-Handling triadic friend of a friend that is a friend with explicit subset of relationship type
-Handling triadic friend of a friend that is a friend with same labels
-Handling triadic friend of a friend that is a friend with different labels
-Handling triadic friend of a friend that is a friend with implicit subset of labels
-Handling triadic friend of a friend that is a friend with implicit superset of labels
-`toBoolean()` on valid literal string
-`toBoolean()` on booleans
-`toBoolean()` on variables with valid string values
-`toBoolean()` on invalid strings
-`toBoolean()` on invalid types
-`toInteger()`
-`toInteger()` on float
-`toInteger()` returning null on non-numerical string
-`toInteger()` handling mixed number types
-`toInteger()` handling Any type
-`toInteger()` on a list of strings
-`toInteger()` on a complex-typed expression
-`toInteger()` failing on invalid arguments
-`toFloat()`
-`toFloat()` on mixed number types
-`toFloat()` returning null on non-numerical string
-`toFloat()` handling Any type
-`toFloat()` on a list of strings
-`toFloat()` failing on invalid arguments
-`toString()`
-`toString()` handling boolean properties
-`toString()` handling inlined boolean
-`toString()` handling boolean literal
-`toString()` should work on Any type
-`toString()` on a list of integers
-`toString()` failing on invalid arguments
-`toString()` should accept potentially correct types 1
-`toString()` should accept potentially correct types 2
-Should be able to create text output from union queries
-Two elements, both unique, not distinct
-Two elements, both unique, distinct
-Three elements, two unique, distinct
-Three elements, two unique, not distinct
-Unwinding a range
-Unwinding a collected unwound expression
-Unwinding a collected expression
-Creating nodes from an unwound parameter list
-Unwind does not remove variables from scope
-Handling unbounded variable length match
-Handling explicitly unbounded variable length match
-Fail when asterisk operator is missing
-Handling single bounded variable length match 1
-Handling single bounded variable length match 2
-Handling single bounded variable length match 3
-Handling upper and lower bounded variable length match 1
-Handling upper and lower bounded variable length match 2
-Handling symmetrically bounded variable length match, bounds are zero
-Handling symmetrically bounded variable length match, bounds are one
-Handling symmetrically bounded variable length match, bounds are two
-Fail on negative bound
-Handling upper and lower bounded variable length match, empty interval 1
-Handling upper and lower bounded variable length match, empty interval 2
-Handling upper bounded variable length match, empty interval
-Handling upper bounded variable length match 1
-Handling upper bounded variable length match 2
-Handling lower bounded variable length match 1
-Handling lower bounded variable length match 2
-Handling lower bounded variable length match 3
-Handling a variable length relationship and a standard relationship in chain, zero length 1
-Handling a variable length relationship and a standard relationship in chain, zero length 2
-Handling a variable length relationship and a standard relationship in chain, single length 1
-Handling a variable length relationship and a standard relationship in chain, single length 2
-Handling a variable length relationship and a standard relationship in chain, longer 1
-Handling a variable length relationship and a standard relationship in chain, longer 2
-Handling a variable length relationship and a standard relationship in chain, longer 3
-Handling mixed relationship patterns and directions 1
-Handling mixed relationship patterns and directions 2
-Handling mixed relationship patterns 1
-Handling mixed relationship patterns 2
-Handling relationships that are already bound in variable length paths
-NOT and false
-Aliasing
-Handle dependencies across WITH
-Handle dependencies across WITH with SKIP
-WHERE after WITH should filter results
-WHERE after WITH can filter on top of an aggregation
-ORDER BY on an aggregating key
-WHERE on a DISTINCT column
-A simple pattern with one bound endpoint
-Null handling
-Nested maps
-Connected components succeeding WITH
-Single WITH using a predicate and aggregation
-Multiple WITHs using a predicate and aggregation
-Fail at compile time when attempting to index with a non-integer into a list
-`properties()` failing on an integer literal
-`properties()` failing on a string literal
-`properties()` failing on a list of booleans
-Fail when adding a new label predicate on a node that is already bound 1
-Fail when adding new label predicate on a node that is already bound 2
-Fail when adding new label predicate on a node that is already bound 3
-Fail when adding new label predicate on a node that is already bound 4
-Fail when adding new label predicate on a node that is already bound 5
-Failing on incorrect unicode literal
-Failing on aggregation in WHERE
-Failing when not aliasing expressions in WITH
-Failing when using undefined variable in pattern
-Failing when using undefined variable in SET
-Failing when using undefined variable in DELETE
-Failing when using a variable that is already bound in CREATE
-
-// Updating queries
-Fail when imposing new predicates on a variable that is already bound
-Creating a node
-Creating two nodes
-Creating two nodes and a relationship
-Creating a node with a label
-Creating a node with a property
-Create a single node with multiple labels
-Combine MATCH and CREATE
-Combine MATCH, WITH and CREATE
-Newly-created nodes not visible to preceding MATCH
-Create a single node with properties
-Creating a node with null properties should not return those properties
-Creating a relationship with null properties should not return those properties
-Create a simple pattern
-Create a self loop
-Create a self loop using MATCH
-Create nodes and relationships
-Create a relationship with a property
-Create a relationship with the correct direction
-Create a relationship and an end node from a matched starting node
-Create a single node after a WITH
-Create a relationship with a reversed direction
-Create a pattern with multiple hops
-Create a pattern with multiple hops in the reverse direction
-Create a pattern with multiple hops in varying directions
-Create a pattern with multiple hops with multiple types and varying directions
-Nodes are not created when aliases are applied to variable names
-Only a single node is created when an alias is applied to a variable name
-Nodes are not created when aliases are applied to variable names multiple times
-Only a single node is created when an alias is applied to a variable name multiple times
-A bound node should be recognized after projection with WITH + WITH
-A bound node should be recognized after projection with WITH + UNWIND
-A bound node should be recognized after projection with WITH + MERGE node
-A bound node should be recognized after projection with WITH + MERGE pattern
-Creating a pattern with multiple hops and changing directions
-Delete nodes
-Detach delete node
-Delete relationships
-Deleting connected nodes
-Detach deleting connected nodes and relationships
-Detach deleting paths
-Undirected expand followed by delete and count
-Undirected variable length expand followed by delete and count
-Create and delete in same query
-Delete optionally matched relationship
-Delete on null node
-Detach delete on null node
-Delete on null path
-Delete node from a list
-Delete relationship from a list
-Delete nodes from a map
-Delete relationships from a map
-Detach delete nodes from nested map/list
-Delete relationships from nested map/list
-Delete paths from nested map/list
-Delete relationship with bidirectional matching
-Generate the movie graph correctly
-Updating one property with ON CREATE
-Null-setting one property with ON CREATE
-Copying properties from node with ON CREATE
-Copying properties from node with ON MATCH
-Copying properties from literal map with ON CREATE
-Copying properties from literal map with ON MATCH
-Merge node when no nodes exist
-Merge node with label
-Merge node with label add label on create
-Merge node with label add property on create
-Merge node with label when it exists
-Merge node should create when it doesn't match, properties
-Merge node should create when it doesn't match, properties and label
-Merge node with prop and label
-Merge node with label add label on match when it exists
-Merge node with label add property on update when it exists
-Merge node and set property on match
-Should work when finding multiple elements
-Should handle argument properly
-Should handle arguments properly with only write clauses
-Should be able to merge using property from match
-Should be able to use properties from match in ON CREATE
-Should be able to use properties from match in ON MATCH
-Should be able to use properties from match in ON MATCH and ON CREATE
-Should be able to set labels on match
-Should be able to set labels on match and on create
-Should support updates while merging
-Merge must properly handle multiple labels
-Merge followed by multiple creates
-Unwind combined with merge
-Merges should not be able to match on deleted nodes
-ON CREATE on created nodes
-Creating a relationship
-Matching a relationship
-Matching two relationships
-Filtering relationships
-Creating relationship when all matches filtered out
-Matching incoming relationship
-Creating relationship with property
-Using ON CREATE on a node
-Using ON CREATE on a relationship
-Using ON MATCH on created node
-Using ON MATCH on created relationship
-Using ON MATCH on a relationship
-Using ON CREATE and ON MATCH
-Creating relationship using merged nodes
-Mixing MERGE with CREATE
-Introduce named paths 1
-Introduce named paths 2
-Use outgoing direction when unspecified
-Match outgoing relationship when direction unspecified
-Match both incoming and outgoing relationships when direction unspecified
-Using list properties via variable
-Matching using list property
-Using bound variables from other updating clause
-UNWIND with multiple merges
-Do not match on deleted entities
-Do not match on deleted relationships
-Aliasing of existing nodes 1
-Aliasing of existing nodes 2
-Double aliasing of existing nodes 1
-Double aliasing of existing nodes 2
-Setting a node property to null removes the existing property
-Setting a relationship property to null removes the existing property
-Set a property
-Set a property to an expression
-Set a property by selecting the node using a simple expression
-Set a property by selecting the relationship using a simple expression
-Setting a property to null removes the property
-Add a label to a node
-Adding a list property
-Concatenate elements onto a list property
-Concatenate elements in reverse onto a list property
-Overwrite values when using +=
-Retain old values when using +=
-Explicit null values in a map remove old values
-Non-existent values in a property map are removed with SET =
-Unwind with merge
-Fail when trying to create using an undirected relationship pattern
-Accept skip zero
-Handling non-string operands for STARTS WITH
-Handling non-string operands for CONTAINS
-Handling non-string operands for ENDS WITH
-Returning nested expressions based on list property
-
-Returning label predicate on null node
-`type()` on mixed null and non-null relationships
-`type()` on null relationship
-Return two subgraphs with bound undirected relationship and optional relationship
-Respect predicates on the OPTIONAL MATCH
-Optionally matching self-loops
-Optionally matching self-loops without matches
-OPTIONAL MATCH with previously bound nodes
-OPTIONAL MATCH with labels on the optional end node
-OPTIONAL MATCH and bound nodes
-MATCH and OPTIONAL MATCH on same pattern
-Handling correlated optional matches; first does not match implies second does not match
-Do not fail when predicates on optionally matched and missed nodes are invalid
-
-Many CREATE clauses
-
-Comparing strings and integers using > in an AND'd predicate
-Comparing strings and integers using > in a OR'd predicate
-Comparing across types yields null, except numbers
-
-`labels()` failing on invalid arguments
-Undirected match in self-relationship graph, count
-Undirected match of self-relationship in self-relationship graph, count
-Undirected match on simple relationship graph, count
-Directed match of self-relationship on self-relationship graph, count
-Mixing directed and undirected pattern parts with self-relationship, count
-Mixing directed and undirected pattern parts with self-relationship, undirected count
-Direction of traversed relationship is not significant for path equality, simple
-In-query call to procedure that takes no arguments
-Calling the same procedure twice using the same outputs in each call
-In-query call to VOID procedure that takes no arguments
-In-query call to VOID procedure does not consume rows
-In-query call to procedure that takes no arguments and yields no results
-In-query call to procedure with explicit arguments
-In-query call to procedure with explicit arguments that drops all result fields
-In-query call to procedure with argument of type NUMBER accepts value of type INTEGER
-In-query call to procedure with argument of type NUMBER accepts value of type FLOAT
-In-query call to procedure with argument of type FLOAT accepts value of type INTEGER
-Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
-In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-In-query call to procedure with null argument
-
-// TCK side effects are incorrectly specified -- need update
-Standalone call to procedure with explicit arguments
+Feature "MatchAcceptance2": Scenario "Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false"
+Feature "MatchAcceptance2": Scenario "Do not fail when evaluating predicates with illegal operations if the OR'd predicate evaluates to true"
+Feature "MatchAcceptance2": Scenario "Aggregation with named paths"
+Feature "MatchAcceptance2": Scenario "Zero-length variable length pattern in the middle of the pattern"
+Feature "MatchAcceptance2": Scenario "Simple variable length pattern"
+Feature "MatchAcceptance2": Scenario "Variable length relationship without lower bound"
+Feature "MatchAcceptance2": Scenario "Variable length relationship without bounds"
+Feature "MatchAcceptance2": Scenario "MATCH with OPTIONAL MATCH in longer pattern"
+Feature "MatchAcceptance2": Scenario "Optionally matching named paths"
+Feature "MatchAcceptance2": Scenario "Optionally matching named paths with single and variable length patterns"
+Feature "MatchAcceptance2": Scenario "Optionally matching named paths with variable length patterns"
+Feature "MatchAcceptance2": Scenario "Matching variable length patterns from a bound node"
+Feature "MatchAcceptance2": Scenario "Excluding connected nodes"
+Feature "MatchAcceptance2": Scenario "Do not fail when predicates on optionally matched and missed nodes are invalid"
+Feature "MatchAcceptance2": Scenario "MATCH and OPTIONAL MATCH on same pattern"
+Feature "MatchAcceptance2": Scenario "Variable length relationship in OPTIONAL MATCH"
+Feature "MatchAcceptance2": Scenario "ORDER BY with LIMIT"
+Feature "MatchAcceptance2": Scenario "Handling direction of named paths"
+Feature "MatchAcceptance2": Scenario "Simple OPTIONAL MATCH on empty graph"
+Feature "MatchAcceptance2": Scenario "OPTIONAL MATCH with previously bound nodes"
+Feature "MatchAcceptance2": Scenario "`collect()` filtering nulls"
+Feature "MatchAcceptance2": Scenario "Handling fixed-length variable length pattern"
+Feature "MatchAcceptance2": Scenario "Matching from null nodes should return no results owing to finding no matches"
+Feature "MatchAcceptance2": Scenario "Matching from null nodes should return no results owing to matches being filtered out"
+Feature "MatchAcceptance2": Scenario "Optionally matching from null nodes should return null"
+Feature "MatchAcceptance2": Scenario "OPTIONAL MATCH returns null"
+Feature "MatchAcceptance2": Scenario "Zero-length named path"
+Feature "MatchAcceptance2": Scenario "Variable-length named path"
+Feature "MatchAcceptance2": Scenario "Matching using a relationship that is already bound"
+Feature "MatchAcceptance2": Scenario "Matching using a relationship that is already bound, in conjunction with aggregation"
+Feature "MatchAcceptance2": Scenario "Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY"
+Feature "MatchAcceptance2": Scenario "Matching with LIMIT and optionally matching using a relationship that is already bound"
+Feature "MatchAcceptance2": Scenario "Matching with LIMIT and optionally matching using a relationship and node that are both already bound"
+Feature "MatchAcceptance2": Scenario "Matching with LIMIT, then matching again using a relationship and node that are both already bound along with an additional predicate"
+Feature "MatchAcceptance2": Scenario "Matching with LIMIT and predicates, then matching again using a relationship and node that are both already bound along with a duplicate predicate"
+Feature "MatchAcceptance2": Scenario "Matching twice with conflicting relationship types on same relationship"
+Feature "MatchAcceptance2": Scenario "Matching twice with duplicate relationship types on same relationship"
+Feature "MatchAcceptance2": Scenario "Matching relationships into a list and matching variable length using the list"
+Feature "MatchAcceptance2": Scenario "Matching relationships into a list and matching variable length using the list, with bound nodes"
+Feature "MatchAcceptance2": Scenario "Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction"
+Feature "MatchAcceptance2": Scenario "Matching and optionally matching with bound nodes in reverse direction"
+Feature "MatchAcceptance2": Scenario "Matching and optionally matching with unbound nodes and equality predicate in reverse direction"
+Feature "MatchAcceptance2": Scenario "Counting an empty graph"
+Feature "MatchAcceptance2": Scenario "Matching variable length pattern with property predicate"
+Feature "MatchAcceptance2": Scenario "Variable length pattern checking labels on endnodes"
+Feature "MatchAcceptance2": Scenario "Variable length pattern with label predicate on both sides"
+Feature "MatchAcceptance2": Scenario "Undirected named path"
+Feature "MatchAcceptance2": Scenario "Named path with WITH"
+Feature "MatchAcceptance2": Scenario "Named path with alternating directed/undirected relationships"
+Feature "MatchAcceptance2": Scenario "Named path with multiple alternating directed/undirected relationships"
+Feature "MatchAcceptance2": Scenario "Named path with undirected fixed variable length pattern"
+Feature "MatchAcceptance2": Scenario "Variable length relationship variables are lists of relationships"
+Feature "MatchAcceptance2": Scenario "Variable length patterns and nulls"
+Feature "MatchAcceptance2": Scenario "Respecting direction when matching existing path"
+Feature "MatchAcceptance2": Scenario "Respecting direction when matching non-existent path"
+Feature "MatchAcceptance2": Scenario "Respecting direction when matching non-existent path with multiple directions"
+Feature "MatchAcceptance2": Scenario "Matching path with both directions should respect other directions"
+Feature "MatchAcceptance2": Scenario "Matching path with multiple bidirectional relationships"
+Feature "MatchAcceptance2": Scenario "Matching longer variable length paths"
+Feature "MatchAcceptance2": Scenario "Counting rows after MATCH, MERGE, OPTIONAL MATCH"
+Feature "OptionalMatchAcceptance": Scenario "Return null when no matches due to inline label predicate"
+Feature "OptionalMatchAcceptance": Scenario "Return null when no matches due to label predicate in WHERE"
+Feature "OptionalMatchAcceptance": Scenario "Respect predicates on the OPTIONAL MATCH"
+Feature "OptionalMatchAcceptance": Scenario "Returning label predicate on null node"
+Feature "OptionalMatchAcceptance": Scenario "MATCH after OPTIONAL MATCH"
+Feature "OptionalMatchAcceptance": Scenario "WITH after OPTIONAL MATCH"
+Feature "OptionalMatchAcceptance": Scenario "Named paths in optional matches"
+Feature "OptionalMatchAcceptance": Scenario "OPTIONAL MATCH and bound nodes"
+Feature "OptionalMatchAcceptance": Scenario "OPTIONAL MATCH with labels on the optional end node"
+Feature "OptionalMatchAcceptance": Scenario "Named paths inside optional matches with node predicates"
+Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships"
+Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with length predicates"
+Feature "OptionalMatchAcceptance": Scenario "Optionally matching self-loops"
+Feature "OptionalMatchAcceptance": Scenario "Optionally matching self-loops without matches"
+Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with bound nodes"
+Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with bound nodes, no matches"
+Feature "OptionalMatchAcceptance": Scenario "Longer pattern with bound nodes"
+Feature "OptionalMatchAcceptance": Scenario "Longer pattern with bound nodes without matches"
+Feature "OptionalMatchAcceptance": Scenario "Handling correlated optional matches; first does not match implies second does not match"
+Feature "OptionalMatchAcceptance": Scenario "Handling optional matches between optionally matched entities"
+Feature "OptionalMatchAcceptance": Scenario "Handling optional matches between nulls"
+Feature "OptionalMatchAcceptance": Scenario "OPTIONAL MATCH and `collect()`"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a single node, non-empty result"
+Feature "KeysAcceptance": Scenario "Using `keys()` on multiple nodes, non-empty result"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a single node, empty result"
+Feature "KeysAcceptance": Scenario "Using `keys()` on an optionally matched node"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a relationship, non-empty result"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a relationship, empty result"
+Feature "KeysAcceptance": Scenario "Using `keys()` on an optionally matched relationship"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a literal map"
+Feature "KeysAcceptance": Scenario "Using `keys()` on a parameter map"
+Feature "CreateAcceptance": Scenario "Create a single node with multiple labels"
+Feature "CreateAcceptance": Scenario "Combine MATCH and CREATE"
+Feature "CreateAcceptance": Scenario "Combine MATCH, WITH and CREATE"
+Feature "CreateAcceptance": Scenario "Newly-created nodes not visible to preceding MATCH"
+Feature "CreateAcceptance": Scenario "Create a single node with properties"
+Feature "CreateAcceptance": Scenario "Creating a node with null properties should not return those properties"
+Feature "CreateAcceptance": Scenario "Creating a relationship with null properties should not return those properties"
+Feature "CreateAcceptance": Scenario "Create a simple pattern"
+Feature "CreateAcceptance": Scenario "Create a self loop"
+Feature "CreateAcceptance": Scenario "Create a self loop using MATCH"
+Feature "CreateAcceptance": Scenario "Create nodes and relationships"
+Feature "CreateAcceptance": Scenario "Create a relationship with a property"
+Feature "CreateAcceptance": Scenario "Create a relationship with the correct direction"
+Feature "CreateAcceptance": Scenario "Create a relationship and an end node from a matched starting node"
+Feature "CreateAcceptance": Scenario "Create a single node after a WITH"
+Feature "CreateAcceptance": Scenario "Create a relationship with a reversed direction"
+Feature "CreateAcceptance": Scenario "Create a pattern with multiple hops"
+Feature "CreateAcceptance": Scenario "Create a pattern with multiple hops in the reverse direction"
+Feature "CreateAcceptance": Scenario "Create a pattern with multiple hops in varying directions"
+Feature "CreateAcceptance": Scenario "Create a pattern with multiple hops with multiple types and varying directions"
+Feature "CreateAcceptance": Scenario "Nodes are not created when aliases are applied to variable names"
+Feature "CreateAcceptance": Scenario "Only a single node is created when an alias is applied to a variable name"
+Feature "CreateAcceptance": Scenario "Nodes are not created when aliases are applied to variable names multiple times"
+Feature "CreateAcceptance": Scenario "Only a single node is created when an alias is applied to a variable name multiple times"
+Feature "CreateAcceptance": Scenario "A bound node should be recognized after projection with WITH + WITH"
+Feature "CreateAcceptance": Scenario "A bound node should be recognized after projection with WITH + UNWIND"
+Feature "CreateAcceptance": Scenario "A bound node should be recognized after projection with WITH + MERGE node"
+Feature "CreateAcceptance": Scenario "A bound node should be recognized after projection with WITH + MERGE pattern"
+Feature "CreateAcceptance": Scenario "Creating a pattern with multiple hops and changing directions"
+Feature "SemanticErrorAcceptance": Scenario "Handling property access on the Any type"
+Feature "SemanticErrorAcceptance": Scenario "Failing when performing property access on a non-map 1"
+Feature "SemanticErrorAcceptance": Scenario "Failing when performing property access on a non-map 2"
+Feature "SemanticErrorAcceptance": Scenario "Bad arguments for `range()`"
+Feature "AggregationAcceptance": Scenario "Aggregates inside normal functions"
+Feature "AggregationAcceptance": Scenario "Handle aggregates inside non-aggregate expressions"
+Feature "AggregationAcceptance": Scenario "Count nodes"
+Feature "AggregationAcceptance": Scenario "Sort on aggregate function and normal property"
+Feature "AggregationAcceptance": Scenario "Aggregate on property"
+Feature "AggregationAcceptance": Scenario "Sum non-null values"
+Feature "AggregationAcceptance": Scenario "Handle aggregation on functions"
+Feature "AggregationAcceptance": Scenario "Distinct on unbound node"
+Feature "AggregationAcceptance": Scenario "Collect distinct nulls"
+Feature "AggregationAcceptance": Scenario "Collect distinct values mixed with nulls"
+Feature "AggregationAcceptance": Scenario "Aggregate on list values"
+Feature "AggregationAcceptance": Scenario "Aggregates in aggregates"
+Feature "AggregationAcceptance": Scenario "Aggregates ordered by arithmetics"
+Feature "AggregationAcceptance": Scenario "Multiple aggregates on same variable"
+Feature "AggregationAcceptance": Scenario "Aggregation of named paths"
+Feature "AggregationAcceptance": Scenario "Aggregation with `min()`"
+Feature "AggregationAcceptance": Scenario "Handle subexpression in aggregation also occurring as standalone expression with nested aggregation in a literal map"
+Feature "AggregationAcceptance": Scenario "Projection during aggregation in WITH before MERGE and after WITH with predicate"
+Feature "AggregationAcceptance": Scenario "No overflow during summation"
+Feature "AggregationAcceptance": Scenario "`max()` should aggregate strings"
+Feature "AggregationAcceptance": Scenario "`min()` should aggregate strings"
+Feature "LargeCreateQuery": Scenario "Generate the movie graph correctly"
+Feature "LargeCreateQuery": Scenario "Many CREATE clauses"
+Feature "Comparability": Scenario "Comparing strings and integers using > in an AND'd predicate"
+Feature "Comparability": Scenario "Comparing strings and integers using > in a OR'd predicate"
+Feature "Comparability": Scenario "Comparing across types yields null, except numbers"
+Feature "LabelsAcceptance": Scenario "Adding a single label"
+Feature "LabelsAcceptance": Scenario "Ignore space before colon"
+Feature "LabelsAcceptance": Scenario "Adding multiple labels"
+Feature "LabelsAcceptance": Scenario "Ignoring intermediate whitespace 1"
+Feature "LabelsAcceptance": Scenario "Ignoring intermediate whitespace 2"
+Feature "LabelsAcceptance": Scenario "Creating node without label"
+Feature "LabelsAcceptance": Scenario "Creating node with two labels"
+Feature "LabelsAcceptance": Scenario "Ignore space when creating node with labels"
+Feature "LabelsAcceptance": Scenario "Create node with label in pattern"
+Feature "LabelsAcceptance": Scenario "Using `labels()` in return clauses"
+Feature "LabelsAcceptance": Scenario "Removing a label"
+Feature "LabelsAcceptance": Scenario "Removing a non-existent label"
+Feature "MatchingSelfRelationships": Scenario "Undirected match in self-relationship graph, count"
+Feature "MatchingSelfRelationships": Scenario "Undirected match of self-relationship in self-relationship graph, count"
+Feature "MatchingSelfRelationships": Scenario "Undirected match on simple relationship graph, count"
+Feature "MatchingSelfRelationships": Scenario "Directed match of self-relationship on self-relationship graph, count"
+Feature "MatchingSelfRelationships": Scenario "Mixing directed and undirected pattern parts with self-relationship, count"
+Feature "MatchingSelfRelationships": Scenario "Mixing directed and undirected pattern parts with self-relationship, undirected count"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling numerical ranges 1"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling numerical ranges 2"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling numerical ranges 3"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling numerical ranges 4"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling string ranges 1"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling string ranges 2"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling string ranges 3"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling string ranges 4"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling empty range"
+Feature "ComparisonOperatorAcceptance": Scenario "Handling long chains of operators"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
+Feature "Aggregation": Scenario "`max()` over strings"
+Feature "Aggregation": Scenario "`min()` over strings"
+Feature "Aggregation": Scenario "`max()` over integers"
+Feature "Aggregation": Scenario "`min()` over integers"
+Feature "Aggregation": Scenario "`max()` over floats"
+Feature "Aggregation": Scenario "`min()` over floats"
+Feature "Aggregation": Scenario "`max()` over mixed numeric values"
+Feature "Aggregation": Scenario "`min()` over mixed numeric values"
+Feature "Aggregation": Scenario "`max()` over mixed values"
+Feature "Aggregation": Scenario "`min()` over mixed values"
+Feature "Aggregation": Scenario "`max()` over list values"
+Feature "Aggregation": Scenario "`min()` over list values"
+Feature "ReturnAcceptanceTest": Scenario "Sort on aggregated function"
+Feature "ReturnAcceptanceTest": Scenario "Count star should count everything in scope"
+Feature "ReturnAcceptanceTest": Scenario "Absolute function"
+Feature "ReturnAcceptanceTest": Scenario "Return collection size"
+Feature "WithAcceptance": Scenario "WHERE after WITH should filter results"
+Feature "WithAcceptance": Scenario "WHERE after WITH can filter on top of an aggregation"
+Feature "WithAcceptance": Scenario "ORDER BY on an aggregating key"
+Feature "WithAcceptance": Scenario "WHERE on a DISTINCT column"
+Feature "WithAcceptance": Scenario "A simple pattern with one bound endpoint"
+Feature "WithAcceptance": Scenario "Null handling"
+Feature "WithAcceptance": Scenario "Single WITH using a predicate and aggregation"
+Feature "WithAcceptance": Scenario "Multiple WITHs using a predicate and aggregation"
+Feature "UnionAcceptance": Scenario "Should be able to create text output from union queries"
+Feature "UnionAcceptance": Scenario "Two elements, both unique, not distinct"
+Feature "UnionAcceptance": Scenario "Two elements, both unique, distinct"
+Feature "UnionAcceptance": Scenario "Three elements, two unique, distinct"
+Feature "UnionAcceptance": Scenario "Three elements, two unique, not distinct"
+Feature "OptionalMatch": Scenario "Satisfies the open world assumption, relationships between same nodes"
+Feature "OptionalMatch": Scenario "Satisfies the open world assumption, single relationship"
+Feature "OptionalMatch": Scenario "Satisfies the open world assumption, relationships between different nodes"
+Feature "ExpressionAcceptance": Scenario "IN should work with nested list subscripting"
+Feature "ExpressionAcceptance": Scenario "IN should work with nested literal list subscripting"
+Feature "ExpressionAcceptance": Scenario "IN should work with list slices"
+Feature "ExpressionAcceptance": Scenario "IN should work with literal list slices"
+Feature "ExpressionAcceptance": Scenario "Execute n[0]"
+Feature "ExpressionAcceptance": Scenario "Execute n['name'] in read queries"
+Feature "ExpressionAcceptance": Scenario "Execute n['name'] in update queries"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is no type information"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is lhs type information"
+Feature "ExpressionAcceptance": Scenario "Use dynamic property lookup based on parameters when there is rhs type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is no type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is lhs type information"
+Feature "ExpressionAcceptance": Scenario "Use collection lookup based on parameters when there is rhs type information"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when attempting to index with an Int into a Map"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index into a map with a non-string"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when attempting to index with a String into a Collection"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index into a list with a list"
+Feature "ExpressionAcceptance": Scenario "Fail at runtime when trying to index something which is not a map or collection"
+Feature "SyntaxErrorAcceptance": Scenario "Using `rand()` in aggregations"
+Feature "MergeIntoAcceptance": Scenario "Updating one property with ON CREATE"
+Feature "MergeIntoAcceptance": Scenario "Null-setting one property with ON CREATE"
+Feature "MergeIntoAcceptance": Scenario "Copying properties from node with ON CREATE"
+Feature "MergeIntoAcceptance": Scenario "Copying properties from node with ON MATCH"
+Feature "MergeIntoAcceptance": Scenario "Copying properties from literal map with ON CREATE"
+Feature "MergeIntoAcceptance": Scenario "Copying properties from literal map with ON MATCH"
+Feature "VarLengthAcceptance2": Scenario "Handling relationships that are already bound in variable length paths"
+Feature "RemoveAcceptance": Scenario "Should ignore nulls"
+Feature "RemoveAcceptance": Scenario "Remove a single label"
+Feature "RemoveAcceptance": Scenario "Remove multiple labels"
+Feature "RemoveAcceptance": Scenario "Remove a single node property"
+Feature "RemoveAcceptance": Scenario "Remove multiple node properties"
+Feature "RemoveAcceptance": Scenario "Remove a single relationship property"
+Feature "RemoveAcceptance": Scenario "Remove multiple relationship properties"
+Feature "RemoveAcceptance": Scenario "Remove a missing property should be a valid operation"
+Feature "OrderByAcceptance": Scenario "ORDER BY of a column introduced in RETURN should return salient results in ascending order"
+Feature "ColumnNameAcceptance": Scenario "Keeping used expression 2"
+Feature "ColumnNameAcceptance": Scenario "Keeping used expression 3"
+Feature "ColumnNameAcceptance": Scenario "Keeping used expression 4"
+Feature "SetAcceptance": Scenario "Setting a node property to null removes the existing property"
+Feature "SetAcceptance": Scenario "Setting a relationship property to null removes the existing property"
+Feature "SetAcceptance": Scenario "Set a property"
+Feature "SetAcceptance": Scenario "Set a property to an expression"
+Feature "SetAcceptance": Scenario "Set a property by selecting the node using a simple expression"
+Feature "SetAcceptance": Scenario "Set a property by selecting the relationship using a simple expression"
+Feature "SetAcceptance": Scenario "Setting a property to null removes the property"
+Feature "SetAcceptance": Scenario "Add a label to a node"
+Feature "SetAcceptance": Scenario "Adding a list property"
+Feature "SetAcceptance": Scenario "Concatenate elements onto a list property"
+Feature "SetAcceptance": Scenario "Concatenate elements in reverse onto a list property"
+Feature "SetAcceptance": Scenario "Overwrite values when using +="
+Feature "SetAcceptance": Scenario "Retain old values when using +="
+Feature "SetAcceptance": Scenario "Explicit null values in a map remove old values"
+Feature "SetAcceptance": Scenario "Non-existent values in a property map are removed with SET ="
+Feature "ListComprehension": Scenario "Returning a list comprehension"
+Feature "ListComprehension": Scenario "Using a list comprehension in a WITH"
+Feature "ListComprehension": Scenario "Using a list comprehension in a WHERE"
+Feature "TernaryLogicAcceptanceTest": Scenario "A literal null IS null"
+Feature "TernaryLogicAcceptanceTest": Scenario "A literal null is not IS NOT null"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in AND"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in OR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in XOR"
+Feature "TernaryLogicAcceptanceTest": Scenario "Using null in IN"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on valid literal string"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on booleans"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on variables with valid string values"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid strings"
+Feature "TypeConversionFunctions": Scenario "`toBoolean()` on invalid types"
+Feature "TypeConversionFunctions": Scenario "`toInteger()`"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on float"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` returning null on non-numerical string"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` handling mixed number types"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` handling Any type"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on a list of strings"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` on a complex-typed expression"
+Feature "TypeConversionFunctions": Scenario "`toInteger()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toFloat()`"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` on mixed number types"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` returning null on non-numerical string"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` handling Any type"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` on a list of strings"
+Feature "TypeConversionFunctions": Scenario "`toFloat()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()`"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling boolean properties"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling inlined boolean"
+Feature "TypeConversionFunctions": Scenario "`toString()` handling boolean literal"
+Feature "TypeConversionFunctions": Scenario "`toString()` should work on Any type"
+Feature "TypeConversionFunctions": Scenario "`toString()` on a list of integers"
+Feature "TypeConversionFunctions": Scenario "`toString()` failing on invalid arguments"
+Feature "TypeConversionFunctions": Scenario "`toString()` should accept potentially correct types 1"
+Feature "TypeConversionFunctions": Scenario "`toString()` should accept potentially correct types 2"
+Feature "StartsWithAcceptance": Scenario "Finding exact matches"
+Feature "StartsWithAcceptance": Scenario "Finding beginning of string"
+Feature "StartsWithAcceptance": Scenario "Finding end of string 1"
+Feature "StartsWithAcceptance": Scenario "Finding end of string 2"
+Feature "StartsWithAcceptance": Scenario "Finding middle of string"
+Feature "StartsWithAcceptance": Scenario "Finding the empty string"
+Feature "StartsWithAcceptance": Scenario "Finding when the middle is known"
+Feature "StartsWithAcceptance": Scenario "Finding strings starting with whitespace"
+Feature "StartsWithAcceptance": Scenario "Finding strings starting with newline"
+Feature "StartsWithAcceptance": Scenario "Finding strings ending with newline"
+Feature "StartsWithAcceptance": Scenario "Finding strings ending with whitespace"
+Feature "StartsWithAcceptance": Scenario "Finding strings containing whitespace"
+Feature "StartsWithAcceptance": Scenario "Finding strings containing newline"
+Feature "StartsWithAcceptance": Scenario "No string starts with null"
+Feature "StartsWithAcceptance": Scenario "No string does not start with null"
+Feature "StartsWithAcceptance": Scenario "No string ends with null"
+Feature "StartsWithAcceptance": Scenario "No string does not end with null"
+Feature "StartsWithAcceptance": Scenario "No string contains null"
+Feature "StartsWithAcceptance": Scenario "No string does not contain null"
+Feature "StartsWithAcceptance": Scenario "Combining string operators"
+Feature "StartsWithAcceptance": Scenario "NOT with CONTAINS"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for STARTS WITH"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for CONTAINS"
+Feature "StartsWithAcceptance": Scenario "Handling non-string operands for ENDS WITH"
+Feature "DeleteAcceptance": Scenario "Delete nodes"
+Feature "DeleteAcceptance": Scenario "Detach delete node"
+Feature "DeleteAcceptance": Scenario "Delete relationships"
+Feature "DeleteAcceptance": Scenario "Deleting connected nodes"
+Feature "DeleteAcceptance": Scenario "Detach deleting connected nodes and relationships"
+Feature "DeleteAcceptance": Scenario "Detach deleting paths"
+Feature "DeleteAcceptance": Scenario "Undirected expand followed by delete and count"
+Feature "DeleteAcceptance": Scenario "Undirected variable length expand followed by delete and count"
+Feature "DeleteAcceptance": Scenario "Create and delete in same query"
+Feature "DeleteAcceptance": Scenario "Delete optionally matched relationship"
+Feature "DeleteAcceptance": Scenario "Delete on null node"
+Feature "DeleteAcceptance": Scenario "Detach delete on null node"
+Feature "DeleteAcceptance": Scenario "Delete on null path"
+Feature "DeleteAcceptance": Scenario "Delete node from a list"
+Feature "DeleteAcceptance": Scenario "Delete relationship from a list"
+Feature "DeleteAcceptance": Scenario "Delete nodes from a map"
+Feature "DeleteAcceptance": Scenario "Delete relationships from a map"
+Feature "DeleteAcceptance": Scenario "Detach delete nodes from nested map/list"
+Feature "DeleteAcceptance": Scenario "Delete relationships from nested map/list"
+Feature "DeleteAcceptance": Scenario "Delete paths from nested map/list"
+Feature "DeleteAcceptance": Scenario "Delete relationship with bidirectional matching"
+Feature "SkipLimitAcceptanceTest": Scenario "SKIP with an expression that does not depend on variables"
+Feature "SkipLimitAcceptanceTest": Scenario "LIMIT with an expression that does not depend on variables"
+Feature "PathEquality": Scenario "Direction of traversed relationship is not significant for path equality, simple"
+Feature "NullAcceptance": Scenario "Ignore null when setting property"
+Feature "NullAcceptance": Scenario "Ignore null when removing property"
+Feature "NullAcceptance": Scenario "Ignore null when setting properties using an appending map"
+Feature "NullAcceptance": Scenario "Ignore null when setting properties using an overriding map"
+Feature "NullAcceptance": Scenario "Ignore null when setting label"
+Feature "NullAcceptance": Scenario "Ignore null when removing label"
+Feature "NullAcceptance": Scenario "Ignore null when deleting node"
+Feature "NullAcceptance": Scenario "Ignore null when deleting relationship"
+Feature "WhereAcceptance": Scenario "NOT and false"
+Feature "MatchAcceptance": Scenario "Path query should return results in written order"
+Feature "MatchAcceptance": Scenario "Longer path query should return results in written order"
+Feature "MatchAcceptance": Scenario "Return two subgraphs with bound undirected relationship and optional relationship"
+Feature "MatchAcceptance": Scenario "Walk alternative relationships"
+Feature "MatchAcceptance": Scenario "Handle OR in the WHERE clause"
+Feature "MatchAcceptance": Scenario "Return a simple path"
+Feature "MatchAcceptance": Scenario "Return a three node path"
+Feature "MatchAcceptance": Scenario "Do not return anything because path length does not match"
+Feature "MatchAcceptance": Scenario "Pass the path length test"
+Feature "MatchAcceptance": Scenario "Return relationships by fetching them from the path - starting from the end"
+Feature "MatchAcceptance": Scenario "Return relationships by fetching them from the path"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - wrong way"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - undirected"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - directed, one way"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - undirected, starting from two extremes"
+Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - undirected, starting from one extreme"
+Feature "MatchAcceptance": Scenario "Return a var length path"
+Feature "MatchAcceptance": Scenario "Return a var length path of length zero"
+Feature "MatchAcceptance": Scenario "Return a named var length path of length zero"
+Feature "MatchAcceptance": Scenario "Accept skip zero"
+Feature "ReturnAcceptance2": Scenario "Fail when returning properties of deleted nodes"
+Feature "ReturnAcceptance2": Scenario "Fail when returning labels of deleted nodes"
+Feature "ReturnAcceptance2": Scenario "Fail when returning properties of deleted relationships"
+Feature "ReturnAcceptance2": Scenario "Do not fail when returning type of deleted relationships"
+Feature "ReturnAcceptance2": Scenario "Ordering with aggregation"
+Feature "ReturnAcceptance2": Scenario "Return all variables"
+Feature "ReturnAcceptance2": Scenario "Setting and returning the size of a list property"
+Feature "ReturnAcceptance2": Scenario "`sqrt()` returning float values"
+Feature "ReturnAcceptance2": Scenario "Arithmetic expressions inside aggregation"
+Feature "ReturnAcceptance2": Scenario "Matching and disregarding output, then matching again"
+Feature "ReturnAcceptance2": Scenario "Returning an expression"
+Feature "ReturnAcceptance2": Scenario "Concatenating and returning the size of literal lists"
+Feature "ReturnAcceptance2": Scenario "Returning nested expressions based on list property"
+Feature "ReturnAcceptance2": Scenario "`substring()` with default second argument"
+Feature "ReturnAcceptance2": Scenario "Arithmetic expressions should propagate null values"
+Feature "ReturnAcceptance2": Scenario "Indexing into nested literal lists"
+Feature "ReturnAcceptance2": Scenario "Multiple aliasing and backreferencing"
+Feature "ReturnAcceptance2": Scenario "Aggregating by a list property has a correct definition of equality"
+Feature "ReturnAcceptance2": Scenario "Reusing variable names"
+Feature "ReturnAcceptance2": Scenario "Handling DISTINCT with lists in maps"
+Feature "MergeRelationshipAcceptance": Scenario "Creating a relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Matching a relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Matching two relationships"
+Feature "MergeRelationshipAcceptance": Scenario "Filtering relationships"
+Feature "MergeRelationshipAcceptance": Scenario "Creating relationship when all matches filtered out"
+Feature "MergeRelationshipAcceptance": Scenario "Matching incoming relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Creating relationship with property"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON CREATE on a node"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON CREATE on a relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON MATCH on created node"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON MATCH on created relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON MATCH on a relationship"
+Feature "MergeRelationshipAcceptance": Scenario "Using ON CREATE and ON MATCH"
+Feature "MergeRelationshipAcceptance": Scenario "Creating relationship using merged nodes"
+Feature "MergeRelationshipAcceptance": Scenario "Mixing MERGE with CREATE"
+Feature "MergeRelationshipAcceptance": Scenario "Introduce named paths 1"
+Feature "MergeRelationshipAcceptance": Scenario "Introduce named paths 2"
+Feature "MergeRelationshipAcceptance": Scenario "Use outgoing direction when unspecified"
+Feature "MergeRelationshipAcceptance": Scenario "Match outgoing relationship when direction unspecified"
+Feature "MergeRelationshipAcceptance": Scenario "Match both incoming and outgoing relationships when direction unspecified"
+Feature "MergeRelationshipAcceptance": Scenario "Using list properties via variable"
+Feature "MergeRelationshipAcceptance": Scenario "Matching using list property"
+Feature "MergeRelationshipAcceptance": Scenario "Using bound variables from other updating clause"
+Feature "MergeRelationshipAcceptance": Scenario "UNWIND with multiple merges"
+Feature "MergeRelationshipAcceptance": Scenario "Do not match on deleted entities"
+Feature "MergeRelationshipAcceptance": Scenario "Do not match on deleted relationships"
+Feature "MergeRelationshipAcceptance": Scenario "Aliasing of existing nodes 1"
+Feature "MergeRelationshipAcceptance": Scenario "Aliasing of existing nodes 2"
+Feature "MergeRelationshipAcceptance": Scenario "Double aliasing of existing nodes 1"
+Feature "MergeRelationshipAcceptance": Scenario "Double aliasing of existing nodes 2"
+Feature "ValueHashJoinAcceptance": Scenario "Find friends of others"
+Feature "ValueHashJoinAcceptance": Scenario "Should only join when matching"
+Feature "Create": Scenario "Creating a node"
+Feature "Create": Scenario "Creating two nodes"
+Feature "Create": Scenario "Creating two nodes and a relationship"
+Feature "Create": Scenario "Creating a node with a label"
+Feature "Create": Scenario "Creating a node with a property"
+Feature "MergeNodeAcceptance": Scenario "Merge node when no nodes exist"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label add label on create"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label add property on create"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label when it exists"
+Feature "MergeNodeAcceptance": Scenario "Merge node should create when it doesn't match, properties"
+Feature "MergeNodeAcceptance": Scenario "Merge node should create when it doesn't match, properties and label"
+Feature "MergeNodeAcceptance": Scenario "Merge node with prop and label"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label add label on match when it exists"
+Feature "MergeNodeAcceptance": Scenario "Merge node with label add property on update when it exists"
+Feature "MergeNodeAcceptance": Scenario "Merge node and set property on match"
+Feature "MergeNodeAcceptance": Scenario "Should work when finding multiple elements"
+Feature "MergeNodeAcceptance": Scenario "Should handle argument properly"
+Feature "MergeNodeAcceptance": Scenario "Should handle arguments properly with only write clauses"
+Feature "MergeNodeAcceptance": Scenario "Should be able to merge using property from match"
+Feature "MergeNodeAcceptance": Scenario "Should be able to use properties from match in ON CREATE"
+Feature "MergeNodeAcceptance": Scenario "Should be able to use properties from match in ON MATCH"
+Feature "MergeNodeAcceptance": Scenario "Should be able to use properties from match in ON MATCH and ON CREATE"
+Feature "MergeNodeAcceptance": Scenario "Should be able to set labels on match"
+Feature "MergeNodeAcceptance": Scenario "Should be able to set labels on match and on create"
+Feature "MergeNodeAcceptance": Scenario "Should support updates while merging"
+Feature "MergeNodeAcceptance": Scenario "Merge must properly handle multiple labels"
+Feature "MergeNodeAcceptance": Scenario "Merge followed by multiple creates"
+Feature "MergeNodeAcceptance": Scenario "Unwind combined with merge"
+Feature "MergeNodeAcceptance": Scenario "Merges should not be able to match on deleted nodes"
+Feature "MergeNodeAcceptance": Scenario "ON CREATE on created nodes"
+Feature "EqualsAcceptance": Scenario "Number-typed integer comparison"
+Feature "EqualsAcceptance": Scenario "Number-typed float comparison"
+Feature "EqualsAcceptance": Scenario "Any-typed string comparison"
+Feature "EqualsAcceptance": Scenario "Comparing nodes to nodes"
+Feature "EqualsAcceptance": Scenario "Comparing relationships to relationships"
+Feature "FunctionsAcceptance": Scenario "Run coalesce"
+Feature "FunctionsAcceptance": Scenario "Functions should return null if they get path containing unbound"
+Feature "FunctionsAcceptance": Scenario "`split()`"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a node"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a relationship"
+Feature "FunctionsAcceptance": Scenario "`properties()` on a map"
+Feature "FunctionsAcceptance": Scenario "`properties()` on null"
+Feature "FunctionsAcceptance": Scenario "`reverse()`"
+Feature "FunctionsAcceptance": Scenario "`exists()` with dynamic property lookup"
+Feature "FunctionsAcceptance": Scenario "`exists()` with literal maps"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()`"
+Feature "FunctionsAcceptance": Scenario "`percentileCont()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing on bad arguments"
+Feature "FunctionsAcceptance": Scenario "`percentileDisc()` failing in more involved query"
+Feature "FunctionsAcceptance": Scenario "`type()` on null relationship"
+Feature "FunctionsAcceptance": Scenario "`type()` on mixed null and non-null relationships"
+Feature "FunctionsAcceptance": Scenario "`type()` handling Any type"
+Feature "FunctionsAcceptance": Scenario "`type()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`labels()` should accept type Any"
+Feature "FunctionsAcceptance": Scenario "`labels()` failing on invalid arguments"
+Feature "FunctionsAcceptance": Scenario "`exists()` is case insensitive"
+Feature "FunctionsAcceptance": Scenario "IS NOT NULL with literal maps"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "Calling the same procedure twice using the same outputs in each call"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure that takes no arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to VOID procedure does not consume rows"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments and yields no results"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type NUMBER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type FLOAT accepts value of type INTEGER"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
+Feature "UnwindAcceptance": Scenario "Unwinding a range"
+Feature "UnwindAcceptance": Scenario "Unwinding a collected unwound expression"
+Feature "UnwindAcceptance": Scenario "Unwinding a collected expression"
+Feature "UnwindAcceptance": Scenario "Creating nodes from an unwound parameter list"
+Feature "UnwindAcceptance": Scenario "Unwind does not remove variables from scope"
+Feature "UnwindAcceptance": Scenario "Unwind with merge"
+Feature "PatternComprehension": Scenario "Pattern comprehension and ORDER BY"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension with label predicate"
+Feature "PatternComprehension": Scenario "Returning a pattern comprehension with bound nodes"
+Feature "PatternComprehension": Scenario "Using a pattern comprehension in a WITH"
+Feature "PatternComprehension": Scenario "Using a variable-length pattern comprehension in a WITH"
+Feature "PatternComprehension": Scenario "Using pattern comprehension in RETURN"
+Feature "PatternComprehension": Scenario "Aggregating on pattern comprehension"
+Feature "PatternComprehension": Scenario "Using pattern comprehension to test existence"
+Feature "PatternComprehension": Scenario "Pattern comprehension inside list comprehension"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension that specifies a relationship type"
+Feature "PatternComprehension": Scenario "Get node degree via size of pattern comprehension that specifies multiple relationship types"
+Feature "PatternComprehension": Scenario "Introducing new node variable in pattern comprehension"
+Feature "PatternComprehension": Scenario "Introducing new relationship variable in pattern comprehension"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with different relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with superset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with implicit subset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with explicit subset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with same labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with different labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with implicit subset of labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is not a friend with implicit superset of labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with different relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with superset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with implicit subset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with explicit subset of relationship type"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with same labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with different labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with implicit subset of labels"
+Feature "TriadicSelection": Scenario "Handling triadic friend of a friend that is a friend with implicit superset of labels"
+Feature "VarLengthAcceptance": Scenario "Handling unbounded variable length match"
+Feature "VarLengthAcceptance": Scenario "Handling explicitly unbounded variable length match"
+Feature "VarLengthAcceptance": Scenario "Handling single bounded variable length match 1"
+Feature "VarLengthAcceptance": Scenario "Handling single bounded variable length match 2"
+Feature "VarLengthAcceptance": Scenario "Handling single bounded variable length match 3"
+Feature "VarLengthAcceptance": Scenario "Handling upper and lower bounded variable length match 1"
+Feature "VarLengthAcceptance": Scenario "Handling upper and lower bounded variable length match 2"
+Feature "VarLengthAcceptance": Scenario "Handling symmetrically bounded variable length match, bounds are zero"
+Feature "VarLengthAcceptance": Scenario "Handling symmetrically bounded variable length match, bounds are one"
+Feature "VarLengthAcceptance": Scenario "Handling symmetrically bounded variable length match, bounds are two"
+Feature "VarLengthAcceptance": Scenario "Handling upper and lower bounded variable length match, empty interval 1"
+Feature "VarLengthAcceptance": Scenario "Handling upper and lower bounded variable length match, empty interval 2"
+Feature "VarLengthAcceptance": Scenario "Handling upper bounded variable length match, empty interval"
+Feature "VarLengthAcceptance": Scenario "Handling upper bounded variable length match 1"
+Feature "VarLengthAcceptance": Scenario "Handling upper bounded variable length match 2"
+Feature "VarLengthAcceptance": Scenario "Handling lower bounded variable length match 1"
+Feature "VarLengthAcceptance": Scenario "Handling lower bounded variable length match 2"
+Feature "VarLengthAcceptance": Scenario "Handling lower bounded variable length match 3"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, zero length 1"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, zero length 2"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, single length 1"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, single length 2"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, longer 1"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, longer 2"
+Feature "VarLengthAcceptance": Scenario "Handling a variable length relationship and a standard relationship in chain, longer 3"
+Feature "VarLengthAcceptance": Scenario "Handling mixed relationship patterns and directions 1"
+Feature "VarLengthAcceptance": Scenario "Handling mixed relationship patterns and directions 2"
+Feature "VarLengthAcceptance": Scenario "Handling mixed relationship patterns 1"
+Feature "VarLengthAcceptance": Scenario "Handling mixed relationship patterns 2"

@@ -31,9 +31,9 @@ public class StateMachineProxyHandler
         implements InvocationHandler
 {
     private StateMachineProxyFactory stateMachineProxyFactory;
-    private StateMachine stateMachine;
+    private StateMachine<?,?> stateMachine;
 
-    public StateMachineProxyHandler( StateMachineProxyFactory stateMachineProxyFactory, StateMachine stateMachine )
+    public StateMachineProxyHandler( StateMachineProxyFactory stateMachineProxyFactory, StateMachine<?,?> stateMachine )
     {
         this.stateMachineProxyFactory = stateMachineProxyFactory;
         this.stateMachine = stateMachine;
@@ -41,7 +41,6 @@ public class StateMachineProxyHandler
 
     @Override
     public Object invoke( Object proxy, Method method, Object[] args )
-            throws Throwable
     {
         // Delegate call to factory, which will translate method call into state machine invocation
         return stateMachineProxyFactory.invoke( stateMachine, method, args == null ? null : (args.length > 1 ? args :

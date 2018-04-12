@@ -47,7 +47,7 @@ public class NullResponseHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onRecords( BoltResult result, boolean pull ) throws Exception
+    public void onRecords( BoltResult result, boolean pull )
     {
         // this page intentionally left blank
     }

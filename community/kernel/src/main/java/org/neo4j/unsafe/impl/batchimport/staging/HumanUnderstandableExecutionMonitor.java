@@ -43,7 +43,6 @@ import static java.lang.Integer.min;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
@@ -64,34 +63,21 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         void progress( ImportStage stage, int percent );
     }
 
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void progress( ImportStage stage, int percent )
-        {   // empty
-        }
-    };
+    public static final Monitor NO_MONITOR = ( stage, percent ) -> {};
 
     public interface ExternalMonitor
     {
         boolean somethingElseBrokeMyNiceOutput();
     }
 
-    public static final ExternalMonitor NO_EXTERNAL_MONITOR = new ExternalMonitor()
-    {
-        @Override
-        public boolean somethingElseBrokeMyNiceOutput()
-        {
-            return false;
-        }
-    };
+    public static final ExternalMonitor NO_EXTERNAL_MONITOR = () -> false;
 
     enum ImportStage
     {
         nodeImport,
         relationshipImport,
         linking,
-        postProcessing;
+        postProcessing
     }
 
     private static final String ESTIMATED_REQUIRED_MEMORY_USAGE = "Estimated required memory usage";
@@ -249,7 +235,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         // A difficulty with the goal here is that we don't know how much woek there is to be done in id mapper preparation stage.
         // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are collisions
         long goal = idMapper.needsPreparation()
-                ? (long) (numberOfNodes + weighted( IdMapperPreparationStage.NAME, numberOfNodes * 4 ))
+                ? numberOfNodes + weighted( IdMapperPreparationStage.NAME, numberOfNodes * 4 )
                 : numberOfNodes;
         initializeProgress( goal, ImportStage.nodeImport );
     }
@@ -366,9 +352,9 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         {
             if ( current > 0 && current % DOT_GROUP_SIZE == 0 )
             {
-                out.print( " " );
+                out.print( ' ' );
             }
-            out.print( "." );
+            out.print( '.' );
             current++;
         }
     }
@@ -482,8 +468,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         // No, then do the generic progress calculation by looking at "done_batches"
         long doneBatches = last( execution.steps() ).stats().stat( Keys.done_batches ).asLong();
         int batchSize = execution.getConfig().batchSize();
-        long progress = weighted( execution.getStageName(), doneBatches * batchSize );
-        return progress;
+        return weighted( execution.getStageName(), doneBatches * batchSize );
     }
 
     private static Stat findProgressStat( Iterable<Step<?>> steps )

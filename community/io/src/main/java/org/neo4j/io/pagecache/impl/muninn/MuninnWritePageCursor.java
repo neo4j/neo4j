@@ -22,16 +22,19 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 final class MuninnWritePageCursor extends MuninnPageCursor
 {
     private final CursorPool.CursorSets cursorSets;
     MuninnWritePageCursor nextCursor;
 
-    MuninnWritePageCursor( CursorPool.CursorSets cursorSets, long victimPage, PageCursorTracer pageCursorTracer )
+    MuninnWritePageCursor( CursorPool.CursorSets cursorSets, long victimPage, PageCursorTracer pageCursorTracer,
+            VersionContextSupplier versionContextSupplier )
     {
-        super( victimPage, pageCursorTracer );
+        super( victimPage, pageCursorTracer, versionContextSupplier );
         this.cursorSets = cursorSets;
     }
 
@@ -111,7 +114,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
     }
 
     @Override
-    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+    protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper ) throws FileIsNotMappedException
     {
         reset( pageRef );
         // Check if we've been racing with unmapping. We want to do this before
@@ -123,6 +126,7 @@ final class MuninnWritePageCursor extends MuninnPageCursor
         // be closed and the page lock will be released.
         assertPagedFileStillMappedAndGetIdOfLastPage();
         pagedFile.incrementUsage( pageRef );
+        pagedFile.setLastModifiedTxId( pageRef, versionContextSupplier.getVersionContext().committingTransactionId() );
     }
 
     @Override

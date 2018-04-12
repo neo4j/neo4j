@@ -215,6 +215,7 @@ public class ImportCommandTest
                             "                          [--quote=<quotation-character>]%n" +
                             "                          [--max-memory=<max-memory-that-importer-can-use>]%n" +
                             "                          [--f=<File containing all arguments to this import>]%n" +
+                            "                          [--high-io=<true/false>]%n" +
                             "usage: neo4j-admin import --mode=database [--database=<name>]%n" +
                             "                          [--additional-config=<config-file-path>]%n" +
                             "                          [--from=<source-directory>]%n" +
@@ -294,7 +295,10 @@ public class ImportCommandTest
                             "      arguments on the command line directly.Each argument can be on a separate%n" +
                             "      line or multiple arguments per line separated by space.Arguments%n" +
                             "      containing spaces needs to be quoted.Supplying other arguments in addition%n" +
-                            "      to this file argument is not supported. [default:]%n" ),
+                            "      to this file argument is not supported. [default:]%n" +
+                            "  --high-io=<true/false>%n" +
+                            "      Ignore environment-based heuristics, and assume that the target storage%n" +
+                            "      subsystem can support parallel IO with high throughput. [default:null]%n" ),
                     baos.toString() );
         }
     }

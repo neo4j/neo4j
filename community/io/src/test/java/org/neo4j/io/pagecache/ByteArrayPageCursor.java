@@ -228,13 +228,13 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         return pageId == 0;
     }
@@ -245,13 +245,19 @@ public class ByteArrayPageCursor extends PageCursor
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
+    public boolean shouldRetry()
     {
         return false;
     }
 
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
     {
         throw new UnsupportedOperationException();
     }

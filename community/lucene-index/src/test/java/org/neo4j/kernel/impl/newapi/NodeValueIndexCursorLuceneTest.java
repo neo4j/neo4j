@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Settings;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 
 public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursorTest
 {
@@ -28,7 +29,25 @@ public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursor
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, LUCENE10.providerName() );
         return readTestSupport;
+    }
+
+    @Override
+    protected String providerKey()
+    {
+        return "lucene";
+    }
+
+    @Override
+    protected String providerVersion()
+    {
+        return "1.0";
+    }
+
+    @Override
+    protected boolean spatialRangeSupport()
+    {
+        return true;
     }
 }

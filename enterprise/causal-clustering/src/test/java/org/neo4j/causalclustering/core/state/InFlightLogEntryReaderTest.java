@@ -137,7 +137,7 @@ public class InFlightLogEntryReaderTest
     }
 
     private void startingFromIndexReturnEntries( InFlightCache inFlightCache, long startIndex,
-            RaftLogEntry entry, RaftLogEntry... otherEntries ) throws IOException
+            RaftLogEntry entry, RaftLogEntry... otherEntries )
     {
         when( inFlightCache.get( startIndex ) ).thenReturn( entry );
         for ( int offset = 0; offset < otherEntries.length; offset++ )

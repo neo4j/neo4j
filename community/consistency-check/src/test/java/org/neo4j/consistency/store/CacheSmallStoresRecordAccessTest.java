@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public class CacheSmallStoresRecordAccessTest
 {
     @Test
-    public void shouldDelegateLookupForMostStores() throws Exception
+    public void shouldDelegateLookupForMostStores()
     {
         // given
         RecordAccess delegate = mock( RecordAccess.class );
@@ -59,7 +59,7 @@ public class CacheSmallStoresRecordAccessTest
     }
 
     @Test
-    public void shouldServePropertyKeysAndRelationshipLabelsFromSuppliedArrayCaches() throws Exception
+    public void shouldServePropertyKeysAndRelationshipLabelsFromSuppliedArrayCaches()
     {
         // given
         RecordAccess delegate = mock( RecordAccess.class );
@@ -106,7 +106,7 @@ public class CacheSmallStoresRecordAccessTest
     @SuppressWarnings( "unchecked" )
     private static <T extends AbstractBaseRecord> Matcher<RecordReference<T>> isDirectReferenceTo( T record )
     {
-        return (Matcher) new DirectReferenceMatcher<T>( record );
+        return (Matcher) new DirectReferenceMatcher<>( record );
     }
 
     private static class DirectReferenceMatcher<T extends AbstractBaseRecord>

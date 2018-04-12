@@ -41,7 +41,7 @@ public class KernelTransactionTimeoutMonitorSchedulerTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
 
     @Test
-    public void startJobTransactionMonitor() throws Throwable
+    public void startJobTransactionMonitor()
     {
         JobScheduler.JobHandle jobHandle = Mockito.mock( JobScheduler.JobHandle.class );
         when( jobScheduler.scheduleRecurring( eq(transactionTimeoutMonitor), eq( transactionMonitor), anyLong(),

@@ -68,7 +68,7 @@ public class StoreVersionCheck
                         expectedVersion.equals( v ) ?
                         new Result( Outcome.ok, null, neostoreFile.getName() ) :
                         new Result( Outcome.unexpectedStoreVersion, v, neostoreFile.getName() ) )
-                .orElse( new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() ) );
+                .orElseGet( () -> new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() ) );
     }
 
     public static class Result

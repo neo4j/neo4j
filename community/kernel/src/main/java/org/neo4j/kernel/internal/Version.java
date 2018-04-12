@@ -115,7 +115,7 @@ public class Version extends Service
                 "(\\d+" +                  // Major version
                 "\\.\\d+" +                // Minor version
                 "(\\.\\d+)?" +             // Optional patch version
-                "(\\-?[^,]+)?)" +          // Optional marker, like M01, GA, SNAPSHOT - anything other than a comma
+                "(-?[^,]+)?)" +          // Optional marker, like M01, GA, SNAPSHOT - anything other than a comma
                 ".*"                       // Anything else, such as git revision
         );
 

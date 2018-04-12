@@ -29,13 +29,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
@@ -44,6 +41,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.NodeChangeVisitor;
 
+import static java.lang.Math.max;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -53,13 +51,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Math.max;
-
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterators.single;
 
 @RunWith( Parameterized.class )
 public class NodeRelationshipCacheTest
@@ -86,7 +80,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldReportCorrectNumberOfDenseNodes() throws Exception
+    public void shouldReportCorrectNumberOfDenseNodes()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 100, base );
@@ -109,7 +103,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldGoThroughThePhases() throws Exception
+    public void shouldGoThroughThePhases()
     {
         // GIVEN
         int nodeCount = 10;
@@ -132,7 +126,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldObserveFirstRelationshipAsEmptyInEachDirection() throws Exception
+    public void shouldObserveFirstRelationshipAsEmptyInEachDirection()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
@@ -169,7 +163,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldResetCountAfterGetOnDenseNodes() throws Exception
+    public void shouldResetCountAfterGetOnDenseNodes()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
@@ -191,7 +185,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldGetAndPutRelationshipAroundChunkEdge() throws Exception
+    public void shouldGetAndPutRelationshipAroundChunkEdge()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10 );
@@ -209,7 +203,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldPutRandomStuff() throws Exception
+    public void shouldPutRandomStuff()
     {
         // GIVEN
         int typeId = 10;
@@ -247,7 +241,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldPut6ByteRelationshipIds() throws Exception
+    public void shouldPut6ByteRelationshipIds()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -268,7 +262,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastIfTooBigRelationshipId() throws Exception
+    public void shouldFailFastIfTooBigRelationshipId()
     {
         // GIVEN
         int typeId = 10;
@@ -290,7 +284,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldVisitChangedNodes() throws Exception
+    public void shouldVisitChangedNodes()
     {
         // GIVEN
         int nodes = 10;
@@ -341,7 +335,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastOnTooHighCountOnNode() throws Exception
+    public void shouldFailFastOnTooHighCountOnNode()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10, 100, base );
@@ -365,7 +359,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldKeepNextGroupIdForNextRound() throws Exception
+    public void shouldKeepNextGroupIdForNextRound()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -421,7 +415,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldHaveDenseNodesWithBigCounts() throws Exception
+    public void shouldHaveDenseNodesWithBigCounts()
     {
         // A count of a dense node follow a different path during import, first there's counting per node
         // then import goes into actual import of relationships where individual chain degrees are
@@ -450,7 +444,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldCacheMultipleDenseNodeRelationshipHeads() throws Exception
+    public void shouldCacheMultipleDenseNodeRelationshipHeads()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
@@ -486,7 +480,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldHaveSparseNodesWithBigCounts() throws Exception
+    public void shouldHaveSparseNodesWithBigCounts()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -504,7 +498,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastOnTooHighNodeCount() throws Exception
+    public void shouldFailFastOnTooHighNodeCount()
     {
         // given
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );

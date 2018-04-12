@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class FailedLoadAggregatedFunction extends CallableUserAggregationFunction.BasicUserAggregationFunction
@@ -30,9 +32,9 @@ public class FailedLoadAggregatedFunction extends CallableUserAggregationFunctio
     }
 
     @Override
-    public Aggregator create( Context ctx ) throws ProcedureException
+    public UserAggregator create( Context ctx ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

@@ -317,7 +317,7 @@ Feature: IndexAcceptance
       RETURN p
       """
     Then the result should be:
-      | p                             |
+      | p |
     And no side effects
 
   Scenario: Index seek should handle null value

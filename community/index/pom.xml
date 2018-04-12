@@ -10,6 +10,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.index</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>

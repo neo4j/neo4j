@@ -48,13 +48,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -423,30 +423,31 @@ public class StoreUpgradeIT
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+              Statement ignore = tx.acquireStatement() )
         {
-            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( statement ) );
+            SchemaRead schemaRead = tx.schemaRead();
+            Iterator<IndexReference> indexes = IndexReference.sortByType( getAllIndexes( schemaRead ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
-                IndexDescriptor descriptor = indexes.next();
+                IndexReference reference = indexes.next();
 
                 // wait index to be online since sometimes we need to rebuild the indexes on migration
-                awaitOnline( statement.readOperations(), descriptor );
+                awaitOnline( schemaRead, reference );
 
                 assertDoubleLongEquals( store.indexCounts[i][0], store.indexCounts[i][1],
-                        statement.readOperations().indexUpdatesAndSize( descriptor, register ) );
+                       schemaRead.indexUpdatesAndSize( reference, register ) );
                 assertDoubleLongEquals( store.indexCounts[i][2], store.indexCounts[i][3],
-                        statement.readOperations().indexSample( descriptor, register ) );
-                double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+                        schemaRead.indexSample( reference, register ) );
+                double selectivity = schemaRead.indexUniqueValuesSelectivity( reference );
                 assertEquals( store.indexSelectivity[i], selectivity, 0.0000001d );
             }
         }
     }
 
-    private static Iterator<IndexDescriptor> getAllIndexes( Statement statement )
+    private static Iterator<IndexReference> getAllIndexes( SchemaRead schemaRead )
     {
-        return statement.readOperations().indexesGetAll();
+        return schemaRead.indexesGetAll();
     }
 
     private static void checkLabelCounts( GraphDatabaseAPI db )
@@ -472,14 +473,14 @@ public class StoreUpgradeIT
 
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
             for ( Map.Entry<Label,Long> entry : counts.entrySet() )
             {
                 assertEquals(
                         entry.getValue().longValue(),
-                        statement.readOperations().countsForNode(
-                                statement.readOperations().labelGetForName( entry.getKey().name() ) )
+                        kernelTransaction.dataRead().countsForNode(
+                                kernelTransaction.tokenRead().nodeLabel( entry.getKey().name() ) )
                 );
             }
         }
@@ -491,9 +492,9 @@ public class StoreUpgradeIT
         {
             ThreadToStatementContextBridge bridge = db.getDependencyResolver()
                     .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
+            KernelTransaction kernelTransaction = bridge.getKernelTransactionBoundToThisThread( true );
 
-            assertThat( statement.readOperations().countsForNode( -1 ), is( store.expectedNodeCount ) );
+            assertThat( kernelTransaction.dataRead().countsForNode( -1 ), is( store.expectedNodeCount ) );
         }
     }
 
@@ -549,14 +550,14 @@ public class StoreUpgradeIT
         return new long[]{upgrade, size, unique, sampleSize};
     }
 
-    private static IndexDescriptor awaitOnline( ReadOperations readOperations, IndexDescriptor index )
+    private static IndexReference awaitOnline( SchemaRead schemRead, IndexReference index )
             throws KernelException
     {
         long start = System.currentTimeMillis();
         long end = start + 20_000;
         while ( System.currentTimeMillis() < end )
         {
-            switch ( readOperations.indexGetState( index ) )
+            switch ( schemRead.indexGetState( index ) )
             {
             case ONLINE:
                 return index;

@@ -37,7 +37,7 @@ public class ForsetiServiceLoadingTest
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
     @Test
-    public void shouldUseForsetiAsDefaultLockManager() throws Exception
+    public void shouldUseForsetiAsDefaultLockManager()
     {
         // When
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
@@ -47,7 +47,7 @@ public class ForsetiServiceLoadingTest
     }
 
     @Test
-    public void shouldAllowUsingCommunityLockManager() throws Exception
+    public void shouldAllowUsingCommunityLockManager()
     {
         // When
         dbRule.setConfig( GraphDatabaseFacadeFactory.Configuration.lock_manager, "community" );

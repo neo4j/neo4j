@@ -45,7 +45,7 @@ public class RecoveryStartInformationProviderTest
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
-    public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() throws Throwable
+    public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery()
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( false,
@@ -62,7 +62,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldReturnLogPositionToRecoverFromIfNeeded() throws Throwable
+    public void shouldReturnLogPositionToRecoverFromIfNeeded()
     {
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
@@ -81,7 +81,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
+    public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero()
     {
         // given
         when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( true, 10L, INITIAL_LOG_VERSION,
@@ -98,7 +98,7 @@ public class RecoveryStartInformationProviderTest
     }
 
     @Test
-    public void shouldFailIfThereAreNoCheckPointsAndOldestLogVersionInNotZero() throws Throwable
+    public void shouldFailIfThereAreNoCheckPointsAndOldestLogVersionInNotZero()
     {
         // given
         long oldestLogVersionFound = 1L;

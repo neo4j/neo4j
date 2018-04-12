@@ -39,6 +39,7 @@ import org.neo4j.collection.primitive.PrimitiveLongLongMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.Factory;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -272,10 +273,12 @@ public class PrimitiveCollectionEqualityTest
     public static Factory<PrimitiveIntSet> intSetWithCapacity = () -> Primitive.intSet( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> offheapIntSet = Primitive::offHeapIntSet;
+    public static Factory<PrimitiveIntSet> offheapIntSet =
+            () -> Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
-    public static Factory<PrimitiveIntSet> offheapIntSetWithCapacity = () -> Primitive.offHeapIntSet( randomCapacity() );
+    public static Factory<PrimitiveIntSet> offheapIntSetWithCapacity =
+            () -> Primitive.offHeapIntSet( randomCapacity(), GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
     public static Factory<PrimitiveLongSet> longSet = Primitive::longSet;
@@ -284,10 +287,12 @@ public class PrimitiveCollectionEqualityTest
     public static Factory<PrimitiveLongSet> longSetWithCapacity = () -> Primitive.longSet( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSet = Primitive::offHeapLongSet;
+    public static Factory<PrimitiveLongSet> offheapLongSet =
+            () -> Primitive.offHeapLongSet( GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
-    public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity = () -> Primitive.offHeapLongSet( randomCapacity() );
+    public static Factory<PrimitiveLongSet> offheapLongSetWithCapacity =
+            () -> Primitive.offHeapLongSet( randomCapacity(), GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
     public static Factory<PrimitiveIntLongMap> intLongMap = Primitive::intLongMap;
@@ -309,11 +314,12 @@ public class PrimitiveCollectionEqualityTest
             () -> Primitive.longLongMap( randomCapacity() );
 
     @DataPoint
-    public static Factory<PrimitiveLongLongMap> offheapLongLongMap = Primitive::offHeapLongLongMap;
+    public static Factory<PrimitiveLongLongMap> offheapLongLongMap =
+            () -> Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
     public static Factory<PrimitiveLongLongMap> offheapLongLongMapWithCapacity =
-            () -> Primitive.offHeapLongLongMap( randomCapacity() );
+            () -> Primitive.offHeapLongLongMap( randomCapacity(), GlobalMemoryTracker.INSTANCE );
 
     @DataPoint
     public static Factory<PrimitiveIntObjectMap> intObjMap = Primitive::intObjectMap;

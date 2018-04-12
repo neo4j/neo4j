@@ -47,6 +47,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.index.schema.DateLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.DurationLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalDateTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.LocalTimeLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.SpatialLayoutTestUtil;
+import org.neo4j.kernel.impl.index.schema.TimeLayoutTestUtil;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -69,17 +76,14 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -96,7 +100,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 public class MultipleIndexPopulationStressIT
 {
     private static final String[] TOKENS = new String[]{"One", "Two", "Three", "Four"};
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
+    private final TestDirectory directory = TestDirectory.testDirectory();
 
     private final RandomRule random = new RandomRule();
     private final CleanupRule cleanup = new CleanupRule();
@@ -287,7 +291,7 @@ public class MultipleIndexPopulationStressIT
             }
             else
             {   // CHANGE
-                node.setProperty( key, randomPropertyValue( random.random() ) );
+                node.setProperty( key, randomPropertyValue( random ) );
             }
             tx.success();
         }
@@ -307,28 +311,36 @@ public class MultipleIndexPopulationStressIT
         importer.doImport( new RandomDataInput( count ) );
     }
 
-    private int randomPropertyValue( Random random )
+    static Object randomPropertyValue( Randoms random )
     {
-        return random.nextInt( 100 );
+        switch ( random.nextInt( 9 ) )
+        {
+        case 0:
+            return random.nextInt( 100 );
+        case 1:
+            return random.string();
+        case 2:
+            return DateTimeLayoutTestUtil.randomDateTime( random );
+        case 3:
+            return TimeLayoutTestUtil.randomTime( random );
+        case 4:
+            return DateLayoutTestUtil.randomDate( random );
+        case 5:
+            return LocalDateTimeLayoutTestUtil.randomLocalDateTime( random );
+        case 6:
+            return LocalTimeLayoutTestUtil.randomLocalTime( random );
+        case 7:
+            return DurationLayoutTestUtil.randomDuration( random );
+        default:
+            return SpatialLayoutTestUtil.randomPoint( random );
+        }
     }
 
     private class RandomNodeGenerator extends GeneratingInputIterator<Randoms>
     {
-        RandomNodeGenerator( int count )
+        RandomNodeGenerator( int count, Generator<Randoms> randomsGenerator )
         {
-            super( count, 1_000, new RandomsStates( random.seed() ), new Generator<Randoms>()
-            {
-                @Override
-                public void accept( Randoms state, InputEntityVisitor visitor, long id ) throws IOException
-                {
-                    String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
-                    for ( String key : keys )
-                    {
-                        visitor.property( key, randomPropertyValue( state.random() ) );
-                    }
-                    visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
-                }
-            }, 0 );
+            super( count, 1_000, new RandomsStates( random.seed() ), randomsGenerator, 0 );
         }
     }
 
@@ -350,7 +362,14 @@ public class MultipleIndexPopulationStressIT
         @Override
         public InputIterable nodes()
         {
-            return InputIterable.replayable( () -> new RandomNodeGenerator( count ) );
+            return InputIterable.replayable( () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
+                String[] keys = random.randoms().selection( TOKENS, 1, TOKENS.length, false );
+                for ( String key : keys )
+                {
+                    visitor.property( key, randomPropertyValue( state ) );
+                }
+                visitor.labels( random.randoms().selection( TOKENS, 1, TOKENS.length, false ) );
+            } ) );
         }
 
         @Override

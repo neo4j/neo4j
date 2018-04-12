@@ -113,7 +113,7 @@ public class PullUpdatesIT
     }
 
     @Test
-    public void terminatedTransactionDoesNotForceUpdatePulling() throws Throwable
+    public void terminatedTransactionDoesNotForceUpdatePulling()
     {
         int testTxsOnMaster = 42;
         ClusterManager.ManagedCluster cluster = clusterRule.
@@ -360,7 +360,7 @@ public class PullUpdatesIT
         assertTrue( "Change wasn't propagated by pulling updates", ok );
     }
 
-    private void setProperty( HighlyAvailableGraphDatabase db, long nodeId, int i ) throws Exception
+    private void setProperty( HighlyAvailableGraphDatabase db, long nodeId, int i )
     {
         try ( Transaction tx = db.beginTx() )
         {

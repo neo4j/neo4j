@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.concurrent.BinaryLatch;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -39,10 +39,10 @@ public class TimerTest
     public LifeRule lifeRule = new LifeRule( true );
 
     @Test
-    public void shouldHandleConcurrentResetAndInvocationOfHandler() throws Exception
+    public void shouldHandleConcurrentResetAndInvocationOfHandler()
     {
         // given
-        Neo4jJobScheduler scheduler = lifeRule.add( new Neo4jJobScheduler() );
+        CentralJobScheduler scheduler = lifeRule.add( new CentralJobScheduler() );
         JobScheduler.Group group = new JobScheduler.Group( "test" );
 
         BinaryLatch invoked = new BinaryLatch();

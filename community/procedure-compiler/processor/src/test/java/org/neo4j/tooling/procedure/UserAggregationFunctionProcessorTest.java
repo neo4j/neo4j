@@ -62,7 +62,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase
         assert_().about( javaSource() ).that( function ).processedWith( processor() ).failsToCompile()
                 .withErrorCount( 1 )
                 .withErrorContaining( "Unsupported return type <void> of aggregation function." )
-                .in( function ).onLine( 31 );
+                .in( function ).onLine( 27 );
     }
 
     @Test

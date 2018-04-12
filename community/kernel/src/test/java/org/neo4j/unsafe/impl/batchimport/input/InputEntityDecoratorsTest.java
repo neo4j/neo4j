@@ -139,7 +139,7 @@ public class InputEntityDecoratorsTest
     }
 
     @Test
-    public void shouldCramMultipleDecoratorsIntoOne() throws Exception
+    public void shouldCramMultipleDecoratorsIntoOne()
     {
         // GIVEN
         Decorator decorator1 = spy( new IdentityDecorator() );

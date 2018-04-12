@@ -36,9 +36,9 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyP
 
     val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A")_))))()
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeCountByCountStore(12)).thenReturn(42L).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeCountByCountStore(12)).thenReturn(42L)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(longValue(42L)))
   }
 
@@ -58,9 +58,9 @@ class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyP
   test("should return a count for nodes without a label") {
     val pipe = NodeCountFromCountStorePipe("count(n)", List(None))()
 
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeCountByCountStore(NameId.WILDCARD)).thenReturn(42L).getMock[QueryContext]
-    )
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeCountByCountStore(NameId.WILDCARD)).thenReturn(42L)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
     pipe.createResults(queryState).map(_("count(n)")).toSet should equal(Set(longValue(42L)))
   }
 

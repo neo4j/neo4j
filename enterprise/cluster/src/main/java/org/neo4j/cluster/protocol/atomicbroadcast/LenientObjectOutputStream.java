@@ -53,11 +53,7 @@ public class LenientObjectOutputStream extends ObjectOutputStream
             Field field = getAccessibleSuidField( wirePayload );
             field.set( wirePayload, versionMapper.mappingFor( wirePayload.getName() ) );
         }
-        catch ( NoSuchFieldException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( IllegalAccessException e )
+        catch ( NoSuchFieldException | IllegalAccessException e )
         {
             throw new RuntimeException( e );
         }

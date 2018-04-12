@@ -19,20 +19,57 @@
  */
 package org.neo4j.io.mem;
 
+import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
+import static org.neo4j.io.os.OsBeanUtil.getCommittedVirtualMemory;
+import static org.neo4j.io.os.OsBeanUtil.getFreePhysicalMemory;
+import static org.neo4j.io.os.OsBeanUtil.getTotalPhysicalMemory;
+
 public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
 {
-    private final long size;
+    private final long attemptedAllocationSizeBytes;
+    private final long alreadyAllocatedBytes;
 
-    public NativeMemoryAllocationRefusedError( long size )
+    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes )
     {
-        this.size = size;
+        this.attemptedAllocationSizeBytes = size;
+        this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
 
     @Override
     public String getMessage()
     {
         String message = super.getMessage();
-        return "Failed to allocate " + size + " bytes; allocation refused by the operating system" +
-               (message == null ? "." : ": " + message);
+        StringBuilder sb = new StringBuilder();
+        sb.append( "Failed to allocate " ).append( attemptedAllocationSizeBytes ).append( " bytes. " );
+        sb.append( "So far " ).append( alreadyAllocatedBytes );
+        sb.append( " bytes have already been successfully allocated. " );
+        sb.append( "The system currently has " );
+        appendBytes( sb, getTotalPhysicalMemory() ).append( " total physical memory, " );
+        appendBytes( sb, getCommittedVirtualMemory() ).append( " committed virtual memory, and " );
+        appendBytes( sb, getFreePhysicalMemory() ).append( " free physical memory. " );
+
+        sb.append( "The allocation was refused by the operating system" );
+        if ( message != null )
+        {
+            sb.append( ": " ).append( message );
+        }
+        else
+        {
+            sb.append( '.' );
+        }
+        return sb.toString();
+    }
+
+    private StringBuilder appendBytes( StringBuilder sb, long bytes )
+    {
+        if ( bytes == VALUE_UNAVAILABLE )
+        {
+            sb.append( "(?) bytes" );
+        }
+        else
+        {
+            sb.append( bytes ).append( " bytes" );
+        }
+        return sb;
     }
 }

@@ -63,6 +63,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -88,7 +89,7 @@ public class BatchingTransactionAppenderTest
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
     }
@@ -197,7 +198,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
+    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead()
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -242,7 +243,8 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
+        FlushablePositionAwareChannel channel =
+                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );
@@ -263,7 +265,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 0 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
     }
@@ -304,7 +306,7 @@ public class BatchingTransactionAppenderTest
             // THEN
             assertSame( failure, e );
             verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
-            verify( transactionIdStore, times( 0 ) ).transactionClosed( eq( txId ), anyLong(), anyLong() );
+            verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
     }

@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
@@ -66,11 +67,11 @@ import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
@@ -509,22 +510,11 @@ public class ImportLogic implements Closeable
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", storeUpdateMonitor, bytes( peakMemoryUsage ) ) );
-        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
-
-        if ( nodeRelationshipCache != null )
-        {
-            nodeRelationshipCache.close();
-        }
-        if ( nodeLabelsCache != null )
-        {
-            nodeLabelsCache.close();
-        }
-        if ( idMapper != null )
-        {
-            idMapper.close();
-        }
-        inputCache.close();
+        DataStatistics state = getState( DataStatistics.class );
+        String additionalInformation = Objects.toString( state, "Data statistics is not available." );
+        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
+        log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper, inputCache );
     }
 
     private void updatePeakMemoryUsage()

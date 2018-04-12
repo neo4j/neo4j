@@ -27,7 +27,7 @@ import java.util.concurrent.FutureTask;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -51,7 +51,7 @@ public class ClusterTransactionIT
     private ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         cluster = clusterRule.withCluster( clusterOfSize( 3 ) )
                              .withSharedSetting( HaSettings.tx_push_factor, "2" )

@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -42,7 +41,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
 import org.neo4j.kernel.ha.cluster.DefaultConversationSPI;
@@ -55,7 +54,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.collection.ConcurrentAccessException;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -92,7 +91,7 @@ public class MasterImplConversationStopFuzzIT
 
     private final LifeSupport life = new LifeSupport();
     private final ExecutorService executor = Executors.newFixedThreadPool( numberOfWorkers + 1 );
-    private final JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+    private final JobScheduler scheduler = life.add( new CentralJobScheduler() );
     private final Config config = Config.defaults( stringMap( server_id.name(), "0", lock_read_timeout.name(), "1" ) );
     private final Locks locks = new ForsetiLockManager( Config.defaults(), Clocks.systemClock(),
             ResourceTypes.NODE, ResourceTypes.LABEL );
@@ -106,7 +105,7 @@ public class MasterImplConversationStopFuzzIT
             .build();
 
     @After
-    public void cleanup() throws InterruptedException
+    public void cleanup()
     {
         life.shutdown();
         executor.shutdownNow();
@@ -255,7 +254,7 @@ public class MasterImplConversationStopFuzzIT
             CLOSING_SESSION
                     {
                         @Override
-                        State next( SlaveEmulatorWorker worker ) throws Exception
+                        State next( SlaveEmulatorWorker worker )
                         {
                             if ( lowProbabilityEvent( worker ) )
                             {
@@ -272,7 +271,7 @@ public class MasterImplConversationStopFuzzIT
             abstract State next( SlaveEmulatorWorker worker ) throws Exception;
 
             protected State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
-                    throws IOException, TransactionFailureException
+                    throws TransactionFailureException
             {
                 try
                 {
@@ -348,7 +347,6 @@ public class MasterImplConversationStopFuzzIT
 
         @Override
         public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-                throws IOException, TransactionFailureException
         {
             // sleeping here and hope to be noticed by conversation killer.
             sleep();
@@ -368,7 +366,7 @@ public class MasterImplConversationStopFuzzIT
         }
 
         @Override
-        public long getTransactionChecksum( long txId ) throws IOException
+        public long getTransactionChecksum( long txId )
         {
             return 0;
         }

@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
@@ -149,7 +150,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreWithNoStore() throws IOException
+    public void selectForStoreWithNoStore()
     {
         assertNull( selectForStore( storeDir, getPageCache(), LOG ) );
     }
@@ -163,6 +164,7 @@ public class RecordFormatSelectorTest
         when( pageCache.pageSize() ).thenReturn( PageCache.PAGE_SIZE );
         when( pageCache.map( any(), anyInt(), any() ) ).thenThrow( new IOException( "No reading..." ) );
         assertNull( selectForStore( storeDir, pageCache, LOG ) );
+        verify( pageCache ).map( any(), anyInt(), any() );
     }
 
     @Test
@@ -237,7 +239,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyStandardConfiguredFormat() throws IOException
+    public void selectForStoreOrConfigWithOnlyStandardConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -247,7 +249,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithOnlyHighLimitConfiguredFormat() throws IOException
+    public void selectForStoreOrConfigWithOnlyHighLimitConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -257,7 +259,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithWrongConfiguredFormat() throws IOException
+    public void selectForStoreOrConfigWithWrongConfiguredFormat()
     {
         PageCache pageCache = getPageCache();
 
@@ -274,7 +276,7 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void selectForStoreOrConfigWithoutConfiguredAndStoredFormats() throws IOException
+    public void selectForStoreOrConfigWithoutConfiguredAndStoredFormats()
     {
         assertSame( defaultFormat(), selectForStoreOrConfig( Config.defaults(), storeDir, getPageCache(), LOG ) );
     }
@@ -346,13 +348,13 @@ public class RecordFormatSelectorTest
     }
 
     @Test
-    public void findSuccessorLatestVersion() throws Exception
+    public void findSuccessorLatestVersion()
     {
         assertFalse( findSuccessor( defaultFormat() ).isPresent() );
     }
 
     @Test
-    public void findSuccessorToOlderVersion() throws Exception
+    public void findSuccessorToOlderVersion()
     {
         assertEquals( StandardV3_0.RECORD_FORMATS, findSuccessor( StandardV2_3.RECORD_FORMATS ).get() );
         assertEquals( StandardV3_2.RECORD_FORMATS, findSuccessor( StandardV3_0.RECORD_FORMATS ).get() );

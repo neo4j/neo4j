@@ -37,7 +37,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -148,7 +148,7 @@ public class InternalFlatFileRealmIT
     }
 
     @Test
-    public void shouldEventuallyFailReloadAttempts() throws Exception
+    public void shouldEventuallyFailReloadAttempts()
     {
         // the roles file has non-existent users
         fs.addUserRoleFilePair(
@@ -186,7 +186,7 @@ public class InternalFlatFileRealmIT
         }
     }
 
-    static class TestJobScheduler extends Neo4jJobScheduler
+    static class TestJobScheduler extends CentralJobScheduler
     {
         Runnable scheduledRunnable;
 
@@ -233,7 +233,7 @@ public class InternalFlatFileRealmIT
         }
 
         @Override
-        public long lastModifiedTime( File fileName ) throws IOException
+        public long lastModifiedTime( File fileName )
         {
             if ( fileName.equals( userStoreFile ) )
             {

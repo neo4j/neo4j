@@ -28,13 +28,7 @@ public class AssertionRunner
 {
     private AssertionRunner()
     {
-    }
-
-    public static boolean isAssertionsEnabled()
-    {
-        boolean assertionsEnabled = false;
-        assert assertionsEnabled = true;
-        return assertionsEnabled;
+        throw new AssertionError( "No instances" );
     }
 
     public static void runUnderAssertion( Thunk thunk )
@@ -51,5 +45,12 @@ public class AssertionRunner
     public interface Thunk
     {
         void apply();
+    }
+
+    public static boolean isAssertionsEnabled()
+    {
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+        return assertionsEnabled;
     }
 }

@@ -19,9 +19,7 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,6 +32,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -47,8 +46,11 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.bolt.v1.messaging.Neo4jPackV1.UNBOUND_RELATIONSHIP;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -62,9 +64,6 @@ import static org.neo4j.values.storable.Values.utf8Value;
 public class Neo4jPackV1Test
 {
     private final Neo4jPackV1 neo4jPack = new Neo4jPackV1();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     private byte[] packed( AnyValue object ) throws IOException
     {
@@ -149,18 +148,23 @@ public class Neo4jPackV1Test
         }
 
         // When
-        PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
-        unpacker.unpack();
+        try
+        {
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            unpacker.unpack();
 
-        // Then
-        assertThat( unpacker.consumeError(), equalTo(
-                Neo4jError.from( Status.Request.Invalid,
-                        "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
+            fail( "exception expected" );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string." ),
+                    Neo4jError.from( ex ) );
+        }
     }
 
     @Test
-    public void shouldErrorOnUnpackingMapWithDuplicateKeys() throws IOException
+    public void shouldThrowOnUnpackingMapWithDuplicateKeys() throws IOException
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
@@ -172,31 +176,99 @@ public class Neo4jPackV1Test
         packer.pack( intValue( 2 ) );
 
         // When
-        PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
-        unpacker.unpack();
+        try
+        {
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            unpacker.unpack();
 
-        // Then
-        assertThat( unpacker.consumeError(),
-                equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ) );
+            fail( "exception expected" );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ), Neo4jError.from( ex ) );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnUnpackingMapWithUnsupportedKeyType() throws IOException
+    {
+        // Given
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
+        packer.packMapHeader( 2 );
+        packer.pack( ValueUtils.of( 1L ) );
+        packer.pack( intValue( 1 ) );
+
+        // When
+        try
+        {
+            PackedInputArray input = new PackedInputArray( output.bytes() );
+            Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+            unpacker.unpack();
+
+            fail( "exception expected" );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Request.InvalidFormat, "Bad key type: INTEGER" ), Neo4jError.from( ex ) );
+        }
     }
 
     @Test
     public void shouldNotBeAbleToUnpackNode() throws IOException
     {
-        // Expect
-        exception.expect( BoltIOException.class );
-        // When
-        unpacked( packed( ALICE ) );
+        try
+        {
+            // When
+            unpacked( packed( ALICE ) );
+            fail( "exception expected." );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Statement.TypeError, "Node values cannot be unpacked with this version of bolt." ), Neo4jError.from( ex ) );
+        }
     }
 
     @Test
     public void shouldNotBeAbleToUnpackRelationship() throws IOException
     {
-        // Expect
-        exception.expect( BoltIOException.class );
-        // When
-        unpacked( packed( ALICE_KNOWS_BOB ) );
+        try
+        {
+            // When
+            unpacked( packed( ALICE_KNOWS_BOB ) );
+            fail( "exception expected." );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Statement.TypeError, "Relationship values cannot be unpacked with this version of bolt." ),
+                    Neo4jError.from( ex ) );
+        }
+    }
+
+    @Test
+    public void shouldNotBeAbleToUnpackUnboundRelationship() throws IOException
+    {
+        // Given
+        PackedOutputArray out = new PackedOutputArray();
+        Neo4jPackV1.Packer packer = neo4jPack.newPacker( out );
+
+        packer.packStructHeader( 3, UNBOUND_RELATIONSHIP );
+        packer.pack( ValueUtils.of( 1L ) );
+        packer.pack( ValueUtils.of( "RELATES_TO" ) );
+        packer.pack( ValueUtils.asMapValue( MapUtil.map( "a", 1L, "b", "x" ) ) );
+
+        try
+        {
+            // When
+            unpacked( out.bytes() );
+            fail( "exception expected." );
+        }
+        catch ( BoltIOException ex )
+        {
+            assertEquals( Neo4jError.from( Status.Statement.TypeError, "Relationship values cannot be unpacked with this version of bolt." ),
+                    Neo4jError.from( ex ) );
+        }
     }
 
     @Test
@@ -204,10 +276,17 @@ public class Neo4jPackV1Test
     {
         for ( PathValue path : ALL_PATHS )
         {
-            // Expect
-            exception.expect( BoltIOException.class );
-            // When
-            unpacked( packed( path ) );
+            try
+            {
+                // When
+                unpacked( packed( path ) );
+                fail( "exception expected." );
+            }
+            catch ( BoltIOException ex )
+            {
+                assertEquals( Neo4jError.from( Status.Statement.TypeError, "Path values cannot be unpacked with this version of bolt." ),
+                        Neo4jError.from( ex ) );
+            }
         }
     }
 
@@ -257,10 +336,5 @@ public class Neo4jPackV1Test
 
         // Then
         assertThat( unpacked, equalTo( textValue ) );
-    }
-
-    private static class Unpackable
-    {
-
     }
 }

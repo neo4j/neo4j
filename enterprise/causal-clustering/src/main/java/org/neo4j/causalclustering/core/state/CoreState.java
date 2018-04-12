@@ -49,7 +49,7 @@ public class CoreState
         coreSnapshot.add( CoreStateType.SESSION_TRACKER, sessionTracker.snapshot() );
     }
 
-    synchronized void installSnapshot( CoreSnapshot coreSnapshot ) throws IOException
+    synchronized void installSnapshot( CoreSnapshot coreSnapshot )
     {
         coreStateMachines.installSnapshots( coreSnapshot );
         sessionTracker.installSnapshot( coreSnapshot.get( CoreStateType.SESSION_TRACKER ) );

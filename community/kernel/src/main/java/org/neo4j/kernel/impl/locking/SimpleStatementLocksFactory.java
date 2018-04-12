@@ -45,7 +45,7 @@ public class SimpleStatementLocksFactory implements StatementLocksFactory
     }
 
     @Override
-    public void initialize( Locks locks, Config config )
+    public final void initialize( Locks locks, Config config )
     {
         this.locks = requireNonNull( locks );
     }

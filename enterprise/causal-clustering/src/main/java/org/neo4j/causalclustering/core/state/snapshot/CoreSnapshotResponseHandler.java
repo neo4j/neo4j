@@ -37,7 +37,7 @@ public class CoreSnapshotResponseHandler extends SimpleChannelInboundHandler<Cor
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, final CoreSnapshot coreSnapshot )
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.CORE_SNAPSHOT ) )
         {

@@ -29,9 +29,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -44,17 +45,17 @@ public class LabelCountsTest
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
 
-    private Supplier<Statement> statementSupplier;
+    private Supplier<KernelTransaction> transactionSupplier;
 
     @Before
     public void exposeGuts()
     {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class );
+        transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     @Test
-    public void shouldGetNumberOfNodesWithLabel() throws Exception
+    public void shouldGetNumberOfNodesWithLabel()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -77,7 +78,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodes() throws Exception
+    public void shouldAccountForDeletedNodes()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -104,7 +105,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodesWithMultipleLabels() throws Exception
+    public void shouldAccountForDeletedNodesWithMultipleLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -134,7 +135,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForAddedLabels() throws Exception
+    public void shouldAccountForAddedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -168,7 +169,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForRemovedLabels() throws Exception
+    public void shouldAccountForRemovedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -215,23 +216,21 @@ public class LabelCountsTest
     /** @param label the label to get the number of nodes of, or {@code null} to get the total number of nodes. */
     private long countsForNode( Label label )
     {
-        try ( Statement statement = statementSupplier.get() )
+        KernelTransaction transaction = transactionSupplier.get();
+        Read read = transaction.dataRead();
+        int labelId;
+        if ( label == null )
         {
-            ReadOperations read = statement.readOperations();
-            int labelId;
-            if ( label == null )
-            {
-                labelId = ReadOperations.ANY_LABEL;
-            }
-            else
-            {
-                if ( KeyReadOperations.NO_SUCH_LABEL == (labelId = read.labelGetForName( label.name() )) )
-                {
-                    return 0;
-                }
-            }
-            return read.countsForNode( labelId );
+            labelId = StatementConstants.ANY_LABEL;
         }
+        else
+        {
+            if ( TokenRead.NO_TOKEN == (labelId = transaction.tokenRead().nodeLabel( label.name() )) )
+            {
+                return 0;
+            }
+        }
+        return read.countsForNode( labelId );
     }
 
 }

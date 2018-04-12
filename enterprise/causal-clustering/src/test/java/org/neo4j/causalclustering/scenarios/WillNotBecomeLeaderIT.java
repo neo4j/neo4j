@@ -41,7 +41,7 @@ public class WillNotBecomeLeaderIT
     @Rule
     public final ClusterRule clusterRule =
             new ClusterRule().withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 0 )
-                    .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() )
+                    .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST )
                     .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
 
     @Rule
@@ -77,7 +77,7 @@ public class WillNotBecomeLeaderIT
         } );
 
         // When
-        cluster.removeCoreMemberWithMemberId( leaderId );
+        cluster.removeCoreMemberWithServerId( leaderId );
 
         // Then
         try

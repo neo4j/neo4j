@@ -19,17 +19,13 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-
-import scala.collection.Map
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 
 trait EnterpriseGraphDatabaseTestSupport extends GraphDatabaseTestSupport {
   self: CypherFunSuite =>
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String]) = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase())
+  override protected def graphDatabaseFactory(): TestGraphDatabaseFactory = {
+    new TestEnterpriseGraphDatabaseFactory()
   }
 }

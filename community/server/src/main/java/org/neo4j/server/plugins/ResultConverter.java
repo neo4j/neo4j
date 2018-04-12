@@ -168,7 +168,7 @@ abstract class ResultConverter
                 @Override
                 Representation convert( Object obj )
                 {
-                    return new PathRepresentation<Path>( (Path) obj );
+                    return new PathRepresentation<>( (Path) obj );
                 }
             };
     private static final ResultConverter STRING_RESULT = new ValueResult( RepresentationType.STRING )

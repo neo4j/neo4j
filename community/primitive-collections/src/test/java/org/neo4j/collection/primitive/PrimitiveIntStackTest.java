@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class PrimitiveIntStackTest
 {
     @Test
-    public void shouldPushAndPollSomeEntities() throws Exception
+    public void shouldPushAndPollSomeEntities()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack( 6 );
@@ -51,7 +51,7 @@ public class PrimitiveIntStackTest
     }
 
     @Test
-    public void shouldGrowArray() throws Exception
+    public void shouldGrowArray()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack( 5 );
@@ -73,7 +73,7 @@ public class PrimitiveIntStackTest
     }
 
     @Test
-    public void shouldIterate() throws Exception
+    public void shouldIterate()
     {
         // GIVEN
         PrimitiveIntStack stack = new PrimitiveIntStack();

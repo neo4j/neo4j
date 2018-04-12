@@ -1,6 +1,7 @@
 This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
+
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons BeanUtils
@@ -45,6 +46,7 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene Memory
   Lucene QueryParsers
+  LZ4 and xxHash
   Metrics Core
   Netty
   Netty/All-in-One
@@ -262,6 +264,7 @@ Apache Software License, Version 2.0
    limitations under the License.
 
 
+
 ------------------------------------------------------------------------------
 BSD - Scala License
   Scala Library
@@ -304,6 +307,7 @@ OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
 
+
 ------------------------------------------------------------------------------
 BSD License
   ASM Analysis
@@ -340,6 +344,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+
 ------------------------------------------------------------------------------
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -372,15 +377,14 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+
 ------------------------------------------------------------------------------
 Common Development and Distribution License Version 1.1
   Java Servlet API
   jersey-core
-  jersey-multipart
   jersey-server
   jersey-servlet
   jsr311-api
-  MIME streaming extension
 ------------------------------------------------------------------------------
 
 COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1 
@@ -729,7 +733,8 @@ State of California (excluding conflict-of-law provisions). Any
 litigation relating to this License shall be subject to the jurisdiction 
 of the Federal Courts of the Northern District of California and the 
 state courts of the State of California, with venue lying in Santa Clara 
-County, California. 
+County, California.
+
 
 
 ------------------------------------------------------------------------------
@@ -1097,7 +1102,8 @@ independent module is a module which is not derived from or based on
 this library. If you modify this library, you may extend this exception 
 to your version of the library, but you are not obligated to do so. If 
 you do not wish to do so, delete this exception statement from your 
-version. 
+version.
+
 
 
 ------------------------------------------------------------------------------
@@ -1128,6 +1134,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
 
 
 ------------------------------------------------------------------------------
@@ -1509,6 +1516,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
+
 
 
 

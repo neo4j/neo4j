@@ -40,7 +40,7 @@ public class ListenAddressSettingsTest
             legacyFallback( legacy_address_setting, listenAddress( "listen_address", 1234 ) );
 
     @Test
-    public void shouldParseExplicitSettingValueWhenProvided() throws Exception
+    public void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -56,7 +56,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -71,7 +71,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided() throws Exception
+    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
         Map<String,String> config = stringMap(

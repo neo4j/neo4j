@@ -226,7 +226,7 @@ public class IncrementalBackupIT
                 newGraphDatabase();
     }
 
-    private ServerInterface startServer( File path, String serverAddress ) throws Exception
+    private ServerInterface startServer( File path, String serverAddress )
     {
         ServerInterface server = new EmbeddedServer( path, serverAddress );
         server.awaitStarted();

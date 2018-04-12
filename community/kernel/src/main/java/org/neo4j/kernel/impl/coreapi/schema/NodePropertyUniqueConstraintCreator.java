@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreator
 {
@@ -47,17 +45,9 @@ public class NodePropertyUniqueConstraintCreator extends BaseNodeConstraintCreat
     {
         assertInUnterminatedTransaction();
 
-        try
-        {
-            IndexDefinitionImpl definition =
-                    new IndexDefinitionImpl( actions, label, propertyKeys.toArray( new String[propertyKeys.size()] ),
-                            true );
-            return actions.createPropertyUniquenessConstraint( definition );
-        }
-        catch ( KernelException e )
-        {
-            String userMessage = actions.getUserMessage( e );
-            throw new ConstraintViolationException( userMessage, e );
-        }
+        IndexDefinitionImpl definition =
+                new IndexDefinitionImpl( actions, label, propertyKeys.toArray( new String[propertyKeys.size()] ),
+                        true );
+        return actions.createPropertyUniquenessConstraint( definition );
     }
 }

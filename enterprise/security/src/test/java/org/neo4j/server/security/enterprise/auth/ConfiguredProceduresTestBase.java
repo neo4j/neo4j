@@ -32,9 +32,9 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
-import org.neo4j.kernel.api.proc.QualifiedName;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
@@ -59,7 +59,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 {
 
     @Override
-    public void setUp() throws Throwable
+    public void setUp()
     {
         // tests are required to setup database with specific configs
     }
@@ -84,7 +84,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         configuredSetup( stringMap( SecuritySettings.default_allowed.name(), "nonEmpty" ) );
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
+        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) ).signature();
         assertThat( Arrays.asList( numNodes.allowed() ), containsInAnyOrder( "nonEmpty" ) );
     }
 
@@ -114,7 +114,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         userManager.newRole( "role1", "noneSubject" );
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
+        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) ).signature();
         assertThat( Arrays.asList( numNodes.allowed() ), empty() );
         assertFail( noneSubject, "CALL test.numNodes", "Read operations are not allowed" );
     }
@@ -125,7 +125,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         configuredSetup( defaultConfiguration() );
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
-        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) );
+        ProcedureSignature numNodes = procedures.procedure( new QualifiedName( new String[]{"test"}, "numNodes" ) ).signature();
         assertThat( Arrays.asList( numNodes.allowed() ), empty() );
     }
 
@@ -137,7 +137,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
         UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
+                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).signature();
         assertThat( Arrays.asList( funcSig.allowed() ), containsInAnyOrder( "nonEmpty" ) );
     }
 
@@ -159,7 +159,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         Procedures procedures = neo.getLocalGraph().getDependencyResolver().resolveDependency( Procedures.class );
 
         UserFunctionSignature funcSig = procedures.function(
-                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).get();
+                new QualifiedName( new String[]{"test"}, "nonAllowedFunc" ) ).signature();
         assertThat( Arrays.asList( funcSig.allowed() ), empty() );
     }
 

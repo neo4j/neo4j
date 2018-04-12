@@ -39,8 +39,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -74,8 +75,9 @@ public class UniqueIndexRecoveryTest
     public static Collection<Object[]> parameters()
     {
         return asList(
-                new Object[]{new LuceneSchemaIndexProviderFactory()},
-                new Object[]{new NativeLuceneFusionSchemaIndexProviderFactory()},
+                new Object[]{new LuceneIndexProviderFactory()},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory10()},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory20()},
                 new Object[]{new InMemoryIndexProviderFactory()} );
     }
 

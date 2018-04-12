@@ -21,12 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.util.function.ToIntFunction;
 
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 public class Inputs
 {
@@ -133,7 +133,7 @@ public class Inputs
             Value[] values = new Value[propertyCount];
             for ( int i = 0; i < propertyCount; i++ )
             {
-                values[i] = Values.of( entity.propertyValue( i ) );
+                values[i] = ValueUtils.asValue( entity.propertyValue( i ) );
             }
             size += valueSizeCalculator.applyAsInt( values );
         }

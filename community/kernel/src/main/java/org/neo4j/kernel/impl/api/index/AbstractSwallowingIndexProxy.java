@@ -19,18 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.concurrent.Future;
-
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {
@@ -69,7 +66,7 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
     }
 
@@ -85,32 +82,37 @@ public abstract class AbstractSwallowingIndexProxy implements IndexProxy
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return indexMeta.indexDescriptor().schema();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         return indexMeta.providerDescriptor();
     }
 
     @Override
-    public Future<Void> close()
+    public void close()
     {
-        return VOID;
     }
 
     @Override
     public IndexReader newReader()
     {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getIndexId()
+    {
+        return indexMeta.getIndexId();
     }
 }

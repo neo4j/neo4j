@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -45,8 +44,6 @@ public interface Neo4jPack
 
         void packListHeader( int size ) throws IOException;
 
-        IOException consumeError();
-
         void flush() throws IOException;
     }
 
@@ -63,11 +60,11 @@ public interface Neo4jPack
         char unpackStructSignature() throws IOException;
 
         long unpackListHeader() throws IOException;
-
-        Neo4jError consumeError();
     }
 
     Packer newPacker( PackOutput output );
 
     Unpacker newUnpacker( PackInput input );
+
+    long version();
 }

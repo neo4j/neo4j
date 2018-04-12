@@ -15,6 +15,10 @@
   <packaging>jar</packaging>
   <description>A package for cross-module integration tests.</description>
 
+  <properties>
+    <moduleName>org.neo4j.integrationtests</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -172,6 +176,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cluster</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-metrics</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

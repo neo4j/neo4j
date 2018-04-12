@@ -40,20 +40,13 @@ public interface InternalSchemaActions
 
     void dropIndexDefinitions( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException, AlreadyIndexedException;
+    ConstraintDefinition createPropertyUniquenessConstraint( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException, AlreadyIndexedException;
+    ConstraintDefinition createNodeKeyConstraint( IndexDefinition indexDefinition );
 
-    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey )
-            throws IllegalTokenNameException, TooManyLabelsException, CreateConstraintFailureException,
-            AlreadyConstrainedException;
+    ConstraintDefinition createPropertyExistenceConstraint( Label label, String... propertyKey );
 
-    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
-            throws CreateConstraintFailureException, AlreadyConstrainedException;
+    ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey );
 
     void dropPropertyUniquenessConstraint( Label label, String[] properties );
 

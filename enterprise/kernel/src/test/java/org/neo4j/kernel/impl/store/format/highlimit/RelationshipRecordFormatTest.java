@@ -31,7 +31,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPageCursor;
-import org.neo4j.kernel.impl.store.format.highlimit.v300.RelationshipRecordFormatV3_0_0;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -54,7 +53,7 @@ public class RelationshipRecordFormatTest
     private final FixedLinkedStubPageCursor cursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) )
     {
         @Override
-        public boolean next( long pageId ) throws IOException
+        public boolean next( long pageId )
         {
             // We're going to use this cursor in an environment where in all genericness this cursor
             // is one that can be moved around to other pages. That's not possible with this stub cursor,

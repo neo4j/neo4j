@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 public class SlaveStatementLocksTest
 {
     @Test
-    public void acquireDeferredSharedLocksOnPrepareForCommit() throws Exception
+    public void acquireDeferredSharedLocksOnPrepareForCommit()
     {
         StatementLocks statementLocks = mock( StatementLocks.class );
         SlaveLocksClient slaveLocksClient = mock( SlaveLocksClient.class );

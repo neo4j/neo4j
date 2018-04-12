@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -62,15 +63,14 @@ public class ElectionStateTest
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
-        when( context.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( ArgumentMatchers.any() ) ).thenReturn( NullLog.getInstance() );
 
         when( context.electionOk() ).thenReturn( false );
-        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.any() ) ).thenReturn( NullLog.getInstance() );
 
         MessageHolder holder = mock( MessageHolder.class );
 
-        election.handle( context,
-                Message.internal( performRoleElections ), holder );
+        election.handle( context, Message.internal( performRoleElections ), holder );
 
         verifyZeroInteractions( holder );
     }
@@ -82,13 +82,12 @@ public class ElectionStateTest
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
         when( context.electionOk() ).thenReturn( false );
-        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-        when( context.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( ArgumentMatchers.any() ) ).thenReturn( NullLog.getInstance() );
 
         MessageHolder holder = mock( MessageHolder.class );
 
-        election.handle( context,
-                Message.internal( demote ), holder );
+        election.handle( context, Message.internal( demote ), holder );
 
         verifyZeroInteractions( holder );
     }
@@ -105,7 +104,7 @@ public class ElectionStateTest
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
-        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.any() ) ).thenReturn( NullLog.getInstance() );
         MessageHolder holder = mock( MessageHolder.class );
 
           // These mean the election can proceed normally, by us
@@ -115,7 +114,7 @@ public class ElectionStateTest
 
           // Like it says on the box, we are the only instance
         final InstanceId myInstanceId = new InstanceId( 1 );
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( myInstanceId, URI.create( "ha://me" ) );
         when( context.getMembers() ).thenReturn( members );
 
@@ -128,17 +127,16 @@ public class ElectionStateTest
         when( context.voteRequestForRole( new ElectionRole( role ) ) ).thenReturn( voteRequest );
 
           // Required for logging
-        when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( Mockito.any() ) ).thenReturn( NullLog.getInstance() );
 
         // When
-        election.handle( context,
-                Message.internal( performRoleElections ), holder );
+        election.handle( context, Message.internal( performRoleElections ), holder );
 
         // Then
           // Make sure that we asked ourselves to vote for that role and that no timer was set
         verify( holder, times(1) ).offer( ArgumentMatchers.argThat( new MessageArgumentMatcher<ElectionMessage>()
                 .onMessageType( ElectionMessage.vote ).withPayload( voteRequest ) ) );
-        verify( context, times( 0 ) ).setTimeout( ArgumentMatchers.<String>any(), ArgumentMatchers.<Message>any() );
+        verify( context, never() ).setTimeout( ArgumentMatchers.any(), ArgumentMatchers.any() );
     }
 
     @Test
@@ -148,22 +146,21 @@ public class ElectionStateTest
         ElectionContext context = mock( ElectionContext.class );
         MessageHolder holder = mock( MessageHolder.class );
 
-        when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( Mockito.any() ) ).thenReturn( NullLog.getInstance() );
 
         final String role = "master";
         final InstanceId voter = new InstanceId( 2 );
 
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
-        Message vote = Message.internal( voted, new ElectionMessage.VersionedVotedData( role, voter,
-                voteCredentialComparable
-        , 4 ) );
+        Message<ElectionMessage> vote = Message.internal( voted, new ElectionMessage.VersionedVotedData( role, voter,
+                voteCredentialComparable, 4 ) );
 
         when( context.voted( role, voter, voteCredentialComparable, 4 ) ).thenReturn( false );
 
         // When
         election.handle( context, vote, holder );
 
-        verify( context ).getLog( ArgumentMatchers.<Class>any() );
+        verify( context ).getLog( ArgumentMatchers.any() );
         verify( context ).voted( role, voter, voteCredentialComparable, 4 );
 
         // Then
@@ -177,11 +174,11 @@ public class ElectionStateTest
         String coordinatorRole = "coordinator";
 
         ElectionContext context = mock( ElectionContext.class );
-        when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( Mockito.any() ) ).thenReturn( NullLog.getInstance() );
 
         MessageHolder holder = mock( MessageHolder.class );
 
-        Message timeout = Message.timeout( ElectionMessage.electionTimeout,
+        Message<ElectionMessage> timeout = Message.timeout( ElectionMessage.electionTimeout,
                 Message.internal( performRoleElections ),
                 new ElectionState.ElectionTimeoutData( coordinatorRole, null ) );
 
@@ -201,13 +198,13 @@ public class ElectionStateTest
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext context = mock( ElectionContext.class );
-        when( context.getLog( Mockito.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( Mockito.any() ) ).thenReturn( NullLog.getInstance() );
         when( context.getNeededVoteCount() ).thenReturn( 3 );
         when( context.getVoteCount( coordinatorRole ) ).thenReturn( 3 );
         when( context.voted( coordinatorRole, votingInstance, voteCredentialComparable, 4 ) ).thenReturn( true );
         MessageHolder holder = mock( MessageHolder.class );
 
-        Message vote = Message.to( ElectionMessage.voted, URI.create( "cluster://elector" ),
+        Message<ElectionMessage> vote = Message.to( ElectionMessage.voted, URI.create( "cluster://elector" ),
                 new ElectionMessage.VersionedVotedData( coordinatorRole, votingInstance, voteCredentialComparable, 4 ) );
 
         // When
@@ -220,23 +217,23 @@ public class ElectionStateTest
     @Test
     public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
     {
-        final List<Message> messages = new ArrayList<Message>( 1 );
-        MessageHolder holder = message -> messages.add( message );
+        final List<Message<?>> messages = new ArrayList<>( 1 );
+        MessageHolder holder = messages::add;
 
         ElectionContext context = mock( ElectionContext.class );
 
         final int version = 14;
-        Message voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
+        Message<ElectionMessage> voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
                 new ElectionContext.VoteRequest( "coordinator", version )
         );
-        voteRequest.setHeader( Message.FROM, "some://other" );
+        voteRequest.setHeader( Message.HEADER_FROM, "some://other" );
 
         election.handle( context, voteRequest, holder );
 
         assertEquals( 1, messages.size() );
-        Message response = messages.get( 0 );
+        Message<?> response = messages.get( 0 );
         assertEquals( ElectionMessage.voted, response.getMessageType() );
-        ElectionMessage.VersionedVotedData payload = (ElectionMessage.VersionedVotedData) response.getPayload();
+        ElectionMessage.VersionedVotedData payload = response.getPayload();
         assertEquals( version, payload.getVersion() );
     }
 
@@ -248,7 +245,7 @@ public class ElectionStateTest
         InstanceId winner = new InstanceId( 2 );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder holder = message -> messages.add( message );
+        MessageHolder holder = messages::add;
         ElectionCredentials voteCredentialComparable = mock( ElectionCredentials.class );
 
         ElectionContext electionContext = mock( ElectionContext.class );
@@ -268,7 +265,7 @@ public class ElectionStateTest
         Message<ElectionMessage> votedMessage = Message.to(
                 ElectionMessage.voted, URI.create( "some://instance" ),
                 new ElectionMessage.VotedData( COORDINATOR, new InstanceId( 1 ), voteCredentialComparable ) );
-        votedMessage.setHeader( Message.FROM, "some://other" );
+        votedMessage.setHeader( Message.HEADER_FROM, "some://other" );
 
         election.handle( electionContext, votedMessage, holder );
 

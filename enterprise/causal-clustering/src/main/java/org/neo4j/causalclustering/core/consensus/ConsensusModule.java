@@ -143,7 +143,9 @@ public class ConsensusModule
                 config.get( refuse_to_be_leader ),
                 supportsPreVoting, platformModule.monitors );
 
-        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine ) );
+        String dbName = config.get( CausalClusteringSettings.database );
+
+        life.add( new RaftCoreTopologyConnector( coreTopologyService, raftMachine, dbName ) );
 
         life.add( logShipping );
     }

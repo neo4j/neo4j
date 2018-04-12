@@ -21,8 +21,6 @@ package org.neo4j.com;
 
 import org.jboss.netty.channel.Channel;
 
-import java.io.IOException;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -76,7 +74,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected void responseWritten( RequestType<MadeUpCommunicationInterface> type, Channel channel,
+    protected void responseWritten( RequestType type, Channel channel,
                                     RequestContext context )
     {
         responseWritten = true;
@@ -96,7 +94,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     }
 
     @Override
-    protected RequestType<MadeUpCommunicationInterface> getRequestContext( byte id )
+    protected RequestType getRequestContext( byte id )
     {
         return MadeUpRequestType.values()[id];
     }
@@ -116,7 +114,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
         return responseFailureEncountered;
     }
 
-    enum MadeUpRequestType implements RequestType<MadeUpCommunicationInterface>
+    enum MadeUpRequestType implements RequestType
     {
         MULTIPLY( ( master, context, input, target ) ->
         {
@@ -133,20 +131,9 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
         SEND_DATA_STREAM( ( master, context, input, target ) ->
         {
-            BlockLogReader reader = new BlockLogReader( input );
-            try
+            try ( BlockLogReader reader = new BlockLogReader( input ) )
             {
                 return master.sendDataStream( reader );
-            }
-            finally
-            {
-                try
-                {
-                    reader.close();
-                }
-                catch ( IOException ignored )
-                {
-                }
             }
         }, Protocol.VOID_SERIALIZER )
         {

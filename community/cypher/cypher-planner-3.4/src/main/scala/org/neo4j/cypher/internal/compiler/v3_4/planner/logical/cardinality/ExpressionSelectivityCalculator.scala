@@ -79,8 +79,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForSubstringSargable(name, selections, propertyKey, None)
 
     // WHERE x.prop <, <=, >=, > that could benefit from an index
-    case AsValueRangeSeekable(seekable@InequalityRangeSeekable(_, _, _)) =>
+    case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, selections)
+
+      // WHERE distance(p.prop, otherPoint) <, <= number that could benefit from an index
+    case AsDistanceSeekable(seekable) =>
+      calculateSelectivityForPointDistanceSeekable(seekable, selections)
 
     // WHERE has(x.prop)
     case AsPropertyScannable(scannable) =>
@@ -197,9 +201,29 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val negatedEquality = BigDecimalCombiner.negate(equality)
 
-    val base = if (seekable.hasEquality) equality else math.BigDecimal.valueOf(0)
+    val base = if (seekable.hasEquality) equality else math.BigDecimal.ZERO
+    val rangeAmountFactor = math.BigDecimal.ONE.divide(math.BigDecimal.valueOf(seekable.expr.inequalities.size))
     val selectivity = base.add(BigDecimalCombiner.andTogetherBigDecimals(
-      Seq(math.BigDecimal.valueOf(seekable.expr.inequalities.size), factor, negatedEquality)
+      Seq(rangeAmountFactor, factor, negatedEquality)
+    ).get)
+    val result = Selectivity.of(selectivity.doubleValue()).getOrElse(Selectivity.ONE)
+    result
+  }
+
+  private def calculateSelectivityForPointDistanceSeekable(seekable: PointDistanceSeekable,
+                                                        selections: Selections)
+                                                       (implicit semanticTable: SemanticTable): Selectivity = {
+    val name = seekable.ident.name
+    val propertyKeyName = seekable.propertyKeyName
+    val equalitySelectivity = calculateSelectivityForPropertyEquality(name, Some(1), selections, propertyKeyName)
+
+    // the selectivity for equality equals the center of the circle for which we're querying
+    val equality = math.BigDecimal.valueOf(equalitySelectivity.factor)
+    val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
+    val negatedEquality = BigDecimalCombiner.negate(equality)
+
+    val selectivity = equality.add(BigDecimalCombiner.andTogetherBigDecimals(
+      Seq(factor, negatedEquality)
     ).get)
     val result = Selectivity.of(selectivity.doubleValue()).getOrElse(Selectivity.ONE)
     result

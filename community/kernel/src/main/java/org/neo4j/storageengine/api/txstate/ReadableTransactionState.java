@@ -23,20 +23,23 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.state.GraphState;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 
 /**
@@ -106,7 +109,7 @@ public interface ReadableTransactionState
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
-    PrimitiveLongResourceIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
     RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 
@@ -119,11 +122,11 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<IndexDescriptor> indexChanges();
+    ReadableDiffSets<SchemaIndexDescriptor> indexChanges();
 
-    Iterable<IndexDescriptor> constraintIndexesCreatedInTx();
+    Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
 
     ReadableDiffSets<ConstraintDescriptor> constraintsChanges();
 
@@ -135,23 +138,23 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSuffixOrContains( SchemaIndexDescriptor index, IndexQuery query );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
-                                                             Number lower, boolean includeLower,
-                                                             Number upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
-                                                             String lower, boolean includeLower,
-                                                             String upper, boolean includeUpper );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( SchemaIndexDescriptor index, ValueGroup valueGroup,
+                                                            Value lower, boolean includeLower,
+                                                            Value upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 
     RelationshipState getRelationshipState( long id );
+
+    GraphState getGraphState();
 
     Cursor<NodeItem> augmentSingleNodeCursor( Cursor<NodeItem> cursor, long nodeId );
 

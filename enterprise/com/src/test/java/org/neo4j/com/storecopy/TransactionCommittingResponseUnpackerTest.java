@@ -32,7 +32,7 @@ import org.neo4j.com.TransactionObligationResponse;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -78,6 +78,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionObligationFulfiller fulfiller = mock( TransactionObligationFulfiller.class );
         when( dependencies.obligationFulfiller() ).thenReturn( fulfiller );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
+        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         KernelTransactions kernelTransactions = mock( KernelTransactions.class );
         when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
@@ -124,6 +125,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionCountingTransactionCommitProcess commitProcess = new TransactionCountingTransactionCommitProcess();
         when( dependencies.commitProcess() ).thenReturn( commitProcess );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
+        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         KernelTransactions kernelTransactions = mock( KernelTransactions.class );
         when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
         TransactionCommittingResponseUnpacker unpacker =
@@ -203,7 +205,6 @@ public class TransactionCommittingResponseUnpackerTest
 
         @Override
         public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
-                throws TransactionFailureException
         {
             int batchSize = count( batch );
             batchSizes.offer( batchSize );

@@ -39,13 +39,13 @@ public class TestClockCache
     {
         try
         {
-            new ClockCache<Object, Object>( "TestCache", 0 );
+            new ClockCache<>( "TestCache", 0 );
             fail( "Illegal maxSize should throw exception" );
         }
         catch ( IllegalArgumentException e )
         { // good
         }
-        ClockCache<Object, Object> cache = new ClockCache<Object, Object>( "TestCache", 70 );
+        ClockCache<Object, Object> cache = new ClockCache<>( "TestCache", 70 );
         try
         {
             cache.put( null, new Object() );
@@ -106,37 +106,37 @@ public class TestClockCache
     @Test
     public void testSimple()
     {
-        ClockCacheTest<Integer, String> cache = new ClockCacheTest<Integer, String>( "TestCache", 3 );
-        Map<String, Integer> valueToKey = new HashMap<String, Integer>();
-        Map<Integer, String> keyToValue = new HashMap<Integer, String>();
+        ClockCacheTest<Integer, String> cache = new ClockCacheTest<>( "TestCache", 3 );
+        Map<String, Integer> valueToKey = new HashMap<>();
+        Map<Integer, String> keyToValue = new HashMap<>();
 
-        String s1 = new String( "1" );
-        Integer key1 = new Integer( 1 );
+        String s1 = "1";
+        Integer key1 = 1;
         valueToKey.put( s1, key1 );
         keyToValue.put( key1, s1 );
 
-        String s2 = new String( "2" );
-        Integer key2 = new Integer( 2 );
+        String s2 = "2";
+        Integer key2 = 2;
         valueToKey.put( s2, key2 );
         keyToValue.put( key2, s2 );
 
-        String s3 = new String( "3" );
-        Integer key3 = new Integer( 3 );
+        String s3 = "3";
+        Integer key3 = 3;
         valueToKey.put( s3, key3 );
         keyToValue.put( key3, s3 );
 
-        String s4 = new String( "4" );
-        Integer key4 = new Integer( 4 );
+        String s4 = "4";
+        Integer key4 = 4;
         valueToKey.put( s4, key4 );
         keyToValue.put( key4, s4 );
 
-        String s5 = new String( "5" );
-        Integer key5 = new Integer( 5 );
+        String s5 = "5";
+        Integer key5 = 5;
         valueToKey.put( s5, key5 );
         keyToValue.put( key5, s5 );
 
-        List<Integer> cleanedElements = new LinkedList<Integer>();
-        List<Integer> existingElements = new LinkedList<Integer>();
+        List<Integer> cleanedElements = new LinkedList<>();
+        List<Integer> existingElements = new LinkedList<>();
 
         cache.put( key1, s1 );
         cache.put( key2, s2 );
@@ -180,9 +180,9 @@ public class TestClockCache
     }
 
     @Test
-    public void shouldUpdateSizeWhenRemoving() throws Exception
+    public void shouldUpdateSizeWhenRemoving()
     {
-        ClockCache<String, Integer> cache = new ClockCache<String, Integer>( "foo", 3 );
+        ClockCache<String, Integer> cache = new ClockCache<>( "foo", 3 );
         cache.put( "bar", 42 );
         cache.put( "baz", 87 );
 

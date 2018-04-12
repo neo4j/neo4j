@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -28,10 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
-import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
 
@@ -39,8 +38,7 @@ public class InstanceIdTest
         extends ClusterMockTest
 {
     @Test
-    public void nodeTriesToJoinAnotherNodeWithSameServerId() throws InterruptedException, ExecutionException,
-            TimeoutException, URISyntaxException
+    public void nodeTriesToJoinAnotherNodeWithSameServerId() throws URISyntaxException
     {
         testCluster( new int[] { 1, 1 }, new VerifyInstanceConfiguration[]
                 {
@@ -58,8 +56,7 @@ public class InstanceIdTest
     }
 
     @Test
-    public void nodeTriesToJoinRunningClusterWithExistingServerId() throws InterruptedException, ExecutionException,
-            TimeoutException, URISyntaxException
+    public void nodeTriesToJoinRunningClusterWithExistingServerId() throws URISyntaxException
     {
         List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );
@@ -86,8 +83,7 @@ public class InstanceIdTest
     }
 
     @Test
-    public void substituteFailedNode() throws InterruptedException, ExecutionException, TimeoutException,
-            URISyntaxException
+    public void substituteFailedNode() throws URISyntaxException
     {
         List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );
@@ -125,8 +121,7 @@ public class InstanceIdTest
     }
 
     @Test
-    public void substituteFailedNodeAndFailedComesOnlineAgain() throws InterruptedException, ExecutionException, TimeoutException,
-            URISyntaxException
+    public void substituteFailedNodeAndFailedComesOnlineAgain() throws URISyntaxException
     {
         List<URI> correctMembers = new ArrayList<>();
         correctMembers.add( URI.create( "server1" ) );

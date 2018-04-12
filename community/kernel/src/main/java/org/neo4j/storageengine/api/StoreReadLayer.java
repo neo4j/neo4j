@@ -28,21 +28,20 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
-import org.neo4j.internal.kernel.api.IndexCapability;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -61,33 +60,33 @@ public interface StoreReadLayer
 
     /**
      * @param labelId label to list indexes for.
-     * @return {@link IndexDescriptor} associated with the given {@code labelId}.
+     * @return {@link SchemaIndexDescriptor} associated with the given {@code labelId}.
      */
-    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId );
 
     /**
-     * @return all {@link IndexDescriptor} in storage.
+     * @return all {@link SchemaIndexDescriptor} in storage.
      */
-    Iterator<IndexDescriptor> indexesGetAll();
+    Iterator<SchemaIndexDescriptor> indexesGetAll();
 
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<IndexDescriptor> indexesGetRelatedToProperty( int propertyId );
+    Iterator<SchemaIndexDescriptor> indexesGetRelatedToProperty( int propertyId );
 
     /**
-     * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
+     * @param index {@link SchemaIndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
+    Long indexGetOwningUniquenessConstraintId( SchemaIndexDescriptor index );
 
     /**
-     * @param index {@link IndexDescriptor} to get schema rule id for.
+     * @param index {@link SchemaIndexDescriptor} to get schema rule id for.
      * @return schema rule id for matching index.
      * @throws SchemaRuleNotFoundException if no such index exists in storage.
      */
-    long indexGetCommittedId( IndexDescriptor index )
+    long indexGetCommittedId( SchemaIndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
     /**
@@ -143,53 +142,53 @@ public interface StoreReadLayer
      * Looks for a stored index by given {@code descriptor}
      *
      * @param descriptor a description of the index.
-     * @return {@link IndexDescriptor} for matching index, or {@code null} if not found.
+     * @return {@link SchemaIndexDescriptor} for matching index, or {@code null} if not found.
      */
-    IndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor );
+    SchemaIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
     /**
      * Returns state of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get state for.
+     * @param descriptor {@link SchemaIndexDescriptor} to get state for.
      * @return {@link InternalIndexState} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Return index provider descriptor of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get provider descriptor for.
-     * @return {@link SchemaIndexProvider.Descriptor} for index.
+     * @param descriptor {@link SchemaIndexDescriptor} to get provider descriptor for.
+     * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * Return capability of stored index.
+     * Return index reference of a stored index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get capability for.
-     * @return {@link IndexCapability} for index.
+     * @param descriptor {@link SchemaIndexDescriptor} to get provider reference for.
+     * @return {@link IndexProvider.Descriptor} for index.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    IndexCapability indexGetCapability( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    CapableIndexReference indexReference( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
-     * @param descriptor {@link LabelSchemaDescriptor} to get population progress for.
+     * @param descriptor {@link SchemaDescriptor} to get population progress for.
      * @return progress of index population, which is the initial state of an index when it's created.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    PopulationProgress indexGetPopulationProgress( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
+    PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Returns any failure that happened during population or operation of an index. Such failures
      * are persisted and can be accessed even after restart.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get failure for.
+     * @param descriptor {@link SchemaDescriptor} to get failure for.
      * @return failure of an index, or {@code null} if index is working as it should.
      * @throws IndexNotFoundKernelException if index not found.
      */
-    String indexGetFailure( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
+    String indexGetFailure( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * @param labelName name of label.
@@ -349,22 +348,22 @@ public interface StoreReadLayer
     /**
      * Returns size of index, i.e. number of entities in that index.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to return size for.
+     * @param descriptor {@link SchemaDescriptor} to return size for.
      * @return number of entities in the given index.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    long indexSize( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
+    long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Returns percentage of values in the given {@code index} are unique. A value of {@code 1.0} means that
      * all values in the index are unique, e.g. that there are no duplicate values. A value of, say {@code 0.9}
      * means that 10% of the values are duplicates.
      *
-     * @param descriptor {@link LabelSchemaDescriptor} to get uniqueness percentage for.
+     * @param descriptor {@link SchemaDescriptor} to get uniqueness percentage for.
      * @return percentage of values being unique in this index, max {@code 1.0} for all unique.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    double indexUniqueValuesPercentage( LabelSchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
+    double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     long nodesGetCount();
 
@@ -376,13 +375,15 @@ public interface StoreReadLayer
 
     int relationshipTypeCount();
 
-    DoubleLongRegister indexUpdatesAndSize( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
-    DoubleLongRegister indexSample( LabelSchemaDescriptor descriptor, DoubleLongRegister target )
+    DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
             throws IndexNotFoundKernelException;
 
     boolean nodeExists( long id );
+
+    boolean relationshipExists( long id );
 
     PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
 

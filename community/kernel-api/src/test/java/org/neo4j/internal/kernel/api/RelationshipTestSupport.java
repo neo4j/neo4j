@@ -128,32 +128,32 @@ public class RelationshipTestSupport
     }
 
     static Map<String,Integer> count(
-            Session session,
+            org.neo4j.internal.kernel.api.Transaction transaction,
             RelationshipTraversalCursor relationship ) throws KernelException
     {
         HashMap<String,Integer> counts = new HashMap<>();
         while ( relationship.next() )
         {
-            String key = computeKey( session, relationship );
+            String key = computeKey( transaction, relationship );
             counts.compute( key, ( k, value ) -> value == null ? 1 : value + 1 );
         }
         return counts;
     }
 
     static void assertCount(
-            Session session,
+            org.neo4j.internal.kernel.api.Transaction transaction,
             RelationshipTraversalCursor relationship,
             Map<String,Integer> expectedCounts,
             int expectedType,
             Direction direction ) throws KernelException
     {
-        String key = computeKey( session.token().relationshipTypeName( expectedType ), direction );
+        String key = computeKey( transaction.token().relationshipTypeName( expectedType ), direction );
         int expectedCount = expectedCounts.getOrDefault( key, 0 );
         int count = 0;
 
         while ( relationship.next() )
         {
-            assertEquals( "same type", expectedType, relationship.label() );
+            assertEquals( "same type", expectedType, relationship.type() );
             count++;
         }
 
@@ -223,7 +223,7 @@ public class RelationshipTestSupport
         return computeKey( r.type.name(), r.direction );
     }
 
-    private static String computeKey( Session session, RelationshipTraversalCursor r ) throws KernelException
+    private static String computeKey( org.neo4j.internal.kernel.api.Transaction transaction, RelationshipTraversalCursor r ) throws KernelException
     {
         Direction d;
         if ( r.sourceNodeReference() == r.targetNodeReference() )
@@ -239,12 +239,12 @@ public class RelationshipTestSupport
             d = Direction.INCOMING;
         }
 
-        return computeKey( session.token().relationshipTypeName( r.label() ), d );
+        return computeKey( transaction.token().relationshipTypeName( r.type() ), d );
     }
 
     static String computeKey( String type, Direction direction )
     {
-        return type + "-" + direction.toString();
+        return type + "-" + direction;
     }
 
     private static Function<Node,StartRelationship>[] sparseDenseRels = Iterators.array(

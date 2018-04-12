@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 class KeyValueWriter implements Closeable
 {
@@ -342,7 +342,7 @@ class KeyValueWriter implements Closeable
         }
 
         @Override
-        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize )
         {
             KeyValueStoreFile result = new KeyValueStoreFile( file, keySize, valueSize, metadata );
             opened = true;

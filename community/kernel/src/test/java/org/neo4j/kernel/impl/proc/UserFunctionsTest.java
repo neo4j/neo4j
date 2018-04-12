@@ -24,24 +24,27 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.Key.key;
-import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.values.storable.Values.numberValue;
 
 public class UserFunctionsTest
 {
@@ -62,7 +65,7 @@ public class UserFunctionsTest
         procs.register( function );
 
         // Then
-        assertThat( procs.function( signature.name() ).get(), equalTo( signature ) );
+        assertThat( procs.function( signature.name() ).signature(), equalTo( signature ) );
     }
 
     @Test
@@ -104,10 +107,10 @@ public class UserFunctionsTest
         procs.register( function );
 
         // When
-        Object result = procs.callFunction( new BasicContext(), signature.name(), new Object[]{1337} );
+        Object result = procs.callFunction( new BasicContext(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
 
         // Then
-        assertThat( result , equalTo( new Object[]{1337} ) );
+        assertThat( result , equalTo( Values.of(1337) ) );
     }
 
     @Test
@@ -120,7 +123,7 @@ public class UserFunctionsTest
                                  "function name correctly and that the function is properly deployed." );
 
         // When
-        procs.callFunction( new BasicContext(), signature.name(), new Object[]{1337} );
+        procs.callFunction( new BasicContext(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
     }
 
     @Test
@@ -138,10 +141,10 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldSignalNonExistingFunction() throws Throwable
+    public void shouldSignalNonExistingFunction()
     {
         // When
-        assertThat(procs.function( signature.name() ), is( Optional.empty()));
+        assertThat(procs.function( signature.name() ), nullValue());
     }
 
     @Test
@@ -153,9 +156,9 @@ public class UserFunctionsTest
         procs.register( new CallableUserFunction.BasicUserFunction( signature )
         {
             @Override
-            public Object apply( Context ctx, Object[] input ) throws ProcedureException
+            public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
             {
-                return ctx.get( someKey );
+                return Values.stringValue( ctx.get( someKey ) );
             }
         } );
 
@@ -163,10 +166,10 @@ public class UserFunctionsTest
         ctx.put( someKey, "hello, world" );
 
         // When
-        Object result = procs.callFunction( ctx, signature.name(), new Object[0] );
+        Object result = procs.callFunction( ctx, signature.name(), new AnyValue[0] );
 
         // Then
-        assertThat( result, equalTo("hello, world" ) );
+        assertThat( result, equalTo(Values.of("hello, world") ) );
     }
 
     private CallableUserFunction function( UserFunctionSignature signature )
@@ -174,9 +177,9 @@ public class UserFunctionsTest
         return new CallableUserFunction.BasicUserFunction( signature )
         {
             @Override
-            public Object apply( Context ctx, Object[] input )
+            public AnyValue apply( Context ctx, AnyValue[] input )
             {
-                return input;
+                return input[0];
             }
         };
     }
@@ -186,7 +189,7 @@ public class UserFunctionsTest
         return new CallableUserAggregationFunction.BasicUserAggregationFunction( signature )
         {
             @Override
-            public Aggregator create( Context ctx ) throws ProcedureException
+            public UserAggregator create( Context ctx )
             {
                 return null;
             }

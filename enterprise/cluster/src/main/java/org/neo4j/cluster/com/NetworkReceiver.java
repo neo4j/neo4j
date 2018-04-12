@@ -43,7 +43,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -124,14 +123,12 @@ public class NetworkReceiver
 
     @Override
     public void init()
-            throws Throwable
     {
         ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         channels = new DefaultChannelGroup();
 
@@ -140,7 +137,7 @@ public class NetworkReceiver
                 Executors.newCachedThreadPool( daemon( "Cluster boss", monitor ) ),
                 Executors.newFixedThreadPool( 2, daemon( "Cluster worker", monitor ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
-        serverBootstrap.setOption( "child.tcpNoDelay", true );
+        serverBootstrap.setOption( "child.tcpNoDelay", Boolean.TRUE );
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
 
         int[] ports = config.clusterServer().getPorts();
@@ -167,7 +164,6 @@ public class NetworkReceiver
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -177,7 +173,7 @@ public class NetworkReceiver
     }
 
     private int listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException
+            throws ChannelException
     {
         ChannelException ex = null;
         for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
@@ -303,7 +299,7 @@ public class NetworkReceiver
             implements ChannelPipelineFactory
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        public ChannelPipeline getPipeline()
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameDecoder",
@@ -318,7 +314,7 @@ public class NetworkReceiver
             extends SimpleChannelHandler
     {
         @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             Channel ctxChannel = ctx.getChannel();
             openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
@@ -326,7 +322,7 @@ public class NetworkReceiver
         }
 
         @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
+        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
         {
             if ( !bindingDetected )
             {
@@ -337,16 +333,16 @@ public class NetworkReceiver
 
             final Message message = (Message) event.getMessage();
 
-            // Fix FROM header since sender cannot know it's correct IP/hostname
+            // Fix HEADER_FROM header since sender cannot know it's correct IP/hostname
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
-            URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
+            URI fromHeader = URI.create( message.getHeader( Message.HEADER_FROM ) );
             if ( remote.getAddress() instanceof Inet6Address )
             {
                 remoteAddress = wrapAddressForIPv6Uri( remoteAddress );
             }
             fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
-            message.setHeader( Message.FROM, fromHeader.toASCIIString() );
+            message.setHeader( Message.HEADER_FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );
             monitor.receivedMessage( message );
@@ -354,20 +350,20 @@ public class NetworkReceiver
         }
 
         @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
             channels.remove( ctx.getChannel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
         {
             if ( !(e.getCause() instanceof ConnectException) )
             {

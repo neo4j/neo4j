@@ -26,6 +26,7 @@ import java.util.Collection;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -66,9 +67,9 @@ public class UpdateCapturingIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        actual.force();
+        actual.force( ioLimiter );
     }
 
     @Override
@@ -105,6 +106,12 @@ public class UpdateCapturingIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
     {
         actual.verifyDeferredConstraints( propertyAccessor );
+    }
+
+    @Override
+    public boolean isDirty()
+    {
+        return actual.isDirty();
     }
 
     public Collection<IndexEntryUpdate<?>> snapshot()

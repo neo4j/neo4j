@@ -63,7 +63,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         result.accept( new BoltResult.Visitor()
         {
             @Override
-            public void visit( QueryResult.Record record ) throws Exception
+            public void visit( QueryResult.Record record )
             {
                 currentResponse.addRecord( record );
             }

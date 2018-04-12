@@ -19,6 +19,10 @@
  */
 package org.neo4j;
 
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -33,10 +37,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.driver.v1.Driver;
@@ -76,6 +76,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -423,7 +424,7 @@ public class TransactionGuardIT
     }
 
     @Test
-    public void changeTimeoutAtRuntime() throws Exception
+    public void changeTimeoutAtRuntime()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =
@@ -523,10 +524,11 @@ public class TransactionGuardIT
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
             BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
-                    .withProperty( boltConnector.enabled.name(), "true" )
+                    .withProperty( boltConnector.enabled.name(), Settings.TRUE )
+                    .withProperty( ServerSettings.script_enabled.name(), Settings.TRUE )
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
-                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+                    .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
             serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
@@ -543,6 +545,7 @@ public class TransactionGuardIT
                 boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
+                ServerSettings.script_enabled, Settings.TRUE,
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
                 GraphDatabaseSettings.auth_enabled, "false" );
     }
@@ -738,7 +741,8 @@ public class TransactionGuardIT
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>()
+            // XXX: This has to be a Function, JVM crashes with ClassFormatError if you pass a lambda here
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>() // Don't make a lambda
             {
                 @Override
                 public EditionModule apply( PlatformModule platformModule )

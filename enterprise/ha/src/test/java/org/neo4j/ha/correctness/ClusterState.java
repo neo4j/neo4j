@@ -22,6 +22,7 @@ package org.neo4j.ha.correctness;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,7 +42,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
  */
 class ClusterState
 {
-    public static final Predicate<ClusterInstance> HAS_TIMEOUTS = ClusterInstance::hasPendingTimeouts;
+    private static final Predicate<ClusterInstance> HAS_TIMEOUTS = ClusterInstance::hasPendingTimeouts;
     private final Set<ClusterAction> pendingActions;
     private final List<ClusterInstance> instances = new ArrayList<>();
 
@@ -49,18 +50,12 @@ class ClusterState
     {
         this.pendingActions = pendingActions instanceof LinkedHashSet ? pendingActions
                 : new LinkedHashSet<>( pendingActions );
-        for ( ClusterInstance instance : instances )
-        {
-            this.instances.add( instance );
-        }
+        this.instances.addAll( instances );
     }
 
     public void addPendingActions( ClusterAction ... actions )
     {
-        for ( ClusterAction action : actions )
-        {
-            pendingActions.add( action );
-        }
+        pendingActions.addAll( Arrays.asList( actions ) );
     }
 
     /** All possible new cluster states that can be generated from this one. */
@@ -171,11 +166,7 @@ class ClusterState
 
         ClusterState that = (ClusterState) o;
 
-        if ( !instances.equals( that.instances ) )
-        {
-            return false;
-        }
-        return pendingActions.equals( that.pendingActions );
+        return instances.equals( that.instances ) && pendingActions.equals( that.pendingActions );
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -63,14 +62,12 @@ public interface IndexReader extends Resource
             IndexQuery... query ) throws IndexNotApplicableKernelException;
 
     /**
-     * @param predicates query to determine whether or not index has full number precision for.
-     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}
-     * when calling with predicates involving numbers, such as {@link IndexQuery#exact(int, Object)}
-     * w/ a {@link Number} or {@link IndexQuery#range(int, Number, boolean, Number, boolean)}.
+     * @param predicates query to determine whether or not index has full value precision for.
+     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}.
      * If {@code false} is returned this means that the caller of {@link #query(IndexQuery...)} will have to
      * do additional filtering, double-checking of actual property values, externally.
      */
-    boolean hasFullNumberPrecision( IndexQuery... predicates );
+    boolean hasFullValuePrecision( IndexQuery... predicates );
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -95,7 +92,6 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query )
-                throws IndexNotApplicableKernelException
         {
             //do nothing
         }
@@ -106,7 +102,7 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public boolean hasFullNumberPrecision( IndexQuery... predicates )
+        public boolean hasFullValuePrecision( IndexQuery... predicates )
         {
             return true;
         }

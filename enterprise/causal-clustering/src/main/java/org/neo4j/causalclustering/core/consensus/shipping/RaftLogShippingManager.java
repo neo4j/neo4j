@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.consensus.shipping;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -133,7 +132,7 @@ public class RaftLogShippingManager extends LifecycleAdapter implements RaftMemb
         }
     }
 
-    public synchronized void handleCommands( Iterable<ShipCommand> shipCommands, LeaderContext leaderContext ) throws IOException
+    public synchronized void handleCommands( Iterable<ShipCommand> shipCommands, LeaderContext leaderContext )
     {
         for ( ShipCommand shipCommand : shipCommands )
         {

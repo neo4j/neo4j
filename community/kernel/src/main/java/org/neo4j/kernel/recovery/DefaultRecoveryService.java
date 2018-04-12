@@ -56,7 +56,7 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public RecoveryStartInformation getRecoveryStartInformation() throws IOException
+    public RecoveryStartInformation getRecoveryStartInformation()
     {
         return recoveryStartInformationProvider.get();
     }
@@ -133,7 +133,7 @@ public class DefaultRecoveryService implements RecoveryService
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {   // nothing to close
         }
     }

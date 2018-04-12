@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -43,11 +43,9 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
-
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 public class AccessUniqueDatabaseIndexTest
 {
@@ -55,7 +53,7 @@ public class AccessUniqueDatabaseIndexTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private final File storeDirectory = new File( "db" );
-    private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
+    private final SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
     public void shouldAddUniqueEntries() throws Exception
@@ -151,7 +149,7 @@ public class AccessUniqueDatabaseIndexTest
     {
         IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystemRule.get(),
                 directoriesByProviderKey( storeDirectory ).forProvider( PROVIDER_DESCRIPTOR ) );
-        return storageFactory.indexStorageOf( 1, false );
+        return storageFactory.indexStorageOf( 1 );
     }
 
     private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )

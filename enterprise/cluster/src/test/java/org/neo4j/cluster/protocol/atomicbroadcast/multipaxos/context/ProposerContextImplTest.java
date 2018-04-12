@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 public class ProposerContextImplTest
 {
     @Test
-    public void shouldOnlyReturnMembersAsAcceptorsIfTheyAreAlive() throws Exception
+    public void shouldOnlyReturnMembersAsAcceptorsIfTheyAreAlive()
     {
         assertEquals( 5, limitedAcceptors( 5, instanceIds( 5 ) ) );
         assertEquals( 3, limitedAcceptors( 3, instanceIds( 5 ) ) );
@@ -47,7 +47,7 @@ public class ProposerContextImplTest
     }
 
     @Test
-    public void shouldCalculateMajorityOfAcceptors() throws Exception
+    public void shouldCalculateMajorityOfAcceptors()
     {
         ProposerContextImpl proposerContext = new ProposerContextImpl( new InstanceId( 1 ),
                 null, null, null, null, null );

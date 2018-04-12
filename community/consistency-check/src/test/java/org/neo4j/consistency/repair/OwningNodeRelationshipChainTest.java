@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 public class OwningNodeRelationshipChainTest
 {
     @Test
-    public void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo() throws Exception
+    public void shouldFindBothChainsThatTheRelationshipRecordShouldBelongTo()
     {
         // given
         long node1 = 101;

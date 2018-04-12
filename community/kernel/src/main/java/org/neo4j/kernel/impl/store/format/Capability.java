@@ -55,7 +55,12 @@ public enum Capability
     /**
      * Point Geometries are an addition to the format, not a change
      */
-    POINT_PROPERTIES( CapabilityType.STORE ),
+    POINT_PROPERTIES( true, CapabilityType.STORE ),
+
+    /**
+     * Temporal types are an addition to the format, not a change
+     */
+    TEMPORAL_PROPERTIES( true, CapabilityType.STORE ),
 
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
@@ -63,14 +68,32 @@ public enum Capability
     SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
 
     private final CapabilityType[] types;
+    private boolean additive;
 
     Capability( CapabilityType... types )
     {
+        this( false, types );
+    }
+
+    Capability( boolean additive, CapabilityType... types )
+    {
+        this.additive = additive;
         this.types = types;
     }
 
     public boolean isType( CapabilityType type )
     {
         return contains( types, type );
+    }
+
+    /**
+     * Whether or not this capability is additive. A capability is additive if data regarding this capability will not change
+     * any existing store and therefore not require migration of existing data.
+     *
+     * @return whether or not this capability is additive.
+     */
+    public boolean isAdditive()
+    {
+        return additive;
     }
 }

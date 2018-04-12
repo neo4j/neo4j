@@ -70,7 +70,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void addShouldThrowIfAskedForChanged() throws Exception
+    public void addShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
@@ -78,7 +78,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void removeShouldThrowIfAskedForChanged() throws Exception
+    public void removeShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         thrown.expect( UnsupportedOperationException.class );
@@ -106,7 +106,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void changedShouldRetainValues() throws Exception
+    public void changedShouldRetainValues()
     {
         Value singleAfter = Values.of( "Hello" );
         IndexEntryUpdate<?> singleChange = IndexEntryUpdate

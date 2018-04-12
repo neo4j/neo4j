@@ -39,8 +39,8 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       variables.foreach {
         case (variable, expr) =>
           body.declare(variable.name, variable.codeGenType)
-          if (variable.codeGenType == CodeGenType.Any) body.assign(variable.name, variable.codeGenType, body.materializeAny(expr.generateExpression(body)))
-          else body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
+          // Only materialize in produce results
+          body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
       }
       action.body(body)
     }

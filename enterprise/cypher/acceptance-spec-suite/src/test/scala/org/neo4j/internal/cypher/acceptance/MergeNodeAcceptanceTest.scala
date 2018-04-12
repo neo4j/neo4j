@@ -29,7 +29,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   // TODO: Reflect something like this in the TCK
   test("multiple merges after each other") {
     1 to 100 foreach { prop =>
-      val result = executeWith(Configs.Interpreted - Configs.Cost2_3, s"merge (a:Label {prop: $prop}) return a.prop")
+      val result = executeWith(Configs.UpdateConf, s"merge (a:Label {prop: $prop}) return a.prop")
       assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     }
   }
@@ -61,27 +61,21 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     }
   }
 
-  private val supportMerge = Configs.Interpreted - Configs.Cost2_3
-  // TODO: Change this setting when the bugfix #10771 merged to earlier 3.x versions is included as a dependency
-  private val doNotYetHaveBugFix = Configs.Cost3_1
-
   test("Merging with self loop and relationship uniqueness") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
-    val result = executeWith(supportMerge, "MERGE (a)-[:X]->(b)-[:X]->(c) RETURN 42")
+    val result = executeWith(Configs.UpdateConf, "MERGE (a)-[:X]->(b)-[:X]->(c) RETURN 42")
     assertStats(result, relationshipsCreated = 2, nodesCreated = 3)
   }
 
   test("Merging with self loop and relationship uniqueness - no stats") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(Configs.UpdateConf, "MERGE (a)-[r1:X]->(b)-[r2:X]->(c) RETURN id(r1) = id(r2) as sameEdge")
     result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
   }
 
   test("Merging with self loop and relationship uniqueness - no stats - reverse direction") {
     graph.execute("CREATE (a) CREATE (a)-[:X]->(a)")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(Configs.UpdateConf, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge")
     result.columnAs[Boolean]("sameEdge").toList should equal(List(false))
   }
 
@@ -89,8 +83,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
     val a = createLabeledNode(Map("name" -> "a"), "A")
     val b = createLabeledNode(Map("name" -> "b"), "B")
     relate(a, b, "X")
-    val result = executeWith(supportMerge, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name",
-      expectedDifferentResults = doNotYetHaveBugFix)
+    val result = executeWith(Configs.UpdateConf, "MERGE (a)-[r1:X]->(b)<-[r2:X]-(c) RETURN id(r1) = id(r2) as sameEdge, c.name as name")
     result.toList should equal(List(Map("sameEdge" -> false, "name" -> null)))
   }
 }

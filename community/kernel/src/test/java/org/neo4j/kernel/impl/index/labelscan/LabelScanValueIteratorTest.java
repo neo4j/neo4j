@@ -31,6 +31,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,7 +46,7 @@ public class LabelScanValueIteratorTest
         when( cursor.next() ).thenReturn( false );
         Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFrom = new HashSet<>();
         LabelScanValueIterator iterator = new LabelScanValueIterator( cursor, toRemoveFrom );
-        verify( cursor, times( 0 ) ).close();
+        verify( cursor, never() ).close();
 
         // WHEN
         exhaust( iterator );

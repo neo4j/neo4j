@@ -39,7 +39,7 @@ public final class StoreId implements Externalizable
     private long upgradeTime;
     private long upgradeId;
 
-    private StoreId()
+    public StoreId()
     {
         //For the readExternal method.
     }
@@ -65,7 +65,7 @@ public final class StoreId implements Externalizable
         this.upgradeId = upgradeId;
     }
 
-    public static StoreId from( ObjectInput in ) throws IOException, ClassNotFoundException
+    public static StoreId from( ObjectInput in ) throws IOException
     {
         StoreId storeId = new StoreId();
         storeId.readExternal( in );
@@ -108,7 +108,7 @@ public final class StoreId implements Externalizable
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in ) throws IOException
     {
         creationTime = in.readLong();
         randomId = in.readLong();
@@ -119,7 +119,7 @@ public final class StoreId implements Externalizable
 
     public boolean equalsByUpgradeId( StoreId other )
     {
-        return equal( upgradeTime, other.upgradeTime ) && equal( upgradeId, other.upgradeId );
+        return internalEqual( upgradeTime, other.upgradeTime ) && internalEqual( upgradeId, other.upgradeId );
     }
 
     @Override
@@ -134,7 +134,7 @@ public final class StoreId implements Externalizable
             return false;
         }
         StoreId other = (StoreId) o;
-        return equal( creationTime, other.creationTime ) && equal( randomId, other.randomId );
+        return internalEqual( creationTime, other.creationTime ) && internalEqual( randomId, other.randomId );
     }
 
     @Override
@@ -155,7 +155,7 @@ public final class StoreId implements Externalizable
                 '}';
     }
 
-    private static boolean equal( long first, long second )
+    private static boolean internalEqual( long first, long second )
     {
         return first == second || first == -1 || second == -1;
     }

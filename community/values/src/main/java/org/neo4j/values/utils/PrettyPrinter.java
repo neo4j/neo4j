@@ -19,17 +19,22 @@
  */
 package org.neo4j.values.utils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.lang.String.format;
 
@@ -162,6 +167,60 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         append( "\", code: " );
         append( Integer.toString( crs.getCode() ) );
         append( "}}}}" );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+    {
+        append( "{duration: {months: " );
+        append( Long.toString( months ) );
+        append( ", days: " );
+        append( Long.toString( days ) );
+        append( ", seconds: " );
+        append( Long.toString( seconds ) );
+        append( ", nanos: " );
+        append( Long.toString( nanos ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate ) throws RuntimeException
+    {
+        append( "{date: " );
+        append( quote( localDate.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    {
+        append( "{localTime: " );
+        append( quote( localTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    {
+        append( "{time: " );
+        append( quote( offsetTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    {
+        append( "{localDateTime: " );
+        append( quote( localDateTime.toString() ) );
+        append( "}" );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    {
+        append( "{datetime: " );
+        append( quote( zonedDateTime.toString() ) );
+        append( "}" );
     }
 
     @Override

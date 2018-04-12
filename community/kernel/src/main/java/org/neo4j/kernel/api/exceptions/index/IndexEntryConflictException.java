@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
@@ -58,18 +58,18 @@ public class IndexEntryConflictException extends Exception
      * was caught but it should not have been allowed to be thrown in the first place.
      * Typically where the index we performed an operation on is not a unique index.
      */
-    public RuntimeException notAllowed( IndexDescriptor descriptor )
+    public RuntimeException notAllowed( SchemaIndexDescriptor descriptor )
     {
         return new IllegalStateException( String.format(
                 "Index for (%s) should not require unique values.",
                 descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ), this );
     }
 
-    public String evidenceMessage( TokenNameLookup tokenNameLookup, LabelSchemaDescriptor schema )
+    public String evidenceMessage( TokenNameLookup tokenNameLookup, SchemaDescriptor schema )
     {
         assert schema.getPropertyIds().length == propertyValues.size();
 
-        String labelName = tokenNameLookup.labelGetName( schema.getLabelId() );
+        String labelName = tokenNameLookup.labelGetName( schema.keyId() );
         if ( addedNodeId == NO_SUCH_NODE )
         {
             return format( "Node(%d) already exists with label `%s` and %s",

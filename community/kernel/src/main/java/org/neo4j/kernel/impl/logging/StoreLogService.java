@@ -39,7 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
+import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 
 public class StoreLogService extends AbstractLogService implements Lifecycle
 {
@@ -109,7 +109,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public Builder withInternalLog( File logFile ) throws IOException
+        public Builder withInternalLog( File logFile )
         {
             this.debugLog = logFile;
             return this;
@@ -139,7 +139,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                         jobScheduler );
     }
 
-    public static Builder withInternalLog( File logFile ) throws IOException
+    public static Builder withInternalLog( File logFile )
     {
         return new Builder().withInternalLog( logFile );
     }
@@ -170,7 +170,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
         FormattedLogProvider internalLogProvider;
         if ( internalLogRotationThreshold == 0 )
         {
-            OutputStream outputStream = createOrOpenAsOuputStream( fileSystem, internalLog, true );
+            OutputStream outputStream = createOrOpenAsOutputStream( fileSystem, internalLog, true );
             internalLogProvider = internalLogBuilder.toOutputStream( outputStream );
             rotationListener.accept( internalLogProvider );
             this.closeable = outputStream;
@@ -210,17 +210,17 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 

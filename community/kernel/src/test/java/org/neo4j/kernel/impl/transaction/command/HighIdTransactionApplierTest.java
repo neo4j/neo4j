@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupComman
 import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
 public class HighIdTransactionApplierTest
 {
@@ -75,9 +75,9 @@ public class HighIdTransactionApplierTest
 
         // Schema rules
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
+                EMPTY.getProviderDescriptor(), 10, SchemaDescriptorFactory.forLabel( 0, 1 ) ) );
         tracker.visitSchemaRuleCommand( Commands.createIndexRule(
-                NO_INDEX_PROVIDER.getProviderDescriptor(), 20, SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
+                EMPTY.getProviderDescriptor(), 20, SchemaDescriptorFactory.forLabel( 1, 2 ) ) );
 
         // Properties
         tracker.visitPropertyCommand( Commands.createProperty( 10, PropertyType.STRING, 0, 6, 7 ) );

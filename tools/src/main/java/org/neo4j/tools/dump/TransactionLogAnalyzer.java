@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.tools.dump.log.TransactionLogEntryCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.tools.util.TransactionLogUtils.openVersionedChannel;
@@ -135,6 +136,10 @@ public class TransactionLogAnalyzer
                 }
             };
             long lowestLogVersion = logFiles.getLowestLogVersion();
+            if ( lowestLogVersion < 0 )
+            {
+                throw new IllegalStateException( format( "Transaction logs at '%s' not found.", storeDirOrLogFile ) );
+            }
             firstFile = logFiles.getLogFileForVersion( lowestLogVersion );
             monitor.logFile( firstFile, lowestLogVersion );
         }

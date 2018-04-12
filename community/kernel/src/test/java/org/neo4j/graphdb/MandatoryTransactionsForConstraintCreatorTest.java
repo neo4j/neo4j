@@ -29,13 +29,13 @@ public class MandatoryTransactionsForConstraintCreatorTest
     extends AbstractMandatoryTransactionsTest<ConstraintCreator>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsConstraintCreators()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsConstraintCreators() throws Exception
+    public void shouldTerminateWhenCallingMethodsConstraintCreators()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }

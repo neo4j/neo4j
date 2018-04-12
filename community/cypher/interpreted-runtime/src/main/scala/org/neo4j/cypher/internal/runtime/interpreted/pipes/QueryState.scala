@@ -42,6 +42,7 @@ class QueryState(val query: QueryContext,
                  new SingleThreadedLRUCache(maxSize = 16)) {
 
   private var _pathValueBuilder: PathValueBuilder = _
+  private var _exFactory: ExecutionContextFactory = _
 
   def createOrGetInitialContext(factory: ExecutionContextFactory): ExecutionContext =
     initialContext.getOrElse(ExecutionContext.empty)
@@ -90,6 +91,12 @@ class QueryState(val query: QueryContext,
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, decorator, timeReader, initialContext, triadicState,
                    repeatableReads, cachedIn)
+
+  def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
+    _exFactory = exFactory
+  }
+
+  def executionContextFactory = _exFactory
 }
 
 object QueryState {

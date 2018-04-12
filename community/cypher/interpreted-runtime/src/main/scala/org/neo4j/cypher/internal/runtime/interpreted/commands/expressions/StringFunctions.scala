@@ -60,8 +60,10 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
     case v: FloatingPointValue => Values.stringValue(v.doubleValue().toString)
     case v: TextValue => v
     case v: BooleanValue => Values.stringValue(v.booleanValue().toString)
+    case v: TemporalValue[_,_] => Values.stringValue(v.toString)
+    case v: DurationValue => Values.stringValue(v.toString)
     case v =>
-      throw new ParameterWrongTypeException("Expected a String, Number or Boolean, got: " + v.toString)
+      throw new ParameterWrongTypeException("Expected a String, Number, Boolean, Temporal or Duration, got: " + v.toString)
   }
 
   override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))

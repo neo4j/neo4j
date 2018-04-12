@@ -147,6 +147,6 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
 
     public static <V> Factory<Set<V>> valuesOfTypeHashSet()
     {
-        return () -> new HashSet<>();
+        return HashSet::new;
     }
 }

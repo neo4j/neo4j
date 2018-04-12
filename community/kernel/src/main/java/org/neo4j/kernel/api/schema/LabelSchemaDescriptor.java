@@ -33,7 +33,7 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     private final int labelId;
     private final int[] propertyIds;
 
-    public LabelSchemaDescriptor( int labelId, int... propertyIds )
+    LabelSchemaDescriptor( int labelId, int... propertyIds )
     {
         this.labelId = labelId;
         this.propertyIds = propertyIds;
@@ -56,6 +56,12 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     {
         return String.format( ":%s(%s)", tokenNameLookup.labelGetName( labelId ),
                 SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
+    }
+
+    @Override
+    public String keyName( TokenNameLookup tokenNameLookup )
+    {
+        return tokenNameLookup.labelGetName( labelId );
     }
 
     @Override
@@ -83,20 +89,9 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     }
 
     @Override
-    public int getPropertyId()
-    {
-        if ( propertyIds.length != 1 )
-        {
-            throw new IllegalStateException(
-                    "Single property schema requires one property but had " + propertyIds.length );
-        }
-        return propertyIds[0];
-    }
-
-    @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof LabelSchemaDescriptor )
+        if ( o instanceof LabelSchemaDescriptor )
         {
             LabelSchemaDescriptor that = (LabelSchemaDescriptor)o;
             return labelId == that.getLabelId() && Arrays.equals( propertyIds, that.getPropertyIds() );

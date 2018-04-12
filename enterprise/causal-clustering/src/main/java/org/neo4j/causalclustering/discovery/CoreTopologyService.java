@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.identity.ClusterId;
 
 /**
@@ -27,7 +29,9 @@ import org.neo4j.causalclustering.identity.ClusterId;
  */
 public interface CoreTopologyService extends TopologyService
 {
-    void addCoreTopologyListener( Listener listener );
+    void addLocalCoreTopologyListener( Listener listener );
+
+    void removeLocalCoreTopologyListener( Listener listener );
 
     /**
      * Publishes the cluster ID so that other members might discover it.
@@ -37,10 +41,20 @@ public interface CoreTopologyService extends TopologyService
      *
      * @return True if the cluster ID was successfully CAS:ed, otherwise false.
      */
-    boolean setClusterId( ClusterId clusterId ) throws InterruptedException;
+    boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException;
+
+    /**
+     * Sets or updates the leader memberId for the given database (i.e. Raft consensus group).
+     * This is intended for informational purposes **only**, e.g. in {@link ClusterOverviewProcedure}.
+     * The leadership information should otherwise be communicated via raft as before.
+     * @param leaderInfo Information about the new leader
+     * @param dbName The database name for which memberId is the new leader
+     */
+    void setLeader( LeaderInfo leaderInfo, String dbName );
 
     interface Listener
     {
         void onCoreTopologyChange( CoreTopology coreTopology );
+        String dbName();
     }
 }

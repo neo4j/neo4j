@@ -36,7 +36,7 @@ public class PropertyTransactionStateTest
     private GraphDatabaseService db;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
@@ -48,7 +48,7 @@ public class PropertyTransactionStateTest
     }
 
     @Test
-    public void testUpdateDoubleArrayProperty() throws Exception
+    public void testUpdateDoubleArrayProperty()
     {
         Node node;
         try ( Transaction tx = db.beginTx() )
@@ -72,7 +72,7 @@ public class PropertyTransactionStateTest
     }
 
     @Test
-    public void testStringPropertyUpdate() throws Exception
+    public void testStringPropertyUpdate()
     {
         String key = "foo";
         Node node;
@@ -92,7 +92,7 @@ public class PropertyTransactionStateTest
     }
 
     @Test
-    public void testSetDoubleArrayProperty() throws Exception
+    public void testSetDoubleArrayProperty()
     {
         try ( Transaction ignore = db.beginTx() )
         {

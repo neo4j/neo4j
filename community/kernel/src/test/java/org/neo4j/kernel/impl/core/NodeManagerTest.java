@@ -86,7 +86,7 @@ public class NodeManagerTest
         thread.join();
 
         // THEN the new node is picked up by the iterator
-        assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
+        assertThat( addToCollection( allNodes, new ArrayList<>() ).size(), is( 2 ) );
         transaction.close();
     }
 
@@ -116,7 +116,7 @@ public class NodeManagerTest
         thread.join();
 
         // THEN
-        assertThat( addToCollection( allRelationships, new ArrayList<Relationship>() ).size(), is(3) );
+        assertThat( addToCollection( allRelationships, new ArrayList<>() ).size(), is(3) );
         tx.success();
         tx.close();
     }

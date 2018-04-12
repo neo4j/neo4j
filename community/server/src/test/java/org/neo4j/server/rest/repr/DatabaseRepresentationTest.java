@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 public class DatabaseRepresentationTest
 {
     @Test
-    public void shouldIncludeExpectedResourcePaths() throws Throwable
+    public void shouldIncludeExpectedResourcePaths()
     {
         // Given
         DatabaseRepresentation repr = new DatabaseRepresentation();

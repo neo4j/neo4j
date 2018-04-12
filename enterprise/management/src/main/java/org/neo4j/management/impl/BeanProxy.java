@@ -24,33 +24,28 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedList;
-
 import javax.management.MBeanServerConnection;
-import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 
-abstract class BeanProxy
-{
-    final boolean supportsMxBeans;
+import org.neo4j.helpers.Exceptions;
 
-    private BeanProxy( boolean supportsMxBeans )
-    {
-        this.supportsMxBeans = supportsMxBeans;
-    }
+public class BeanProxy
+{
+    private static final BeanProxy INSTANCE = new BeanProxy();
 
     public static <T> T load( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name )
     {
-        return factory.makeProxy( mbs, beanInterface, name );
+        return INSTANCE.makeProxy( mbs, beanInterface, name );
     }
 
-    public static <T> Collection<T> loadAll( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName query )
+    static <T> Collection<T> loadAll( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName query )
     {
-        Collection<T> beans = new LinkedList<T>();
+        Collection<T> beans = new LinkedList<>();
         try
         {
             for ( ObjectName name : mbs.queryNames( query, null ) )
             {
-                beans.add( factory.makeProxy( mbs, beanInterface, name ) );
+                beans.add( INSTANCE.makeProxy( mbs, beanInterface, name ) );
             }
         }
         catch ( IOException e )
@@ -60,106 +55,36 @@ abstract class BeanProxy
         return beans;
     }
 
-    static boolean supportsMxBeans()
-    {
-        return factory != null && factory.supportsMxBeans;
-    }
+    private final Method newMXBeanProxy;
 
-    abstract <T> T makeProxy( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name );
-
-    private static final BeanProxy factory;
-    static
+    private BeanProxy()
     {
-        BeanProxy proxyMaker;
         try
         {
-            proxyMaker = new Java6ProxyMaker();
+            Class<?> jmx = Class.forName( "javax.management.JMX" );
+            this.newMXBeanProxy = jmx.getMethod( "newMXBeanProxy", MBeanServerConnection.class, ObjectName.class, Class.class );
         }
-        catch ( Exception t )
+        catch ( ClassNotFoundException | NoSuchMethodException e )
         {
-            proxyMaker = null;
-        }
-        catch ( LinkageError t )
-        {
-            proxyMaker = null;
-        }
-        if ( proxyMaker == null )
-        {
-            try
-            {
-                proxyMaker = new Java5ProxyMaker();
-            }
-            catch ( Exception t )
-            {
-                proxyMaker = null;
-            }
-            catch ( LinkageError t )
-            {
-                proxyMaker = null;
-            }
-        }
-        factory = proxyMaker;
-    }
-
-    private static class Java6ProxyMaker extends BeanProxy
-    {
-        private final Method newMXBeanProxy;
-
-        Java6ProxyMaker() throws Exception
-        {
-            super( true );
-            Class<?> JMX = Class.forName( "javax.management.JMX" );
-            this.newMXBeanProxy = JMX.getMethod( "newMXBeanProxy", MBeanServerConnection.class,
-                    ObjectName.class, Class.class );
-        }
-
-        @Override
-        <T> T makeProxy( MBeanServerConnection mbs, Class<T> beanType, ObjectName name )
-        {
-            try
-            {
-                return beanType.cast( newMXBeanProxy.invoke( null, mbs, name, beanType ) );
-            }
-            catch ( InvocationTargetException exception )
-            {
-                throw launderRuntimeException( exception.getTargetException() );
-            }
-            catch ( Exception exception )
-            {
-                throw new UnsupportedOperationException(
-                        "Creating Management Bean proxies requires Java 1.6", exception );
-            }
-        }
-
-        static RuntimeException launderRuntimeException( Throwable exception )
-        {
-            if ( exception instanceof RuntimeException )
-            {
-                return (RuntimeException) exception;
-            }
-            else if ( exception instanceof Error )
-            {
-                throw (Error) exception;
-            }
-            else
-            {
-                throw new RuntimeException( "Unexpected Exception!", exception );
-            }
+            throw new RuntimeException( e );
         }
     }
 
-    private static class Java5ProxyMaker extends BeanProxy
+    private <T> T makeProxy( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName name )
     {
-        Java5ProxyMaker() throws Exception
+        try
         {
-            super( false );
-            Class.forName( "javax.management.MBeanServerInvocationHandler" );
+            return beanInterface.cast( newMXBeanProxy.invoke( null, mbs, name, beanInterface ) );
         }
-
-        @Override
-        <T> T makeProxy( MBeanServerConnection mbs, Class<T> beanType, ObjectName name )
+        catch ( InvocationTargetException exception )
         {
-            return MBeanServerInvocationHandler.newProxyInstance( mbs, name, beanType, false );
+            Exceptions.throwIfUnchecked( exception.getTargetException() );
+            throw new RuntimeException( exception.getTargetException() );
+        }
+        catch ( Exception exception )
+        {
+            throw new UnsupportedOperationException(
+                    "Creating Management Bean proxies requires Java 1.6", exception );
         }
     }
 }

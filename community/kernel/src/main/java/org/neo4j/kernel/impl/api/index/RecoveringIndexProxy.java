@@ -20,14 +20,11 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
+import org.neo4j.values.storable.Value;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
 {
@@ -43,7 +40,7 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted()
     {
         throw unsupportedOperation( "Cannot await population on a recovering index." );
     }
@@ -51,25 +48,30 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void activate()
     {
-        throw  unsupportedOperation( "Cannot activate recovering index." );
+        throw unsupportedOperation( "Cannot activate recovering index." );
     }
 
     @Override
     public void validate()
     {
-        throw  unsupportedOperation( "Cannot validate recovering index." );
+        throw unsupportedOperation( "Cannot validate recovering index." );
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        throw unsupportedOperation( "Unexpected call for validating value while recovering." );
     }
 
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        throw  unsupportedOperation( "Cannot snapshot a recovering index." );
+        throw unsupportedOperation( "Cannot snapshot a recovering index." );
     }
 
     @Override
-    public Future<Void> drop()
+    public void drop()
     {
-        return VOID;
     }
 
     @Override

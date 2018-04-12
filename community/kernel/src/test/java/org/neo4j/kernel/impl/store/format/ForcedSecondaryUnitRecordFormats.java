@@ -134,7 +134,7 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     {
         Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
         myCapabilities.add( Capability.SECONDARY_RECORD_UNITS );
-        return myCapabilities.stream().toArray( Capability[]::new );
+        return myCapabilities.toArray( new Capability[0] );
     }
 
     @Override
@@ -150,9 +150,9 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasSameCapabilities( RecordFormats other, CapabilityType type )
+    public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
-        return BaseRecordFormats.hasSameCapabilities( this, other, type );
+        return BaseRecordFormats.hasCompatibleCapabilities( this, other, type );
     }
 
     @Override

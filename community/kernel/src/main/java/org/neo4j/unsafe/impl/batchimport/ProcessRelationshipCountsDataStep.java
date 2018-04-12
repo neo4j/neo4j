@@ -75,14 +75,9 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
 
     private RelationshipCountsProcessor processor()
     {
-        RelationshipCountsProcessor processor = processors.get( Thread.currentThread() );
-        if ( processor == null )
-        {   // This is OK since in this step implementation we use TaskExecutor which sticks to its threads.
-            // deterministically.
-            processors.put( Thread.currentThread(), processor = new RelationshipCountsProcessor(
-                    cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
-        }
-        return processor;
+        // This is OK since in this step implementation we use TaskExecutor which sticks to its threads deterministically.
+        return processors.computeIfAbsent( Thread.currentThread(),
+                k -> new RelationshipCountsProcessor( cache, highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory ) );
     }
 
     @Override

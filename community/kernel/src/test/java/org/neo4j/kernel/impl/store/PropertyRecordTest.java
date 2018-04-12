@@ -64,7 +64,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldIterateOverBlocks() throws Exception
+    public void shouldIterateOverBlocks()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -79,16 +79,16 @@ public class PropertyRecordTest
         Iterator<PropertyBlock> iterator = record.iterator();
 
         // THEN
-        for ( int i = 0; i < blocks.length; i++ )
+        for ( PropertyBlock block : blocks )
         {
             assertTrue( iterator.hasNext() );
-            assertEquals( blocks[i], iterator.next() );
+            assertEquals( block, iterator.next() );
         }
         assertFalse( iterator.hasNext() );
     }
 
     @Test
-    public void shouldBeAbleToRemoveBlocksDuringIteration() throws Exception
+    public void shouldBeAbleToRemoveBlocksDuringIteration()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );

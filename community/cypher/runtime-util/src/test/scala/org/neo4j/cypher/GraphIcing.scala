@@ -29,7 +29,7 @@ import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.kernel.api.Statement
-import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
@@ -66,7 +66,11 @@ trait GraphIcing {
 
     def shutdown() = graph.shutdown()
 
+    def createNode() = graph.createNode()
+
     def createNode(label: Label) = graph.createNode(label)
+
+    def createNode(label1: Label, label2: Label) = graph.createNode(label1, label2)
 
     def execute(query: String) = graph.execute(query)
 

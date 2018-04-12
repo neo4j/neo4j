@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
 import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.ScoreEntry;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -52,23 +54,23 @@ public class BloomProcedures
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation()
     {
         provider.awaitPopulation();
     }
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys()
     {
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys()
     {
-        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
+        return provider.getProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Set the node property keys to index" )
@@ -87,11 +89,11 @@ public class BloomProcedures
 
     @Description( "Check the status of the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.indexStatus", mode = READ )
-    public Stream<StatusOutput> indexStatus() throws Exception
+    public Stream<StatusOutput> indexStatus()
     {
-        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
-        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
+        StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, provider.getState( BLOOM_NODES, NODES ) );
+        StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
+        return Stream.of( nodeIndexState, relationshipIndexState );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
@@ -122,6 +124,7 @@ public class BloomProcedures
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
+        terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
         ScoreEntityIterator resultIterator;
         if ( fuzzy )
         {
@@ -156,12 +159,14 @@ public class BloomProcedures
         }
     }
 
-    public class StatusOutput
+    public static class StatusOutput
     {
+        public final String name;
         public final String state;
 
-        StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( String name, InternalIndexState internalIndexState )
         {
+            this.name = name;
             switch ( internalIndexState )
             {
             case POPULATING:

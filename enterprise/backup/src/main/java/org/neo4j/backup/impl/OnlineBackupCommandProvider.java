@@ -29,8 +29,9 @@ import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 import static org.neo4j.backup.impl.BackupSupportingClassesFactoryProvider.getProvidersByPriority;
@@ -81,7 +82,8 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        LogProvider logProvider = NullLogProvider.getInstance();
+        boolean debug = System.getenv().get( "NEO4J_DEBUG") != null;
+        LogProvider logProvider = FormattedLogProvider.withDefaultLogLevel( debug ? Level.DEBUG : Level.NONE ).toOutputStream( outsideWorld.outStream() );
         Monitors monitors = new Monitors();
 
         OnlineBackupContextBuilder contextBuilder = new OnlineBackupContextBuilder( homeDir, configDir );

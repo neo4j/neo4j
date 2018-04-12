@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;

@@ -49,7 +49,7 @@ public abstract class TxAbstractRelationshipCursor
     private long endNodeId;
 
     RelationshipState relationshipState;
-    boolean relationshipIsAddedInThisTx;
+    protected boolean relationshipIsAddedInThisTx;
 
     TxAbstractRelationshipCursor( TransactionState state, Consumer<TxAbstractRelationshipCursor> instanceCache )
     {

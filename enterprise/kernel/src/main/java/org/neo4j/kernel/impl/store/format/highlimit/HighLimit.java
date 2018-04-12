@@ -51,10 +51,10 @@ public class HighLimit extends BaseRecordFormats
     public static final RecordFormats RECORD_FORMATS = new HighLimit();
     public static final String NAME = "high_limit";
 
-    public HighLimit()
+    protected HighLimit()
     {
         super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_4_0.introductionVersion(), 5, Capability.DENSE_NODES,
-                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES,
+                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES,
                 Capability.SECONDARY_RECORD_UNITS );
     }
 

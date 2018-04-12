@@ -27,10 +27,11 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
@@ -38,8 +39,8 @@ import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
-import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -122,7 +123,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         state = TX_PULLING;
         timer = timerService.create( TX_PULLER_TIMER, Groups.pullUpdates, timeout -> onTimeout() );
@@ -131,13 +132,13 @@ public class CatchupPollingProcess extends LifecycleAdapter
         upToDateFuture = new CompletableFuture<>();
     }
 
-    public Future<Boolean> upToDateFuture() throws InterruptedException
+    public Future<Boolean> upToDateFuture()
     {
         return upToDateFuture;
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         state = CANCELLED;
         timer.cancel( SYNC_WAIT );
@@ -288,7 +289,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             return true;
         case SUCCESS_END_OF_STREAM:
             log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId );
-            upToDateFuture.complete( true );
+            upToDateFuture.complete( Boolean.TRUE );
             return false;
         case E_TRANSACTION_PRUNED:
             log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.", lastQueuedTxId );
@@ -302,22 +303,11 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private void copyStore()
     {
-        MemberId upstream;
-        try
-        {
-            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
-        }
-        catch ( UpstreamDatabaseSelectionException e )
-        {
-            log.warn( "Could not find upstream database from which to copy store", e );
-            return;
-        }
-
         StoreId localStoreId = localDatabase.storeId();
-        downloadDatabase( upstream, localStoreId );
+        downloadDatabase( localStoreId );
     }
 
-    private void downloadDatabase( MemberId upstream, StoreId localStoreId )
+    private void downloadDatabase( StoreId localStoreId )
     {
         try
         {
@@ -331,12 +321,18 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
-            storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
+            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider upstreamStrategyBoundAddressProvider =
+                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
+            storeCopyProcess.replaceWithStoreFrom( upstreamStrategyBoundAddressProvider, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException | TopologyLookupException e )
+        catch ( IOException | StoreCopyFailedException e )
         {
-            log.warn( format( "Error copying store from: %s. Will retry shortly.", upstream ) );
+            log.warn( "Error copying store. Will retry shortly.", e );
+            return;
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            log.warn( "Store copy aborted due to shutdown.", e );
             return;
         }
 

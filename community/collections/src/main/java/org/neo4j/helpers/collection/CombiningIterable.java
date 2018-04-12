@@ -32,19 +32,20 @@ public class CombiningIterable<T> implements Iterable<T>
 {
     private Iterable<Iterable<T>> iterables;
 
-    public CombiningIterable( Iterable<Iterable<T>> iterables )
+    @SuppressWarnings( "unchecked" )
+    public <INNER extends Iterable<T>> CombiningIterable( Iterable<INNER> iterables )
     {
-        this.iterables = iterables;
+        this.iterables = (Iterable) iterables;
     }
 
     @Override
     public Iterator<T> iterator()
     {
-        LinkedList<Iterator<T>> iterators = new LinkedList<Iterator<T>>();
+        LinkedList<Iterator<T>> iterators = new LinkedList<>();
         for ( Iterable<T> iterable : iterables )
         {
             iterators.add( iterable.iterator() );
         }
-        return new CombiningIterator<T>( iterators );
+        return new CombiningIterator<>( iterators );
     }
 }

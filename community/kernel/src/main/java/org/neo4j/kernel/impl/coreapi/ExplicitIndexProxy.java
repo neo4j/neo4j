@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -27,220 +28,223 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
+import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.ExplicitIndexHits;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.EXPLICIT_INDEX;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.explicitIndexResourceId;
 
 public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 {
-    public enum Type
+    public static final Type NODE = new Type<Node>()
     {
-        NODE
-                {
-                    @Override
-                    Class<Node> getEntityType()
-                    {
-                        return Node.class;
-                    }
+        @Override
+        public Class<Node> getEntityType()
+        {
+            return Node.class;
+        }
 
-                    @Override
-                    Node entity( long id, GraphDatabaseService graphDatabaseService )
-                    {
-                        return graphDatabaseService.getNodeById( id );
-                    }
+        @Override
+        public Node entity( long id, GraphDatabaseService graphDatabaseService )
+        {
+            return graphDatabaseService.getNodeById( id );
+        }
 
-                    @Override
-                    ExplicitIndexHits get( ReadOperations operations, String name, String key, Object value )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.nodeExplicitIndexGet( name, key, value );
-                    }
+        @Override
+        public IndexHits<Node> get( KernelTransaction ktx, String name, String key, Object value,
+                GraphDatabaseService graphDatabaseService ) throws ExplicitIndexNotFoundKernelException
+        {
+            NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
+            ktx.indexRead().nodeExplicitIndexLookup( cursor, name, key, value );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    ExplicitIndexHits query( ReadOperations operations, String name, String key,
-                                           Object queryOrQueryObject )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.nodeExplicitIndexQuery( name, key, queryOrQueryObject );
-                    }
+        @Override
+        public IndexHits<Node> query( KernelTransaction ktx, String name, String key, Object queryOrQueryObject,
+                GraphDatabaseService graphDatabaseService )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
+            ktx.indexRead().nodeExplicitIndexQuery( cursor, name, key, queryOrQueryObject );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    ExplicitIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.nodeExplicitIndexQuery( name, queryOrQueryObject );
-                    }
+        @Override
+        public IndexHits<Node> query( KernelTransaction ktx, String name, Object queryOrQueryObject,
+                GraphDatabaseService graphDatabaseService )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            NodeExplicitIndexCursor cursor = ktx.cursors().allocateNodeExplicitIndexCursor();
+            ktx.indexRead().nodeExplicitIndexQuery( cursor, name, queryOrQueryObject );
+            return new CursorWrappingNodeIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                            ExplicitIndexNotFoundKernelException
-                    {
-                        operations.nodeAddToExplicitIndex( name, id, key, value );
-                    }
+        @Override
+        public void add( ExplicitIndexWrite operations, String name, long id, String key, Object value )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.nodeAddToExplicitIndex( name, id, key, value );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
-                    {
-                        operations.nodeRemoveFromExplicitIndex( name, id, key, value );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id, String key, Object value )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.nodeRemoveFromExplicitIndex( name, id, key, value );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
-                    {
-                        operations.nodeRemoveFromExplicitIndex( name, id, key );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id, String key )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.nodeRemoveFromExplicitIndex( name, id, key );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
-                    {
-                        operations.nodeRemoveFromExplicitIndex( name, id );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.nodeRemoveFromExplicitIndex( name, id );
+        }
 
-                    @Override
-                    void drop( DataWriteOperations operations, String name )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
-                    {
-                        operations.nodeExplicitIndexDrop( name );
-                    }
+        @Override
+        public void drop( ExplicitIndexWrite operations, String name )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.nodeExplicitIndexDrop( name );
+        }
 
-                    @Override
-                    long id( PropertyContainer entity )
-                    {
-                        return ((Node) entity).getId();
-                    }
-                },
-        RELATIONSHIP
-                {
-                    @Override
-                    Class<Relationship> getEntityType()
-                    {
-                        return Relationship.class;
-                    }
+        @Override
+        public long id( PropertyContainer entity )
+        {
+            return ((Node) entity).getId();
+        }
+    };
 
-                    @Override
-                    Relationship entity( long id, GraphDatabaseService graphDatabaseService )
-                    {
-                        return graphDatabaseService.getRelationshipById( id );
-                    }
+    public static final Type RELATIONSHIP = new Type<Relationship>()
+    {
+        @Override
+        public Class<Relationship> getEntityType()
+        {
+            return Relationship.class;
+        }
 
-                    @Override
-                    ExplicitIndexHits get( ReadOperations operations, String name, String key, Object value )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.relationshipExplicitIndexGet( name, key, value, -1, -1 );
-                    }
+        @Override
+        public Relationship entity( long id, GraphDatabaseService graphDatabaseService )
+        {
+            return graphDatabaseService.getRelationshipById( id );
+        }
 
-                    @Override
-                    ExplicitIndexHits query( ReadOperations operations, String name, String key,
-                                           Object queryOrQueryObject )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.relationshipExplicitIndexQuery( name, key, queryOrQueryObject, -1, -1 );
-                    }
+        @Override
+        public IndexHits<Relationship> get( KernelTransaction ktx, String name, String key, Object value,
+            GraphDatabaseService graphDatabaseService ) throws ExplicitIndexNotFoundKernelException
+        {
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            ktx.indexRead().relationshipExplicitIndexLookup( cursor, name, key, value, -1, -1 );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    ExplicitIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
-                            throws ExplicitIndexNotFoundKernelException
-                    {
-                        return operations.relationshipExplicitIndexQuery( name, queryOrQueryObject, -1, -1 );
-                    }
+        @Override
+        public IndexHits<Relationship> query( KernelTransaction ktx, String name, String key, Object queryOrQueryObject,
+            GraphDatabaseService graphDatabaseService )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, key, queryOrQueryObject,-1, -1 );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                            ExplicitIndexNotFoundKernelException
-                    {
-                        operations.relationshipAddToExplicitIndex( name, id, key, value );
-                    }
+        @Override
+        public IndexHits<Relationship> query( KernelTransaction ktx, String name, Object queryOrQueryObject,
+            GraphDatabaseService graphDatabaseService )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            RelationshipExplicitIndexCursor cursor = ktx.cursors().allocateRelationshipExplicitIndexCursor();
+            ktx.indexRead().relationshipExplicitIndexQuery( cursor, name, queryOrQueryObject, -1 , -1 );
+            return new CursorWrappingRelationshipIndexHits( cursor, graphDatabaseService, ktx, name );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
-                    {
-                        operations.relationshipRemoveFromExplicitIndex( name, id, key, value );
-                    }
+        @Override
+        public void add( ExplicitIndexWrite operations, String name, long id, String key, Object value )
+                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+        {
+            operations.relationshipAddToExplicitIndex( name, id, key, value );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
-                    {
-                        operations.relationshipRemoveFromExplicitIndex( name, id, key );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id, String key, Object value )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.relationshipRemoveFromExplicitIndex( name, id, key, value );
+        }
 
-                    @Override
-                    void remove( DataWriteOperations operations, String name, long id )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
-                    {
-                        operations.relationshipRemoveFromExplicitIndex( name, id );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id, String key )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.relationshipRemoveFromExplicitIndex( name, id, key );
+        }
 
-                    @Override
-                    void drop( DataWriteOperations operations, String name )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
-                    {
-                        operations.relationshipExplicitIndexDrop( name );
-                    }
+        @Override
+        public void remove( ExplicitIndexWrite operations, String name, long id )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.relationshipRemoveFromExplicitIndex( name, id );
+        }
 
-                    @Override
-                    long id( PropertyContainer entity )
-                    {
-                        return ((Relationship) entity).getId();
-                    }
-                };
+        @Override
+        public void drop( ExplicitIndexWrite operations, String name )
+                throws ExplicitIndexNotFoundKernelException
+        {
+            operations.relationshipExplicitIndexDrop( name );
+        }
 
-        abstract <T extends PropertyContainer> Class<T> getEntityType();
+        @Override
+        public long id( PropertyContainer entity )
+        {
+            return ((Relationship) entity).getId();
+        }
+    };
 
-        abstract <T extends PropertyContainer> T entity( long id, GraphDatabaseService graphDatabaseService );
+    interface Type<T extends PropertyContainer>
+    {
+        Class<T> getEntityType();
 
-        abstract ExplicitIndexHits get( ReadOperations operations, String name, String key, Object value )
+        T entity( long id, GraphDatabaseService graphDatabaseService );
+
+        IndexHits<T> get( KernelTransaction operations, String name, String key, Object value,
+                GraphDatabaseService gds ) throws ExplicitIndexNotFoundKernelException;
+
+        IndexHits<T> query( KernelTransaction operations, String name, String key, Object queryOrQueryObject,
+                GraphDatabaseService gds ) throws ExplicitIndexNotFoundKernelException;
+
+        IndexHits<T> query( KernelTransaction transaction, String name, Object queryOrQueryObject,
+                GraphDatabaseService gds ) throws ExplicitIndexNotFoundKernelException;
+
+        void add( ExplicitIndexWrite operations, String name, long id, String key, Object value )
+                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+
+        void remove( ExplicitIndexWrite operations, String name, long id, String key, Object value )
                 throws ExplicitIndexNotFoundKernelException;
 
-        abstract ExplicitIndexHits query( ReadOperations operations, String name, String key, Object queryOrQueryObject )
+        void remove( ExplicitIndexWrite operations, String name, long id, String key )
                 throws ExplicitIndexNotFoundKernelException;
 
-        abstract ExplicitIndexHits query( ReadOperations operations, String name, Object queryOrQueryObject )
-                throws ExplicitIndexNotFoundKernelException;
+        void remove( ExplicitIndexWrite operations, String name, long id ) throws ExplicitIndexNotFoundKernelException;
 
-        abstract void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                ExplicitIndexNotFoundKernelException;
+        void drop( ExplicitIndexWrite operations, String name ) throws ExplicitIndexNotFoundKernelException;
 
-        abstract void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
-
-        abstract void remove( DataWriteOperations operations, String name, long id, String key )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
-
-        abstract void remove( DataWriteOperations operations, String name, long id )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
-
-        abstract void drop( DataWriteOperations operations, String name )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException;
-
-        abstract long id( PropertyContainer entity );
+        long id( PropertyContainer entity );
     }
 
     public interface Lookup
@@ -249,17 +253,17 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     }
 
     protected final String name;
-    protected final Type type;
-    protected final Supplier<Statement> statementContextBridge;
+    protected final Type<T> type;
+    protected final Supplier<KernelTransaction> txBridge;
     private final GraphDatabaseService gds;
 
-    public ExplicitIndexProxy( String name, Type type, GraphDatabaseService gds,
-                             Supplier<Statement> statementContextBridge )
+    public ExplicitIndexProxy( String name, Type<T> type, GraphDatabaseService gds,
+                             Supplier<KernelTransaction> txBridge )
     {
         this.name = name;
         this.type = type;
         this.gds = gds;
-        this.statementContextBridge = statementContextBridge;
+        this.txBridge = txBridge;
     }
 
     @Override
@@ -277,9 +281,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public IndexHits<T> get( String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( internalGet( key, value, statement ) );
+            return internalGet( key, value, ktx ) ;
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -287,28 +292,19 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         }
     }
 
-    private ExplicitIndexHits internalGet( String key, Object value, Statement statement )
+    private IndexHits<T> internalGet( String key, Object value, KernelTransaction ktx )
             throws ExplicitIndexNotFoundKernelException
     {
-        return type.get( statement.readOperations(), name, key, value );
-    }
-
-    protected IndexHits<T> wrapIndexHits( final ExplicitIndexHits ids )
-    {
-        return new ExplicitIndexWrapHits( ids );
-    }
-
-    private T entityOf( long id )
-    {
-        return type.entity( id, gds );
+        return type.get( ktx, name, key, value, gds );
     }
 
     @Override
     public IndexHits<T> query( String key, Object queryOrQueryObject )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( type.query( statement.readOperations(), name, key, queryOrQueryObject ) );
+            return type.query( ktx, name, key, queryOrQueryObject, gds );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -319,9 +315,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public IndexHits<T> query( Object queryOrQueryObject )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            return wrapIndexHits( type.query( statement.readOperations(), name, queryOrQueryObject ) );
+            return type.query( ktx, name, queryOrQueryObject, gds );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -344,9 +341,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void add( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            internalAdd( entity, key, value, statement );
+            internalAdd( entity, key, value, ktx );
         }
         catch ( EntityNotFoundException e )
         {
@@ -365,9 +363,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public void remove( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            type.remove( statement.dataWriteOperations(), name, type.id( entity ), key, value );
+            type.remove( ktx.indexWrite(), name, type.id( entity ), key, value );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -376,19 +375,16 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
         }
     }
 
     @Override
     public void remove( T entity, String key )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            type.remove( statement.dataWriteOperations(), name, type.id( entity ), key );
+            type.remove( ktx.indexWrite(), name, type.id( entity ), key );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -397,19 +393,16 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
         }
     }
 
     @Override
     public void remove( T entity )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            internalRemove( statement, type.id( entity ) );
+            internalRemove( ktx, type.id( entity ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -419,24 +412,21 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
-        }
     }
 
-    private void internalRemove( Statement statement, long id )
-            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException, EntityNotFoundException
+    private void internalRemove( KernelTransaction ktx, long id )
+            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
     {
-        type.remove( statement.dataWriteOperations(), name, id );
+        type.remove( ktx.indexWrite(), name, id );
     }
 
     @Override
     public void delete()
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
-            type.drop( statement.dataWriteOperations(), name );
+            type.drop( ktx.indexWrite(), name );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -451,28 +441,29 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
     @Override
     public T putIfAbsent( T entity, String key, Object value )
     {
-        try ( Statement statement = statementContextBridge.get() )
+        KernelTransaction ktx = txBridge.get();
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             // Does it already exist?
-            long existing = single( internalGet( key, value, statement ), -1L );
-            if ( existing != -1 )
+            T existing = Iterators.single( internalGet( key, value, ktx ), null );
+            if ( existing != null )
             {
-                return entityOf( existing );
+                return existing;
             }
 
             // No, OK so Grab lock
-            statement.readOperations().acquireExclusive( EXPLICIT_INDEX, explicitIndexResourceId( name, key ) );
+            ktx.locks().acquireExclusiveExplicitIndexLock( explicitIndexResourceId( name, key ) );
             // and check again -- now holding an exclusive lock
-            existing = single( internalGet( key, value, statement ), -1L );
-            if ( existing != -1 )
+            existing = Iterators.single( internalGet( key, value, ktx ), null );
+            if ( existing != null )
             {
                 // Someone else created this entry before us just before we got the lock,
                 // release the lock as we won't be needing it
-                statement.readOperations().releaseExclusive( EXPLICIT_INDEX, explicitIndexResourceId( name, key ) );
-                return entityOf( existing );
+                ktx.locks().releaseExclusiveExplicitIndexLock( explicitIndexResourceId( name, key ) );
+                return existing;
             }
 
-            internalAdd( entity, key, value, statement );
+            internalAdd( entity, key, value, ktx );
             return null;
         }
         catch ( EntityNotFoundException e )
@@ -489,10 +480,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         }
     }
 
-    private void internalAdd( T entity, String key, Object value, Statement statement ) throws EntityNotFoundException,
+    private void internalAdd( T entity, String key, Object value, KernelTransaction transaction ) throws EntityNotFoundException,
             InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
     {
-        type.add( statement.dataWriteOperations(), name, type.id( entity ), key, value );
+        type.add( transaction.indexWrite(), name, type.id( entity ), key, value );
     }
 
     @Override
@@ -501,72 +492,198 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         return "Index[" + type + ", " + name + "]";
     }
 
-    private class ExplicitIndexWrapHits extends AbstractIndexHits<T>
+    private abstract static class AbstractCursorWrappingIndexHits<T extends PropertyContainer> implements IndexHits<T>
     {
-        private final ExplicitIndexHits ids;
-        private final KernelStatement statement;
-        private volatile boolean closed;
+        private static final long NOT_INITIALIZED = -2L;
+        static final long NO_ID = -1L;
+        private long next = NOT_INITIALIZED;
+        protected int size;
+        protected float score;
 
-        ExplicitIndexWrapHits( ExplicitIndexHits ids )
+        AbstractCursorWrappingIndexHits( int size, float score )
         {
-            this.ids = ids;
-            this.statement = (KernelStatement) statementContextBridge.get();
+            this.size = size;
+            this.score = score;
+        }
+
+        @Override
+        public ResourceIterator<T> iterator()
+        {
+            return this;
         }
 
         @Override
         public int size()
         {
-            return ids.size();
+            return size;
         }
 
         @Override
         public float currentScore()
         {
-            return ids.currentScore();
+            return score;
         }
 
         @Override
-        protected T fetchNextOrNull()
+        public T getSingle()
         {
-            assertOpen();
-            while ( ids.hasNext() )
+            next = fetchNext();
+            if ( next == NO_ID )
             {
-                long id = ids.next();
-                try
-                {
-                    return entityOf( id );
-                }
-                catch ( NotFoundException e )
-                {   // By contract this is OK. So just skip it.
-                    // But first, let's try to repair the index so this doesn't happen again.
-                    try
-                    {
-                        internalRemove( statement, id );
-                    }
-                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException | EntityNotFoundException ignore )
-                    {
-                        // Ignore these failures because we are going to skip the entity anyway
-                    }
-                }
+                return null;
             }
-            close();
-            return null;
+
+            T item = materialize( next );
+            if ( fetchNext() != NO_ID )
+            {
+                throw new NoSuchElementException();
+            }
+            return item;
         }
 
-        private void assertOpen()
+        @Override
+        public boolean hasNext()
         {
-            statement.assertOpen();
+            if ( next == NOT_INITIALIZED )
+            {
+                next = fetchNext();
+            }
+            return next != NO_ID;
+        }
+
+        @Override
+        public T next()
+        {
+            if ( !hasNext() )
+            {
+                close();
+                throw new NoSuchElementException();
+            }
+            T item = materialize( next );
+            next = fetchNext();
+            return item;
+        }
+
+        protected abstract long fetchNext();
+
+        protected abstract T materialize( long id );
+    }
+
+    private static class CursorWrappingNodeIndexHits extends AbstractCursorWrappingIndexHits<Node>
+    {
+        private final NodeExplicitIndexCursor cursor;
+        private final GraphDatabaseService graphDatabaseService;
+        private final KernelTransaction ktx;
+        private final String name;
+
+        private CursorWrappingNodeIndexHits( NodeExplicitIndexCursor cursor,
+                GraphDatabaseService graphDatabaseService, KernelTransaction ktx, String name )
+        {
+            super( cursor.expectedTotalNumberOfResults(), cursor.score() );
+            this.cursor = cursor;
+            this.graphDatabaseService = graphDatabaseService;
+            this.ktx = ktx;
+            this.name = name;
         }
 
         @Override
         public void close()
         {
-            if ( !closed )
+            cursor.close();
+        }
+
+        protected long fetchNext()
+        {
+            ktx.assertOpen();
+            while ( cursor.next() )
             {
-                closed = true;
-                ids.close();
-                statement.close();
+                long reference = cursor.nodeReference();
+                if ( ktx.dataRead().nodeExists( reference ) )
+                {
+                    return reference;
+                }
+                else
+                {
+                    //remove it from index so it doesn't happen again
+                    try
+                    {
+                        NODE.remove( ktx.indexWrite(), name, reference );
+                    }
+                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException e )
+                    {
+                        //ignore
+                    }
+                }
             }
+            close();
+            return NO_ID;
+        }
+
+        @Override
+        protected Node materialize( long id )
+        {
+            this.score = cursor.score();
+            this.size = cursor.expectedTotalNumberOfResults();
+            return graphDatabaseService.getNodeById( id );
+        }
+    }
+
+    protected static class CursorWrappingRelationshipIndexHits extends AbstractCursorWrappingIndexHits<Relationship>
+    {
+        private final RelationshipExplicitIndexCursor cursor;
+        private final GraphDatabaseService graphDatabaseService;
+        private final KernelTransaction ktx;
+        private final String name;
+
+        CursorWrappingRelationshipIndexHits( RelationshipExplicitIndexCursor cursor,
+                GraphDatabaseService graphDatabaseService, KernelTransaction ktx, String name )
+        {
+            super( cursor.expectedTotalNumberOfResults(), cursor.score() );
+            this.cursor = cursor;
+            this.graphDatabaseService = graphDatabaseService;
+            this.ktx = ktx;
+            this.name = name;
+        }
+
+        @Override
+        public void close()
+        {
+            cursor.close();
+        }
+
+        protected long fetchNext()
+        {
+            ktx.assertOpen();
+            while ( cursor.next() )
+            {
+                long reference = cursor.relationshipReference();
+                if ( ktx.dataRead().relationshipExists( reference ) )
+                {
+                    return reference;
+                }
+                else
+                {
+                    //remove it from index so it doesn't happen again
+                    try
+                    {
+                        RELATIONSHIP.remove( ktx.indexWrite(), name, reference );
+                    }
+                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException e )
+                    {
+                        //ignore
+                    }
+                }
+            }
+            close();
+            return NO_ID;
+        }
+
+        @Override
+        protected Relationship materialize( long id )
+        {
+            this.score = cursor.score();
+            this.size = cursor.expectedTotalNumberOfResults();
+            return graphDatabaseService.getRelationshipById( id );
         }
     }
 }

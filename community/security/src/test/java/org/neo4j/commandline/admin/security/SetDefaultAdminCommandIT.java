@@ -42,6 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -104,12 +105,12 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldErrorWithNoSuchUser() throws Throwable
+    public void shouldErrorWithNoSuchUser()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "bob" );
         verify( out ).stdErrLine( "command failed: no such user: 'bob'" );
         verify( out ).exit( 1 );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
@@ -127,7 +128,7 @@ public class SetDefaultAdminCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN );
         assertNoAuthIniFile();
@@ -147,11 +148,11 @@ public class SetDefaultAdminCommandIT
                         "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_ADMIN, "foo", "bar" );
         assertNoAuthIniFile();
@@ -171,7 +172,7 @@ public class SetDefaultAdminCommandIT
                         "when upgrading to neo4j 3.1 enterprise." ) );
         verify( out ).exit( 1 );
         verifyNoMoreInteractions( out );
-        verify( out, times( 0 ) ).stdOutLine( anyString() );
+        verify( out, never() ).stdOutLine( anyString() );
     }
 
     private void insertUser( String username, boolean initial ) throws Throwable

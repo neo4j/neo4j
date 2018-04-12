@@ -263,7 +263,7 @@ public class DurableStateStorageIT
         private LifeSupport lifeSupport = new LifeSupport();
 
         LongState( FileSystemAbstraction fileSystemAbstraction, File stateDir,
-                   int numberOfEntriesBeforeRotation ) throws IOException
+                   int numberOfEntriesBeforeRotation )
         {
             lifeSupport.start();
 
@@ -288,7 +288,7 @@ public class DurableStateStorageIT
                 }
 
                 @Override
-                public Long unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+                public Long unmarshal0( ReadableChannel channel ) throws IOException
                 {
                     return channel.getLong();
                 }
@@ -314,7 +314,7 @@ public class DurableStateStorageIT
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             lifeSupport.shutdown();
         }

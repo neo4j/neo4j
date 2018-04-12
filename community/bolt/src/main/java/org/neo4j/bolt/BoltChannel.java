@@ -19,10 +19,9 @@
  */
 package org.neo4j.bolt;
 
-import java.net.SocketAddress;
-
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
+
+import java.net.SocketAddress;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 
@@ -31,31 +30,28 @@ import org.neo4j.bolt.logging.BoltMessageLogger;
  */
 public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
 {
-    private final ChannelHandlerContext channelHandlerContext;
+    private final String connector;
+    private final Channel rawChannel;
     private final BoltMessageLogger messageLogger;
 
-    public static BoltChannel open( ChannelHandlerContext channelHandlerContext,
+    public static BoltChannel open( String connector, Channel rawChannel,
                                     BoltMessageLogger messageLogger )
     {
-        return new BoltChannel( channelHandlerContext, messageLogger );
+        return new BoltChannel( connector, rawChannel, messageLogger );
     }
 
-    private BoltChannel( ChannelHandlerContext channelHandlerContext,
+    private BoltChannel( String connector, Channel rawChannel,
                          BoltMessageLogger messageLogger )
     {
-        this.channelHandlerContext = channelHandlerContext;
+        this.connector = connector;
+        this.rawChannel = rawChannel;
         this.messageLogger = messageLogger;
         messageLogger.serverEvent( "OPEN" );
     }
 
-    public ChannelHandlerContext channelHandlerContext()
-    {
-        return channelHandlerContext;
-    }
-
     public Channel rawChannel()
     {
-        return channelHandlerContext.channel();
+        return rawChannel;
     }
 
     public BoltMessageLogger log()
@@ -75,14 +71,27 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     }
 
     @Override
+    public String id()
+    {
+        return rawChannel().id().asLongText();
+    }
+
+    @Override
+    public String connector()
+    {
+        return connector;
+    }
+
+    @Override
     public SocketAddress clientAddress()
     {
-        return channelHandlerContext.channel().remoteAddress();
+        return rawChannel.remoteAddress();
     }
 
     @Override
     public SocketAddress serverAddress()
     {
-        return channelHandlerContext.channel().localAddress();
+        return rawChannel.localAddress();
     }
+
 }

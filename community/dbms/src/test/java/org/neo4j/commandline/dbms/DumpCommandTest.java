@@ -396,7 +396,7 @@ public class DumpCommandTest
         }
     }
 
-    private void execute( final String database ) throws IncorrectUsage, CommandFailed, AccessDeniedException
+    private void execute( final String database ) throws IncorrectUsage, CommandFailed
     {
         new DumpCommand( homeDir, configDir, dumper )
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );

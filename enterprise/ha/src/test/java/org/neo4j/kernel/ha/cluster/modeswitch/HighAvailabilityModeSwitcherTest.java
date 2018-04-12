@@ -75,7 +75,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class HighAvailabilityModeSwitcherTest
 {
     @Test
-    public void shouldBroadcastMasterIsAvailableIfMasterAndReceiveMasterIsElected() throws Exception
+    public void shouldBroadcastMasterIsAvailableIfMasterAndReceiveMasterIsElected()
     {
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
@@ -94,7 +94,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldBroadcastSlaveIsAvailableIfSlaveAndReceivesMasterIsAvailable() throws Exception
+    public void shouldBroadcastSlaveIsAvailableIfSlaveAndReceivesMasterIsAvailable()
     {
 
         // Given
@@ -114,7 +114,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldNotBroadcastIfSlaveAndReceivesMasterIsElected() throws Exception
+    public void shouldNotBroadcastIfSlaveAndReceivesMasterIsElected()
     {
 
         // Given
@@ -134,7 +134,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldNotBroadcastIfMasterAndReceivesSlaveIsAvailable() throws Exception
+    public void shouldNotBroadcastIfMasterAndReceivesSlaveIsAvailable()
     {
 
         // Given
@@ -352,7 +352,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster() throws Throwable
+    public void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster()
     {
         // Given
         // A HAMS
@@ -542,7 +542,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Throwable
+    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached()
     {
         // Given
         SwitchToSlaveCopyThenBranch sts = mock( SwitchToSlaveCopyThenBranch.class );

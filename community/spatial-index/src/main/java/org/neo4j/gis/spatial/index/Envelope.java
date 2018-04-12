@@ -23,8 +23,10 @@ import java.util.Arrays;
 
 public class Envelope
 {
-    private final double[] min;
-    private final double[] max;
+    static final double MAXIMAL_ENVELOPE_SIDE_RATIO = 100_000;
+
+    protected final double[] min;
+    protected final double[] max;
 
     /**
      * Copy constructor
@@ -36,8 +38,6 @@ public class Envelope
 
     /**
      * General constructor for the n-dimensional case
-     * @param min
-     * @param max
      */
     public Envelope( double[] min, double[] max )
     {
@@ -45,20 +45,41 @@ public class Envelope
         this.max = max.clone();
         if ( !isValid() )
         {
-            throw new RuntimeException( "Invalid envelope created " + toString() );
+            throw new IllegalArgumentException( "Invalid envelope created " + toString() );
         }
     }
 
     /**
      * Special constructor for the 2D case
-     * @param xmin
-     * @param xmax
-     * @param ymin
-     * @param ymax
      */
     public Envelope( double xmin, double xmax, double ymin, double ymax )
     {
         this( new double[] { xmin, ymin }, new double[] { xmax, ymax } );
+    }
+
+    /**
+     * @return a copy of the envelope where the ratio of smallest to largest side is not more than 1:100
+     */
+    public Envelope withSideRatioNotTooSmall( )
+    {
+        double[] from = Arrays.copyOf( this.min, min.length );
+        double[] to = Arrays.copyOf( this.max, max.length );
+        double highestDiff = -Double.MAX_VALUE;
+        double[] diffs = new double[from.length];
+        for ( int i = 0; i < from.length; i++ )
+        {
+            diffs[i] = to[i] - from[i];
+            highestDiff = Math.max( highestDiff, diffs[i] );
+        }
+        final double mindiff = highestDiff / MAXIMAL_ENVELOPE_SIDE_RATIO;
+        for ( int i = 0; i < from.length; i++ )
+        {
+            if ( diffs[i] < mindiff )
+            {
+                to[i] = from[i] + mindiff;
+            }
+        }
+        return new Envelope( from, to );
     }
 
     public double[] getMin()
@@ -157,10 +178,50 @@ public class Envelope
         }
     }
 
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( obj instanceof Envelope )
+        {
+            Envelope other = (Envelope) obj;
+            if ( this.getDimension() != other.getDimension() )
+            {
+                return false;
+            }
+            for ( int i = 0; i < getDimension(); i++ )
+            {
+                if ( this.min[i] != other.getMin( i ) || this.max[i] != other.getMax( i ) )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = 1;
+        for ( double element : min )
+        {
+            long bits = Double.doubleToLongBits( element );
+            result = 31 * result + (int) (bits ^ (bits >>> 32));
+        }
+        for ( double element : max )
+        {
+            long bits = Double.doubleToLongBits( element );
+            result = 31 * result + (int) (bits ^ (bits >>> 32));
+        }
+        return result;
+    }
+
     /**
      * Return the distance between the two envelopes on one dimension. This can return negative values if the envelopes intersect on this dimension.
-     * @param other
-     * @param dimension
      * @return distance between envelopes
      */
     public double distance( Envelope other, int dimension )
@@ -177,8 +238,6 @@ public class Envelope
 
     /**
      * Find the pythagorean distance between two envelopes
-     * @param other
-     * @return
      */
     public double distance( Envelope other )
     {
@@ -209,7 +268,6 @@ public class Envelope
 
     /**
      * Return the width of the envelope at the specified dimension
-     * @param dimension
      * @return with of that dimension, ie. max[d] - min[d]
      */
     public double getWidth( int dimension )
@@ -220,7 +278,7 @@ public class Envelope
     /**
      * Return the fractional widths of the envelope at all axes
      *
-     * @param divisor te number of segments to divide by (a 2D envelope will be divided into quadrants using 2)
+     * @param divisor the number of segments to divide by (a 2D envelope will be divided into quadrants using 2)
      * @return double array of widths, ie. max[d] - min[d]
      */
     public double[] getWidths( int divisor )
@@ -264,24 +322,11 @@ public class Envelope
     private boolean isValid()
     {
         boolean valid = min != null && max != null && min.length == max.length;
-        for ( int i = 0; i < min.length && valid; i++ )
+        for ( int i = 0; valid && i < min.length; i++ )
         {
             valid = min[i] <= max[i];
         }
         return valid;
-    }
-
-    /**
-     * Move this Envelope by the specified offsets
-     * @param offset array of offsets
-     */
-    public void translate( double[] offset )
-    {
-        for ( int i = 0; i < Math.min(offset.length, min.length); i++ )
-        {
-            min[i] += offset[i];
-            max[i] += offset[i];
-        }
     }
 
     @Override
@@ -323,24 +368,24 @@ public class Envelope
     {
         if ( getDimension() == other.getDimension() )
         {
-            double[] i_min = new double[this.min.length];
-            double[] i_max = new double[this.min.length];
-            Arrays.fill(i_min, Double.NaN);
-            Arrays.fill(i_max, Double.NaN);
+            double[] iMin = new double[this.min.length];
+            double[] iMax = new double[this.min.length];
+            Arrays.fill(iMin, Double.NaN);
+            Arrays.fill(iMax, Double.NaN);
             boolean result = true;
             for ( int i = 0; i < min.length; i++ )
             {
                 if ( other.min[i] <= this.max[i] && other.max[i] >= this.min[i] )
                 {
-                    i_min[i] = Math.max(this.min[i], other.min[i]);
-                    i_max[i] = Math.min(this.max[i], other.max[i]);
+                    iMin[i] = Math.max(this.min[i], other.min[i]);
+                    iMax[i] = Math.min(this.max[i], other.max[i]);
                 }
                 else
                 {
                     result = false;
                 }
             }
-            return result ? new Envelope( i_min, i_max ) : null;
+            return result ? new Envelope( iMin, iMax ) : null;
         }
         else
         {

@@ -42,17 +42,17 @@ public class UserTest
         assertThat( u1, equalTo( u1 ) );
         assertThat( u1, not( equalTo( u2 ) ) );
 
-        User u1_as_u2 = u1.augment().withCredentials( fruit )
+        User u1AsU2 = u1.augment().withCredentials( fruit )
                 .withRequiredPasswordChange( true )
                 .withFlag( "nice_guy" ).build();
-        assertThat( u1, not( equalTo( u1_as_u2 )));
-        assertThat( u2, equalTo( u1_as_u2 ));
+        assertThat( u1, not( equalTo( u1AsU2 )));
+        assertThat( u2, equalTo( u1AsU2 ));
 
-        User u2_as_u1 = u2.augment().withCredentials( abc )
+        User u2AsU1 = u2.augment().withCredentials( abc )
                 .withRequiredPasswordChange( false )
                 .withoutFlag( "nice_guy" ).build();
-        assertThat( u2, not( equalTo( u2_as_u1 )));
-        assertThat( u1, equalTo( u2_as_u1 ));
+        assertThat( u2, not( equalTo( u2AsU1 )));
+        assertThat( u1, equalTo( u2AsU1 ));
 
         assertThat( u1, not( equalTo( u2 ) ) );
     }

@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-class BackupModule
+public class BackupModule
 {
     private final OutsideWorld outsideWorld;
     private final LogProvider logProvider;

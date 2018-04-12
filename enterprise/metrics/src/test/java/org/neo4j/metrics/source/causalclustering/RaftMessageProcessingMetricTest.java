@@ -19,6 +19,7 @@
  */
 package org.neo4j.metrics.source.causalclustering;
 
+import com.codahale.metrics.SlidingWindowReservoir;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -29,10 +30,10 @@ import static org.junit.Assert.assertEquals;
 
 public class RaftMessageProcessingMetricTest
 {
-    private RaftMessageProcessingMetric metric = new RaftMessageProcessingMetric();
+    private RaftMessageProcessingMetric metric = RaftMessageProcessingMetric.createUsing( () -> new SlidingWindowReservoir( 1000 ) );
 
     @Test
-    public void shouldDefaultAllMessageTypesToEmptyTimer() throws Throwable
+    public void shouldDefaultAllMessageTypesToEmptyTimer()
     {
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
@@ -42,29 +43,35 @@ public class RaftMessageProcessingMetricTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateAllMessageTypes() throws Throwable
+    public void shouldBeAbleToUpdateAllMessageTypes()
     {
+        // given
         int durationNanos = 5;
+        double delta = 0.002;
+
+        // when
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
             metric.updateTimer( type, Duration.ofNanos( durationNanos ) );
             assertEquals( 1, metric.timer( type ).getCount() );
-            assertEquals( durationNanos, metric.timer( type ).getSnapshot().getMean(), 0 );
+            assertEquals( durationNanos, metric.timer( type ).getSnapshot().getMean(), delta );
         }
+
+        // then
         assertEquals( RaftMessages.Type.values().length, metric.timer().getCount() );
-        assertEquals( 0, metric.timer().getSnapshot().getMean(), durationNanos );
+        assertEquals( durationNanos, metric.timer().getSnapshot().getMean(), delta );
     }
 
     @Test
-    public void shouldDefaultDelayToZero() throws Throwable
+    public void shouldDefaultDelayToZero()
     {
         assertEquals( 0, metric.delay() );
     }
 
     @Test
-    public void shouldUpdateDelay() throws Throwable
+    public void shouldUpdateDelay()
     {
         metric.setDelay( Duration.ofMillis( 5 ) );
-        assertEquals( 5, metric.delay(), 0 );
+        assertEquals( 5, metric.delay() );
     }
 }

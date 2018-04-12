@@ -35,10 +35,11 @@ class AllNodesScanPipeTest extends CypherFunSuite {
     val node2 = node(2)
     // given
     val nodes = List(node1, node2)
-    val nodeOps = when(mock[Operations[NodeValue]].all).thenReturn(nodes.iterator).getMock[Operations[NodeValue]]
-    val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
-    )
+    val nodeOps = mock[Operations[NodeValue]]
+    when(nodeOps.all).thenReturn(nodes.iterator).getMock[Operations[NodeValue]]
+    val queryContext = mock[QueryContext]
+    when(queryContext.nodeOps).thenReturn(nodeOps)
+    val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
     // when
     val result: Iterator[ExecutionContext] = AllNodesScanPipe("a")().createResults(queryState)

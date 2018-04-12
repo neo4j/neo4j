@@ -60,7 +60,7 @@ public class RWLockTest
     }
 
     @Test
-    public void assertWriteLockDoesNotLeakMemory() throws InterruptedException
+    public void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );
@@ -77,7 +77,7 @@ public class RWLockTest
     }
 
     @Test
-    public void assertReadLockDoesNotLeakMemory() throws InterruptedException
+    public void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
         final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );

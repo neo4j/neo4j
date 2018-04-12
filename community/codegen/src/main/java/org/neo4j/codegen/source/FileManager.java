@@ -45,7 +45,7 @@ class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
 
     @Override
     public JavaFileObject getJavaFileForOutput( Location location, String className,
-                                                JavaFileObject.Kind kind, FileObject sibling ) throws IOException
+                                                JavaFileObject.Kind kind, FileObject sibling )
     {
         ClassFile file = new ClassFile( className );
         classes.put( className, file );
@@ -69,7 +69,7 @@ class FileManager extends ForwardingJavaFileManager<StandardJavaFileManager>
         }
 
         @Override
-        public OutputStream openOutputStream() throws IOException
+        public OutputStream openOutputStream()
         {
             return bytes;
         }

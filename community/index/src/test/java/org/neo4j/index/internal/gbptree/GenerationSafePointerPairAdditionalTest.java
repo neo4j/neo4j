@@ -32,7 +32,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 public class GenerationSafePointerPairAdditionalTest
 {
     @Test
-    public void shouldFailFastOnTooLargeGenerationOffset() throws Exception
+    public void shouldFailFastOnTooLargeGenerationOffset()
     {
         // GIVEN
         int pageSize = PageCache.PAGE_SIZE;

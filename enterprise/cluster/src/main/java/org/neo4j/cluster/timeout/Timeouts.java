@@ -41,8 +41,8 @@ public class Timeouts implements MessageSource
     private MessageProcessor receiver;
     private TimeoutStrategy timeoutStrategy;
 
-    private Map<Object, Timeout> timeouts = new HashMap<Object, Timeout>();
-    private List<Map.Entry<Object, Timeout>> triggeredTimeouts = new ArrayList<Map.Entry<Object, Timeout>>();
+    private Map<Object, Timeout> timeouts = new HashMap<>();
+    private List<Map.Entry<Object, Timeout>> triggeredTimeouts = new ArrayList<>();
 
     public Timeouts( TimeoutStrategy timeoutStrategy )
     {

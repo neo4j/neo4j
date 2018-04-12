@@ -27,6 +27,8 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
@@ -36,16 +38,10 @@ public class UTF8StringValueTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21", " a b c ", "䤹᳽", "熨", "ۼ",
-            "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ",
-            " 㺂࿝鋦毠",//first character is a thin space,
-            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 ", "\u001cӳ"
-    };
-
     @Test
     public void shouldHandleDifferentTypesOfStrings()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( UTF_8 );
@@ -58,7 +54,7 @@ public class UTF8StringValueTest
     @Test
     public void shouldTrimDifferentTypesOfStrings()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( UTF_8 );
@@ -70,7 +66,7 @@ public class UTF8StringValueTest
     @Test
     public void shouldLTrimDifferentTypesOfStrings()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( UTF_8 );
@@ -82,7 +78,7 @@ public class UTF8StringValueTest
     @Test
     public void trimShouldBeSameAsLtrimAndRtrim()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue utf8 = utf8Value( string.getBytes( UTF_8 ) );
             assertSame( utf8.trim(), utf8.ltrim().rtrim() );
@@ -100,7 +96,7 @@ public class UTF8StringValueTest
     @Test
     public void shouldRTrimDifferentTypesOfStrings()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( UTF_8 );
@@ -112,9 +108,9 @@ public class UTF8StringValueTest
     @Test
     public void shouldCompareTo()
     {
-        for ( String string1 : strings )
+        for ( String string1 : STRINGS )
         {
-            for ( String string2 : strings )
+            for ( String string2 : STRINGS )
             {
 
                 int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
@@ -131,7 +127,7 @@ public class UTF8StringValueTest
     @Test
     public void shouldReverse()
     {
-        for ( String string : strings )
+        for ( String string : STRINGS )
         {
             TextValue stringValue = stringValue( string );
             byte[] bytes = string.getBytes( UTF_8 );

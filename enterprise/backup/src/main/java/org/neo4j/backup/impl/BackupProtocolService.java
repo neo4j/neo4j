@@ -48,7 +48,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -138,7 +137,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -172,9 +171,13 @@ public class BackupProtocolService
             clearIdFiles( fileSystem, targetDirectory );
             return new BackupOutcome( lastCommittedTx, consistent );
         }
+        catch ( RuntimeException e )
+        {
+            throw e;
+        }
         catch ( Exception e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -190,7 +193,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -228,7 +231,7 @@ public class BackupProtocolService
         }
         catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
     }
 
@@ -255,6 +258,7 @@ public class BackupProtocolService
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
         // In case someone deleted the logical log from a full backup
         tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        tempDbConfig.put( GraphDatabaseSettings.pagecache_warmup_enabled.name(), Settings.FALSE );
         return tempDbConfig;
     }
 
@@ -309,7 +313,7 @@ public class BackupProtocolService
         }
         catch ( IOException io )
         {
-            throw Exceptions.launderedException( io );
+            throw new RuntimeException( io );
         }
     }
 
@@ -328,7 +332,7 @@ public class BackupProtocolService
         return anonymous( transactionIdStore.getLastCommittedTransactionId() );
     }
 
-    boolean directoryContainsDb( Path targetDirectory )
+    private boolean directoryContainsDb( Path targetDirectory )
     {
         return Files.isRegularFile( targetDirectory.resolve( MetaDataStore.DEFAULT_NAME ) );
     }

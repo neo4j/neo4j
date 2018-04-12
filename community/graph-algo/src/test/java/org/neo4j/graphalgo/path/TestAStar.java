@@ -91,7 +91,7 @@ public class TestAStar extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void wikipediaExample() throws Exception
+    public void wikipediaExample()
     {
         /* GIVEN
          *
@@ -163,7 +163,7 @@ public class TestAStar extends Neo4jAlgoTestCase
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     @Test
-    public void canUseBranchState() throws Exception
+    public void canUseBranchState()
     {
         // This test doesn't use the predefined finder, which only means an unnecessary instantiation
         // if such an object. And this test will be run twice (once for each finder type in data()).
@@ -192,7 +192,7 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "B", "C", "length", 3d );
         graph.makeEdge( "A", "C", "length", 10d );
 
-        final Map<Node, Double> seenBranchStates = new HashMap<Node, Double>();
+        final Map<Node, Double> seenBranchStates = new HashMap<>();
         PathExpander<Double> expander = new PathExpander<Double>()
         {
             @Override
@@ -227,7 +227,7 @@ public class TestAStar extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void betterTentativePath() throws Exception
+    public void betterTentativePath()
     {
         // GIVEN
         EstimateEvaluator<Double> estimator = ( node, goal ) -> (Double) node.getProperty( "estimate" );
@@ -247,9 +247,9 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "3", "4", "weight", 0.013d );
 
         // WHEN
-        WeightedPath best1_4 = finder.findSinglePath( node1, node4 );
+        WeightedPath best14 = finder.findSinglePath( node1, node4 );
         // THEN
-        assertPath( best1_4, node1, node2, node3, node4 );
+        assertPath( best14, node1, node2, node3, node4 );
     }
 
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->

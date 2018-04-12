@@ -19,7 +19,7 @@
  */
 package org.neo4j.com;
 
-public interface RequestType<M>
+public interface RequestType
 {
     TargetCaller getTargetCaller();
 

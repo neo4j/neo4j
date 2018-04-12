@@ -58,7 +58,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_1() throws Exception
+    public void shouldContainAddedValues_generated_1()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 15 );
@@ -109,7 +109,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_6() throws Exception
+    public void shouldContainAddedValues_generated_6()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 11 );
@@ -142,7 +142,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainAddedValues_generated_4() throws Exception
+    public void shouldContainAddedValues_generated_4()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 9 );
@@ -160,7 +160,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_generated_8() throws Exception
+    public void shouldOnlyContainAddedValues_generated_8()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 7 );
@@ -205,7 +205,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldContainReallyBigLongValue() throws Exception
+    public void shouldContainReallyBigLongValue()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 10 );
@@ -221,7 +221,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues() throws Exception
+    public void shouldOnlyContainAddedValues()
     {
         // GIVEN
         PrimitiveLongSet set = newSet( 13 );
@@ -431,7 +431,7 @@ public class PrimitiveLongSetTest
     }
 
     @Test
-    public void shouldHandleEmptySet() throws Exception
+    public void shouldHandleEmptySet()
     {
         // GIVEN
         PrimitiveLongSet set = Primitive.longSet( 0 );

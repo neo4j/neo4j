@@ -90,11 +90,11 @@ public class PropertySettingStrategyTest
         // Given
         Node node = db.createNode();
 
-        List<String> anArray = new ArrayList<String>(  );
+        List<String> anArray = new ArrayList<>();
         anArray.add( "hello" );
         anArray.add( "Iamanarray" );
 
-        Map<String, Object> props = new HashMap<String, Object>();
+        Map<String, Object> props = new HashMap<>();
         props.put( "name", "bob" );
         props.put( "age", 12 );
         props.put( "anArray", anArray );
@@ -135,7 +135,7 @@ public class PropertySettingStrategyTest
         node.setProperty( "arr", new String[]{} );
 
         // When
-        propSetter.setProperty( node, "arr", new ArrayList<Object>() );
+        propSetter.setProperty( node, "arr", new ArrayList<>() );
 
         // Then
         assertThat( node.getProperty( "arr" ), is(new String[]{}));
@@ -148,7 +148,7 @@ public class PropertySettingStrategyTest
         Node node = db.createNode();
         node.setProperty( "arr", new String[]{} );
 
-        Map<String, Object> props = new HashMap<String, Object>();
+        Map<String, Object> props = new HashMap<>();
         props.put( "name", "bob" );
         props.put( "arr", new ArrayList<String>(  ) );
 
@@ -167,7 +167,7 @@ public class PropertySettingStrategyTest
         Node node = db.createNode();
 
         // When
-        propSetter.setProperty( node, "arr", new ArrayList<Object>() );
+        propSetter.setProperty( node, "arr", new ArrayList<>() );
     }
 
     @Test( expected = PropertyValueException.class )
@@ -178,7 +178,7 @@ public class PropertySettingStrategyTest
         node.setProperty( "arr", "hello" );
 
         // When
-        propSetter.setProperty( node, "arr", new ArrayList<Object>() );
+        propSetter.setProperty( node, "arr", new ArrayList<>() );
     }
 
     @Test
@@ -189,7 +189,7 @@ public class PropertySettingStrategyTest
         node.setProperty( "arr", new String[]{"a","b"} );
 
         // When
-        propSetter.setProperty( node, "arr", new ArrayList<Object>() );
+        propSetter.setProperty( node, "arr", new ArrayList<>() );
 
         // Then
         assertThat( node.getProperty( "arr" ), is(new String[]{}));

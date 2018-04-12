@@ -23,6 +23,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.enterprise</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
@@ -175,7 +179,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

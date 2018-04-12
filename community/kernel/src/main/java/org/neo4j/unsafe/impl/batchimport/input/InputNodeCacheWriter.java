@@ -37,7 +37,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputCache.LABEL_TOKEN;
 public class InputNodeCacheWriter extends InputEntityCacheWriter
 {
     public InputNodeCacheWriter( StoreChannel channel, StoreChannel header, RecordFormats recordFormats, int chunkSize )
-            throws IOException
     {
         super( channel, header, recordFormats, chunkSize );
     }

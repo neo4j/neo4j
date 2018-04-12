@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.sp
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.values.AnyValue
 
 /**
   * Describes the SPI for generating a method.
@@ -41,7 +42,7 @@ trait MethodStructure[E] {
 
 
   // misc
-  def localVariable(variable: String, e: E): Unit
+  def localVariable(variable: String, e: E, codeGenType: CodeGenType): Unit
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit
@@ -66,9 +67,11 @@ trait MethodStructure[E] {
   def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor): E
   def noValue(): E
   def constantExpression(value: AnyRef): E
+  def constantValueExpression(value: AnyRef, codeGenType: CodeGenType): E
   def constantPrimitiveExpression(value: AnyVal): E = constantExpression(value.asInstanceOf[AnyRef])
   def asMap(map: Map[String, E]): E
   def asList(values: Seq[E]): E
+  def asAnyValueList(values: Seq[E]): E
   def asPrimitiveStream(values: E, codeGenType: CodeGenType): E
   def asPrimitiveStream(values: Seq[E], codeGenType: CodeGenType): E
 
@@ -78,6 +81,7 @@ trait MethodStructure[E] {
   def primitiveIteratorHasNext(iterator: E, iterableCodeGenType: CodeGenType): E
 
   def declareIterator(name: String): Unit
+  def declareIterator(name: String, codeGenType: CodeGenType): Unit
   def iteratorFrom(iterable: E): E
   def iteratorNext(iterator: E): E
   def iteratorHasNext(iterator: E): E
@@ -100,8 +104,6 @@ trait MethodStructure[E] {
   def sortTableIterate(name: String, tableDescriptor: SortTableDescriptor,
                        varNameToField: Map[String, String])
                       (block: (MethodStructure[E]) => Unit): Unit
-
-  def castToCollection(value: E): E
 
   def loadVariable(varName: String): E
 
@@ -131,6 +133,7 @@ trait MethodStructure[E] {
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(expr: E, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
+  def ifNullThenNoValue(expr: E): E // NOTE: Only for non-primitives
   def box(expression:E, codeGenType: CodeGenType): E
   def unbox(expression:E, codeGenType: CodeGenType): E
   def toFloat(expression:E): E
@@ -139,7 +142,7 @@ trait MethodStructure[E] {
   def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
 
   // map
-  def mapGetExpression(mapName: String, key: String): E
+  def mapGetExpression(map: E, key: String): E
 
   // tracing
   def trace[V](planStepId: String, maybeSuffix: Option[String] = None)(block: MethodStructure[E] => V): V
@@ -158,25 +161,30 @@ trait MethodStructure[E] {
   def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection, typeVars: Seq[String]): Unit
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, toNode:String, toNodeType: CodeGenType)
   def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, types: Seq[String], toNode: String, toNodeType: CodeGenType)
-  def nextNode(targetVar: String, iterVar: String): Unit
+  def nodeFromNodeValueIndexCursor(targetVar: String, iterVar: String): Unit
   def nodeFromNodeCursor(targetVar: String, iterVar: String): Unit
   def nodeFromNodeLabelIndexCursor(targetVar: String, iterVar: String): Unit
   def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
-  def hasNextNode(iterVar: String): E
-  def advanceNodeCursor(iterVar: String): E
-  def advanceNodeLabelIndexCursor(iterVar: String): E
-  def hasNextRelationship(iterVar: String): E
+
+  def advanceNodeCursor(cursorName: String): E
+  def closeNodeCursor(cursorName: String): Unit
+  def advanceNodeLabelIndexCursor(cursorName: String): E
+  def closeNodeLabelIndexCursor(cursorName: String): Unit
+  def advanceRelationshipSelectionCursor(cursorName: String): E
+  def closeRelationshipSelectionCursor(cursorName: String): Unit
+  def advanceNodeValueIndexCursor(cursorName: String): E
+  def closeNodeValueIndexCursor(cursorName: String): Unit
+
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
-  def relationshipGetPropertyById(nodeIdVar: String, propId: Int, propValueVar: String): Unit
-  def relationshipGetPropertyForVar(nodeIdVar: String, propIdVar: String, propValueVar: String): Unit
+  def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String): Unit
+  def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def lookupPropertyKey(propName: String, propVar: String)
   def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
-  def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
-  def createRelExtractor(extractorName: String): Unit
+  def newIndexReference(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
   def nodeCountFromCountStore(expression: E): E
   def relCountFromCountStore(start: E, end: E, types: E*): E
   def token(t: Int): E
@@ -187,7 +195,7 @@ trait MethodStructure[E] {
   def forEach(varName: String, codeGenType: CodeGenType, iterable: E)(block: MethodStructure[E] => Unit): Unit
   def ifStatement(test: E)(block: MethodStructure[E] => Unit): Unit
   def ifNotStatement(test: E)(block: MethodStructure[E] => Unit): Unit
-  def ifNonNullStatement(test: E)(block: MethodStructure[E] => Unit): Unit
+  def ifNonNullStatement(test: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
   def ternaryOperator(test: E, onTrue: E, onFalse: E): E
   def returnSuccessfully(): Unit
 
@@ -201,6 +209,7 @@ trait MethodStructure[E] {
   def visitorAccept(): Unit
   def setInRow(column: Int, value: E): Unit
   def toAnyValue(e: E, t: CodeGenType): E
+  def toMaterializedAnyValue(e: E, t: CodeGenType): E // Like toAnyValue, but will materialize nodes and relationships into proxies
 }
 
 sealed trait Comparator

@@ -21,22 +21,30 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.junit.Test;
 
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
+import static org.hamcrest.Matchers.lessThan;
+
+import static java.lang.Math.abs;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.valueOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
 public class ConfigurationTest
 {
     @Test
-    public void shouldOverrideBigPageCacheMemorySettingContainingUnit() throws Exception
+    public void shouldOverrideBigPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         Config dbConfig = Config.defaults( pagecache_memory, "2g" );
@@ -50,7 +58,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit() throws Exception
+    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
@@ -65,7 +73,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldParseDefaultPageCacheMemorySetting() throws Exception
+    public void shouldParseDefaultPageCacheMemorySetting()
     {
         // GIVEN
         Configuration config = Configuration.DEFAULT;
@@ -78,20 +86,34 @@ public class ConfigurationTest
         assertTrue( within( memory, heuristic, MAX_PAGE_CACHE_MEMORY ) );
     }
 
+    @Test
+    public void shouldCalculateCorrectMaxMemorySetting() throws Exception
+    {
+        long totalMachineMemory = OsBeanUtil.getTotalPhysicalMemory();
+        assumeTrue( totalMachineMemory != VALUE_UNAVAILABLE );
+
+        // given
+        int percent = 70;
+        Configuration config = new Configuration()
+        {
+            @Override
+            public long maxMemoryUsage()
+            {
+                return Configuration.calculateMaxMemoryFromPercent( percent );
+            }
+        };
+
+        // when
+        long memory = config.maxMemoryUsage();
+
+        // then
+        long expected = (long) ((totalMachineMemory - Runtime.getRuntime().maxMemory()) * (percent / 100D));
+        long diff = abs( expected - memory );
+        assertThat( diff, lessThan( (long)(expected / 10D) ) );
+    }
+
     private boolean within( long value, long firstBound, long otherBound )
     {
         return value >= min( firstBound, otherBound ) && value <= max( firstBound, otherBound );
-    }
-
-    private Configuration configWithPageCacheMemory( long bytes )
-    {
-        return new Configuration()
-        {
-            @Override
-            public long pageCacheMemory()
-            {
-                return bytes;
-            }
-        };
     }
 }

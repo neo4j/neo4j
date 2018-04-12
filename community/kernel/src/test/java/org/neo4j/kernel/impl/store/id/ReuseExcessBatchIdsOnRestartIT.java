@@ -24,11 +24,11 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -76,7 +76,7 @@ public class ReuseExcessBatchIdsOnRestartIT
         int threads = Runtime.getRuntime().availableProcessors();
         int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
         ExecutorService executor = Executors.newFixedThreadPool( threads );
-        AtomicIntegerArray createdIds = new AtomicIntegerArray( threads * batchSize );
+        SimpleBitSet usedIds = new SimpleBitSet( threads * batchSize );
         for ( int i = 0; i < threads; i++ )
         {
             executor.submit( () ->
@@ -86,7 +86,7 @@ public class ReuseExcessBatchIdsOnRestartIT
                     for ( int j = 0; j < batchSize / 2; j++ )
                     {
                         int index = toIntExact( db.createNode().getId() );
-                        createdIds.set( index, 1 );
+                        usedIds.put( index );
                     }
                     tx.success();
                 }
@@ -96,27 +96,27 @@ public class ReuseExcessBatchIdsOnRestartIT
         while ( !executor.awaitTermination( 1, SECONDS ) )
         {   // Just wait longer
         }
-        assertFalse( allSet( createdIds ) );
+        assertFalse( allSet( usedIds ) );
 
         // when/then
         db.restartDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            while ( !allSet( createdIds ) )
+            while ( !allSet( usedIds ) )
             {
                 int index = toIntExact( db.createNode().getId() );
-                assert createdIds.get( index ) != 1;
-                createdIds.set( index, 1 );
+                assert !usedIds.contains( index );
+                usedIds.put( index );
             }
             tx.success();
         }
     }
 
-    private static boolean allSet( AtomicIntegerArray values )
+    private static boolean allSet( SimpleBitSet bitSet )
     {
-        for ( int i = 0; i < values.length(); i++ )
+        for ( int i = 0; i < bitSet.size(); i++ )
         {
-            if ( values.get( i ) == 0 )
+            if ( !bitSet.contains( i ) )
             {
                 return false;
             }

@@ -33,17 +33,20 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
+import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
@@ -75,7 +78,7 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @Before
-    public void commonMocking() throws StoreIdDownloadFailedException, IOException
+    public void commonMocking() throws IOException
     {
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
         members.put( memberId, mock( CoreServerInfo.class ) );
@@ -85,7 +88,7 @@ public class ReadReplicaStartupProcessTest
         when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( topologyService.coreServers() ).thenReturn( clusterTopology );
+        when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );
         when( topologyService.findCatchupAddress( memberId ) ).thenReturn( Optional.of( fromAddress ) );
     }
@@ -114,7 +117,9 @@ public class ReadReplicaStartupProcessTest
     private UpstreamDatabaseStrategySelector chooseFirstMember()
     {
         AlwaysChooseFirstMember firstMember = new AlwaysChooseFirstMember();
-        firstMember.inject( topologyService, null, NullLogProvider.getInstance(), null);
+        Config config = mock( Config.class );
+        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
+        firstMember.inject( topologyService, config, NullLogProvider.getInstance(), null);
 
         return new UpstreamDatabaseStrategySelector( firstMember );
     }
@@ -196,9 +201,9 @@ public class ReadReplicaStartupProcessTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
-            CoreTopology coreTopology = topologyService.coreServers();
+            CoreTopology coreTopology = topologyService.allCoreServers();
             return Optional.ofNullable( coreTopology.members().keySet().iterator().next() );
         }
     }

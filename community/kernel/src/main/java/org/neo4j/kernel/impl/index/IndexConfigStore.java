@@ -44,7 +44,7 @@ public class IndexConfigStore extends LifecycleAdapter
     private static final String OLD_INDEX_DB_FILE_NAME = INDEX_DB_FILE_NAME + ".old";
     private static final String TMP_INDEX_DB_FILE_NAME = INDEX_DB_FILE_NAME + ".tmp";
 
-    private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
+    private static final byte[] MAGIC = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
     private static final int VERSION = 1;
 
     private final File file;
@@ -88,7 +88,7 @@ public class IndexConfigStore extends LifecycleAdapter
                 close( channel );
                 channel = fileSystem.open( fileToReadFrom, OpenMode.READ );
                 // Legacy format, TODO
-                readMap( channel, nodeConfig, version );
+                readMap( channel, nodeConfig, null );
                 relConfig.putAll( nodeConfig );
             }
             else if ( version < VERSION )
@@ -119,7 +119,7 @@ public class IndexConfigStore extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         // Refresh the read config
         nodeConfig.clear();
@@ -127,8 +127,8 @@ public class IndexConfigStore extends LifecycleAdapter
         read();
     }
 
-    private Map<String, Map<String, String>> readMap( StoreChannel channel,
-            Map<String, Map<String, String>> map, Integer sizeOrTillEof ) throws IOException
+    private void readMap( StoreChannel channel, Map<String,Map<String,String>> map, Integer sizeOrTillEof )
+            throws IOException
     {
         for ( int i = 0; sizeOrTillEof == null || i < sizeOrTillEof; i++ )
         {
@@ -159,13 +159,12 @@ public class IndexConfigStore extends LifecycleAdapter
             }
             map.put( indexName, properties );
         }
-        return Collections.unmodifiableMap( map );
     }
 
     private Integer tryToReadVersion( ReadableByteChannel channel ) throws IOException
     {
-        byte[] array = IoPrimitiveUtils.readBytes( channel, new byte[MAGICK.length] );
-        if ( !Arrays.equals( MAGICK, array ) )
+        byte[] array = IoPrimitiveUtils.readBytes( channel, new byte[MAGIC.length] );
+        if ( !Arrays.equals( MAGIC, array ) )
         {
             return null;
         }
@@ -275,7 +274,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
+            throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile, e );
         }
 
         // Rename the .tmp file to the current name
@@ -285,7 +284,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file );
+            throw new RuntimeException( "Couldn't rename " + tmpFile + " -> " + file, e );
         }
         fileSystem.deleteFile( oldFile );
     }
@@ -297,7 +296,7 @@ public class IndexConfigStore extends LifecycleAdapter
         {
 
             channel = fileSystem.open( file, OpenMode.READ_WRITE );
-            channel.writeAll( ByteBuffer.wrap( MAGICK ) );
+            channel.writeAll( ByteBuffer.wrap( MAGIC ) );
             IoPrimitiveUtils.writeInt( channel, buffer( 4 ), VERSION );
             writeMap( channel, nodeConfig );
             writeMap( channel, relConfig );

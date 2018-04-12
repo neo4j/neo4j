@@ -19,10 +19,11 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
-import java.time.Clock;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
+import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -33,7 +34,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -41,7 +41,7 @@ import org.neo4j.logging.LogProvider;
 /**
  * A replicator implementation suitable in a RAFT context. Will handle resending due to timeouts and leader switches.
  */
-public class RaftReplicator extends LifecycleAdapter implements Replicator, Listener<MemberId>
+public class RaftReplicator extends LifecycleAdapter implements Replicator, LeaderListener
 {
     private final MemberId me;
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
@@ -53,11 +53,10 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final TimeoutStrategy leaderTimeoutStrategy;
     private final Log log;
     private final Throttler throttler;
-    private final Clock clock;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, TimeoutStrategy leaderTimeoutStrategy,
-            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit, Clock clock )
+            AvailabilityGuard availabilityGuard, LogProvider logProvider, long replicationLimit )
     {
         this.me = me;
         this.outbound = outbound;
@@ -68,7 +67,6 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         this.availabilityGuard = availabilityGuard;
         this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
-        this.clock = clock;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
     }
@@ -137,12 +135,12 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     }
 
     @Override
-    public void receive( MemberId leader )
+    public void onLeaderSwitch( LeaderInfo leaderInfo )
     {
         progressTracker.triggerReplicationEvent();
     }
 
-    private void assertDatabaseNotShutdown() throws InterruptedException
+    private void assertDatabaseNotShutdown()
     {
         if ( availabilityGuard.isShutdown() )
         {

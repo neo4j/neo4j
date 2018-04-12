@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 public class JumpingSequencePutTest
 {
     @Test
-    public void shouldHandlePathologicalSequenceCase() throws Exception
+    public void shouldHandlePathologicalSequenceCase()
     {
         // Given
         PrimitiveLongSet set = Primitive.longSet();

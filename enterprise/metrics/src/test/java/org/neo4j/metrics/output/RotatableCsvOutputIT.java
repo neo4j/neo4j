@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.util.function.BiPredicate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -39,6 +39,8 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.metrics.MetricsSettings.csvMaxArchives;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.csvRotationThreshold;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
@@ -51,20 +53,23 @@ public class RotatableCsvOutputIT
 
     private File outputPath;
     private GraphDatabaseService database;
+    private static final BiPredicate<Long,Long> MONOTONIC = ( newValue, currentValue ) -> newValue >= currentValue;
+    private static final int MAX_ARCHIVES = 20;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( csvPath, outputPath.getAbsolutePath() )
                 .setConfig( csvRotationThreshold, "21" )
+                .setConfig( csvMaxArchives, String.valueOf( MAX_ARCHIVES ) )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         database.shutdown();
     }
@@ -72,27 +77,51 @@ public class RotatableCsvOutputIT
     @Test
     public void rotateMetricsFile() throws InterruptedException, IOException
     {
-        try ( Transaction transaction = database.beginTx() )
-        {
-            database.createNode();
-            transaction.success();
-        }
+        // Commit a transaction and wait for rotation to happen
+        doTransaction();
+        waitForRotation( outputPath, TransactionMetrics.TX_COMMITTED );
+
+        // Latest file should now have recorded the transaction
         File metricsFile = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED );
-        long committedTransactions = readLongValueAndAssert( metricsFile,
-                ( newValue, currentValue ) -> newValue >= currentValue );
+        long committedTransactions = readLongValueAndAssert( metricsFile, MONOTONIC );
         assertEquals( 1, committedTransactions );
 
-        metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 1 );
+        // Commit yet another transaction and wait for rotation to happen again
+        doTransaction();
+        waitForRotation( outputPath, TransactionMetrics.TX_COMMITTED );
+
+        // Latest file should now have recorded the new transaction
+        File metricsFile2 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED );
+        long committedTransactions2 = readLongValueAndAssert( metricsFile2, MONOTONIC );
+        assertEquals( 2, committedTransactions2 );
+    }
+
+    private void doTransaction()
+    {
         try ( Transaction transaction = database.beginTx() )
         {
             database.createNode();
             transaction.success();
         }
-        // Since we rotated twice, file 3 is actually the original file
-        File metricsFile3 = metricsCsv( outputPath, TransactionMetrics.TX_COMMITTED, 2 );
-        long oldCommittedTransactions = readLongValueAndAssert( metricsFile3,
-                ( newValue, currentValue ) -> newValue >= currentValue );
-        assertEquals( 1, oldCommittedTransactions );
+    }
+
+    private static void waitForRotation( File dbDir, String metric ) throws InterruptedException
+    {
+        // Find highest missing file
+        int i = 0;
+        while ( getMetricFile( dbDir, metric, i ).exists() )
+        {
+            i++;
+        }
+
+        if ( i >= MAX_ARCHIVES )
+        {
+            fail( "Test did not finish before " + MAX_ARCHIVES + " rotations, which means we have rotated away from the " +
+                    "file we want to assert on." );
+        }
+
+        // wait for file to exists
+        metricsCsv( dbDir, metric, i );
     }
 
     private static File metricsCsv( File dbDir, String metric ) throws InterruptedException
@@ -102,8 +131,13 @@ public class RotatableCsvOutputIT
 
     private static File metricsCsv( File dbDir, String metric, long index ) throws InterruptedException
     {
-        File csvFile = new File( dbDir, index > 0 ? metric + ".csv." + index : metric + ".csv" );
+        File csvFile = getMetricFile( dbDir, metric, index );
         assertEventually( "Metrics file should exist", csvFile::exists, is( true ), 40, SECONDS );
         return csvFile;
+    }
+
+    private static File getMetricFile( File dbDir, String metric, long index )
+    {
+        return new File( dbDir, index > 0 ? metric + ".csv." + index : metric + ".csv" );
     }
 }

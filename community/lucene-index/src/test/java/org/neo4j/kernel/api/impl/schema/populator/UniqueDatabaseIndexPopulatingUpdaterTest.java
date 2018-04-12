@@ -25,7 +25,7 @@ import org.mockito.ArgumentCaptor;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -52,7 +52,7 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 
 public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
-    private static final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 42 );
+    private static final SchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 42 );
 
     @Test
     public void closeVerifiesUniquenessOfAddedValues() throws Exception
@@ -246,17 +246,14 @@ public class UniqueDatabaseIndexPopulatingUpdaterTest
                 mock( PropertyAccessor.class ), sampler );
     }
 
-    private void verifyVerifyUniqueness( SchemaIndex index, LabelSchemaDescriptor descriptor, Object... values )
+    private void verifyVerifyUniqueness( SchemaIndex index, SchemaDescriptor descriptor, Object... values )
             throws IOException, IndexEntryConflictException
     {
         @SuppressWarnings( "unchecked" )
-        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass((Class)List.class);
+        ArgumentCaptor<List<Value[]>> captor = ArgumentCaptor.forClass( List.class );
         verify( index ).verifyUniqueness(
                 any(), eq( descriptor.getPropertyIds() ), captor.capture() );
 
-        assertThat( captor.getValue(),
-                containsInAnyOrder(
-                        valueTupleList( values ).toArray()
-                ) );
+        assertThat( captor.getValue(), containsInAnyOrder( valueTupleList( values ).toArray() ) );
     }
 }

@@ -45,7 +45,6 @@ import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.helper.VolatileFuture;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
-import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -74,7 +73,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private RaftMembershipManager membershipManager;
-    private final boolean refuseToBecomeLeader;
 
     private final VolatileFuture<MemberId> volatileLeader = new VolatileFuture<>( null );
 
@@ -84,10 +82,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private RaftLogShippingManager logShipping;
 
-    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
-            RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting, Monitors monitors )
+    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage, RaftLog entryLog,
+            LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+            RaftMembershipManager membershipManager, RaftLogShippingManager logShipping, InFlightCache inFlightCache, boolean refuseToBecomeLeader,
+            boolean supportPreVoting, Monitors monitors )
     {
         this.myself = myself;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
@@ -97,11 +95,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
-        this.refuseToBecomeLeader = refuseToBecomeLeader;
 
         this.inFlightCache = inFlightCache;
         this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache,
-                logProvider, supportPreVoting );
+                logProvider, supportPreVoting, refuseToBecomeLeader );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
     }
@@ -113,13 +110,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
      */
     public synchronized void postRecoveryActions()
     {
-        if ( !refuseToBecomeLeader )
-        {
-            leaderAvailabilityTimers.start(
-                    this::electionTimeout,
-                    clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) )
-            );
-        }
+        leaderAvailabilityTimers.start( this::electionTimeout,
+                clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
 
         inFlightCache.enable();
     }
@@ -139,10 +131,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     public void triggerElection( Clock clock ) throws IOException
     {
-        if ( !refuseToBecomeLeader )
-        {
             handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Election( myself ) ) );
-        }
     }
 
     public void panic()
@@ -196,17 +185,17 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
-    private Collection<Listener<MemberId>> leaderListeners = new ArrayList<>();
+    private Collection<LeaderListener> leaderListeners = new ArrayList<>();
 
     @Override
-    public synchronized void registerListener( Listener<MemberId> listener )
+    public synchronized void registerListener( LeaderListener listener )
     {
         leaderListeners.add( listener );
-        listener.receive( state.leader() );
+        listener.onLeaderSwitch( state.leaderInfo() );
     }
 
     @Override
-    public synchronized void unregisterListener( Listener listener )
+    public synchronized void unregisterListener( LeaderListener listener )
     {
         leaderListeners.remove( listener );
     }
@@ -223,13 +212,14 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        for ( Listener<MemberId> listener : leaderListeners )
+        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
+        for ( LeaderListener listener : leaderListeners )
         {
-            listener.receive( outcome.getLeader() );
+            listener.onLeaderSwitch( leaderInfo );
         }
     }
 
-    private void handleLogShipping( Outcome outcome ) throws IOException
+    private void handleLogShipping( Outcome outcome )
     {
         LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
         if ( outcome.isElectedLeader() )
@@ -257,6 +247,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         {
             return true;
         }
+
+        //TODO: Add logic for handling leader step-down with no replacement
 
         return false;
     }

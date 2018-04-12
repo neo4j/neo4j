@@ -30,12 +30,13 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -77,6 +78,7 @@ import org.neo4j.time.SystemNanoClock;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 public class NeoStoreDataSourceRule extends ExternalResource
 {
@@ -136,9 +138,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new CanWrite(), new StoreCopyCheckPointMutex(),
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                        idConfigurationProvider ), jobScheduler ),
-                OperationalMode.single );
+                        new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ), jobScheduler ),
+                OperationalMode.single, new TransactionVersionContextSupplier(), ON_HEAP );
         return dataSource;
     }
 
@@ -165,7 +166,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     }
 
     @Override
-    protected void after( boolean successful ) throws Throwable
+    protected void after( boolean successful )
     {
         shutdownAnyRunning();
     }
@@ -177,9 +178,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
             @Override
             public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
             {
-                if ( SchemaIndexProvider.class.isAssignableFrom( type ) )
+                if ( IndexProvider.class.isAssignableFrom( type ) )
                 {
-                    return type.cast( SchemaIndexProvider.NO_INDEX_PROVIDER );
+                    return type.cast( IndexProvider.EMPTY );
                 }
                 throw new IllegalArgumentException( type.toString() );
             }

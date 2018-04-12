@@ -28,29 +28,27 @@ case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: Se
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.createRelExtractor(relVar.name)
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
   }
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](cursorName: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     if(types.isEmpty)
-      generator.nodeGetRelationshipsWithDirection(iterVar, fromVar.name, fromVar.codeGenType, dir)
+      generator.nodeGetRelationshipsWithDirection(cursorName, fromVar.name, fromVar.codeGenType, dir)
     else
-      generator.nodeGetRelationshipsWithDirectionAndTypes(iterVar, fromVar.name, fromVar.codeGenType, dir, types.keys.toIndexedSeq)
+      generator.nodeGetRelationshipsWithDirectionAndTypes(cursorName, fromVar.name, fromVar.codeGenType, dir, types.keys.toIndexedSeq)
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def getNext[E](nextVar: Variable, cursorName: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
-    generator.nextRelationshipAndNode(toVar.name, iterVar, dir, fromVar.name, relVar.name)
+    generator.nextRelationshipAndNode(toVar.name, cursorName, dir, fromVar.name, relVar.name)
   }
 
-  def foo[E](generator: MethodStructure[E]) = fromVar.codeGenType match {
-    case c if c.isPrimitive => generator.loadVariable(fromVar.name)
-  }
+  override def checkNext[E](generator: MethodStructure[E], cursorName: String): E =  generator.advanceRelationshipSelectionCursor(cursorName)
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
+  override def close[E](cursorName: String,
+                        generator: MethodStructure[E]): Unit = generator.closeRelationshipSelectionCursor(cursorName)
 }

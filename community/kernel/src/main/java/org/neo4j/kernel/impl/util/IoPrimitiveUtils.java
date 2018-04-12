@@ -142,7 +142,7 @@ public abstract class IoPrimitiveUtils
     public static Map<String, String> read2bMap( ReadableChannel channel ) throws IOException
     {
         short size = channel.getShort();
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>( size );
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel );

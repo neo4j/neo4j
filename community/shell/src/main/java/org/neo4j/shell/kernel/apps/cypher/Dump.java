@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
-import java.rmi.RemoteException;
-
 import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
@@ -34,9 +32,8 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 @Service.Implementation( App.class )
 public class Dump extends Start
@@ -89,17 +86,17 @@ public class Dump extends Start
         }
         catch ( Exception e )
         {
-            throw launderedException( ShellException.class, "Error parsing input " + line, e );
+            throw new ShellException( "Error parsing input " + line, e );
         }
     }
 
-    private void export( SubGraph subGraph, Output out ) throws RemoteException, ShellException
+    private void export( SubGraph subGraph, Output out )
     {
         new Exporter( subGraph ).export( out );
     }
 
     @Override
-    protected void handleResult( Output out, Result result, long startTime ) throws RemoteException, ShellException
+    protected void handleResult( Output out, Result result, long startTime )
     {
         final SubGraph subGraph = CypherResultSubGraph.from( result, getServer().getDb(), false );
         export( subGraph, out );

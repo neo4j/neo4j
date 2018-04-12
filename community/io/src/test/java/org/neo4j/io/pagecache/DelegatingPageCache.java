@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,6 +46,12 @@ public class DelegatingPageCache implements PageCache
     public Optional<PagedFile> getExistingMapping( File file ) throws IOException
     {
         return delegate.getExistingMapping( file );
+    }
+
+    @Override
+    public List<PagedFile> listExistingMappings() throws IOException
+    {
+        return delegate.listExistingMappings();
     }
 
     @Override
@@ -72,6 +79,12 @@ public class DelegatingPageCache implements PageCache
     }
 
     @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
+
+    @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );
@@ -81,5 +94,11 @@ public class DelegatingPageCache implements PageCache
     public void flushAndForce() throws IOException
     {
         delegate.flushAndForce();
+    }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        return delegate.fileSystemSupportsFileOperations();
     }
 }

@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class UpdateRecordsStepTest
 {
     @Test
-    public void ioThroughputStatDoesNotOverflow() throws Throwable
+    public void ioThroughputStatDoesNotOverflow()
     {
         // store with huge record size to force overflow and not create huge batch of records
         RecordStore<NodeRecord> store = mock( RecordStore.class );
@@ -69,7 +69,7 @@ public class UpdateRecordsStepTest
     }
 
     @Test
-    public void recordWithReservedIdIsSkipped() throws Throwable
+    public void recordWithReservedIdIsSkipped()
     {
         RecordStore<NodeRecord> store = mock( NodeStore.class );
         StageControl stageControl = mock( StageControl.class );

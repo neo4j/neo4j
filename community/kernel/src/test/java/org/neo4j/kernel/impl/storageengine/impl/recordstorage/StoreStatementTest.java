@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 public class StoreStatementTest
 {
     @Test
-    public void shouldCloseOpenedLabelScanReader() throws Exception
+    public void shouldCloseOpenedLabelScanReader()
     {
         // given
         Supplier<LabelScanReader> scanStore = mock( Supplier.class );

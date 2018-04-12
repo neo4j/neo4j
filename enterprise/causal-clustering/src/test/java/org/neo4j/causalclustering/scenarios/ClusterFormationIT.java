@@ -35,7 +35,7 @@ import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -59,7 +59,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldSupportBuiltInProcedures() throws Exception
+    public void shouldSupportBuiltInProcedures()
     {
         cluster.addReadReplicaWithId( 0 ).start();
 
@@ -78,7 +78,7 @@ public class ClusterFormationIT
             // (2) BuiltInProcedures from enterprise
             try ( InternalTransaction tx = gdb.beginTransaction(
                     KernelTransaction.Type.explicit,
-                    EnterpriseSecurityContext.AUTH_DISABLED
+                    EnterpriseLoginContext.AUTH_DISABLED
             ) )
             {
                 Result result = gdb.execute( tx, "CALL dbms.listQueries()", EMPTY_MAP );
@@ -91,7 +91,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreMembers() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembers()
     {
         // when
         cluster.getCoreMemberById( 0 ).shutdown();
@@ -101,7 +101,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
 
         // then
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
@@ -114,7 +114,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreMembersUnderModestLoad() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembersUnderModestLoad()
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -136,7 +136,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 0 );
+        cluster.removeCoreMemberWithServerId( 0 );
 
         // then
         assertEquals( 2, cluster.numberOfCoreMembersReportedByTopology() );
@@ -164,7 +164,7 @@ public class ClusterFormationIT
         assertEquals( 3, cluster.numberOfCoreMembersReportedByTopology() );
 
         // when
-        cluster.removeCoreMemberWithMemberId( 1 );
+        cluster.removeCoreMemberWithServerId( 1 );
 
         cluster.addCoreMemberWithId( 3 ).start();
         cluster.shutdown();

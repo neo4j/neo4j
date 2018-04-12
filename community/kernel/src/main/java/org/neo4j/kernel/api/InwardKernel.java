@@ -20,19 +20,19 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read
  * and write operations are supported as well as creating transactions.
  *
  * Changes to the graph (i.e. write operations) are performed via a
- * {@link #newTransaction(KernelTransaction.Type, SecurityContext) transaction context} where changes done
+ * {@link #newTransaction(KernelTransaction.Type, LoginContext) transaction context} where changes done
  * inside the transaction are visible in read operations for {@link Statement statements}
  * executed within that transaction context.
  */
@@ -43,19 +43,19 @@ public interface InwardKernel extends Kernel
      * underlying graph.
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
-     * @param securityContext transaction security context
+     * @param loginContext transaction login context
      */
-    KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext ) throws TransactionFailureException;
+    KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext ) throws TransactionFailureException;
 
     /**
      * Creates and returns a new {@link KernelTransaction} capable of modifying the
      * underlying graph with custom timeout in milliseconds.
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
-     * @param securityContext transaction security context
+     * @param loginContext transaction login context
      * @param timeout transaction timeout in millisiseconds
      */
-    KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+    KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
             throws TransactionFailureException;
 
     /**

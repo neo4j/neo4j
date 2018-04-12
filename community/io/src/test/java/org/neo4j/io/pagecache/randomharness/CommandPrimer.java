@@ -139,7 +139,7 @@ class CommandPrimer
         return new Action( Command.FlushFile, "[no files mapped to flush]" )
         {
             @Override
-            public void perform() throws Exception
+            public void perform()
             {
             }
         };

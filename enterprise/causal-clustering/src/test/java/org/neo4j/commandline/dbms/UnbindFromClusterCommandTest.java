@@ -72,7 +72,7 @@ public class UnbindFromClusterCommandTest
     private FileChannel channel;
 
     @Before
-    public void setup() throws ClusterStateException
+    public void setup()
     {
         homeDir = testDir.directory( "home" ).toPath();
         confDir = testDir.directory( "conf" ).toPath();

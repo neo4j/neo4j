@@ -23,12 +23,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -45,9 +43,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -204,12 +202,7 @@ public class Jetty9WebServer implements WebServer
         mountPoint = ensureRelativeUri( mountPoint );
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        JaxRsServletHolderFactory factory = jaxRSPackages.get( mountPoint );
-        if ( factory == null )
-        {
-            factory = new JaxRsServletHolderFactory.Packages();
-            jaxRSPackages.put( mountPoint, factory );
-        }
+        JaxRsServletHolderFactory factory = jaxRSPackages.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory.Packages() );
         factory.add( packageNames, injectables );
 
         log.debug( "Adding JAXRS packages %s at [%s]", packageNames, mountPoint );
@@ -222,12 +215,7 @@ public class Jetty9WebServer implements WebServer
         mountPoint = ensureRelativeUri( mountPoint );
         mountPoint = trimTrailingSlashToKeepJettyHappy( mountPoint );
 
-        JaxRsServletHolderFactory factory = jaxRSClasses.get( mountPoint );
-        if ( factory == null )
-        {
-            factory = new JaxRsServletHolderFactory.Classes();
-            jaxRSClasses.put( mountPoint, factory );
-        }
+        JaxRsServletHolderFactory factory = jaxRSClasses.computeIfAbsent( mountPoint, k -> new JaxRsServletHolderFactory.Classes() );
         factory.add( classNames, injectables );
 
         log.debug( "Adding JAXRS classes %s at [%s]", classNames, mountPoint );
@@ -280,15 +268,7 @@ public class Jetty9WebServer implements WebServer
     @Override
     public void removeFilter( Filter filter, String pathSpec )
     {
-        Iterator<FilterDefinition> iter = filters.iterator();
-        while ( iter.hasNext() )
-        {
-            FilterDefinition current = iter.next();
-            if ( current.matches( filter, pathSpec ) )
-            {
-                iter.remove();
-            }
-        }
+        filters.removeIf( current -> current.matches( filter, pathSpec ) );
     }
 
     @Override
@@ -366,11 +346,9 @@ public class Jetty9WebServer implements WebServer
                         .orElseThrow( () -> new IllegalStateException( "Secure connector is not configured" ) );
     }
 
-    private void loadAllMounts() throws IOException
+    private void loadAllMounts()
     {
-        SessionManager sm = new HashSessionManager();
-
-        final SortedSet<String> mountpoints = new TreeSet<>( ( o1, o2 ) -> o2.compareTo( o1 ) );
+        final SortedSet<String> mountpoints = new TreeSet<>( Comparator.reverseOrder() );
 
         mountpoints.addAll( staticContent.keySet() );
         mountpoints.addAll( jaxRSPackages.keySet() );
@@ -389,15 +367,15 @@ public class Jetty9WebServer implements WebServer
             }
             else if ( isStatic )
             {
-                loadStaticContent( sm, contentKey );
+                loadStaticContent( contentKey );
             }
             else if ( isJaxrsPackage )
             {
-                loadJAXRSPackage( sm, contentKey );
+                loadJAXRSPackage( contentKey );
             }
             else if ( isJaxrsClass )
             {
-                loadJAXRSClasses( sm, contentKey );
+                loadJAXRSClasses( contentKey );
             }
             else
             {
@@ -422,7 +400,7 @@ public class Jetty9WebServer implements WebServer
     private void loadRequestLogging()
     {
         // This makes the request log handler decorate whatever other handlers are already set up
-        final RequestLogHandler requestLogHandler = new RequestLogHandler();
+        final RequestLogHandler requestLogHandler = new HttpChannelOptionalRequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
         requestLogHandler.setServer( jetty );
         requestLogHandler.setHandler( jetty.getHandler() );
@@ -464,12 +442,12 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadStaticContent( SessionManager sm, String mountPoint )
+    private void loadStaticContent( String mountPoint )
     {
         String contentLocation = staticContent.get( mountPoint );
         try
         {
-            SessionHandler sessionHandler = new SessionHandler( sm );
+            SessionHandler sessionHandler = new SessionHandler();
             sessionHandler.setServer( getJetty() );
             final WebAppContext staticContext = new WebAppContext();
             staticContext.setServer( getJetty() );
@@ -503,20 +481,20 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private void loadJAXRSPackage( SessionManager sm, String mountPoint )
+    private void loadJAXRSPackage( String mountPoint )
     {
-        loadJAXRSResource( sm, mountPoint, jaxRSPackages.get( mountPoint ) );
+        loadJAXRSResource( mountPoint, jaxRSPackages.get( mountPoint ) );
     }
 
-    private void loadJAXRSClasses( SessionManager sm, String mountPoint )
+    private void loadJAXRSClasses( String mountPoint )
     {
-        loadJAXRSResource( sm, mountPoint, jaxRSClasses.get( mountPoint ) );
+        loadJAXRSResource( mountPoint, jaxRSClasses.get( mountPoint ) );
     }
 
-    private void loadJAXRSResource( SessionManager sm, String mountPoint,
+    private void loadJAXRSResource( String mountPoint,
                                     JaxRsServletHolderFactory jaxRsServletHolderFactory )
     {
-        SessionHandler sessionHandler = new SessionHandler( sm );
+        SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setServer( getJetty() );
         log.debug( "Mounting servlet at [%s]", mountPoint );
         ServletContextHandler jerseyContext = new ServletContextHandler();

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
@@ -37,13 +37,11 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
 import org.neo4j.test.rule.LoggerRule;
-import org.neo4j.test.rule.RetryACoupleOfTimesHandler;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
@@ -320,7 +318,7 @@ public class ClusterPartitionIT
     private ClusterManager.RepairKit killAbruptly( ClusterManager.ManagedCluster cluster,
                                                    HighlyAvailableGraphDatabase failed1,
                                                    HighlyAvailableGraphDatabase failed2,
-                                                   HighlyAvailableGraphDatabase failed3 ) throws Throwable
+                                                   HighlyAvailableGraphDatabase failed3 )
     {
         ClusterManager.RepairKit firstFailure = cluster.fail( failed1 );
         cluster.fail( failed2 );
@@ -336,7 +334,7 @@ public class ClusterPartitionIT
     private ClusterManager.RepairKit killIncrementally( ClusterManager.ManagedCluster cluster,
                                                    HighlyAvailableGraphDatabase failed1,
                                                    HighlyAvailableGraphDatabase failed2,
-                                                   HighlyAvailableGraphDatabase failed3 ) throws Throwable
+                                                   HighlyAvailableGraphDatabase failed3 )
     {
         ClusterManager.RepairKit firstFailure = cluster.fail( failed1 );
         cluster.await( instanceEvicted( failed1 ) );

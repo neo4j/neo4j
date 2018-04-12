@@ -157,55 +157,66 @@ class Candidate implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PreVote.Request request ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Request req ) throws IOException
+        {
+            if ( ctx.supportPreVoting() )
+            {
+                if ( req.term() > ctx.term() )
+                {
+                    outcome.getVotesForMe().clear();
+                    outcome.setNextRole( FOLLOWER );
+                    log.info( "Moving to FOLLOWER state after receiving pre vote request from %s at term %d (I am at %d)",
+                            req.from(), req.term(), ctx.term() );
+                }
+                Voting.declinePreVoteRequest( ctx, outcome, req );
+            }
+            return outcome;
+        }
+
+        @Override
+        public Outcome handle( RaftMessages.PreVote.Response response )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.PreVote.Response response ) throws IOException
+        public Outcome handle( RaftMessages.AppendEntries.Response response )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.AppendEntries.Response response ) throws IOException
+        public Outcome handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws IOException
+        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws IOException
+        public Outcome handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws IOException
+        public Outcome handle( RaftMessages.NewEntry.Request request )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.NewEntry.Request request ) throws IOException
+        public Outcome handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws IOException
-        {
-            return outcome;
-        }
-
-        @Override
-        public Outcome handle( RaftMessages.PruneRequest pruneRequest ) throws IOException
+        public Outcome handle( RaftMessages.PruneRequest pruneRequest )
         {
             Pruning.handlePruneRequest( outcome, pruneRequest );
             return outcome;

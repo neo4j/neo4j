@@ -41,7 +41,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -64,7 +64,7 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         {
             DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             life.add( new FileSystemLifecycleAdapter( fileSystem ) );
-            life.add( new Neo4jJobScheduler() );
+            life.add( new CentralJobScheduler() );
             new ClusterClientModule(
                     life,
                     new Dependencies(),
@@ -145,25 +145,20 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
 
     private void addShutdownHook()
     {
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+            // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
+            // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
+            // the deadlock will prevent the shutdown from finishing.
+            timer.schedule( new TimerTask()
             {
-                // ClusterJoin will block on a Future.get(), which will prevent it to shutdown.
-                // Adding a timer here in case a shutdown is requested before cluster join has succeeded. Otherwise
-                // the deadlock will prevent the shutdown from finishing.
-                timer.schedule( new TimerTask()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        System.err.println( "Failed to stop in a reasonable time, terminating..." );
-                        Runtime.getRuntime().halt( 1 );
-                    }
-                }, 4_000L );
-                ArbiterBootstrapper.this.stop();
-            }
-        } );
+                    System.err.println( "Failed to stop in a reasonable time, terminating..." );
+                    Runtime.getRuntime().halt( 1 );
+                }
+            }, 4_000L );
+            ArbiterBootstrapper.this.stop();
+        } ) );
     }
 }

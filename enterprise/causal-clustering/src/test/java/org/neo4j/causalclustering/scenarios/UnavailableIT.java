@@ -49,7 +49,7 @@ public class UnavailableIT
     }
 
     @Test
-    public void shouldReturnUnavailableStatusWhenDoingLongOperation() throws Exception
+    public void shouldReturnUnavailableStatusWhenDoingLongOperation()
     {
         // given
         ClusterMember member = cluster.getCoreMemberById( 1 );
@@ -71,7 +71,7 @@ public class UnavailableIT
     }
 
     @Test
-    public void shouldReturnUnavailableStatusWhenShutdown() throws Exception
+    public void shouldReturnUnavailableStatusWhenShutdown()
     {
         // given
         ClusterMember member = cluster.getCoreMemberById( 1 );

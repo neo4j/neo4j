@@ -26,17 +26,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.proc.FieldSignature;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.NeoValueConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.procedure.Name;
 
-import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 
 /**
- * Given a java method, figures out a valid {@link org.neo4j.kernel.api.proc.ProcedureSignature} field signature.
+ * Given a java method, figures out a valid {@link ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
  */
 public class MethodSignatureCompiler
@@ -54,8 +56,7 @@ public class MethodSignatureCompiler
         List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
         for ( Type type : types )
         {
-            NeoValueConverter valueConverter = typeMappers.converterFor( type );
-            neoTypes.add( valueConverter.type() );
+            neoTypes.add( typeMappers.toNeo4jType( type ) );
         }
 
         return neoTypes;
@@ -92,8 +93,8 @@ public class MethodSignatureCompiler
 
             try
             {
-                NeoValueConverter valueConverter = typeMappers.converterFor( type );
-                Optional<Neo4jValue> defaultValue = valueConverter.defaultValue( parameter );
+                DefaultValueConverter valueConverter = typeMappers.converterFor( type );
+                Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
                 if ( seenDefault && !defaultValue.isPresent() )
                 {

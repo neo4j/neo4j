@@ -34,8 +34,10 @@ class ProcedureCallPipeTest
     with PipeTestSupport
     with ImplicitDummyPos {
 
+  val ID = 42
   val procedureName = QualifiedName(List.empty, "foo")
-  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))), None, ProcedureReadOnlyAccess(Array.empty))
+  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
+                                     None, ProcedureReadOnlyAccess(Array.empty), id = Some(ID))
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
@@ -52,7 +54,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()
 
-    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
+    val qtx = new FakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
@@ -75,7 +77,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()
 
-    val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = new FakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
       ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
@@ -97,7 +99,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq.empty
     )()
 
-    val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = new FakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
@@ -113,18 +115,18 @@ class ProcedureCallPipeTest
   }.toIterator
 
 
-  class FakeQueryContext(procedureName: QualifiedName, result: Seq[Any] => Iterator[Array[AnyRef]],
+  class FakeQueryContext(id: Int, result: Seq[Any] => Iterator[Array[AnyRef]],
                          expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
     override def isGraphKernelResultValue(v: Any): Boolean = false
 
-    override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+    override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
       expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
-      doIt(name, args, allowed)
+      doIt(id, args, allowed)
     }
 
-    override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
-      doIt(name, args, allowed)
+      doIt(id, args, allowed)
     }
 
     override def asObject(value: AnyValue): AnyRef = value match {
@@ -133,8 +135,8 @@ class ProcedureCallPipeTest
       case _ => throw new IllegalStateException()
     }
 
-    private def doIt(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
-      name should equal(procedureName)
+    private def doIt(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+      id should equal(ID)
       args.length should be(1)
       result(args)
     }

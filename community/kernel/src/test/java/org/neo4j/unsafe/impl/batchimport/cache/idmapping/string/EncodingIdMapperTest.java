@@ -28,14 +28,12 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntFunction;
 import java.util.function.LongFunction;
 
 import org.neo4j.function.Factory;
@@ -51,9 +49,9 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 
+import static java.lang.Math.toIntExact;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -63,9 +61,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Math.toIntExact;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.progress.ProgressListener.NONE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
@@ -98,7 +93,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleGreatAmountsOfStuff() throws Exception
+    public void shouldHandleGreatAmountsOfStuff()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -125,7 +120,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReturnExpectedValueForNotFound() throws Exception
+    public void shouldReturnExpectedValueForNotFound()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -139,7 +134,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportyProgressForSortAndDetect() throws Exception
+    public void shouldReportyProgressForSortAndDetect()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -156,7 +151,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeShortStrings() throws Exception
+    public void shouldEncodeShortStrings()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -172,7 +167,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeSmallSetOfRandomData() throws Throwable
+    public void shouldEncodeSmallSetOfRandomData()
     {
         // GIVEN
         int size = random.nextInt( 10_000 ) + 2;
@@ -196,7 +191,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportCollisionsForSameInputId() throws Exception
+    public void shouldReportCollisionsForSameInputId()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -221,7 +216,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
+    public void shouldCopeWithCollisionsBasedOnDifferentInputIds()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -250,7 +245,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldCopeWithMixedActualAndAccidentalCollisions() throws Exception
+    public void shouldCopeWithMixedActualAndAccidentalCollisions()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -300,7 +295,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups() throws Exception
+    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -327,7 +322,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
+    public void shouldOnlyFindInputIdsInSpecificGroup()
     {
         // GIVEN
         Group firstGroup = groups.getOrCreate( "first" );
@@ -356,7 +351,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleManyGroups() throws Exception
+    public void shouldHandleManyGroups()
     {
         // GIVEN
         int size = 256; // which results in GLOBAL (0) + 1-256 = 257 groups, i.e. requiring two bytes
@@ -382,7 +377,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups() throws Exception
+    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups()
     {
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
@@ -439,7 +434,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleHolesInIdSequence() throws Exception
+    public void shouldHandleHolesInIdSequence()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -469,7 +464,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleLargeAmountsOfDuplicateNodeIds() throws Exception
+    public void shouldHandleLargeAmountsOfDuplicateNodeIds()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -501,7 +496,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldDetectLargeAmountsOfCollisions() throws Exception
+    public void shouldDetectLargeAmountsOfCollisions()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -578,14 +573,7 @@ public class EncodingIdMapperTest
 
     private LongFunction<Object> values( Object... values )
     {
-        return new LongFunction<Object>()
-        {
-            @Override
-            public Object apply( long value )
-            {
-                return values[toIntExact( value )];
-            }
-        };
+        return value -> values[toIntExact( value )];
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )

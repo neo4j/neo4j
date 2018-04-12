@@ -112,7 +112,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
             // be faster if we decremented the processor count, with a slight conservative margin as well
             // (0.8 instead of 1.0 so that we don't decrement and immediately become the bottleneck ourselves).
             float factorWithDecrementedProcessorCount =
-                    fast.other().floatValue() * numberOfProcessors / (numberOfProcessors - 1);
+                    fast.other() * numberOfProcessors / (numberOfProcessors - 1);
             if ( factorWithDecrementedProcessorCount < 0.8f )
             {
                 Step<?> fastestStep = fast.first();

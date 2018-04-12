@@ -19,36 +19,37 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import java.util.function.Supplier;
+
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
-
-import static java.lang.String.format;
 
 class PersistentSnapshotDownloader implements Runnable
 {
     static final String OPERATION_NAME = "download of snapshot";
 
     private final CommandApplicationProcess applicationProcess;
-    private final LeaderLocator leaderLocator;
+    private final CatchupAddressProvider addressProvider;
     private final CoreStateDownloader downloader;
     private final Log log;
     private final TimeoutStrategy.Timeout timeout;
+    private final Supplier<DatabaseHealth> dbHealth;
     private volatile State state;
     private volatile boolean keepRunning;
 
-    PersistentSnapshotDownloader( LeaderLocator leaderLocator,
-            CommandApplicationProcess applicationProcess, CoreStateDownloader downloader, Log log,
-            TimeoutStrategy.Timeout pauseStrategy )
+    PersistentSnapshotDownloader( CatchupAddressProvider addressProvider, CommandApplicationProcess applicationProcess,
+            CoreStateDownloader downloader, Log log, TimeoutStrategy.Timeout pauseStrategy, Supplier<DatabaseHealth> dbHealth )
     {
         this.applicationProcess = applicationProcess;
-        this.leaderLocator = leaderLocator;
+        this.addressProvider = addressProvider;
         this.downloader = downloader;
         this.log = log;
         this.timeout = pauseStrategy;
+        this.dbHealth = dbHealth;
         this.state = State.INITIATED;
         this.keepRunning = true;
     }
@@ -71,28 +72,25 @@ class PersistentSnapshotDownloader implements Runnable
         try
         {
             applicationProcess.pauseApplier( OPERATION_NAME );
-            while ( keepRunning )
+            while ( keepRunning && !downloader.downloadSnapshot( addressProvider ) )
             {
-                try
-                {
-                    downloader.downloadSnapshot( leaderLocator.getLeader() );
-                    break;
-                }
-                catch ( StoreCopyFailedException e )
-                {
-                    log.error( format( "Failed to download snapshot. Retrying in %s ms.", timeout.getMillis() ), e );
-                }
-                catch ( NoLeaderFoundException e )
-                {
-                    log.warn( "No leader found. Retrying in {} ms.", timeout.getMillis() );
-                }
                 Thread.sleep( timeout.getMillis() );
                 timeout.increment();
             }
         }
         catch ( InterruptedException e )
         {
-            log.error( "Persistent snapshot downloader was interrupted" );
+            Thread.currentThread().interrupt();
+            log.warn( "Persistent snapshot downloader was interrupted" );
+        }
+        catch ( DatabaseShutdownException e )
+        {
+            log.warn( "Store copy aborted due to shut down", e );
+        }
+        catch ( Throwable e )
+        {
+            log.error( "Unrecoverable error during store copy", e );
+            dbHealth.get().panic( e );
         }
         finally
         {

@@ -36,7 +36,7 @@ public class FreeIdFilteredIdGeneratorTest
     private IdGenerator idGenerator = mock( IdGenerator.class );
 
     @Test
-    public void freeIdIfConditionSatisfied() throws Exception
+    public void freeIdIfConditionSatisfied()
     {
         FreeIdFilteredIdGenerator generator = createFilteredIdGenerator( idGenerator, () -> true );
         generator.freeId( 1 );

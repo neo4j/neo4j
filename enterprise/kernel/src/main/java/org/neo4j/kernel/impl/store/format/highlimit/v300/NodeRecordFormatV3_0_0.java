@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -52,7 +50,7 @@ public class NodeRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_0_0<Node
         this( RECORD_SIZE );
     }
 
-    NodeRecordFormatV3_0_0( int recordSize )
+    private NodeRecordFormatV3_0_0( int recordSize )
     {
         super( fixedRecordSize( recordSize ), 0 );
     }
@@ -99,7 +97,6 @@ public class NodeRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_0_0<Node
 
     @Override
     protected void doWriteInternal( NodeRecord record, PageCursor cursor )
-            throws IOException
     {
         encode( cursor, record.getNextRel(), NULL );
         encode( cursor, record.getNextProp(), NULL );

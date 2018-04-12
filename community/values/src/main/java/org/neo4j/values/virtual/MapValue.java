@@ -21,12 +21,14 @@ package org.neo4j.values.virtual;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
 
@@ -72,8 +74,13 @@ public final class MapValue extends VirtualValue
 
     public ListValue keys()
     {
-        String[] strings = map.keySet().toArray( new String[map.size()] );
+        String[] strings = keySet().toArray( new String[map.size()] );
         return VirtualValues.fromArray( Values.stringArray( strings ) );
+    }
+
+    public Set<String> keySet()
+    {
+        return map.keySet();
     }
 
     @Override
@@ -94,7 +101,7 @@ public final class MapValue extends VirtualValue
         int compare = Integer.compare( size(), otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = map.keySet().toArray( new String[size] );
+            String[] thisKeys = keySet().toArray( new String[size] );
             Arrays.sort( thisKeys, String::compareTo );
             String[] thatKeys = otherMap.keySet().toArray( new String[size] );
             Arrays.sort( thatKeys, String::compareTo );
@@ -129,15 +136,15 @@ public final class MapValue extends VirtualValue
         }
         else if ( !(other instanceof MapValue) )
         {
-            return false;
+            return Boolean.FALSE;
         }
         Map<String,AnyValue> otherMap = ((MapValue) other).map;
         int size = map.size();
         if ( size != otherMap.size() )
         {
-            return false;
+            return Boolean.FALSE;
         }
-        String[] thisKeys = map.keySet().toArray( new String[size] );
+        String[] thisKeys = keySet().toArray( new String[size] );
         Arrays.sort( thisKeys, String::compareTo );
         String[] thatKeys = otherMap.keySet().toArray( new String[size] );
         Arrays.sort( thatKeys, String::compareTo );
@@ -145,10 +152,10 @@ public final class MapValue extends VirtualValue
         {
             if ( thisKeys[i].compareTo( thatKeys[i] ) != 0 )
             {
-                return false;
+                return Boolean.FALSE;
             }
         }
-        Boolean equalityResult = true;
+        Boolean equalityResult = Boolean.TRUE;
 
         for ( int i = 0; i < size; i++ )
         {
@@ -160,10 +167,16 @@ public final class MapValue extends VirtualValue
             }
             else if ( !s )
             {
-                return false;
+                return Boolean.FALSE;
             }
         }
         return equalityResult;
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapMap( this );
     }
 
     public void foreach( BiConsumer<String,AnyValue> f )
@@ -184,6 +197,11 @@ public final class MapValue extends VirtualValue
     public AnyValue get( String key )
     {
       return map.getOrDefault( key, NO_VALUE );
+    }
+
+    public Map<String,AnyValue> getMapCopy()
+    {
+        return new HashMap<>( map );
     }
 
     @Override

@@ -34,7 +34,7 @@ public class ClusterAssertion
 
     public static ClusterAssertion basedOn( int[] serverIds )
     {
-        Map<Integer, InstanceAssertion> out = new HashMap<Integer, InstanceAssertion>();
+        Map<Integer, InstanceAssertion> out = new HashMap<>();
 
         for ( int i = 0; i < serverIds.length; i++ )
         {
@@ -42,7 +42,7 @@ public class ClusterAssertion
         }
 
         ClusterAssertion result = new ClusterAssertion();
-        result.in = new HashMap<Integer, InstanceAssertion>(  );
+        result.in = new HashMap<>();
         result.out = out;
         return result;
     }
@@ -55,8 +55,8 @@ public class ClusterAssertion
 
     public ClusterAssertion joins( int... joiners )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>( in );
-        final Map<Integer, InstanceAssertion> newOut = new HashMap<Integer, InstanceAssertion>( out );
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>( in );
+        final Map<Integer, InstanceAssertion> newOut = new HashMap<>( out );
         for ( int joiner : joiners )
         {
             newIn.put( joiner, newOut.remove( joiner ) );
@@ -70,7 +70,7 @@ public class ClusterAssertion
 
     public ClusterAssertion failed( final int failed )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>( in );
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>( in );
         final InstanceAssertion current = in.get( failed );
 
         InstanceAssertion failedInstance = new InstanceAssertion()
@@ -91,7 +91,7 @@ public class ClusterAssertion
 
     public ClusterAssertion elected( final int elected, final String atRole )
     {
-        final Map<Integer, InstanceAssertion> newIn = new HashMap<Integer, InstanceAssertion>();
+        final Map<Integer, InstanceAssertion> newIn = new HashMap<>();
         for ( final Map.Entry<Integer, InstanceAssertion> instanceAssertionEntry : in.entrySet() )
         {
             final InstanceAssertion assertion = instanceAssertionEntry.getValue();
@@ -139,14 +139,14 @@ public class ClusterAssertion
         int serverId;
         URI uri;
         boolean isFailed;
-        Map<Integer, URI> reachableInstances = new HashMap<Integer, URI>();
-        Map<Integer, URI> failedInstances = new HashMap<Integer, URI>();
-        Map<String, Integer> roles = new HashMap<String, Integer>();
+        Map<Integer, URI> reachableInstances = new HashMap<>();
+        Map<Integer, URI> failedInstances = new HashMap<>();
+        Map<String, Integer> roles = new HashMap<>();
 
-        public InstanceAssertion()
+        InstanceAssertion()
         {}
 
-        public InstanceAssertion( int serverId, URI uri )
+        InstanceAssertion( int serverId, URI uri )
         {
             this.serverId = serverId;
             this.uri = uri;
@@ -157,9 +157,9 @@ public class ClusterAssertion
             this.serverId = instance.serverId;
             this.uri = instance.uri;
             this.isFailed = instance.isFailed;
-            this.reachableInstances = new HashMap<Integer, URI>( instance.reachableInstances );
-            this.failedInstances = new HashMap<Integer, URI>( instance.failedInstances );
-            this.roles = new HashMap<String, Integer>( instance.roles );
+            this.reachableInstances = new HashMap<>( instance.reachableInstances );
+            this.failedInstances = new HashMap<>( instance.failedInstances );
+            this.roles = new HashMap<>( instance.roles );
         }
     }
 }

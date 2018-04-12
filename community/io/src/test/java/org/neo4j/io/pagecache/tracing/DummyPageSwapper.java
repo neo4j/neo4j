@@ -59,39 +59,39 @@ public class DummyPageSwapper implements PageSwapper
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 
     @Override
-    public void force() throws IOException
+    public void force()
     {
     }
 
     @Override
-    public long getLastPageId() throws IOException
-    {
-        return 0;
-    }
-
-    @Override
-    public void truncate() throws IOException
-    {
-    }
-
-    @Override
-    public void closeAndDelete() throws IOException
-    {
-    }
-
-    @Override
-    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
+    public long getLastPageId()
     {
         return 0;
     }
 
     @Override
-    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
+    public void truncate()
+    {
+    }
+
+    @Override
+    public void closeAndDelete()
+    {
+    }
+
+    @Override
+    public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length )
+    {
+        return 0;
+    }
+
+    @Override
+    public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length )
     {
         return 0;
     }

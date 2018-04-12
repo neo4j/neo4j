@@ -79,7 +79,7 @@ public class TestCleanupRule
     }
 
     @Test
-    public void shouldTellUserIllegalArgumentIfSo() throws Throwable
+    public void shouldTellUserIllegalArgumentIfSo()
     {
         // GIVEN
         CleanupRule rule = new CleanupRule();
@@ -98,7 +98,7 @@ public class TestCleanupRule
         rule.apply( new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
             }
         }, null ).evaluate();

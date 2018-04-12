@@ -39,7 +39,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         closeCountsUpdaterIfOpen();
@@ -66,7 +66,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command ) throws IOException
+    public boolean visitRelationshipCountsCommand( Command.RelationshipCountsCommand command )
     {
         assert countsUpdater != null || mode == TransactionApplicationMode.RECOVERY : "You must call begin first";
         haveUpdates = true;
@@ -79,7 +79,7 @@ public class CountsStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
     {
         // This shows that this transaction is a schema transaction, so it cannot have commands
         // updating any counts anyway. Therefore the counts updater is closed right away.

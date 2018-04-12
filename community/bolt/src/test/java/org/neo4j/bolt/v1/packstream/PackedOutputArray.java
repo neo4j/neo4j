@@ -36,7 +36,22 @@ public class PackedOutputArray implements PackOutput
     }
 
     @Override
-    public PackOutput flush() throws IOException
+    public void beginMessage()
+    {
+    }
+
+    @Override
+    public void messageSucceeded() throws IOException
+    {
+    }
+
+    @Override
+    public void messageFailed() throws IOException
+    {
+    }
+
+    @Override
+    public PackOutput flush()
     {
         return this;
     }
@@ -91,6 +106,12 @@ public class PackedOutputArray implements PackOutput
     {
         data.writeDouble( value );
         return this;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        data.close();
     }
 
     public byte[] bytes()

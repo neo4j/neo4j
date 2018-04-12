@@ -24,7 +24,6 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
@@ -34,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 
 /**
  * Returns transactions in reverse order in a log file. It tries to keep peak memory consumption to a minimum
@@ -113,12 +113,12 @@ public class ReversedSingleFileTransactionCursor implements TransactionCursor
                 startOffset = channel.position();
             }
         }
-        catch ( Throwable t )
+        catch ( IOException | UnsupportedLogVersionException e )
         {
-            monitor.transactionalLogRecordReadFailure( t, offsets, offsetCursor, logVersion );
+            monitor.transactionalLogRecordReadFailure( offsets, offsetCursor, logVersion );
             if ( failOnCorruptedLogFiles )
             {
-                throw Exceptions.launderedException( t );
+                throw e;
             }
         }
 

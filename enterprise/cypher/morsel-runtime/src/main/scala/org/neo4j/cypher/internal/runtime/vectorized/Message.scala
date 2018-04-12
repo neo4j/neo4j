@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized
 
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.SlottedExecutionContext
+import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 
 sealed trait Message {
@@ -32,7 +32,7 @@ sealed trait Message {
 * */
 case class StartLeafLoop(iterationState: Iteration) extends Message
 case class StartLoopWithSingleMorsel(data: Morsel, iterationState: Iteration) extends Message
-case class StartLoopWithEagerData(data: Seq[Morsel], iterationState: Iteration) extends Message
+case class StartLoopWithEagerData(data: Array[Morsel], iterationState: Iteration) extends Message
 
 case class ContinueLoopWith(continuation: Continuation) extends Message {
   override def iterationState: Iteration = continuation.iteration

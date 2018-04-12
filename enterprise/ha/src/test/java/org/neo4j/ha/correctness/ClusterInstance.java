@@ -75,7 +75,7 @@ class ClusterInstance
     private final ClusterInstanceOutput output;
     private final URI uri;
 
-    public static final Executor DIRECT_EXECUTOR = command -> command.run();
+    public static final Executor DIRECT_EXECUTOR = Runnable::run;
 
     private boolean online = true;
 
@@ -292,7 +292,7 @@ class ClusterInstance
 
         ProtocolServer snapshotProtocolServer = factory.constructSupportingInfrastructureFor( server.getServerId(),
                 input, output, executor, timeoutsSnapshot, stateMachineExecutor,
-                snapshotCtx, snapshotMachines.toArray( new StateMachine[snapshotMachines.size()] ) );
+                snapshotCtx, snapshotMachines.toArray( new StateMachine[0] ) );
 
         return new ClusterInstance( stateMachineExecutor, logging, factory, snapshotProtocolServer, snapshotCtx,
                 snapshotAcceptorInstances, timeoutsSnapshot, input, output, uri );
@@ -360,7 +360,7 @@ class ClusterInstance
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
-            messages.add( message.setHeader( Message.FROM, uri.toASCIIString() ) );
+            messages.add( message.setHeader( Message.HEADER_FROM, uri.toASCIIString() ) );
             return true;
         }
 

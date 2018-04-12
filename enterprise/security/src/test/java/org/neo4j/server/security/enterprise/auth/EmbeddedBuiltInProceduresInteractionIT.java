@@ -24,13 +24,15 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -42,7 +44,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
-public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<EnterpriseSecurityContext>
+public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<EnterpriseLoginContext>
 {
 
     @Override
@@ -59,7 +61,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
     }
 
     @Override
-    protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
+    protected NeoInteractionLevel<EnterpriseLoginContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {
         return new EmbeddedInteraction( config );
     }
@@ -67,10 +69,11 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
     @Test
     public void shouldNotListAnyQueriesIfNotAuthenticated()
     {
+        EnterpriseLoginContext unAuthSubject = createFakeAnonymousEnterpriseLoginContext();
         GraphDatabaseFacade graph = neo.getLocalGraph();
 
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
+                .beginTransaction( KernelTransaction.Type.explicit, unAuthSubject ) )
         {
             Result result = graph.execute( tx, "CALL dbms.listQueries", EMPTY_MAP );
             assertFalse( result.hasNext() );
@@ -81,19 +84,18 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
     @Test
     public void shouldNotKillQueryIfNotAuthenticated() throws Throwable
     {
-        EnterpriseSecurityContext authy = createFakeAnonymousEnterpriseSecurityContext();
+        EnterpriseLoginContext unAuthSubject = createFakeAnonymousEnterpriseLoginContext();
 
         GraphDatabaseFacade graph = neo.getLocalGraph();
         DoubleLatch latch = new DoubleLatch( 2 );
-        ThreadedTransaction<EnterpriseSecurityContext> read = new ThreadedTransaction<>( neo, latch );
-        String query = read.execute( threading, authy, "UNWIND [1,2,3] AS x RETURN x" );
+        ThreadedTransaction<EnterpriseLoginContext> read = new ThreadedTransaction<>( neo, latch );
+        String query = read.execute( threading, readSubject, "UNWIND [1,2,3] AS x RETURN x" );
 
         latch.startAndWaitForAllToStart();
 
         String id = extractQueryId( query );
 
-        try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
+        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, unAuthSubject ) )
         {
             graph.execute( tx, "CALL dbms.killQuery('" + id + "')", EMPTY_MAP );
             throw new AssertionError( "Expected exception to be thrown" );
@@ -107,20 +109,14 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         read.closeAndAssertSuccess();
     }
 
-    private EnterpriseSecurityContext createFakeAnonymousEnterpriseSecurityContext()
+    private EnterpriseLoginContext createFakeAnonymousEnterpriseLoginContext()
     {
-        return new EnterpriseSecurityContext()
+        return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext freeze()
+            public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
             {
-                return this;
-            }
-
-            @Override
-            public EnterpriseSecurityContext withMode( AccessMode mode )
-            {
-                return new EnterpriseSecurityContext.Frozen( subject(), mode, roles(), isAdmin() );
+                return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }
 
             @Override
@@ -129,24 +125,12 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
                 return Collections.emptySet();
             }
 
-            AnonymousContext inner = AnonymousContext.none();
+            SecurityContext inner = AnonymousContext.none().authorize( s -> -1 );
 
             @Override
             public AuthSubject subject()
             {
                 return inner.subject();
-            }
-
-            @Override
-            public AccessMode mode()
-            {
-                return inner.mode();
-            }
-
-            @Override
-            public boolean isAdmin()
-            {
-                return false;
             }
         };
     }

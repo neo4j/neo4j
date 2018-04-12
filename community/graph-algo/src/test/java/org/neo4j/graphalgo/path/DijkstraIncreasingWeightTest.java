@@ -249,7 +249,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withState() throws Exception
+    public void withState()
     {
         /* Graph
          *
@@ -261,8 +261,8 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
         setWeight( "b", "c", 2 );
         setWeight( "c", "d", 5 );
 
-        InitialBranchState<Integer> state = new InitialBranchState.State<Integer>( 0, 0 );
-        final Map<Node, Integer> encounteredState = new HashMap<Node, Integer>();
+        InitialBranchState<Integer> state = new InitialBranchState.State<>( 0, 0 );
+        final Map<Node, Integer> encounteredState = new HashMap<>();
         PathExpander<Integer> expander = new PathExpander<Integer>()
         {
             @Override

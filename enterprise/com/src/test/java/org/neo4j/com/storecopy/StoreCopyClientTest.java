@@ -24,6 +24,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -38,6 +42,7 @@ import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -80,12 +85,22 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
 
+@RunWith( Parameterized.class )
 public class StoreCopyClientTest
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final CleanupRule cleanup = new CleanupRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+
+    @Parameters
+    public static StoreCopyRequestFactory[] data()
+    {
+        return new StoreCopyRequestFactory[]{LocalStoreCopyRequester::new, LocalStoreCopyRequesterForcePageCache::new};
+    }
+
+    @Parameter
+    public StoreCopyRequestFactory requestFactory;
 
     @Rule
     public TestRule rules = RuleChain.outerRule( directory ).around( fileSystemRule ).
@@ -134,7 +149,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( new LocalStoreCopyRequester( original, originalDir, fileSystem, false ) );
+                spy( requestFactory.create( original, originalDir, fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -179,7 +194,7 @@ public class StoreCopyClientTest
         long logFileSize =
                 original.getDependencyResolver().resolveDependency( LogFiles.class ).getLogFileForVersion( 0 ).length();
 
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir,
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,
                 fileSystem, true );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
@@ -245,7 +260,7 @@ public class StoreCopyClientTest
         }
 
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                spy( new LocalStoreCopyRequester( original, originalDir, fileSystem, false ) );
+                spy( requestFactory.create( original, originalDir, fileSystem, false ) );
 
         // when
         copier.copyStore( storeCopyRequest, cancelStoreCopy::get, MoveAfterCopy.moveReplaceExisting() );
@@ -285,7 +300,7 @@ public class StoreCopyClientTest
                         .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
-                new LocalStoreCopyRequester( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem, false );
+                requestFactory.create( (GraphDatabaseAPI) initialDatabase, initialStore, fileSystem, false );
 
         // WHEN
         copier.copyStore( storeCopyRequest, falseCancellationRequest, MoveAfterCopy.moveReplaceExisting() );
@@ -350,7 +365,7 @@ public class StoreCopyClientTest
                 new StoreCopyClient.Monitor.Adapter(), false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir, recordFormatsName );
-        StoreCopyClient.StoreCopyRequester storeCopyRequest = new LocalStoreCopyRequester( original, originalDir,
+        StoreCopyClient.StoreCopyRequester storeCopyRequest = requestFactory.create( original, originalDir,
                 fileSystem, false );
 
         copier.copyStore( storeCopyRequest, CancellationRequest.NEVER_CANCELLED, MoveAfterCopy.moveReplaceExisting() );
@@ -412,6 +427,12 @@ public class StoreCopyClientTest
         }
     }
 
+    private interface StoreCopyRequestFactory
+    {
+        StoreCopyClient.StoreCopyRequester create( GraphDatabaseAPI original, File originalDir, FileSystemAbstraction fs,
+                boolean includeLogs );
+    }
+
     private static class LocalStoreCopyRequester implements StoreCopyClient.StoreCopyRequester
     {
         private final GraphDatabaseAPI original;
@@ -430,6 +451,11 @@ public class StoreCopyClientTest
             this.includeLogs = includeLogs;
         }
 
+        protected PageCache getPageCache()
+        {
+            return original.getDependencyResolver().resolveDependency( PageCache.class );
+        }
+
         @Override
         public Response<?> copyStore( StoreWriter writer )
         {
@@ -445,8 +471,7 @@ public class StoreCopyClientTest
             CheckPointer checkPointer =
                     original.getDependencyResolver().resolveDependency( CheckPointer.class );
 
-            PageCache pageCache =
-                    original.getDependencyResolver().resolveDependency( PageCache.class );
+            PageCache pageCache = getPageCache();
 
             RequestContext requestContext = new StoreCopyServer( neoStoreDataSource, checkPointer, fs,
                     originalDir, new Monitors().newMonitor( StoreCopyServer.Monitor.class ), pageCache,
@@ -470,6 +495,28 @@ public class StoreCopyClientTest
             // Ensure response is closed before this method is called
             assertNotNull( response );
             verify( response, times( 1 ) ).close();
+        }
+    }
+
+    private static class LocalStoreCopyRequesterForcePageCache extends LocalStoreCopyRequester
+    {
+
+        LocalStoreCopyRequesterForcePageCache( GraphDatabaseAPI original, File originalDir, FileSystemAbstraction fs, boolean includeLogs )
+        {
+            super( original, originalDir, fs, includeLogs );
+        }
+
+        @Override
+        protected PageCache getPageCache()
+        {
+            return new DelegatingPageCache( super.getPageCache() )
+            {
+                @Override
+                public boolean fileSystemSupportsFileOperations()
+                {
+                    return false;
+                }
+            };
         }
     }
 }

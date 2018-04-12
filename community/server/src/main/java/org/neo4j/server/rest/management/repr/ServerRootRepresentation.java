@@ -23,13 +23,13 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.repr.MappingRepresentation;
 import org.neo4j.server.rest.repr.MappingSerializer;
-import org.neo4j.server.rest.management.AdvertisableService;
 
 public class ServerRootRepresentation extends MappingRepresentation
 {
-    private HashMap<String, String> services = new HashMap<String, String>();
+    private HashMap<String, String> services = new HashMap<>();
 
     public ServerRootRepresentation( URI baseUri, Iterable<AdvertisableService> advertisableServices )
     {
@@ -42,7 +42,7 @@ public class ServerRootRepresentation extends MappingRepresentation
 
     public Map<String, Map<String, String>> serialize()
     {
-        HashMap<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
+        HashMap<String, Map<String, String>> result = new HashMap<>();
         result.put( "services", services );
         return result;
     }

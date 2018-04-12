@@ -23,6 +23,10 @@ import java.net.SocketAddress;
 
 public interface BoltConnectionDescriptor
 {
+    String id();
+
+    String connector();
+
     SocketAddress clientAddress();
 
     SocketAddress serverAddress();

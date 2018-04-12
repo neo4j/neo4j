@@ -24,6 +24,10 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.internal.cypher.acceptance.spec.suite</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>GNU Affero General Public License, Version 3</name>
@@ -87,6 +91,27 @@
     <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <version>${junit-plattform-runner.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- neo4j -->
@@ -187,7 +212,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

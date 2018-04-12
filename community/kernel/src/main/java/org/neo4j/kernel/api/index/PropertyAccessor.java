@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.values.storable.Value;
 
 /**

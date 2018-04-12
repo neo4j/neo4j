@@ -32,8 +32,8 @@ import org.neo4j.kernel.configuration.Config;
 public class Configuration extends ExternalResource
 {
     public static final String DEFAULT = null;
-    private final Map<String, String> configuration = new HashMap<String, String>();
-    private final Map<String, String> sysProperties = new HashMap<String, String>();
+    private final Map<String, String> configuration = new HashMap<>();
+    private final Map<String, String> sysProperties = new HashMap<>();
 
     public Config config( LoadableConfig settingsClasses )
     {

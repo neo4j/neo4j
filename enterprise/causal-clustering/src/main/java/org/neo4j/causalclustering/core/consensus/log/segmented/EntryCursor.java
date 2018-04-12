@@ -42,7 +42,7 @@ class EntryCursor implements IOCursor<EntryRecord>
     private long limit = Long.MAX_VALUE;
     private CursorValue<EntryRecord> currentRecord = new CursorValue<>();
 
-    EntryCursor( Segments segments, long logIndex ) throws IOException
+    EntryCursor( Segments segments, long logIndex )
     {
         this.segments = segments;
         this.currentIndex = logIndex - 1;

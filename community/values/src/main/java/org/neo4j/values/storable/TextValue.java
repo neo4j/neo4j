@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static org.neo4j.values.storable.Values.stringArray;
@@ -67,19 +71,25 @@ public abstract class TextValue extends ScalarValue
     public abstract int compareTo( TextValue other );
 
     @Override
-    public boolean equals( boolean x )
+    int unsafeCompareTo( Value otherValue )
+    {
+        return compareTo( (TextValue) otherValue );
+    }
+
+    @Override
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long x )
+    public final boolean equals( long x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double x )
+    public final boolean equals( double x )
     {
         return false;
     }
@@ -94,4 +104,12 @@ public abstract class TextValue extends ScalarValue
     {
         return NumberType.NO_NUMBER;
     }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapText( this );
+    }
+
+    abstract Matcher matcher( Pattern pattern );
 }

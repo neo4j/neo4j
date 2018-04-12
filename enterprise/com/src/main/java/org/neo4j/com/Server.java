@@ -49,7 +49,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -156,7 +155,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
@@ -202,7 +201,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         String name = getClass().getSimpleName();
         msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
@@ -237,7 +236,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
     {
         ChannelPipeline pipeline = Channels.pipeline();
         pipeline.addLast( "monitor", new MonitorChannelHandler( byteCounterMonitor ) );
@@ -247,14 +246,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
     {
         channelGroup.add( e.getChannel() );
     }
 
     @Override
     public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
-            throws Exception
     {
         try
         {
@@ -272,7 +270,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
             ctx.getChannel().close();
             tryToCloseChannel( ctx.getChannel() );
-            throw Exceptions.launderedException( e );
+            throw e;
         }
     }
 
@@ -319,7 +317,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
     {
         msgLog.warn( "Exception from Netty", e.getCause() );
     }
@@ -411,7 +409,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             if ( partialRequest == null )
             {
                 // This is the first chunk in a multi-chunk request
-                RequestType<T> type = getRequestContext( buffer.readByte() );
+                RequestType type = getRequestContext( buffer.readByte() );
                 RequestContext context = readContext( buffer );
                 ChannelBuffer targetBuffer = mapSlave( channel, context );
                 partialRequest = new PartialRequest( type, context, targetBuffer );
@@ -422,7 +420,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         else
         {
             PartialRequest partialRequest = partialRequests.remove( channel );
-            RequestType<T> type;
+            RequestType type;
             RequestContext context;
             ChannelBuffer targetBuffer;
             ChannelBuffer bufferToReadFrom;
@@ -488,7 +486,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
     }
 
-    protected void responseWritten( RequestType<T> type, Channel channel, RequestContext context )
+    protected void responseWritten( RequestType type, Channel channel, RequestContext context )
     {
     }
 
@@ -511,7 +509,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         return readRequestContext;
     }
 
-    protected abstract RequestType<T> getRequestContext( byte id );
+    protected abstract RequestType getRequestContext( byte id );
 
     protected ChannelBuffer mapSlave( Channel channel, RequestContext slave )
     {
@@ -551,13 +549,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
     private class TargetCaller implements Response.Handler, Runnable
     {
-        private final RequestType<T> type;
+        private final RequestType type;
         private final Channel channel;
         private final RequestContext context;
         private final ChunkingChannelBuffer targetBuffer;
         private final ChannelBuffer bufferToReadFrom;
 
-        TargetCaller( RequestType<T> type, Channel channel, RequestContext context,
+        TargetCaller( RequestType type, Channel channel, RequestContext context,
                       ChunkingChannelBuffer targetBuffer, ChannelBuffer bufferToReadFrom )
         {
             this.type = type;
@@ -590,7 +588,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 targetBuffer.clear( true );
                 writeFailureResponse( e, targetBuffer );
                 tryToFinishOffChannel( channel, context );
-                throw Exceptions.launderedException( e );
+                throw new RuntimeException( e );
             }
             finally
             {
@@ -603,7 +601,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public void obligation( long txId ) throws IOException
+        public void obligation( long txId )
         {
             targetBuffer.writeByte( -1 );
             targetBuffer.writeLong( txId );
@@ -621,9 +619,9 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     {
         final RequestContext context;
         final ChannelBuffer buffer;
-        final RequestType<T> type;
+        final RequestType type;
 
-        PartialRequest( RequestType<T> type, RequestContext context, ChannelBuffer buffer )
+        PartialRequest( RequestType type, RequestContext context, ChannelBuffer buffer )
         {
             this.type = type;
             this.context = context;

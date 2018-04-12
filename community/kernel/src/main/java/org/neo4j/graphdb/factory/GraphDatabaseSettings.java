@@ -43,7 +43,6 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
-import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -209,65 +208,71 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE );
 
     @Description( "The number of Cypher query execution plans that are cached." )
-    public static Setting<Integer> query_cache_size =
+    public static final Setting<Integer> query_cache_size =
             buildSetting( "dbms.query_cache_size", INTEGER, "1000" ).constraint( min( 0 ) ).build();
 
     @Description( "The threshold when a plan is considered stale. If any of the underlying " +
                   "statistics used to create the plan have changed more than this value, " +
                   "the plan will be considered stale and will be replanned. Change is calculated as " +
                   "abs(a-b)/max(a,b). This means that a value of 0.75 requires the database to approximately " +
-                  "quadruple in size. A value of 0 means always replan, and 1 means never replan." )
-    public static Setting<Double> query_statistics_divergence_threshold =
+                  "quadruple in size. A value of 0 means replan as soon as possible, with the soonest being " +
+                  "defined by the cypher.min_replan_interval which defaults to 10s. After this interval the " +
+                  "divergence threshold will slowly start to decline, reaching 10% after about 7h. This will " +
+                  "ensure that long running databases will still get query replanning on even modest changes, " +
+                  "while not replanning frequently unless the changes are very large." )
+    public static final Setting<Double> query_statistics_divergence_threshold =
             buildSetting( "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
 
     @Description( "Large databases might change slowly, and so to prevent queries from never being replanned " +
                   "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
                   "shrink over time. " +
-                  "The algorithm used to manage this change is set by cypher.statistics_divergence_algorithm " +
+                  "The algorithm used to manage this change is set by unsupported.cypher.replan_algorithm " +
                   "and will cause the threshold to reach the value set here once the time since the previous " +
                   "replanning has reached unsupported.cypher.target_replan_interval. " +
                   "Setting this value to higher than the cypher.statistics_divergence_threshold will cause the " +
                   "threshold to not decay over time." )
     @Internal
-    public static Setting<Double> query_statistics_divergence_target =
+    public static final Setting<Double> query_statistics_divergence_target =
             buildSetting( "unsupported.cypher.statistics_divergence_target", DOUBLE, "0.10" ).constraint( range( 0.0, 1.0 ) ).build();
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
                   "where the label has no index" )
     @Internal
-    public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
+    public static final Setting<Long> query_non_indexed_label_warning_threshold = setting(
             "unsupported.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
                   "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
                   "but the higher the risk of sub-optimal plans." )
     @Internal
-    public static Setting<Integer> cypher_idp_solver_table_threshold = buildSetting(
+    public static final Setting<Integer> cypher_idp_solver_table_threshold = buildSetting(
             "unsupported.cypher.idp_solver_table_threshold", INTEGER, "128" ).constraint( min( 16 ) ).build();
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
                   "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
                   "faster the planning, but the higher the risk of sub-optimal plans." )
     @Internal
-    public static Setting<Long> cypher_idp_solver_duration_threshold = buildSetting(
+    public static final Setting<Long> cypher_idp_solver_duration_threshold = buildSetting(
             "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000" ).constraint( min( 10L ) ).build();
 
     @Description( "The minimum time between possible cypher query replanning events. After this time, the graph " +
-            "statistics will be evaluated, and if they have changed by more than the value set by " +
-            "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
-            "not changed sufficiently, the same interval will need to pass before the statistics will be " +
-            "evaluated again." )
-    public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
+                  "statistics will be evaluated, and if they have changed by more than the value set by " +
+                  "cypher.statistics_divergence_threshold, the query will be replanned. If the statistics have " +
+                  "not changed sufficiently, the same interval will need to pass before the statistics will be " +
+                  "evaluated again. Each time they are evaluated, the divergence threshold will be reduced slightly " +
+                  "until it reaches 10% after 7h, so that even moderately changing databases will see query replanning " +
+                  "after a sufficiently long time interval." )
+    public static final Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
 
     @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
                   "the divergence threshold set by cypher.statistics_divergence_threshold is configured to " +
                   "shrink over time. The algorithm used to manage this change is set by " +
-                  "unsupported.cypher.statistics_divergence_algorithm and will cause the threshold to reach " +
+                  "unsupported.cypher.replan_algorithm and will cause the threshold to reach " +
                   "the value set by unsupported.cypher.statistics_divergence_target once the time since the " +
                   "previous replanning has reached the value set here. Setting this value to less than the " +
                   "value of cypher.min_replan_interval will cause the threshold to not decay over time." )
     @Internal
-    public static Setting<Duration> cypher_replan_interval_target =
+    public static final Setting<Duration> cypher_replan_interval_target =
             setting( "unsupported.cypher.target_replan_interval", DURATION, "7h" );
 
     @Description( "Large databases might change slowly, and to prevent queries from never being replanned " +
@@ -277,38 +282,38 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "previous replanning has reached the value set in unsupported.cypher.target_replan_interval. " +
                   "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
     @Internal
-    public static Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
+    public static final Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
             options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
-    public static Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );
+    public static final Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );
 
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
-    public static Setting<File> load_csv_file_url_root = pathSetting( "dbms.directories.import", NO_DEFAULT );
+    public static final Setting<File> load_csv_file_url_root = pathSetting( "dbms.directories.import", NO_DEFAULT );
 
     @Description( "Selects whether to conform to the standard https://tools.ietf.org/html/rfc4180 for interpreting " +
                   "escaped quotation characters in CSV files loaded using `LOAD CSV`. Setting this to `false` will use" +
                   " the standard, interpreting repeated quotes '\"\"' as a single in-lined quote, while `true` will " +
                   "use the legacy convention originally supported in Neo4j 3.0 and 3.1, allowing a backslash to " +
                   "include quotes in-lined in fields." )
-    public static Setting<Boolean> csv_legacy_quote_escaping =
+    public static final Setting<Boolean> csv_legacy_quote_escaping =
             setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
                     Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
     @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
     @Dynamic
-    public static Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
+    public static final Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
 
     @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
     @Dynamic
-    public static Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
+    public static final Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
 
     @Description( "The size of the morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size =
-            setting( "unsupported.cypher.morsel_size", INTEGER, "100000" );
+            setting( "unsupported.cypher.morsel_size", INTEGER, "10000" );
 
     @Description( "Number of threads to allocate to Cypher worker threads. If set to 0, two workers will be started" +
             " for every physical core in the system." )
@@ -491,7 +496,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
-    public static Setting<Integer> lucene_searcher_cache_size = buildSetting( "dbms.index_searcher_cache_size",INTEGER,
+    public static final Setting<Integer> lucene_searcher_cache_size = buildSetting( "dbms.index_searcher_cache_size",INTEGER,
             Integer.toString( Integer.MAX_VALUE ) ).constraint( min( 1 ) ).build();
 
     // Lucene schema indexes
@@ -499,9 +504,51 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
+    @Deprecated
+    @ReplacedBy( "dbms.index.default_schema_provider" )
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
+
+    public enum SchemaIndex
+    {
+        NATIVE20( "lucene+native-2.0" ),
+        NATIVE10( "lucene+native-1.0" ),
+        LUCENE10( "lucene-1.0" );
+
+        private final String providerName;
+
+        SchemaIndex( String providerName )
+        {
+            this.providerName = providerName;
+        }
+
+        public String providerName()
+        {
+            return providerName;
+        }
+    }
+
+    @Description( "Index provider to use for newly created schema indexes. " +
+            "An index provider may store different value types in separate physical indexes. " +
+            "lucene-1.0: Store spatial and temporal value types in native indexes, remaining value types in a Lucene index. " +
+            "lucene+native-1.0: Store numbers in a native index and remaining value types like lucene-1.0. " +
+            "This improves read and write performance for non-composite indexed numbers. " +
+            "lucene+native-2.0: Store strings in a native index and remaining value types like lucene+native-1.0. " +
+            "This improves write performance for non-composite indexed strings. " +
+            "This version of the native string index has a value limit of 4047B, such that byte-representation " +
+            "of a string to index cannot be larger than that limit, or the transaction trying to index such a value will fail. " +
+            "This version of the native string index also has reduced performance for CONTAINS and ENDS WITH queries, " +
+            "due to resorting to index scan+filter internally. " +
+            "Native indexes generally has these benefits over Lucene:\n" +
+            "- Faster writes\n" +
+            "- Less garbage and heap presence\n" +
+            "- Less CPU resources per operation\n" +
+            "- Controllable memory usage, due to being bound by the page cache" )
+            public static final Setting<String> default_schema_provider =
+            setting( "dbms.index.default_schema_provider",
+                    optionsIgnoreCase( SchemaIndex.NATIVE20.providerName(), SchemaIndex.NATIVE10.providerName(), SchemaIndex.LUCENE10.providerName() ),
+                    null );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location =
@@ -534,6 +581,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> rebuild_idgenerators_fast =
             setting( "unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE );
 
+    @Description( "Specifies if engine should run cypher query based on a snapshot of accessed data. " +
+            "Query will be restarted in case if concurrent modification of data will be detected." )
+    @Internal
+    public static final Setting<Boolean> snapshot_query = setting( "unsupported.dbms.query.snapshot", BOOLEAN, FALSE );
+
+    @Description( "Specifies number or retries that query engine will do to execute query based on " +
+            "stable accessed data snapshot before giving up." )
+    @Internal
+    public static final Setting<Integer> snapshot_query_retries = buildSetting( "unsupported.dbms.query.snapshot.retries",
+            INTEGER, "5" ).constraint( range( 1, Integer.MAX_VALUE ) ).build();
+
     // Store memory settings
     @Description( "Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
                  "depending on the storage device used." )
@@ -556,6 +614,20 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper =
             setting( "dbms.memory.pagecache.swapper", STRING, null );
+
+    @Internal
+    @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
+                  "warmup after a restart, reducing the mean time to performance. " +
+                  "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Duration> pagecache_warmup_profiling_interval =
+            setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
+
+    @Internal
+    @Description( "Page cache can be configured to perform usage sampling of loaded pages that can be used to construct active load profile. " +
+            "According to that profile pages can be reloaded on the restart, replication, etc. " +
+            "This setting allows disabling that behavior. " +
+            "This feature available in Neo4j Enterprise Edition." )
+    public static final Setting<Boolean> pagecache_warmup_enabled = setting( "unsupported.dbms.memory.pagecache.warmup.enable", BOOLEAN, TRUE );
 
     /**
      * Block size properties values depends from selected record format.
@@ -606,16 +678,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> forced_kernel_id = buildSetting( "unsupported.dbms.kernel_id", STRING, NO_DEFAULT ).constraint(
             illegalValueMessage( "has to be a valid kernel identifier", matches( "[a-zA-Z0-9]*" ) ) ).build();
 
-    @SuppressWarnings( "unused" )
-    @Description( "Amount of time in ms the GC monitor thread will wait before taking another measurement." )
     @Internal
-    public static final Setting<Duration> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
+    public static final Setting<Duration> vm_pause_monitor_measurement_duration =
+            setting( "unsupported.vm_pause_monitor.measurement_duration", DURATION, "100ms" );
 
-    @SuppressWarnings( "unused" )
-    @Description( "The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
-            "blocked." )
     @Internal
-    public static final Setting<Duration> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
+    public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
+            setting( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, "100ms" );
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold =
@@ -777,31 +846,49 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
             GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
 
-    @Description( "Whether to apply network level write throttling" )
+    @Description( "Whether to apply network level outbound network buffer based throttling" )
     @Internal
-    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+    public static final Setting<Boolean> bolt_outbound_buffer_throttle = setting( "unsupported.dbms.bolt.outbound_buffer_throttle", BOOLEAN, TRUE );
 
-    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
-            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
-            "threads will block until it becomes writable again." )
+    @Description( "When the size (in bytes) of outbound network buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and will block " +
+            "related processing thread until it becomes writable again." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
-            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Description( "When the size (in bytes) of outbound network buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked processing " +
+            "thread will resume execution." )
     @Internal
-    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+    public static final Setting<Integer> bolt_outbound_buffer_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
                     range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
 
-    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
-            + " this to 0 will disable this behaviour." )
+    @Description( "When the total time outbound network buffer based throttle lock is held exceeds this value, " +
+            "the corresponding bolt channel will be aborted. Setting " +
+            "this to 0 will disable this behaviour." )
     @Internal
-    public static final Setting<Duration> bolt_write_throttle_max_duration =
-            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+    public static final Setting<Duration> bolt_outbound_buffer_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.outbound_buffer_throttle.max_duration", DURATION, "15m" ).constraint(
                     min( Duration.ofSeconds( 30 ) ) ).build();
+
+    @Description( "When the number of queued inbound messages grows beyond this value, reading from underlying " +
+            "channel will be paused (no more inbound messages will be available) until queued number of " +
+            "messages drops below the configured low watermark value." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.high_watermark", INTEGER, String.valueOf( 300 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the number of queued inbound messages, previously reached configured high watermark value, " +
+            "drops below this value, reading from underlying channel will be enabled and any pending messages " +
+            "will start queuing again." )
+    @Internal
+    public static final Setting<Integer> bolt_inbound_message_throttle_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.inbound_message_throttle.low_watermark", INTEGER, String.valueOf( 100 ) ).constraint(
+                    range( 1, Integer.MAX_VALUE ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
@@ -819,6 +906,19 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout = buildSetting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
+
+    public enum TransactionStateMemoryAllocation
+    {
+        ON_HEAP,
+        OFF_HEAP
+    }
+
+    @Internal
+    @Description( "[Experimental] Defines whether memory for transaction state should allocaten on- or off-heap." )
+    public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
+            "unsupported.dbms.tx_state.memory_allocation",
+            options( TransactionStateMemoryAllocation.class, true ),
+            TransactionStateMemoryAllocation.ON_HEAP.name() ).build();
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )

@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -60,6 +59,7 @@ import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
@@ -207,8 +207,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             @Override
             protected ChannelContext create()
             {
-                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination,
-                        true );
+                msgLog.info( threadInfo() + "Trying to open a new channel from " + origin + " to " + destination );
                 // We must specify the origin address in case the server has multiple IPs per interface
                 ChannelFuture channelFuture = bootstrap.connect( destination, origin );
                 channelFuture.awaitUninterruptibly( 5, TimeUnit.SECONDS );
@@ -225,7 +224,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 Throwable cause = channelFuture.getCause();
                 String msg = Client.this.getClass().getSimpleName() + " could not connect from " + origin + " to " +
                         destination;
-                msgLog.debug( msg, true );
+                msgLog.debug( msg );
                 throw traceComException( new ComException( msg, cause ), "Client.start" );
             }
 
@@ -279,16 +278,16 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
 
         comExceptionHandler = getNoOpComExceptionHandler();
-        msgLog.info( toString() + " shutdown", true );
+        msgLog.info( toString() + " shutdown" );
     }
 
-    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
+    protected <R> Response<R> sendRequest( RequestType type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer )
     {
         return sendRequest( type, context, serializer, deserializer, null, NO_OP_TX_HANDLER );
     }
 
-    protected <R> Response<R> sendRequest( RequestType<T> type, RequestContext context,
+    protected <R> Response<R> sendRequest( RequestType type, RequestContext context,
             Serializer serializer, Deserializer<R> deserializer,
             StoreId specificStoreId, TxHandler txHandler )
     {
@@ -336,7 +335,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         catch ( Throwable e )
         {
             failure = e;
-            throw Exceptions.launderedException( ComException.class, e );
+            throwIfUnchecked( e );
+            throw new RuntimeException( e );
         }
         finally
         {
@@ -351,12 +351,12 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
     }
 
-    protected long getReadTimeout( RequestType<T> type, long readTimeout )
+    protected long getReadTimeout( RequestType type, long readTimeout )
     {
         return readTimeout;
     }
 
-    protected boolean shouldCheckStoreId( RequestType<T> type )
+    protected boolean shouldCheckStoreId( RequestType type )
     {
         return true;
     }
@@ -374,32 +374,25 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         }
     }
 
-    private ChannelContext acquireChannelContext( RequestType<T> type )
+    private ChannelContext acquireChannelContext( RequestType type )
     {
-        try
+        if ( channelPool == null )
         {
-            if ( channelPool == null )
-            {
-                throw new ComException( String.format( "Client for %s is stopped", destination.toString() ) );
-            }
+            throw new ComException( String.format( "Client for %s is stopped", destination.toString() ) );
+        }
 
-            // Calling acquire is dangerous since it may be a blocking call... and if this
-            // thread holds a lock which others may want to be able to communicate with
-            // the server things go stiff.
-            ChannelContext result = channelPool.acquire();
-            if ( result == null )
-            {
-                msgLog.error( "Unable to acquire new channel for " + type );
-                throw traceComException(
-                        new ComException( "Unable to acquire new channel for " + type ),
-                        "Client.acquireChannelContext" );
-            }
-            return result;
-        }
-        catch ( Throwable e )
+        // Calling acquire is dangerous since it may be a blocking call... and if this
+        // thread holds a lock which others may want to be able to communicate with
+        // the server things go stiff.
+        ChannelContext result = channelPool.acquire();
+        if ( result == null )
         {
-            throw Exceptions.launderedException( ComException.class, e );
+            msgLog.error( "Unable to acquire new channel for " + type );
+            throw traceComException(
+                    new ComException( "Unable to acquire new channel for " + type ),
+                    "Client.acquireChannelContext" );
         }
+        return result;
     }
 
     private void dispose( ChannelContext channelContext )
@@ -412,7 +405,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
     {
         ChannelPipeline pipeline = Channels.pipeline();
         pipeline.addLast( MONITORING_CHANNEL_HANDLER_NAME, new MonitorChannelHandler( byteCounterMonitor ) );

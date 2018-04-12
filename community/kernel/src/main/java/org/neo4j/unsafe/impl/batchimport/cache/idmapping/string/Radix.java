@@ -31,11 +31,11 @@ import static java.lang.Math.pow;
  */
 public abstract class Radix
 {
-    public static final Factory<Radix> LONG = () -> new Long();
+    public static final Factory<Radix> LONG = Long::new;
 
-    public static final Factory<Radix> STRING = () -> new String();
+    public static final Factory<Radix> STRING = String::new;
 
-    protected final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
+    final int[] radixIndexCount = new int[(int) pow( 2, RadixCalculator.RADIX_BITS - 1 )];
 
     public int registerRadixOf( long value )
     {

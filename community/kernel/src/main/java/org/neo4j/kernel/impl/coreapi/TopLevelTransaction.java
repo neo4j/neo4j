@@ -29,25 +29,23 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.Status.Classification;
 import org.neo4j.kernel.api.exceptions.Status.Code;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class TopLevelTransaction implements InternalTransaction
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private boolean successCalled;
-    private final Supplier<Statement> stmt;
     private final KernelTransaction transaction;
 
     public TopLevelTransaction( KernelTransaction transaction, Supplier<Statement> stmt )
     {
-        this.stmt = stmt;
         this.transaction = transaction;
     }
 
@@ -117,13 +115,13 @@ public class TopLevelTransaction implements InternalTransaction
     @Override
     public Lock acquireWriteLock( PropertyContainer entity )
     {
-        return locker.exclusiveLock( stmt, entity );
+        return locker.exclusiveLock( transaction, entity );
     }
 
     @Override
     public Lock acquireReadLock( PropertyContainer entity )
     {
-        return locker.sharedLock(stmt, entity);
+        return locker.sharedLock(transaction, entity);
     }
 
     @Override

@@ -62,7 +62,7 @@ public class StringMarshalTest
     }
 
     @Test
-    public void shouldSerializeAndDeserializeNull() throws Exception
+    public void shouldSerializeAndDeserializeNull()
     {
         // given
         final ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();

@@ -33,7 +33,7 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
       WHERE i <> j
       RETURN i, j"""
 
-    val result = executeWith(Configs.All + Configs.Morsel - Configs.Compiled, query)
+    val result = executeWith(Configs.Interpreted + Configs.Morsel, query)
     result.toList should equal(List(Map("j" -> 1, "i" -> 0), Map("j" -> 0, "i" -> 1)))
   }
 
@@ -46,9 +46,27 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
         |ORDER BY y
       """.stripMargin
 
-    // Fixed in 3.3.3
-    val result = executeWith(Configs.All, query, expectedDifferentResults = Configs.BackwardsCompatibility + Configs.AllRulePlanners)
+    val result = executeWith(Configs.All, query, expectedDifferentResults = Configs.OldAndRule)
     result.toList should equal(List(Map("y" -> 1, "y3" -> 3), Map("y" -> 1, "y3" -> 4), Map("y" -> 2, "y3" -> 3), Map("y" -> 2, "y3" -> 4)))
   }
 
+  test("should unwind nodes") {
+    val n = createNode("prop" -> 42)
+
+    val query = "UNWIND $nodes AS n WITH n WHERE n.prop = 42 RETURN n"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("nodes" -> List(n)))
+
+    result.toList should equal(List(Map("n" -> n)))
+  }
+
+  test("should unwind relationships") {
+    val a = createNode()
+    val b = createNode()
+    val r = relate(a, b, "prop" -> 42)
+
+    val query = "UNWIND $relationships AS r WITH r WHERE r.prop = 42 RETURN r"
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("relationships" -> List(r)))
+
+    result.toList should equal(List(Map("r" -> r)))
+  }
 }

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.InwardKernel;
-import org.neo4j.kernel.api.Statement;
+import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -30,16 +30,16 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultLabelIdCreator( Supplier<InwardKernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
+    public DefaultLabelIdCreator( Supplier<Kernel> kernelSupplier, IdGeneratorFactory idGeneratorFactory )
     {
         super( kernelSupplier, idGeneratorFactory );
     }
 
     @Override
-    protected int createKey( Statement statement, String name ) throws IllegalTokenNameException, TooManyLabelsException
+    protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException, TooManyLabelsException
     {
         int id = (int) idGeneratorFactory.get( IdType.LABEL_TOKEN ).nextId();
-        statement.tokenWriteOperations().labelCreateForName( name, id );
+        transaction.tokenWrite().labelCreateForName( name, id );
         return id;
     }
 }

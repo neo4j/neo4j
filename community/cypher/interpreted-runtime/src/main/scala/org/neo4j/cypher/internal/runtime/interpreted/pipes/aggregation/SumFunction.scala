@@ -20,24 +20,24 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.TypeSafeMathSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
-  with TypeSafeMathSupport
   with NumericExpressionOnly {
 
   def name = "SUM"
 
-  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
-  override def result(state: QueryState): AnyValue = asNumberValue(sum.value)
+  private var sum: NumberValue = Values.ZERO_INT
+  override def result(state: QueryState): AnyValue = sum
 
   override def apply(data: ExecutionContext, state: QueryState) {
     actOnNumber(value(data, state), (number) => {
-      sum = sum.add(number)
+      sum = overflowSafeAdd(sum, number)
     })
   }
 }

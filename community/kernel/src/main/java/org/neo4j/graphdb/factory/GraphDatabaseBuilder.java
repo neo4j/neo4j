@@ -151,7 +151,7 @@ public class GraphDatabaseBuilder
         }
         catch ( MalformedURLException e )
         {
-            throw new IllegalArgumentException( "Illegal filename:" + fileName );
+            throw new IllegalArgumentException( "Illegal filename:" + fileName, e );
         }
     }
 

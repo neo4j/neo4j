@@ -21,24 +21,22 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.UpdateCountingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-import static org.neo4j.helpers.FutureAdapter.VOID;
+import org.neo4j.values.storable.Value;
 
 public class OnlineIndexProxy implements IndexProxy
 {
@@ -124,27 +122,26 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop() throws IOException
+    public void drop() throws IOException
     {
         indexCountsRemover.remove();
         accessor.drop();
-        return VOID;
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return indexMeta.indexDescriptor();
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return indexMeta.indexDescriptor().schema();
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         return indexMeta.providerDescriptor();
     }
@@ -162,9 +159,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
-        accessor.force();
+        accessor.force( ioLimiter );
     }
 
     @Override
@@ -174,10 +171,9 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public Future<Void> close() throws IOException
+    public void close() throws IOException
     {
         accessor.close();
-        return VOID;
     }
 
     @Override
@@ -187,7 +183,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted()
     {
         return false; // the store scan is already completed
     }
@@ -202,6 +198,18 @@ public class OnlineIndexProxy implements IndexProxy
     public void validate()
     {
         // ok, it's online so it's valid
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        accessor.validateBeforeCommit( tuple );
+    }
+
+    @Override
+    public long getIndexId()
+    {
+        return indexId;
     }
 
     @Override

@@ -30,7 +30,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +52,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
@@ -56,8 +60,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -107,11 +111,7 @@ public class OnlineBackupCommandCcIT
 
         Cluster cluster = startCluster( recordFormat );
         String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
+
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
@@ -131,21 +131,6 @@ public class OnlineBackupCommandCcIT
     }
 
     @Test
-    public void backupCanNotBePerformedOverBackupProtocol() throws Exception
-    {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS );
-
-        Cluster cluster = startCluster( recordFormat );
-        String ip = TestHelpers.backupAddressHa( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
-    }
-
-    @Test
     public void dataIsInAUsableStateAfterBackup() throws Exception
     {
         // given database exists
@@ -158,12 +143,149 @@ public class OnlineBackupCommandCcIT
         AtomicBoolean populateDatabaseFlag = new AtomicBoolean( true );
         new Thread( () -> repeatedlyPopulateDatabase(  cluster, populateDatabaseFlag ) )
                 .start(); // populate db with number properties etc.
-        oneOffShutdownTasks.add( () -> populateDatabaseFlag.set( false ) ); // kill thread
+        oneOffShutdownTasks.add( () -> populateDatabaseFlag.set( false ) ); // kill thread after test is complete
 
         // then backup is successful
         String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
                 "--name=defaultport" ) );
+    }
+
+    @Test
+    public void backupCanBeOptionallySwitchedOnWithTheBackupConfig() throws Exception
+    {
+        // given a cluster with backup switched on
+        int[] backupPorts = new int[]{PortAuthority.allocatePort(), PortAuthority.allocatePort(), PortAuthority.allocatePort()};
+        String value = "localhost:%d";
+        clusterRule = clusterRule.withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, "true" )
+                .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, i -> String.format( value, backupPorts[i] ) );
+        Cluster cluster = startCluster( recordFormat );
+        String customAddress = "localhost:" + backupPorts[0];
+
+        // when a full backup is performed
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
+
+        // and an incremental backup is performed
+        createSomeData( cluster );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+
+        // then the data matches
+        assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
+    }
+
+    @Test
+    public void secondaryTransactionProtocolIsSwitchedOffCorrespondingBackupSetting() throws Exception
+    {
+        // given a cluster with backup switched off
+        int[] backupPorts = new int[]{PortAuthority.allocatePort(), PortAuthority.allocatePort(), PortAuthority.allocatePort()};
+        String value = "localhost:%d";
+        clusterRule = clusterRule.withSharedCoreParam( OnlineBackupSettings.online_backup_enabled, "false" )
+                .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, i -> String.format( value, backupPorts[i] ) );
+        startCluster( recordFormat );
+        String customAddress = "localhost:" + backupPorts[0];
+
+        // then a full backup is impossible from the backup port
+        assertEquals( 1, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=defaultport" ) );
+    }
+
+    @Test
+    public void backupNotPossibleIfLegacyProtocolSpecified() throws Exception
+    {
+        // given
+        Cluster cluster = startCluster( recordFormat );
+        String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
+
+        assertEquals(
+                1,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=defaultport",
+                        "--proto=legacy") );
+    }
+
+    @Test
+    public void backupDoesntDisplayExceptionWhenSuccessful() throws Exception
+    {
+        // given
+        Cluster cluster = startCluster( recordFormat );
+        String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
+
+        // and
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
+
+        // and
+        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
+        PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
+
+        // when
+        assertEquals(
+                0,
+                runBackupToolFromOtherJvmToGetExitCode( outputStream, errorStream,
+                        "--from", customAddress,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=defaultport" ) );
+
+        // then
+        assertFalse( byteArrayErrorStream.toString().toLowerCase().contains( "exception" ) );
+        assertFalse( byteArrayOutputStream.toString().toLowerCase().contains( "exception" ) );
+    }
+
+    static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
+    {
+        if ( nullAbleOutput == null )
+        {
+            return normalOutput;
+        }
+        return duplexPrintStream( normalOutput, nullAbleOutput );
+    }
+
+    private static PrintStream duplexPrintStream( PrintStream first, PrintStream second )
+    {
+        return new PrintStream( first )
+        {
+
+            @Override
+            public void write( int i )
+            {
+                super.write( i );
+                second.write( i );
+            }
+
+            @Override
+            public void write( byte[] bytes, int i, int i1 )
+            {
+                super.write( bytes, i, i1 );
+                second.write( bytes, i, i1 );
+            }
+
+            @Override
+            public void write( byte[] bytes ) throws IOException
+            {
+                super.write( bytes );
+                second.write( bytes );
+            }
+
+            @Override
+            public void flush()
+            {
+                super.flush();
+                second.flush();
+            }
+
+            @Override
+            public void close()
+            {
+                super.close();
+                second.close();
+            }
+        };
     }
 
     private void repeatedlyPopulateDatabase( Cluster cluster, AtomicBoolean continueFlagReference )
@@ -179,14 +301,12 @@ public class OnlineBackupCommandCcIT
         return clusterLeader( cluster ).database();
     }
 
-    private Cluster startCluster( String recordFormat )
-            throws Exception
+    private Cluster startCluster( String recordFormat ) throws Exception
     {
-        ClusterRule clusterRule = this.clusterRule
-                .withSharedCoreParam( GraphDatabaseSettings.record_format, recordFormat )
+        ClusterRule clusterRule = this.clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_format, recordFormat )
                 .withSharedReadReplicaParam( GraphDatabaseSettings.record_format, recordFormat );
         Cluster cluster = clusterRule.startCluster();
-        createSomeData(  cluster );
+        createSomeData( cluster );
         return cluster;
     }
 
@@ -198,7 +318,7 @@ public class OnlineBackupCommandCcIT
         }
         catch ( Exception e )
         {
-            throw launderedException( e );
+            throw new RuntimeException( e );
         }
         return DbRepresentation.of( clusterLeader( cluster ).database() );
     }
@@ -213,6 +333,11 @@ public class OnlineBackupCommandCcIT
         Config config = Config.defaults();
         config.augment( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
         return DbRepresentation.of( new File( backupDir, name ), config );
+    }
+
+    private int runBackupToolFromOtherJvmToGetExitCode( PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
+    {
+        return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), outputStream, errorStream, false, args );
     }
 
     private int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception

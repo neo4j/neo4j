@@ -106,7 +106,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenParsingBadlyFormattedSingleBookmark() throws Exception
+    public void shouldFailWhenParsingBadlyFormattedSingleBookmark()
     {
         // given
         String bookmarkString = "neo4q:markbook:v9:xt998";
@@ -124,7 +124,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenParsingBadlyFormattedMultipleBookmarks() throws Exception
+    public void shouldFailWhenParsingBadlyFormattedMultipleBookmarks()
     {
         // given
         String bookmarkString = "neo4j:bookmark:v1:tx998";
@@ -143,7 +143,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenNoNumberFollowsThePrefixInSingleBookmark() throws Exception
+    public void shouldFailWhenNoNumberFollowsThePrefixInSingleBookmark()
     {
         // given
         String bookmarkString = "neo4j:bookmark:v1:tx";
@@ -161,7 +161,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenNoNumberFollowsThePrefixInMultipleBookmarks() throws Exception
+    public void shouldFailWhenNoNumberFollowsThePrefixInMultipleBookmarks()
     {
         // given
         String bookmarkString = "neo4j:bookmark:v1:tx10";
@@ -180,7 +180,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenSingleBookmarkHasExtraneousTrailingCharacters() throws Exception
+    public void shouldFailWhenSingleBookmarkHasExtraneousTrailingCharacters()
     {
         // given
         String bookmarkString = "neo4j:bookmark:v1:tx1234supercalifragilisticexpialidocious";
@@ -198,7 +198,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldFailWhenMultipleBookmarksHaveExtraneousTrailingCharacters() throws Exception
+    public void shouldFailWhenMultipleBookmarksHaveExtraneousTrailingCharacters()
     {
         // given
         String bookmarkString = "neo4j:bookmark:v1:tx1234";
@@ -270,7 +270,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldThrowWhenMultipleBookmarksIsNotAList() throws Exception
+    public void shouldThrowWhenMultipleBookmarksIsNotAList()
     {
         MapValue params = params( "neo4j:bookmark:v1:tx67", new String[]{"neo4j:bookmark:v1:tx68"} );
 
@@ -286,7 +286,7 @@ public class BookmarkTest
     }
 
     @Test
-    public void shouldThrowWhenMultipleBookmarksIsNotAListOfStrings() throws Exception
+    public void shouldThrowWhenMultipleBookmarksIsNotAListOfStrings()
     {
         MapValue params = params(
                 "neo4j:bookmark:v1:tx67",

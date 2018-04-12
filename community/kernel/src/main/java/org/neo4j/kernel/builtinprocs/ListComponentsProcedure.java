@@ -20,16 +20,17 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 /**
  * This procedure lists "components" and their version.
@@ -65,7 +66,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         return asRawIterator( singletonList(

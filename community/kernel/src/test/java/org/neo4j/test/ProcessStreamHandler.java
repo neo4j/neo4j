@@ -44,7 +44,7 @@ public class ProcessStreamHandler
      * Convenience constructor assuming the local output streams are
      * {@link System#out} and {@link System#err} for the process's OutputStream
      * and ErrorStream respectively.
-     *
+     * <p>
      * Set quiet to true if you just want to consume the output to avoid locking up the process.
      *
      * @param process The process whose output to consume.
@@ -54,16 +54,15 @@ public class ProcessStreamHandler
         this( process, quiet, "", quiet ? IGNORE_FAILURES : PRINT_FAILURES );
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler )
+    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler )
     {
         this( process, quiet, prefix, failureHandler, System.out, System.err );
     }
 
-    public ProcessStreamHandler( Process process, boolean quiet, String prefix,
-            StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
+    public ProcessStreamHandler( Process process, boolean quiet, String prefix, StreamExceptionHandler failureHandler, PrintStream out, PrintStream err )
     {
         this.process = process;
+
         this.out = new Thread( new StreamConsumer( process.getInputStream(), out, quiet, prefix, failureHandler ) );
         this.err = new Thread( new StreamConsumer( process.getErrorStream(), err, quiet, prefix, failureHandler ) );
     }
@@ -83,6 +82,10 @@ public class ProcessStreamHandler
      */
     public void done()
     {
+        if ( process.isAlive() )
+        {
+            process.destroyForcibly();
+        }
         try
         {
             out.join();
@@ -115,15 +118,12 @@ public class ProcessStreamHandler
         launch();
         try
         {
-            try
-            {
-                return process.waitFor();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.interrupted();
-                return 0;
-            }
+            return process.waitFor();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.interrupted();
+            return 0;
         }
         finally
         {

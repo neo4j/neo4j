@@ -76,7 +76,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.subprocess.SubProcess;
 
 import static java.lang.Integer.parseInt;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -118,7 +117,7 @@ public class BackupIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         servers = new ArrayList<>();
         serverPath = testDir.directory( "server" );
@@ -137,7 +136,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureFullFailsWhenDbExists() throws Exception
+    public void makeSureFullFailsWhenDbExists()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -157,7 +156,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureIncrementalFailsWhenNoDb() throws Exception
+    public void makeSureIncrementalFailsWhenNoDb()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -215,7 +214,7 @@ public class BackupIT
     }
 
     @Test
-    public void fullThenIncremental() throws Exception
+    public void fullThenIncremental()
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -236,7 +235,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureNoLogFileRemains() throws Exception
+    public void makeSureNoLogFileRemains()
     {
         createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -262,7 +261,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureStoreIdIsEnforced() throws Exception
+    public void makeSureStoreIdIsEnforced()
     {
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
@@ -350,7 +349,7 @@ public class BackupIT
     }
 
     @Test
-    public void backupIndexWithNoCommits() throws Exception
+    public void backupIndexWithNoCommits()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = null;
@@ -428,7 +427,7 @@ public class BackupIT
     }
 
     @Test
-    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
+    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase()
     {
         int backupPort = PortAuthority.allocatePort();
         File sourcePath = testDir.directory( "serverdb-lock" );
@@ -451,7 +450,7 @@ public class BackupIT
     }
 
     @Test
-    public void shouldIncrementallyBackupDenseNodes() throws Exception
+    public void shouldIncrementallyBackupDenseNodes()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = startGraphDatabase( serverPath, true, backupPort );
@@ -564,62 +563,6 @@ public class BackupIT
         {
             assertThat( ex.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
-
-        StartupChecker proc = new LockProcess().start( path );
-        try
-        {
-            assertFalse( "Could start up database in subprocess, store is not locked", proc.startupOk() );
-        }
-        finally
-        {
-            SubProcess.stop( proc );
-        }
-    }
-
-    public interface StartupChecker
-    {
-        boolean startupOk();
-    }
-
-    @SuppressWarnings( "serial" )
-    private static class LockProcess extends SubProcess<StartupChecker, File> implements StartupChecker
-    {
-        private volatile Object state;
-
-        @Override
-        public boolean startupOk()
-        {
-            Object result;
-            do
-            {
-                result = state;
-            }
-            while ( result == null );
-            return !( state instanceof Exception );
-        }
-
-        @Override
-        protected void startup( File path ) throws Throwable
-        {
-            GraphDatabaseService db = null;
-            try
-            {
-                db = new TestGraphDatabaseFactory().newEmbeddedDatabase( path );
-            }
-            catch ( RuntimeException ex )
-            {
-                if ( ex.getCause().getCause() instanceof StoreLockException )
-                {
-                    state = ex;
-                    return;
-                }
-            }
-            state = new Object();
-            if ( db != null )
-            {
-                db.shutdown();
-            }
-        }
     }
 
     private static boolean checkLogFileExistence( String directory )
@@ -633,7 +576,7 @@ public class BackupIT
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
-    private ServerInterface startServer( File path, int backupPort ) throws Exception
+    private ServerInterface startServer( File path, int backupPort )
     {
         ServerInterface server = new EmbeddedServer( path, "127.0.0.1:" + backupPort );
         server.awaitStarted();
@@ -641,7 +584,7 @@ public class BackupIT
         return server;
     }
 
-    private void shutdownServer( ServerInterface server ) throws Exception
+    private void shutdownServer( ServerInterface server )
     {
         server.shutdown();
         servers.remove( server );

@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.test.assertion.Assert;
 
@@ -31,30 +32,30 @@ import static org.mockito.Mockito.mock;
 
 public class KernelTokenArgumentTest
 {
-    private KernelToken token = new KernelToken( mock( StoreReadLayer.class ) );
+    private KernelToken token = new KernelToken( mock( StoreReadLayer.class ), mock( KernelTransactionImplementation.class) );
 
     @Test
-    public void labelGetOrCreateForName() throws Exception
+    public void labelGetOrCreateForName()
     {
         assertIllegalToken( () -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.labelGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void propertyKeyGetOrCreateForName() throws Exception
+    public void propertyKeyGetOrCreateForName()
     {
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void relationshipTypeGetOrCreateForName() throws Exception
+    public void relationshipTypeGetOrCreateForName()
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( "" ) );
     }
 
-    private void assertIllegalToken( ThrowingAction<KernelException> f ) throws Exception
+    private void assertIllegalToken( ThrowingAction<KernelException> f )
     {
         Assert.assertException( f, IllegalTokenNameException.class );
     }

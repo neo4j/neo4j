@@ -24,12 +24,12 @@ import java.util.function.Predicate;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -64,7 +64,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
+
+import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
@@ -81,6 +83,8 @@ public abstract class EditionModule
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
+        procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
+        registerTemporalFunctions( procedures );
 
         registerEditionSpecificProcedures( procedures );
     }

@@ -46,7 +46,7 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
     private long thomasAndersonLovesTrinity;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();

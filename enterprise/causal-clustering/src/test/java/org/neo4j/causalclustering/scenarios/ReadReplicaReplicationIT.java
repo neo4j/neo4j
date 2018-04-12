@@ -49,7 +49,6 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
@@ -65,7 +64,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.monitoring.PageCacheCounters;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -119,7 +118,7 @@ public class ReadReplicaReplicationIT
     public final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( NR_CORE_MEMBERS )
             .withNumberOfReadReplicas( NR_READ_REPLICAS )
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
-            .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
+            .withDiscoveryServiceType( DiscoveryServiceType.HAZELCAST );
 
     @Test
     public void shouldNotBeAbleToWriteToReadReplica() throws Exception
@@ -239,10 +238,6 @@ public class ReadReplicaReplicationIT
         {
             Path relativePath = dbStoreDirectory.relativize( files.next().toPath().toAbsolutePath() );
             labelScanStoreFiles.add( relativePath );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
@@ -452,7 +447,7 @@ public class ReadReplicaReplicationIT
         // when the poller is paused, transaction doesn't make it to the read replica
         try
         {
-            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+            transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
             fail( "should have thrown exception" );
         }
         catch ( TransactionFailureException e )
@@ -462,7 +457,7 @@ public class ReadReplicaReplicationIT
 
         // when the poller is resumed, it does make it to the read replica
         pollingClient.start();
-        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 3 ) );
+        transactionIdTracker( readReplicaGraphDatabase ).awaitUpToDate( transactionVisibleOnLeader, ofSeconds( 15 ) );
     }
 
     private TransactionIdTracker transactionIdTracker( GraphDatabaseAPI database )

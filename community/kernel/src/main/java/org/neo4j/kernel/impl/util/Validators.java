@@ -29,18 +29,11 @@ import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.ExplicitIndexValueValidator;
-import org.neo4j.kernel.impl.api.IndexValueValidator;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 
 public class Validators
 {
-
-    public static final IndexValueValidator INDEX_VALUE_VALIDATOR = IndexValueValidator.INSTANCE;
-
-    public static final ExplicitIndexValueValidator EXPLICIT_INDEX_VALUE_VALIDATOR = ExplicitIndexValueValidator.INSTANCE;
-
     public static final Validator<File> REGEX_FILE_EXISTS = file ->
     {
         if ( matchingFiles( file ).isEmpty() )
@@ -157,5 +150,16 @@ public class Validators
     public static <T> Validator<T> emptyValidator()
     {
         return value -> {};
+    }
+
+    public static <T> Validator<T> all( Validator<T>... validators )
+    {
+        return value ->
+        {
+            for ( Validator<T> validator : validators )
+            {
+                validator.validate( value );
+            }
+        };
     }
 }

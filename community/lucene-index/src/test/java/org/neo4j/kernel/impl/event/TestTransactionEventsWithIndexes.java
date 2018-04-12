@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 public class TestTransactionEventsWithIndexes extends TestTransactionEvents
 {
     @Test
-    public void nodeCanBeExplicitIndexedInBeforeCommit() throws Exception
+    public void nodeCanBeExplicitIndexedInBeforeCommit()
     {
         // Given we have an explicit index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -53,7 +53,7 @@ public class TestTransactionEventsWithIndexes extends TestTransactionEvents
         db.registerTransactionEventHandler( new TransactionEventHandler<Object>()
         {
             @Override
-            public Object beforeCommit( TransactionData data ) throws Exception
+            public Object beforeCommit( TransactionData data )
             {
                 Iterator<Node> nodes = data.createdNodes().iterator();
                 if ( nodes.hasNext() )

@@ -288,7 +288,6 @@ public class SwitchToSlaveBranchThenCopyTest
 
     @SuppressWarnings( "unchecked" )
     private SwitchToSlaveBranchThenCopy newSwitchToSlaveSpy( PageCache pageCacheMock, StoreCopyClient storeCopyClient )
-            throws IOException
     {
         ClusterMembers clusterMembers = mock( ClusterMembers.class );
         ClusterMember master = mock( ClusterMember.class );

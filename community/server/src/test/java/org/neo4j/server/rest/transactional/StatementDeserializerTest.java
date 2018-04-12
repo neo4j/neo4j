@@ -22,7 +22,6 @@ package org.neo4j.server.rest.transactional;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.Status;
@@ -41,7 +40,7 @@ public class StatementDeserializerTest
 {
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldDeserializeSingleStatement() throws Exception
+    public void shouldDeserializeSingleStatement()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList( map( "statement", "Blah blah", "parameters", map( "one", 12 ) ) ) ) );
@@ -60,7 +59,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldRejectMapWithADifferentFieldBeforeStatement() throws Exception
+    public void shouldRejectMapWithADifferentFieldBeforeStatement()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -72,7 +71,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished() throws Exception
+    public void shouldTotallyIgnoreInvalidJsonAfterStatementArrayHasFinished()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -94,7 +93,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldIgnoreUnknownFields() throws Exception
+    public void shouldIgnoreUnknownFields()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"b\" : { \"k\":1 }, \"statement\" : \"blah\" } ] }";
@@ -110,7 +109,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTakeParametersBeforeStatement() throws Exception
+    public void shouldTakeParametersBeforeStatement()
     {
         // Given
         String json =  "{ \"statements\" : [ { \"a\" : \"\", \"parameters\" : { \"k\":1 }, \"statement\" : \"blah\"}]}";
@@ -129,7 +128,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldTreatEmptyInputStreamAsEmptyStatementList() throws Exception
+    public void shouldTreatEmptyInputStreamAsEmptyStatementList()
     {
         // Given
         byte[] json = new byte[0];
@@ -144,7 +143,7 @@ public class StatementDeserializerTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldDeserializeMultipleStatements() throws Exception
+    public void shouldDeserializeMultipleStatements()
     {
         // Given
         String json = createJsonFrom( map( "statements", asList(
@@ -171,7 +170,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
+    public void shouldNotThrowButReportErrorOnInvalidInput()
     {
         assertYieldsErrors( "{}",
                 new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "Unable to " +
@@ -210,7 +209,7 @@ public class StatementDeserializerTest
                                 "line: 1, column: 42]" ) ) );
     }
 
-    private void assertYieldsErrors( String json, Neo4jError... expectedErrors ) throws UnsupportedEncodingException
+    private void assertYieldsErrors( String json, Neo4jError... expectedErrors )
     {
         StatementDeserializer de = new StatementDeserializer( new ByteArrayInputStream( UTF8.encode( json ) )
         {

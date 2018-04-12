@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.Modes;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -30,43 +31,38 @@ import org.neo4j.storageengine.api.StorageStatement;
  * This is a temporary implementation of the Kernel API, used to enable early testing. The plan is to merge this
  * class with org.neo4j.kernel.impl.api.Kernel.
  */
-public class NewKernel implements Kernel
+public class NewKernel implements Kernel, Modes
 {
     private final StorageEngine engine;
-    private final KernelToken token;
     private final InwardKernel kernel;
 
     private StorageStatement statement;
-    private Cursors cursors;
 
     private volatile boolean isRunning;
 
-    public NewKernel( StorageEngine engine, KernelToken token, InwardKernel kernel )
+    public NewKernel( StorageEngine engine, InwardKernel kernel )
     {
         this.engine = engine;
-        this.token = token;
         this.kernel = kernel;
         this.isRunning = false;
     }
 
     @Override
-    public CursorFactory cursors()
+    public KernelSession beginSession( LoginContext loginContext )
     {
         assert isRunning : "kernel is not running, so it is not possible to use it";
-        return cursors;
+        return new KernelSession( kernel, loginContext );
     }
 
     @Override
-    public KernelSession beginSession( SecurityContext securityContext )
+    public Modes modes()
     {
-        assert isRunning : "kernel is not running, so it is not possible to use it";
-        return new KernelSession( token, kernel, securityContext );
+        return this;
     }
 
     public void start()
     {
         statement = engine.storeReadLayer().newStatement();
-        this.cursors = new Cursors();
         isRunning = true;
     }
 
@@ -78,6 +74,11 @@ public class NewKernel implements Kernel
         }
         statement.close();
         isRunning = false;
-        this.cursors = null;
+    }
+
+    @Override
+    public boolean twoLayerTransactionState()
+    {
+        return false;
     }
 }

@@ -44,6 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -133,7 +134,7 @@ public class SegmentsTest
             segments.truncate( 20, 9, 4 );
 
             // Then
-            verify( fsa, times( 0 ) ).deleteFile( any() );
+            verify( fsa, never() ).deleteFile( any() );
         }
     }
 
@@ -164,7 +165,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldCloseTheSegments() throws Exception
+    public void shouldCloseTheSegments()
     {
         // Given
         Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
@@ -180,7 +181,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldNotSwallowExceptionOnClose() throws Exception
+    public void shouldNotSwallowExceptionOnClose()
     {
         // Given
         doThrow( new RuntimeException() ).when( fileA ).close();

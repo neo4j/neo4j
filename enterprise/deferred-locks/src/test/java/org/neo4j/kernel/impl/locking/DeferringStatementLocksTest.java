@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class DeferringStatementLocksTest
 {
     @Test
-    public void shouldUseCorrectClientForImplicitAndExplicit() throws Exception
+    public void shouldUseCorrectClientForImplicitAndExplicit()
     {
         // GIVEN
         final Locks.Client client = mock( Locks.Client.class );
@@ -49,7 +49,7 @@ public class DeferringStatementLocksTest
     }
 
     @Test
-    public void shouldDoNothingWithClientWhenPreparingForCommitWithNoLocksAcquired() throws Exception
+    public void shouldDoNothingWithClientWhenPreparingForCommitWithNoLocksAcquired()
     {
         // GIVEN
         final Locks.Client client = mock( Locks.Client.class );
@@ -64,7 +64,7 @@ public class DeferringStatementLocksTest
     }
 
     @Test
-    public void shouldPrepareExplicitForCommitWhenLocksAcquire() throws Exception
+    public void shouldPrepareExplicitForCommitWhenLocksAcquire()
     {
         // GIVEN
         final Locks.Client client = mock( Locks.Client.class );
@@ -84,7 +84,7 @@ public class DeferringStatementLocksTest
     }
 
     @Test
-    public void shouldStopUnderlyingClient() throws Exception
+    public void shouldStopUnderlyingClient()
     {
         // GIVEN
         final Locks.Client client = mock( Locks.Client.class );
@@ -98,7 +98,7 @@ public class DeferringStatementLocksTest
     }
 
     @Test
-    public void shouldCloseUnderlyingClient() throws Exception
+    public void shouldCloseUnderlyingClient()
     {
         // GIVEN
         final Locks.Client client = mock( Locks.Client.class );

@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 public class MasterServerTest
 {
     @Test
-    public void shouldCleanExistentLockSessionOnFinishOffChannel() throws Exception
+    public void shouldCleanExistentLockSessionOnFinishOffChannel()
     {
         Master master = mock( Master.class );
         ConversationManager conversationManager = mock( ConversationManager.class );

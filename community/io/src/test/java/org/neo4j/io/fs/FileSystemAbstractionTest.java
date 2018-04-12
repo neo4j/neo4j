@@ -82,7 +82,7 @@ public abstract class FileSystemAbstractionTest
     protected File path;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         fsa = buildFileSystemAbstraction();
         path = new File( testDirectory.directory(), UUID.randomUUID().toString() );
@@ -725,6 +725,12 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
+    public void lastModifiedOfNonExistingFileIsZero() throws Exception
+    {
+        assertThat( fsa.lastModifiedTime( nonExistingFile( "blabla" ) ), is( 0L ) );
+    }
+
+    @Test
     public void shouldHandlePathThatLooksVeryDifferentWhenCanonicalized() throws Exception
     {
         File dir = existingDirectory( "/././home/.././././home/././.././././././././././././././././././home/././" );
@@ -804,7 +810,7 @@ public abstract class FileSystemAbstractionTest
         return file;
     }
 
-    private File nonExistingFile( String fileName ) throws IOException
+    private File nonExistingFile( String fileName )
     {
         File file = new File( path, fileName );
         return file;

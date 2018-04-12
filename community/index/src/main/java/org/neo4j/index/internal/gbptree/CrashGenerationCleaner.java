@@ -34,7 +34,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Scans the entire tree and checks all GSPPs, replacing all CRASH gen GSPs with zeros.
@@ -108,7 +107,7 @@ class CrashGenerationCleaner
         Throwable finalError = error.get();
         if ( finalError != null )
         {
-            throw launderedException( IOException.class, finalError );
+            throw new IOException( finalError );
         }
 
         long endTime = currentTimeMillis();

@@ -30,14 +30,14 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -87,7 +87,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsCreatedNodes() throws Exception
+    public void showsCreatedNodes()
     {
         // Given
         state.nodeDoCreate( 1 );
@@ -124,7 +124,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsAddedRelationships() throws Exception
+    public void showsAddedRelationships()
     {
         // Given
         state.relationshipDoCreate( 1, 1, 1L, 2L );
@@ -161,7 +161,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysNodeIsDeleted() throws Exception
+    public void correctlySaysNodeIsDeleted()
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -176,7 +176,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysRelIsDeleted() throws Exception
+    public void correctlySaysRelIsDeleted()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );
@@ -225,7 +225,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.nodeDoRemoveProperty( 1L, propertyKeyId, prevValue );
+        state.nodeDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 20L;
         when( storeStatement.acquireSingleNodeCursor( 1L ) ).thenReturn(
@@ -250,7 +250,7 @@ public class TxStateTransactionDataViewTest
         // Given
         int propertyKeyId = 1;
         Value prevValue = Values.of( "prevValue" );
-        state.relationshipDoRemoveProperty( 1L, propertyKeyId, prevValue );
+        state.relationshipDoRemoveProperty( 1L, propertyKeyId );
         when( ops.propertyKeyGetName( propertyKeyId ) ).thenReturn( "theKey" );
         long propertyId = 40L;
         when( storeStatement.acquireSingleRelationshipCursor( 1 ) )
@@ -345,7 +345,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read() );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( s -> -1 ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );
@@ -357,7 +357,7 @@ public class TxStateTransactionDataViewTest
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
-                .thenReturn( new SecurityContext.Frozen( authSubject, AccessMode.Static.FULL ) );
+                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "Christof", transactionDataSnapshot.username() );

@@ -38,7 +38,7 @@ class BooleanTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    boolean[] convert( Object[] data ) throws BadInputException
+    boolean[] convert( Object[] data )
     {
         Boolean[] incoming = (Boolean[]) data;
         boolean[] result = new boolean[incoming.length];

@@ -35,7 +35,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 public class CountsRecordStateTest
 {
     @Test
-    public void shouldReportDifferencesBetweenDifferentStates() throws Exception
+    public void shouldReportDifferencesBetweenDifferentStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();
@@ -60,7 +60,7 @@ public class CountsRecordStateTest
     }
 
     @Test
-    public void shouldNotReportAnythingForEqualStates() throws Exception
+    public void shouldNotReportAnythingForEqualStates()
     {
         // given
         CountsRecordState oracle = new CountsRecordState();

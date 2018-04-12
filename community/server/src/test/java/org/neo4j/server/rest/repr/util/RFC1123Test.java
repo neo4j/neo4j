@@ -66,7 +66,7 @@ public class RFC1123Test
     }
 
     @Test
-    public void shouldReturnSameInstanceInSameThread() throws Exception
+    public void shouldReturnSameInstanceInSameThread()
     {
         // given
         RFC1123 instance = RFC1123.instance();

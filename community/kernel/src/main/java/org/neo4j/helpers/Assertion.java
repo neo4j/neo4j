@@ -35,6 +35,6 @@ public class Assertion
 
     private Assertion()
     {
-        // no instance allowed
+        throw new AssertionError( "No instances" );
     }
 }

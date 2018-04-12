@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
@@ -54,7 +54,7 @@ public abstract class SchemaKernelException extends KernelException
     }
 
     protected static String messageWithLabelAndPropertyName( TokenNameLookup tokenNameLookup, String formatString,
-            LabelSchemaDescriptor descriptor )
+            SchemaDescriptor descriptor )
     {
         int[] propertyIds = descriptor.getPropertyIds();
 
@@ -66,7 +66,7 @@ public abstract class SchemaKernelException extends KernelException
                                             .mapToObj( i -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
                                             .collect( Collectors.joining( " and " ));
             return String.format( formatString,
-                    tokenNameLookup.labelGetName( descriptor.getLabelId() ), propertyString);
+                    tokenNameLookup.labelGetName( descriptor.keyId() ), propertyString);
         }
         else
         {
@@ -75,7 +75,7 @@ public abstract class SchemaKernelException extends KernelException
                                        .mapToObj( Integer::toString )
                                        .collect( Collectors.joining( ", " )) + "]";
             return String.format( formatString,
-                    "label[" + descriptor.getLabelId() + "]", keyString );
+                    "label[" + descriptor.keyId() + "]", keyString );
         }
     }
 }

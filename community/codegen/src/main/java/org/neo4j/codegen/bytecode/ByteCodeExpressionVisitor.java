@@ -325,9 +325,10 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
 
     private void equal( Expression lhs, Expression rhs, boolean equal )
     {
-        assertSameType( lhs, rhs, "compare" );
         if ( lhs.type().isPrimitive() )
         {
+            assert rhs.type().isPrimitive();
+
             switch ( lhs.type().name() )
             {
             case "int":
@@ -335,15 +336,19 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             case "short":
             case "char":
             case "boolean":
+                assertSameType( lhs, rhs, "compare" );
                 compareIntOrReferenceType( lhs, rhs, equal ? IF_ICMPNE : IF_ICMPEQ );
                 break;
             case "long":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, LCMP, equal ? IFNE : IFEQ );
                 break;
             case "float":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, FCMPL, equal ? IFNE : IFEQ );
                 break;
             case "double":
+                assertSameType( lhs, rhs, "compare" );
                 compareLongOrFloatType( lhs, rhs, DCMPL, equal ? IFNE : IFEQ );
                 break;
             default:
@@ -352,6 +357,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         else
         {
+            assert !(rhs.type().isPrimitive());
             compareIntOrReferenceType( lhs, rhs, equal ? IF_ACMPNE : IF_ACMPEQ );
         }
     }
@@ -359,18 +365,19 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void or( Expression... expressions )
     {
-        assert expressions.length == 2 : "only supports or(lhs, rhs)";
-        Expression lhs = expressions[0];
-        Expression rhs = expressions[1];
+        assert expressions.length >= 2;
         /*
          * something like:
          *
-         * LOAD lhs
+         * LOAD expression1
          * IF TRUE GOTO 0
-         * LOAD rhs
+         * LOAD expression2
+         * IF TRUE GOTO 0
+         * ...
+         * LOAD expressionN
          * IF FALSE GOTO 1
-         *
-         * 0:
+         * 0: // The reason we have this extra block for the true case is because we mimic what javac does
+         *    // hoping that it will be nice to the JIT compiler
          *  LOAD TRUE
          *  GOTO 2
          * 1:
@@ -378,15 +385,20 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
          * 2:
          *  ...continue doing stuff
          */
-        lhs.accept( this );
         Label l0 = new Label();
-        methodVisitor.visitJumpInsn( IFNE, l0 );
-        rhs.accept( this );
         Label l1 = new Label();
+        Label l2 = new Label();
+        for ( int i = 0; i < expressions.length; i++ )
+        {
+            expressions[i].accept( this );
+            if ( i < expressions.length - 1 )
+            {
+                methodVisitor.visitJumpInsn( IFNE, l0 );
+            }
+        }
         methodVisitor.visitJumpInsn( IFEQ, l1 );
         methodVisitor.visitLabel( l0 );
         methodVisitor.visitInsn( ICONST_1 );
-        Label l2 = new Label();
         methodVisitor.visitJumpInsn( GOTO, l2 );
         methodVisitor.visitLabel( l1 );
         methodVisitor.visitInsn( ICONST_0 );
@@ -396,30 +408,32 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     @Override
     public void and( Expression... expressions )
     {
-        assert expressions.length == 2 : "only supports and(lhs, rhs)";
-        Expression lhs = expressions[0];
-        Expression rhs = expressions[1];
+        assert expressions.length >= 2;
         /*
          * something like:
          *
-         * LOAD lhs
+         * LOAD expression1
          * IF FALSE GOTO 0
-         * LOAD rhs
+         * LOAD expression2
          * IF FALSE GOTO 0
          * LOAD TRUE
+         * ...
+         * LOAD expressionN
+         * IF FALSE GOTO 0
          * GOTO 1
          * 0:
          *  LOAD FALSE
          * 1:
          *  ...continue doing stuff
          */
-        lhs.accept( this );
         Label l0 = new Label();
-        methodVisitor.visitJumpInsn( IFEQ, l0 );
-        rhs.accept( this );
-        methodVisitor.visitJumpInsn( IFEQ, l0 );
-        methodVisitor.visitInsn( ICONST_1 );
         Label l1 = new Label();
+        for ( Expression expression : expressions )
+        {
+            expression.accept( this );
+            methodVisitor.visitJumpInsn( IFEQ, l0 );
+        }
+        methodVisitor.visitInsn( ICONST_1 );
         methodVisitor.visitJumpInsn( GOTO, l1 );
         methodVisitor.visitLabel( l0 );
         methodVisitor.visitInsn( ICONST_0 );
@@ -821,7 +835,9 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     {
         if ( !lhs.type().equals( rhs.type() ) )
         {
-            throw new IllegalArgumentException( String.format( "Can only %s values of the same type", operation ) );
+            throw new IllegalArgumentException(
+                    String.format( "Can only %s values of the same type (lhs: %s, rhs: %s)", operation, lhs.type().toString(), rhs.type().toString() )
+            );
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,18 +34,19 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -64,9 +66,11 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
+public class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
+    private static final int HAZELCAST_MIN_CLUSTER = 2;
+
     private final Config config;
     private final MemberId myself;
     private final Log log;
@@ -74,22 +78,24 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final CoreTopologyListenerService listenerService;
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
-    private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
+    private final String localDBName;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
+    private volatile LeaderInfo leaderInfo = LeaderInfo.INITIAL;
     private volatile HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
     private volatile Map<MemberId,AdvertisedSocketAddress> catchupAddressMap = new HashMap<>();
+    private volatile Map<MemberId,RoleInfo> coreRoles = Collections.emptyMap();
 
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
+    public HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
@@ -97,30 +103,57 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
-        this.logProvider = logProvider;
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
+        this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
-    public void addCoreTopologyListener( Listener listener )
+    public void addLocalCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( coreTopology );
+        listener.onCoreTopologyChange( localCoreServers() );
     }
 
     @Override
-    public boolean setClusterId( ClusterId clusterId ) throws InterruptedException
+    public void removeLocalCoreTopologyListener( Listener listener )
+    {
+        listenerService.removeCoreTopologyListener( listener );
+    }
+
+    @Override
+    public boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
-        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId );
+        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId, dbName );
     }
 
     @Override
-    public void start() throws Throwable
+    public void setLeader( LeaderInfo leaderInfo, String dbName )
+    {
+        if ( this.leaderInfo.term() < leaderInfo.term() )
+        {
+            this.leaderInfo = leaderInfo;
+        }
+    }
+
+    @Override
+    public Map<MemberId,RoleInfo> allCoreRoles()
+    {
+        return coreRoles;
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return localDBName;
+    }
+
+    @Override
+    public void start()
     {
         /*
          * We will start hazelcast in its own thread. Hazelcast blocks until the minimum cluster size is available
@@ -211,8 +244,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             networkConfig.setInterfaces( interfaces );
         }
 
-        additionalConfig( networkConfig, logProvider );
-
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
@@ -232,8 +263,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setProperty( OPERATION_CALL_TIMEOUT_MILLIS.getName(), String.valueOf( baseHazelcastTimeoutMillis ) );
         c.setProperty( MERGE_NEXT_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
         c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
-        c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
-                String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
+        c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(), String.valueOf( HAZELCAST_MIN_CLUSTER ) );
 
         if ( config.get( disable_middleware_logging ) )
         {
@@ -278,11 +308,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         return hazelcastInstance;
     }
 
-    protected void additionalConfig( NetworkConfig networkConfig, LogProvider logProvider )
-    {
-
-    }
-
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
     {
         userLog.info( "My connection info: " + "[\n\tDiscovery:   listen=%s, advertised=%s," +
@@ -298,19 +323,17 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         userLog.info( "Attempting to connect to the other cluster members before continuing..." );
     }
 
-    private Integer minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize()
-    {
-        return config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation ) / 2 + 1;
-    }
-
     @Override
-    public CoreTopology coreServers()
+    public CoreTopology allCoreServers()
     {
+        // It is perhaps confusing (Or even error inducing) that this core Topology will always contain the cluster id
+        // for the database local to the host upon which this method is called.
+        // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return coreTopology;
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
     }
@@ -326,11 +349,24 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }
 
+    private void refreshRoles() throws InterruptedException
+    {
+        waitOnHazelcastInstanceCreation();
+
+        if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
+        {
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
+        }
+
+        coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
+    }
+
     private synchronized void refreshTopology() throws InterruptedException
     {
         refreshCoreTopology();
         refreshReadReplicaTopology();
-        catchupAddressMap = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
+        refreshRoles();
+        catchupAddressMap = extractCatchupAddressesMap( localCoreServers(), localReadReplicas() );
     }
 
     private void refreshCoreTopology() throws InterruptedException

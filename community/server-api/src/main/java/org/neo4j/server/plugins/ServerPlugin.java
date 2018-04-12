@@ -167,7 +167,7 @@ public abstract class ServerPlugin
      */
     protected Collection<PluginPoint> getDefaultExtensionPoints( PluginPointFactory pluginPointFactory )
     {
-        List<PluginPoint> result = new ArrayList<PluginPoint>();
+        List<PluginPoint> result = new ArrayList<>();
         for ( Method method : getClass().getMethods() )
         {
             PluginTarget target = method.getAnnotation( PluginTarget.class );

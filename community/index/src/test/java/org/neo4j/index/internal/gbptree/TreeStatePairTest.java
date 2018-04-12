@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -104,7 +105,13 @@ public class TreeStatePairTest
     @Parameterized.Parameter( 3 )
     public Selected expectedOldest;
 
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( 256 );
+    private PageAwareByteArrayCursor cursor;
+
+    @Before
+    public void setUp()
+    {
+        cursor = new PageAwareByteArrayCursor( 256 );
+    }
 
     @Test
     public void shouldCorrectSelectNewestAndOldestState() throws Exception
@@ -158,7 +165,7 @@ public class TreeStatePairTest
         BROKEN
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9, true );
                 cursor.rewind();
@@ -170,7 +177,7 @@ public class TreeStatePairTest
         VALID // stableGeneration:5 and unstableGeneration:6
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, true );
             }
@@ -178,7 +185,7 @@ public class TreeStatePairTest
         CRASH_VALID // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, true );
             }
@@ -186,7 +193,7 @@ public class TreeStatePairTest
         WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, true );
             }
@@ -194,7 +201,7 @@ public class TreeStatePairTest
         OLD_VALID // stableGeneration:2 and unstableGeneration:3
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, true );
             }
@@ -202,7 +209,7 @@ public class TreeStatePairTest
         VALID_DIRTY // stableGeneration:5 and unstableGeneration:6
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, false );
             }
@@ -210,7 +217,7 @@ public class TreeStatePairTest
         CRASH_VALID_DIRTY // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, false );
             }
@@ -218,7 +225,7 @@ public class TreeStatePairTest
         WIDE_VALID_DIRTY // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, false );
             }
@@ -226,13 +233,13 @@ public class TreeStatePairTest
         OLD_VALID_DIRTY // stableGeneration:2 and unstableGeneration:3
         {
             @Override
-            void write( PageCursor cursor ) throws IOException
+            void write( PageCursor cursor )
             {
                 TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, false );
             }
         };
 
-        abstract void write( PageCursor cursor ) throws IOException;
+        abstract void write( PageCursor cursor );
     }
 
     enum Selected

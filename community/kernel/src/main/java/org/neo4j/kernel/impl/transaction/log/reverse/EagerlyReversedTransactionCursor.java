@@ -54,7 +54,7 @@ public class EagerlyReversedTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         if ( indexToReturn > 0 )
         {

@@ -34,7 +34,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
 public class StageTest
 {
     @Test
-    public void shouldReceiveBatchesInOrder() throws Exception
+    public void shouldReceiveBatchesInOrder()
     {
         // GIVEN
         Configuration config = new Configuration.Overridden( DEFAULT )

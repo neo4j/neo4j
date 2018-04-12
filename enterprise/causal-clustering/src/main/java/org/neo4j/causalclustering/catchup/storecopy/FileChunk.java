@@ -45,7 +45,7 @@ public class FileChunk
         return new FileChunk( last ? bytes.length : USE_MAX_SIZE_AND_EXPECT_MORE_CHUNKS, bytes );
     }
 
-    private FileChunk( int encodedLength, byte[] bytes )
+    FileChunk( int encodedLength, byte[] bytes )
     {
         this.encodedLength = encodedLength;
         this.bytes = bytes;
@@ -115,7 +115,7 @@ public class FileChunk
         }
 
         @Override
-        protected FileChunk unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+        protected FileChunk unmarshal0( ReadableChannel channel ) throws IOException
         {
             int encodedLength = channel.getInt();
             int length = encodedLength == USE_MAX_SIZE_AND_EXPECT_MORE_CHUNKS ? MAX_SIZE : encodedLength;

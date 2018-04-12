@@ -115,7 +115,7 @@ public class NodeLabelRange
             {
                 result.append( "null" );
             }
-            result.append( "]" );
+            result.append( ']' );
         }
         return result.append( "}]" ).toString();
     }

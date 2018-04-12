@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken,
 import org.neo4j.cypher.internal.v3_4.logical.plans.SingleQueryExpression
 import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api.Transaction.Type
-import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -341,11 +341,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   implicit class RichGraph(graph: GraphDatabaseQueryService) {
-    def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
-      val tx = graph.beginTransaction(Type.explicit, SecurityContext.AUTH_DISABLED)
+      val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
       try {
         val result = f(tx)
         tx.success()
@@ -356,6 +355,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
 
     def shutdown() = gds.shutdown()
+
+    def createNode() = gds.createNode()
 
     def createNode(label: Label) = gds.createNode(label)
 

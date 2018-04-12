@@ -23,9 +23,11 @@ import java.util
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.helpers.collection.MapUtil.map
-import org.neo4j.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException
+import org.neo4j.internal.kernel.api.procs.{FieldSignature, Neo4jTypes}
+import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, FieldSignature, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
@@ -77,7 +79,9 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
         FieldSignature.outputField("oldTwo",Neo4jTypes.NTString, true),
         FieldSignature.outputField("newTwo",Neo4jTypes.NTString) ))
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]):  RawIterator[Array[AnyRef], ProcedureException] =
+        override def apply(ctx: Context,
+                           input: Array[AnyRef],
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](Array("alpha","junk","beta"))
       }
     }

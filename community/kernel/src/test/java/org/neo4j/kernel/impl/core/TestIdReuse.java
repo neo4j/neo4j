@@ -35,13 +35,13 @@ import static org.junit.Assert.assertEquals;
 public class TestIdReuse
 {
     @Test
-    public void makeSureIdsGetsReusedForPropertyStore() throws Exception
+    public void makeSureIdsGetsReusedForPropertyStore()
     {
         makeSureIdsGetsReused( "neostore.propertystore.db", 10, 200 );
     }
 
     @Test
-    public void makeSureIdsGetsReusedForArrayStore() throws Exception
+    public void makeSureIdsGetsReusedForArrayStore()
     {
         long[] array = new long[500];
         for ( int i = 0; i < array.length; i++ )
@@ -52,7 +52,7 @@ public class TestIdReuse
     }
 
     @Test
-    public void makeSureIdsGetsReusedForStringStore() throws Exception
+    public void makeSureIdsGetsReusedForStringStore()
     {
         String string = "something";
         for ( int i = 0; i < 100; i++ )
@@ -65,7 +65,7 @@ public class TestIdReuse
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
-    private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
+    private void makeSureIdsGetsReused( String fileName, Object value, int iterations )
     {
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );

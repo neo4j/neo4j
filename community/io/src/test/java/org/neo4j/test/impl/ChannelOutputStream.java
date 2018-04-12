@@ -28,7 +28,7 @@ import org.neo4j.io.fs.StoreChannel;
 public class ChannelOutputStream extends OutputStream
 {
     private final StoreChannel channel;
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect( 8096 );
+    private final ByteBuffer buffer = ByteBuffer.allocate( 8096 );
 
     public ChannelOutputStream( StoreChannel channel, boolean append ) throws IOException
     {

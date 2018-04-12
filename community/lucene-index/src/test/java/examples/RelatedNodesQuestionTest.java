@@ -49,11 +49,11 @@ public class RelatedNodesQuestionTest
             // ...creation of the nodes and relationship
             Node node1 = service.createNode();
             Node node2 = service.createNode();
-            String a_uuid = "xyz";
+            String uuid = "xyz";
             Relationship relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "related" ) );
-            index.add( relationship, "uuid", a_uuid );
+            index.add( relationship, "uuid", uuid );
             // query
-            try ( IndexHits<Relationship> hits = index.get( "uuid", a_uuid, node1, node2 ) )
+            try ( IndexHits<Relationship> hits = index.get( "uuid", uuid, node1, node2 ) )
             {
                 assertEquals( 1, hits.size() );
             }

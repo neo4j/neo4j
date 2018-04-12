@@ -22,16 +22,16 @@ package org.neo4j.causalclustering.core.consensus;
 import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 
-public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
 {
-    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private final ShouldRenewElectionTimeout shouldRenewElectionTimeout;
 
-    public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegateHandler,
+    public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler,
             LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
         this.delegateHandler = delegateHandler;
@@ -41,8 +41,7 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
 
     public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
     {
-        return ( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate ) ->
-                new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
+        return delegate -> new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
     }
 
     @Override
@@ -58,13 +57,13 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
     }
 
     @Override
-    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message )
     {
         handleTimeouts( message );
         delegateHandler.handle( message );
     }
 
-    private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    private void handleTimeouts( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message )
     {
         if ( message.dispatch( shouldRenewElectionTimeout ) )
         {
@@ -96,73 +95,73 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
         @Override
         public Boolean handle( RaftMessages.Vote.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Vote.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PreVote.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PreVote.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.AppendEntries.Response response )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Timeout.Election election )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.NewEntry.Request request )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
-            return false;
+            return Boolean.FALSE;
         }
 
         @Override
         public Boolean handle( RaftMessages.PruneRequest pruneRequest )
         {
-            return false;
+            return Boolean.FALSE;
         }
     }
 }

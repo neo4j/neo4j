@@ -183,7 +183,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
                  "Drop uniqueness constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
-    public void drop_constraint() throws Exception
+    public void drop_constraint()
     {
         data.get();
 
@@ -213,7 +213,7 @@ public class SchemaConstraintsIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void drop_non_existent_constraint() throws Exception
+    public void drop_non_existent_constraint()
     {
         String labelName = labels.newInstance();
         String propertyKey = properties.newInstance();

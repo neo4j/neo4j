@@ -25,6 +25,7 @@
   <properties>
     <licensing.prepend.text>notice-asl-prefix.txt</licensing.prepend.text>
     <license-text.header>${project.baseUri}/ASL-2-header.txt</license-text.header>
+    <moduleName>org.neo4j.cypher.internal.v3_4.expressions</moduleName>
   </properties>
 
   <licenses>

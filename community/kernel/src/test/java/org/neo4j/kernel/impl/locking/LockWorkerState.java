@@ -27,7 +27,7 @@ class LockWorkerState
     final Locks grabber;
     final Locks.Client client;
     volatile boolean deadlockOnLastWait;
-    final List<String> completedOperations = new ArrayList<String>();
+    final List<String> completedOperations = new ArrayList<>();
     String doing;
 
     LockWorkerState( Locks locks )

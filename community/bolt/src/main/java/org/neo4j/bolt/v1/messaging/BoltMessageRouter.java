@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
@@ -35,7 +35,7 @@ import org.neo4j.values.virtual.MapValue;
  * This class is responsible for routing incoming request messages to a worker
  * as well as handling outgoing response messages via appropriate handlers.
  */
-public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeException>
+public class BoltMessageRouter implements BoltRequestMessageHandler
 {
     private final BoltMessageLogger messageLogger;
 
@@ -46,98 +46,98 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     private final MessageProcessingHandler resultHandler;
     private final MessageProcessingHandler defaultHandler;
 
-    private BoltWorker worker;
+    private BoltResponseMessageHandler<IOException> output;
+    private BoltConnection connection;
 
     public BoltMessageRouter( Log internalLog, BoltMessageLogger messageLogger,
-                              BoltWorker worker, BoltResponseMessageHandler<IOException> output,
-                              Runnable onEachCompletedRequest )
+                              BoltConnection connection, BoltResponseMessageHandler<IOException> output )
     {
         this.messageLogger = messageLogger;
 
-        this.initHandler = new InitHandler( output, onEachCompletedRequest, worker, internalLog );
-        this.runHandler = new RunHandler( output, onEachCompletedRequest, worker, internalLog );
-        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, worker, internalLog );
-        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, worker, internalLog );
+        this.initHandler = new InitHandler( output, connection, internalLog );
+        this.runHandler = new RunHandler( output, connection, internalLog );
+        this.resultHandler = new ResultHandler( output, connection, internalLog );
+        this.defaultHandler = new MessageProcessingHandler( output, connection, internalLog );
 
-        this.worker = worker;
+        this.connection = connection;
+        this.output = output;
     }
 
     @Override
-    public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
+    public void onInit( String userAgent, Map<String,Object> authToken )
     {
-        // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
         messageLogger.logInit(userAgent );
-        worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
+        connection.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
     @Override
-    public void onAckFailure() throws RuntimeException
+    public void onAckFailure()
     {
         messageLogger.logAckFailure();
-        worker.enqueue( session -> session.ackFailure( defaultHandler ) );
+        connection.enqueue( session -> session.ackFailure( defaultHandler ) );
     }
 
     @Override
-    public void onReset() throws RuntimeException
+    public void onReset()
     {
         messageLogger.clientEvent("INTERRUPT");
         messageLogger.logReset();
-        worker.interrupt();
-        worker.enqueue( session -> session.reset( defaultHandler ) );
+        connection.interrupt();
+        connection.enqueue( session -> session.reset( defaultHandler ) );
     }
 
     @Override
     public void onRun( String statement, MapValue params )
     {
         messageLogger.logRun();
-        worker.enqueue( session -> session.run( statement, params, runHandler ) );
+        connection.enqueue( session -> session.run( statement, params, runHandler ) );
     }
 
     @Override
     public void onExternalError( Neo4jError error )
     {
         messageLogger.clientEvent( "ERROR", error::message );
-        worker.enqueue( session -> session.externalError( error, defaultHandler ) );
+        connection.enqueue( session -> session.externalError( error, defaultHandler ) );
     }
 
     @Override
     public void onDiscardAll()
     {
         messageLogger.logDiscardAll();
-        worker.enqueue( session -> session.discardAll( resultHandler ) );
+        connection.enqueue( session -> session.discardAll( resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
         messageLogger.logPullAll();
-        worker.enqueue( session -> session.pullAll( resultHandler ) );
+        connection.enqueue( session -> session.pullAll( resultHandler ) );
     }
 
     private static class InitHandler extends MessageProcessingHandler
     {
-        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
+        InitHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, connection, log );
         }
 
     }
 
     private static class RunHandler extends MessageProcessingHandler
     {
-        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
+        RunHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, connection, log );
         }
 
     }
 
     private static class ResultHandler extends MessageProcessingHandler
     {
-        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker,
+        ResultHandler( BoltResponseMessageHandler<IOException> handler, BoltConnection connection,
                 Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, connection, log );
         }
 
         @Override

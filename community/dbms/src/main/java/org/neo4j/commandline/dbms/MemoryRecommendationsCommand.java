@@ -27,7 +27,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;

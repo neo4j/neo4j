@@ -129,7 +129,7 @@ public class AppendEntriesRequestTest
                 new RaftLogEntry[]{logEntry1, logEntry2} ) ) );
     }
 
-    private RaftLog bootstrappedLog() throws IOException
+    private RaftLog bootstrappedLog()
     {
         InMemoryRaftLog raftLog = new InMemoryRaftLog();
         raftLog.append( new RaftLogEntry( 0, content() ) );

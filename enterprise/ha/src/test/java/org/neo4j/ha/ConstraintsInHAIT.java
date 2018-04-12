@@ -39,7 +39,7 @@ public class ConstraintsInHAIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void creatingConstraintOnSlaveIsNotAllowed() throws Exception
+    public void creatingConstraintOnSlaveIsNotAllowed()
     {
         // given
         ClusterManager.ManagedCluster cluster = clusterRule.startCluster();

@@ -231,7 +231,7 @@ public class Netty4LoggerFactory extends InternalLoggerFactory
                 // Netty uses MessageFormat as placeholders, we use String.format()
                 // Sidenote: MessageFormat is the right tool for this job, it handles
                 // pluralization, i18n etc., we should change at some point.
-                return nettyLogTemplate.replaceAll( "\\{\\}", "%s" );
+                return nettyLogTemplate.replaceAll( "\\{}", "%s" );
             }
 
         };

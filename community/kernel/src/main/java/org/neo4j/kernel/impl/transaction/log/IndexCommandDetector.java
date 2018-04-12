@@ -34,7 +34,7 @@ final class IndexCommandDetector implements org.neo4j.helpers.collection.Visitor
     }
 
     @Override
-    public boolean visit( StorageCommand element ) throws IOException
+    public boolean visit( StorageCommand element )
     {
         if ( element instanceof IndexCommand )
         {

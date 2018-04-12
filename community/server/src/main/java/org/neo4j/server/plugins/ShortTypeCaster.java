@@ -38,7 +38,7 @@ class ShortTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    short[] convert( Object[] data ) throws BadInputException
+    short[] convert( Object[] data )
     {
         Short[] incoming = (Short[]) data;
         short[] result = new short[incoming.length];

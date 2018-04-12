@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
 /**
@@ -75,7 +76,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
         else
         {
-            T head = (T) heap.peek();
+            T head = heap.peek();
             if ( comparator.compare( head, e ) > 0 )
             {
                 heap.poll();
@@ -121,7 +122,13 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             @SuppressWarnings( "unchecked" )
             public T next()
             {
-                return (T) array[--cursor];
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+
+                int offset = --cursor;
+                return (T) array[offset];
             }
         };
     }

@@ -21,9 +21,10 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
-import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -34,16 +35,14 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
             throws Exception
     {
         GraphDatabaseAPI internal = (GraphDatabaseAPI) graphDb;
-        try ( Statement statement = internal.getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class ).get() )
-        {
-            SchemaWriteOperations schemaWriteOperations =
-                    statement.schemaWriteOperations();
-            TokenWriteOperations token = statement.tokenWriteOperations();
-            schemaWriteOperations.indexCreate(
-                    new org.neo4j.kernel.api.schema.LabelSchemaDescriptor( token.labelGetOrCreateForName( "Person" ),
-                            token.propertyKeyGetOrCreateForName( "firstname" ),
-                            token.propertyKeyGetOrCreateForName( "surname" ) ) );
-        }
+        KernelTransaction ktx = internal.getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( true );
+        SchemaWrite schemaWrite = ktx.schemaWrite();
+        TokenWrite token = ktx.tokenWrite();
+        schemaWrite.indexCreate(
+                SchemaDescriptorFactory.forLabel( token.labelGetOrCreateForName( "Person" ),
+                        token.propertyKeyGetOrCreateForName( "firstname" ),
+                        token.propertyKeyGetOrCreateForName( "surname" ) ) );
     }
 }

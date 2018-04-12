@@ -35,13 +35,13 @@ public class JmxServiceIT extends AbstractRestFunctionalTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
 
     @Test
-    public void shouldRespondWithJMXResources() throws Exception
+    public void shouldRespondWithJMXResources()
     {
         String url = functionalTestHelper.managementUri() + "/server/jmx";
         JaxRsResponse resp = RestRequest.req().get(url);

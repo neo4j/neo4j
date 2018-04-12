@@ -41,15 +41,14 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
@@ -71,11 +70,12 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
@@ -91,7 +91,7 @@ public class IndexRecoveryIT
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
 
@@ -101,11 +101,11 @@ public class IndexRecoveryIT
         killFuture.get();
 
         // When
-        when( mockedIndexProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) )
+        when( mockedIndexProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         startDb();
 
@@ -113,9 +113,9 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, never() ).getOnlineAccessor(
+                anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }
@@ -128,7 +128,7 @@ public class IndexRecoveryIT
 
         CountDownLatch latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
         createIndex( myLabel );
         rotateLogsAndCheckPoint();
@@ -139,9 +139,9 @@ public class IndexRecoveryIT
         killFuture.get();
         latch = new CountDownLatch( 1 );
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        when( mockedIndexProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) )
+        when( mockedIndexProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.POPULATING );
 
         // When
@@ -151,9 +151,9 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
         verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, times( 0 ) ).getOnlineAccessor(
-                anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, never() ).getOnlineAccessor(
+                anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class )
         );
         latch.countDown();
     }
@@ -166,13 +166,13 @@ public class IndexRecoveryIT
 
         IndexPopulator populator = mock( IndexPopulator.class );
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( populator );
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                        anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
@@ -182,11 +182,11 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong(), any( IndexDescriptor.class )) )
+        when( mockedIndexProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class )) )
                 .thenReturn( InternalIndexState.ONLINE );
         GatheringIndexWriter writer = new GatheringIndexWriter();
         when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                        anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( writer );
 
         // When
@@ -196,10 +196,10 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
         verify( mockedIndexProvider, times( 1 ) )
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         int onlineAccessorInvocationCount = 2; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
-                .getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getOnlineAccessor( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         assertEquals( expectedUpdates, writer.batchedUpdates );
     }
 
@@ -208,10 +208,10 @@ public class IndexRecoveryIT
     {
         // Given
         when( mockedIndexProvider
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( mock( IndexPopulator.class ) );
         when( mockedIndexProvider.getOnlineAccessor(
-                        anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
+                        anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
         ).thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );
@@ -219,7 +219,7 @@ public class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( anyLong(), any( IndexDescriptor.class ) ) )
+        when( mockedIndexProvider.getInitialState( anyLong(), any( SchemaIndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.FAILED );
 
         // When
@@ -229,15 +229,15 @@ public class IndexRecoveryIT
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
         verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                .getPopulator( anyLong(), any( SchemaIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
     }
 
     private GraphDatabaseAPI db;
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final SchemaIndexProvider mockedIndexProvider = mock( SchemaIndexProvider.class );
+    private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
-            singleInstanceSchemaIndexProviderFactory( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
+            singleInstanceIndexProviderFactory( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR.getKey(),
                     mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
@@ -246,8 +246,8 @@ public class IndexRecoveryIT
     public void setUp()
     {
         when( mockedIndexProvider.getProviderDescriptor() )
-                .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
+                .thenReturn( TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
+        when( mockedIndexProvider.compareTo( any( IndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ),
                 any( PageCache.class ) ) )
@@ -335,17 +335,17 @@ public class IndexRecoveryIT
         {
             ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
                     ThreadToStatementContextBridge.class );
-            try ( Statement statement = ctxSupplier.get() )
+            KernelTransaction ktx =
+                    ctxSupplier.getKernelTransactionBoundToThisThread( true );
+
+            int labelId = ktx.tokenRead().nodeLabel( label.name() );
+            int propertyKeyId = ktx.tokenRead().propertyKey( key );
+            LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+            for ( int number : new int[]{4, 10} )
             {
-                int labelId = statement.readOperations().labelGetForName( label.name() );
-                int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
-                LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
-                for ( int number : new int[] {4, 10} )
-                {
-                    Node node = db.createNode( label );
-                    node.setProperty( key, number );
-                    updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, Values.of( number ) ) );
-                }
+                Node node = db.createNode( label );
+                node.setProperty( key, number );
+                updates.add( IndexEntryUpdate.add( node.getId(), schemaDescriptor, Values.of( number ) ) );
             }
             tx.success();
             return updates;
@@ -363,7 +363,7 @@ public class IndexRecoveryIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                     switch ( mode )
                     {

@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
+import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponse;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponse;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -35,10 +36,10 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 @SuppressWarnings( "unchecked" )
 class TrackingResponseHandler implements CatchUpResponseHandler
 {
+    private CatchUpResponseCallback delegate;
+    private CompletableFuture<?> requestOutcomeSignal = new CompletableFuture<>();
     private final Clock clock;
-    private volatile CatchUpResponseCallback delegate;
-    private volatile CompletableFuture<?> requestOutcomeSignal = new CompletableFuture<>();
-    private volatile Long lastResponseTime;
+    private Long lastResponseTime;
 
     TrackingResponseHandler( CatchUpResponseCallback delegate, Clock clock )
     {
@@ -122,6 +123,16 @@ class TrackingResponseHandler implements CatchUpResponseHandler
         {
             recordLastResponse();
             delegate.onCoreSnapshot( requestOutcomeSignal, coreSnapshot );
+        }
+    }
+
+    @Override
+    public void onStoreListingResponse( PrepareStoreCopyResponse storeListingRequest )
+    {
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            recordLastResponse();
+            delegate.onStoreListingResponse( requestOutcomeSignal, storeListingRequest );
         }
     }
 

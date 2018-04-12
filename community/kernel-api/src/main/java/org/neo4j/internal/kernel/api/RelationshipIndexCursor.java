@@ -30,7 +30,7 @@ public interface RelationshipIndexCursor extends Cursor
 
     void targetNode( NodeCursor cursor );
 
-    int relationshipLabel();
+    int type();
 
     long sourceNodeReference();
 

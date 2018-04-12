@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 public class TopologyTest
 {
     @Test
-    public void identicalTopologiesShouldHaveNoDifference() throws Exception
+    public void identicalTopologiesShouldHaveNoDifference()
     {
         // given
         Map<MemberId,ReadReplicaInfo> readReplicaMembers = randomMembers( 5 );
@@ -53,7 +53,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectAddedMembers() throws Exception
+    public void shouldDetectAddedMembers()
     {
         // given
         Map<MemberId,ReadReplicaInfo> initialMembers = randomMembers( 3 );
@@ -74,7 +74,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectRemovedMembers() throws Exception
+    public void shouldDetectRemovedMembers()
     {
         Map<MemberId,ReadReplicaInfo> initialMembers = randomMembers( 3 );
 
@@ -94,7 +94,7 @@ public class TopologyTest
     }
 
     @Test
-    public void shouldDetectAddedAndRemovedMembers() throws Exception
+    public void shouldDetectAddedAndRemovedMembers()
     {
         // given
         int initialQuantity = 4;
@@ -125,6 +125,15 @@ public class TopologyTest
         public Map<MemberId,ReadReplicaInfo> members()
         {
             return members;
+        }
+
+        @Override
+        public Topology<ReadReplicaInfo> filterTopologyByDb( String dbName )
+        {
+            Map<MemberId, ReadReplicaInfo> newMembers = this.members.entrySet().stream()
+                    .filter( e -> e.getValue().getDatabaseName().equals( dbName ) )
+                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            return new TestTopology( newMembers );
         }
     }
 

@@ -19,148 +19,56 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.PageCacheFlusher;
-import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.monitoring.Monitors;
 
-public class StreamToDisk implements StoreFileStreams
+import static org.neo4j.io.IOUtils.closeAll;
+
+public class StreamToDisk implements StoreFileStream
 {
-    private final File storeDir;
-    private final FileSystemAbstraction fs;
-    private final PageCache pageCache;
-    private final FileCopyMonitor fileCopyMonitor;
-    private final PageCacheFlusher flusherThread;
-    private final Map<String,PageCacheDestination> channels;
-    private boolean closed;
+    private WritableByteChannel writableByteChannel;
+    private List<AutoCloseable> closeables;
 
-    public StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
+    static StreamToDisk fromPagedFile( PagedFile pagedFile ) throws IOException
     {
-        this.storeDir = storeDir;
-        this.fs = fs;
-        this.pageCache = pageCache;
-        this.flusherThread = new PageCacheFlusher( pageCache );
-        flusherThread.start();
-        fs.mkdirs( storeDir );
-        this.fileCopyMonitor = monitors.newMonitor( FileCopyMonitor.class );
-        channels = new HashMap<>();
+        return new StreamToDisk( pagedFile.openWritableByteChannel(), pagedFile );
+    }
+
+    static StreamToDisk fromFile( FileSystemAbstraction fsa, File file ) throws IOException
+    {
+        return new StreamToDisk( fsa.open( file, OpenMode.READ_WRITE ) );
+    }
+
+    private StreamToDisk( WritableByteChannel writableByteChannel, AutoCloseable... closeables )
+    {
+        this.writableByteChannel = writableByteChannel;
+        this.closeables = new ArrayList<>();
+        this.closeables.add( writableByteChannel );
+        this.closeables.addAll( Arrays.asList( closeables ) );
     }
 
     @Override
-    public void write( String destination, int requiredAlignment, byte[] data ) throws IOException
+    public void write( byte[] data ) throws IOException
     {
-        File fileName = new File( storeDir, destination );
-        fs.mkdirs( fileName.getParentFile() );
-
-        fileCopyMonitor.copyFile( fileName );
-        if ( StoreType.shouldBeManagedByPageCache( destination ) )
+        ByteBuffer buffer = ByteBuffer.wrap( data );
+        while ( buffer.hasRemaining() )
         {
-            PageCacheDestination dest = getPageCacheDestination( destination, requiredAlignment, fileName );
-            dest.write( data );
-        }
-        else
-        {
-            try ( OutputStream outputStream = fs.openAsOutputStream( fileName, true ) )
-            {
-                outputStream.write( data );
-            }
-        }
-    }
-
-    private synchronized PageCacheDestination getPageCacheDestination(
-            String destination, int requiredAlignment, File fileName ) throws IOException
-    {
-        if ( closed )
-        {
-            throw new IOException( "Destination has been closed: " + fileName );
-        }
-        PageCacheDestination dest = channels.get( destination );
-        if ( dest == null )
-        {
-            dest = new PageCacheDestination( pageCache, fileName, requiredAlignment );
-            channels.put( destination, dest );
-        }
-        return dest;
-    }
-
-    private static final class PageCacheDestination implements Closeable
-    {
-        private final PagedFile pagedFile;
-        private final WritableByteChannel channel;
-
-        PageCacheDestination( PageCache pageCache, File fileName, int requiredAlignment ) throws IOException
-        {
-            int filePageSize = pageCache.pageSize() - pageCache.pageSize() % requiredAlignment;
-            pagedFile = pageCache.map( fileName, filePageSize, StandardOpenOption.CREATE );
-            try
-            {
-                channel = pagedFile.openWritableByteChannel();
-            }
-            catch ( IOException channelException )
-            {
-                try
-                {
-                    pagedFile.close();
-                }
-                catch ( IOException pagedFileException )
-                {
-                    channelException.addSuppressed( pagedFileException );
-                }
-                channelException.printStackTrace();
-                throw channelException;
-            }
-        }
-
-        public synchronized void write( byte[] data ) throws IOException
-        {
-            ByteBuffer buf = ByteBuffer.wrap( data );
-            while ( buf.hasRemaining() )
-            {
-                channel.write( buf );
-            }
-        }
-
-        @Override
-        public synchronized void close() throws IOException
-        {
-            IOUtils.closeAll( channel, pagedFile );
+            writableByteChannel.write( buffer );
         }
     }
 
     @Override
-    public synchronized void close() throws IOException
+    public void close() throws IOException
     {
-        closed = true;
-        try
-        {
-            flusherThread.halt();
-        }
-        catch ( Exception haltException )
-        {
-            try
-            {
-                IOUtils.closeAll( channels.values() );
-            }
-            catch ( IOException channelsException )
-            {
-                haltException.addSuppressed( channelsException );
-            }
-            throw haltException;
-        }
-        IOUtils.closeAll( channels.values() );
+        closeAll( closeables );
     }
 }

@@ -51,7 +51,7 @@ public class TransactionLogFilesTest
     private final String filename = "filename";
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         storeDirectory = testDirectory.directory();
     }
@@ -72,15 +72,15 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldVisitEachLofFile() throws IOException
+    public void shouldVisitEachLofFile() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "2" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -97,44 +97,47 @@ public class TransactionLogFilesTest
                 new File( storeDirectory, getVersionedLogFileName( filename, "1" ) ),
                 new File( storeDirectory, getVersionedLogFileName( filename, "3" ) ) )  );
         assertThat( seenVersions, containsInAnyOrder( 1L, 3L ) );
+        files.shutdown();
     }
 
     @Test
-    public void shouldBeAbleToRetrieveTheHighestLogVersion() throws IOException
+    public void shouldBeAbleToRetrieveTheHighestLogVersion() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) );
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "1" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "3" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
 
         // then
         assertEquals( 3, highestLogVersion );
+        files.shutdown();
     }
 
     @Test
-    public void shouldReturnANegativeValueIfThereAreNoLogFiles() throws IOException
+    public void shouldReturnANegativeValueIfThereAreNoLogFiles() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
 
-        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) );
-        fileSystemRule.create( new File( storeDirectory, filename ) );
+        fileSystemRule.create( new File( storeDirectory, getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystemRule.create( new File( storeDirectory, filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
 
         // then
         assertEquals( -1, highestLogVersion );
+        files.shutdown();
     }
 
     @Test
-    public void shouldFindTheVersionBasedOnTheFilename() throws IOException
+    public void shouldFindTheVersionBasedOnTheFilename() throws Throwable
     {
         // given
         LogFiles logFiles = createLogFiles();
@@ -145,6 +148,7 @@ public class TransactionLogFilesTest
 
         // then
         assertEquals( 2, logVersion );
+        logFiles.shutdown();
     }
 
     @Test

@@ -56,7 +56,6 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyForVar(nodeIdVar.name, nodeIdVar.codeGenType, propKeyVar, localName)
 
-  //TODO will probably need to send in type so that nodes can be unboxed
   override def propertyById[E](body: MethodStructure[E], localName: String) =
     if (nodeIdVar.nullable)
       body.ifNotStatement(body.isNull(nodeIdVar.name, nodeIdVar.codeGenType)) {ifBody =>
@@ -65,7 +64,7 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyById(nodeIdVar.name, nodeIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
 }
 
 case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
@@ -74,18 +73,18 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
   override def propertyByName[E](body: MethodStructure[E], localName: String) =
     if (relIdVar.nullable)
       body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
-        ifBody.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+        ifBody.relationshipGetPropertyForVar(relIdVar.name, relIdVar.codeGenType, propKeyVar, localName)
       }
     else
-      body.relationshipGetPropertyForVar(relIdVar.name, propKeyVar, localName)
+      body.relationshipGetPropertyForVar(relIdVar.name, relIdVar.codeGenType, propKeyVar, localName)
 
   override def propertyById[E](body: MethodStructure[E], localName: String) =
   if (relIdVar.nullable)
     body.ifNotStatement(body.isNull(relIdVar.name, CodeGenType.primitiveRel)) { ifBody =>
-      ifBody.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+      ifBody.relationshipGetPropertyById(relIdVar.name, relIdVar.codeGenType, token.get, localName)
     }
     else
-      body.relationshipGetPropertyById(relIdVar.name, token.get, localName)
+      body.relationshipGetPropertyById(relIdVar.name, relIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
 }

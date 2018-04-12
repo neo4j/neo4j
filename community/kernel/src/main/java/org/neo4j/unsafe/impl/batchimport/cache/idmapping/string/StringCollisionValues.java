@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static java.lang.Integer.min;
 import static java.lang.Long.max;
+import static java.lang.Long.min;
 
 /**
  * Stores {@link String strings} in a {@link ByteArray} provided by {@link NumberArrayFactory}. Each string can have different
@@ -56,7 +57,8 @@ public class StringCollisionValues implements CollisionValues
             throw new IllegalArgumentException( string );
         }
 
-        if ( offset % chunkSize >= chunkSize - 2 )
+        long bytesLeftInThisChunk = bytesLeftInCurrentChunk();
+        if ( bytesLeftInThisChunk < Short.BYTES + 1 )
         {
             // There isn't enough space left in the current chunk to begin writing this value, move over to the next one
             offset += chunkSize - (offset % chunkSize);
@@ -65,7 +67,7 @@ public class StringCollisionValues implements CollisionValues
 
         long startOffset = offset;
         current.setShort( offset, 0, (short) length );
-        offset += 2;
+        offset += Short.BYTES;
         for ( int i = 0; i < length; )
         {
             int bytesLeftToWrite = length - i;
@@ -85,12 +87,18 @@ public class StringCollisionValues implements CollisionValues
         return startOffset;
     }
 
+    private long bytesLeftInCurrentChunk()
+    {
+        long rest = offset % chunkSize;
+        return rest == 0 ? 0 : chunkSize - rest;
+    }
+
     @Override
     public Object get( long offset )
     {
         ByteArray array = cache.at( offset );
         int length = array.getShort( offset, 0 ) & 0xFFFF;
-        offset += 2;
+        offset += Short.BYTES;
         byte[] bytes = new byte[length];
         for ( int i = 0; i < length; )
         {

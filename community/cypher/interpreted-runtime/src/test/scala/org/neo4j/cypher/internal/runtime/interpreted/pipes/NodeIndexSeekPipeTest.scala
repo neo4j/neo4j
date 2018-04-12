@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, Windows
 import org.neo4j.cypher.internal.util.v3_4.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
-import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.NodeValue
 
@@ -38,11 +38,12 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   implicit val windowsSafe = WindowsStringSafe
 
-  val label = LabelToken(LabelName("LabelName") _, LabelId(11))
-  val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
-  val descriptor = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
-  val node = nodeValue(1)
-  val node2 = nodeValue(2)
+  private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
+  private val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
+  private val propertyKeys = propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11))
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
+  private val node = nodeValue(1)
+  private val node2 = nodeValue(2)
 
   private def nodeValue(id: Long) = {
     val node = mock[NodeValue]
@@ -201,8 +202,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label,
-      propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11)),
+    val pipe = NodeIndexSeekPipe("n", label, propertyKeys,
       CompositeQueryExpression(Seq(
         SingleQueryExpression(Literal("hello")),
         SingleQueryExpression(Literal("world"))
@@ -253,12 +253,14 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos {
     result.map(_("n")).toList should equal(List(node))
   }
 
-  private def indexFor(values: (Seq[Any], Iterator[NodeValue])*): QueryContext = {
+  private def indexFor(values: (Seq[AnyRef], Iterator[NodeValue])*): QueryContext = {
     val query = mock[QueryContext]
     when(query.indexSeek(any(), any())).thenReturn(Iterator.empty)
 
     values.foreach {
-      case (searchTerm, result) => when(query.indexSeek(any(), ArgumentMatchers.eq(searchTerm))).thenReturn(result)
+      case (searchTerm, result) =>
+        val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
+        when(query.indexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(result)
     }
 
     query

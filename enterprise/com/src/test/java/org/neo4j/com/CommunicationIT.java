@@ -104,7 +104,7 @@ public class CommunicationIT
     }
 
     @Test( expected = MismatchingStoreIdException.class )
-    public void makeSureClientStoreIdsMustMatch() throws Throwable
+    public void makeSureClientStoreIdsMustMatch()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).client();
@@ -114,7 +114,7 @@ public class CommunicationIT
     }
 
     @Test( expected = MismatchingStoreIdException.class )
-    public void makeSureServerStoreIdsMustMatch() throws Throwable
+    public void makeSureServerStoreIdsMustMatch()
     {
         MadeUpServer server = builder.storeId( newStoreIdForCurrentVersion( 10, 10, 10, 10 ) ).server();
         MadeUpClient client = builder.client();
@@ -124,7 +124,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void makeSureClientCanStreamBigData() throws Throwable
+    public void makeSureClientCanStreamBigData()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -134,7 +134,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientThrowsServerSideErrorMidwayThroughStreaming() throws Throwable
+    public void clientThrowsServerSideErrorMidwayThroughStreaming()
     {
         final String failureMessage = "Just failing";
         MadeUpServerImplementation serverImplementation = new MadeUpServerImplementation( storeIdToUse )
@@ -163,7 +163,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void communicateBetweenJvms() throws Throwable
+    public void communicateBetweenJvms()
     {
         ServerInterface server = builder.serverInOtherJvm();
         server.awaitStarted();
@@ -178,7 +178,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void throwingServerSideExceptionBackToClient() throws Throwable
+    public void throwingServerSideExceptionBackToClient()
     {
         MadeUpServer server = builder.server();
         MadeUpClient client = builder.client();
@@ -197,7 +197,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatch() throws Throwable
+    public void applicationProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) ).server();
         MadeUpClient client = builder.client();
@@ -213,7 +213,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void applicationProtocolVersionsMustMatchMultiJvm() throws Throwable
+    public void applicationProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.applicationProtocolVersion( (byte) (APPLICATION_PROTOCOL_VERSION + 1) )
                                         .serverInOtherJvm();
@@ -234,7 +234,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatch() throws Throwable
+    public void internalProtocolVersionsMustMatch()
     {
         MadeUpServer server = builder.internalProtocolVersion( (byte) 1 ).server();
         MadeUpClient client = builder.internalProtocolVersion( (byte) 2 ).client();
@@ -250,7 +250,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void internalProtocolVersionsMustMatchMultiJvm() throws Throwable
+    public void internalProtocolVersionsMustMatchMultiJvm()
     {
         ServerInterface server = builder.internalProtocolVersion( (byte) 1 ).serverInOtherJvm();
         server.awaitStarted();
@@ -299,7 +299,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverContextVerificationCanThrowException() throws Throwable
+    public void serverContextVerificationCanThrowException()
     {
         final String failureMessage = "I'm failing";
         TxChecksumVerifier failingVerifier = ( txId, checksum ) ->
@@ -324,7 +324,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
+    public void clientCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 20000;
         int clientChunkSize = serverChunkSize / 10;
@@ -339,7 +339,7 @@ public class CommunicationIT
     }
 
     @Test
-    public void serverCanReadChunkSizeBiggerThanItsOwn() throws Throwable
+    public void serverCanReadChunkSizeBiggerThanItsOwn()
     {   // Given that frameLength is the same for both client and server.
         int serverChunkSize = 1000;
         int clientChunkSize = serverChunkSize * 10;
@@ -616,7 +616,7 @@ public class CommunicationIT
         }
 
         @Override
-        public void obligation( long txId ) throws IOException
+        public void obligation( long txId )
         {
             fail( "Should not called" );
         }
@@ -628,7 +628,7 @@ public class CommunicationIT
         }
 
         @Override
-        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+        public boolean visit( CommittedTransactionRepresentation element )
         {
             assertEquals( expectedTxId + TransactionIdStore.BASE_TX_ID, element.getCommitEntry().getTxId() );
             expectedTxId++;

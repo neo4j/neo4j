@@ -48,7 +48,7 @@ public class PagedTraverserTest
     private Node startNode;
 
     @Before
-    public void clearDb() throws Throwable
+    public void clearDb()
     {
         createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseAPI() );
     }

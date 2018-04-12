@@ -22,8 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;
@@ -34,16 +32,17 @@ import static org.junit.Assert.fail;
 public class TreeStateTest
 {
     private final int pageSize = 256;
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
+    private PageAwareByteArrayCursor cursor;
 
     @Before
-    public void initiateCursor() throws IOException
+    public void initiateCursor()
     {
+        cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next();
     }
 
     @Test
-    public void readEmptyStateShouldThrow() throws Exception
+    public void readEmptyStateShouldThrow()
     {
         // GIVEN empty state
 
@@ -55,7 +54,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldReadValidPage() throws Exception
+    public void shouldReadValidPage()
     {
         // GIVEN valid state
         long pageId = cursor.getCurrentPageId();
@@ -71,7 +70,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void readBrokenStateShouldFail() throws Exception
+    public void readBrokenStateShouldFail()
     {
         // GIVEN broken state
         long pageId = cursor.getCurrentPageId();
@@ -90,7 +89,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidStableGeneration() throws Exception
+    public void shouldNotWriteInvalidStableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
@@ -109,7 +108,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidUnstableGeneration() throws Exception
+    public void shouldNotWriteInvalidUnstableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;

@@ -28,7 +28,6 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -36,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RecordingChannel implements Channel
 {
-    private Queue<ChannelBuffer> recievedMessages = new LinkedList<ChannelBuffer>();
+    private Queue<ChannelBuffer> recievedMessages = new LinkedList<>();
 
     @Override
     public ChannelFuture write( Object message )
@@ -208,13 +207,13 @@ public class RecordingChannel implements Channel
         return new BlockingReadHandler<ChannelBuffer>()
         {
             @Override
-            public ChannelBuffer read() throws IOException, InterruptedException
+            public ChannelBuffer read()
             {
                 return recievedMessages.poll();
             }
 
             @Override
-            public ChannelBuffer read( long timeout, TimeUnit unit ) throws IOException, InterruptedException
+            public ChannelBuffer read( long timeout, TimeUnit unit )
             {
                 return read();
             }
@@ -296,13 +295,13 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public ChannelFuture rethrowIfFailed() throws Exception
+        public ChannelFuture rethrowIfFailed()
         {
             return null;
         }
 
         @Override
-        public ChannelFuture sync() throws InterruptedException
+        public ChannelFuture sync()
         {
             return null;
         }
@@ -314,7 +313,7 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public ChannelFuture await() throws InterruptedException
+        public ChannelFuture await()
         {
             return null;
         }
@@ -326,13 +325,13 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public boolean await( long timeout, TimeUnit unit ) throws InterruptedException
+        public boolean await( long timeout, TimeUnit unit )
         {
             return false;
         }
 
         @Override
-        public boolean await( long timeoutMillis ) throws InterruptedException
+        public boolean await( long timeoutMillis )
         {
             return false;
         }

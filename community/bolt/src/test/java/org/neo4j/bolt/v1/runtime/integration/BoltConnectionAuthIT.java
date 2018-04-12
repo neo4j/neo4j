@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
@@ -45,9 +44,6 @@ public class BoltConnectionAuthIT
     private static final String USER_AGENT = "BoltConnectionAuthIT/0.0";
     private static final BoltChannel boltChannel = mock( BoltChannel.class );
 
-//    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
-//            new InetSocketAddress( "testClient", 56789 ),
-//            new InetSocketAddress( "testServer", 7468 ) );
     @Rule
     public SessionRule env = new SessionRule().withAuthEnabled( true );
 
@@ -76,11 +72,7 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-//<<<<<<< 24278c4de3ee849106c96df999c3269a90db8c73
-//        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
-//=======
         BoltStateMachine machine = env.newMachine( boltChannel );
-//>>>>>>> Bolt message logging
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         String version = "Neo4j/" + Version.getNeo4jVersion();
         // When

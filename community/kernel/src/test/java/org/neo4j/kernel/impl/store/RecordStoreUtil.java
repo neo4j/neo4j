@@ -40,7 +40,7 @@ public class RecordStoreUtil
         }
 
         @Override
-        public NodeRecord answer( InvocationOnMock invocation ) throws Throwable
+        public NodeRecord answer( InvocationOnMock invocation )
         {
             if ( ((Number) invocation.getArgument( 0 )).longValue() == 0L &&
                     invocation.getArgument( 1 ) == null &&

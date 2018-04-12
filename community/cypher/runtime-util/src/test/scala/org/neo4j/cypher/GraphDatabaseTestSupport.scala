@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher
 
+import java.io.File
+
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
+import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{InwardKernel, Statement}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -36,18 +39,42 @@ import scala.collection.Map
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite  =>
 
-  var graph: GraphDatabaseCypherService = null
-  var nodes: List[Node] = null
+  var graphOps: GraphDatabaseService = _
+  var graph: GraphDatabaseCypherService = _
+  var nodes: List[Node] = _
 
   def databaseConfig(): Map[Setting[_],String] = Map()
 
   override protected def initTest() {
     super.initTest()
-    graph = createGraphDatabase()
+    startGraphDatabase()
   }
 
-  protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+  protected def startGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): Unit = {
+    graphOps = graphDatabaseFactory().newImpermanentDatabase(config.asJava)
+    graph = new GraphDatabaseCypherService(graphOps)
+  }
+
+  protected def startGraphDatabase(storeDir: File): Unit = {
+    graphOps = graphDatabaseFactory().newImpermanentDatabase(storeDir)
+    graph = new GraphDatabaseCypherService(graphOps)
+  }
+
+  protected def graphDatabaseFactory(): TestGraphDatabaseFactory = {
+    val factory = createDatabaseFactory()
+    this match {
+      case custom: FakeClock =>
+        factory.setClock(custom.clock)
+      case _ =>
+    }
+    factory
+  }
+
+  protected def createDatabaseFactory(): TestGraphDatabaseFactory = new TestGraphDatabaseFactory
+
+  protected def restartWithConfig(config: Map[Setting[_], String] = databaseConfig()): Unit = {
+    graph.shutdown()
+    startGraphDatabase(config)
   }
 
   override protected def stopTest() {
@@ -101,7 +128,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def createNode(props: Map[String, Any]): Node = {
     graph.inTx {
-      val node = graph.createNode()
+      val node = graphOps.createNode()
 
       props.foreach((kv) => node.setProperty(kv._1, kv._2))
       node

@@ -134,7 +134,7 @@ public final class SuppressOutput implements TestRule
                 return new Voice( this, redirectTo )
                 {
                     @Override
-                    void restore( boolean failure ) throws IOException
+                    void restore( boolean failure )
                     {
                         for ( Handler handler : handlers )
                         {

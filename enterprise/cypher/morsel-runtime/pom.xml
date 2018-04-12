@@ -17,6 +17,10 @@
   <description>Parallel runtime for Cypher</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.runtime.vectorized</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -98,7 +102,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

@@ -37,10 +37,10 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.AssertableLogProvider;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LuceneSchemaIndexCorruptionTest
@@ -64,19 +64,19 @@ public class LuceneSchemaIndexCorruptionTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
-    private final SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
+    private final IndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
 
     @Test
-    public void shouldRequestIndexPopulationIfTheIndexIsCorrupt() throws Exception
+    public void shouldRequestIndexPopulationIfTheIndexIsCorrupt()
     {
         // Given
         long faultyIndexId = 1;
         CorruptIndexException error = new CorruptIndexException( "It's broken.", "" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -85,16 +85,16 @@ public class LuceneSchemaIndexCorruptionTest
     }
 
     @Test
-    public void shouldRequestIndexPopulationFailingWithFileNotFoundException() throws Exception
+    public void shouldRequestIndexPopulationFailingWithFileNotFoundException()
     {
         // Given
         long faultyIndexId = 1;
         FileNotFoundException error = new FileNotFoundException( "/some/path/somewhere" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -103,16 +103,16 @@ public class LuceneSchemaIndexCorruptionTest
     }
 
     @Test
-    public void shouldRequestIndexPopulationWhenFailingWithEOFException() throws Exception
+    public void shouldRequestIndexPopulationWhenFailingWithEOFException()
     {
         // Given
         long faultyIndexId = 1;
         EOFException error = new EOFException( "/some/path/somewhere" );
 
-        LuceneSchemaIndexProvider provider = newFaultySchemaIndexProvider( faultyIndexId, error );
+        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
+        SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 1, 1 );
         InternalIndexState initialState = provider.getInitialState( faultyIndexId, descriptor );
 
         // Then
@@ -120,12 +120,12 @@ public class LuceneSchemaIndexCorruptionTest
         logProvider.assertAtLeastOnce( loggedException( error ) );
     }
 
-    private LuceneSchemaIndexProvider newFaultySchemaIndexProvider( long faultyIndexId, Exception error )
+    private LuceneIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.graphDbDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
+        return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
                 Config.defaults(), OperationalMode.single )
         {
             @Override
@@ -153,9 +153,9 @@ public class LuceneSchemaIndexCorruptionTest
         }
 
         @Override
-        public PartitionedIndexStorage indexStorageOf( long indexId, boolean archiveFailed )
+        public PartitionedIndexStorage indexStorageOf( long indexId )
         {
-            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId, archiveFailed );
+            return indexId == faultyIndexId ? newFaultyPartitionedIndexStorage() : super.indexStorageOf( indexId );
         }
 
         PartitionedIndexStorage newFaultyPartitionedIndexStorage()

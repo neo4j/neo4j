@@ -46,7 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -242,14 +242,14 @@ class RebuildFromLogs
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
         private final Config tuningConfiguration = Config.defaults();
-        private final SchemaIndexProviderMap indexes;
+        private final IndexProviderMap indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )
         {
             this.graphdb = startTemporaryDb( dbDirectory.getAbsoluteFile(), pageCache );
             DependencyResolver resolver = graphdb.getDependencyResolver();
             this.labelScanStore = resolver.resolveDependency( LabelScanStore.class );
-            this.indexes = resolver.resolveDependency( SchemaIndexProviderMap.class );
+            this.indexes = resolver.resolveDependency( IndexProviderMap.class );
         }
 
         private void checkConsistency() throws ConsistencyCheckIncompleteException, InconsistentStoreException

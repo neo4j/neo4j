@@ -28,8 +28,9 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
 
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -37,6 +38,7 @@ import org.neo4j.values.storable.Value;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.newapi.MockStore.block;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -44,11 +46,12 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
 {
     @Rule
-    public final MockStore store = new MockStore( new Cursors() );
+    public final MockStore store = new MockStore( new DefaultCursors() );
     private final List<Event> events = new ArrayList<>();
+    private final DefaultCursors cursors = new DefaultCursors();
 
     @Test
-    public void shouldAcceptAllNodesOnNoFilters() throws Exception
+    public void shouldAcceptAllNodesOnNoFilters()
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
@@ -64,7 +67,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldRejectNodeNotInUse() throws Exception
+    public void shouldRejectNodeNotInUse()
     {
         // given
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
@@ -79,7 +82,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldRejectNodeWithNoProperties() throws Exception
+    public void shouldRejectNodeWithNoProperties()
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
@@ -95,8 +98,9 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldAcceptNodeWithMatchingProperty() throws Exception
+    public void shouldAcceptNodeWithMatchingProperty()
     {
+        when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 12, stringValue( "hello" ) ) );
@@ -112,8 +116,9 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldNotAcceptNodeWithoutMatchingProperty() throws Exception
+    public void shouldNotAcceptNodeWithoutMatchingProperty()
     {
+        when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given
         store.node( 17, 1, false, NO_ID, 0 );
         store.property( 1, NO_ID, NO_ID, block( 7, stringValue( "wrong" ) ) );
@@ -131,8 +136,8 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, new NodeCursor(), new PropertyCursor(), store, filters );
-        filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
+                this, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), store, filters );
+        filter.initialize( SchemaIndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }
 
@@ -147,7 +152,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }
@@ -156,6 +161,12 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     public boolean acceptNode( long reference, Value[] values )
     {
         events.add( new Event.Node( reference, values ) );
+        return true;
+    }
+
+    @Override
+    public boolean needsValues()
+    {
         return true;
     }
 

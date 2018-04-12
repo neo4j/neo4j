@@ -50,9 +50,9 @@ import org.neo4j.logging.Log;
  */
 public class NetworkMock
 {
-    Map<String, TestProtocolServer> participants = new LinkedHashMap<String, TestProtocolServer>();
+    Map<String, TestProtocolServer> participants = new LinkedHashMap<>();
 
-    private List<MessageDelivery> messageDeliveries = new ArrayList<MessageDelivery>();
+    private List<MessageDelivery> messageDeliveries = new ArrayList<>();
 
     private long now;
     private Monitors monitors;
@@ -72,7 +72,7 @@ public class NetworkMock
         this.timeoutStrategy = timeoutStrategy;
         this.logService = logService;
         this.log = logService.getInternalLog( NetworkMock.class );
-        futureWaiter = new LinkedList<Pair<Future<?>, Runnable>>();
+        futureWaiter = new LinkedList<>();
     }
 
     public TestProtocolServer addServer( int serverId, URI serverUri )
@@ -149,7 +149,7 @@ public class NetworkMock
         }
 
         // Get all sent messages from all test servers
-        List<Message> messages = new ArrayList<Message>();
+        List<Message> messages = new ArrayList<>();
         for ( TestProtocolServer testServer : participants.values() )
         {
             testServer.sendMessages( messages );
@@ -158,9 +158,9 @@ public class NetworkMock
         // Now send them and figure out latency
         for ( Message message : messages )
         {
-            String to = message.getHeader( Message.TO );
+            String to = message.getHeader( Message.HEADER_TO );
             long delay = 0;
-            if ( message.getHeader( Message.TO ).equals( message.getHeader( Message.FROM ) ) )
+            if ( message.getHeader( Message.HEADER_TO ).equals( message.getHeader( Message.HEADER_FROM ) ) )
             {
                 log.debug( "Sending message to itself; zero latency" );
             }
@@ -243,7 +243,7 @@ public class NetworkMock
 
     public List<TestProtocolServer> getServers()
     {
-        return new ArrayList<TestProtocolServer>( participants.values() );
+        return new ArrayList<>( participants.values() );
     }
 
     public MultipleFailureLatencyStrategy getNetworkLatencyStrategy()

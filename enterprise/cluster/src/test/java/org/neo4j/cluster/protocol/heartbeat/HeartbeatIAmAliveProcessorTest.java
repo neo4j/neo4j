@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 public class HeartbeatIAmAliveProcessorTest
 {
     @Test
-    public void shouldNotCreateHeartbeatsForNonExistingInstances() throws Exception
+    public void shouldNotCreateHeartbeatsForNonExistingInstances()
     {
         // GIVEN
         MessageHolder outgoing = mock( MessageHolder.class );
@@ -60,7 +60,7 @@ public class HeartbeatIAmAliveProcessorTest
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( outgoing, mockContext );
 
         Message incoming = Message.to( mock( MessageType.class ), URI.create( "ha://someAwesomeInstanceInJapan") )
-                .setHeader( Message.FROM, "some://value" ).setHeader( Message.INSTANCE_ID, "5" );
+                .setHeader( Message.HEADER_FROM, "some://value" ).setHeader( Message.HEADER_INSTANCE_ID, "5" );
 
         // WHEN
         processor.process( incoming );
@@ -70,7 +70,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotProcessMessagesWithEqualFromAndToHeaders() throws Exception
+    public void shouldNotProcessMessagesWithEqualFromAndToHeaders()
     {
         URI to = URI.create( "ha://someAwesomeInstanceInJapan" );
 
@@ -88,8 +88,8 @@ public class HeartbeatIAmAliveProcessorTest
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
 
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( outgoing, mockContext );
-        Message incoming = Message.to( mock( MessageType.class ), to ).setHeader( Message.FROM, to.toASCIIString() )
-                .setHeader( Message.INSTANCE_ID, "1" );
+        Message incoming = Message.to( mock( MessageType.class ), to ).setHeader( Message.HEADER_FROM, to.toASCIIString() )
+                .setHeader( Message.HEADER_INSTANCE_ID, "1" );
 
         // WHEN
         processor.process( incoming );
@@ -99,7 +99,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotGenerateHeartbeatsForSuspicions() throws Exception
+    public void shouldNotGenerateHeartbeatsForSuspicions()
     {
         URI to = URI.create( "ha://1" );
 
@@ -117,9 +117,9 @@ public class HeartbeatIAmAliveProcessorTest
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
 
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( outgoing, mockContext );
-        Message incoming = Message.to( HeartbeatMessage.suspicions , to ).setHeader( Message.FROM, to
+        Message incoming = Message.to( HeartbeatMessage.suspicions , to ).setHeader( Message.HEADER_FROM, to
             .toASCIIString() )
-                .setHeader( Message.INSTANCE_ID, "1" );
+                .setHeader( Message.HEADER_INSTANCE_ID, "1" );
         assertEquals( HeartbeatMessage.suspicions, incoming.getMessageType() );
 
         // WHEN
@@ -130,7 +130,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotGenerateHeartbeatsForHeartbeats() throws Exception
+    public void shouldNotGenerateHeartbeatsForHeartbeats()
     {
         URI to = URI.create( "ha://1" );
 
@@ -148,9 +148,9 @@ public class HeartbeatIAmAliveProcessorTest
         when( mockContext.getConfiguration() ).thenReturn( mockConfiguration );
 
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( outgoing, mockContext );
-        Message incoming = Message.to( HeartbeatMessage.i_am_alive , to ).setHeader( Message.FROM, to
+        Message incoming = Message.to( HeartbeatMessage.i_am_alive , to ).setHeader( Message.HEADER_FROM, to
                 .toASCIIString() )
-                .setHeader( Message.INSTANCE_ID, "1" );
+                .setHeader( Message.HEADER_INSTANCE_ID, "1" );
         assertEquals( HeartbeatMessage.i_am_alive, incoming.getMessageType() );
 
         // WHEN
@@ -161,9 +161,9 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldCorrectlySetTheInstanceIdHeaderInTheGeneratedHeartbeat() throws Exception
+    public void shouldCorrectlySetTheInstanceIdHeaderInTheGeneratedHeartbeat()
     {
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
 
         // Given
         MessageHolder holder = mock( MessageHolder.class );
@@ -188,7 +188,7 @@ public class HeartbeatIAmAliveProcessorTest
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( holder, mockContext );
 
         Message incoming = Message.to( mock( MessageType.class ), URI.create( "ha://someAwesomeInstanceInJapan") )
-                .setHeader( Message.INSTANCE_ID, "2" ).setHeader( Message.FROM, "ha://2" );
+                .setHeader( Message.HEADER_INSTANCE_ID, "2" ).setHeader( Message.HEADER_FROM, "ha://2" );
 
         // WHEN
         processor.process( incoming );
@@ -200,13 +200,13 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     /*
-     * This test is required to ensure compatibility with the previous version. If we fail on non existing INSTANCE_ID
+     * This test is required to ensure compatibility with the previous version. If we fail on non existing HEADER_INSTANCE_ID
      * header then heartbeats may pause during rolling upgrades and cause timeouts, which we don't want.
      */
     @Test
-    public void shouldRevertToInverseUriLookupIfNoInstanceIdHeader() throws Exception
+    public void shouldRevertToInverseUriLookupIfNoInstanceIdHeader()
     {
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
         String instance2UriString = "ha://2";
 
         // Given
@@ -233,7 +233,7 @@ public class HeartbeatIAmAliveProcessorTest
         HeartbeatIAmAliveProcessor processor = new HeartbeatIAmAliveProcessor( holder, mockContext );
 
         Message incoming = Message.to( mock( MessageType.class ), URI.create( "ha://someAwesomeInstanceInJapan") )
-                .setHeader( Message.FROM, instance2UriString );
+                .setHeader( Message.HEADER_FROM, instance2UriString );
 
         // WHEN
         processor.process( incoming );

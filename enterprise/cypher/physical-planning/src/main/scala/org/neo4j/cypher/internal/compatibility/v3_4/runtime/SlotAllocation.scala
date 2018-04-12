@@ -338,7 +338,8 @@ object SlotAllocation {
            _: Limit |
            _: Skip |
            _: Sort |
-           _: Top
+           _: Top |
+           _: ActiveRead
       =>
         source
 
@@ -515,6 +516,11 @@ object SlotAllocation {
       case _: Apply =>
         rhs
 
+      case _: TriadicSelection =>
+        // TriadicSelection is essentially a special Apply which performs filtering.
+        // All the slots are allocated by it's left and right children
+        rhs
+
       case _: AbstractSemiApply |
            _: AbstractSelectOrSemiApply =>
         lhs
@@ -679,6 +685,7 @@ object SlotAllocation {
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
     case _: AntiConditionalApply |
          _: Apply |
+         _: TriadicSelection |
          _: AbstractSemiApply |
          _: AbstractSelectOrSemiApply |
          _: AbstractLetSelectOrSemiApply |

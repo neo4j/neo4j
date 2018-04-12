@@ -28,8 +28,9 @@ import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenR
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -68,7 +69,8 @@ public class ReplicatedTransactionStateMachineTest
         PageCursorTracer cursorTracer = mock( PageCursorTracer.class );
 
         ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
-                commandIndexTracker, lockState( lockSessionId ), batchSize, logProvider, () -> cursorTracer );
+                commandIndexTracker, lockState( lockSessionId ), batchSize, logProvider, () -> cursorTracer,
+                EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
@@ -82,7 +84,7 @@ public class ReplicatedTransactionStateMachineTest
     }
 
     @Test
-    public void shouldFailFutureForTransactionCommittedUnderWrongLockSession() throws Exception
+    public void shouldFailFutureForTransactionCommittedUnderWrongLockSession()
     {
         // given
         int txLockSessionId = 23;
@@ -96,7 +98,7 @@ public class ReplicatedTransactionStateMachineTest
         final ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ),
                         batchSize, logProvider,
-                        PageCursorTracerSupplier.NULL );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -139,7 +141,7 @@ public class ReplicatedTransactionStateMachineTest
 
         ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ), batchSize, logProvider,
-                        PageCursorTracerSupplier.NULL );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();

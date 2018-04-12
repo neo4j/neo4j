@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -54,7 +54,7 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws  IllegalStateException if more than one matching rule.
      * @param descriptor the target IndexDescriptor
      */
-    public IndexRule indexGetForSchema( final IndexDescriptor descriptor )
+    public IndexRule indexGetForSchema( final SchemaIndexDescriptor descriptor )
     {
         Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
 

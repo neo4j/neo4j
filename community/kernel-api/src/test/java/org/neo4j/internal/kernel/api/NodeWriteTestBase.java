@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -145,7 +146,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeAddLabel( node, labelId );
             tx.success();
         }
@@ -172,7 +173,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeAddLabel( node, labelId ) );
             tx.success();
         }
@@ -198,7 +199,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             tx.dataWrite().nodeRemoveLabel( nodeId, labelId );
             tx.success();
         }
@@ -217,7 +218,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         final String labelName = "Town";
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             exception.expect( KernelException.class );
             tx.dataWrite().nodeAddLabel( node, labelId );
         }
@@ -238,14 +239,14 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
             tx.success();
         }
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            labelId = session.token().labelGetOrCreateForName( labelName );
+            labelId = tx.token().labelGetOrCreateForName( labelName );
             assertFalse( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
             tx.success();
         }
@@ -271,7 +272,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             tx.success();
         }
@@ -300,7 +301,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ),
                     equalTo( intValue( 42 ) ) );
             tx.success();
@@ -330,7 +331,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
                     equalTo( intValue( 42 ) ) );
             tx.success();
@@ -358,7 +359,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
                     equalTo( NO_VALUE ) );
             tx.success();
@@ -388,7 +389,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
                     equalTo( intValue( 42 ) ) );
             assertThat( tx.dataWrite().nodeRemoveProperty( node, token ),
@@ -418,7 +419,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         try ( Transaction tx = session.beginTransaction() )
         {
-            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
             assertThat( tx.dataWrite().nodeSetProperty( node, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
@@ -430,5 +431,30 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             assertThat( graphDb.getNodeById( node ).getProperty( "prop" ), equalTo( 1337 ) );
         }
+    }
+
+    @Test
+    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    {
+        // Given
+        long nodeId;
+        String propertyKey = "prop";
+        Value theValue = stringValue( "The Value" );
+
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            Node node = graphDb.createNode();
+            node.setProperty( propertyKey, theValue.asObject() );
+            nodeId = node.getId();
+            ctx.success();
+        }
+
+        // When
+        Transaction tx = session.beginTransaction();
+        int property = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+        assertThat( tx.dataWrite().nodeSetProperty( nodeId, property, theValue ), equalTo( theValue ) );
+        tx.success();
+
+        assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
     }
 }

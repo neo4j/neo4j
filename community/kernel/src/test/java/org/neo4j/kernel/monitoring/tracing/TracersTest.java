@@ -58,7 +58,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceNullImplementationsWhenRequested() throws Exception
+    public void mustProduceNullImplementationsWhenRequested()
     {
         Tracers tracers = createTracers( "null" );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
@@ -68,7 +68,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceNullImplementationsWhenRequestedIgnoringCase() throws Exception
+    public void mustProduceNullImplementationsWhenRequestedIgnoringCase()
     {
         Tracers tracers = createTracers( "NuLl" );
         assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
@@ -78,7 +78,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceDefaultImplementationForNullConfiguration() throws Exception
+    public void mustProduceDefaultImplementationForNullConfiguration()
     {
         Tracers tracers = createTracers( null );
         assertDefaultImplementation( tracers );
@@ -86,7 +86,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceDefaultImplementationWhenRequested() throws Exception
+    public void mustProduceDefaultImplementationWhenRequested()
     {
         Tracers tracers = createTracers( "default" );
         assertDefaultImplementation( tracers );
@@ -94,7 +94,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceDefaultImplementationWhenRequestedIgnoringCase() throws Exception
+    public void mustProduceDefaultImplementationWhenRequestedIgnoringCase()
     {
         Tracers tracers = createTracers( "DeFaUlT" );
         assertDefaultImplementation( tracers );
@@ -102,7 +102,7 @@ public class TracersTest
     }
 
     @Test
-    public void mustProduceDefaultImplementationWhenRequestingUnknownImplementation() throws Exception
+    public void mustProduceDefaultImplementationWhenRequestingUnknownImplementation()
     {
         Tracers tracers = createTracers( "there's nothing like this" );
         assertDefaultImplementation( tracers );

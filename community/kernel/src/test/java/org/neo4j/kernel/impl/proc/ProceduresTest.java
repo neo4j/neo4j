@@ -27,12 +27,14 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
-import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
@@ -42,11 +44,11 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.Key.key;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class ProceduresTest
 {
@@ -56,6 +58,7 @@ public class ProceduresTest
     private final Procedures procs = new Procedures();
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).out( "name", NTString ).build();
     private final CallableProcedure procedure = procedure( signature );
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldGetRegisteredProcedure() throws Throwable
@@ -64,7 +67,7 @@ public class ProceduresTest
         procs.register( procedure );
 
         // Then
-        assertThat( procs.procedure( signature.name() ), equalTo( signature ) );
+        assertThat( procs.procedure( signature.name() ).signature(), equalTo( signature ) );
     }
 
     @Test
@@ -90,7 +93,8 @@ public class ProceduresTest
         procs.register( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> result = procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337} );
+        RawIterator<Object[], ProcedureException> result =
+                procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337}, resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
@@ -106,7 +110,7 @@ public class ProceduresTest
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
-        procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337} );
+        procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337}, resourceTracker );
     }
 
     @Test
@@ -171,7 +175,7 @@ public class ProceduresTest
         procs.register( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
                 return RawIterator.<Object[], ProcedureException>of( new Object[]{ctx.get( someKey )} );
             }
@@ -181,7 +185,7 @@ public class ProceduresTest
         ctx.put( someKey, "hello, world" );
 
         // When
-        RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0] );
+        RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0], resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
@@ -260,7 +264,8 @@ public class ProceduresTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply(
+                    Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
                 return null;
             }
@@ -272,7 +277,7 @@ public class ProceduresTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
             {
                 return RawIterator.<Object[], ProcedureException>of( input );
             }

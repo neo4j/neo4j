@@ -55,7 +55,7 @@ public class TransactionPropagatorTest
     public final LifeRule life = new LifeRule( true );
 
     @Test
-    public void shouldCapUndesiredSlaveCountPushLogging() throws Exception
+    public void shouldCapUndesiredSlaveCountPushLogging()
     {
         // GIVEN
         int serverId = 1;
@@ -97,7 +97,7 @@ public class TransactionPropagatorTest
     }
 
     @Test
-    public void shouldPrioritizeAscendingIfAsked() throws Exception
+    public void shouldPrioritizeAscendingIfAsked()
     {
         // GIVEN
         Configuration propagator = TransactionPropagator
@@ -112,7 +112,7 @@ public class TransactionPropagatorTest
     }
 
     @Test
-    public void shouldPrioritizeDescendingIfAsked() throws Exception
+    public void shouldPrioritizeDescendingIfAsked()
     {
         // GIVEN
         Configuration propagator = TransactionPropagator

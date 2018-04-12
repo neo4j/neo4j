@@ -114,7 +114,7 @@ public class DefaultWinnerStrategyTest
     }
 
     @Test
-    public void theWinnerShouldHaveTheBestVoteCredentials() throws Exception
+    public void theWinnerShouldHaveTheBestVoteCredentials()
     {
         // given
         InstanceId instanceOne = new InstanceId( 1 );

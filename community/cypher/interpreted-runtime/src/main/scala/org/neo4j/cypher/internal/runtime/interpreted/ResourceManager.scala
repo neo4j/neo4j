@@ -31,9 +31,7 @@ class ResourceManager extends CloseableResource {
   private val resources: util.Set[AutoCloseable] = newSetFromMap(new util.IdentityHashMap[AutoCloseable, java.lang.Boolean]())
 
   def trace(resource: AutoCloseable): Unit =
-    if (!resources.add(resource)) {
-      throw new IllegalStateException(s"$resource is already in the resource set $resources")
-    }
+    resources.add(resource)
 
   def release(resource: AutoCloseable): Unit = {
     resource.close()

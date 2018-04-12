@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -46,10 +48,13 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 /**
  * The Muninn {@link org.neo4j.io.pagecache.PageCache page cache} implementation.
@@ -154,6 +159,7 @@ public class MuninnPageCache implements PageCache
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -191,7 +197,6 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-
     /**
      * Compute the amount of memory needed for a page cache with the given number of 8 KiB pages.
      * @param pageCount The number of pages
@@ -209,19 +214,23 @@ public class MuninnPageCache implements PageCache
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     * access to thread local version context
      */
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,
             PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier )
+            PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier )
     {
         this( swapperFactory,
                 // Cast to long prevents overflow:
-                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ) ),
+                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ), GlobalMemoryTracker.INSTANCE ),
                 PAGE_SIZE,
                 pageCacheTracer,
-                pageCursorTracerSupplier );
+                pageCursorTracerSupplier,
+                versionContextSupplier );
     }
 
     /**
@@ -231,14 +240,17 @@ public class MuninnPageCache implements PageCache
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     *        access to thread local version context
      */
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             MemoryAllocator memoryAllocator,
             PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier )
+            PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier )
     {
-        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier );
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier, versionContextSupplier );
     }
 
     /**
@@ -252,7 +264,8 @@ public class MuninnPageCache implements PageCache
             MemoryAllocator memoryAllocator,
             int cachePageSize,
             PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier )
+            PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -260,6 +273,7 @@ public class MuninnPageCache implements PageCache
 
         // Expose the total number of pages
         pageCacheTracer.maxPages( maxPages );
+        MemoryAllocationTracker memoryTracker = GlobalMemoryTracker.INSTANCE;
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
@@ -267,9 +281,10 @@ public class MuninnPageCache implements PageCache
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.pageCacheTracer = pageCacheTracer;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
         long alignment = swapperFactory.getRequiredBufferAlignment();
-        this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
+        this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );
@@ -389,6 +404,7 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 pageCacheTracer,
                 pageCursorTracerSupplier,
+                versionContextSupplier,
                 createIfNotExists,
                 truncateExisting );
         pagedFile.incrementRefCount();
@@ -416,7 +432,7 @@ public class MuninnPageCache implements PageCache
         return Optional.empty();
     }
 
-    private MuninnPagedFile tryGetMappingOrNull( File file ) throws IOException
+    private MuninnPagedFile tryGetMappingOrNull( File file )
     {
         FileMapping current = mappedFiles;
 
@@ -432,6 +448,26 @@ public class MuninnPageCache implements PageCache
 
         // no mapping exists
         return null;
+    }
+
+    @Override
+    public synchronized List<PagedFile> listExistingMappings() throws IOException
+    {
+        assertHealthy();
+        ensureThreadsInitialised();
+
+        List<PagedFile> list = new ArrayList<>();
+        FileMapping current = mappedFiles;
+
+        while ( current != null )
+        {
+            // Note that we are NOT incrementing the reference count here.
+            // Calling code is expected to be able to deal with asynchronously closed PagedFiles.
+            MuninnPagedFile pagedFile = current.pagedFile;
+            list.add( pagedFile );
+            current = current.next;
+        }
+        return list;
     }
 
     /**
@@ -566,7 +602,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    void syncDevice() throws IOException
+    void syncDevice()
     {
         swapperFactory.syncDevice();
     }
@@ -654,6 +690,19 @@ public class MuninnPageCache implements PageCache
     public FileSystemAbstraction getCachedFileSystem()
     {
         return swapperFactory.getFileSystemAbstraction();
+    }
+
+    @Override
+    public void reportEvents()
+    {
+        pageCursorTracerSupplier.get().reportEvents();
+    }
+
+    @Override
+    public boolean fileSystemSupportsFileOperations()
+    {
+        // Default filesystem supports direct file access.
+        return getCachedFileSystem() instanceof DefaultFileSystemAbstraction;
     }
 
     int getPageCacheId()
@@ -924,14 +973,14 @@ public class MuninnPageCache implements PageCache
         return clockArm;
     }
 
-    private void addFreePageToFreelist( long pageRef )
+    void addFreePageToFreelist( long pageRef )
     {
         Object current;
         FreePage freePage = new FreePage( pageRef );
         do
         {
             current = getFreelistHead();
-            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() >= pages.getPageCount() )
+            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() > pages.getPageCount() )
             {
                 current = null;
             }
@@ -965,7 +1014,7 @@ public class MuninnPageCache implements PageCache
 
     void vacuum( SwapperSet swappers )
     {
-        if ( getFreelistHead() instanceof AtomicInteger  && swappers.countAvailableIds() > 200 )
+        if ( getFreelistHead() instanceof AtomicInteger && swappers.countAvailableIds() > 200 )
         {
             return; // We probably still have plenty of free pages left. Don't bother vacuuming just yet.
         }
@@ -991,6 +1040,6 @@ public class MuninnPageCache implements PageCache
             {
                 throw new UncheckedIOException( e );
             }
-        });
+        } );
     }
 }

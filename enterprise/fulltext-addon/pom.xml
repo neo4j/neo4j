@@ -17,6 +17,10 @@
   <description>Fulltext index addon for neo4j</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.kernel.api.impl.fulltext</moduleName>
+  </properties>
+
   <scm>
     <url>https://github.com/neo4j/neo4j/tree/3.3/enterprise/fulltext-addon</url>
   </scm>
@@ -64,6 +68,12 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-backup</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-consistency-check</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -103,7 +113,6 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 

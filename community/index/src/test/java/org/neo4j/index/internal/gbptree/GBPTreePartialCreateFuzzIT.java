@@ -33,15 +33,16 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertNotEquals;
-
 import static java.lang.ProcessBuilder.Redirect.INHERIT;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 
 /**
  * Tests functionality around process crashing, or similar, when having started, but not completed creation of an index file,
@@ -69,14 +70,14 @@ public class GBPTreePartialCreateFuzzIT
         // then reading it should either work or throw IOException
         try ( PageCache pageCache = storage.pageCache() )
         {
-            SimpleLongLayout layout = new SimpleLongLayout();
+            SimpleLongLayout layout = longLayout().build();
 
             // check readHeader
             try
             {
-                GBPTree.readHeader( pageCache, file, layout, NO_HEADER_READER );
+                GBPTree.readHeader( pageCache, file, NO_HEADER_READER );
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 // It's OK if the process was destroyed
                 assertNotEquals( 0, exitCode );
@@ -87,7 +88,7 @@ public class GBPTreePartialCreateFuzzIT
             {
                 new GBPTreeBuilder<>( pageCache, file, layout ).build().close();
             }
-            catch ( IOException e )
+            catch ( MetadataMismatchException | IOException e )
             {
                 // It's OK if the process was destroyed
                 assertNotEquals( 0, exitCode );
@@ -103,10 +104,11 @@ public class GBPTreePartialCreateFuzzIT
         {
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
             swapper.open( fs, EMPTY );
-            try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL ) )
+            try ( PageCache pageCache = new MuninnPageCache( swapper, 10, PageCacheTracer.NULL,
+                    PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY ) )
             {
                 fs.deleteFile( file );
-                new GBPTreeBuilder<>( pageCache, file, new SimpleLongLayout() ).build().close();
+                new GBPTreeBuilder<>( pageCache, file, longLayout().build() ).build().close();
             }
         }
     }

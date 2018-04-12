@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
@@ -148,7 +147,7 @@ public abstract class AbstractStep<T> implements Step<T>
         control.panic( cause );
         if ( rethrow )
         {
-            throw Exceptions.launderedException( cause );
+            throw new RuntimeException( cause );
         }
     }
 
@@ -156,7 +155,7 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         if ( isPanic() )
         {
-            throw Exceptions.launderedException( panic );
+            throw new RuntimeException( panic );
         }
     }
 

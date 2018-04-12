@@ -25,11 +25,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
@@ -125,7 +125,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
         return Stream.empty();
     }

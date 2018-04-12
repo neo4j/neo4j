@@ -19,25 +19,18 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalDateTime}
+
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.ConstraintViolationException
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes._
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
+  private val duplicateConstraintConfiguration = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
 
   test("Node key constraint creation should be reported") {
     // When
@@ -150,13 +143,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     // Then
     val query = "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY"
     val errorMessage = "Both Node(%d) and Node(%d) have the label `User` and properties `firstname` = 'Joe', `lastname` = 'Soap'".format(a, c)
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3, query, List(errorMessage))
+    failWithError(Configs.AbsolutelyAll - Configs.OldAndRule, query, List(errorMessage))
   }
-
-  private val duplicateConstraintConfiguration =
-    TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema, Slotted)) +
-    TestConfiguration(V3_1 -> V3_3, Cost, Runtimes.Default) +
-    TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
 
   test("trying to add duplicate node when node key constraint exists") {
     createLabeledNode(Map("name" -> "A"), "Person")
@@ -184,11 +172,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val a = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
     val b = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
 
-    val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
-    Configs.Version3_3
     failWithError(
-      config,
+      Configs.AbsolutelyAll - Configs.OldAndRule,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
       List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%s" +
         "Both Node(%d) and Node(%d) have the label `Person` and properties `name` = 'A', `surname` = 'B'").format(String.format("%n"), a, b))
@@ -199,11 +184,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val a = createLabeledNode(Map("name" -> "A"), "Person").getId
     val b = createLabeledNode(Map("name" -> "A"), "Person").getId
 
-    val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
-      Configs.Version3_3
     failWithError(
-      config,
+      Configs.AbsolutelyAll - Configs.OldAndRule,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
       List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%s" +
         "Both Node(%d) and Node(%d) have the label `Person` and property `name` = 'A'").format(String.format("%n"), a, b))
@@ -211,11 +193,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
   }
 
   test("drop a non existent node key constraint") {
-    val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
-      Configs.Version3_3
     failWithError(
-      config,
+      Configs.AbsolutelyAll - Configs.OldAndRule,
       "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
       List("No such constraint")
     )
@@ -237,10 +216,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE INDEX ON :Person(firstname, lastname)".fixNewLines)
 
     // then
-    val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
-      Configs.Version3_3
-    failWithError(config,
+    failWithError(Configs.AbsolutelyAll - Configs.OldAndRule,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
       List("There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
                   "A constraint cannot be created until the index has been dropped."))
@@ -251,11 +227,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY".fixNewLines)
 
     // then
-    val config = TestConfiguration(V3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema, Morsel)) +
-      Configs.Version3_3
     failWithError(
-      config,
+      Configs.AbsolutelyAll - Configs.OldAndRule,
       "CREATE INDEX ON :Person(firstname, lastname)",
       List("Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
                   "so an index is already created that matches this."))
@@ -267,27 +240,18 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val id = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood"), "Person").getId
 
     // Expect
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
-        TestConfiguration(Versions(V2_3, Versions.Default), Rule, Runtimes.Default) +
-        TestScenario(V3_3, Planners.Cost, Runtimes.Default)
-    failWithError(config,
+    failWithError(duplicateConstraintConfiguration,
       "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.surname",
       List(s"Node($id) with label `Person` must have the properties `firstname, surname`"))
 
   }
-
-  private val updateConfiguration: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted)) +
-    TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
-    TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default) +
-    TestScenario(V3_3, Planners.Cost, Runtimes.Default)
 
   test("Should be able to remove non constrained property") {
     // Given
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY".fixNewLines)
     val node = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
-    executeWith(updateConfiguration, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
+    executeWith(Configs.UpdateConf, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
 
     // Then
     graph.inTx {
@@ -300,7 +264,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY".fixNewLines)
     createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
-    executeWith(updateConfiguration, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
+    executeWith(Configs.UpdateConf, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
 
     // Then
     graph.execute("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines).hasNext shouldBe false
@@ -311,9 +275,36 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname, n.surname) IS NODE KEY".fixNewLines)
     createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood", "foo" -> "bar"), "Person")
 
-    executeWith(updateConfiguration, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
+    executeWith(Configs.UpdateConf, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
 
     // Then
     graph.execute("MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines).hasNext shouldBe false
+  }
+
+  test("Should handle temporal with node key constraint") {
+      // When
+      graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.birthday) IS NODE KEY")
+
+      // Then
+      createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+      createLabeledNode(Map("birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+      createLabeledNode(Map("birthday" -> "1991-10-18"), "User")
+      a[ConstraintViolationException] should be thrownBy {
+        createLabeledNode(Map("birthday" -> LocalDate.of(1991, 10, 18)), "User")
+      }
+  }
+
+  test("Should handle temporal with composite node key constraint") {
+    // When
+    graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.name, n.birthday) IS NODE KEY")
+
+    // Then
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDateTime.of(1991, 10, 18, 0, 0, 0, 0)), "User")
+    createLabeledNode(Map("name" -> "Neo", "birthday" -> "1991-10-18"), "User")
+    createLabeledNode(Map("name" -> "Neolina", "birthday" -> "1991-10-18"), "User")
+    a[ConstraintViolationException] should be thrownBy {
+      createLabeledNode(Map("name" -> "Neo", "birthday" -> LocalDate.of(1991, 10, 18)), "User")
+    }
   }
 }

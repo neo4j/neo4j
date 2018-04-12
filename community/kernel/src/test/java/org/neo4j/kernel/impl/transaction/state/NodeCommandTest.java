@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -239,19 +240,20 @@ public class NodeCommandTest
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         @SuppressWarnings( "deprecation" )
         StoreFactory storeFactory = new StoreFactory( dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }

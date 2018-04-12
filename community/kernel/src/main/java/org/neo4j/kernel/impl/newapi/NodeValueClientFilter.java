@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -69,8 +69,8 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 {
     private static final Comparator<IndexQuery> ASCENDING_BY_KEY = Comparator.comparingInt( IndexQuery::propertyKeyId );
     private final NodeValueClient target;
-    private final NodeCursor node;
-    private final PropertyCursor property;
+    private final DefaultNodeCursor node;
+    private final DefaultPropertyCursor property;
     private final IndexQuery[] filters;
     private final Read read;
     private int[] keys;
@@ -78,7 +78,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
 
     NodeValueClientFilter(
             NodeValueClient target,
-            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
+            DefaultNodeCursor node, DefaultPropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
@@ -89,7 +89,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+    public void initialize( SchemaIndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
     {
         this.progressor = progressor;
         this.keys = descriptor.schema().getPropertyIds();
@@ -117,6 +117,12 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
             }
             return filterByCursors( reference, values );
         }
+    }
+
+    @Override
+    public boolean needsValues()
+    {
+        return true;
     }
 
     @Override

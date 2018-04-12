@@ -42,7 +42,7 @@ public class TestTransactionEventDeadlocks
     public DatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
-    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData() throws Exception
+    public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
         Node node = null;
@@ -77,7 +77,7 @@ public class TestTransactionEventDeadlocks
 
         @SuppressWarnings( "boxing" )
         @Override
-        public Void beforeCommit( TransactionData data ) throws Exception
+        public Void beforeCommit( TransactionData data )
         {
             // TODO Hmm, makes me think... should we really call transaction event handlers
             // for these relationship type / property index transasctions?

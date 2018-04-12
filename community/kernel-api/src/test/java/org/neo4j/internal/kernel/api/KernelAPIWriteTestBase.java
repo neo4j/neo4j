@@ -24,14 +24,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
@@ -50,11 +47,8 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     protected static final TemporaryFolder folder = new TemporaryFolder();
     protected static KernelAPIWriteTestSupport testSupport;
     protected Session session;
-    protected ManagedTestCursors cursors;
+    protected Modes modes;
     protected static GraphDatabaseService graphDb;
-
-    @Rule
-    public CursorsClosedPostCondition conditionalTeardown = new CursorsClosedPostCondition( () -> cursors );
 
     /**
      * Creates a new instance of WriteSupport, which will be used to execute the concrete test
@@ -73,8 +67,8 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         }
         testSupport.clearGraph();
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
-        cursors = new ManagedTestCursors( kernel.cursors() );
+        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
+        modes = kernel.modes();
     }
 
     @After
@@ -84,7 +78,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         if ( testSupport != null )
         {

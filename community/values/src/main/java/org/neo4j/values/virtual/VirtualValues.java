@@ -23,12 +23,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.PathValue.DirectPathValue;
 
 /**
  * Entry point to the virtual values library.
@@ -65,9 +66,9 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-    public static ListValue filter( ListValue list, Function<AnyValue,Boolean> filter )
+    public static ListValue dropNoValues( ListValue list )
     {
-        return new ListValue.FilteredListValue( list, filter );
+        return new ListValue.DropNoValuesListValue( list );
     }
 
     public static ListValue slice( ListValue list, int from, int to )
@@ -96,10 +97,17 @@ public final class VirtualValues
         return new ListValue.ListSlice( list, 0, end );
     }
 
-    public static ListValue transform( ListValue list, Function<AnyValue,AnyValue> transForm )
-    {
-        return new ListValue.TransformedListValue( list, transForm );
-    }
+    /*
+    TOMBSTONE: TransformedListValue & FilteredListValue
+
+    This list value variant would lazily apply a transform/filter on a inner list. The lazy behavior made it hard
+    to guarantee that the transform/filter was still evaluable and correct on reading the transformed list, so
+    this was removed. If we want lazy values again, remember the problems of
+
+       - returning results out of Cypher combined with auto-closing iterators
+       - reading modified tx-state which was not visible at TransformedListValue creation
+
+    */
 
     public static ListValue reverse( ListValue list )
     {
@@ -156,12 +164,17 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static MapValue copy( MapValue map )
+    @SafeVarargs
+    public static MapValue copy( MapValue map, Pair<String,AnyValue>... moreEntries )
     {
         HashMap<String,AnyValue> hashMap = new HashMap<>( map.size() );
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
             hashMap.put( entry.getKey(), entry.getValue() );
+        }
+        for ( Pair<String,AnyValue> entry : moreEntries )
+        {
+            hashMap.put( entry.first(), entry.other() );
         }
         return new MapValue( hashMap );
     }
@@ -185,7 +198,7 @@ public final class VirtualValues
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements" );
         }
-        return new PathValue( nodes, relationships );
+        return new DirectPathValue( nodes, relationships );
     }
 
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )

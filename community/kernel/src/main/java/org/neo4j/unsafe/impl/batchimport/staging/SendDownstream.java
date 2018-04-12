@@ -46,7 +46,7 @@ class SendDownstream implements Work<Downstream,SendDownstream>
     }
 
     @Override
-    public void apply( Downstream downstream ) throws Exception
+    public void apply( Downstream downstream )
     {
         TicketedBatch next = head;
         do

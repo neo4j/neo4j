@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
 import static org.mockito.Mockito.mock;
@@ -33,7 +32,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class StatementLifecycleTest
 {
     @Test
-    public void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero() throws Exception
+    public void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero()
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -53,7 +52,7 @@ public class StatementLifecycleTest
     }
 
     @Test
-    public void shouldReleaseStoreStatementWhenForceClosingStatements() throws Exception
+    public void shouldReleaseStoreStatementWhenForceClosingStatements()
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -78,7 +77,7 @@ public class StatementLifecycleTest
     private KernelStatement getKernelStatement( KernelTransactionImplementation transaction,
             StorageStatement storageStatement )
     {
-        return new KernelStatement( transaction, null, storageStatement, new Procedures(), new CanWrite(),
-                LockTracer.NONE, mock( StatementOperationParts.class ) );
+        return new KernelStatement( transaction, null, storageStatement,
+                LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 }

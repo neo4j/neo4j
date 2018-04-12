@@ -76,7 +76,7 @@ public class AsyncLogTest
     }
 
     @Test
-    public void shouldLogAsynchronously() throws Exception
+    public void shouldLogAsynchronously()
     {
         // given
         AssertableLogProvider logging = new AssertableLogProvider();

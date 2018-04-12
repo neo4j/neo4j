@@ -20,6 +20,7 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,14 +49,13 @@ import static org.neo4j.helpers.collection.Iterables.count;
  * @see Cluster
  * @see ClusterMessage
  */
-public enum ClusterState
-        implements State<ClusterContext, ClusterMessage>
+public enum ClusterState implements State<ClusterContext, ClusterMessage>
 {
     start
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -134,8 +134,8 @@ public enum ClusterState
     discovery
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing ) throws URISyntaxException
                 {
                     List<ClusterMessage.ConfigurationRequestState> discoveredInstances = context.getDiscoveredInstances();
                     context.getLog( getClass() ).info( format( "Discovered instances are %s", discoveredInstances ) );
@@ -155,10 +155,10 @@ public enum ClusterState
                                         ", got " + state.getClusterName() + "." );
                             }
 
-                            HashMap<InstanceId, URI> memberList = new HashMap<InstanceId, URI>( state.getMembers() );
+                            HashMap<InstanceId, URI> memberList = new HashMap<>( state.getMembers() );
                             context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId() );
 
-                            context.acquiredConfiguration( memberList, state.getRoles() );
+                            context.acquiredConfiguration( memberList, state.getRoles(), state.getFailedMembers() );
 
                             if ( !memberList.containsKey( context.getMyId() ) ||
                                     !memberList.get( context.getMyId() ).equals( context.boundAt() ) )
@@ -180,13 +180,13 @@ public enum ClusterState
                                 else
                                 {
                                     outgoing.offer( to( ProposerMessage.propose, new URI( message.getHeader(
-                                            Message.FROM ) ), newState ) );
+                                            Message.HEADER_FROM ) ), newState ) );
                                 }
 
                                 context.getLog( ClusterState.class ).debug( "Setup join timeout for " + message
-                                        .getHeader( Message.CONVERSATION_ID ) );
+                                        .getHeader( Message.HEADER_CONVERSATION_ID ) );
                                 context.setTimeout( "join", timeout( ClusterMessage.joiningTimeout, message,
-                                        new URI( message.getHeader( Message.FROM ) ) ) );
+                                        new URI( message.getHeader( Message.HEADER_FROM ) ) ) );
 
                                 return joining;
                             }
@@ -309,7 +309,7 @@ public enum ClusterState
                             ClusterMessage.ConfigurationRequestState configurationRequested = message.getPayload();
                             configurationRequested = new ClusterMessage.ConfigurationRequestState(
                                     configurationRequested.getJoiningId(),
-                                    URI.create( message.getHeader( Message.FROM ) ) );
+                                    URI.create( message.getHeader( Message.HEADER_FROM ) ) );
                             // Make a note that this instance contacted us.
                             context.addContactingInstance( configurationRequested, message.getHeader( DISCOVERED, "" ) );
                             context.getLog( getClass() ).info( format( "Received configuration request %s and " +
@@ -376,11 +376,10 @@ public enum ClusterState
     joining
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context,
+                public ClusterState handle( ClusterContext context,
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -407,7 +406,7 @@ public enum ClusterState
                         case joiningTimeout:
                         {
                             context.getLog( ClusterState.class ).info( "Join timeout for " + message.getHeader(
-                                    Message.CONVERSATION_ID ) );
+                                    Message.HEADER_CONVERSATION_ID ) );
 
                             if ( context.hasJoinBeenDenied() )
                             {
@@ -449,8 +448,8 @@ public enum ClusterState
     entered
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -472,7 +471,7 @@ public enum ClusterState
                         {
                             ClusterMessage.ConfigurationRequestState request = message.getPayload();
                             request = new ClusterMessage.ConfigurationRequestState( request.getJoiningId(),
-                                    URI.create( message.getHeader( Message.FROM ) ) );
+                                    URI.create( message.getHeader( Message.HEADER_FROM ) ) );
 
                             InstanceId joiningId = request.getJoiningId();
                             URI joiningUri = request.getJoiningUri();
@@ -506,6 +505,7 @@ public enum ClusterState
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             else
@@ -517,6 +517,7 @@ public enum ClusterState
                                                 .getRoles(), context.getConfiguration().getMembers(),
                                                 new org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InstanceId(
                                                         context.getLastDeliveredInstanceId() ),
+                                                context.getFailedInstances(),
                                                 context.getConfiguration().getName() ) ) ) );
                             }
                             break;
@@ -531,7 +532,7 @@ public enum ClusterState
 
                         case leave:
                         {
-                            List<URI> nodeList = new ArrayList<URI>( context.getConfiguration().getMemberURIs() );
+                            List<URI> nodeList = new ArrayList<>( context.getConfiguration().getMemberURIs() );
                             if ( nodeList.size() == 1 )
                             {
                                 context.getLog( ClusterState.class ).info( format( "Shutting down cluster: %s",
@@ -568,11 +569,10 @@ public enum ClusterState
     leaving
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context,
+                public ClusterState handle( ClusterContext context,
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

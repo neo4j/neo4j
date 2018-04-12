@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class EstimationSanityCheckerTest
 {
     @Test
-    public void shouldWarnAboutCountGettingCloseToCapacity() throws Exception
+    public void shouldWarnAboutCountGettingCloseToCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -50,7 +50,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldWarnAboutCounthigherThanCapacity() throws Exception
+    public void shouldWarnAboutCounthigherThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -67,7 +67,7 @@ public class EstimationSanityCheckerTest
     }
 
     @Test
-    public void shouldNotWantIfCountWayLowerThanCapacity() throws Exception
+    public void shouldNotWantIfCountWayLowerThanCapacity()
     {
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;

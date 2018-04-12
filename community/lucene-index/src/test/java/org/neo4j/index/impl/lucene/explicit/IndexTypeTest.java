@@ -57,7 +57,7 @@ public class IndexTypeTest
     }
 
     @Test
-    public void removeFromExactIndexedDocumentRetainCorrectNumberOfFields() throws Exception
+    public void removeFromExactIndexedDocumentRetainCorrectNumberOfFields()
     {
         Document document = new Document();
         indexType.addToDocument( document, STRING_TEST_FIELD, "value"  );
@@ -76,7 +76,7 @@ public class IndexTypeTest
     }
 
     @Test
-    public void removeFieldFromExactIndexedDocumentRetainCorrectNumberOfFields() throws Exception
+    public void removeFieldFromExactIndexedDocumentRetainCorrectNumberOfFields()
     {
         Document document = new Document();
         indexType.addToDocument( document, STRING_TEST_FIELD, "value"  );

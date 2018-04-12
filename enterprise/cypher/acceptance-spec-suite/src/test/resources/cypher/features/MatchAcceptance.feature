@@ -186,7 +186,8 @@ Feature: MatchAcceptance
       MATCH (ts)-[:R]->(f)
       RETURN k, ts, f, d
       """
-    Then the result should be empty
+    Then the result should be:
+      | k | ts | f | d |
     And no side effects
 
   Scenario: difficult to plan query number 3
@@ -366,5 +367,6 @@ Feature: MatchAcceptance
       """
       MATCH (n {prop: false}) RETURN n
       """
-    Then the result should be empty
+    Then the result should be:
+      | n |
     And no side effects

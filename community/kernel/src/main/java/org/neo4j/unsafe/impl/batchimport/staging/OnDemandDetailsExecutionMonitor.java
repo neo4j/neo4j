@@ -24,18 +24,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.impl.cache.MeasureDoNothing;
-import org.neo4j.kernel.impl.cache.MeasureDoNothing.CollectingMonitor;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.monitoring.VmPauseMonitor;
+import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
+import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
@@ -74,21 +79,22 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private final PrintStream out;
     private final InputStream in;
     private final Map<String,Pair<String,Runnable>> actions = new HashMap<>();
-    private final CollectingMonitor gcBlockTime = new CollectingMonitor();
-    private final MeasureDoNothing gcMonitor;
+    private final VmPauseTimeAccumulator vmPauseTimeAccumulator = new VmPauseTimeAccumulator();
+    private final VmPauseMonitor vmPauseMonitor;
     private final Monitor monitor;
 
     private StageDetails current;
     private boolean printDetailsOnDone;
 
-    public OnDemandDetailsExecutionMonitor( PrintStream out, InputStream in, Monitor monitor )
+    public OnDemandDetailsExecutionMonitor( PrintStream out, InputStream in, Monitor monitor, JobScheduler jobScheduler )
     {
         this.out = out;
         this.in = in;
         this.monitor = monitor;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
-        this.gcMonitor = new MeasureDoNothing( "Importer GC monitor", gcBlockTime, 100, 200 );
+        this.vmPauseMonitor = new VmPauseMonitor( Duration.ofMillis( 100 ), Duration.ofMillis( 100 ),
+                NullLog.getInstance(), jobScheduler, vmPauseTimeAccumulator );
     }
 
     @Override
@@ -97,13 +103,13 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         out.println( "InteractiveReporterInteractions command list (end with ENTER):" );
         actions.forEach( ( key, action ) -> out.println( "  " + key + ": " + action.first() ) );
         out.println();
-        gcMonitor.start();
+        vmPauseMonitor.start();
     }
 
     @Override
     public void start( StageExecution execution )
     {
-        details.add( current = new StageDetails( execution, gcBlockTime ) );
+        details.add( current = new StageDetails( execution, vmPauseTimeAccumulator ) );
     }
 
     @Override
@@ -119,7 +125,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         {
             printDetails();
         }
-        gcMonitor.stopMeasuring();
+        vmPauseMonitor.stop();
     }
 
     @Override
@@ -149,7 +155,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         printIndented( out, "  Free physical memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
         printIndented( out, "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
         printIndented( out, "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
-        printIndented( out, "  GC block time: " + duration( gcBlockTime.getGcBlockTime() ) );
+        printIndented( out, "  VM stop-the-world time: " + duration( vmPauseTimeAccumulator.getPauseTime() ) );
         printIndented( out, "  Duration: " + duration( totalTime ) );
         out.println();
     }
@@ -206,21 +212,21 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     {
         private final StageExecution execution;
         private final long startTime;
-        private final CollectingMonitor gcBlockTime;
-        private final long baseGcBlockTime;
+        private final VmPauseTimeAccumulator vmPauseTimeAccumulator;
+        private final long baseVmPauseTime;
 
         private long memoryUsage;
         private long ioThroughput;
         private long totalTimeMillis;
-        private long stageGcBlockTime;
+        private long stageVmPauseTime;
         private long doneBatches;
 
-        StageDetails( StageExecution execution, CollectingMonitor gcBlockTime )
+        StageDetails( StageExecution execution, VmPauseTimeAccumulator vmPauseTimeAccumulator )
         {
             this.execution = execution;
-            this.gcBlockTime = gcBlockTime;
+            this.vmPauseTimeAccumulator = vmPauseTimeAccumulator;
+            this.baseVmPauseTime = vmPauseTimeAccumulator.getPauseTime();
             this.startTime = currentTimeMillis();
-            this.baseGcBlockTime = gcBlockTime.getGcBlockTime();
         }
 
         void print( PrintStream out )
@@ -231,7 +237,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
             printIndented( out, builder.toString() );
             printValue( out, memoryUsage, "Memory usage", Format::bytes );
             printValue( out, ioThroughput, "I/O throughput", value -> bytes( value ) + "/s" );
-            printValue( out, stageGcBlockTime, "GC block time", Format::duration );
+            printValue( out, stageVmPauseTime, "VM stop-the-world time", Format::duration );
             printValue( out, totalTimeMillis, "Duration", Format::duration );
             printValue( out, doneBatches, "Done batches", String::valueOf );
 
@@ -249,7 +255,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         void collect()
         {
             totalTimeMillis = currentTimeMillis() - startTime;
-            stageGcBlockTime = gcBlockTime.getGcBlockTime() - baseGcBlockTime;
+            stageVmPauseTime = vmPauseTimeAccumulator.getPauseTime() - baseVmPauseTime;
             long lastDoneBatches = doneBatches;
             for ( Step<?> step : execution.steps() )
             {
@@ -267,6 +273,22 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
                 lastDoneBatches = stats.stat( Keys.done_batches ).asLong();
             }
             doneBatches = lastDoneBatches;
+        }
+    }
+
+    private static class VmPauseTimeAccumulator implements Consumer<VmPauseInfo>
+    {
+        private final AtomicLong totalPauseTime = new AtomicLong();
+
+        @Override
+        public void accept( VmPauseInfo pauseInfo )
+        {
+            totalPauseTime.addAndGet( pauseInfo.getPauseTime() );
+        }
+
+        long getPauseTime()
+        {
+            return totalPauseTime.get();
         }
     }
 }

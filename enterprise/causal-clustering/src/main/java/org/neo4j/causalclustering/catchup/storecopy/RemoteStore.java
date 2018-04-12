@@ -21,29 +21,27 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.CatchupAddressResolutionException;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -62,6 +60,7 @@ public class RemoteStore
     private final StoreCopyClient storeCopyClient;
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
+    private final CommitStateHelper commitStateHelper;
 
     public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient,
             TxPullClient txPullClient, TransactionLogCatchUpFactory transactionLogFactory, Config config, Monitors monitors )
@@ -75,90 +74,73 @@ public class RemoteStore
         this.config = config;
         this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
+        this.commitStateHelper = new CommitStateHelper( pageCache, fs, config );
     }
 
     /**
      * Later stages of the startup process require at least one transaction to
      * figure out the mapping between the transaction log and the consensus log.
-     * <p>
+     *
      * If there are no transaction logs then we can pull from and including
      * the index which the metadata store points to. This would be the case
      * for example with a backup taken during an idle period of the system.
-     * <p>
+     *
      * However, if there are transaction logs then we want to find out where
      * they end and pull from there, excluding the last one so that we do not
      * get duplicate entries.
      */
-    private long getPullIndex( File storeDir ) throws IOException
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, boolean keepTxLogsInDir )
+            throws StoreCopyFailedException, IOException
     {
-        /* this is the metadata store */
-        ReadOnlyTransactionIdStore txIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+        CommitState commitState = commitStateHelper.getStoreState( storeDir );
+        log.info( "Store commit state: " + commitState );
 
-        /* Clean as in clean shutdown. Without transaction logs this should be the truth,
-        * but otherwise it can be used as a starting point for scanning the logs. */
-        long lastCleanTxId = txIdStore.getLastCommittedTransactionId();
-        log.info( "Last Clean Tx Id: %d", lastCleanTxId );
-
-        /* these are the transaction logs */
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, config,
-                new Monitors() );
-
-        long lastTxId = BASE_TX_ID;
-        try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
+        if ( commitState.transactionLogIndex().isPresent() )
         {
-            while ( cursor.next() )
-            {
-                CommittedTransactionRepresentation tx = cursor.get();
-                lastTxId = tx.getCommitEntry().getTxId();
-            }
-
-            if ( lastTxId < lastCleanTxId )
-            {
-                throw new IllegalStateException( "Metadata index was higher than transaction log index." );
-            }
-
-            // we don't want to pull a transaction we already have in the log, hence +1
-            return lastTxId + 1;
+            return pullTransactions( from, expectedStoreId, storeDir, commitState.transactionLogIndex().get() + 1, false, keepTxLogsInDir );
         }
-        catch ( NoSuchTransactionException e )
+        else
         {
-            log.info( "No transaction logs found. Will use metadata store as base for pull request." );
-            return Math.max( TransactionIdStore.BASE_TX_ID + 1, lastCleanTxId );
+            CatchupResult catchupResult;
+            if ( commitState.metaDataStoreIndex() == BASE_TX_ID )
+            {
+                return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir );
+            }
+            else
+            {
+                catchupResult = pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex(), false, keepTxLogsInDir );
+                if ( catchupResult == E_TRANSACTION_PRUNED )
+                {
+                    return pullTransactions( from, expectedStoreId, storeDir, commitState.metaDataStoreIndex() + 1, false, keepTxLogsInDir );
+                }
+            }
+            return catchupResult;
         }
     }
 
-    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir,
-            boolean keepTxLogsInStoreDir ) throws StoreCopyFailedException, IOException
-    {
-        long pullIndex = getPullIndex( storeDir );
-        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false, keepTxLogsInStoreDir );
-    }
-
-    public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )
-            throws StoreCopyFailedException, StreamingTransactionsFailedException
+    public void copy( CatchupAddressProvider addressProvider, StoreId expectedStoreId, File destDir )
+            throws StoreCopyFailedException
     {
         try
         {
-            log.info( "Copying store from %s", from );
             long lastFlushedTxId;
-            try ( StreamToDisk storeFileStreams = new StreamToDisk( destDir, fs, pageCache, monitors ) )
-            {
-                lastFlushedTxId = storeCopyClient.copyStoreFiles( from, expectedStoreId, storeFileStreams );
-            }
+            StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, pageCache, monitors );
+            lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, streamToDiskProvider,
+                        () -> new MaximumTotalTime( config.get( CausalClusteringSettings.store_copy_max_retry_time_per_request ).getSeconds(),
+                                TimeUnit.SECONDS ) );
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
             // Even for cluster store copy, we still write the transaction logs into the store directory itself
             // because the destination directory is temporary. We will copy them to the correct place later.
-            boolean keepTxLogsInStoreDir = true;
-            CatchupResult catchupResult =
-                    pullTransactions( from, expectedStoreId, destDir, lastFlushedTxId, true, keepTxLogsInStoreDir );
+            CatchupResult catchupResult = pullTransactions( addressProvider.primary(), expectedStoreId, destDir,
+                    lastFlushedTxId, true, true );
             if ( catchupResult != SUCCESS_END_OF_STREAM )
             {
-                throw new StreamingTransactionsFailedException( "Failed to pull transactions: " + catchupResult );
+                throw new StoreCopyFailedException( "Failed to pull transactions: " + catchupResult );
             }
         }
-        catch ( IOException e )
+        catch ( CatchupAddressResolutionException | IOException e )
         {
             throw new StoreCopyFailedException( e );
         }
@@ -171,7 +153,7 @@ public class RemoteStore
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
                 logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
-            log.info( "Pulling transactions from: %d", fromTxId );
+            log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
 
             long previousTxId = fromTxId - 1;
 

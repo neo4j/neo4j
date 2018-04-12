@@ -204,7 +204,7 @@ public final class FunctionalTestHelper
 
     public long getNodeIdFromUri( String nodeUri )
     {
-        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( "/" ) + 1, nodeUri.length() ) );
+        return Long.valueOf( nodeUri.substring( nodeUri.lastIndexOf( '/' ) + 1, nodeUri.length() ) );
     }
 
     public long getRelationshipIdFromUri( String relationshipUri )
@@ -214,7 +214,7 @@ public final class FunctionalTestHelper
 
     public Map<String, Object> removeAnyAutoIndex( Map<String, Object> map )
     {
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         for ( Map.Entry<String, Object> entry : map.entrySet() )
         {
             Map<?, ?> innerMap = (Map<?,?>) entry.getValue();

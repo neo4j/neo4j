@@ -21,10 +21,13 @@ in the LICENSE.txt file.
 
 Full license texts are found in LICENSES.txt.
 
+
 Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Lang
   Apache Commons Text

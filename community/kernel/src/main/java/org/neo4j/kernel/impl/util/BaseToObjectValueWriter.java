@@ -20,6 +20,11 @@
 package org.neo4j.kernel.impl.util;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,12 +43,13 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
@@ -316,7 +322,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         writeValue( newPoint( crs, coordinate ) );
     }
@@ -398,6 +404,42 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeByteArray( byte[] value ) throws RuntimeException
     {
         writeValue( value );
+    }
+
+    @Override
+    public void writeDuration( long months, long days, long seconds, int nanos )
+    {
+        writeValue( DurationValue.duration( months, days, seconds, nanos ) );
+    }
+
+    @Override
+    public void writeDate( LocalDate localDate ) throws RuntimeException
+    {
+        writeValue( localDate );
+    }
+
+    @Override
+    public void writeLocalTime( LocalTime localTime ) throws RuntimeException
+    {
+        writeValue( localTime );
+    }
+
+    @Override
+    public void writeTime( OffsetTime offsetTime ) throws RuntimeException
+    {
+        writeValue( offsetTime );
+    }
+
+    @Override
+    public void writeLocalDateTime( LocalDateTime localDateTime ) throws RuntimeException
+    {
+        writeValue( localDateTime );
+    }
+
+    @Override
+    public void writeDateTime( ZonedDateTime zonedDateTime ) throws RuntimeException
+    {
+        writeValue( zonedDateTime );
     }
 
     private interface Writer

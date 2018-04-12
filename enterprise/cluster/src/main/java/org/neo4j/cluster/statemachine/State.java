@@ -42,7 +42,6 @@ public interface State<CONTEXT, MESSAGETYPE extends MessageType>
      * @param message  that needs to be handled
      * @param outgoing processor for new messages created by the handling of this message
      * @return the new state
-     * @throws Throwable
      */
-    State<?, ?> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageHolder outgoing ) throws Throwable;
+    State<CONTEXT, MESSAGETYPE> handle( CONTEXT context, Message<MESSAGETYPE> message, MessageHolder outgoing ) throws Throwable;
 }

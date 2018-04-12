@@ -20,10 +20,13 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
+import java.util.Collections;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.kernel.api.security.AuthToken;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -51,13 +54,21 @@ public class MachineRoom
     public static BoltStateMachine newMachine()
     {
         BoltChannel boltChannel = mock( BoltChannel.class );
-        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), boltChannel, Clock.systemUTC() );
+        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
     }
 
     public static BoltStateMachine newMachine( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
     {
         BoltStateMachine machine = newMachine();
         init( machine );
+        machine.state = state;
+        return machine;
+    }
+
+    public static BoltStateMachine newMachineWithOwner( BoltStateMachine.State state, String owner ) throws AuthenticationException, BoltConnectionFatality
+    {
+        BoltStateMachine machine = newMachine();
+        init( machine, owner );
         machine.state = state;
         return machine;
     }
@@ -79,18 +90,23 @@ public class MachineRoom
         when( spi.transactionSpi() ).thenReturn( transactionSPI );
 
         BoltChannel boltChannel = mock( BoltChannel.class );
-        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC(), NullLogService.getInstance() );
         init( machine );
         return machine;
     }
 
     private static void init( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
     {
-        when( machine.spi.authenticate( any() ) ).thenReturn( mock( AuthenticationResult.class ) );
-        machine.init( USER_AGENT, emptyMap(), nullResponseHandler() );
+        init( machine, null );
     }
 
-    private static void runBegin( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
+    private static void init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
+    {
+        when( machine.spi.authenticate( any() ) ).thenReturn( mock( AuthenticationResult.class ) );
+        machine.init( USER_AGENT, owner == null ? emptyMap() : Collections.singletonMap( AuthToken.PRINCIPAL, owner ), nullResponseHandler() );
+    }
+
+    private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality
     {
         machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );

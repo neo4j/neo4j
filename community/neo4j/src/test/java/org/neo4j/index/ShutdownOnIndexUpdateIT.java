@@ -33,7 +33,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -52,7 +51,7 @@ public class ShutdownOnIndexUpdateIT
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
 
     @Test
-    public void shutdownWhileFinishingTransactionWithIndexUpdates() throws Exception
+    public void shutdownWhileFinishingTransactionWithIndexUpdates()
     {
         createConstraint( database );
         waitIndexesOnline( database );
@@ -62,7 +61,7 @@ public class ShutdownOnIndexUpdateIT
             Node node = database.createNode( constraintIndexLabel );
             node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
 
-            DependencyResolver dependencyResolver = ((GraphDatabaseAPI) database).getDependencyResolver();
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
             NeoStoreDataSource dataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
             LifeSupport dataSourceLife = dataSource.getLife();
             TransactionCloseListener closeListener = new TransactionCloseListener( transaction );

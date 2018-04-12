@@ -32,23 +32,24 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
-import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
+import static org.neo4j.values.storable.ValueGroup.NO_VALUE;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
     private Map<List<Object>,Set<Long>> data;
 
-    HashBasedIndex( IndexDescriptor descriptor )
+    HashBasedIndex( SchemaIndexDescriptor descriptor )
     {
         super( descriptor );
     }
@@ -87,62 +88,16 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return asResource( nodes == null ? emptyIterator() : toPrimitiveIterator( nodes.iterator() ) );
     }
 
-    private synchronized PrimitiveLongResourceIterator rangeSeekByNumberInclusive( Number lower, Number upper )
+    private synchronized PrimitiveLongResourceIterator rangeSeek( Value lower, boolean includeLower, Value upper, boolean includeUpper,
+            ValueGroup targetValueGroup, IndexQuery query )
     {
         Set<Long> nodeIds = new HashSet<>();
         for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
         {
-            Object key = entry.getKey().get( 0 );
-            if ( NUMBER.isSuperTypeOf( key ) )
+            Value key = Values.of( entry.getKey().get( 0 ) );
+            if ( query.acceptsValue( key ) )
             {
-                boolean lowerFilter = lower == null || COMPARE_VALUES.compare( key, lower ) >= 0;
-                boolean upperFilter = upper == null || COMPARE_VALUES.compare( key, upper ) <= 0;
-
-                if ( lowerFilter && upperFilter )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
-            }
-        }
-        return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
-    }
-
-    private synchronized PrimitiveLongResourceIterator rangeSeekByString( String lower, boolean includeLower, String upper,
-            boolean includeUpper )
-    {
-        Set<Long> nodeIds = new HashSet<>();
-        for ( Map.Entry<List<Object>,Set<Long>> entry : data.entrySet() )
-        {
-            Object key = entry.getKey().get( 0 );
-            if ( STRING.isSuperTypeOf( key ) )
-            {
-                boolean lowerFilter;
-                boolean upperFilter;
-
-                if ( lower == null )
-                {
-                    lowerFilter = true;
-                }
-                else
-                {
-                    int cmp = COMPARE_VALUES.compare( key, lower );
-                    lowerFilter = (includeLower && cmp >= 0) || (cmp > 0);
-                }
-
-                if ( upper == null )
-                {
-                    upperFilter = true;
-                }
-                else
-                {
-                    int cmp = COMPARE_VALUES.compare( key, upper );
-                    upperFilter = (includeUpper && cmp <= 0) || (cmp < 0);
-                }
-
-                if ( lowerFilter && upperFilter )
-                {
-                    nodeIds.addAll( entry.getValue() );
-                }
+                nodeIds.addAll( entry.getValue() );
             }
         }
         return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
@@ -150,17 +105,17 @@ class HashBasedIndex extends InMemoryIndexImplementation
 
     private synchronized PrimitiveLongResourceIterator rangeSeekByPrefix( String prefix )
     {
-        return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
+        return stringSearch( entry -> entry.startsWith( prefix ) );
     }
 
     private synchronized PrimitiveLongResourceIterator containsString( String exactTerm )
     {
-        return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
+        return stringSearch( entry -> entry.contains( exactTerm ) );
     }
 
     private PrimitiveLongResourceIterator endsWith( String suffix )
     {
-        return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
+        return stringSearch( entry -> entry.endsWith( suffix ) );
     }
 
     private synchronized PrimitiveLongResourceIterator scan()
@@ -273,12 +228,27 @@ class HashBasedIndex extends InMemoryIndexImplementation
             return scan();
         case exact:
             return seek( ((IndexQuery.ExactPredicate) predicate).value() );
-        case rangeNumeric:
-            IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
-            return rangeSeekByNumberInclusive( np.from(), np.to() );
-        case rangeString:
-            IndexQuery.StringRangePredicate srp = (IndexQuery.StringRangePredicate) predicate;
-            return rangeSeekByString( srp.from(), srp.fromInclusive(), srp.to(), srp.toInclusive() );
+        case range:
+            switch ( predicate.valueGroup().category() )
+            {
+            case NUMBER:
+                IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
+                return rangeSeek( np.fromValue(), np.fromInclusive(), np.toValue(), np.toInclusive(), ValueGroup.NUMBER, np );
+
+            case TEXT:
+                IndexQuery.TextRangePredicate srp = (IndexQuery.TextRangePredicate) predicate;
+                return rangeSeek( srp.fromValue(), srp.fromInclusive(), srp.toValue(), srp.toInclusive(), ValueGroup.TEXT, srp );
+
+            case TEMPORAL:
+                IndexQuery.RangePredicate trp = (IndexQuery.RangePredicate) predicate;
+                Value lower = trp.fromValue();
+                Value upper = trp.toValue();
+                return rangeSeek( lower, trp.fromInclusive(), upper, trp.toInclusive(), extractValueGroup( lower, upper ), trp );
+            case GEOMETRY:
+            default:
+                throw new UnsupportedOperationException(
+                        format( "Range scan of valueCategory %s is not supported", predicate.valueGroup().category() ) );
+            }
         case stringPrefix:
             IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
             return rangeSeekByPrefix( spp.prefix() );
@@ -294,7 +264,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
     }
@@ -330,5 +300,23 @@ class HashBasedIndex extends InMemoryIndexImplementation
     boolean hasSameContentsAs( InMemoryIndexImplementation other )
     {
         return this.data.equals( ((HashBasedIndex)other).data );
+    }
+
+    private ValueGroup extractValueGroup( Value o1, Value o2 )
+    {
+        if ( o1.valueGroup() != NO_VALUE && o2.valueGroup() != NO_VALUE )
+        {
+            assert o1.valueGroup() == o2.valueGroup() : "o1.valueGroup=" + o1.valueGroup() + ", o2.valueGroup=" + o2.valueGroup();
+            return o1.valueGroup();
+        }
+        else if ( o1.valueGroup() != NO_VALUE )
+        {
+            return o1.valueGroup();
+        }
+        else if ( o2.valueGroup() != NO_VALUE )
+        {
+            return o2.valueGroup();
+        }
+        throw new IllegalArgumentException( "Can't decide ValueGroup from null values" );
     }
 }

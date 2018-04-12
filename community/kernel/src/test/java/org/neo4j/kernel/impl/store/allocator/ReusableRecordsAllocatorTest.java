@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class ReusableRecordsAllocatorTest
 {
     @Test
-    public void allocatePreviouslyNotUsedRecord() throws Exception
+    public void allocatePreviouslyNotUsedRecord()
     {
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );
         dynamicRecord.setInUse( false );
@@ -44,7 +44,7 @@ public class ReusableRecordsAllocatorTest
     }
 
     @Test
-    public void allocatePreviouslyUsedRecord() throws Exception
+    public void allocatePreviouslyUsedRecord()
     {
         DynamicRecord dynamicRecord = new DynamicRecord( 1 );
         dynamicRecord.setInUse( true );

@@ -59,8 +59,7 @@ class DumpSegmentedRaftLog
                 new RecoveryProtocol( fileSystem, fileNames, readerPool, marshal, logProvider );
         Segments segments = recoveryProtocol.run().segments;
 
-        segments.visit( segment ->
-        {
+        segments.visit( segment -> {
                 logsFound[0]++;
                 out.println( "=== " + segment.getFilename() + " ===" );
 
@@ -75,26 +74,20 @@ class DumpSegmentedRaftLog
                         out.println( cursor.get().toString() );
                     }
                 }
-                catch ( DisposedException e )
-                {
-                    e.printStackTrace();
-                    System.exit( -1 );
-                    return true;
-                }
-                catch ( IOException e )
+                catch ( DisposedException | IOException e )
                 {
                     e.printStackTrace();
                     System.exit( -1 );
                     return true;
                 }
 
-                return false;
+            return false;
         } );
 
         return logsFound[0];
     }
 
-    public static void main( String[] args ) throws IOException, DisposedException, DamagedLogStorageException
+    public static void main( String[] args )
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         try ( Printer printer = getPrinter( arguments ) )
@@ -107,6 +100,10 @@ class DumpSegmentedRaftLog
                 {
                     new DumpSegmentedRaftLog( fileSystem, new CoreReplicatedContentMarshal() )
                             .dump( fileAsString, printer.getFor( fileAsString ) );
+                }
+                catch ( IOException | DisposedException | DamagedLogStorageException e )
+                {
+                    e.printStackTrace();
                 }
             }
         }

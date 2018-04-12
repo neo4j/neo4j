@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
+import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.kernel.impl.api.RelationshipVisitor
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 
 class ExpandAllOperator(toSlots: SlotConfiguration,
                         fromSlots: SlotConfiguration,
@@ -49,7 +48,7 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
      */
     var readPos = 0
     var writePos = 0
-    var relationships: RelationshipIterator = null
+    var relationships: RelationshipSelectionCursor = null
     var input: Morsel = null
     var iterationState: Iteration = null
 
@@ -65,7 +64,7 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
         input = data
         readPos = index
         iterationState = is
-        relationships = rels.asInstanceOf[RelationshipIterator]
+        relationships = rels.asInstanceOf[RelationshipSelectionCursor]
       case _ =>
         throw new InternalException("Unknown continuation received")
     }
@@ -82,21 +81,12 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
       readPos += 1
       else {
         if (relationships == null) {
-          relationships = context.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(context))
+          relationships = context.getRelationshipsCursor(fromNode, dir, types.types(context))
         }
 
-        var otherSide: Long = 0
-
-        val relVisitor = new RelationshipVisitor[InternalException] {
-          override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
-            if (fromNode == startNodeId)
-              otherSide = endNodeId
-            else
-              otherSide = startNodeId
-        }
-        while (writePos < output.validRows && relationships.hasNext) {
-          val relId = relationships.next()
-          relationships.relationshipVisit(relId, relVisitor)
+        while (writePos < output.validRows && relationships.next()) {
+          val relId = relationships.relationshipReference()
+          val otherSide = relationships.otherNodeReference()
 
           // Now we have everything needed to create a row.
           System.arraycopy(input.longs, readPos * inputLongCount, output.longs, writePos * outputLongCount, inputLongCount)
@@ -106,7 +96,8 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
           writePos += 1
         }
 
-        if (!relationships.hasNext) {
+        //we haven't filled up the rows
+        if (writePos < output.validRows) {
           relationships = null
           readPos += 1
         }
@@ -118,8 +109,13 @@ class ExpandAllOperator(toSlots: SlotConfiguration,
         ContinueWithData(input, readPos, iterationState)
       else
         ContinueWithDataAndSource(input, readPos, relationships, iterationState)
-    } else
+    } else {
+      if (relationships != null) {
+        relationships.close()
+        relationships = null
+      }
       EndOfLoop(iterationState)
+    }
 
     output.validRows = writePos
     next

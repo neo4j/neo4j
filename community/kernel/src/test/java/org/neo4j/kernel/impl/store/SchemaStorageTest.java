@@ -39,15 +39,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -85,15 +85,14 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        try ( Transaction transaction = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction transaction = db.beginTx() )
         {
-            TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
-            tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL1 );
-            tokenWriteOperations.labelGetOrCreateForName( LABEL2 );
-            tokenWriteOperations.relationshipTypeGetOrCreateForName( TYPE1 );
+            TokenWrite tokenWrite = getTransaction().tokenWrite();
+            tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
+            tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+            tokenWrite.labelGetOrCreateForName( LABEL1 );
+            tokenWrite.labelGetOrCreateForName( LABEL2 );
+            tokenWrite.relationshipTypeGetOrCreateForName( TYPE1 );
             transaction.success();
         }
         SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
@@ -120,11 +119,11 @@ public class SchemaStorageTest
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP2, IndexDescriptor.Type.GENERAL );
+        assertRule( rule, LABEL1, PROP2, SchemaIndexDescriptor.Type.GENERAL );
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndPropertyComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndPropertyComposite()
     {
         String a = "a";
         String b = "b";
@@ -132,13 +131,10 @@ public class SchemaStorageTest
         String d = "d";
         String e = "e";
         String f = "f";
-        createSchema( db ->
-        {
-            db.schema().indexFor( Label.label( LABEL1 ) )
-              .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create();
-        } );
+        createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
+          .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
-        IndexRule rule = storage.indexGetForSchema( IndexDescriptorFactory.forLabel(
+        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
 
         assertNotNull( rule );
@@ -149,11 +145,11 @@ public class SchemaStorageTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
     {
         String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
         createSchema( db ->
@@ -166,7 +162,7 @@ public class SchemaStorageTest
             indexCreator.create();
         } );
 
-        IndexRule rule = storage.indexGetForSchema( IndexDescriptorFactory.forLabel(
+        IndexRule rule = storage.indexGetForSchema( SchemaIndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
 
         assertNotNull( rule );
@@ -175,7 +171,7 @@ public class SchemaStorageTest
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( SchemaIndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
     }
 
     @Test
@@ -205,7 +201,7 @@ public class SchemaStorageTest
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP1, IndexDescriptor.Type.UNIQUE );
+        assertRule( rule, LABEL1, PROP1, SchemaIndexDescriptor.Type.UNIQUE );
     }
 
     @Test
@@ -335,7 +331,7 @@ public class SchemaStorageTest
         return tokenNameLookup;
     }
 
-    private void assertRule( IndexRule rule, String label, String propertyKey, IndexDescriptor.Type type )
+    private void assertRule( IndexRule rule, String label, String propertyKey, SchemaIndexDescriptor.Type type )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
@@ -349,21 +345,21 @@ public class SchemaStorageTest
         assertEquals( type, rule.getConstraintDescriptor().type() );
     }
 
-    private IndexDescriptor indexDescriptor( String label, String property )
+    private SchemaIndexDescriptor indexDescriptor( String label, String property )
     {
-        return IndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
+        return SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( property ) );
     }
 
-    private IndexDescriptor uniqueIndexDescriptor( String label, String property )
+    private SchemaIndexDescriptor uniqueIndexDescriptor( String label, String property )
     {
-        return IndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
+        return SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( property ) );
     }
 
     private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
     {
         return IndexRule.indexRule(
                 ruleId,
-                IndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
+                SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
                 PROVIDER_DESCRIPTOR );
     }
 
@@ -372,7 +368,7 @@ public class SchemaStorageTest
     {
         return IndexRule.constraintIndexRule(
                 ruleId,
-                IndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
+                SchemaIndexDescriptorFactory.uniqueForLabel( labelId( label ), propId( propertyKey ) ),
                 PROVIDER_DESCRIPTOR, constraintId );
     }
 
@@ -391,34 +387,31 @@ public class SchemaStorageTest
 
     private static int labelId( String labelName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().labelGetForName( labelName );
+            return getTransaction().tokenRead().nodeLabel( labelName );
         }
     }
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().propertyKeyGetForName( propName );
+            return getTransaction().tokenRead().propertyKey( propName );
         }
     }
 
     private static int typeId( String typeName )
     {
-        try ( Transaction ignore = db.beginTx();
-                Statement statement = getStatement() )
+        try ( Transaction ignore = db.beginTx() )
         {
-            return statement.readOperations().relationshipTypeGetForName( typeName );
+            return getTransaction().tokenRead().relationshipType( typeName );
         }
     }
 
-    private static Statement getStatement()
+    private static KernelTransaction getTransaction()
     {
-        return resolveDependency( ThreadToStatementContextBridge.class ).get();
+        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
     }
 
     private static <T> T resolveDependency( Class<T> clazz )

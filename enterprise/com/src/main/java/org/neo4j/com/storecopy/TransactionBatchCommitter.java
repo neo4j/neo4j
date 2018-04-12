@@ -21,7 +21,7 @@ package org.neo4j.com.storecopy;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionQueue;
@@ -141,7 +141,7 @@ class TransactionBatchCommitter implements TransactionQueue.Applier
                             ", lastCommittedTxId:" + last.transactionId() +
                             ", lastCommittedTimestamp:" + informativeTimestamp( lastCommittedTimestamp ) +
                             ", batchTimeRange:" + informativeDuration( lastCommittedTimestamp - firstCommittedTimestamp ) +
-                            ", earliestSafeTimstamp:" + informativeTimestamp( earliestSafeTimestamp ) +
+                            ", earliestSafeTimestamp:" + informativeTimestamp( earliestSafeTimestamp ) +
                             ", safeZoneDuration:" + informativeDuration( idReuseSafeZoneTime ) +
                             "\n" +
                             "  Transaction: lastCommittedTimestamp:" +

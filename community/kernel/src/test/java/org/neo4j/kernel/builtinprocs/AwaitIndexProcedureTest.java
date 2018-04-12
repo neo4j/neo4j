@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.SchemaRead;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -42,6 +46,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -49,23 +54,39 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.storageengine.api.schema.SchemaRule.Kind.INDEX_RULE;
+import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forSchema;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
 {
     private static final int TIMEOUT = 10;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-    private final ReadOperations operations = mock( ReadOperations.class );
-    private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
-    private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
-    private final LabelSchemaDescriptor anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-    private final IndexDescriptor anyIndex = IndexDescriptorFactory.forSchema( anyDescriptor );
+    private KernelTransaction transaction;
+    private TokenRead tokenRead;
+    private SchemaRead schemaRead;
+    private IndexProcedures procedure;
+    private LabelSchemaDescriptor descriptor;
+    private LabelSchemaDescriptor anyDescriptor;
+    private CapableIndexReference anyIndex ;
+
+    @Before
+    public void setup()
+    {
+        transaction = mock( KernelTransaction.class );
+        tokenRead = mock( TokenRead.class );
+        schemaRead = mock( SchemaRead.class );
+        procedure = new IndexProcedures( transaction, null );
+        descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
+        anyDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+        anyIndex = DefaultCapableIndexReference.fromDescriptor( forSchema( anyDescriptor ) );
+        when( transaction.tokenRead() ).thenReturn( tokenRead );
+        when( transaction.schemaRead() ).thenReturn( schemaRead );
+    }
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
-        when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
+        when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
 
         try
         {
@@ -79,9 +100,9 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
-        when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
+        when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
 
         try
         {
@@ -98,14 +119,14 @@ public class AwaitIndexProcedureTest
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
             throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( descriptor.getLabelId() );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( descriptor.getPropertyId() );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( ONLINE );
 
         procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
 
-        verify( operations ).indexGetForSchema( descriptor );
+        verify( schemaRead ).index( descriptor.getLabelId(), descriptor.getPropertyId() );
     }
 
     @Test
@@ -113,10 +134,10 @@ public class AwaitIndexProcedureTest
             throws SchemaRuleNotFoundException, IndexNotFoundKernelException
 
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( FAILED );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( FAILED );
 
         try
         {
@@ -131,13 +152,12 @@ public class AwaitIndexProcedureTest
 
     @Test
     public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException
 
     {
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( any() ) ).thenThrow(
-                new SchemaRuleNotFoundException( INDEX_RULE, SchemaDescriptorFactory.forLabel( 0, 0 ) ) );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( CapableIndexReference.NO_INDEX );
 
         try
         {
@@ -154,12 +174,12 @@ public class AwaitIndexProcedureTest
     public void shouldBlockUntilTheIndexIsOnline() throws SchemaRuleNotFoundException, IndexNotFoundKernelException,
             InterruptedException
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
+        when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
 
         AtomicReference<InternalIndexState> state = new AtomicReference<>( POPULATING );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).then( invocationOnMock -> state.get() );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).then( invocationOnMock -> state.get() );
 
         AtomicBoolean done = new AtomicBoolean( false );
         new Thread( () ->
@@ -186,10 +206,10 @@ public class AwaitIndexProcedureTest
     public void shouldTimeoutIfTheIndexTakesTooLongToComeOnline()
             throws InterruptedException, SchemaRuleNotFoundException, IndexNotFoundKernelException
     {
-        when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.propertyKeyGetForName( anyString() ) ).thenReturn( 0 );
-        when( operations.indexGetForSchema( any() ) ).thenReturn( anyIndex );
-        when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( POPULATING );
+        when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
+        when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
+        when( schemaRead.index( anyInt(), anyInt() ) ).thenReturn( anyIndex );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( POPULATING );
 
         AtomicReference<ProcedureException> exception = new AtomicReference<>();
         new Thread( () ->

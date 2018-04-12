@@ -51,7 +51,7 @@ public class NestedIndexReadersIT
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 
     @Test
-    public void shouldReadCorrectResultsFromMultipleNestedReaders() throws Exception
+    public void shouldReadCorrectResultsFromMultipleNestedReaders()
     {
         // given
         createIndex();

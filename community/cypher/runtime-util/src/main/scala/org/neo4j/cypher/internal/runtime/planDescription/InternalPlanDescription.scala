@@ -164,6 +164,8 @@ object InternalPlanDescription {
 
     case class InequalityIndex(label: String, propertyKey: String, bounds: Seq[String]) extends Argument
 
+    case class PointDistanceIndex(label: String, propertyKey: String, point: String, distance: String, inclusive: Boolean) extends Argument
+
     case class LabelName(label: String) extends Argument
 
     case class KeyNames(keys: Seq[String]) extends Argument

@@ -23,49 +23,50 @@ public abstract class TextArray extends ArrayValue
 {
     public abstract String stringValue( int offset );
 
-    public int compareTo( TextArray other )
+    @Override
+    int unsafeCompareTo( Value otherValue )
     {
-        return TextValues.compareTextArrays( this, other );
+        return TextValues.compareTextArrays( this, (TextArray) otherValue );
     }
 
     @Override
-    public boolean equals( byte[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( short[] x )
+    public final boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( int[] x )
+    public final boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long[] x )
+    public final boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( float[] x )
+    public final boolean equals( long[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double[] x )
+    public final boolean equals( float[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( boolean[] x )
+    public final boolean equals( double[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( boolean[] x )
     {
         return false;
     }

@@ -35,12 +35,12 @@ import static org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResp
 
 public class StoreStreamingProcess
 {
-    private final StoreStreamingProtocol protocol;
+    private final StoreFileStreamingProtocol protocol;
     private final Supplier<CheckPointer> checkPointerSupplier;
     private final StoreCopyCheckPointMutex mutex;
     private final StoreResourceStreamFactory resourceStreamFactory;
 
-    public StoreStreamingProcess( StoreStreamingProtocol protocol, Supplier<CheckPointer> checkPointerSupplier, StoreCopyCheckPointMutex mutex,
+    public StoreStreamingProcess( StoreFileStreamingProtocol protocol, Supplier<CheckPointer> checkPointerSupplier, StoreCopyCheckPointMutex mutex,
             StoreResourceStreamFactory resourceStreamFactory )
     {
         this.protocol = protocol;
@@ -57,8 +57,12 @@ public class StoreStreamingProcess
         Future<Void> completion = null;
         try ( RawCursor<StoreResource,IOException> resources = resourceStreamFactory.create() )
         {
-            protocol.stream( ctx, resources );
-            completion = protocol.end( ctx, SUCCESS, checkPointer.lastCheckPointedTransactionId() );
+            while ( resources.next() )
+            {
+                StoreResource resource = resources.get();
+                protocol.stream( ctx, resource );
+            }
+            completion = protocol.end( ctx, SUCCESS );
         }
         finally
         {
@@ -75,6 +79,6 @@ public class StoreStreamingProcess
 
     public void fail( ChannelHandlerContext ctx, StoreCopyFinishedResponse.Status failureCode )
     {
-        protocol.end( ctx, failureCode, -1 );
+        protocol.end( ctx, failureCode );
     }
 }

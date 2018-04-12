@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -38,14 +38,14 @@ import org.neo4j.values.storable.Value;
  */
 public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<LuceneSchemaIndex> implements SchemaIndex
 {
-    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, IndexDescriptor descriptor,
+    public ReadOnlyDatabaseSchemaIndex( PartitionedIndexStorage indexStorage, SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig, ReadOnlyIndexPartitionFactory readOnlyIndexPartitionFactory )
     {
         super( new LuceneSchemaIndex( indexStorage, descriptor, samplingConfig, readOnlyIndexPartitionFactory ) );
     }
 
     @Override
-    public LuceneIndexWriter getIndexWriter() throws IOException
+    public LuceneIndexWriter getIndexWriter()
     {
         throw new UnsupportedOperationException( "Can't get index writer for read only lucene index." );
     }
@@ -57,7 +57,7 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return luceneIndex.getDescriptor();
     }
@@ -95,7 +95,7 @@ public class ReadOnlyDatabaseSchemaIndex extends ReadOnlyAbstractDatabaseIndex<L
      * Unsupported operation in read only index.
      */
     @Override
-    public void markAsOnline() throws IOException
+    public void markAsOnline()
     {
         throw new UnsupportedOperationException( "Can't mark read only index." );
     }

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -50,8 +51,9 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.cache.MonitorGc;
+import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -62,12 +64,12 @@ import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -79,13 +81,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
 
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTGeometry;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPoint;
-import static org.neo4j.kernel.api.proc.Neo4jTypes.NTRelationship;
 
 /**
  * Datasource module for {@link GraphDatabaseFacadeFactory}. This implements all the
@@ -168,6 +170,7 @@ public class DataSourceModule
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
+        final CollectionsFactorySupplier collectionsFactorySupplier = createCollectionsFactorySupplier( config );
         neoStoreDataSource = deps.satisfyDependency( new NeoStoreDataSource(
                 storeDir,
                 config,
@@ -201,11 +204,13 @@ public class DataSourceModule
                 platformModule.storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
                 editionModule.idController,
-                platformModule.databaseInfo.operationalMode ) );
+                platformModule.databaseInfo.operationalMode,
+                platformModule.versionContextSupplier,
+                collectionsFactorySupplier ) );
 
         dataSourceManager.register( neoStoreDataSource );
 
-        life.add( new MonitorGc( config, logging.getInternalLog( MonitorGc.class ) ) );
+        life.add( new VmPauseMonitorComponent( config, logging.getInternalLog( VmPauseMonitorComponent.class ), platformModule.jobScheduler ) );
 
         life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
 
@@ -220,9 +225,23 @@ public class DataSourceModule
         this.storeId = neoStoreDataSource::getStoreId;
         this.kernelAPI = neoStoreDataSource::getKernel;
 
-        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, this, deps,
+        ProcedureGDSFactory gdsFactory = new ProcedureGDSFactory( platformModule, editionModule, this, deps,
                 editionModule.coreAPIAvailabilityGuard, editionModule.relationshipTypeTokenHolder );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
+    }
+
+    private CollectionsFactorySupplier createCollectionsFactorySupplier( Config config )
+    {
+        final TransactionStateMemoryAllocation allocation = config.get( GraphDatabaseSettings.tx_state_memory_allocation );
+        switch ( allocation )
+        {
+        case ON_HEAP:
+            return CollectionsFactorySupplier.ON_HEAP;
+        case OFF_HEAP:
+            return CollectionsFactorySupplier.OFF_HEAP;
+        default:
+            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
+        }
     }
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
@@ -241,19 +260,20 @@ public class DataSourceModule
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
-        Procedures procedures = new Procedures(
+        Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
                 pluginDir, internalLog, new ProcedureConfig( platform.config ) );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
-        procedures.registerType( Geometry.class, new SimpleConverter( NTGeometry, Geometry.class ) );
-        procedures.registerType( Point.class, new SimpleConverter( NTPoint, Point.class ) );
+        procedures.registerType( Node.class, NTNode );
+        procedures.registerType( Relationship.class, NTRelationship );
+        procedures.registerType( Path.class, NTPath );
+        procedures.registerType( Geometry.class, NTGeometry );
+        procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
@@ -308,7 +328,7 @@ public class DataSourceModule
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             availabilityGuard.isAvailable( timeout );
         }

@@ -23,22 +23,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.UUID;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.function.Predicates;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
-import org.neo4j.kernel.impl.util.Listener;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -50,35 +49,36 @@ import static org.neo4j.causalclustering.core.state.snapshot.PersistentSnapshotD
 
 public class CoreStateDownloaderServiceTest
 {
-    private final MemberId someMember = new MemberId( UUID.randomUUID() );
-    private Neo4jJobScheduler neo4jJobScheduler;
+    private final AdvertisedSocketAddress someMemberAddress = new AdvertisedSocketAddress( "localhost", 1234 );
+    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
+    private CentralJobScheduler centralJobScheduler;
+    private DatabaseHealth dbHealth = mock( DatabaseHealth.class );
 
     @Before
     public void create()
     {
-        neo4jJobScheduler = new Neo4jJobScheduler();
-        neo4jJobScheduler.init();
+        centralJobScheduler = new CentralJobScheduler();
+        centralJobScheduler.init();
     }
 
     @After
     public void shutdown()
     {
-        neo4jJobScheduler.shutdown();
+        centralJobScheduler.shutdown();
     }
 
     @Test
     public void shouldRunPersistentDownloader() throws Exception
     {
         CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        when( coreStateDownloader.downloadSnapshot( any() ) ).thenReturn( true );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
 
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
-                new CoreStateDownloaderService( neo4jJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ), new NoTimeout() );
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( someMember );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
+                new CoreStateDownloaderService( centralJobScheduler, coreStateDownloader, applicationProcess,
+                        logProvider( log ), new NoTimeout(), () -> dbHealth );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
         waitForApplierToResume( applicationProcess );
 
         verify( applicationProcess, times( 1 ) ).pauseApplier( OPERATION_NAME );
@@ -87,29 +87,46 @@ public class CoreStateDownloaderServiceTest
     }
 
     @Test
-    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime() throws Exception
+    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime() throws InterruptedException
     {
         AtomicInteger schedules = new AtomicInteger();
-        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );
-        CoreStateDownloader coreStateDownloader = mock( CoreStateDownloader.class );
+        CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, centralJobScheduler );
+        Semaphore blockDownloader = new Semaphore( 0 );
+        CoreStateDownloader coreStateDownloader = new BlockingCoreStateDownloader( blockDownloader );
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
 
         final Log log = mock( Log.class );
         CoreStateDownloaderService coreStateDownloaderService =
                 new CoreStateDownloaderService( countingJobScheduler, coreStateDownloader, applicationProcess,
-                        logProvider( log ), new NoTimeout() );
+                        logProvider( log ), new NoTimeout(), () -> dbHealth );
 
-        AtomicBoolean availableLeader = new AtomicBoolean( false );
-
-        LeaderLocator leaderLocator = new ControllableLeaderLocator( availableLeader );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-        coreStateDownloaderService.scheduleDownload( leaderLocator );
-
-        availableLeader.set( true );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        Thread.sleep( 50 );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
+        coreStateDownloaderService.scheduleDownload( catchupAddressProvider );
 
         assertEquals( 1, schedules.get() );
+        blockDownloader.release();
+    }
+
+    static class BlockingCoreStateDownloader extends CoreStateDownloader
+    {
+        private final Semaphore semaphore;
+
+        BlockingCoreStateDownloader( Semaphore semaphore )
+        {
+            super( null, null, null, null, NullLogProvider.getInstance(), null,
+                    null, null, null );
+            this.semaphore = semaphore;
+        }
+
+        @Override
+        boolean downloadSnapshot( CatchupAddressProvider addressProvider )
+        {
+            semaphore.acquireUninterruptibly();
+            return true;
+        }
     }
 
     private void waitForApplierToResume( CommandApplicationProcess applicationProcess ) throws TimeoutException
@@ -125,39 +142,7 @@ public class CoreStateDownloaderServiceTest
             {
                 return false;
             }
-        }, 1, TimeUnit.SECONDS );
-    }
-
-    private class ControllableLeaderLocator implements LeaderLocator
-    {
-        private final AtomicBoolean shouldProvideALeader;
-
-        ControllableLeaderLocator( AtomicBoolean shouldProvideALeader )
-        {
-            this.shouldProvideALeader = shouldProvideALeader;
-        }
-
-        @Override
-        public MemberId getLeader() throws NoLeaderFoundException
-        {
-            if ( shouldProvideALeader.get() )
-            {
-                return someMember;
-            }
-            throw new NoLeaderFoundException( "sorry" );
-        }
-
-        @Override
-        public void registerListener( Listener<MemberId> listener )
-        {
-            // do nothing
-        }
-
-        @Override
-        public void unregisterListener( Listener<MemberId> listener )
-        {
-            // do nothing
-        }
+        }, 20, TimeUnit.SECONDS );
     }
 
     private LogProvider logProvider( Log log )

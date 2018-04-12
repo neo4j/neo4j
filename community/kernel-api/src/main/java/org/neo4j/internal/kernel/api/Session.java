@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 
 /**
  * A Session is used to gain
@@ -31,7 +31,7 @@ public interface Session extends AutoCloseable
      *
      * @return The new transaction
      */
-    Transaction beginTransaction() throws KernelException;
+    Transaction beginTransaction() throws TransactionFailureException;
 
     /**
      * Begin new transaction.
@@ -39,9 +39,7 @@ public interface Session extends AutoCloseable
      * @param type The type of transaction
      * @return The new transaction
      */
-    Transaction beginTransaction( Transaction.Type type ) throws KernelException;
-
-    Token token();
+    Transaction beginTransaction( Transaction.Type type ) throws TransactionFailureException;
 
     @Override
     void close();

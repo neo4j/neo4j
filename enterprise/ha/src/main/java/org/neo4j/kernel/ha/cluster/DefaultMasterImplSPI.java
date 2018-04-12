@@ -30,7 +30,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.TransactionChecksumLookup;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -146,7 +146,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
 
     @Override
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-            throws IOException, TransactionFailureException
+            throws TransactionFailureException
     {
         return transactionCommitProcess.commit( new TransactionToApply( preparedTransaction ), CommitEvent.NULL,
                 TransactionApplicationMode.EXTERNAL );
@@ -161,7 +161,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public long getTransactionChecksum( long txId ) throws IOException
     {
-        return txChecksumLookup.applyAsLong( txId );
+        return txChecksumLookup.lookup( txId );
     }
 
     @Override

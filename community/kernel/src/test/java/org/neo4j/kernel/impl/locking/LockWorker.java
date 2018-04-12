@@ -112,7 +112,7 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>
     {
         @Override
-        public Void doWork( LockWorkerState state ) throws Exception
+        public Void doWork( LockWorkerState state )
         {
             try
             {

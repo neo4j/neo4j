@@ -20,7 +20,9 @@
 package org.neo4j.kernel.api.proc;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
@@ -31,9 +33,10 @@ public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply(
+            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

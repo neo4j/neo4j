@@ -20,10 +20,8 @@
 package org.neo4j.test;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -117,14 +115,6 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public JobHandle schedule( Group group, Runnable job, Map<String,String> metadata )
-    {
-        JobHandle handle = schedule( job, now() );
-        processSchedule();
-        return handle;
-    }
-
-    @Override
     public JobHandle schedule( Group group, Runnable job, long initialDelay, TimeUnit timeUnit )
     {
         JobHandle handle = schedule( job, now() + timeUnit.toMillis( initialDelay ) );
@@ -155,25 +145,25 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         throw new UnsupportedOperationException();
     }
@@ -218,7 +208,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
+        public void waitTermination()
         {
             throw new UnsupportedOperationException();
         }

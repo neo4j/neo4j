@@ -27,8 +27,8 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 import org.neo4j.values.storable.ValueTuple;
@@ -43,19 +43,19 @@ public class TxStateCompositeIndexTest
 {
     private TransactionState state;
 
-    private final IndexDescriptor indexOn_1_1_2 = IndexDescriptorFactory.forLabel( 1, 1, 2 );
-    private final IndexDescriptor indexOn_1_2_3 = IndexDescriptorFactory.forLabel( 1, 2, 3 );
-    private final IndexDescriptor indexOn_2_2_3 = IndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
-    private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
+    private final SchemaIndexDescriptor indexOn_1_1_2 = SchemaIndexDescriptorFactory.forLabel( 1, 1, 2 );
+    private final SchemaIndexDescriptor indexOn_1_2_3 = SchemaIndexDescriptorFactory.forLabel( 1, 2, 3 );
+    private final SchemaIndexDescriptor indexOn_2_2_3 = SchemaIndexDescriptorFactory.uniqueForLabel( 2, 2, 3 );
+    private final SchemaIndexDescriptor indexOn_2_2_3_4 = SchemaIndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         state = new TxState();
     }
 
     @Test
-    public void shouldScanOnAnEmptyTxState() throws Exception
+    public void shouldScanOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
@@ -65,7 +65,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekOnAnEmptyTxState() throws Exception
+    public void shouldSeekOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets =
@@ -76,7 +76,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldScanWhenThereAreNewNodes() throws Exception
+    public void shouldScanWhenThereAreNewNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -90,7 +90,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewStringNodes() throws Exception
+    public void shouldSeekWhenThereAreNewStringNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -105,7 +105,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewNumberNodes() throws Exception
+    public void shouldSeekWhenThereAreNewNumberNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringProperties( 42L, 43L );
@@ -120,7 +120,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldHandleMixedAddsAndRemovesEntry() throws Exception
+    public void shouldHandleMixedAddsAndRemovesEntry()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -136,7 +136,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreManyEntriesWithTheSameValues() throws Exception
+    public void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -152,15 +152,15 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekInComplexMix() throws Exception
+    public void shouldSeekInComplexMix()
     {
         // GIVEN
-        ValueTuple[] values2_1 = Iterators.array(
+        ValueTuple[] values21 = Iterators.array(
                 ValueTuple.of( "hi", 3 ),
                 ValueTuple.of( 9L, 33L ),
                 ValueTuple.of( "sneaker", false ) );
 
-        ValueTuple[] values2_2 = Iterators.array(
+        ValueTuple[] values22 = Iterators.array(
                 ValueTuple.of( true, false ),
                 ValueTuple.of( new int[]{ 10,100}, "array-buddy" ),
                 ValueTuple.of( 40.1, 40.2 ) );
@@ -170,16 +170,16 @@ public class TxStateCompositeIndexTest
                 ValueTuple.of( true, new long[]{4L}, 33L ),
                 ValueTuple.of( 2, false, 1 ) );
 
-        addEntries( indexOn_1_1_2, values2_1, 10 );
-        addEntries( indexOn_2_2_3, values2_2, 100 );
+        addEntries( indexOn_1_1_2, values21, 10 );
+        addEntries( indexOn_2_2_3, values22, 100 );
         addEntries( indexOn_2_2_3_4, values3, 1000 );
 
-        assertSeek( indexOn_1_1_2, values2_1, 10 );
-        assertSeek( indexOn_2_2_3, values2_2, 100 );
+        assertSeek( indexOn_1_1_2, values21, 10 );
+        assertSeek( indexOn_2_2_3, values22, 100 );
         assertSeek( indexOn_2_2_3_4, values3, 1000 );
     }
 
-    private void addEntries( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void addEntries( SchemaIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -187,7 +187,7 @@ public class TxStateCompositeIndexTest
         }
     }
 
-    private void assertSeek( IndexDescriptor index, ValueTuple[] values, long nodeIdStart )
+    private void assertSeek( SchemaIndexDescriptor index, ValueTuple[] values, long nodeIdStart )
     {
         for ( int i = 0; i < values.length; i++ )
         {
@@ -208,7 +208,7 @@ public class TxStateCompositeIndexTest
         void addDefaultStringProperties( long... nodeIds );
     }
 
-    private IndexUpdater modifyIndex( final IndexDescriptor descriptor )
+    private IndexUpdater modifyIndex( final SchemaIndexDescriptor descriptor )
     {
         return new IndexUpdater()
         {

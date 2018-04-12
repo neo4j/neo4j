@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.Randoms;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -159,12 +160,14 @@ public class IndexPopulationIT
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
     {
+        final Randoms random = new Randoms();
         for ( int j = 0; j < 10_000; j++ )
         {
             try ( Transaction transaction = database.beginTx() )
             {
                 Node node = database.createNode( testLabel );
-                node.setProperty( propertyName, RandomStringUtils.randomAlphabetic( 10 ) );
+                Object property = MultipleIndexPopulationStressIT.randomPropertyValue( random );
+                node.setProperty( propertyName, property );
                 transaction.success();
             }
         }

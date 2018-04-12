@@ -10,6 +10,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.logging</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
@@ -105,7 +106,6 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.findbugs</groupId>

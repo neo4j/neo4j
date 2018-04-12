@@ -19,52 +19,144 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.utils.InvalidValuesArgumentException;
 
+import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class Value extends AnyValue
 {
+    static final Pattern mapPattern = Pattern.compile( "\\{(.*)\\}" );
+
+    static final Pattern keyValuePattern =
+            Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
+
+    static final Pattern quotesPattern = Pattern.compile( "^[\"']|[\"']$" );
+
     @Override
     public boolean eq( Object other )
     {
-        return other != null && other instanceof Value && equals( (Value) other );
+        return other instanceof Value && equals( (Value) other );
     }
 
     public abstract boolean equals( Value other );
 
-    public abstract boolean equals( byte[] x );
+    public boolean equals( byte[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( short[] x );
+    public boolean equals( short[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( int[] x );
+    public boolean equals( int[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( long[] x );
+    public boolean equals( long[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( float[] x );
+    public boolean equals( float[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( double[] x );
+    public boolean equals( double[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( boolean x );
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( boolean[] x );
+    public boolean equals( boolean[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( long x );
+    public boolean equals( long x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( double x );
+    public boolean equals( double x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( char x );
+    public boolean equals( char x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( String x );
+    public boolean equals( String x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( char[] x );
+    public boolean equals( char[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( String[] x );
+    public boolean equals( String[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( Geometry[] x );
+    public boolean equals( Geometry[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( OffsetTime[] x )
+    {
+        return false;
+    }
 
     @Override
     public Boolean ternaryEquals( AnyValue other )
@@ -86,7 +178,18 @@ public abstract class Value extends AnyValue
             }
             return equals( otherValue );
         }
-        return false;
+        return Boolean.FALSE;
+    }
+
+    abstract int unsafeCompareTo( Value other );
+
+    /**
+     * Should return {@code null} for values that cannot be compared
+     * under Comparability semantics.
+     */
+    Integer unsafeTernaryCompareTo( Value other )
+    {
+        return unsafeCompareTo( other );
     }
 
     @Override
@@ -128,5 +231,41 @@ public abstract class Value extends AnyValue
     public boolean isNaN()
     {
         return false;
+    }
+
+    static void parseHeaderInformation( CharSequence text, String type, CSVHeaderInformation info )
+    {
+        Matcher mapMatcher = mapPattern.matcher( text );
+        String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
+        if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
+        {
+            throw new InvalidValuesArgumentException( errorMessage );
+        }
+
+        String mapContents = mapMatcher.group( 1 );
+        if ( mapContents.isEmpty() )
+        {
+            throw new InvalidValuesArgumentException( errorMessage );
+        }
+
+        Matcher matcher = keyValuePattern.matcher( mapContents );
+        if ( !(matcher.find()) )
+        {
+            throw new InvalidValuesArgumentException( errorMessage );
+        }
+
+        do
+        {
+            String key = matcher.group( "k" );
+            if ( key != null )
+            {
+                String value = matcher.group( "v" );
+                if ( value != null )
+                {
+                    info.assign( key, value );
+                }
+            }
+        }
+        while ( matcher.find() );
     }
 }

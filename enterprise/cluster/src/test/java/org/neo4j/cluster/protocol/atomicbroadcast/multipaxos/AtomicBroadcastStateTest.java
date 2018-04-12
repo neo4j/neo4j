@@ -19,22 +19,20 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage.failed;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState.broadcasting;
@@ -54,7 +52,7 @@ public class AtomicBroadcastStateTest
         when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -72,7 +70,7 @@ public class AtomicBroadcastStateTest
         when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -92,7 +90,7 @@ public class AtomicBroadcastStateTest
         when( context.getUriForId( coordinator ) ).thenReturn( uri( 1 ) );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -109,7 +107,7 @@ public class AtomicBroadcastStateTest
         when( context.hasQuorum() ).thenReturn( true );
         when( context.getCoordinator() ).thenReturn( null );
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
         // THEN
@@ -118,7 +116,7 @@ public class AtomicBroadcastStateTest
 
     private Message<AtomicBroadcastMessage> message( int id )
     {
-        return to( failed, uri( id ), "some payload" ).setHeader( Message.CONVERSATION_ID, "some id" );
+        return to( failed, uri( id ), "some payload" ).setHeader( Message.HEADER_CONVERSATION_ID, "some id" );
     }
 
     private URI uri( int i )

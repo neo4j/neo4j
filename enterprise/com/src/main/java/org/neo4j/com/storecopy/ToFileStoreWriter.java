@@ -31,7 +31,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.io.pagecache.impl.PageCacheFlusher;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -44,7 +43,6 @@ public class ToFileStoreWriter implements StoreWriter
     private final StoreCopyClient.Monitor monitor;
     private final PageCache pageCache;
     private final List<FileMoveAction> fileMoveActions;
-    private final PageCacheFlusher flusherThread;
 
     public ToFileStoreWriter( File graphDbStoreDir, FileSystemAbstraction fs,
             StoreCopyClient.Monitor monitor, PageCache pageCache, List<FileMoveAction> fileMoveActions )
@@ -54,8 +52,6 @@ public class ToFileStoreWriter implements StoreWriter
         this.monitor = monitor;
         this.pageCache = pageCache;
         this.fileMoveActions = fileMoveActions;
-        this.flusherThread = new PageCacheFlusher( pageCache );
-        flusherThread.start();
     }
 
     @Override
@@ -75,7 +71,7 @@ public class ToFileStoreWriter implements StoreWriter
             {
                 // Note that we don't bother checking if the page cache already has a mapping for the given file.
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( StoreType.shouldBeManagedByPageCache( filename ) )
+                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( filename ) )
                 {
                     int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
@@ -162,6 +158,6 @@ public class ToFileStoreWriter implements StoreWriter
     @Override
     public void close()
     {
-        flusherThread.halt();
+        // Do nothing
     }
 }

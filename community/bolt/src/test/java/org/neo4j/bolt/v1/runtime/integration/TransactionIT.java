@@ -51,8 +51,11 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
@@ -205,24 +208,19 @@ public class TransactionIT
         BinaryLatch latch = new BinaryLatch();
 
         long dbVersion = env.lastClosedTxId();
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
             {
-                try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
-                {
-                    machine.init( USER_AGENT, emptyMap(), null );
-                    latch.await();
-                    machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
-                    machine.pullAll( nullResponseHandler() );
-                }
-                catch ( BoltConnectionFatality connectionFatality )
-                {
-                    throw new RuntimeException( connectionFatality );
-                }
+                machine.init( USER_AGENT, emptyMap(), null );
+                latch.await();
+                machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
+                machine.pullAll( nullResponseHandler() );
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
@@ -269,37 +267,32 @@ public class TransactionIT
 
         final BoltStateMachine[] machine = {null};
 
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
+                machine[0] = stateMachine;
+                stateMachine.init( USER_AGENT, emptyMap(), null );
+                String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
+                                       "CREATE (n:A {id: line[0], square: line[1]}) " +
+                                       "WITH count(*) as number " +
+                                       "CREATE (n:ShouldNotExist)",
+                                       localPort );
+                try
                 {
-                    machine[0] = stateMachine;
-                    stateMachine.init( USER_AGENT, emptyMap(), null );
-                    String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
-                                           "CREATE (n:A {id: line[0], square: line[1]}) " +
-                                           "WITH count(*) as number " +
-                                           "CREATE (n:ShouldNotExist)",
-                                           localPort );
-                    try
-                    {
-                        latch.start();
-                        stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
-                        stateMachine.pullAll( nullResponseHandler() );
-                    }
-                    finally
-                    {
-                        latch.finish();
-                    }
+                    latch.start();
+                    stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
+                    stateMachine.pullAll( nullResponseHandler() );
                 }
-                catch ( BoltConnectionFatality connectionFatality )
+                finally
                 {
-                    throw new RuntimeException( connectionFatality );
+                    latch.finish();
                 }
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.setName( "query runner" );
         thread.start();
 
@@ -389,6 +382,54 @@ public class TransactionIT
         assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
     }
 
+    @Test
+    public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenRunFails() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "INVALID QUERY", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+        machine.ackFailure( recorder );
+        machine.run( "RETURN 2", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Statement.SyntaxError ) );
+        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
+    }
+
+    @Test
+    public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenStreamingFails() throws Throwable
+    {
+        // Given
+        final BoltStateMachine machine = env.newMachine( boltChannel );
+        machine.init( USER_AGENT, emptyMap(), null );
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+
+        // When
+        machine.run( "UNWIND [1, 0] AS x RETURN 1 / x", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+        machine.ackFailure( recorder );
+        machine.run( "RETURN 2", EMPTY_MAP, recorder );
+        machine.pullAll( recorder );
+
+        // Then
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), allOf( containsRecord( 1L ), failedWithStatus( Status.Statement.ArithmeticError ) ) );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeeded() );
+        assertThat( recorder.nextResponse(), succeededWithRecord( 2L ) );
+        assertEquals( recorder.responseCount(), 0 );
+    }
+
     public static Server createHttpServer(
             DoubleLatch latch, Barrier.Control innerBarrier, int firstBatchSize, int otherBatchSize )
     {
@@ -398,7 +439,7 @@ public class TransactionIT
             @Override
             public void handle(
                     String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
-                    throws IOException, ServletException
+                    throws IOException
             {
                 response.setContentType( "text/plain; charset=utf-8" );
                 response.setStatus( HttpServletResponse.SC_OK );

@@ -35,7 +35,7 @@ public class MatrixUtil
      */
     public static class DoubleVector
     {
-        Map<Integer,Double> values = new HashMap<Integer,Double>();
+        Map<Integer,Double> values = new HashMap<>();
 
         /**
          * Increment a value in the vector.
@@ -111,7 +111,7 @@ public class MatrixUtil
      */
     public static class DoubleMatrix
     {
-        Map<Integer,DoubleVector> rows = new HashMap<Integer,DoubleVector>();
+        Map<Integer,DoubleVector> rows = new HashMap<>();
 
         /**
          * Increment a value at a certain position.
@@ -122,12 +122,7 @@ public class MatrixUtil
         public void incrementValue( Integer rowIndex, Integer columnIndex,
             double increment )
         {
-            DoubleVector row = rows.get( rowIndex );
-            if ( row == null )
-            {
-                row = new DoubleVector();
-                rows.put( rowIndex, row );
-            }
+            DoubleVector row = rows.computeIfAbsent( rowIndex, k -> new DoubleVector() );
             row.incrementValue( columnIndex, increment );
         }
 
@@ -139,12 +134,7 @@ public class MatrixUtil
          */
         public void set( Integer rowIndex, Integer columnIndex, double value )
         {
-            DoubleVector row = rows.get( rowIndex );
-            if ( row == null )
-            {
-                row = new DoubleVector();
-                rows.put( rowIndex, row );
-            }
+            DoubleVector row = rows.computeIfAbsent( rowIndex, k -> new DoubleVector() );
             row.set( columnIndex, value );
         }
 

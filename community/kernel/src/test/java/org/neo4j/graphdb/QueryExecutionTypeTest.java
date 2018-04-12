@@ -100,7 +100,7 @@ public class QueryExecutionTypeTest
     private final Assumptions expected;
 
     @Test
-    public void verify() throws Exception
+    public void verify()
     {
         QueryExecutionType executionType = expected.type();
         assertEquals( expected.isProfiled, executionType.isProfiled() );
@@ -112,7 +112,7 @@ public class QueryExecutionTypeTest
     }
 
     @Test
-    public void noneOtherLikeIt() throws Exception
+    public void noneOtherLikeIt()
     {
         for ( QueryExecutionType.QueryType queryType : QueryExecutionType.QueryType.values() )
         {

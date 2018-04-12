@@ -28,7 +28,7 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.lessThan;
@@ -51,7 +51,7 @@ public class TestNoFileDescriptorLeaks
     }
 
     @Test
-    public void mustNotLeakFileDescriptorsFromMerge() throws Exception
+    public void mustNotLeakFileDescriptorsFromMerge()
     {
         // GIVEN
         try ( Transaction tx = db.beginTx() )

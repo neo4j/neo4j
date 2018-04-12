@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
+
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.values.storable.{CoordinateReferenceSystem, DurationValue, Values}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -33,8 +36,6 @@ import scala.collection.JavaConverters._
   * [[org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LeafPlanningIntegrationTest]]
   */
 class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-
-  val planFailConfig = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1
 
   test("should succeed in creating and deleting composite index") {
     // When
@@ -65,7 +66,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -113,7 +114,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         plan should useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)")
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -184,20 +185,20 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
   test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
+    executeWith(Configs.UpdateConf, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
+    executeWith(Configs.UpdateConf, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
     executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Person(firstname,lastname)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
   }
 
   test("should use composite index correctly given two IN predicates") {
@@ -219,7 +220,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal((0 to 99).map(i => Map("x" -> i)).toList)
@@ -242,7 +243,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal((0 to 9).map(i => Map("x" -> i)).toList)
@@ -265,7 +266,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
@@ -285,7 +286,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -303,7 +304,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -357,7 +358,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
                 //THEN
                 plan should useOperatorWithText("NodeIndexSeek", ":User(name,surname,age,active)")
-              }, planFailConfig))
+              }, Configs.OldAndRule))
           else
             executeWith(testConfig, query,
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
@@ -396,9 +397,89 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":X(p1,p2)")
-      }, planFailConfig), params = Map("id" -> a.getId))
+      }, Configs.OldAndRule), params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
+  }
+
+  test("should use composite index with spatial") {
+    // Given
+    val n1 = createLabeledNode(Map("name" -> "Joe", "city" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 5.6).asObjectCopy()), "User")
+    createLabeledNode(Map("name" -> "Joe", "city" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4).asObjectCopy()), "User")
+    createLabeledNode(Map("name" -> "Joe", "city" -> "P:2-7203[1.2, 5.6]"), "User")
+
+    // When
+    val query = "MATCH (n:User) WHERE n.name = 'Joe' AND n.city = point({x: 1.2, y: 5.6}) RETURN n"
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("User", "name", "city")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
+  }
+
+  test("should use composite index with temporal") {
+    // Given
+    val n1 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18), "time" -> LocalTime.of(21,22,0)), "Label")
+    val n2 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18), "time" -> OffsetTime.of(21,22,0,0, ZoneOffset.of("+00:00"))), "Label")
+    val n3 = createLabeledNode(Map("date" -> "1991-10-18", "time" -> LocalTime.of(21,22,0)), "Label")
+    val n4 = createLabeledNode(Map("date" -> LocalDate.of(1991, 10, 18).toEpochDay, "time" -> LocalTime.of(21,22,0) ), "Label")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Label)
+        |WHERE n.date = date('1991-10-18') AND n.time = localtime('21:22')
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Label", "date","time")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
+  }
+
+  test("should use composite index with duration") {
+    // Given
+    val n1 = createLabeledNode(Map("name" -> "Neo", "result" -> DurationValue.duration(0, 0, 1800, 0).asObject()), "Runner")
+    createLabeledNode(Map("name" -> "Neo", "result" -> LocalTime.of(0,30,0)), "Runner")
+    createLabeledNode(Map("name" -> "Neo", "result" -> "PT30M"), "Runner")
+
+    // When
+    val query =
+      """
+        |MATCH (n:Runner)
+        |WHERE n.name = 'Neo' AND n.result = duration('PT30M')
+        |RETURN n
+      """.stripMargin
+
+    val resultNoIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+
+    graph.createIndex("Runner", "name", "result")
+    val resultIndex = executeWith(Configs.Interpreted - Configs.OldAndRule, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexSeek")
+      }))
+
+    // Then
+    resultNoIndex.toComparableResult should equal(List(Map("n" -> n1)))
+    resultIndex.toComparableResult should equal(resultNoIndex.toComparableResult)
   }
 
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {

@@ -22,18 +22,21 @@ package org.neo4j.kernel.impl.api.index;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 /**
@@ -73,11 +76,12 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
         switch ( mode )
         {
             case ONLINE:
-                return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
+                return new DelegatingIndexUpdater( new DeferredConflictCheckingIndexUpdater(
+                        target.accessor.newUpdater( mode ), target::newReader, target.getDescriptor() ) )
                 {
                     @Override
                     public void process( IndexEntryUpdate<?> update )
-                            throws IOException, IndexEntryConflictException
+                            throws IOException
                     {
                         try
                         {
@@ -90,7 +94,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                     }
 
                     @Override
-                    public void close() throws IOException, IndexEntryConflictException
+                    public void close() throws IOException
                     {
                         try
                         {
@@ -137,13 +141,29 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     }
 
     @Override
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    {
+        // If we've seen constraint violation failures in here when updates came in then fail immediately with those
+        if ( !failures.isEmpty() )
+        {
+            Iterator<IndexEntryConflictException> failureIterator = failures.iterator();
+            IndexEntryConflictException conflict = failureIterator.next();
+            failureIterator.forEachRemaining( conflict::addSuppressed );
+            throw conflict;
+        }
+
+        // Otherwise consolidate the usual verification
+        super.verifyDeferredConstraints( accessor );
+    }
+
+    @Override
     public void validate() throws UniquePropertyValueValidationException
     {
         if ( !failures.isEmpty() )
         {
-            LabelSchemaDescriptor descriptor = getDescriptor().schema();
+            SchemaDescriptor descriptor = getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
-                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
+                    ConstraintDescriptorFactory.uniqueForLabel( descriptor.keyId(), descriptor.getPropertyIds() ),
                     ConstraintValidationException.Phase.VERIFICATION,
                     new HashSet<>( failures )
                 );

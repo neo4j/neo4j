@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.identity;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -29,7 +30,8 @@ import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 
-public class MemberId
+// TODO: basics for Serializable
+public class MemberId implements Serializable
 {
     private final UUID uuid;
     private final String shortName;

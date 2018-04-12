@@ -59,7 +59,7 @@ public class DiscoveryService
 
     @GET
     @Produces( MediaType.APPLICATION_JSON )
-    public Response getDiscoveryDocument( @Context UriInfo uriInfo ) throws URISyntaxException
+    public Response getDiscoveryDocument( @Context UriInfo uriInfo )
     {
         String managementUri = config.get( ServerSettings.management_api_path ).getPath() + "/";
         String dataUri = config.get( ServerSettings.rest_api_path ).getPath() + "/";

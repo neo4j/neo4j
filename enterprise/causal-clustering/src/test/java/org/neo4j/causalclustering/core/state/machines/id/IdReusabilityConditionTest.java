@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -44,7 +45,7 @@ public class IdReusabilityConditionTest
     private IdReusabilityCondition idReusabilityCondition;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( raftMachine.state() ) .thenReturn( state );
         myself = new MemberId( UUID.randomUUID() );
@@ -52,29 +53,29 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldReturnFalseAsDefault() throws Exception
+    public void shouldReturnFalseAsDefault()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }
 
     @Test
-    public void shouldNeverReuseWhenNotLeader() throws Exception
+    public void shouldNeverReuseWhenNotLeader()
     {
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
 
-        idReusabilityCondition.receive( someoneElse );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( someoneElse, 1 ));
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }
 
     @Test
-    public void shouldNotReturnTrueWithPendingTransactions() throws Exception
+    public void shouldNotReturnTrueWithPendingTransactions()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
@@ -85,14 +86,14 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied() throws Exception
+    public void shouldOnlyReturnTrueWhenOldTransactionsBeenApplied()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
@@ -103,21 +104,21 @@ public class IdReusabilityConditionTest
     }
 
     @Test
-    public void shouldNotReuseIfReelection() throws Exception
+    public void shouldNotReuseIfReelection()
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
         when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
         when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
-        idReusabilityCondition.receive( myself );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( myself, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertTrue( idReusabilityCondition.getAsBoolean() );
 
         MemberId someoneElse = new MemberId( UUID.randomUUID() );
-        idReusabilityCondition.receive( someoneElse );
+        idReusabilityCondition.onLeaderSwitch( new LeaderInfo( someoneElse, 1 ) );
 
         assertFalse( idReusabilityCondition.getAsBoolean() );
     }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v310;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -141,7 +139,6 @@ class RelationshipGroupRecordFormatV3_1_0 extends BaseHighLimitRecordFormatV3_1_
 
     @Override
     protected void doWriteInternal( RelationshipGroupRecord record, PageCursor cursor )
-            throws IOException
     {
         if ( record.isUseFixedReferences() )
         {

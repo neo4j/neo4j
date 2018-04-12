@@ -28,7 +28,8 @@ import java.util.concurrent.CountDownLatch;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -56,23 +57,23 @@ public class BatchingTxApplierTest
 
     private final BatchingTxApplier txApplier = new BatchingTxApplier(
             maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(), PageCursorTracerSupplier.NULL,
-            NullLogProvider.getInstance() );
+            EmptyVersionContextSupplier.EMPTY, NullLogProvider.getInstance() );
 
     @Before
-    public void before() throws Throwable
+    public void before()
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( startTxId );
         txApplier.start();
     }
 
     @After
-    public void after() throws Throwable
+    public void after()
     {
         txApplier.stop();
     }
 
     @Test
-    public void shouldHaveCorrectDefaults() throws Throwable
+    public void shouldHaveCorrectDefaults()
     {
         assertEquals( startTxId, txApplier.lastQueuedTxId() );
     }
@@ -144,22 +145,17 @@ public class BatchingTxApplierTest
 
         // when
         CountDownLatch latch = new CountDownLatch( 1 );
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            latch.countDown();
+            try
             {
-                latch.countDown();
-                try
-                {
-                    txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( e );
-                }
+                txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
             }
-        };
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
 
         thread.start();
 

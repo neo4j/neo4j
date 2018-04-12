@@ -14,6 +14,10 @@
   <description>Enterprise security features for Neo4j</description>
   <packaging>jar</packaging>
 
+  <properties>
+    <moduleName>org.neo4j.server.security.enterprise</moduleName>
+  </properties>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

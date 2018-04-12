@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 /**
  * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.
  */
-public interface IndexUpdates extends Iterable<IndexEntryUpdate<LabelSchemaDescriptor>>
+public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor>>
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.

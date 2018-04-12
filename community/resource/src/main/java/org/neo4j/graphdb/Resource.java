@@ -31,8 +31,5 @@ public interface Resource extends AutoCloseable
     /**
      * Empty resource that doesn't {@link #close() close} anything.
      */
-    Resource EMPTY = () ->
-    {
-        // Nothing to close
-    };
+    Resource EMPTY = () -> {};
 }

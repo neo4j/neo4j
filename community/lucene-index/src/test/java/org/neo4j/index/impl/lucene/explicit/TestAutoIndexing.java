@@ -238,7 +238,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testSmallGraphWithNonIndexableProps() throws Exception
+    public void testSmallGraphWithNonIndexableProps()
     {
         stopDb();
         config = new HashMap<>();
@@ -374,7 +374,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDefaultIsOffIfExplicit() throws Exception
+    public void testDefaultIsOffIfExplicit()
     {
         stopDb();
         config = new HashMap<>();
@@ -402,7 +402,6 @@ public class TestAutoIndexing
 
     @Test
     public void testDefaultsAreSeparateForNodesAndRelationships()
-            throws Exception
     {
         stopDb();
         config = new HashMap<>();
@@ -433,7 +432,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testStartStopAutoIndexing() throws Exception
+    public void testStartStopAutoIndexing()
     {
         stopDb();
         config = new HashMap<>();
@@ -620,7 +619,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void testDeletingNodeRemovesItFromAutoIndex() throws Exception
+    public void testDeletingNodeRemovesItFromAutoIndex()
     {
         AutoIndexer<Node> nodeAutoIndexer = graphDb.index().getNodeAutoIndexer();
         nodeAutoIndexer.startAutoIndexingProperty( "foo" );
@@ -649,7 +648,7 @@ public class TestAutoIndexing
     }
 
     @Test
-    public void shouldOnlyDeleteAffectedKeyWhenRemovingPropertyFromNode() throws Exception
+    public void shouldOnlyDeleteAffectedKeyWhenRemovingPropertyFromNode()
     {
         // GIVEN a node with two auto-indexed properties
         String key1 = "foo";

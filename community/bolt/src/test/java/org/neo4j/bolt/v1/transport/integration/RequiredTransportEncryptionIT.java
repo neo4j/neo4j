@@ -28,6 +28,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
@@ -48,9 +49,9 @@ public class RequiredTransportEncryptionIT
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->
             {
-                Setting<BoltConnector.EncryptionLevel> encryption_level =
+                Setting<BoltConnector.EncryptionLevel> encryptionLevel =
                         new BoltConnector( DEFAULT_CONNECTOR_KEY ).encryption_level;
-                settings.put( encryption_level.name(), REQUIRED.name() );
+                settings.put( encryptionLevel.name(), REQUIRED.name() );
             } );
 
     @Parameterized.Parameter( 0 )
@@ -58,6 +59,7 @@ public class RequiredTransportEncryptionIT
 
     private HostnamePort address;
     private TransportConnection client;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<Factory<TransportConnection>> transports()
@@ -70,6 +72,7 @@ public class RequiredTransportEncryptionIT
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();
+        this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -86,7 +89,7 @@ public class RequiredTransportEncryptionIT
     {
         // When
         client.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) );
 
         assertThat( client, TransportTestUtil.eventuallyDisconnects() );
     }

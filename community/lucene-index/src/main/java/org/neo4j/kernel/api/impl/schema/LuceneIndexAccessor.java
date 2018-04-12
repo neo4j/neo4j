@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.reader.LuceneAllEntriesIndexAccessorReader;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -31,7 +32,8 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
@@ -40,9 +42,9 @@ public class LuceneIndexAccessor implements IndexAccessor
 {
     private final LuceneIndexWriter writer;
     private final SchemaIndex luceneIndex;
-    private final IndexDescriptor descriptor;
+    private final SchemaIndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, SchemaIndexDescriptor descriptor )
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -66,7 +68,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force( IOLimiter ioLimiter ) throws IOException
     {
         // We never change status of read-only indexes.
         if ( !luceneIndex.isReadOnly() )
@@ -120,6 +122,22 @@ public class LuceneIndexAccessor implements IndexAccessor
         luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
+    @Override
+    public boolean isDirty()
+    {
+        return !luceneIndex.isValid();
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+        // In Lucene all values in a tuple (composite index) will be placed in a separate field, so validate their fields individually.
+        for ( Value value : tuple )
+        {
+            LuceneIndexValueValidator.INSTANCE.validate( value );
+        }
+    }
+
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;
@@ -164,7 +182,7 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IOException
         {
             if ( hasChanges && refresh )
             {

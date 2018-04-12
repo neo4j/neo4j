@@ -142,7 +142,7 @@ public class ClusterNetworkIT
     @ClassRule
     public static LoggerRule logger = new LoggerRule( Level.OFF );
 
-    private List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<AtomicReference<ClusterConfiguration>>();
+    private List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<>();
 
     private ClusterTestScript script;
 
@@ -207,7 +207,7 @@ public class ClusterNetworkIT
 
     @Test
     public void testCluster()
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws InterruptedException
     {
         final long start = System.currentTimeMillis();
         timer.scheduleAtFixedRate( new TimerTask()

@@ -36,7 +36,7 @@ public class KernelTransactionMonitorSchedulerTest
     private final KernelTransactionTimeoutMonitor transactionTimeoutMonitor = mock( KernelTransactionTimeoutMonitor.class );
 
     @Test
-    public void scheduleRecurringMonitorJobIfConfigured() throws Throwable
+    public void scheduleRecurringMonitorJobIfConfigured()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(1);
         transactionMonitorScheduler.start();
@@ -46,7 +46,7 @@ public class KernelTransactionMonitorSchedulerTest
     }
 
     @Test
-    public void doNotScheduleMonitorJobIfDisabled() throws Throwable
+    public void doNotScheduleMonitorJobIfDisabled()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler( 0 );
         transactionMonitorScheduler.start();

@@ -56,7 +56,7 @@ object CSVResources {
 
 class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, headers: Boolean = false): Iterator[Array[String]] = {
 
     val reader: CharReadable = getReader(url)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)

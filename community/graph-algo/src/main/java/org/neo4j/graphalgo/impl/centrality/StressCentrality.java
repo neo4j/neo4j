@@ -136,7 +136,6 @@ public class StressCentrality<ShortestPathCostType> extends
             .reversedPredecessors( predecessors );
         PathCounter counter = new Util.PathCounter( predecessors );
         // Recursively update the node dependencies
-        getAndUpdateNodeStress( node, true, successors, counter,
-            new HashMap<Node,Double>() );
+        getAndUpdateNodeStress( node, true, successors, counter, new HashMap<>() );
     }
 }

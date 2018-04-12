@@ -48,11 +48,7 @@ public class TerminationGuardTest extends KernelTransactionTestBase
         TerminationGuard terminationGuard = buildGuard();
 
         KernelTransactionImplementation kernelTransaction = getKernelTransaction();
-        try ( KernelStatement kernelStatement = kernelTransaction.acquireStatement() )
-        {
-            terminationGuard.check( kernelStatement );
-            terminationGuard.check( kernelTransaction );
-        }
+        terminationGuard.check( kernelTransaction );
     }
 
     @Test

@@ -28,10 +28,11 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.helpers.MathUtil
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.mutable
 
@@ -164,6 +165,25 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     }
 
     override def hasNext: Boolean = inner.hasNext
+  }
+
+  override protected def manyDbHits[A](inner: RelationshipSelectionCursor): RelationshipSelectionCursor = new RelationshipSelectionCursor {
+    override def next(): Boolean = {
+      increment()
+      inner.next()
+    }
+
+    override def close(): Unit = inner.close()
+
+    override def relationshipReference(): Long = inner.relationshipReference()
+
+    override def `type`(): Int = inner.`type`()
+
+    override def otherNodeReference(): Long = inner.otherNodeReference()
+
+    override def sourceNodeReference(): Long = inner.sourceNodeReference()
+
+    override def targetNodeReference(): Long = inner.targetNodeReference()
   }
 
   class ProfilerOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {

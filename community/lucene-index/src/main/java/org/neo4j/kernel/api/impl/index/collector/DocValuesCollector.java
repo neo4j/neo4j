@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
@@ -55,6 +56,8 @@ import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
 import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.Value;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every
@@ -100,6 +103,11 @@ public class DocValuesCollector extends SimpleCollector
     public LongValuesIterator getValuesIterator( String field )
     {
         return new LongValuesIterator( getMatchingDocs(), getTotalHits(), field );
+    }
+
+    public IndexProgressor getIndexProgressor( String field, IndexProgressor.NodeValueClient client )
+    {
+        return new LongValuesIndexProgressor( getMatchingDocs(), getTotalHits(), field, client );
     }
 
     /**
@@ -192,13 +200,13 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     @Override
-    public void setScorer( Scorer scorer ) throws IOException
+    public void setScorer( Scorer scorer )
     {
         this.scorer = scorer;
     }
 
     @Override
-    public void doSetNextReader( LeafReaderContext context ) throws IOException
+    public void doSetNextReader( LeafReaderContext context )
     {
         if ( docs != null && segmentHits > 0 )
         {
@@ -313,6 +321,92 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     /**
+     * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}.
+     * Provides base functionality for extracting entity ids and other values from documents.
+     */
+    private abstract static class LongValuesSource
+    {
+        private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
+        private final String field;
+        final int totalHits;
+        final Map<String,NumericDocValues> docValuesCache;
+
+        DocIdSetIterator currentIdIterator;
+        NumericDocValues currentDocValues;
+        DocValuesCollector.MatchingDocs currentDocs;
+        int index;
+        long next;
+
+        LongValuesSource( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
+        {
+            this.totalHits = totalHits;
+            this.field = field;
+            matchingDocs = allMatchingDocs.iterator();
+            docValuesCache = new HashMap<>();
+        }
+
+        /**
+         * @return true if it was able to make sure, that currentDisi is valid
+         */
+        boolean ensureValidDisi()
+        {
+            try
+            {
+                while ( currentIdIterator == null )
+                {
+                    if ( matchingDocs.hasNext() )
+                    {
+                        currentDocs = matchingDocs.next();
+                        currentIdIterator = currentDocs.docIdSet.iterator();
+                        if ( currentIdIterator != null )
+                        {
+                            docValuesCache.clear();
+                            currentDocValues = currentDocs.readDocValues( field );
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        boolean fetchNextEntityId()
+        {
+            try
+            {
+                if ( ensureValidDisi() )
+                {
+                    int nextDoc = currentIdIterator.nextDoc();
+                    if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
+                    {
+                        index++;
+                        next = currentDocValues.get( nextDoc );
+                        return true;
+                    }
+                    else
+                    {
+                        currentIdIterator = null;
+                        return fetchNextEntityId();
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            return false;
+        }
+    }
+
+    /**
      * Iterates over all per-segment {@link DocValuesCollector.MatchingDocs}. Supports two kinds of lookups.
      * One, iterate over all long values of the given field (constructor argument).
      * Two, lookup a value for the current doc in a sidecar {@code NumericDocValues} field.
@@ -323,14 +417,10 @@ public class DocValuesCollector extends SimpleCollector
      * is crossed; one thread might think it is reading from one segment while another thread has
      * already advanced this Iterator to the next segment, having raced the first thread.
      */
-    public static class LongValuesIterator extends ValuesIterator implements PrimitiveLongResourceIterator
+    public static class LongValuesIterator extends LongValuesSource implements ValuesIterator, PrimitiveLongResourceIterator
     {
-        private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
-        private final String field;
-        private DocIdSetIterator currentIdIterator;
-        private NumericDocValues currentDocValues;
-        private DocValuesCollector.MatchingDocs currentDocs;
-        private final Map<String,NumericDocValues> docValuesCache;
+        private boolean hasNext;
+        private boolean hasNextDecided;
 
         /**
          * @param allMatchingDocs all {@link DocValuesCollector.MatchingDocs} across all segments
@@ -339,10 +429,7 @@ public class DocValuesCollector extends SimpleCollector
          */
         public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
         {
-            super( totalHits );
-            this.field = field;
-            matchingDocs = allMatchingDocs.iterator();
-            docValuesCache = new HashMap<>();
+            super( allMatchingDocs, totalHits, field );
         }
 
         @Override
@@ -382,69 +469,67 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        protected boolean fetchNext()
+        public boolean hasNext()
         {
-            try
+            if ( !hasNextDecided )
             {
-                if ( ensureValidDisi() )
-                {
-                    int nextDoc = currentIdIterator.nextDoc();
-                    if ( nextDoc != DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        index++;
-                        return next( currentDocValues.get( nextDoc ) );
-                    }
-                    else
-                    {
-                        currentIdIterator = null;
-                        return fetchNext();
-                    }
-                }
+                hasNext = fetchNextEntityId();
+                hasNextDecided = true;
             }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-
-            return false;
+            return hasNext;
         }
 
-        /**
-         * @return true if it was able to make sure, that currentDisi is valid
-         */
-        private boolean ensureValidDisi()
+        @Override
+        public long next()
         {
-            try
+            if ( !hasNext() )
             {
-                while ( currentIdIterator == null )
-                {
-                    if ( matchingDocs.hasNext() )
-                    {
-                        currentDocs = matchingDocs.next();
-                        currentIdIterator = currentDocs.docIdSet.iterator();
-                        if ( currentIdIterator != null )
-                        {
-                            docValuesCache.clear();
-                            currentDocValues = currentDocs.readDocValues( field );
-                        }
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                throw new NoSuchElementException();
             }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            hasNextDecided = false;
+            return next;
+        }
+
+        @Override
+        public int remaining()
+        {
+            return totalHits - index;
         }
 
         @Override
         public void close()
         {
-            //nothing to close
+            // nothing to close
+        }
+    }
+
+    private static class LongValuesIndexProgressor extends LongValuesSource implements IndexProgressor
+    {
+        private final NodeValueClient client;
+
+        LongValuesIndexProgressor( Iterable<MatchingDocs> allMatchingDocs, int totalHits, String field, NodeValueClient client )
+        {
+            super( allMatchingDocs, totalHits, field );
+            this.client = client;
+        }
+
+        @Override
+        public boolean next()
+        {
+            while ( fetchNextEntityId() )
+            {
+                if ( client.acceptNode( next, (Value[]) null ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+            // nothing to close
         }
     }
 
@@ -543,7 +628,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public float score() throws IOException
+        public float score()
         {
             if ( index < scores.length )
             {
@@ -553,7 +638,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public int freq() throws IOException
+        public int freq()
         {
             throw new UnsupportedOperationException();
         }
@@ -761,7 +846,7 @@ public class DocValuesCollector extends SimpleCollector
         }
     }
 
-    private static final class TopDocsValuesIterator extends ValuesIterator
+    private static final class TopDocsValuesIterator extends ValuesIterator.Adapter
     {
         private final ScoreDocsIterator scoreDocs;
         private final String field;

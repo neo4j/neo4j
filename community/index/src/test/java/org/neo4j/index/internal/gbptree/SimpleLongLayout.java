@@ -29,21 +29,75 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
 {
     private final int keyPadding;
     private String customNameAsMetaData;
+    private final boolean fixedSize;
+    private final int identifier;
+    private final int majorVersion;
+    private final int minorVersion;
 
-    SimpleLongLayout( int keyPadding, String customNameAsMetaData )
+    static class Builder
+    {
+        private int keyPadding;
+        private int identifier = 999;
+        private int majorVersion;
+        private int minorVersion;
+        private String customNameAsMetaData = "test";
+        private boolean fixedSize = true;
+
+        Builder withKeyPadding( int keyPadding )
+        {
+            this.keyPadding = keyPadding;
+            return this;
+        }
+
+        Builder withIdentifier( int identifier )
+        {
+            this.identifier = identifier;
+            return this;
+        }
+
+        Builder withMajorVersion( int majorVersion )
+        {
+            this.majorVersion = majorVersion;
+            return this;
+        }
+
+        Builder withMinorVersion( int minorVersion )
+        {
+            this.minorVersion = minorVersion;
+            return this;
+        }
+
+        Builder withCustomerNameAsMetaData( String customNameAsMetaData )
+        {
+            this.customNameAsMetaData = customNameAsMetaData;
+            return this;
+        }
+
+        Builder withFixedSize( boolean fixedSize )
+        {
+            this.fixedSize = fixedSize;
+            return this;
+        }
+
+        SimpleLongLayout build()
+        {
+            return new SimpleLongLayout( keyPadding, customNameAsMetaData, fixedSize, identifier, majorVersion, minorVersion );
+        }
+    }
+
+    static Builder longLayout()
+    {
+        return new Builder();
+    }
+
+    SimpleLongLayout( int keyPadding, String customNameAsMetaData, boolean fixedSize, int identifier, int majorVersion, int minorVersion )
     {
         this.keyPadding = keyPadding;
         this.customNameAsMetaData = customNameAsMetaData;
-    }
-
-    SimpleLongLayout( int keyPadding )
-    {
-        this( keyPadding, "test" );
-    }
-
-    SimpleLongLayout()
-    {
-        this( 0 );
+        this.fixedSize = fixedSize;
+        this.identifier = identifier;
+        this.majorVersion = majorVersion;
+        this.minorVersion = minorVersion;
     }
 
     @Override
@@ -117,25 +171,25 @@ class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     @Override
     public boolean fixedSize()
     {
-        return true;
+        return fixedSize;
     }
 
     @Override
     public long identifier()
     {
-        return 999;
+        return identifier;
     }
 
     @Override
     public int majorVersion()
     {
-        return 0;
+        return majorVersion;
     }
 
     @Override
     public int minorVersion()
     {
-        return 0;
+        return minorVersion;
     }
 
     @Override

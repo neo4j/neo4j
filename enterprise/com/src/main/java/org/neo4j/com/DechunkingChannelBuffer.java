@@ -565,13 +565,13 @@ class DechunkingChannelBuffer implements ChannelBuffer
     }
 
     @Override
-    public int setBytes( int index, InputStream in, int length ) throws IOException
+    public int setBytes( int index, InputStream in, int length )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public int setBytes( int index, ScatteringByteChannel in, int length ) throws IOException
+    public int setBytes( int index, ScatteringByteChannel in, int length )
     {
         throw unsupportedOperation();
     }
@@ -846,13 +846,13 @@ class DechunkingChannelBuffer implements ChannelBuffer
     }
 
     @Override
-    public int writeBytes( InputStream in, int length ) throws IOException
+    public int writeBytes( InputStream in, int length )
     {
         throw unsupportedOperation();
     }
 
     @Override
-    public int writeBytes( ScatteringByteChannel in, int length ) throws IOException
+    public int writeBytes( ScatteringByteChannel in, int length )
     {
         throw unsupportedOperation();
     }
@@ -1049,21 +1049,21 @@ class DechunkingChannelBuffer implements ChannelBuffer
         return new InputStream()
         {
             @Override
-            public int read( byte[] b ) throws IOException
+            public int read( byte[] b )
             {
                 readBytes( b );
                 return b.length;
             }
 
             @Override
-            public int read( byte[] b, int off, int len ) throws IOException
+            public int read( byte[] b, int off, int len )
             {
                 readBytes( b, off, len );
                 return len;
             }
 
             @Override
-            public long skip( long n ) throws IOException
+            public long skip( long n )
             {
                 skipBytes( (int)n );
                 return n;
@@ -1076,7 +1076,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 
@@ -1087,7 +1087,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public synchronized void reset() throws IOException
+            public synchronized void reset()
             {
                 throw new UnsupportedOperationException();
             }
@@ -1099,7 +1099,7 @@ class DechunkingChannelBuffer implements ChannelBuffer
             }
 
             @Override
-            public int read() throws IOException
+            public int read()
             {
                 return readByte();
             }

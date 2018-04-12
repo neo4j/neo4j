@@ -56,7 +56,7 @@ import static org.neo4j.helpers.Numbers.unsignedShortToInt;
  * a phase of making changes using {@link #getAndPutRelationship(long, int, Direction, long, boolean)} and e.g
  * {@link #visitChangedNodes(NodeChangeVisitor, int)}.
  */
-public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
+public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable, AutoCloseable
 {
     private static final int CHUNK_SIZE = 1_000_000;
     private static final long EMPTY = -1;

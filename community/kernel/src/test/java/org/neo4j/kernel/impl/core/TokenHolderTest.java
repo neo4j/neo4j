@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 public class TokenHolderTest
 {
     @Test
-    public void shouldClearTokensAsPartOfInitialTokenLoading() throws Exception
+    public void shouldClearTokensAsPartOfInitialTokenLoading()
     {
         // GIVEN
         TokenCreator creator = mock( TokenCreator.class );

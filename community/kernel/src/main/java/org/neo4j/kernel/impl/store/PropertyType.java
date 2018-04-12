@@ -155,9 +155,13 @@ public enum PropertyType
             {
                 return headOf( recordBytes, DynamicArrayStore.NUMBER_HEADER_SIZE );
             }
-            else if ( itemType <= GEOMETRY.byteValue() )
+            else if ( itemType == GEOMETRY.byteValue() )
             {
                 return headOf( recordBytes, DynamicArrayStore.GEOMETRY_HEADER_SIZE );
+            }
+            else if ( itemType == TEMPORAL.byteValue() )
+            {
+                return headOf( recordBytes, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
             }
             throw new IllegalArgumentException( "Unknown array type " + itemType );
         }
@@ -207,6 +211,20 @@ public enum PropertyType
         public int calculateNumberOfBlocksUsed( long firstBlock )
         {
             return GeometryType.calculateNumberOfBlocksUsed( firstBlock );
+        }
+    },
+    TEMPORAL( 14 )
+    {
+        @Override
+        public Value value( PropertyBlock block, PropertyStore store )
+        {
+            return TemporalType.decode( block );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return TemporalType.calculateNumberOfBlocksUsed( firstBlock );
         }
     };
 
@@ -279,6 +297,8 @@ public enum PropertyType
             return SHORT_ARRAY;
         case 13:
             return GEOMETRY;
+        case 14:
+            return TEMPORAL;
         default:
             return null;
         }

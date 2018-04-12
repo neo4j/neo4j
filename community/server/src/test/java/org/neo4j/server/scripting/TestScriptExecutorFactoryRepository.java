@@ -33,20 +33,20 @@ public class TestScriptExecutorFactoryRepository
 {
 
     @Test( expected = NoSuchScriptLanguageException.class )
-    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages() throws Exception
+    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
     {
         // Given
-        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<String, ScriptExecutor.Factory>() );
+        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
 
         // When
         repo.getFactory( "Blah" );
     }
 
     @Test
-    public void shouldReturnRegisteredFactory() throws Exception
+    public void shouldReturnRegisteredFactory()
     {
         // Given
-        Map<String, ScriptExecutor.Factory> languages = new HashMap<String, ScriptExecutor.Factory>(  );
+        Map<String, ScriptExecutor.Factory> languages = new HashMap<>();
         languages.put( "js", mock(ScriptExecutor.Factory.class) );
 
         ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( languages );

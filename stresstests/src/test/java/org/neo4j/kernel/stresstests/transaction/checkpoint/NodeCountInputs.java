@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
-import java.io.IOException;
 import java.util.function.ToIntFunction;
 
 import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
@@ -31,7 +30,6 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.unsafe.impl.batchimport.InputIterable.replayable;
@@ -56,19 +54,15 @@ public class NodeCountInputs implements Input
     @Override
     public InputIterable nodes()
     {
-        return replayable( () -> new GeneratingInputIterator<>( nodeCount, 1_000, batch -> null, new GeneratingInputIterator.Generator<Void>()
-        {
-            @Override
-            public void accept( Void state, InputEntityVisitor visitor, long id ) throws IOException
-            {
-                visitor.id( id, Group.GLOBAL );
-                visitor.labels( labels );
-                for ( int i = 0; i < properties.length; i++ )
-                {
-                    visitor.property( (String) properties[i++], properties[i] );
-                }
-            }
-        }, 0 ) );
+        return replayable( () -> new GeneratingInputIterator<>( nodeCount, 1_000, batch -> null,
+                (GeneratingInputIterator.Generator<Void>) ( state, visitor, id ) -> {
+                    visitor.id( id, Group.GLOBAL );
+                    visitor.labels( labels );
+                    for ( int i = 0; i < properties.length; i++ )
+                    {
+                        visitor.property( (String) properties[i++], properties[i] );
+                    }
+                }, 0 ) );
     }
 
     @Override

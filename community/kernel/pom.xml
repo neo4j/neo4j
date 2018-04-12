@@ -42,6 +42,7 @@
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <moduleName>org.neo4j.kernel</moduleName>
   </properties>
 
   <packaging>jar</packaging>
@@ -131,6 +132,11 @@ the relevant Commercial Agreement.
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-procedure-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel-api</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -182,6 +188,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-index</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-spatial-index</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -245,6 +256,13 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-values</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

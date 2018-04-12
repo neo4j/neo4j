@@ -44,7 +44,7 @@ public class RelationshipGroupStoreIT
             .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     @Test
-    public void shouldCreateAllTheseRelationshipTypes() throws Exception
+    public void shouldCreateAllTheseRelationshipTypes()
     {
         shiftHighId( db );
 

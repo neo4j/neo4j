@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.IntFunction;
 
-import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -66,9 +66,12 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
+    private final String raftListenAddress;
     protected CoreGraphDatabase database;
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
+    private final Monitors monitors = new Monitors();
+    private final String dbName;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -93,13 +96,14 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
+        raftListenAddress = listenAddress( listenAddress, raftPort );
 
         config.put( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
         config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), raftListenAddress );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( clusterSize ) );
@@ -137,6 +141,8 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         storeDir = new File( new File( dataDir, "databases" ), "graph.db" );
         memberConfig = Config.defaults( config );
 
+        this.dbName = memberConfig.get( CausalClusteringSettings.database );
+
         //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
         threadGroup = new ThreadGroup( toString() );
@@ -157,11 +163,16 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
+    public String raftListenAddress()
+    {
+        return raftListenAddress;
+    }
+
     @Override
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, memberConfig,
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -169,9 +180,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     {
         if ( database != null )
         {
-            database.shutdown();
-            database = null;
+            try
+            {
+                database.shutdown();
+            }
+            finally
+            {
+                database = null;
+            }
         }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return database == null;
     }
 
     @Override
@@ -180,14 +203,10 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return database;
     }
 
+    @Override
     public File storeDir()
     {
         return storeDir;
-    }
-
-    public Config getMemberConfig()
-    {
-        return memberConfig;
     }
 
     public RaftLogPruner raftLogPruner()
@@ -214,6 +233,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         }
     }
 
+    @Override
     public File homeDir()
     {
         return neo4jHome;
@@ -230,6 +250,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return serverId;
     }
 
+    public String dbName()
+    {
+        return dbName;
+    }
+
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
@@ -243,9 +268,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     }
 
     @Override
+    public Config config()
+    {
+        return memberConfig;
+    }
+
+    @Override
     public ThreadGroup threadGroup()
     {
         return threadGroup;
+    }
+
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
     }
 
     public File clusterStateDirectory()
@@ -258,9 +295,9 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void stopCatchupServer() throws Throwable
+    public void stopCatchupServer()
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.stopCatchupServer();
     }
 
     int discoveryPort()

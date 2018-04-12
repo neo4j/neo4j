@@ -29,7 +29,7 @@ public class OptionalBooleanArgTest
 {
 
     @Test
-    public void parsesValues1() throws Exception
+    public void parsesValues1()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", false, "" );
 
@@ -40,7 +40,7 @@ public class OptionalBooleanArgTest
     }
 
     @Test
-    public void parsesValues2() throws Exception
+    public void parsesValues2()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", true, "" );
 
@@ -51,7 +51,7 @@ public class OptionalBooleanArgTest
     }
 
     @Test
-    public void usageTest() throws Exception
+    public void usageTest()
     {
         OptionalBooleanArg arg = new OptionalBooleanArg( "foo", true, "" );
 

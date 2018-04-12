@@ -21,17 +21,12 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.PathImpl
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
-  val expectedToSucceedRestricted =
-    TestConfiguration(
-      Versions(V3_1, Versions.Default, Versions.V3_3),
-      Planners(Planners.Cost, Planners.Default),
-      Runtimes(Runtimes.Interpreted, Runtimes.Default)) + Configs.SlottedInterpreted
+  val expectedToSucceedRestricted = expectedToSucceed - Configs.AllRulePlanners
 
   test("pattern comprehension nested in pattern comprehension") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
@@ -428,4 +423,31 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     ))
   }
 
+  test("pattern comprehension in unwind with empty db") {
+    val query =
+      """
+        | unwind [(a)-->(b) | b ] as c
+        | return c
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+    result.toList should equal(List.empty)
+  }
+
+  test("pattern comprehension in unwind with hits") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    relate(node1, node2)
+    relate(node2, node3)
+
+    val query =
+      """
+        | unwind [(a)-->(b) | b ] as c
+        | return c
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted - Configs.OldAndRule, query)
+    result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
+  }
 }

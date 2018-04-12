@@ -65,7 +65,7 @@ public class TransactionLogsInSeparateLocationIT
         verifyTransactionLogs( txDirectory, storeDir );
     }
 
-    private void performTransactions( String txPath, File storeDir ) throws IOException
+    private void performTransactions( String txPath, File storeDir )
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, txPath )

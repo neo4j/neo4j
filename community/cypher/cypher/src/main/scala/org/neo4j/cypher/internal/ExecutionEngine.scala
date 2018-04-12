@@ -31,11 +31,10 @@ import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTr
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.query.SchemaIndexUsage
-import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.configuration.Config
-import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
@@ -107,6 +106,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    // TODO: Should we use ValueUtils.asMapValue here like in GraphDatabaseFacade
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
    execute(query, ValueConversion.asValues(scalaParams), context)
   }
@@ -171,7 +171,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
         val ((plan: ExecutionPlan, extractedParameters, queryParamNames), touched) = try {
           // fetch plan cache
-          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any], Seq[String])] = getOrCreateFromSchemaState(tc.readOperations, {
+          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any], Seq[String])] = getOrCreateFromSchemaState(tc.schemaRead, {
             cacheMonitor.cacheFlushDetected(tc.statement)
             val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)
@@ -237,11 +237,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
-    tc.readOperations.releaseShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+    tc.kernelTransaction.locks().releaseSharedLabelLock(labelIds.toArray[Long]:_*)
   }
 
   private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
-    tc.readOperations.acquireShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+    tc.kernelTransaction.locks().acquireSharedLabelLock(labelIds.toArray[Long]:_*)
   }
 
   private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any], Seq[String]), version: CypherVersion, tc:
@@ -253,7 +253,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
 
     def allLabels: Seq[Long] = {
-      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
+      tc.kernelTransaction.tokenRead().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
     }
 
     version match {
@@ -267,10 +267,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private def schemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
     (ExecutionPlan, Map[String, Any], Seq[String])], LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])]] = {
-    tc.readOperations.schemaStateGet(this)
+    tc.schemaRead.schemaStateGet(this)
   }
 
-  private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {
+  private def getOrCreateFromSchemaState[V](operations: SchemaRead, creator: => V) = {
     val javaCreator = new java.util.function.Function[ExecutionEngine, V]() {
       def apply(key: ExecutionEngine) = creator
     }

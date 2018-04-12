@@ -107,7 +107,7 @@ public enum GeometryType
                     }
                     else
                     {
-                        throw new RuntimeException(
+                        throw new InvalidRecordException(
                                 "Point array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: FloatingPointArray." );
                     }
                 }
@@ -218,7 +218,7 @@ public enum GeometryType
 
     private static GeometryType find( int gtype )
     {
-        if ( gtype < TYPES.length )
+        if ( gtype < TYPES.length && gtype >= 0 )
         {
             return TYPES[gtype];
         }
@@ -226,19 +226,6 @@ public enum GeometryType
         {
             // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
             return GEOMETRY_INVALID;
-        }
-    }
-
-    public static GeometryType find( String name )
-    {
-        GeometryType table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Geometry Type: " + name );
         }
     }
 
@@ -280,13 +267,13 @@ public enum GeometryType
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
 
         long keyAndType = keyId | (((long) (PropertyType.GEOMETRY.intValue()) << idBits));
-        long gtype_bits = GeometryType.GEOMETRY_POINT.gtype << (idBits + 4);
-        long dimension_bits = ((long) coordinate.length) << (idBits + 8);
-        long crsTableId_bits = ((long) crs.getTable().getTableId()) << (idBits + 12);
-        long crsCode_bits = ((long) crs.getCode()) << (idBits + 16);
+        long gtypeBits = GeometryType.GEOMETRY_POINT.gtype << (idBits + 4);
+        long dimensionBits = ((long) coordinate.length) << (idBits + 8);
+        long crsTableIdBits = ((long) crs.getTable().getTableId()) << (idBits + 12);
+        long crsCodeBits = ((long) crs.getCode()) << (idBits + 16);
 
         long[] data = new long[1 + coordinate.length];
-        data[0] = keyAndType | gtype_bits | dimension_bits | crsTableId_bits | crsCode_bits;
+        data[0] = keyAndType | gtypeBits | dimensionBits | crsTableIdBits | crsCodeBits;
         for ( int i = 0; i < coordinate.length; i++ )
         {
             data[1 + i] = Double.doubleToLongBits( coordinate[i] );

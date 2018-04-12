@@ -47,7 +47,7 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canAccessKernelBean() throws Exception
+    public void canAccessKernelBean()
     {
         Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );
@@ -56,7 +56,7 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canAccessPrimitivesBean() throws Exception
+    public void canAccessPrimitivesBean()
     {
         Primitives primitives = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Primitives.class );
@@ -65,14 +65,14 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canListAllBeans() throws Exception
+    public void canListAllBeans()
     {
         Neo4jManager manager = getManager();
         assertTrue( "No beans returned", manager.allBeans().size() > 0 );
     }
 
     @Test
-    public void canGetConfigurationParameters() throws Exception
+    public void canGetConfigurationParameters()
     {
         Neo4jManager manager = getManager();
         Map<String, Object> configuration = manager.getConfiguration();
@@ -86,49 +86,49 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canGetLockManagerBean() throws Exception
+    public void canGetLockManagerBean()
     {
         assertNotNull( getManager().getLockManagerBean() );
     }
 
     @Test
-    public void canIndexSamplingManagerBean() throws Exception
+    public void canIndexSamplingManagerBean()
     {
         assertNotNull( getManager().getIndexSamplingManagerBean() );
     }
 
     @Test
-    public void canGetMemoryMappingBean() throws Exception
+    public void canGetMemoryMappingBean()
     {
         assertNotNull( getManager().getMemoryMappingBean() );
     }
 
     @Test
-    public void canGetPrimitivesBean() throws Exception
+    public void canGetPrimitivesBean()
     {
         assertNotNull( getManager().getPrimitivesBean() );
     }
 
     @Test
-    public void canGetStoreFileBean() throws Exception
+    public void canGetStoreFileBean()
     {
         assertNotNull( getManager().getStoreFileBean() );
     }
 
     @Test
-    public void canGetTransactionManagerBean() throws Exception
+    public void canGetTransactionManagerBean()
     {
         assertNotNull( getManager().getTransactionManagerBean() );
     }
 
     @Test
-    public void canGetPageCacheBean() throws Exception
+    public void canGetPageCacheBean()
     {
         assertNotNull( getManager().getPageCacheBean() );
     }
 
     @Test
-    public void canAccessMemoryMappingCompositData() throws Exception
+    public void canAccessMemoryMappingCompositData()
     {
         assertNotNull( "MemoryPools is null", getManager().getMemoryMappingBean().getMemoryPools() );
     }

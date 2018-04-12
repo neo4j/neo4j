@@ -42,7 +42,7 @@ import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.slave.InvalidEpochExceptionHandler;
 import org.neo4j.kernel.impl.util.CountingJobScheduler;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
+import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.CleanupRule;
@@ -76,7 +76,7 @@ public class SlaveUpdatePullerTest
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
     private final InvalidEpochExceptionHandler invalidEpochHandler = mock( InvalidEpochExceptionHandler.class );
     private final SlaveUpdatePuller.Monitor monitor = mock( SlaveUpdatePuller.Monitor.class );
-    private final JobScheduler jobScheduler = new CountingJobScheduler( scheduledJobs, new Neo4jJobScheduler() );
+    private final JobScheduler jobScheduler = new CountingJobScheduler( scheduledJobs, new CentralJobScheduler() );
     private final SlaveUpdatePuller updatePuller = new SlaveUpdatePuller( requestContextFactory, master,
             lastUpdateTime, logProvider, instanceId, availabilityGuard, invalidEpochHandler, jobScheduler, monitor );
 
@@ -104,7 +104,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void initialisationMustBeIdempotent() throws Throwable
+    public void initialisationMustBeIdempotent()
     {
         updatePuller.start();
         updatePuller.start();
@@ -231,7 +231,7 @@ public class SlaveUpdatePullerTest
         OutOfMemoryError oom = new OutOfMemoryError();
         when( master.pullUpdates( any( RequestContext.class ) ) )
                 .thenThrow( oom )
-                .thenReturn( Response.EMPTY );
+                .thenReturn( Response.empty() );
 
         // WHEN making the first pull
         updatePuller.pullUpdates();
@@ -259,7 +259,7 @@ public class SlaveUpdatePullerTest
         logProvider.assertContainsThrowablesMatching( 0, repeat( new ComException(), SlaveUpdatePuller.LOG_CAP ) );
 
         // And we should be able to recover afterwards
-        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new ComException() );
+        updatePullStubbing.thenReturn( Response.empty() ).thenThrow( new ComException() );
 
         updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
         updatePuller.pullUpdates(); // And then we log another exception
@@ -292,7 +292,7 @@ public class SlaveUpdatePullerTest
                 repeat( new InvalidEpochException( 2, 1 ), SlaveUpdatePuller.LOG_CAP ) );
 
         // And we should be able to recover afterwards
-        updatePullStubbing.thenReturn( Response.EMPTY ).thenThrow( new InvalidEpochException( 2, 1 ) );
+        updatePullStubbing.thenReturn( Response.empty() ).thenThrow( new InvalidEpochException( 2, 1 ) );
 
         updatePuller.pullUpdates(); // This one will succeed and unlock the circuit breaker
         updatePuller.pullUpdates(); // And then we log another exception

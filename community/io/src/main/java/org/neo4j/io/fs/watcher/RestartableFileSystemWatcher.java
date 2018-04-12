@@ -48,7 +48,7 @@ public class RestartableFileSystemWatcher implements FileWatcher
     }
 
     @Override
-    public WatchedResource watch( File file ) throws IOException
+    public WatchedResource watch( File file )
     {
         filesToWatch.add( file );
         return WatchedResource.EMPTY;

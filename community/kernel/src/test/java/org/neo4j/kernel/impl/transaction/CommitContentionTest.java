@@ -61,7 +61,7 @@ public class CommitContentionTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }

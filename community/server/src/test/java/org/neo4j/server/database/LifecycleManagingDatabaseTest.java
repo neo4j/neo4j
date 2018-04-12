@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class LifecycleManagingDatabaseTest
 {
     @Test
-    public void mustIgnoreExceptionsFromPreLoadingCypherQuery() throws Throwable
+    public void mustIgnoreExceptionsFromPreLoadingCypherQuery()
     {
         // Given a lifecycled database that'll try to warm up Cypher when it starts
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );

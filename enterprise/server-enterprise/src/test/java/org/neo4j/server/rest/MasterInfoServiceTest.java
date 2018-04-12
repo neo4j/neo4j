@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import javax.ws.rs.core.Response;
-
 import org.junit.Test;
+
+import javax.ws.rs.core.Response;
 
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 public class MasterInfoServiceTest
 {
     @Test
-    public void masterShouldRespond200AndTrueWhenMaster() throws Exception
+    public void masterShouldRespond200AndTrueWhenMaster()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -49,7 +49,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void masterShouldRespond404AndFalseWhenSlave() throws Exception
+    public void masterShouldRespond404AndFalseWhenSlave()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -66,7 +66,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void masterShouldRespond404AndUNKNOWNWhenUnknown() throws Exception
+    public void masterShouldRespond404AndUNKNOWNWhenUnknown()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -83,7 +83,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond200AndTrueWhenSlave() throws Exception
+    public void slaveShouldRespond200AndTrueWhenSlave()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -100,7 +100,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond404AndFalseWhenMaster() throws Exception
+    public void slaveShouldRespond404AndFalseWhenMaster()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -117,7 +117,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void slaveShouldRespond404AndUNKNOWNWhenUnknown() throws Exception
+    public void slaveShouldRespond404AndUNKNOWNWhenUnknown()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -134,7 +134,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing() throws Exception
+    public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -151,7 +151,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing() throws Exception
+    public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -168,7 +168,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing() throws Exception
+    public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,16 +28,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -56,7 +60,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
+import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureTest
@@ -66,9 +70,10 @@ public class ReflectiveProcedureTest
 
     private ReflectiveProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -82,10 +87,10 @@ public class ReflectiveProcedureTest
         Log log = spy( Log.class );
         components.register( Log.class, ctx -> log );
         CallableProcedure procedure =
-                procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty(), true ).get( 0 );
+                procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
         // When
-        procedure.apply( new BasicContext(), new Object[0] );
+        procedure.apply( new BasicContext(), new Object[0], resourceTracker );
 
         // Then
         verify( log ).debug( "1" );
@@ -115,7 +120,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = proc.apply( new BasicContext(), new Object[0] );
+        RawIterator<Object[],ProcedureException> out = proc.apply( new BasicContext(), new Object[0], resourceTracker );
 
         // Then
         assertThat( asList( out ), contains(
@@ -143,8 +148,8 @@ public class ReflectiveProcedureTest
         CallableProcedure coolPeople = compiled.get( 1 );
 
         // When
-        RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( new BasicContext(), new Object[0] );
-        RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( new BasicContext(), new Object[0] );
+        RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( new BasicContext(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( new BasicContext(), new Object[0], resourceTracker );
 
         // Then
         assertThat( asList( coolOut ), contains(
@@ -192,7 +197,7 @@ public class ReflectiveProcedureTest
 
         // Then
         assertEquals( 0, proc.signature().outputSignature().size() );
-        assertFalse( proc.apply( null, new Object[0] ).hasNext() );
+        assertFalse( proc.apply( null, new Object[0], resourceTracker ).hasNext() );
     }
 
     @Test
@@ -270,7 +275,55 @@ public class ReflectiveProcedureTest
                                  "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
-        proc.apply( new BasicContext(), new Object[0] );
+        proc.apply( new BasicContext(), new Object[0], resourceTracker );
+    }
+
+    @Test
+    public void shouldCloseResourcesAndGiveHelpfulErrorOnMidStreamException() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionMidStream.class ).get( 0 );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Failed to invoke procedure `org.neo4j.kernel.impl.proc.throwsInStream`: " +
+                                 "Caused by: java.lang.IndexOutOfBoundsException" );
+
+        // Expect that we get a suppressed exception from Stream.onClose (which also verifies that we actually call
+        // onClose on the first exception)
+        exception.expect( new BaseMatcher<Exception>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "a suppressed exception with cause ExceptionDuringClose" );
+            }
+
+            @Override
+            public boolean matches( Object item )
+            {
+                Exception e = (Exception) item;
+                for ( Throwable suppressed : e.getSuppressed() )
+                {
+                    if ( suppressed instanceof ResourceCloseFailureException )
+                    {
+                        if ( suppressed.getCause() instanceof ExceptionDuringClose )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        } );
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                proc.apply( new BasicContext(), new Object[0], resourceTracker );
+        if ( stream.hasNext() )
+        {
+            stream.next();
+        }
     }
 
     @Test
@@ -283,7 +336,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> procs =
-                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, Optional.empty(), true );
+                procedureCompiler.compileProcedure( ProcedureWithDeprecation.class, null, true );
 
         // Then
         verify( log ).warn( "Use of @Procedure(deprecatedBy) without @Deprecated in badProc" );
@@ -291,7 +344,7 @@ public class ReflectiveProcedureTest
         for ( CallableProcedure proc : procs )
         {
             String name = proc.signature().name().name();
-            proc.apply( new BasicContext(), new Object[0] );
+            proc.apply( new BasicContext(), new Object[0], resourceTracker );
             switch ( name )
             {
             case "newProc":
@@ -321,9 +374,9 @@ public class ReflectiveProcedureTest
 
         // When
         CallableProcedure proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false ).get( 0 );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false ).get( 0 );
         // When
-        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0] );
+        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
 
         // Then
         assertEquals( result.next()[0], "Bonnie" );
@@ -342,7 +395,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -360,9 +413,9 @@ public class ReflectiveProcedureTest
 
         // When
         CallableProcedure proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), true ).get( 0 );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, true ).get( 0 );
         // Then
-        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0] );
+        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
         assertEquals( result.next()[0], "Bonnie" );
     }
 
@@ -377,7 +430,7 @@ public class ReflectiveProcedureTest
 
         // When
         List<CallableProcedure> proc =
-                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
+                procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false );
         // Then
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -523,9 +576,12 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> throwsInStream( )
         {
-            return Stream.generate( () ->
+            return Stream.<MyOutputRecord>generate( () ->
             {
                 throw new IndexOutOfBoundsException();
+            }).onClose( () ->
+            {
+                throw new ExceptionDuringClose();
             } );
         }
     }
@@ -602,6 +658,10 @@ public class ReflectiveProcedureTest
 
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
-        return procedureCompiler.compileProcedure( clazz, Optional.empty(), true );
+        return procedureCompiler.compileProcedure( clazz, null, true );
+    }
+
+    private static class ExceptionDuringClose extends RuntimeException
+    {
     }
 }

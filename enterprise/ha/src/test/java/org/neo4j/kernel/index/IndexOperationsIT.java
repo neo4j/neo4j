@@ -54,7 +54,7 @@ public class IndexOperationsIT
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
     }
@@ -191,10 +191,6 @@ public class IndexOperationsIT
             }
             tx.success();
             return node.getId();
-        }
-        catch ( Exception e )
-        {
-            throw e;
         }
     }
 

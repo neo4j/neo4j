@@ -60,8 +60,7 @@ public class TestMultiPruneEvaluators extends TraversalTestBase
 
         TraversalDescription description = getGraphDb().traversalDescription().evaluator( Evaluators.all() )
                 .evaluator( toDepth( 1 ) ).evaluator( lessThanThreeRels );
-        Set<String> expectedNodes = new HashSet<String>(
-                asList( "a", "b", "c", "d", "e" ) );
+        Set<String> expectedNodes = new HashSet<>( asList( "a", "b", "c", "d", "e" ) );
         try ( Transaction tx = beginTx() )
         {
             for ( Path position : description.traverse( node( "a" ) ) )

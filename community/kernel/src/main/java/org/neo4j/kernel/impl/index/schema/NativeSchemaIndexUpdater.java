@@ -25,34 +25,30 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.values.storable.ValueTuple;
 
-class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue>
         implements IndexUpdater
 {
     private final KEY treeKey;
     private final VALUE treeValue;
-    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
+    private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger = new ConflictDetectingValueMerger<>( true );
     private Writer<KEY,VALUE> writer;
 
     private boolean closed = true;
-    private boolean manageClosingOfWriter;
 
     NativeSchemaIndexUpdater( KEY treeKey, VALUE treeValue )
     {
         this.treeKey = treeKey;
         this.treeValue = treeValue;
-        this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
     }
 
-    NativeSchemaIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer, boolean manageClosingOfWriter )
+    NativeSchemaIndexUpdater<KEY,VALUE> initialize( Writer<KEY,VALUE> writer )
     {
         if ( !closed )
         {
             throw new IllegalStateException( "Updater still open" );
         }
 
-        this.manageClosingOfWriter = manageClosingOfWriter;
         this.writer = writer;
         closed = false;
         return this;
@@ -66,12 +62,9 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException
     {
-        if ( manageClosingOfWriter )
-        {
-            writer.close();
-        }
+        writer.close();
         closed = true;
     }
 
@@ -83,7 +76,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         }
     }
 
-    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processUpdate( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
@@ -103,7 +96,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         }
     }
 
-    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processRemove( KEY treeKey,
+    private static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processRemove( KEY treeKey,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer ) throws IOException
     {
         // todo Do we need to verify that we actually removed something at all?
@@ -112,7 +105,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         writer.remove( treeKey );
     }
 
-    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processChange( KEY treeKey, VALUE treeValue,
+    private static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processChange( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
@@ -123,29 +116,20 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
         // Insert new entry
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
+        conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
-        assertNoConflict( update, conflictDetectingValueMerger );
+        conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
+    static <KEY extends NativeSchemaKey<KEY>, VALUE extends NativeSchemaValue> void processAdd( KEY treeKey, VALUE treeValue,
             IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer,
             ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
         treeKey.from( update.getEntityId(), update.values() );
         treeValue.from( update.values() );
+        conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
-        assertNoConflict( update, conflictDetectingValueMerger );
-    }
-
-    private static <KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> void assertNoConflict( IndexEntryUpdate<?> update,
-            ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger ) throws IndexEntryConflictException
-    {
-        if ( conflictDetectingValueMerger.wasConflict() )
-        {
-            long existingNodeId = conflictDetectingValueMerger.existingNodeId();
-            long addedNodeId = conflictDetectingValueMerger.addedNodeId();
-            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( update.values() ) );
-        }
+        conflictDetectingValueMerger.checkConflict( update.values() );
     }
 }

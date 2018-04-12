@@ -69,7 +69,7 @@ public class TxPushStrategyConfigIT
     private final MissedReplicasMonitor monitorListener = new MissedReplicasMonitor();
 
     @Test
-    public void shouldPushToSlavesInDescendingOrder() throws Exception
+    public void shouldPushToSlavesInDescendingOrder()
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_descending );
 
@@ -83,7 +83,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void shouldPushToSlavesInAscendingOrder() throws Exception
+    public void shouldPushToSlavesInAscendingOrder()
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_ascending );
 
@@ -97,7 +97,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void twoRoundRobin() throws Exception
+    public void twoRoundRobin()
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.round_robin );
 
@@ -132,7 +132,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void shouldPushToOneLessSlaveOnSlaveCommit() throws Exception
+    public void shouldPushToOneLessSlaveOnSlaveCommit()
     {
         ManagedCluster cluster = startCluster( 4, 2, HaSettings.TxPushStrategy.fixed_descending );
 
@@ -160,7 +160,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void slavesListGetsUpdatedWhenSlaveLeavesNicely() throws Exception
+    public void slavesListGetsUpdatedWhenSlaveLeavesNicely()
     {
         ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
 
@@ -169,7 +169,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void slaveListIsCorrectAfterMasterSwitch() throws Exception
+    public void slaveListIsCorrectAfterMasterSwitch()
     {
         ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
         cluster.shutdown( cluster.getMaster() );
@@ -183,7 +183,7 @@ public class TxPushStrategyConfigIT
     }
 
     @Test
-    public void slavesListGetsUpdatedWhenSlaveRageQuits() throws Throwable
+    public void slavesListGetsUpdatedWhenSlaveRageQuits()
     {
         ManagedCluster cluster = startCluster( 3, 1, HaSettings.TxPushStrategy.fixed_ascending );
         cluster.fail( cluster.getAnySlave() );
@@ -192,7 +192,6 @@ public class TxPushStrategyConfigIT
     }
 
     private ManagedCluster startCluster( int memberCount, final int pushFactor, final HaSettings.TxPushStrategy pushStrategy )
-            throws Exception
     {
         ManagedCluster cluster = clusterRule.withCluster( clusterOfSize( memberCount ) )
                 .withSharedSetting( HaSettings.tx_push_factor, "" + pushFactor )

@@ -19,24 +19,26 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
+import java.time._
+import java.time.temporal.TemporalAmount
 import java.util
 
-import org.neo4j.cypher.internal.util.v3_4.{ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.StandardInternalExecutionResult
-import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
-import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.util.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.util.v3_4.{ProfilerStatisticsNotReadyException, TaskCloser}
+import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
+import org.neo4j.values.storable._
 
 /**
   * Execution result of a Procedure
@@ -44,6 +46,7 @@ import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
   * @param context                           The QueryContext used to communicate with the kernel.
   * @param taskCloser                        called when done with the result, cleans up resources.
   * @param name                              The name of the procedure.
+  * @param id                                The id of the procedure.
   * @param callMode                          The call mode of the procedure.
   * @param args                              The argument to the procedure.
   * @param indexResultNameMappings           Describes how values at output row indices are mapped onto result columns.
@@ -53,6 +56,7 @@ import org.neo4j.values.storable.Values.{of => DONT_USE_OMG, _}
 class ProcedureExecutionResult(context: QueryContext,
                                taskCloser: TaskCloser,
                                name: QualifiedName,
+                               id: Option[Int],
                                callMode: ProcedureCallMode,
                                args: Seq[Any],
                                indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
@@ -65,7 +69,9 @@ class ProcedureExecutionResult(context: QueryContext,
   private final val executionResults = executeCall
 
   // The signature mode is taking care of eagerization
-  protected def executeCall: Iterator[Array[AnyRef]] = callMode.callProcedure(context, name, args)
+  protected def executeCall: Iterator[Array[AnyRef]] =
+    if (id.nonEmpty) callMode.callProcedure(context, id.get, args)
+    else callMode.callProcedure(context, name, args)
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
@@ -100,7 +106,7 @@ class ProcedureExecutionResult(context: QueryContext,
         fieldArray(i) = mapping._3 match {
           case CTNode => transform(res(pos), fromNodeProxy)
           case CTRelationship => transform(res(pos), fromRelationshipProxy)
-          case CTPath => transform(res(pos), asPathValue)
+          case CTPath => transform(res(pos), fromPath)
           case CTInteger => transform(res(pos), longValue)
           case CTFloat => transform(res(pos), doubleValue)
           case CTNumber => transform(res(pos), numberValue)
@@ -108,6 +114,12 @@ class ProcedureExecutionResult(context: QueryContext,
           case CTBoolean => transform(res(pos), booleanValue)
           case CTPoint => transform(res(pos), (p: Point) => asPointValue(p))
           case CTGeometry => transform(res(pos), (g: Geometry) => asGeometryValue(g))
+          case CTDateTime => transform(res(pos), (g: ZonedDateTime) => DateTimeValue.datetime(g))
+          case CTLocalDateTime => transform(res(pos), (g: LocalDateTime) => LocalDateTimeValue.localDateTime(g))
+          case CTDate => transform(res(pos), (g: LocalDate) => DateValue.date(g))
+          case CTTime => transform(res(pos), (g: OffsetTime) => TimeValue.time(g))
+          case CTLocalTime => transform(res(pos), (g: LocalTime) => LocalTimeValue.localTime(g))
+          case CTDuration => transform(res(pos), (g: TemporalAmount) => Values.durationValue(g))
           case CTMap => transform(res(pos), asMapValue)
           case ListType(_) => transform(res(pos), asListValue)
           case CTAny => transform(res(pos), ValueUtils.of)

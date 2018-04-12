@@ -105,7 +105,7 @@ public final class RelationshipRepresentation extends ObjectRepresentation imple
     {
         if ( isDeleted() )
         {
-            return new MapRepresentation( map( "id", rel.getId(), "deleted", true ) );
+            return new MapRepresentation( map( "id", rel.getId(), "deleted", Boolean.TRUE ) );
         }
         else
         {

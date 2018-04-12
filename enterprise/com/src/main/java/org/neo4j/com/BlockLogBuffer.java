@@ -72,19 +72,19 @@ public class BlockLogBuffer implements Closeable
      * are moved over at the beginning of the cleared buffer.
      *
      * @return the buffer
-     * @throws IOException
      */
-    private BlockLogBuffer checkFlush() throws IOException
+    private BlockLogBuffer checkFlush()
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
-            flush( MAX_SIZE );
+            flush();
         }
         return this;
     }
 
-    private void flush( int howManyBytesToWrite ) throws IOException
+    private void flush()
     {
+        int howManyBytesToWrite = MAX_SIZE;
         target.writeBytes( byteArray, 0, howManyBytesToWrite );
         monitor.bytesWritten( howManyBytesToWrite );
         int pos = byteBuffer.position();
@@ -92,49 +92,43 @@ public class BlockLogBuffer implements Closeable
         byteBuffer.put( byteArray, howManyBytesToWrite, pos - howManyBytesToWrite );
     }
 
-//    @Override
-//    public void emptyBufferIntoChannelAndClearIt() throws IOException
-//    {
-//        flush( byteBuffer.position() );
-//    }
-
-    public BlockLogBuffer put( byte b ) throws IOException
+    public BlockLogBuffer put( byte b )
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
-    public BlockLogBuffer putShort( short s ) throws IOException
+    public BlockLogBuffer putShort( short s )
     {
         byteBuffer.putShort( s );
         return checkFlush();
     }
 
-    public BlockLogBuffer putInt( int i ) throws IOException
+    public BlockLogBuffer putInt( int i )
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
-    public BlockLogBuffer putLong( long l ) throws IOException
+    public BlockLogBuffer putLong( long l )
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
-    public BlockLogBuffer putFloat( float f ) throws IOException
+    public BlockLogBuffer putFloat( float f )
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
-    public BlockLogBuffer putDouble( double d ) throws IOException
+    public BlockLogBuffer putDouble( double d )
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
-    public BlockLogBuffer put( byte[] bytes, int length ) throws IOException
+    public BlockLogBuffer put( byte[] bytes, int length )
     {
         for ( int pos = 0; pos < length; )
         {
@@ -167,7 +161,7 @@ public class BlockLogBuffer implements Closeable
     public int write( ReadableByteChannel data ) throws IOException
     {
         int result = 0;
-        int bytesRead = 0;
+        int bytesRead;
         while ( (bytesRead = data.read( byteBuffer )) >= 0 )
         {
             checkFlush();

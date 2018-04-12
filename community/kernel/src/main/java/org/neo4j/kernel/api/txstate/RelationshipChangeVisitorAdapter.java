@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.txstate;
 
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
@@ -88,7 +87,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
 
     @Override
     public final void visitAdded( Long relationshipId )
-            throws ConstraintValidationException, CreateConstraintFailureException
+            throws ConstraintValidationException
     {
         visitAddedRelationship( relationshipId );
     }
@@ -108,7 +107,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
                 throws ConstraintValidationException;
     }
 
-    DetailVisitor added( final ReadableTransactionState txState )
+    private DetailVisitor added( final ReadableTransactionState txState )
     {
         return new DetailVisitor()
         {

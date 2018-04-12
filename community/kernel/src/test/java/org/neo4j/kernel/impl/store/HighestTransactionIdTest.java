@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class HighestTransactionIdTest
 {
     @Test
-    public void shouldHardSetHighest() throws Exception
+    public void shouldHardSetHighest()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( 10, 10, 10 );
@@ -47,7 +47,7 @@ public class HighestTransactionIdTest
     }
 
     @Test
-    public void shouldOnlyKeepTheHighestOffered() throws Exception
+    public void shouldOnlyKeepTheHighestOffered()
     {
         // GIVEN
         HighestTransactionId highest = new HighestTransactionId( -1, -1, -1 );

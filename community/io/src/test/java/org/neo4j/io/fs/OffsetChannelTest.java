@@ -163,7 +163,7 @@ public class OffsetChannelTest
     }
 
     @Test
-    public void isOpen() throws Exception
+    public void isOpen()
     {
         channel.isOpen();
         verify( actual ).isOpen();

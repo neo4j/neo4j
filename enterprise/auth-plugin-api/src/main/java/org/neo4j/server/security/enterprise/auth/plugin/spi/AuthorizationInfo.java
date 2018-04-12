@@ -23,16 +23,16 @@ import java.io.Serializable;
 import java.util.Collection;
 
 /**
- * An object that can be returned as the result of authorization by an <tt>AuthorizationPlugin</tt>.
+ * An object that can be returned as the result of authorization by an {@link AuthorizationPlugin}.
  *
  * @see AuthorizationPlugin#authorize(Collection)
  */
 public interface AuthorizationInfo extends Serializable
 {
     /**
-     * Should return a collection of roles assigned to the principals recognized by an <tt>AuthorizationPlugin</tt>.
+     * Should return a collection of roles assigned to the principals recognized by an {@link AuthorizationPlugin}.
      *
-     * @return the roles assigned to the principals recognized by an <tt>AuthorizationPlugin</tt>
+     * @return the roles assigned to the principals recognized by an {@link AuthorizationPlugin}.
      */
     Collection<String> roles();
 

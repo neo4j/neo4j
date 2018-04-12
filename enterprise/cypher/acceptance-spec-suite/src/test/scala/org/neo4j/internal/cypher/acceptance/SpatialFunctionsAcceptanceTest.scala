@@ -21,18 +21,17 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.Interpreted + Configs.Morsel - Configs.Version2_3
-
-  val expectedToFail = TestConfiguration(Versions(Versions.Default, V3_1), Planners.all, Runtimes.Default)
+  val pointConfig = Configs.Interpreted - Configs.Version2_3
+  val equalityConfig = Configs.Interpreted - Configs.OldAndRule
+  val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("point function should work with literal map") {
-    val result = executeWith(expectedToSucceed, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
+    val result = executeWith(pointConfig, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -40,59 +39,124 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and cartesian coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
+  test("point function should work with literal map and 3D cartesian coordinates") {
+    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian-3D'}) as point",
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.3, 4.5, 6.7))))
+  }
+
+  test("point function should work with literal map and srid") {
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, srid: 4326}) as point",
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
+  }
+
   test("point function should work with literal map and geographic coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
       expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
+  test("point function should not work with NaN or infinity") {
+    for(invalidDouble <- Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) {
+      failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted + Configs.Version3_3 + Configs.Procs,
+        "RETURN point({x: 2.3, y: $v}) as point", List("Cannot create a point with non-finite coordinate values"), params = Map(("v", invalidDouble)))
+    }
+  }
+
   test("point function should not work with literal map and incorrect cartesian CRS") {
-    failWithError(expectedToFail, "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points"))
+    failWithError(pointConfig + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points",
+      "Unknown coordinate reference system: cart"))
+  }
+
+  test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
+      "'cartesian-3D' is not a supported coordinate reference system for points",
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point",
+      List("Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
-    failWithError(expectedToFail, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point",
+      List("'WGS84' is not a supported coordinate reference system for points", "Unknown coordinate reference system: WGS84"))
+  }
+
+  test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
+    failWithError(pointConfig + Configs.Procs, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
+      "'WGS-84-3D' is not a supported coordinate reference system for points",
+      "Cannot create point with 3D coordinate reference system and 2 coordinates. Please consider using equivalent 2D coordinate reference system"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners + Configs.Procs,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
+      "Cannot create point with 2D coordinate reference system and 3 coordinates. Please consider using equivalent 3D coordinate reference system"))
   }
 
   test("point function should work with integer arguments") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2, y: 4}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2, y: 4}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 4))))
   }
 
+  test("point function should throw on unrecognized map entry") {
+    val stillWithoutFix = Configs.Version3_1 + Configs.AllRulePlanners
+    failWithError(pointConfig - stillWithoutFix + Configs.Procs, "RETURN point({x: 2, y:3, a: 4}) as point", Seq("Unknown key 'a' for creating new point"))
+  }
+
   test("should fail properly if missing cartesian coordinates") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
-      params = "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
+      List("A cartesian point must contain 'x' and 'y'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
+      params = Map("params" -> Map("y" -> 1.0, "crs" -> "cartesian")))
   }
 
   test("should fail properly if missing geographic longitude") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
-      params = "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
+      List("A wgs-84 point must contain 'latitude' and 'longitude'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
+      params = Map("params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if missing geographic latitude") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
-      params = "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point",
+      List("A wgs-84 point must contain 'latitude' and 'longitude'",
+           "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" /* in version < 3.4 */),
+      params = Map("params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84")))
   }
 
   test("should fail properly if unknown coordinate system") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points"),
-      params = "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points",
+      "Unknown coordinate reference system: WGS-1337"),
+      params = Map("params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337")))
   }
 
   test("should default to Cartesian if missing cartesian CRS") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -100,7 +164,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should default to WGS84 if missing geographic CRS") {
-    val result = executeWith(expectedToSucceed, "RETURN point({longitude: 2.3, latitude: 4.5}) as point",
+    val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -108,7 +172,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should allow Geographic CRS with x/y coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -116,129 +180,17 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should not allow Cartesian CRS with latitude/longitude coordinates") {
-    failWithError(expectedToFail, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
-      List("'cartesian' is not a supported coordinate reference system for geographic points"))
+    failWithError(pointConfig + Configs.Procs, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
+      List("'cartesian' is not a supported coordinate reference system for geographic points",
+        "Geographic points does not support coordinate reference system: cartesian"))
   }
 
   test("point function should work with previous map") {
-    val result = executeWith(expectedToSucceed, "WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point",
+    val result = executeWith(pointConfig, "WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
-  }
-
-  test("distance function should work on co-located points") {
-    val result = executeWith(expectedToSucceed, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
-        expectPlansToFail = Configs.AllRulePlanners))
-
-    result.toList should equal(List(Map("dist" -> 0.0)))
-  }
-
-  test("distance function should work on nearby cartesian points") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
-        expectPlansToFail = Configs.AllRulePlanners))
-
-    result.columnAs("dist").next().asInstanceOf[Double] should equal(1.5)
-  }
-
-  test("distance function should work on nearby points") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
-        expectPlansToFail = Configs.AllRulePlanners))
-
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1270)
-  }
-
-  test("distance function should work on distant points") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin,
-    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
-      expectPlansToFail = Configs.AllRulePlanners))
-
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
-  }
-
-  // Fails with TestFailException or java.lang.IllegalArgumentException depending on TestConfiguration
-  test("distance function should fail if provided with points from different CRS") {
-    try {
-      failWithError(expectedToFail,
-        """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
-        |RETURN distance(p1,p2) as dist""".stripMargin, List("Invalid points passed to distance(p1, p2)"))
-    } catch {
-      case e: Throwable => assert(e.getMessage.contains("Invalid points passed to distance(p1, p2)"))
-    }
-  }
-
-  test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
-        |RETURN distance(p1,p2) as dist
-      """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2","dist"),
-        expectPlansToFail = Configs.AllRulePlanners))
-
-    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(27842)
-  }
-
-  test("distance function should work with two null inputs") {
-    val result = executeWith(expectedToSucceed, "RETURN distance(null, null) as dist")
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null with lhs null input") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
-        |RETURN distance(null, p1) as dist
-      """.stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null with rhs null input") {
-    val result = executeWith(expectedToSucceed,
-      """
-        |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
-        |RETURN distance(p1, null) as dist
-      """.stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null if a point is null") {
-    var result = executeWith(expectedToSucceed,
-      "RETURN distance(point({latitude:3,longitude:7}),point({latitude:null, longitude:3})) as dist;")
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWith(expectedToSucceed,
-      "RETURN distance(point({latitude:3,longitude:null}),point({latitude:7, longitude:3})) as dist;")
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWith(expectedToSucceed,
-      "RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWith(expectedToSucceed,
-      "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should fail on wrong type") {
-    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
-    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
   }
 
   test("point function should work with node properties") {
@@ -246,7 +198,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
+    val result = executeWith(pointConfig - Configs.Morsel, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -259,7 +211,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     val r = relate(createNode(), createNode(), "PASS_THROUGH", Map("latitude" -> 12.78, "longitude" -> 56.7))
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point",
+    val result = executeWith(pointConfig, "MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -272,7 +224,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point(p) as point",
+    val result = executeWith(pointConfig - Configs.Morsel, "MATCH (p:Place) RETURN point(p) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -281,21 +233,21 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with null input") {
-    val result = executeWith(expectedToSucceed, "RETURN point(null) as p")
+    val result = executeWith(pointConfig, "RETURN point(null) as p")
     result.toList should equal(List(Map("p" -> null)))
   }
 
   test("point function should return null if the map that backs it up contains a null") {
-    var result = executeWith(expectedToSucceed, "RETURN point({latitude:null, longitude:3}) as pt;")
+    var result = executeWith(pointConfig, "RETURN point({latitude:null, longitude:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({latitude:3, longitude:null}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({latitude:3, longitude:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({x:null, y:3}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({x:null, y:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({x:3, y:null}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({x:3, y:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
   }
 
@@ -309,8 +261,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
-    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
+    val result = executeWith(equalityConfig, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -329,10 +280,135 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
+    result.toList.length should be(1)
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
+  }
+
+  test("3D point should be assignable to node property") {
+    // Given
+    createLabeledNode("Place")
+
+    // When
+    val config = pointConfig - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))))
+  }
+
+  test("3D point should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList.length should be(1)
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
+    // And CRS names should equal
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
+  }
+
+  test("inequality on cartesian points") {
+    // case same point
+    shouldCompareLike("point({x: 0, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = false)
+
+    // case top right quadrant
+    shouldCompareLike("point({x: 1, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case bottom left quadrant
+    shouldCompareLike("point({x: -1, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+    // case top left quadrant
+    shouldCompareLike("point({x: -1, y: 1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+    // case bottom right quadrant
+    shouldCompareLike("point({x: 1, y: -1})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+
+    // case straight top
+    shouldCompareLike("point({x: 0, y: 1})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case straight right
+    shouldCompareLike("point({x: 1, y: 0})", "point({x: 0, y: 0})", aBiggerB = true, aSmallerB = false)
+    // case straight bottom
+    shouldCompareLike("point({x: 0, y: -1})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+    // case straight left
+    shouldCompareLike("point({x: -1, y: 0})", "point({x: 0, y: 0})", aBiggerB = false, aSmallerB = true)
+  }
+
+  test("inequality on geographic points") {
+    // case same point
+    shouldCompareLike("point({longitude: 0, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = false)
+
+    // case top right quadrant
+    shouldCompareLike("point({longitude: 1, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case bottom left quadrant
+    shouldCompareLike("point({longitude: -1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+    // case top left quadrant
+    shouldCompareLike("point({longitude: -1, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
+    // case bottom right quadrant
+    shouldCompareLike("point({longitude: 1, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = null, aSmallerB = null)
+
+    // case straight top
+    shouldCompareLike("point({longitude: 0, latitude: 1})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case straight right
+    shouldCompareLike("point({longitude: 1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = true, aSmallerB = false)
+    // case straight bottom
+    shouldCompareLike("point({longitude: 0, latitude: -1})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+    // case straight left
+    shouldCompareLike("point({longitude: -1, latitude: 0})", "point({longitude: 0, latitude: 0})", aBiggerB = false, aSmallerB = true)
+
+    // the poles might be the same point, but in the effective projection onto 2D plane, they are not the same
+    shouldCompareLike("point({longitude: -1, latitude: 90})", "point({longitude: 1, latitude: 90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: 90})", "point({longitude: -1, latitude: 90})", aBiggerB = true, aSmallerB = false)
+    shouldCompareLike("point({longitude: -1, latitude: -90})", "point({longitude: 1, latitude: -90})", aBiggerB = false, aSmallerB = true)
+    shouldCompareLike("point({longitude: 1, latitude: -90})", "point({longitude: -1, latitude: -90})", aBiggerB = true, aSmallerB = false)
+  }
+
+  test("inequality on 3D points") {
+    Seq("cartesian-3D","WGS-84-3D").foreach { crsName =>
+      (-1 to 1).foreach { x =>
+        (-1 to 1).foreach { y =>
+          (-1 to 1).foreach { z =>
+            val same = x == 0 && y == 0 && z == 0
+            val smaller = x <= 0 && y <= 0 && z <= 0
+            val larger = x >= 0 && y >= 0 && z >= 0
+            if (same) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = false)
+            } else if (smaller) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = false, aSmallerB = true)
+            } else if (larger) {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = true, aSmallerB = false)
+            } else {
+              shouldCompareLike(s"point({x: $x, y: $y, z: $z, crs: '$crsName'})", s"point({x: 0, y: 0, z: 0, crs: '$crsName'})", aBiggerB = null, aSmallerB = null)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  test("inequality on mixed points") {
+    shouldCompareLike("point({longitude: 0, latitude: 0})", "point({x: 0, y: 0})", aBiggerB = null, aSmallerB = null)
+  }
+
+  private def shouldCompareLike(a: String, b: String, aBiggerB: Any, aSmallerB: Any) = {
+    val query =
+      s"""WITH $a as a, $b as b
+         |RETURN a > b, a < b
+      """.stripMargin
+
+    val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
+    val result = executeWith(pointConfig, query).toList
+    withClue(s"Comparing '$a' to '$b'") {
+      result should equal(List(Map("a > b" -> aBiggerB, "a < b" -> aSmallerB)))
+    }
   }
 
   test("array of points should be assignable to node property") {
@@ -340,7 +416,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |UNWIND [1,2,3] as num
@@ -349,7 +424,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         |MATCH (place:Place) SET place.location = points
         |RETURN points
       """.stripMargin
-    val result = executeWith(config, query,
+    val result = executeWith(equalityConfig, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -387,6 +462,58 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     ))
   }
 
+  test("array of 3D cartesian points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({x: num, y: num, z: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 3.0, 3.0, 3.0)
+    ))
+  }
+
+  test("array of 3D WGS84 points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({longitude: num, latitude: num, height: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 3.0, 3.0, 3.0)
+    ))
+  }
+
   test("array of wgs84 points should be readable from node property") {
     // Given
     createLabeledNode("Place")
@@ -418,7 +545,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |WITH [point({x: 1, y: 2}), point({latitude: 1, longitude: 2})] as points
@@ -427,6 +553,37 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       """.stripMargin
 
     // Then
-    failWithError(config + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
+    failWithError(equalityConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
   }
+
+  test("accessors on 2D cartesian points") {
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2}) AS p RETURN p.x, p.y, p.crs, p.srid")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.crs" -> "cartesian", "p.srid" -> 7203)))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
+  }
+
+  test("accessors on 3D cartesian points") {
+    val result = executeWith(latestPointConfig, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.x, p.y, p.z, p.crs, p.srid")
+    result.toList should be(List(Map("p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0, "p.crs" -> "cartesian-3d", "p.srid" -> 9157)))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2, z:3}) AS p RETURN p.latitude", Seq("Field: latitude is not available"))
+  }
+
+  test("accessors on 2D geographic points") {
+    val result = executeWith(latestPointConfig, "WITH point({longitude: 1, latitude: 2}) AS p RETURN p.longitude, p.latitude, p.crs, p.x, p.y, p.srid")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.crs" -> "wgs-84", "p.x" -> 1.0, "p.y" -> 2.0, "p.srid" -> 4326)))
+
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.height", Seq("Field: height is not available"))
+    failWithError(latestPointConfig + Configs.Procs, "WITH point({x: 1, y: 2}) AS p RETURN p.z", Seq("Field: z is not available"))
+  }
+
+  test("accessors on 3D geographic points") {
+    val result = executeWith(latestPointConfig,
+      "WITH point({longitude: 1, latitude: 2, height:3}) AS p RETURN p.longitude, p.latitude, p.height, p.crs, p.x, p.y, p.z, p.srid")
+    result.toList should be(List(Map("p.longitude" -> 1.0, "p.latitude" -> 2.0, "p.height" -> 3.0, "p.crs" -> "wgs-84-3d", "p.srid" -> 4979,
+                                     "p.x" -> 1.0, "p.y" -> 2.0, "p.z" -> 3.0)))
+  }
+
 }

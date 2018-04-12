@@ -46,7 +46,7 @@ public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtension
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new DummyExtension( dependencies );
     }

@@ -38,8 +38,6 @@ public interface ThrowingConsumer<T, E extends Throwable>
 
     static <T, E extends Exception> ThrowingConsumer<T, E> noop()
     {
-        return t ->
-        {
-        };
+        return t -> {};
     }
 }

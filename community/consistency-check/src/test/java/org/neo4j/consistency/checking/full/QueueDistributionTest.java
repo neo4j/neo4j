@@ -61,11 +61,9 @@ public class QueueDistributionTest
             relationshipRecord.setFirstNode( nextLong( randomGenerator ) );
             relationshipRecord.setSecondNode( nextLong( randomGenerator ) );
             distributor.distribute( relationshipRecord, ( record, qIndex ) ->
-            {
-                assertThat( "Distribution index for record " + record + " should be within a range of available " +
-                                "executors, while expected records per cpu is: " + recordsPerCpu, qIndex,
-                        allOf( greaterThanOrEqualTo( 0 ), lessThan( numberOfThreads ) ) );
-            } );
+                    assertThat( "Distribution index for record " + record + " should be within a range of available " +
+                            "executors, while expected records per cpu is: " + recordsPerCpu, qIndex,
+                    allOf( greaterThanOrEqualTo( 0 ), lessThan( numberOfThreads ) ) ) );
         }
     }
 

@@ -32,7 +32,7 @@ import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.certifica
 public class LegacySslPolicyConfigTest
 {
     @Test
-    public void shouldBeFoundInServerDefaults() throws Exception
+    public void shouldBeFoundInServerDefaults()
     {
         // given
         Config serverDefaultConfig = Config.builder().withServerDefaults().build();

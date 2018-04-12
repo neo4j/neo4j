@@ -31,7 +31,7 @@ public class CommandExtractor implements Visitor<StorageCommand,IOException>
     private final List<StorageCommand> commands = new ArrayList<>();
 
     @Override
-    public boolean visit( StorageCommand element ) throws IOException
+    public boolean visit( StorageCommand element )
     {
         commands.add( element );
         return false;

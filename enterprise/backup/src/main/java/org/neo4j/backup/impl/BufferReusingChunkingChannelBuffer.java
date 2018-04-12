@@ -45,7 +45,7 @@ import org.neo4j.function.Factory;
  */
 class BufferReusingChunkingChannelBuffer extends ChunkingChannelBuffer
 {
-    private static final Factory<ChannelBuffer> DEFAULT_CHANNEL_BUFFER_FACTORY = () -> ChannelBuffers.dynamicBuffer();
+    private static final Factory<ChannelBuffer> DEFAULT_CHANNEL_BUFFER_FACTORY = ChannelBuffers::dynamicBuffer;
 
     private final Factory<ChannelBuffer> bufferFactory;
     private final Queue<ChannelBuffer> freeBuffers = new LinkedBlockingQueue<>( MAX_WRITE_AHEAD_CHUNKS );

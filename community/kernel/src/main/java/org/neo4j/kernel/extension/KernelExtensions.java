@@ -51,7 +51,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         for ( KernelExtensionFactory<?> kernelExtensionFactory : kernelExtensionFactories )
         {
@@ -73,25 +73,25 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T> Lifecycle newInstance( KernelExtensionFactory<T> factory, Object dependencies ) throws Throwable
+    private <T> Lifecycle newInstance( KernelExtensionFactory<T> factory, Object dependencies )
     {
         return factory.newInstance( kernelContext, (T)dependencies );
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
     }

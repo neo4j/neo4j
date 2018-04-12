@@ -20,14 +20,23 @@
 package org.neo4j.causalclustering.core.server;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
-import org.neo4j.causalclustering.catchup.CatchupServer;
+import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
+import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
+import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
+import org.neo4j.causalclustering.catchup.CatchupServerHandler;
+import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
+import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
+import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -37,6 +46,8 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.IdentityModule;
+import org.neo4j.causalclustering.core.SupportedProtocolCreator;
+import org.neo4j.causalclustering.core.TransactionBackupServiceProvider;
 import org.neo4j.causalclustering.core.consensus.ConsensusModule;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.pruning.PruningScheduler;
@@ -54,13 +65,23 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
-import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
+import org.neo4j.causalclustering.net.InstalledProtocolHandler;
+import org.neo4j.causalclustering.net.Server;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
+import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
+import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
+import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
+import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
+import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -70,9 +91,11 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.time.Clocks;
 
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
+import static org.neo4j.time.Clocks.systemClock;
 
 public class CoreServerModule
 {
@@ -80,7 +103,9 @@ public class CoreServerModule
     public static final String LAST_FLUSHED_NAME = "last-flushed";
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
-    private final CatchupServer catchupServer;
+    private final Server catchupServer;
+    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
+    private final Optional<Server> backupServer;
     private final IdentityModule identityModule;
     private final CoreStateMachinesModule coreStateMachinesModule;
     private final ConsensusModule consensusModule;
@@ -94,12 +119,12 @@ public class CoreServerModule
     private final JobScheduler jobScheduler;
     private final LogProvider logProvider;
     private final PlatformModule platformModule;
-    private final PipelineHandlerAppender pipelineAppender;
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
             CoreStateMachinesModule coreStateMachinesModule, ClusteringModule clusteringModule, ReplicationModule replicationModule,
-            LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier,
-            File clusterStateDirectory, PipelineHandlerAppender pipelineAppender )
+            LocalDatabase localDatabase, Supplier<DatabaseHealth> dbHealthSupplier, File clusterStateDirectory,
+            NettyPipelineBuilderFactory clientPipelineBuilderFactory, NettyPipelineBuilderFactory serverPipelineBuilderFactory,
+            NettyPipelineBuilderFactory backupServerPipelineBuilderFactory, InstalledProtocolHandler installedProtocolsHandler )
     {
         this.identityModule = identityModule;
         this.coreStateMachinesModule = coreStateMachinesModule;
@@ -108,7 +133,6 @@ public class CoreServerModule
         this.localDatabase = localDatabase;
         this.dbHealthSupplier = dbHealthSupplier;
         this.platformModule = platformModule;
-        this.pipelineAppender = pipelineAppender;
 
         this.config = platformModule.config;
         this.jobScheduler = platformModule.jobScheduler;
@@ -117,8 +141,6 @@ public class CoreServerModule
         final LogService logging = platformModule.logging;
         final FileSystemAbstraction fileSystem = platformModule.fileSystem;
         final LifeSupport life = platformModule.life;
-        Map<String, String> overrideBackupSettings = backupDisabledSettings();
-        config.augment( overrideBackupSettings );
 
         this.logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
@@ -146,22 +168,62 @@ public class CoreServerModule
                 coreState,
                 consensusModule.inFlightCache(),
                 platformModule.monitors );
+
         platformModule.dependencies.satisfyDependency( commandApplicationProcess ); // lastApplied() for CC-robustness
 
         this.snapshotService = new CoreSnapshotService( commandApplicationProcess, coreState, consensusModule.raftLog(), consensusModule.raftMachine() );
 
-        CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy );
+        CatchUpClient catchUpClient = createCatchupClient( clientPipelineBuilderFactory );
+        CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy, catchUpClient );
 
         this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
-                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout() );
+                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout(), databaseHealthSupplier );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
-        catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
-                platformModule.dependencies.provideDependency( TransactionIdStore.class ),
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
+        ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+
+        ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
+        ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
+
+        CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
+                logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
-                snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, pipelineAppender );
+                fileSystem, platformModule.pageCache, platformModule.storeCopyCheckPointMutex, snapshotService,
+                new CheckpointerSupplier( platformModule.dependencies ) );
+
+        CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( serverPipelineBuilderFactory,
+                logProvider, catchupServerHandler );
+
+        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository = new ProtocolInstallerRepository<>(
+                singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
+
+        HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( catchupProtocolRepository, modifierProtocolRepository,
+                protocolInstallerRepository, serverPipelineBuilderFactory, logProvider );
+
+        catchupServer = new CatchupServerBuilder( catchupServerHandler )
+                .serverHandler( installedProtocolsHandler )
+                .catchupProtocols( supportedCatchupProtocols )
+                .modifierProtocols( supportedModifierProtocols )
+                .pipelineBuilder( serverPipelineBuilderFactory )
+                .userLogProvider( userLogProvider )
+                .debugLogProvider( logProvider )
+                .listenAddress( config.get( transaction_listen_address ) )
+                .serverName( "catchup-server" )
+                .build();
+
+        TransactionBackupServiceProvider transactionBackupServiceProvider =
+                new TransactionBackupServiceProvider( logProvider,
+                        userLogProvider,
+                        supportedCatchupProtocols,
+                        supportedModifierProtocols,
+                        backupServerPipelineBuilderFactory,
+                        catchupServerHandler,
+                        installedProtocolsHandler );
+
+        backupServer = transactionBackupServiceProvider.resolveIfBackupEnabled( config );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess, platformModule.clock );
         dependencies.satisfyDependency( raftLogPruner );
@@ -169,20 +231,31 @@ public class CoreServerModule
         life.add( new PruningScheduler( raftLogPruner, jobScheduler,
                 config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
 
-        // Exposes this so that tests can start/stop the catchup server
-        dependencies.satisfyDependency( catchupServer );
-
-        servicesToStopOnStoreCopy.add( catchupServer );
+        servicesToStopOnStoreCopy.add( this.catchupServer );
+        backupServer.ifPresent( servicesToStopOnStoreCopy::add );
     }
 
-    private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy )
+    private CatchUpClient createCatchupClient( NettyPipelineBuilderFactory clientPipelineBuilderFactory )
     {
+        SupportedProtocolCreator supportedProtocolCreator = new SupportedProtocolCreator( config, logProvider );
+        ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
+        Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
+        Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
         long inactivityTimeoutMillis = platformModule.config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = platformModule.life.add(
-                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, platformModule.monitors, pipelineAppender ) );
 
-        RemoteStore remoteStore = new RemoteStore(
-                logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
+        CatchUpClient catchUpClient = new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory,
+                handshakeTimeout, inactivityTimeoutMillis, logProvider, systemClock() ).build();
+        platformModule.life.add( catchUpClient );
+        return catchUpClient;
+    }
+
+    private CoreStateDownloader createCoreStateDownloader( LifeSupport servicesToStopOnStoreCopy, CatchUpClient catchUpClient )
+    {
+        ExponentialBackoffStrategy storeCopyBackoffStrategy =
+                new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
+
+        RemoteStore remoteStore = new RemoteStore( logProvider, platformModule.fileSystem, platformModule.pageCache,
+                new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(
@@ -191,8 +264,9 @@ public class CoreServerModule
         StoreCopyProcess storeCopyProcess = new StoreCopyProcess( platformModule.fileSystem, platformModule.pageCache, localDatabase,
                 copiedStoreRecovery, remoteStore, logProvider );
 
+        CommitStateHelper commitStateHelper = new CommitStateHelper( platformModule.pageCache, platformModule.fileSystem, config );
         return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider,
-                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService() );
+                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, commitStateHelper );
     }
 
     private MembershipWaiterLifecycle createMembershipWaiterLifecycle()
@@ -204,16 +278,21 @@ public class CoreServerModule
         return new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
     }
 
-    public CatchupServer catchupServer()
+    public Server catchupServer()
     {
         return catchupServer;
     }
 
-    public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler )
+    public Optional<Server> backupServer()
+    {
+        return backupServer;
+    }
+
+    public CoreLife createCoreLife( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler )
     {
         return new CoreLife( consensusModule.raftMachine(),
                 localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess, coreStateMachinesModule.coreStateMachines,
-                handler, snapshotService );
+                handler, snapshotService, downloadService );
     }
 
     public CommandApplicationProcess commandApplicationProcess()
@@ -224,12 +303,5 @@ public class CoreServerModule
     public CoreStateDownloaderService downloadService()
     {
         return downloadService;
-    }
-
-    private static Map<String,String> backupDisabledSettings()
-    {
-        Map<String,String> overrideBackupSettings = new HashMap<>(  );
-        overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        return overrideBackupSettings;
     }
 }

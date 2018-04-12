@@ -19,13 +19,18 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static org.neo4j.scheduler.JobScheduler.Groups.downloadSnapshot;
 
@@ -37,33 +42,36 @@ public class CoreStateDownloaderService extends LifecycleAdapter
     private final Log log;
     private final TimeoutStrategy.Timeout downloaderPauseStrategy;
     private PersistentSnapshotDownloader currentJob;
+    private JobHandle jobHandle;
     private boolean stopped;
+    private Supplier<DatabaseHealth> dbHealth;
 
-    public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader,
-            CommandApplicationProcess applicationProcess,
-            LogProvider logProvider,
-            TimeoutStrategy.Timeout downloaderPauseStrategy )
+    public CoreStateDownloaderService( JobScheduler jobScheduler, CoreStateDownloader downloader, CommandApplicationProcess applicationProcess,
+            LogProvider logProvider, TimeoutStrategy.Timeout downloaderPauseStrategy, Supplier<DatabaseHealth> dbHealth )
     {
         this.jobScheduler = jobScheduler;
         this.downloader = downloader;
         this.applicationProcess = applicationProcess;
         this.log = logProvider.getLog( getClass() );
         this.downloaderPauseStrategy = downloaderPauseStrategy;
+        this.dbHealth = dbHealth;
     }
 
-    public synchronized void scheduleDownload( LeaderLocator leaderLocator )
+    public synchronized Optional<JobHandle> scheduleDownload( CatchupAddressProvider addressProvider )
     {
         if ( stopped )
         {
-            return;
+            return Optional.empty();
         }
 
         if ( currentJob == null || currentJob.hasCompleted() )
         {
-            currentJob = new PersistentSnapshotDownloader( leaderLocator, applicationProcess, downloader, log,
-                    downloaderPauseStrategy );
-            jobScheduler.schedule( downloadSnapshot, currentJob );
+            currentJob = new PersistentSnapshotDownloader( addressProvider, applicationProcess, downloader, log,
+                    downloaderPauseStrategy, dbHealth );
+            jobHandle = jobScheduler.schedule( downloadSnapshot, currentJob );
+            return Optional.of( jobHandle );
         }
+        return Optional.of( jobHandle );
     }
 
     @Override
@@ -75,5 +83,10 @@ public class CoreStateDownloaderService extends LifecycleAdapter
         {
             currentJob.stop();
         }
+    }
+
+    public synchronized Optional<JobHandle> downloadJob()
+    {
+        return Optional.ofNullable( jobHandle );
     }
 }

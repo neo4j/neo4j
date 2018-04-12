@@ -20,20 +20,20 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
-import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.values.storable.Value;
 
-import static org.neo4j.helpers.FutureAdapter.VOID;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 
 public class IndexProxyAdapter implements IndexProxy
@@ -50,9 +50,8 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public Future<Void> drop()
+    public void drop()
     {
-        return VOID;
     }
 
     @Override
@@ -67,8 +66,7 @@ public class IndexProxyAdapter implements IndexProxy
         return null;
     }
 
-    @Override
-    public void force()
+    public void force( IOLimiter ioLimiter )
     {
     }
 
@@ -78,13 +76,12 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public Future<Void> close()
+    public void close()
     {
-        return VOID;
     }
 
     @Override
-    public IndexDescriptor getDescriptor()
+    public SchemaIndexDescriptor getDescriptor()
     {
         return null;
     }
@@ -96,7 +93,7 @@ public class IndexProxyAdapter implements IndexProxy
     }
 
     @Override
-    public SchemaIndexProvider.Descriptor getProviderDescriptor()
+    public IndexProvider.Descriptor getProviderDescriptor()
     {
         return null;
     }
@@ -121,6 +118,17 @@ public class IndexProxyAdapter implements IndexProxy
     @Override
     public void validate()
     {
+    }
+
+    @Override
+    public void validateBeforeCommit( Value[] tuple )
+    {
+    }
+
+    @Override
+    public long getIndexId()
+    {
+        return 1;
     }
 
     @Override

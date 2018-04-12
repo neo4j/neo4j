@@ -50,7 +50,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     }
 
     // TODO use VarHandles in Java 9
-    private static final AtomicReferenceFieldUpdater<AsyncEvents,AsyncEvent> STACK =
+    private static final AtomicReferenceFieldUpdater<AsyncEvents,AsyncEvent> STACK_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater( AsyncEvents.class, AsyncEvent.class, "stack" );
     private static final Sentinel END_SENTINEL = new Sentinel( "END" );
     private static final Sentinel SHUTDOWN_SENTINEL = new Sentinel( "SHUTDOWN" );
@@ -82,7 +82,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     @Override
     public void send( T event )
     {
-        AsyncEvent prev = STACK.getAndSet( this, event );
+        AsyncEvent prev = STACK_UPDATER.getAndSet( this, event );
         assert prev != null;
         event.next = prev;
         if ( prev == END_SENTINEL )
@@ -91,7 +91,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
         }
         else if ( prev == SHUTDOWN_SENTINEL )
         {
-            AsyncEvent events = STACK.getAndSet( this, SHUTDOWN_SENTINEL );
+            AsyncEvent events = STACK_UPDATER.getAndSet( this, SHUTDOWN_SENTINEL );
             process( events );
         }
     }
@@ -107,7 +107,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
         {
             do
             {
-                AsyncEvent events = STACK.getAndSet( this, END_SENTINEL );
+                AsyncEvent events = STACK_UPDATER.getAndSet( this, END_SENTINEL );
                 process( events );
                 if ( stack == END_SENTINEL && !shutdown )
                 {
@@ -116,7 +116,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
             }
             while ( !shutdown );
 
-            AsyncEvent events = STACK.getAndSet( this, SHUTDOWN_SENTINEL );
+            AsyncEvent events = STACK_UPDATER.getAndSet( this, SHUTDOWN_SENTINEL );
             process( events );
         }
         finally
@@ -129,13 +129,12 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     private void process( AsyncEvent events )
     {
         events = reverseAndStripEndMark( events );
-        Consumer<T> consumer = this.eventConsumer;
 
         while ( events != null )
         {
             @SuppressWarnings( "unchecked" )
             T event = (T) events;
-            consumer.accept( event );
+            eventConsumer.accept( event );
             events = events.next;
         }
     }
@@ -181,7 +180,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
         startupLatch.await();
     }
 
-    public void awaitTermination() throws InterruptedException
+    public void awaitTermination()
     {
         shutdownLatch.await();
     }

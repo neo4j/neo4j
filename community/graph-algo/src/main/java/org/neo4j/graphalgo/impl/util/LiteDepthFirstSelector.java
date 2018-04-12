@@ -37,7 +37,7 @@ import org.neo4j.graphdb.traversal.TraversalContext;
  */
 public class LiteDepthFirstSelector implements BranchSelector
 {
-    private final Queue<TraversalBranch> superNodes = new LinkedList<TraversalBranch>();
+    private final Queue<TraversalBranch> superNodes = new LinkedList<>();
     private TraversalBranch current;
     private final int threshold;
     private final PathExpander expander;
@@ -77,10 +77,7 @@ public class LiteDepthFirstSelector implements BranchSelector
                 continue;
             }
             current = next;
-            if ( current != null )
-            {
-                result = current;
-            }
+            result = current;
         }
         return result;
     }

@@ -41,7 +41,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
-                              context: LogicalPlanningContext): Seq[Expression] => LogicalPlan
+                              context: LogicalPlanningContext)
+                             (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
 
@@ -57,7 +58,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     else {
       val arguments: Set[LogicalVariable] = qg.argumentIds.map(n => Variable(n)(null))
       val plannables: Set[IndexPlannableExpression] = predicates.collect(
-        indexPlannableExpression(qg.argumentIds, arguments, qg.hints))
+        indexPlannableExpression(qg.argumentIds, arguments, qg.hints.toSet))
       val result = plannables.map(_.name).flatMap { name =>
         val idName = name
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
@@ -96,7 +97,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   private def producePlansForSpecificVariable(idName: String, nodePlannables: Set[IndexPlannableExpression],
                                               labelPredicates: Set[HasLabels],
-                                              hints: Set[Hint], argumentIds: Set[String],
+                                              hints: Seq[Hint], argumentIds: Set[String],
                                               context: LogicalPlanningContext): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
@@ -109,7 +110,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   }
 
   private def createLogicalPlan(idName: String,
-                  hints: Set[Hint],
+                  hints: Seq[Hint],
                   argumentIds: Set[String],
                   labelPredicate: HasLabels,
                   labelName: LabelName,
@@ -129,10 +130,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(plannables)
 
     val propertyKeyTokens = plannables.map(p => p.propertyKeyName).map(n => PropertyKeyToken(n, semanticTable.id(n).head))
-    val entryConstructor: Seq[Expression] => LogicalPlan =
+    val entryConstructor: (Seq[Expression], Seq[Expression]) => LogicalPlan =
       constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens, queryExpression, hint, argumentIds, context)
 
-    entryConstructor(plannables.map(p => p.propertyPredicate) :+ labelPredicate)
+    val solvedPredicates = plannables.filter(_.solvesPredicate).map(p => p.propertyPredicate) :+ labelPredicate
+    val predicatesForCardinalityEstimation = plannables.map(p => p.propertyPredicate) :+ labelPredicate
+    entryConstructor(solvedPredicates, predicatesForCardinalityEstimation)
   }
 
   private def mergeQueryExpressionsToSingleOne(plannables: Seq[IndexPlannableExpression]): QueryExpression[Expression] =
@@ -151,7 +154,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     case predicate@AsPropertySeekable(seekable: PropertySeekable)
       if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
       val queryExpression = seekable.args.asQueryExpression
-      IndexPlannableExpression(seekable.name, seekable.propertyKey, predicate, queryExpression, hints, argumentIds)
+      IndexPlannableExpression(seekable.name, seekable.propertyKey, predicate, queryExpression, hints, argumentIds, solvesPredicate = true)
 
     // ... = n.prop
     // In some rare cases, we can't rewrite these predicates cleanly,
@@ -159,20 +162,28 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     case predicate@Equals(a, Property(seekable@LogicalVariable(_), propKeyName))
       if a.dependencies.forall(arguments) && !arguments(seekable) =>
       val expr = SingleQueryExpression(a)
-      IndexPlannableExpression(seekable.name, propKeyName, predicate, expr, hints, argumentIds)
+      IndexPlannableExpression(seekable.name, propKeyName, predicate, expr, hints, argumentIds, solvesPredicate = true)
 
     // n.prop STARTS WITH "prefix%..."
     case predicate@AsStringRangeSeekable(seekable) =>
       val partialPredicate = PartialPredicate(seekable.expr, predicate)
       val queryExpression = seekable.asQueryExpression
       val propertyKey = seekable.propertyKey
-      IndexPlannableExpression(seekable.name, propertyKey, partialPredicate, queryExpression, hints, argumentIds)
+      IndexPlannableExpression(seekable.name, propertyKey, partialPredicate, queryExpression, hints, argumentIds, solvesPredicate = true)
 
     // n.prop <|<=|>|>= value
     case predicate@AsValueRangeSeekable(seekable) =>
       val queryExpression = seekable.asQueryExpression
       val keyName = seekable.propertyKeyName
-      IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds)
+      IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds, solvesPredicate = true)
+
+    // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
+    // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
+    // but not mark it as solved, since the planner will still need to solve it with a Filter.
+    case predicate@AsDistanceSeekable(seekable) =>
+      val queryExpression = seekable.asQueryExpression
+      val keyName = seekable.propertyKeyName
+      IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds, solvesPredicate = false)
   }
 
   private def plannablesForIndex(indexDescriptor: IndexDescriptor, plannables: Set[IndexPlannableExpression])
@@ -200,6 +211,6 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
   case class IndexPlannableExpression(name: String, propertyKeyName: PropertyKeyName,
                                       propertyPredicate: Expression, queryExpression: QueryExpression[Expression],
-                                      hints: Set[Hint], argumentIds: Set[String])
+                                      hints: Set[Hint], argumentIds: Set[String], solvesPredicate: Boolean)
                                      (implicit labelPredicateMap: Map[String, Set[HasLabels]])
 }

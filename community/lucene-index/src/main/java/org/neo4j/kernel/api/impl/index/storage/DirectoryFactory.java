@@ -37,7 +37,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Math.min;
 
@@ -85,10 +85,10 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
 
     final class InMemoryDirectoryFactory implements DirectoryFactory
     {
-        private final Map<File, RAMDirectory> directories = new HashMap<File, RAMDirectory>( );
+        private final Map<File, RAMDirectory> directories = new HashMap<>();
 
         @Override
-        public synchronized Directory open( File dir ) throws IOException
+        public synchronized Directory open( File dir )
         {
             if ( !directories.containsKey( dir ) )
             {
@@ -143,7 +143,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public Directory open( File dir ) throws IOException
+        public Directory open( File dir )
         {
             return directory;
         }
@@ -169,7 +169,7 @@ public interface DirectoryFactory extends FileSystemAbstraction.ThirdPartyFileSy
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             // No-op
         }

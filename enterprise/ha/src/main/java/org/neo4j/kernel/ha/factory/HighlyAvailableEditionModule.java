@@ -58,13 +58,13 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -152,6 +152,7 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -237,7 +238,7 @@ public class HighlyAvailableEditionModule
                 new TransactionCommittingResponseUnpacker( dependencies,
                         config.get( HaSettings.pull_apply_batch_size ), idReuseSafeZone ) );
 
-        Supplier<InwardKernel> kernelProvider = dependencies.provideDependency( InwardKernel.class );
+        Supplier<Kernel> kernelProvider = dependencies.provideDependency( Kernel.class );
 
         transactionStartTimeout = config.get( HaSettings.state_switch_timeout ).toMillis();
 
@@ -576,7 +577,8 @@ public class HighlyAvailableEditionModule
                 fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
-                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ),
+                filename -> filename.endsWith( PageCacheWarmer.SUFFIX_CACHEPROF )
         );
     }
 
@@ -702,7 +704,7 @@ public class HighlyAvailableEditionModule
     private TokenCreator createRelationshipTypeCreator( Config config,
             ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterInvocationHandler, RequestContextFactory requestContextFactory,
-            Supplier<InwardKernel> kernelProvider )
+            Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -724,7 +726,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createPropertyKeyCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<InwardKernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {
@@ -746,7 +748,7 @@ public class HighlyAvailableEditionModule
 
     private TokenCreator createLabelIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
             DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
-            RequestContextFactory requestContextFactory, Supplier<InwardKernel> kernelProvider )
+            RequestContextFactory requestContextFactory, Supplier<Kernel> kernelProvider )
     {
         if ( config.get( GraphDatabaseSettings.read_only ) )
         {

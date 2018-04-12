@@ -50,7 +50,7 @@ public class HeapSizeSanityCheckerTest
     private final MemoryStatsVisitor.Visitable memoryUser2 = visitor -> visitor.offHeapUsage( memoryUser2Supplier.getAsLong() );
 
     @Test
-    public void shouldReportInsufficientAvailableMemory() throws Exception
+    public void shouldReportInsufficientAvailableMemory()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
@@ -69,7 +69,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportInsufficientHeapSize() throws Exception
+    public void shouldReportInsufficientHeapSize()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 20 ) );
@@ -88,7 +88,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportAbundantHeapSize() throws Exception
+    public void shouldReportAbundantHeapSize()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 2 ) );
@@ -107,7 +107,7 @@ public class HeapSizeSanityCheckerTest
     }
 
     @Test
-    public void shouldReportNothingOnGoodSetup() throws Exception
+    public void shouldReportNothingOnGoodSetup()
     {
         // given
         when( freeMemorySupplier.getAsLong() ).thenReturn( gibiBytes( 10 ) );

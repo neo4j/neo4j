@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.index.ControlledPopulationSchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -37,11 +37,11 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
 public class SchemaIndexWaitingAcceptanceTest
 {
-    private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
+    private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
     @Rule
     public ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule()
@@ -50,13 +50,13 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             List<KernelExtensionFactory<?>> extensions;
-            extensions = Collections.singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
+            extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
             ((TestGraphDatabaseFactory) databaseFactory).setKernelExtensions( extensions );
         }
     };
 
     @Test
-    public void shouldTimeoutWatingForIndexToComeOnline() throws Exception
+    public void shouldTimeoutWatingForIndexToComeOnline()
     {
         // given
         GraphDatabaseService db = rule.getGraphDatabaseAPI();
@@ -91,7 +91,7 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    public void shouldTimeoutWatingForAllIndexesToComeOnline() throws Exception
+    public void shouldTimeoutWatingForAllIndexesToComeOnline()
     {
         // given
         GraphDatabaseService db = rule.getGraphDatabaseAPI();

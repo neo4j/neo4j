@@ -350,7 +350,7 @@ public class NetworkSenderReceiverIT
             life.add( new LifecycleAdapter()
             {
                 @Override
-                public void start() throws Throwable
+                public void start()
                 {
                     networkReceiver.addMessageProcessor( message ->
                     {
@@ -364,25 +364,25 @@ public class NetworkSenderReceiverIT
         }
 
         @Override
-        public void init() throws Throwable
+        public void init()
         {
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
 
             life.start();
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
             life.stop();
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
 

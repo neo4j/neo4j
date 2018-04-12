@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class VersionTest
 {
     @Test
-    public void shouldExposeCleanAndDetailedVersions() throws Throwable
+    public void shouldExposeCleanAndDetailedVersions()
     {
         assertThat( version( "1.2.3-M01,abcdef012345" ).getReleaseVersion(), equalTo( "1.2.3-M01" ));
         assertThat( version( "1.2.3-M01,abcdef012345" ).getVersion(),        equalTo( "1.2.3-M01,abcdef012345" ));

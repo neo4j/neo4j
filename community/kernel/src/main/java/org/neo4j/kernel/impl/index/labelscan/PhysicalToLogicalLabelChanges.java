@@ -83,15 +83,7 @@ class PhysicalToLogicalLabelChanges
 
     private static boolean smaller( long id, long otherId )
     {
-        if ( id == -1 )
-        {
-            return false;
-        }
-        if ( otherId == -1 )
-        {
-            return true;
-        }
-        return id < otherId;
+        return id != -1 && (otherId == -1 || id < otherId);
     }
 
     private static void terminateWithMinusOneIfNeeded( long[] labelIds, int actualLength )

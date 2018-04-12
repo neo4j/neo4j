@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.ArgumentMatchers._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper, TestableIterator}
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
@@ -198,7 +198,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
     // then
     result shouldBe empty
-    verify(right, times(0)).createResults(any())
+    verify(right, never()).createResults(any())
   }
 
   test("should not fetch results from RHS if no probe table was built") {

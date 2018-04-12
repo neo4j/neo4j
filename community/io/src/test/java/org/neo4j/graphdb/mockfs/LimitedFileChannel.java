@@ -49,7 +49,7 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public long read( ByteBuffer[] dsts ) throws IOException
+    public long read( ByteBuffer[] dsts )
     {
         return 0;
     }
@@ -69,7 +69,7 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
-    public long write( ByteBuffer[] srcs ) throws IOException
+    public long write( ByteBuffer[] srcs )
     {
         return 0;
     }

@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
  */
 public interface PrimitiveLongDiffSetsVisitor
 {
-    void visitAdded( long element ) throws ConstraintValidationException, CreateConstraintFailureException;
+    void visitAdded( long element );
 
-    void visitRemoved( long element ) throws ConstraintValidationException;
+    void visitRemoved( long element );
 }

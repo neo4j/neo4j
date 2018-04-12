@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -81,7 +81,7 @@ public class CountsComputerTest
     private PageCache pageCache;
 
     @Test
-    public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
+    public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -100,7 +100,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -131,7 +131,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -163,7 +163,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -197,7 +197,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -236,7 +236,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
+    public void shouldCreateACountStoreWhenDBContainsDenseNodes()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
@@ -316,15 +316,15 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( LOG_PROVIDER, fs, pageCache,
-                CONFIG, new File( dir, COUNTS_STORE_BASE ) );
+                CONFIG, new File( dir, COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
-    private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
+    private void rebuildCounts( long lastCommittedTransactionId )
     {
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER );
+        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

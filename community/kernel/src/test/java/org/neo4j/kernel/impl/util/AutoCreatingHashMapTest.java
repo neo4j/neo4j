@@ -33,7 +33,7 @@ import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 public class AutoCreatingHashMapTest
 {
     @Test
-    public void shouldCreateValuesIfMissing() throws Exception
+    public void shouldCreateValuesIfMissing()
     {
         // GIVEN
         Map<String, AtomicLong> map = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
@@ -49,7 +49,7 @@ public class AutoCreatingHashMapTest
     }
 
     @Test
-    public void shouldCreateValuesEvenForNestedMaps() throws Exception
+    public void shouldCreateValuesEvenForNestedMaps()
     {
         // GIVEN
         Map<String, Map<String, Map<String, AtomicLong>>> map = new AutoCreatingHashMap<>(

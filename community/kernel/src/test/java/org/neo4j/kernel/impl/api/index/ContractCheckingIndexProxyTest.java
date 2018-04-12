@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.test.DoubleLatch;
@@ -150,7 +151,7 @@ public class ContractCheckingIndexProxyTest
         IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        outer.force();
+        outer.force( IOLimiter.unlimited() );
     }
 
     @Test( expected = IllegalStateException.class )
@@ -163,7 +164,7 @@ public class ContractCheckingIndexProxyTest
         // WHEN
         outer.start();
         outer.close();
-        outer.force();
+        outer.force( IOLimiter.unlimited() );
     }
 
     @Test( expected = /* THEN */ IllegalStateException.class )
@@ -278,7 +279,7 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy inner = new IndexProxyAdapter()
         {
             @Override
-            public void force()
+            public void force( IOLimiter ioLimiter )
             {
                 try
                 {
@@ -296,7 +297,7 @@ public class ContractCheckingIndexProxyTest
         actionThreadReference.set( actionThread );
 
         outer.start();
-        Thread thread = runInSeparateThread( outer::force );
+        Thread thread = runInSeparateThread( () -> outer.force( IOLimiter.unlimited() ) );
 
         ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();

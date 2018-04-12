@@ -133,7 +133,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       Seq(ForeachPattern("i",
           ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
           RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set("i"),
-                                         Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
+                                         Selections(Set.empty), Vector.empty, Seq.empty, Set.empty,
                                          IndexedSeq(CreateNodePattern("a", Seq.empty, None))),
                               RegularQueryProjection(Map("i" -> Variable("i")(pos))), None)))
     )

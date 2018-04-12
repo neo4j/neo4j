@@ -58,7 +58,7 @@ public class ReadTransactionLogWritingTest
     private long logEntriesWrittenBeforeReadOperations;
 
     @Before
-    public void createDataset() throws IOException
+    public void createDataset()
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
@@ -75,7 +75,7 @@ public class ReadTransactionLogWritingTest
     }
 
     @Test
-    public void shouldNotWriteAnyLogCommandInPureReadTransaction() throws Exception
+    public void shouldNotWriteAnyLogCommandInPureReadTransaction()
     {
         // WHEN
         executeTransaction( getRelationships() );

@@ -170,7 +170,7 @@ public class RecoveryTest
     }
 
     @Test
-    public void recoveryOnDeletedIndex() throws Exception
+    public void recoveryOnDeletedIndex()
     {
         try ( Transaction tx = db.beginTx() )
         {

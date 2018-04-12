@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -99,7 +98,7 @@ public class DatabaseActionsTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
-    public static void createDb() throws IOException
+    public static void createDb()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
@@ -110,7 +109,7 @@ public class DatabaseActionsTest
     }
 
     @AfterClass
-    public static void shutdownDatabase() throws Throwable
+    public static void shutdownDatabase()
     {
         graph.shutdown();
     }
@@ -774,16 +773,16 @@ public class DatabaseActionsTest
         // (Emil) (Peter) (Tobias)
 
         long startNode = graphdbHelper.createNode( MapUtil.map( "name", "Root" ), LABEL );
-        long child1_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child1_l1 );
-        long child2_l1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", startNode, child2_l1 );
-        long child1_l2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child2_l1, child1_l2 );
-        long child1_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
-        graphdbHelper.createRelationship( "knows", child1_l2, child1_l3 );
-        long child2_l3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
-        graphdbHelper.createRelationship( "loves", child1_l2, child2_l3 );
+        long child1L1 = graphdbHelper.createNode( MapUtil.map( "name", "Mattias" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", startNode, child1L1 );
+        long child2L1 = graphdbHelper.createNode( MapUtil.map( "name", "Johan" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", startNode, child2L1 );
+        long child1L2 = graphdbHelper.createNode( MapUtil.map( "name", "Emil" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", child2L1, child1L2 );
+        long child1L3 = graphdbHelper.createNode( MapUtil.map( "name", "Peter" ), LABEL  );
+        graphdbHelper.createRelationship( "knows", child1L2, child1L3 );
+        long child2L3 = graphdbHelper.createNode( MapUtil.map( "name", "Tobias" ), LABEL  );
+        graphdbHelper.createRelationship( "loves", child1L2, child2L3 );
         return startNode;
     }
 
@@ -871,7 +870,7 @@ public class DatabaseActionsTest
 
         try ( Transaction transaction = graph.beginTx() )
         {
-            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            assertEquals( 2, serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.node ) ).size() );
         }
     }
@@ -947,7 +946,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.relationship ) );
         }
 
@@ -967,7 +966,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.path ) );
         }
 
@@ -989,7 +988,7 @@ public class DatabaseActionsTest
         List<Object> hits;
         try ( Transaction transaction = graph.beginTx() )
         {
-            hits = serialize( actions.traverse( startNode, new HashMap<String, Object>(),
+            hits = serialize( actions.traverse( startNode, new HashMap<>(),
                     TraverserReturnType.fullpath ) );
         }
 
@@ -1020,7 +1019,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetShortestPaths() throws Exception
+    public void shouldBeAbleToGetShortestPaths()
     {
         long[] nodes = createMoreComplexGraph();
 
@@ -1052,7 +1051,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstra() throws Exception
+    public void shouldBeAbleToGetPathsUsingDijkstra()
     {
         long[] nodes = createDijkstraGraph( true );
 
@@ -1077,7 +1076,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults() throws Exception
+    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults()
     {
         long[] nodes = createDijkstraGraph( false );
 
@@ -1172,7 +1171,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void getNodesWithLabel() throws Exception
+    public void getNodesWithLabel()
     {
         // GIVEN
         String label1 = "first";
@@ -1197,7 +1196,7 @@ public class DatabaseActionsTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
+    public void getNodesWithLabelAndSeveralPropertiesShouldFail()
     {
         // WHEN
         actions.getNodesWithLabel( "Person", map( "name", "bob", "age", 12 ) );
@@ -1221,7 +1220,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreateSchemaIndex() throws Exception
+    public void shouldCreateSchemaIndex()
     {
         // GIVEN
         String labelName = "person";
@@ -1240,7 +1239,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropSchemaIndex() throws Exception
+    public void shouldDropSchemaIndex()
     {
         // GIVEN
         String labelName = "user";
@@ -1259,7 +1258,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetSchemaIndexes() throws Exception
+    public void shouldGetSchemaIndexes()
     {
         // GIVEN
         String labelName = "mylabel";
@@ -1281,7 +1280,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreatePropertyUniquenessConstraint() throws Exception
+    public void shouldCreatePropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "person";
@@ -1300,7 +1299,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropPropertyUniquenessConstraint() throws Exception
+    public void shouldDropPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1317,7 +1316,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void dropNonExistentConstraint() throws Exception
+    public void dropNonExistentConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1337,7 +1336,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetPropertyUniquenessConstraint() throws Exception
+    public void shouldGetPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "mylabel";

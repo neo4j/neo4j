@@ -21,134 +21,78 @@ package org.neo4j.kernel.enterprise.api.security;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
- * A logged in user.
+ * A logged in and authorized user.
  */
-public interface EnterpriseSecurityContext extends SecurityContext
+public class EnterpriseSecurityContext extends SecurityContext
 {
-    @Override
-    EnterpriseSecurityContext freeze();
+    private final Set<String> roles;
+    private final boolean isAdmin;
 
-    @Override
-    EnterpriseSecurityContext withMode( AccessMode mode );
-
-    Set<String> roles();
-
-    EnterpriseSecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
-
-    /** Allows all operations. */
-    final class AuthDisabled implements EnterpriseSecurityContext
+    public EnterpriseSecurityContext( AuthSubject subject, AccessMode mode, Set<String> roles, boolean isAdmin )
     {
-        private final AccessMode mode;
-
-        private AuthDisabled( AccessMode mode )
-        {
-            this.mode = mode;
-        }
-
-        @Override
-        public EnterpriseSecurityContext freeze()
-        {
-            return this;
-        }
-
-        @Override
-        public EnterpriseSecurityContext withMode( AccessMode mode )
-        {
-            return new EnterpriseSecurityContext.AuthDisabled( mode );
-        }
-
-        @Override
-        public Set<String> roles()
-        {
-            return Collections.emptySet();
-        }
-
-        @Override
-        public AuthSubject subject()
-        {
-            return AuthSubject.AUTH_DISABLED;
-        }
-
-        @Override
-        public AccessMode mode()
-        {
-            return mode;
-        }
-
-        @Override
-        public String description()
-        {
-            return "AUTH_DISABLED with " + mode().name();
-        }
-
-        @Override
-        public String toString()
-        {
-            return defaultString( "enterprise-auth-disabled" );
-        }
-
-        @Override
-        public boolean isAdmin()
-        {
-            return true;
-        }
+        super( subject, mode );
+        this.roles = roles;
+        this.isAdmin = isAdmin;
     }
 
-    final class Frozen implements EnterpriseSecurityContext
+    @Override
+    public boolean isAdmin()
     {
-        private final AuthSubject subject;
-        private final AccessMode mode;
-        private final Set<String> roles;
-        private final boolean isAdmin;
+        return isAdmin;
+    }
 
-        public Frozen( AuthSubject subject, AccessMode mode, Set<String> roles, boolean isAdmin )
-        {
-            this.subject = subject;
-            this.mode = mode;
-            this.roles = roles;
-            this.isAdmin = isAdmin;
-        }
+    @Override
+    public EnterpriseSecurityContext authorize( Function<String, Integer> propertyIdLookup )
+    {
+        return this;
+    }
 
-        @Override
-        public boolean isAdmin()
-        {
-            return isAdmin;
-        }
+    @Override
+    public EnterpriseSecurityContext withMode( AccessMode mode )
+    {
+        return new EnterpriseSecurityContext( subject, mode, roles, isAdmin );
+    }
 
-        @Override
-        public AccessMode mode()
-        {
-            return mode;
-        }
+    /**
+     * Get the roles of the authenticated user.
+     */
+    public Set<String> roles()
+    {
+        return roles;
+    }
 
-        @Override
-        public AuthSubject subject()
-        {
-            return subject;
-        }
+    /** Allows all operations. */
+    public static final EnterpriseSecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL );
 
-        @Override
-        public EnterpriseSecurityContext freeze()
+    private static EnterpriseSecurityContext authDisabled( AccessMode mode )
+    {
+        return new EnterpriseSecurityContext( AuthSubject.AUTH_DISABLED, mode, Collections.emptySet(), true )
         {
-            return this;
-        }
 
-        @Override
-        public EnterpriseSecurityContext withMode( AccessMode mode )
-        {
-            return new EnterpriseSecurityContext.Frozen( subject, mode, roles, isAdmin );
-        }
+            @Override
+            public EnterpriseSecurityContext withMode( AccessMode mode )
+            {
+                return authDisabled( mode );
+            }
 
-        @Override
-        public Set<String> roles()
-        {
-            return roles;
-        }
+            @Override
+            public String description()
+            {
+                return "AUTH_DISABLED with " + mode().name();
+            }
+
+            @Override
+            public String toString()
+            {
+                return defaultString( "enterprise-auth-disabled" );
+            }
+        };
     }
 }

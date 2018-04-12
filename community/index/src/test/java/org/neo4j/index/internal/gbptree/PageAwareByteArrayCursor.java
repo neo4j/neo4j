@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -100,7 +101,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         currentPageId = nextPageId;
         nextPageId++;
@@ -112,7 +113,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         currentPageId = pageId;
         assertPages();
@@ -137,6 +138,18 @@ class PageAwareByteArrayCursor extends PageCursor
         for ( int i = 0; i < bytesToCopy; i++ )
         {
             targetCursor.putByte( targetOffset + i, getByte( sourceOffset + i ) );
+        }
+        return bytesToCopy;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
         }
         return bytesToCopy;
     }
@@ -379,7 +392,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
+    public PageCursor openLinkedCursor( long pageId )
     {
         PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
         if ( linkedCursor != null )
