@@ -84,30 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        int labelId = ktx.tokenWrite().labelGetOrCreateForName( "mylabel" );
-        ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
-
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        boolean removed = ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId );
-
-        // THEN
-        assertTrue( "Should have been removed now", removed );
-        tx.close();
-    }
-
-    @Test
     public void deletingNodeWithLabelsShouldHaveThoseLabelRemovalsReflectedInTransaction() throws Exception
     {
         // GIVEN

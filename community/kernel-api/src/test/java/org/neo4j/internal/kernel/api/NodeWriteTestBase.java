@@ -200,7 +200,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         try ( Transaction tx = session.beginTransaction() )
         {
             labelId = tx.token().labelGetOrCreateForName( labelName );
-            tx.dataWrite().nodeRemoveLabel( nodeId, labelId );
+            assertTrue( tx.dataWrite().nodeRemoveLabel( nodeId, labelId ) );
             tx.success();
         }
 
