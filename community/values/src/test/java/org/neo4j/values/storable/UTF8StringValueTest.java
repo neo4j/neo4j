@@ -116,10 +116,10 @@ public class UTF8StringValueTest
                 int x = stringValue( string1 ).compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
                 int y = utf8Value( string1.getBytes( UTF_8 ) ).compareTo( stringValue( string2 ) );
                 int z = utf8Value( string1.getBytes( UTF_8 ) )
-                        .compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
+                         .compareTo( utf8Value( string2.getBytes( UTF_8 ) ) );
 
-                assertThat( x, equalTo( y ) );
-                assertThat( x, equalTo( z ) );
+                assertThat( Math.signum( x ), equalTo( Math.signum( y ) ) );
+                assertThat( Math.signum( x ), equalTo( Math.signum( z ) ) );
             }
         }
     }
