@@ -154,11 +154,6 @@ public class Neo4jMetricsBuilder
                 life.add( new ClusterMetrics( dependencies.monitors(), registry, dependencies.clusterMembers() ) );
                 result = true;
             }
-            else
-            {
-                logService.getUserLog( getClass() )
-                        .warn( "Cluster metrics was enabled but the graph database is not in HA mode." );
-            }
         }
 
         if ( config.get( MetricsSettings.cypherPlanningEnabled ) )
@@ -211,12 +206,6 @@ public class Neo4jMetricsBuilder
                 life.add( new ReadReplicaMetrics( dependencies.monitors(), registry ) );
                 life.add( new CatchUpMetrics( dependencies.monitors(), registry ) );
                 result = true;
-            }
-            else
-            {
-                logService.getUserLog( getClass() )
-                        .warn( "Causal Clustering metrics was enabled but the graph database is not in Causal " +
-                                "Clustering mode." );
             }
         }
 
