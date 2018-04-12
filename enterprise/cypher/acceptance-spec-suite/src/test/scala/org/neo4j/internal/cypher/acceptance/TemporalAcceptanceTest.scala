@@ -691,13 +691,13 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
 
   test("should not provide undefined accessors for date") {
     shouldNotHaveAccessor("date", Seq("hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochMillis",
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
   test("should not provide undefined accessors for local time") {
     shouldNotHaveAccessor("localtime", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochSeconds", "epochMillis",
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
@@ -708,7 +708,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   test("should not provide undefined accessors for local date time") {
-    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "offsetMinutes", "epochSeconds", "epochSeconds", "epochMillis",
+    shouldNotHaveAccessor("localdatetime", Seq("timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis",
       "years", "months", "days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds"))
   }
 
@@ -719,7 +719,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not provide undefined accessors for duration") {
     shouldNotHaveAccessor("duration", Seq("year", "quarter", "month", "week", "weekYear", "day",  "ordinalDay", "weekDay", "dayOfQuarter",
       "hour", "minute", "second", "millisecond", "microsecond", "nanosecond",
-      "timezone", "offset", "offsetMinutes", "epochSeconds", "epochSeconds", "epochMillis"), "{days: 14, hours:16, minutes: 12}")
+      "timezone", "offset", "offsetMinutes", "offsetSeconds", "epochSeconds", "epochMillis"), "{days: 14, hours:16, minutes: 12}")
   }
 
   // Duration between
