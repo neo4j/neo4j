@@ -39,8 +39,11 @@ import java.util.stream.Stream;
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
+import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -612,15 +615,39 @@ public abstract class CompiledConversionUtils
     @SuppressWarnings( "unchecked" )
     public static Object mapGetProperty( Object object, String key )
     {
-        try
+        if ( object instanceof MapValue )
         {
             MapValue map = (MapValue) object;
             return map.get( key );
         }
-        catch ( ClassCastException e )
+        if ( object instanceof NodeProxyWrappingNodeValue )
         {
-            throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
+            return Values.of( ((NodeProxyWrappingNodeValue) object).nodeProxy().getProperty( key ) );
         }
+        if ( object instanceof RelationshipProxyWrappingValue )
+        {
+            return Values.of( ((RelationshipProxyWrappingValue) object).relationshipProxy().getProperty( key ) );
+        }
+        if ( object instanceof PropertyContainer ) // Entity that is not wrapped by an AnyValue
+        {
+            return Values.of( ((PropertyContainer) object).getProperty( key ) );
+        }
+        if ( object instanceof NodeValue )
+        {
+            return ((NodeValue) object).properties().get( key );
+        }
+        if ( object instanceof RelationshipValue )
+        {
+            return ((RelationshipValue) object).properties().get( key );
+        }
+        if ( object instanceof Map<?,?> )
+        {
+            Map<String,Object> map = (Map<String,Object>) object;
+            return map.get( key );
+        }
+        // NOTE: VirtualNodeValue and VirtualRelationshipValue will fall through to here
+        // To handle these we would need specialized cursor code
+        throw new CypherTypeException( String.format( "Type mismatch: expected a map but was %s", object ), null );
     }
 
     static class ArrayIterator implements Iterator

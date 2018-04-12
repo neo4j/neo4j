@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4
 
 import org.neo4j.cypher.internal.runtime.InternalExecutionResult
 import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite}
+import org.neo4j.kernel.impl.util.ValueUtils
 
 class TypeConversionTest extends ExecutionEngineFunSuite {
   test("should not allow adding node and number") {
@@ -31,7 +32,7 @@ class TypeConversionTest extends ExecutionEngineFunSuite {
       println(result.executionPlanDescription())
     }
 
-    failure.getMessage should equal(s"Don't know how to add `$x` and `5`")
+    failure.getMessage should equal(s"Don't know how to add `${ValueUtils.of(x)}` and `5`")
   }
 
   test("shouldHandlePatternMatchingWithParameters") {
