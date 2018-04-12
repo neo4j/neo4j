@@ -39,6 +39,33 @@ public class FieldSignature
         return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
     }
 
+    public interface InputMapper
+    {
+        Object map( Object input );
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, InputMapper mapper )
+    {
+        return new FieldSignature( name, type, null, false )
+        {
+            public Object map( Object input )
+            {
+                return mapper.map( input );
+            }
+        };
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, Neo4jValue defaultValue, InputMapper mapper )
+    {
+        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false )
+        {
+            public Object map( Object input )
+            {
+                return mapper.map( input );
+            }
+        };
+    }
+
     public static FieldSignature outputField( String name, Neo4jTypes.AnyType type )
     {
         return outputField( name, type, false );
@@ -69,6 +96,12 @@ public class FieldSignature
                         type.toString(), defaultValue.neo4jType().toString() ) );
             }
         }
+    }
+
+    /** Fields that are not supported full stack (ie. by Cypher) need to be mapped from Cypher to internal types */
+    public Object map( Object input )
+    {
+        return input;
     }
 
     public String name()

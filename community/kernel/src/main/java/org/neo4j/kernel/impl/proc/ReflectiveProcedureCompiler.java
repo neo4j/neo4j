@@ -547,6 +547,23 @@ class ReflectiveProcedureCompiler
         }
     }
 
+    private static Object[] verifyInput( String type, QualifiedName name, List<FieldSignature> inputSignature, Object[] input ) throws ProcedureException
+    {
+        // Verify that the number of passed arguments matches the number expected in the mthod signature
+        if ( inputSignature.size() != input.length )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "%s `%s` takes %d arguments but %d was provided.", type, name,
+                    inputSignature.size(), input.length );
+        }
+
+        // Some input fields are not supported by Cypher and need to be mapped
+        for ( int i = 0; i < input.length; i++ )
+        {
+            input[i] = inputSignature.get( i ).map( input[i] );
+        }
+        return input;
+    }
+
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
     {
         private final ProcedureSignature signature;
@@ -579,14 +596,8 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                int numberOfDeclaredArguments = signature.inputSignature().size();
-                if ( numberOfDeclaredArguments != input.length )
-                {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                            "Procedure `%s` takes %d arguments but %d was provided.",
-                            signature.name(),
-                            numberOfDeclaredArguments, input.length );
-                }
+                // verify and possibly map the input
+                input = verifyInput( "Procedure", signature.name(), signature.inputSignature(), input );
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -750,14 +761,8 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                int numberOfDeclaredArguments = signature.inputSignature().size();
-                if ( numberOfDeclaredArguments != input.length )
-                {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                            "Function `%s` takes %d arguments but %d was provided.",
-                            signature.name(),
-                            numberOfDeclaredArguments, input.length );
-                }
+                // verify and possibly map the input
+                input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -838,14 +843,9 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            int numberOfDeclaredArguments = signature.inputSignature().size();
-                            if ( numberOfDeclaredArguments != input.length )
-                            {
-                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                                        "Function `%s` takes %d arguments but %d was provided.",
-                                        signature.name(),
-                                        numberOfDeclaredArguments, input.length );
-                            }
+                            // verify and possibly map the input
+                            input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
+
                             // Call the method
                             updateMethod.invoke( aggregator, input );
                         }

@@ -70,6 +70,11 @@ public class Neo4jValue
         return new Neo4jValue( value, Neo4jTypes.NTMap );
     }
 
+    public static Neo4jValue ntByteArray( byte[] value )
+    {
+        return new Neo4jValue( value, Neo4jTypes.NTByteArray );
+    }
+
     public static Neo4jValue ntList( List<?> value, Neo4jTypes.AnyType inner )
     {
         return new Neo4jValue( value, Neo4jTypes.NTList( inner ) );
