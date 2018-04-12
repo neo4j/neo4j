@@ -22,7 +22,6 @@ package org.neo4j.backup.impl;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -57,7 +56,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -72,15 +70,15 @@ import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandHaIT
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
+    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( db );
 
-    private final File backupDir = testDirectory.directory( "backups" );
+    private File backupDir;
 
     @Parameter
     public String recordFormat;
@@ -110,6 +108,7 @@ public class OnlineBackupCommandHaIT
     @Before
     public void resetTasks()
     {
+        backupDir = testDirectory.directory( "backups" );
         oneOffShutdownTasks = new ArrayList<>();
     }
 
@@ -129,13 +128,13 @@ public class OnlineBackupCommandHaIT
         startDb( backupPort );
         assertEquals( "should not be able to do backup when noone is listening",
                 1,
-                runBackupTool( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
         assertEquals(
                 0,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -143,7 +142,7 @@ public class OnlineBackupCommandHaIT
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
@@ -167,7 +166,9 @@ public class OnlineBackupCommandHaIT
 
         // then backup is successful
         String ip = ":" + backupPort;
-        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=defaultport" + recordFormat ) );
+        String backupName = "usableState" + recordFormat;
+        assertEquals( 0, runBackupTool( testDirectory.absolutePath(),
+                "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + backupName ) );
         db.shutdown();
     }
 
@@ -178,7 +179,8 @@ public class OnlineBackupCommandHaIT
         startDb( backupPort );
         String ip = ":" + backupPort;
         String name = "backupWithTxLogs" + recordFormat;
-        assertEquals( 0, runBackupTool( "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+        assertEquals( 0, runBackupTool( testDirectory.absolutePath(),
+                "--from", ip, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
                 "--name=" + name ) );
         db.shutdown();
 
@@ -193,14 +195,14 @@ public class OnlineBackupCommandHaIT
     @Test
     public void backupFailsWithCatchupProtoOverride() throws Exception
     {
-        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
+        String backupName = "portOverride" + recordFormat; // due to ClassRule not cleaning between tests
 
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
         assertEquals(
                 1,
-                runBackupTool( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( testDirectory.absolutePath(), "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--proto=catchup",
@@ -211,7 +213,7 @@ public class OnlineBackupCommandHaIT
     public void backupDoesNotDisplayExceptionWhenSuccessful() throws Exception
     {
         // given
-        String backupName = "customPort" + recordFormat;
+        String backupName = "noExceptionTest_" + recordFormat;
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
@@ -226,7 +228,7 @@ public class OnlineBackupCommandHaIT
         // when
         assertEquals(
                 0,
-                runBackupTool( outputStream, errorStream,
+                runBackupTool( testDirectory.absolutePath(), outputStream, errorStream,
                         "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
@@ -270,15 +272,15 @@ public class OnlineBackupCommandHaIT
         createSomeData( db );
     }
 
-    private static int runBackupTool( PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
+    private static int runBackupTool( File neo4jHome, PrintStream outputStream, PrintStream errorStream, String... args ) throws Exception
     {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), outputStream, errorStream, false, args );
+        return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, outputStream, errorStream, false, args );
     }
 
-    private static int runBackupTool( String... args )
+    private static int runBackupTool( File neo4jHome, String... args )
             throws Exception
     {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
+        return runBackupToolFromOtherJvmToGetExitCode( neo4jHome, args );
     }
 
     private DbRepresentation getDbRepresentation()
