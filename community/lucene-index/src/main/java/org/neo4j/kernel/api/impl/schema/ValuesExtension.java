@@ -45,7 +45,7 @@ public class ValuesExtension implements Lifecycle
     public void start()
     {
         life.start();
-        Values.setNanoPrecision( configuration.get( GraphDatabaseSettings.default_temporal_nanosecond_precision ) );
+        Values.setNanoPrecision( configuration.get( GraphDatabaseSettings.temporal_nanosecond_precision ) );
     }
 
     @Override

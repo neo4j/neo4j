@@ -29,7 +29,7 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
 
   override val cypherComparisonSupport = true
 
-  override def databaseConfig() = Map(GraphDatabaseSettings.default_temporal_nanosecond_precision -> "9")
+  override def databaseConfig() = Map(GraphDatabaseSettings.temporal_nanosecond_precision -> "9")
 
   test("should seek") {
     val conf =  Configs.Interpreted - Configs.OldAndRule

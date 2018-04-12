@@ -1371,7 +1371,12 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     {
         if ( precision < 0 || precision > 9 )
         {
-            throw new InvalidValuesArgumentException( "The default_temporal_nanosecond_precision config must be an integer between 0 and 9, was " + precision );
+            throw new InvalidValuesArgumentException( "The unsupported.dbms.temporal.nanosecond_precision config " +
+                    "must be an integer between 0 and 9, was " + precision );
+        }
+        if ( precision == 9 )
+        {
+            return value;
         }
         int truncateFactor = (int) Math.pow( 10, 9 - precision );
         TEMP newValue;

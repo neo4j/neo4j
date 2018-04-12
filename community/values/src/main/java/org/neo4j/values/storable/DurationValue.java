@@ -213,8 +213,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
-        int truncateFactor = (int) Math.pow( 10, 9 - nanoPrecision );
-        nanos = nanos / truncateFactor * truncateFactor;
+        if ( nanoPrecision < 0 || nanoPrecision > 9 )
+        {
+            throw new InvalidValuesArgumentException( "The unsupported.dbms.temporal.nanosecond_precision config " +
+                    "must be an integer between 0 and 9, was " + nanoPrecision );
+        }
+        if ( nanoPrecision != 9 )
+        {
+            int truncateFactor = (int) Math.pow( 10, 9 - nanoPrecision );
+            nanos = nanos / truncateFactor * truncateFactor;
+        }
 
         seconds += nanos / NANOS_PER_SECOND;
         nanos %= NANOS_PER_SECOND;
