@@ -84,31 +84,6 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void addingExistingLabelToNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        labelId = ktx.tokenWrite().labelGetOrCreateForName( "mylabel" );
-
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-
-        boolean added = ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
-
-        tx.close();
-
-        // THEN
-        assertTrue( "Should have been added now", added );
-    }
-
-    @Test
     public void removingExistingLabelFromNodeShouldRespondTrue() throws Exception
     {
         // GIVEN
@@ -129,28 +104,6 @@ public class KernelIT extends KernelIntegrationTest
 
         // THEN
         assertTrue( "Should have been removed now", removed );
-        tx.close();
-    }
-
-    @Test
-    public void removingNonExistentLabelFromNodeShouldRespondFalse() throws Exception
-    {
-        // GIVEN
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        int labelId;
-        KernelTransaction ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        labelId = ktx.tokenWrite().labelGetOrCreateForName( "mylabel" );
-        tx.success();
-        tx.close();
-
-        // WHEN
-        tx = db.beginTx();
-        ktx = statementContextSupplier.getKernelTransactionBoundToThisThread( true );
-        boolean removed = ktx.dataWrite().nodeRemoveLabel( node.getId(), labelId );
-
-        // THEN
-        assertFalse( "Shouldn't have been removed now", removed );
         tx.close();
     }
 
