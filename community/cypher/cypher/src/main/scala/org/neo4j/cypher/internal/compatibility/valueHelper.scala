@@ -45,6 +45,7 @@ object valueHelper {
     case n: NodeProxyWrappingNodeValue => n.nodeProxy()
     case r: RelationshipProxyWrappingValue => r.relationshipProxy()
     case p: PathWrappingPathValue => p.path()
+    case a: ByteArray => a.asObjectCopy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
     case Values.NO_VALUE => null
   }

@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntIntege
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTByteArray;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDate;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDateTime;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTDuration;
@@ -139,6 +140,7 @@ public class TypeMappers extends DefaultValueMapper
         registerType( Map.class, TO_MAP );
         registerType( List.class, TO_LIST );
         registerType( Object.class, TO_ANY );
+        registerType( byte[].class, TO_BYTEARRAY );
         registerType( ZonedDateTime.class, new DefaultValueConverter( NTDateTime, ZonedDateTime.class ) );
         registerType( LocalDateTime.class, new DefaultValueConverter( NTLocalDateTime, LocalDateTime.class ) );
         registerType( LocalDate.class, new DefaultValueConverter( NTDate, LocalDate.class ) );
@@ -219,6 +221,7 @@ public class TypeMappers extends DefaultValueMapper
     private static final DefaultValueConverter TO_MAP =
             new DefaultValueConverter( NTMap, Map.class, new MapConverter() );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
+    private final DefaultValueConverter TO_BYTEARRAY = new DefaultValueConverter( NTByteArray, byte[].class, new ByteArrayConverter() );
 
     private static DefaultValueConverter toList( DefaultValueConverter inner, Type type )
     {

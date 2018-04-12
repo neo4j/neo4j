@@ -193,6 +193,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     case Neo4jTypes.NTGeometry => symbols.CTGeometry
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTByteArray => symbols.CTList(symbols.CTAny)
     case Neo4jTypes.NTDateTime => symbols.CTAny
     case Neo4jTypes.NTLocalDateTime => symbols.CTAny
     case Neo4jTypes.NTDate => symbols.CTAny
