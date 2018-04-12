@@ -1525,7 +1525,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             if ( timezone != null )
             {
-                ZoneId tz = ZoneId.of( timezone );
+                ZoneId tz = DateTimeValue.parseZoneName( timezone );
                 // Override defaultZone
                 return () -> tz;
             }
