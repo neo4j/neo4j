@@ -183,10 +183,7 @@ public final class UTF8StringValue extends StringValue
 
         byte[] values = bytes;
 
-        if ( values.length == 0 || byteLength == 0 )
-        {
-            return 0;
-        }
+        int codePointCount = 0;
 
         int i = offset;
         int len = offset + byteLength;
@@ -199,6 +196,7 @@ public final class UTF8StringValue extends StringValue
             {
                 hash = hashFunction.update( hash, b );
                 i++;
+                codePointCount++;
                 continue;
             }
 
@@ -216,11 +214,12 @@ public final class UTF8StringValue extends StringValue
             }
             int codePoint = codePoint( bytes, b, i, bytesNeeded );
             i += bytesNeeded;
+            codePointCount++;
 
             hash = hashFunction.update( hash, codePoint );
         }
 
-        return hash;
+        return hashFunction.update( hash, codePointCount );
     }
 
     @Override

@@ -74,7 +74,7 @@ public class CharArray extends TextArray
         hash = hashFunction.update( hash, value.length );
         for ( char c : value )
         {
-            hash = hashFunction.update( hash, c );
+            hash = CharValue.updateHash( hashFunction, hash, c );
         }
         return hash;
     }

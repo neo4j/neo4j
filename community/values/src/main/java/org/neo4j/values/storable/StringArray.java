@@ -79,11 +79,7 @@ public class StringArray extends TextArray
         hash = hashFunction.update( hash, value.length );
         for ( String s : value )
         {
-            int len = s.length();
-            for ( int i = 0; i < len; i++ )
-            {
-                hash = hashFunction.update( hash, s.charAt( i ) );
-            }
+            hash = StringWrappingStringValue.updateHash( hashFunction, hash, s );
         }
         return hash;
     }

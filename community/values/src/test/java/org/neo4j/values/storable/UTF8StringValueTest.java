@@ -23,13 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.hashing.HashFunction;
-
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
@@ -160,10 +157,8 @@ public class UTF8StringValueTest
         assertThat( format( "%s != %s", lhs, rhs ), lhs, equalTo( rhs ) );
         assertThat( format( "%s != %s", rhs, lhs ), rhs, equalTo( lhs ) );
         assertThat( format( "%s.hashCode != %s.hashCode", rhs, lhs ), lhs.hashCode(), equalTo( rhs.hashCode() ) );
-        HashFunction xxh64 = HashFunction.incrementalXXH64();
-        assertThat( format( "%s.updateHash != %s.updateHash", rhs, lhs ),
-                xxh64.finalise( lhs.updateHash( xxh64, xxh64.initialise( 123456 ) ) ),
-                equalTo( xxh64.finalise( rhs.updateHash( xxh64, xxh64.initialise( 123456 ) ) ) ) );
+        assertThat( format( "%s.hashCode64 != %s.hashCode64", rhs, lhs ),
+                lhs.hashCode64(), equalTo( rhs.hashCode64() ) );
         assertThat( lhs, equalTo( rhs ) );
     }
 
