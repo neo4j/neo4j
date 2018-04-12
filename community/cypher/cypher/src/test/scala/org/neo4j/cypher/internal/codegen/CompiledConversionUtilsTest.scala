@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.storable._
 
 import scala.collection.JavaConverters._
 
@@ -41,15 +39,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (Array(), false),
     (Array(1), true),
     (Array("foo"), true),
-    (Array[Int](), false),
-
-    (Values.booleanValue(true), true),
-    (Values.booleanValue(false), false),
-    (Values.NO_VALUE, false),
-    (Values.stringArray(), false),
-    (Values.longArray(Array(1)), true),
-    (Values.stringArray("foo"), true),
-    (Values.intArray(Array[Int]()), false)
+    (Array[Int](), false)
   )
 
   testPredicates.foreach {
@@ -62,6 +52,29 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   test("should throw for string and int") {
     intercept[CypherTypeException](CompiledConversionUtils.coerceToPredicate("APA"))
     intercept[CypherTypeException](CompiledConversionUtils.coerceToPredicate(12))
+  }
+
+  test("should convert List") {
+    val col = CompiledConversionUtils.toCollection(List("a", "b", "c").asJava)
+
+    col shouldBe a[java.util.Collection[_]]
+    col.asScala.toSeq should equal(Seq("a", "b", "c"))
+  }
+
+  test("should throw if converting from non-collection") {
+    intercept[CypherTypeException](CompiledConversionUtils.toCollection("this is not a collection"))
+  }
+
+  test("should handle null") {
+    CompiledConversionUtils.toCollection(null) shouldBe empty
+  }
+
+  test("should be able to turn an array into a collection") {
+    CompiledConversionUtils.toCollection(Array("a", 42L)).asScala.toList should equal(List("a", 42))
+  }
+
+  test("should be able to turn a primitive array into a collection") {
+    CompiledConversionUtils.toCollection(Array(1337L, 42L)).asScala.toList should equal(List(1337L, 42))
   }
 
   test("should be able to use a composite key in a hash map") {
@@ -82,29 +95,25 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     CompiledConversionUtils.toSet(LongStream.of(1L, 2L, 3L, 1L)) should equal(Set(1L, 2L, 3L).asJava)
     CompiledConversionUtils.toSet(DoubleStream.of(1.1, 2.2, 3.3, 1.1)) should equal(Set(1.1, 2.2, 3.3).asJava)
     CompiledConversionUtils.toSet(Array(1, 1, 3, 2)) should equal(Set(1, 2, 3).asJava)
-    // Values
-    CompiledConversionUtils.toSet(Values.NO_VALUE) should equal(Set.empty.asJava)
-    CompiledConversionUtils.toSet(Values.of(Array(1, 1, 3, 2))) should equal(Set(Values.intValue(1), Values.intValue(2), Values.intValue(3)).asJava)
-    CompiledConversionUtils.toSet(ValueUtils.of(List(1, 1, 2, 3).asJava)) should equal(Set(Values.intValue(1), Values.intValue(2), Values.intValue(3)).asJava)
   }
 
   val testMakeSafe = Seq(
-    Array(1, 2, 3) -> classOf[IntArray],
-    Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3)) -> classOf[ByteArray],
-    Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3)) -> classOf[ShortArray],
-    Array[AnyRef](Byte.box(1), Long.box(2), Short.box(3)) -> classOf[LongArray],
-    Array[AnyRef](Double.box(1), Long.box(2), Float.box(3)) -> classOf[DoubleArray],
-    Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3)) -> classOf[FloatArray],
-    Array[AnyRef]("foo", "bar", "baz") -> classOf[StringArray],
-    Array[AnyRef](Boolean.box(true), Boolean.box(false)) -> classOf[BooleanArray],
+    Array(1, 2, 3) -> classOf[Array[Int]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3)) -> classOf[Array[java.lang.Byte]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3)) -> classOf[Array[java.lang.Short]],
+    Array[AnyRef](Byte.box(1), Long.box(2), Short.box(3)) -> classOf[Array[java.lang.Long]],
+    Array[AnyRef](Double.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Double]],
+    Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Float]],
+    Array[AnyRef]("foo", "bar", "baz") -> classOf[Array[java.lang.String]],
+    Array[AnyRef](Boolean.box(true), Boolean.box(false)) -> classOf[Array[java.lang.Boolean]],
 
-    List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava -> classOf[ByteArray],
-    List(Byte.box(1), Byte.box(2), Short.box(3)).asJava -> classOf[ShortArray],
-    List(Byte.box(1), Long.box(2), Short.box(3)).asJava -> classOf[LongArray],
-    List(Double.box(1), Long.box(2), Float.box(3)).asJava -> classOf[DoubleArray],
-    List(Byte.box(1), Long.box(2), Float.box(3)).asJava -> classOf[FloatArray],
-    List("foo", "bar", "baz").asJava -> classOf[StringArray],
-    List(Boolean.box(true), Boolean.box(false)).asJava -> classOf[BooleanArray]
+    List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava -> classOf[Array[java.lang.Byte]],
+    List(Byte.box(1), Byte.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Short]],
+    List(Byte.box(1), Long.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Long]],
+    List(Double.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Double]],
+    List(Byte.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Float]],
+    List("foo", "bar", "baz").asJava -> classOf[Array[java.lang.String]],
+    List(Boolean.box(true), Boolean.box(false)).asJava -> classOf[Array[java.lang.Boolean]]
   )
 
   testMakeSafe.foreach {
@@ -112,16 +121,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       test(s"$v should have type $t") {
         makeValueNeoSafe(v).getClass should equal(t)
       }
-  }
-
-  private var i = 0
-  testMakeSafe.foreach {
-    case (v, t) =>
-      val av = ValueUtils.of(v)
-      test(s"AnyValue $av should have type $t ($i)") {
-        makeValueNeoSafe(av).getClass should equal(t)
-      }
-      i += 1
   }
 
   val testEquality = Seq(
@@ -158,31 +157,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
       }
   }
 
-  testEquality.foreach {
-    case ((v1, v2), expected) =>
-      val av1 = ValueUtils.of(v1)
-      val av2 = ValueUtils.of(v2)
-      test(s"${av1} == ${av2}") {
-        CompiledConversionUtils.equals _ tupled (av1 -> av2) should equal(expected)
-      }
-  }
-
-  testEquality.foreach {
-    case ((v1, v2), expected) =>
-      val av1 = ValueUtils.of(v1)
-      test(s"${av1} == ${v2}") {
-        CompiledConversionUtils.equals _ tupled (av1 -> v2) should equal(expected)
-      }
-  }
-
-  testEquality.foreach {
-    case ((v1, v2), expected) =>
-      val av2 = ValueUtils.of(v2)
-      test(s"${v1} == ${av2}") {
-        CompiledConversionUtils.equals _ tupled (v1 -> av2) should equal(expected)
-      }
-  }
-
   val testOr = Seq(
     (null, true) -> true,
     (null, false) -> null,
@@ -191,35 +165,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (true, true) -> true,
     (true, false) -> true,
     (false, true) -> true,
-    (false, false) -> false,
-
-    (Values.NO_VALUE, Values.booleanValue(true)) -> true,
-    (Values.NO_VALUE, Values.booleanValue(false)) -> null,
-    (Values.booleanValue(true), Values.NO_VALUE) -> true,
-    (Values.booleanValue(false), Values.NO_VALUE) -> null,
-    (Values.booleanValue(true), Values.booleanValue(true)) -> true,
-    (Values.booleanValue(true), Values.booleanValue(false)) -> true,
-    (Values.booleanValue(false), Values.booleanValue(true)) -> true,
-    (Values.booleanValue(false), Values.booleanValue(false)) -> false,
-
-    (null, Values.booleanValue(true)) -> true,
-    (null, Values.booleanValue(false)) -> null,
-    (true, Values.NO_VALUE) -> true,
-    (false, Values.NO_VALUE) -> null,
-    (true, Values.booleanValue(true)) -> true,
-    (true, Values.booleanValue(false)) -> true,
-    (false, Values.booleanValue(true)) -> true,
-    (false, Values.booleanValue(false)) -> false,
-
-    (Values.NO_VALUE, true) -> true,
-    (Values.NO_VALUE, false) -> null,
-    (Values.booleanValue(true), null) -> true,
-    (Values.booleanValue(false), null) -> null,
-    (Values.booleanValue(true), true) -> true,
-    (Values.booleanValue(true), false) -> true,
-    (Values.booleanValue(false), true) -> true,
-    (Values.booleanValue(false), false) -> false
-  )
+    (false, false) -> false)
 
   testOr.foreach {
     case (v, expected) =>
@@ -231,11 +177,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   val testNot = Seq(
     (null, null),
     (false, true),
-    (true, false),
-
-    (Values.NO_VALUE, null),
-    (Values.booleanValue(false), true),
-    (Values.booleanValue(true), false)
+    (true, false)
   )
 
   testNot.foreach {
@@ -244,4 +186,9 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
         CompiledConversionUtils.not(v) should equal(expected)
       }
   }
+
+  private val node = mock[Node]
+  when(node.getId).thenReturn(11L)
+  private val rel = mock[Relationship]
+  when(rel.getId).thenReturn(13L)
 }

@@ -97,7 +97,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         {
             return false;
         }
-        // TODO: This can be an assert
         List<Double> otherCoordinate = other.getCoordinate().getCoordinate();
         if ( otherCoordinate.size() != this.coordinate.length )
         {
@@ -128,7 +127,6 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             return cmpCRS;
         }
 
-        // TODO: This is unnecessary and can be an assert. Is it even correct? This implies e.g. that all 2D points are before all 3D regardless of x and y
         if ( this.coordinate.length > other.coordinate.length )
         {
             return 1;

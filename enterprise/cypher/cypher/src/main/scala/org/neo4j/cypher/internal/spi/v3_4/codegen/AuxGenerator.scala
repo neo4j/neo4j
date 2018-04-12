@@ -19,20 +19,16 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.util
-
 import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_4.common.CypherOrderability
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
-import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.mutable
 
@@ -72,14 +68,10 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
         body.assign(body.declare(clazz.handle(), otherName), Expression.cast(clazz.handle(), body.load("other")))
 
         body.returns(tupleDescriptor.structure.map {
-          case (fieldName, fieldType @ CypherCodeGenType(_, _: AnyValueType)) =>
-            val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
-            Expression.invoke(Expression.get(body.self(), fieldReference),
-              method[AnyValue, Boolean]("equals", typeRef[Object]), Expression.get(body.load(otherName), fieldReference))
-
           case (fieldName, fieldType) =>
             val fieldReference = field(clazz.handle(), lowerType(fieldType), fieldName)
             Expression.invoke(method[CompiledEquivalenceUtils, Boolean]("equals", typeRef[Object], typeRef[Object]),
+
                               Expression.box(
                                 Expression.get(body.self(), fieldReference)),
                               Expression.box(
@@ -154,7 +146,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
             codeGenType match {
               // TODO: Primitive nodes and relationships including correct ordering of nulls
               // TODO: Extract shared code between cases
-              case CypherCodeGenType(symbols.CTInteger, reprType) if RepresentationType.isPrimitive(reprType) => {
+              case CypherCodeGenType(symbols.CTInteger, reprType) => {
                 /*
                 E.g.
                 long thisValue_a = this.a
@@ -175,7 +167,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(Expression.constant(greaterThanSortResult(sortOrder)))
                 }
               }
-              case CypherCodeGenType(symbols.CTFloat, reprType) if RepresentationType.isPrimitive(reprType) => {
+              case CypherCodeGenType(symbols.CTFloat, reprType) => {
                 // We use Double.compare(double, double) which handles float equality properly
                 /*
                 E.g.
@@ -202,7 +194,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                   l3.returns(compareResult)
                 }
               }
-              case CypherCodeGenType(symbols.CTBoolean, reprType) if RepresentationType.isPrimitive(reprType) => {
+              case CypherCodeGenType(symbols.CTBoolean, reprType) => {
                 /*
                 E.g.
                 boolean thisValue_a = this.a
@@ -231,21 +223,9 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 // Invoke compare with the parameter order of the fields based on the sort order
                 val (lhs, rhs) = rearrangeInSortOrder(thisField, otherField, sortOrder)
 
-                val compareExpression = codeGenType.repr match {
-                  case ValueType =>
-                    val comparator = Templates.valueComparator
-                    Expression.invoke(comparator, method[util.Comparator[Value], Int]("compare", typeRef[Object], typeRef[Object]),
-                      Expression.cast(typeRef[Value], lhs), Expression.cast(typeRef[Value], rhs))
-
-                  case _: AnyValueType =>
-                    val comparator = Templates.anyValueComparator
-                    Expression.invoke(comparator, method[util.Comparator[AnyValue], Int]("compare", typeRef[Object], typeRef[Object]), lhs, rhs)
-
-                  case _ =>
-                    Expression.invoke(method[CypherOrderability, Int]("compare", typeRef[Object], typeRef[Object]), lhs, rhs)
-                }
-
-                l2.assign(compareResult, compareExpression)
+                l2.assign(compareResult,
+                  Expression.invoke(method[CypherOrderability, Int]("compare", typeRef[Object], typeRef[Object]),
+                    lhs, rhs))
                 using(l2.ifStatement(Expression.notEqual(compareResult, Expression.constant(0)))) { l3 =>
                   l3.returns(compareResult)
                 }

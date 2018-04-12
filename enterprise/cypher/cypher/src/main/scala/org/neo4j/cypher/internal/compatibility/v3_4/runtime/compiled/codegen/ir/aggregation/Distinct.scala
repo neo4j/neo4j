@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.Instruction
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.{HashableTupleDescriptor, MethodStructure}
 
 case class Distinct(opName: String, setName: String, vars: Iterable[(String, CodeGenExpression)])
@@ -39,15 +39,10 @@ case class Distinct(opName: String, setName: String, vars: Iterable[(String, Cod
     vars.foreach {
       case (variable, expr) =>
         generator.declare(variable, expr.codeGenType)
-        val generatedExpression =
-          if (expr.needsJavaNullCheck) {
-            // If we get null in an ReferenceType we convert it to NO_VALUE to avoid keeping both null and NO_VALUE in the set
-            generator.ifNullThenNoValue(expr.generateExpression(generator))
-          } else {
-            expr.generateExpression(generator)
-          }
-        // Only materialize in produce results
-        generator.assign(variable, expr.codeGenType, generatedExpression)
+        if (expr.codeGenType == CodeGenType.Any) generator.assign(variable, expr.codeGenType,
+                                                                  generator
+                                                                    .materializeAny(expr.generateExpression(generator)))
+        else generator.assign(variable, expr.codeGenType, expr.generateExpression(generator))
     }
     generator.distinctSetIfNotContains(setName,
                                        vars.map(v => v._1 -> (v._2.codeGenType ->

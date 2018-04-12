@@ -24,39 +24,21 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
   */
 sealed trait RepresentationType
 
-case object IntType extends RepresentationType // Primitive int
+case object IntType extends RepresentationType
 
-case object LongType extends RepresentationType // Primitive long
+case object LongType extends RepresentationType
 
-case object BoolType extends RepresentationType // Primitive boolean
+case object BoolType extends RepresentationType
 
-case object FloatType extends RepresentationType // Primitive double
+case object FloatType extends RepresentationType
 
-sealed trait ReferenceType extends RepresentationType // Boxed type (Object)
-
-case object ReferenceType extends ReferenceType
-
-sealed trait AnyValueType extends ReferenceType
-
-case object AnyValueType extends AnyValueType
-
-case object ValueType extends AnyValueType
+case object ReferenceType extends RepresentationType
 
 case class ListReferenceType(inner: RepresentationType) extends RepresentationType
 
 object RepresentationType {
   def isPrimitive(repr: RepresentationType): Boolean = repr match {
     case IntType | LongType | FloatType | BoolType => true
-    case _ => false
-  }
-
-  def isValue(repr: RepresentationType): Boolean = repr match {
-    case ValueType => true
-    case _ => false
-  }
-
-  def isAnyValue(repr: RepresentationType): Boolean = repr match {
-    case AnyValueType | ValueType => true
     case _ => false
   }
 }

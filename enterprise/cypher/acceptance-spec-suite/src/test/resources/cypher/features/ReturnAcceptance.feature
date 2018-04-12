@@ -96,3 +96,25 @@ Feature: ReturnAcceptance
       | result |
       | null   |
     And no side effects
+
+  Scenario: Return a nested list with null
+    Given any graph
+    When executing query:
+      """
+      RETURN [[1], null] AS result
+      """
+    Then the result should be:
+      | result |
+      | [[1], null]   |
+    And no side effects
+
+  Scenario: Return a map with null
+    Given any graph
+    When executing query:
+      """
+      RETURN {foo: null} AS result
+      """
+    Then the result should be:
+      | result |
+      | {foo: null}   |
+    And no side effects

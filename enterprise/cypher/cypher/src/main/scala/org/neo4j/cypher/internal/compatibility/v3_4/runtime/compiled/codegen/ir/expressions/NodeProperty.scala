@@ -64,7 +64,7 @@ case class NodeProperty(token: Option[Int], propName: String, nodeIdVar: Variabl
     else
       body.nodeGetPropertyById(nodeIdVar.name, nodeIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }
 
 case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable, propKeyVar: String)
@@ -86,5 +86,5 @@ case class RelProperty(token: Option[Int], propName: String, relIdVar: Variable,
     else
       body.relationshipGetPropertyById(relIdVar.name, relIdVar.codeGenType, token.get, localName)
 
-  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Value
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.Any
 }

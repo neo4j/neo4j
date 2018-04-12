@@ -29,7 +29,7 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{AnyValueType, BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
@@ -47,7 +47,7 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue, VirtualValues}
+import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
 
 import scala.collection.mutable
 
@@ -214,19 +214,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def ifNonNullStatement(test: Expression, codeGenType: CodeGenType)(block: (MethodStructure[Expression]) => Unit) = {
-    val notNullExpression: Expression =
-      codeGenType match {
-        case CodeGenType.primitiveNode | CodeGenType.primitiveRel | CypherCodeGenType(_, _: AnyValueType) =>
-          Expression.notEqual(test, nullValue(codeGenType))
-
-        case CypherCodeGenType(_, ReferenceType) =>
-          Expression.and(Expression.notNull(test), Expression.notEqual(test, noValue()))
-
-        case _ =>
-          throw new IllegalArgumentException(s"CodeGenType $codeGenType does not have a null value")
-      }
-    using(generator.ifStatement(notNullExpression)) { body =>
+  override def ifNonNullStatement(test: Expression)(block: (MethodStructure[Expression]) => Unit) = {
+    using(generator.ifStatement(Expression.notNull(test))) { body =>
       block(copy(generator = body))
     }
   }
@@ -278,72 +267,38 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def setInRow(column: Int, value: Expression) =
     generator.expression(invoke(resultRow, set, constant(column), value))
 
-  override def toMaterializedAnyValue(expression: Expression, codeGenType: CodeGenType): Expression =
-    toAnyValue(expression, codeGenType, materializeEntities = true)
 
-  override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression =
-    toAnyValue(expression, codeGenType, materializeEntities = false)
-
-  // NOTE: This method assumes that code for converting from null to NoValue for nullable expressions has already been generated outside it
-  private def toAnyValue(expression: Expression, codeGenType: CodeGenType, materializeEntities: Boolean): Expression = codeGenType match {
-    case CypherCodeGenType(_, _: AnyValueType) =>
-      expression // Already an AnyValue
-
-    // == Node ==
+  override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression = codeGenType match {
     case CodeGenType.primitiveNode =>
-      if (materializeEntities)
-        createNewNodeValueFromPrimitive(nodeManager, expression)
-      else
-        createNewInstance(typeRef[NodeIdWrapperImpl], (typeRef[Long], expression))
-
-    case CypherCodeGenType(CTNode, _) => // NOTE: This may already be a NodeValue
-      invoke(method[ValueUtils, NodeValue]("asNodeValue", typeRef[Object]), expression)
-
-    // == Relationship ==
+      invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
+             invoke(nodeManager, newNodeProxyById, expression))
+    case CypherCodeGenType(CTNode, _) =>
+      invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
     case CodeGenType.primitiveRel =>
-      if (materializeEntities)
-        createNewRelationshipValueFromPrimitive(nodeManager, expression)
-      else
-        createNewInstance(typeRef[RelationshipIdWrapperImpl], (typeRef[Long], expression))
-
-    case CypherCodeGenType(CTRelationship, _) => // NOTE: This may already be a RelationshipValue
-      invoke(method[ValueUtils, RelationshipValue]("asRelationshipValue", typeRef[Object]), expression)
-
-    // == Integer ==
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Node]),
+             invoke(nodeManager, newRelationshipProxyById, expression))
+    case CypherCodeGenType(CTRelationship, _) =>
+      invoke(method[ValueUtils, RelationshipValue]("fromRelationshipProxy", typeRef[Relationship]),
+             cast(typeRef[Relationship], expression))
     case CodeGenType.primitiveInt =>
       invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)
-
-    case CypherCodeGenType(CTInteger, _) => // NOTE: This may already be a LongValue
-      invoke(method[ValueUtils, LongValue]("asLongValue", typeRef[Object]), expression)
-
-    // == Float ==
+    case CypherCodeGenType(CTInteger, _) =>
+      invoke(method[Values, LongValue]("longValue", typeRef[Long]), Expression.unbox(cast(typeRef[java.lang.Long],
+                                                                                          expression)))
     case CodeGenType.primitiveFloat =>
       invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), expression)
-
-    case CypherCodeGenType(symbols.CTFloat, _) => // NOTE: This may already be a DoubleValue
-      invoke(method[ValueUtils, DoubleValue]("asDoubleValue", typeRef[Object]), expression)
-
-    // == Boolean ==
+    case CypherCodeGenType(symbols.CTFloat, _) =>
+      invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), Expression.unbox(cast(typeRef[java.lang.Double],
+                                                                                              expression)))
     case CodeGenType.primitiveBool =>
       invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), expression)
-
-    case CypherCodeGenType(symbols.CTBoolean, _) => // NOTE: This may already be a BooleanValue
-      invoke(method[ValueUtils, BooleanValue]("asBooleanValue", typeRef[Object]), expression)
-
-    // == String ==
-    case CypherCodeGenType(symbols.CTString, _) => // NOTE: This may already be a StringValue
-      invoke(method[ValueUtils, TextValue]("asTextValue", typeRef[Object]), expression)
-
-    // TODO: Primitive list values
-    //    case CypherCodeGenType(ListType(CTNode), ListReferenceType(LongType)) =>
-    //    case CypherCodeGenType(ListType(CTRelationship), ListReferenceType(LongType)) =>
-    //    case CypherCodeGenType(_, ListReferenceType(LongType)) =>
-    //    case CypherCodeGenType(_, ListReferenceType(FloatType)) =>
-    //    case CypherCodeGenType(_, ListReferenceType(BoolType)) =>
-
+    case CypherCodeGenType(symbols.CTBoolean, _) =>
+      invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), Expression.unbox(cast(typeRef[java.lang.Boolean],
+                                                                                                expression)))
+    case CypherCodeGenType(symbols.CTString, _) =>
+      invoke(method[Values, TextValue]("stringValue", typeRef[String]), cast(typeRef[String], expression))
     case _ =>
-      // This also allows things that are already AnyValue (as opposed to ValueUtils.of). We do not always know this at compile time.
-      invoke(method[ValueUtils, AnyValue]("asAnyValue", typeRef[Object]), expression)
+      invoke(method[ValueUtils, AnyValue]("of", typeRef[Object]), expression)
 
   }
 
@@ -376,8 +331,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def materializeNode(nodeIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive)
       invoke(nodeManager, newNodeProxyById, generator.load(nodeIdVar))
-    else if (codeGenType.isAnyValue)
-      invoke(materializeNodeValue, nodeManager, generator.load(nodeIdVar))
     else
       invoke(nodeManager, newNodeProxyById,
         invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId))
@@ -386,7 +339,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (codeGenType.isPrimitive) generator.load(nodeIdVar)
     else invoke(cast(typeRef[NodeIdWrapper], generator.load(nodeIdVar)), nodeId)
 
-  // Unused in production
   override def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
     case CypherCodeGenType(CTNode, LongType) | CypherCodeGenType(CTRelationship, LongType) =>
       ternary(
@@ -397,7 +349,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: Expression) = codeGenType match {
-    case CypherCodeGenType(CTNode, LongType) | CypherCodeGenType(CTRelationship, LongType) | CypherCodeGenType(_, _: AnyValueType) =>
+    case CypherCodeGenType(CTNode, LongType) | CypherCodeGenType(CTRelationship, LongType) =>
       ternary(
         equal(nullValue(codeGenType), generator.load(varName)),
         constant(null),
@@ -408,8 +360,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def materializeRelationship(relIdVar: String, codeGenType: CodeGenType) =
     if (codeGenType.isPrimitive)
       invoke(nodeManager, newRelationshipProxyById, generator.load(relIdVar))
-    else if (codeGenType.isAnyValue)
-      invoke(materializeRelationshipValue, nodeManager, generator.load(relIdVar))
     else
       invoke(nodeManager, newRelationshipProxyById,
         invoke(cast(typeRef[RelationshipIdWrapper], generator.load(relIdVar)), relId))
@@ -446,8 +396,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       generator.ifStatement(not(invoke(params,  method[MapValue, Boolean]("containsKey", typeRef[String]), constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-    val invokeLoadParameter = invoke(params, method[MapValue, AnyValue]("get", typeRef[String]), constantExpression(key))
-
+    val invokeLoadParameter = invoke(loadParameter,
+                                     invoke(params, method[MapValue, AnyValue]("get", typeRef[String]), constantExpression(key)),
+                                     get(generator.self(), fields.entityAccessor))
     generator.assign(lowerType(codeGenType), variableName,
       // We assume the value in the parameter map will always be boxed, so if we are declaring
       // a primitive variable we need to force it to be unboxed
@@ -466,8 +417,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
           Expression.unbox(Expression.cast(typeRef[java.lang.Boolean], invokeLoadParameter))
         case CypherCodeGenType(_, ListReferenceType(repr)) if RepresentationType.isPrimitive(repr) =>
           asPrimitiveStream(invokeLoadParameter, codeGenType)
-        case CypherCodeGenType(_, _: AnyValueType) =>
-          Expression.cast(typeRef[AnyValue], invokeLoadParameter)
         case _ => invokeLoadParameter
       }
     )
@@ -479,12 +428,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def constantExpression(value: AnyRef) = constant(value)
-
-  override def constantValueExpression(value: AnyRef, codeGenType: CodeGenType) =
-    if (codeGenType.isPrimitive)
-      invoke(method[Values,Value]("of", typeRef[AnyRef]), box(constant(value), codeGenType))
-    else
-      invoke(method[Values,Value]("of", typeRef[AnyRef]), constant(value))
 
   override def notExpression(value: Expression): Expression = not(value)
 
@@ -519,17 +462,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def isNull(varName: String, codeGenType: CodeGenType) = isNull(generator.load(varName), codeGenType)
 
-  override def isNull(expr: Expression, codeGenType: CodeGenType) = {
-    equal(nullValue(codeGenType), expr)
-  }
+  override def isNull(expr: Expression, codeGenType: CodeGenType) = equal(nullValue(codeGenType), expr)
 
   override def notNull(expr: Expression, codeGenType: CodeGenType) = not(isNull(expr, codeGenType))
 
   override def notNull(varName: String, codeGenType: CodeGenType) = notNull(generator.load(varName), codeGenType)
-
-  override def ifNullThenNoValue(expr: Expression) = {
-    ternary(Expression.isNull(expr), noValue(), expr)
-  }
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CypherCodeGenType(symbols.CTNode, LongType) =>
@@ -658,10 +595,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case SemanticDirection.BOTH => Templates.both
   }
 
-  // Unused
   override def asList(values: Seq[Expression]) = Templates.asList[Object](values)
-
-  override def asAnyValueList(values: Seq[Expression]) = Templates.asAnyValueList(values)
 
   override def asPrimitiveStream(publicTypeList: Expression, codeGenType: CodeGenType) = {
     codeGenType match {
@@ -674,13 +608,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         // short[]
         // int[]
         // long[]
+        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[LongStream], "toLongStream", typeRef[Object]), publicTypeList)
       case CypherCodeGenType(_, ListReferenceType(FloatType)) =>
         // float[]
         // double[]
+        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[DoubleStream], "toDoubleStream", typeRef[Object]), publicTypeList)
       case CypherCodeGenType(_, ListReferenceType(BoolType)) =>
         // boolean[]
+        // Object[]
         Expression.invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[IntStream], "toBooleanStream", typeRef[Object]), publicTypeList)
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType not supported as primitive stream")
@@ -746,7 +683,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       case _ => throw new IllegalArgumentException(s"CodeGenType $iterableCodeGenType not supported as primitive iterator")
     }
 
-  // Unused
   override def primitiveIteratorHasNext(iterator: Expression, iterableCodeGenType: CodeGenType) =
     iterableCodeGenType match {
       case CypherCodeGenType(symbols.ListType(_), ListReferenceType(LongType)) =>
@@ -761,11 +697,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def declareIterator(name: String): Unit = {
     val variable = generator.declare(typeRef[JIterator[Object]], name)
-    locals += (name -> variable)
-  }
-
-  override def declareIterator(name: String, elementCodeGenType: CodeGenType): Unit = {
-    val variable = generator.declare(parameterizedType(classOf[JIterator[_]], lowerType(elementCodeGenType)), name)
     locals += (name -> variable)
   }
 
@@ -1163,13 +1094,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  // This version is for when maps contains AnyValues
+  override def castToCollection(value: Expression) = invoke(Methods.toCollection, value)
+
   override def asMap(map: Map[String, Expression]) = {
-    invoke(method[VirtualValues, MapValue]("map", typeRef[java.util.Map[String,AnyValue]]),
-      invoke(Methods.createAnyValueMap,
-             newArray(typeRef[Object], map.flatMap {
-               case (key, value) => Seq(constant(key), value)
-             }.toSeq: _*)))
+    invoke(Methods.createMap,
+           newArray(typeRef[Object], map.flatMap {
+             case (key, value) => Seq(constant(key), value)
+           }.toSeq: _*))
   }
 
   override def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)
@@ -1392,9 +1323,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def declareProperty(propertyVar: String) = {
-    val localVariable = generator.declare(typeRef[Value], propertyVar)
+    val localVariable = generator.declare(typeRef[Object], propertyVar)
     locals += (propertyVar -> localVariable)
-    generator.assign(localVariable, noValue)
+    generator.assign(localVariable, constant(null))
   }
 
   override def declareAndInitialize(varName: String, codeGenType: CodeGenType) = {
@@ -1452,8 +1383,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def localVariable(variable: String, e: Expression, codeGenType: CodeGenType): Unit = {
-    val local = generator.declare(lowerType(codeGenType), variable)
+  override def localVariable(variable: String, e: Expression): Unit = {
+    val local = generator.declare(e.`type`(), variable)
     generator.assign(local, e)
   }
 
@@ -1475,15 +1406,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
+                  invoke(
+                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "nodeGetProperty",
                                       typeRef[Read], typeRef[NodeCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType), propertyCursor, body.load(propIdVar))
-      )
+                  ))
     } { fail =>
-      fail.assign(local, noValue())
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1491,15 +1424,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
+                  invoke(
+                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "nodeGetProperty",
                                       typeRef[Read], typeRef[NodeCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, nodeCursor, forceLong(nodeVar, nodeVarType),  propertyCursor, constant(propId))
-      )
+                  ))
     }{ fail =>
-      fail.assign(local, noValue())
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1507,8 +1442,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     codeGenType match {
       case CypherCodeGenType(CTInteger, LongType) =>
         generator.assign(typeRef[Long], nodeIdVar, expression)
-      case CypherCodeGenType(CTInteger, _: AnyValueType) =>
-        generator.assign(typeRef[Long], nodeIdVar, invoke(cast(typeRef[NumberValue], expression), method[NumberValue, Long]("longValue")))
       case CypherCodeGenType(CTInteger, ReferenceType) =>
         generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
       case _ =>
@@ -1526,15 +1459,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
+                  invoke(
+                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "relationshipGetProperty",
                                       typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType), propertyCursor, body.load(propIdVar))
-      )
+                  ))
     } { fail =>
-      fail.assign(local, noValue())
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1542,15 +1477,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val local = locals(propValueVar)
     handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
+                  invoke(
+                    reboxValue,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
                                       typeRef[Value], "relationshipGetProperty",
                                       typeRef[Read], typeRef[RelationshipScanCursor], typeRef[Long],
                                       typeRef[PropertyCursor], typeRef[Int]),
                       dataRead, relationshipScanCursor, forceLong(relIdVar, relVarType),  propertyCursor, constant(propId))
-      )
+                  ))
     }{ fail =>
-      fail.assign(local, noValue())
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1630,7 +1567,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   //Forces variable to be of type long or fails accordingly
   private def forceLong(name: String, typ: CodeGenType): Expression = typ.repr match {
     case LongType => generator.load(name)
-    case _: ReferenceType =>
+    case ReferenceType =>
       invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Long], "extractLong", typeRef[Object]), generator.load(name))
     case _ => throw new IllegalStateException(s"$name has type $typ which cannot be represented as a long")
   }

@@ -36,8 +36,9 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
     (aVal, bVal) match {
       case (_, l:IntegralValue) if l.longValue() == 0L  => throw new ArithmeticException("/ by zero")
+      case (_, l:DoubleValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
+      case (_, l:FloatValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
       case (x: DurationValue, y: NumberValue) => x.div(y)
-      // Floating point division should not throw "/ by zero"
       case _ => applyWithValues(aVal, bVal)
     }
   }
