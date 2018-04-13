@@ -100,10 +100,11 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     public void shouldSeeLabelChangesInTransaction() throws Exception
     {
         long nodeId;
-        int toRetain, toDelete, toAdd;
+        int toRetain, toDelete, toAdd, toRegret;
         final String toRetainName = "ToRetain";
         final String toDeleteName = "ToDelete";
         final String toAddName = "ToAdd";
+        final String toRegretName = "ToRegret";
 
         try ( Transaction tx = session.beginTransaction() )
         {
@@ -127,6 +128,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             toAdd = tx.token().labelGetOrCreateForName( toAddName );
             tx.dataWrite().nodeAddLabel( nodeId, toAdd );
             tx.dataWrite().nodeRemoveLabel( nodeId, toDelete );
+
+            toRegret = tx.token().labelGetOrCreateForName( toRegretName );
+            tx.dataWrite().nodeAddLabel( nodeId, toRegret );
+            tx.dataWrite().nodeRemoveLabel( nodeId, toRegret );
 
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {

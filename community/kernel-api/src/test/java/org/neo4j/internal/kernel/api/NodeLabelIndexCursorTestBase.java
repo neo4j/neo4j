@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
 import static org.neo4j.graphdb.Label.label;
@@ -36,15 +37,23 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Override
     void createTestGraph( GraphDatabaseService graphDb )
     {
+        Node toDelete;
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.createNode( label( "One" ), label( "First" ) );
             graphDb.createNode( label( "Two" ), label( "First" ) );
             graphDb.createNode( label( "Three" ), label( "First" ) );
+            toDelete = graphDb.createNode( label( "One" ) );
             graphDb.createNode( label( "Two" ) );
             graphDb.createNode( label( "Three" ) );
             graphDb.createNode( label( "Three" ) );
 
+            tx.success();
+        }
+
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            toDelete.delete();
             tx.success();
         }
     }
