@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -112,9 +111,7 @@ public class TemporalIndexProvider extends IndexProvider
         final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
         if ( !existing.iterator().hasNext() )
         {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.",
-                    new NoSuchFileException( temporalIndexFiles.date().indexFile.getAbsolutePath() ) );
-            return InternalIndexState.POPULATING;
+            return InternalIndexState.ONLINE;
         }
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( TemporalIndexFiles.FileLayout subIndex : existing )
