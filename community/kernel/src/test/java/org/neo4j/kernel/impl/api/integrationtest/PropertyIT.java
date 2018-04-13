@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -39,48 +38,6 @@ import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class PropertyIT extends KernelIntegrationTest
 {
-    @Test
-    public void shouldBeAbleToSetAndReadLargeByteArray() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId = transaction.dataWrite().nodeCreate();
-
-        // WHEN
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( new byte[100_000] ) );
-
-        // WHEN
-        commit();
-        transaction = newTransaction();
-
-        // THEN
-        nodeGetProperty( transaction, nodeId, propertyKeyId );
-
-        commit();
-    }
-
-    @Test
-    public void shouldRollbackSetNodePropertyValue() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId = transaction.dataWrite().nodeCreate();
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        commit();
-
-        // WHEN
-        Write write = dataWriteInNewTransaction();
-        write.nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
-        rollback();
-
-        // THEN
-        transaction = newTransaction();
-        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-        commit();
-    }
-
     @Test
     public void shouldListAllPropertyKeys() throws Exception
     {
@@ -110,30 +67,6 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldNotAllowModifyingPropertiesOnDeletedNode() throws Exception
-    {
-        // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int prop1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "prop1" );
-        long node = transaction.dataWrite().nodeCreate();
-
-        transaction.dataWrite().nodeSetProperty( node, prop1, Values.stringValue( "As" ) );
-        transaction.dataWrite().nodeDelete( node );
-
-        // When
-        try
-        {
-            transaction.dataWrite().nodeRemoveProperty( node, prop1 );
-            fail( "Should have failed." );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            assertThat( e.getMessage(), equalTo( "Unable to load NODE with id " + node + "." ) );
-        }
-        commit();
-    }
-
-    @Test
     public void shouldNotAllowModifyingPropertiesOnDeletedRelationship() throws Exception
     {
         // given
@@ -157,33 +90,6 @@ public class PropertyIT extends KernelIntegrationTest
         {
             assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
         }
-        commit();
-    }
-
-    @Test
-    public void shouldBeAbleToRemoveResetAndTwiceRemovePropertyOnNode() throws Exception
-    {
-        // given
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int prop = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
-
-        long node = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().nodeSetProperty( node, prop, Values.of( "bar" ) );
-
-        commit();
-
-        // when
-        Write write = dataWriteInNewTransaction();
-        write.nodeRemoveProperty( node, prop );
-        write.nodeSetProperty( node, prop, Values.of( "bar" ) );
-        write.nodeRemoveProperty( node, prop );
-        write.nodeRemoveProperty( node, prop );
-
-        commit();
-
-        // then
-        transaction = newTransaction();
-        assertThat( nodeGetProperty( transaction, node, prop ), equalTo( Values.NO_VALUE ) );
         commit();
     }
 

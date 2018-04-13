@@ -26,8 +26,10 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -231,6 +233,47 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
+    public void shouldRollbackSetNodeProperty() throws Exception
+    {
+        // Given
+        long node = createNode();
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.failure();
+        }
+
+        // Then
+        assertNoProperty( node, propertyKey );
+    }
+
+    @Test
+    public void shouldThrowWhenSettingPropertyOnDeletedNode() throws Exception
+    {
+        // Given
+        long node = createNode();
+        deleteNode( node );
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+            tx.dataWrite().nodeSetProperty( node, token, stringValue( "hello" ) );
+            fail( "Expected EntityNotFoundException" );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // wanted
+        }
+
+        // Then
+        assertNoProperty( node, propertyKey );
+    }
+
+    @Test
     public void shouldUpdatePropertyToNode() throws Exception
     {
         // Given
@@ -328,6 +371,28 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
+    public void shouldRemoveReSetAndTwiceRemovePropertyOnNode() throws Exception
+    {
+        // given
+        long node = createNodeWithProperty( propertyKey, "bar" );
+
+        // when
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+            tx.dataWrite().nodeRemoveProperty( node, prop );
+            tx.dataWrite().nodeSetProperty( node, prop, Values.of( "bar" ) );
+            tx.dataWrite().nodeRemoveProperty( node, prop );
+            tx.dataWrite().nodeRemoveProperty( node, prop );
+            tx.success();
+        }
+
+        // then
+        assertNoProperty( node, propertyKey );
+    }
+
+    @Test
     public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
     {
         // Given
@@ -343,6 +408,36 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         assertThat( tx.closeTransaction(), equalTo( Transaction.READ_ONLY ) );
     }
 
+    @Test
+    public void shouldSetAndReadLargeByteArrayPropertyToNode() throws Exception
+    {
+        // Given
+        int prop;
+        long node = createNode();
+        Value largeByteArray = Values.of( new byte[100_000] );
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            prop = tx.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().nodeSetProperty( node, prop, largeByteArray ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        // Then
+        try ( Transaction tx = session.beginTransaction();
+              NodeCursor nodeCursor = tx.cursors().allocateNodeCursor();
+              PropertyCursor propertyCursor = tx.cursors().allocatePropertyCursor(); )
+        {
+            tx.dataRead().singleNode( node, nodeCursor );
+            assertTrue( nodeCursor.next() );
+            nodeCursor.properties( propertyCursor );
+            assertTrue( propertyCursor.next() );
+            assertEquals( propertyCursor.propertyKey(), prop );
+            assertThat( propertyCursor.propertyValue(), equalTo( largeByteArray ) );
+        }
+    }
+
     // HELPERS
 
     private long createNode()
@@ -354,6 +449,15 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             ctx.success();
         }
         return node;
+    }
+
+    private void deleteNode( long node )
+    {
+        try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )
+        {
+            graphDb.getNodeById( node ).delete();
+            ctx.success();
+        }
     }
 
     private long createNodeWithLabel( String labelName )
