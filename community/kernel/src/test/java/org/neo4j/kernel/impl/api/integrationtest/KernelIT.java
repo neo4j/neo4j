@@ -66,7 +66,7 @@ public class KernelIT extends KernelIntegrationTest
         int labelId = ktx.tokenWrite().labelGetOrCreateForName( "labello" );
         ktx.dataWrite().nodeAddLabel( node.getId(), labelId );
 
-        // 5: Commit through the beans API
+        // 4: Commit through the beans API
         transaction.success();
         transaction.close();
     }
