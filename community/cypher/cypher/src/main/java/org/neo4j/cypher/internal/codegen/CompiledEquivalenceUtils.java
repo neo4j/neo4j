@@ -95,6 +95,26 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (boolean) element );
         }
+        else if ( element instanceof AnyValue[] )
+        {
+            return hashCode( (AnyValue[]) element );
+        }
+        else if ( element instanceof Object[] )
+        {
+            return hashCode( (Object[]) element );
+        }
+        else if ( element instanceof long[] )
+        {
+            return hashCode( (long[]) element );
+        }
+        else if ( element instanceof double[] )
+        {
+            return hashCode( (double[]) element );
+        }
+        else if ( element instanceof boolean[] )
+        {
+            return hashCode( (boolean[]) element );
+        }
         else if ( element instanceof List<?> )
         {
             return hashCode( (List<?>) element );
@@ -102,10 +122,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof Map<?,?> )
         {
             return hashCode( (Map<String,Object>) element );
-        }
-        else if ( element instanceof Object[] )
-        {
-            return hashCode( (Object[]) element );
         }
         else if ( element instanceof byte[] )
         {
@@ -119,10 +135,6 @@ public final class CompiledEquivalenceUtils
         {
             return hashCode( (int[]) element );
         }
-        else if ( element instanceof long[] )
-        {
-            return hashCode( (long[]) element );
-        }
         else if ( element instanceof char[] )
         {
             return hashCode( (char[]) element );
@@ -130,14 +142,6 @@ public final class CompiledEquivalenceUtils
         else if ( element instanceof float[] )
         {
             return hashCode( (float[]) element );
-        }
-        else if ( element instanceof double[] )
-        {
-            return hashCode( (double[]) element );
-        }
-        else if ( element instanceof boolean[] )
-        {
-            return hashCode( (boolean[]) element );
         }
         else
         {
@@ -245,6 +249,29 @@ public final class CompiledEquivalenceUtils
      * @return the hash code of the given value
      */
     public static int hashCode( Object[] array )
+    {
+        int len = array.length;
+        switch ( len )
+        {
+        case 0:
+            return 42;
+        case 1:
+            return hashCode( array[0] );
+        case 2:
+            return 31 * hashCode( array[0] ) + hashCode( array[1] );
+        case 3:
+            return (31 * hashCode( array[0] ) + hashCode( array[1] )) * 31  + hashCode( array[2] );
+        default:
+            return len * (31 * hashCode( array[0] ) + hashCode( array[len / 2] ) * 31 + hashCode( array[len - 1] ));
+        }
+    }
+
+    /**
+     * Calculate hash code of a AnyValue[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
+     */
+    public static int hashCode( AnyValue[] array )
     {
         int len = array.length;
         switch ( len )

@@ -885,9 +885,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                     invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Object]),
                            box(expression, cgType)))
     } else {
+      val elementType = deriveCommonType(structure.values.map(_._1))
       generator.put(generator.load(varName), FieldReference.field(typ, typeRef[Int], "hashCode"),
-                    invoke(method[CompiledEquivalenceUtils, Int]("hashCode", typeRef[Array[Object]]),
-                           newArray(typeRef[Object], structure.values.map(_._2).toSeq: _*)))
+        invoke(method[CompiledEquivalenceUtils, Int]("hashCode", TypeReference.arrayOf(elementType)),
+          if (elementType.isPrimitive)
+            newArray(elementType, structure.values.map(_._2).toSeq: _*)
+          else
+            newArray(elementType, structure.values.map(e => Expression.box(e._2)).toSeq: _*)
+        ))
     }
   }
 
@@ -1643,5 +1648,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case _: ReferenceType =>
       invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Long], "extractLong", typeRef[Object]), generator.load(name))
     case _ => throw new IllegalStateException(s"$name has type $typ which cannot be represented as a long")
+  }
+
+  // Lowers a sequence of types and returns either a type that all elements share or Object if any types are different
+  private def deriveCommonType(codeGenTypes: Iterable[CodeGenType]): TypeReference = {
+    val lowerTypes = codeGenTypes.map(lowerTypeScalarSubset) // We use a subset version of lowerType that does not give us the specializations for sequence values (CTList)
+    lowerTypes.reduce((a, b) => if (a == b) a else typeRef[Object])
   }
 }
