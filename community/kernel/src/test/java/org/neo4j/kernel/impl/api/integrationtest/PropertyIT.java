@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NamedToken;
@@ -29,7 +28,6 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -38,11 +36,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
-import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class PropertyIT extends KernelIntegrationTest
 {
@@ -65,155 +60,6 @@ public class PropertyIT extends KernelIntegrationTest
         nodeGetProperty( transaction, nodeId, propertyKeyId );
 
         commit();
-    }
-
-    @Test
-    public void shouldSetNodePropertyValue() throws Exception
-    {
-        // GIVEN
-        Value value = Values.of( "bozo" );
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-
-        long nodeId = transaction.dataWrite().nodeCreate();
-
-        // WHEN
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, value );
-
-        // THEN
-        assertEquals( value, nodeGetProperty( transaction, nodeId, propertyKeyId ) );
-
-        // WHEN
-        commit();
-        transaction = newTransaction();
-
-        // THEN
-        assertEquals( value, nodeGetProperty( transaction, nodeId, propertyKeyId ) );
-        commit();
-    }
-
-    @Test
-    public void shouldRemoveSetNodeProperty() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-
-        long nodeId = transaction.dataWrite().nodeCreate();
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
-
-        // WHEN
-        transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId );
-
-        // THEN
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-
-        // WHEN
-        commit();
-
-        // THEN
-        transaction = newTransaction();
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-        commit();
-    }
-
-    @Test
-    public void shouldRemoveSetNodePropertyAcrossTransactions() throws Exception
-    {
-        // GIVEN
-        int propertyKeyId;
-        long nodeId;
-        {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-            nodeId = transaction.dataWrite().nodeCreate();
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-            transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
-            commit();
-        }
-        {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-
-            // WHEN
-            Value previous = transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId );
-
-            // THEN
-            assertTrue( previous.equals( "bozo" ) );
-            assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-
-            // WHEN
-            commit();
-        }
-
-        // THEN
-        Transaction transaction = newTransaction();
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-        commit();
-    }
-
-    @Test
-    public void shouldRemoveSetExistingProperty() throws Exception
-    {
-        // GIVEN
-        dbWithNoCache();
-
-        int propertyKeyId;
-        long nodeId;
-        {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-            nodeId = transaction.dataWrite().nodeCreate();
-            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-            transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
-            commit();
-        }
-
-        Value newValue = Values.stringValue( "ozob" );
-
-        {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-
-            // WHEN
-            transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId );
-            transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, newValue );
-
-            // THEN
-            assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( newValue ) );
-
-            // WHEN
-            commit();
-        }
-
-        // THEN
-        {
-            Transaction transaction = newTransaction();
-            assertThat( nodeGetProperty( transaction,  nodeId, propertyKeyId ), equalTo( newValue ) );
-            assertThat( toList( nodeGetPropertyKeys( transaction,  nodeId ) ),
-                    equalTo( Collections.singletonList( propertyKeyId ) ) );
-            commit();
-        }
-    }
-
-    @Test
-    public void shouldSilentlyNotRemoveMissingNodeProperty() throws Exception
-    {
-        // GIVEN
-        int propertyId;
-        long nodeId;
-        {
-            Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-            nodeId = transaction.dataWrite().nodeCreate();
-            propertyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-            commit();
-        }
-        {
-            Write statement = dataWriteInNewTransaction();
-
-            // WHEN
-            Value result = statement.nodeRemoveProperty( nodeId, propertyId );
-
-            // THEN
-            assertTrue( "Return no property if removing missing", result == NO_VALUE );
-            commit();
-        }
     }
 
     @Test
