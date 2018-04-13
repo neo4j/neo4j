@@ -77,15 +77,8 @@ class StoreRecordCursor<RECORD extends AbstractBaseRecord> implements RecordCurs
             return false;
         }
 
-        try
-        {
-            store.readIntoRecord( id, record, mode, pageCursor );
-            return record.inUse();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        store.getRecordByCursor( id, record, mode, pageCursor );
+        return record.inUse();
     }
 
     @Override
