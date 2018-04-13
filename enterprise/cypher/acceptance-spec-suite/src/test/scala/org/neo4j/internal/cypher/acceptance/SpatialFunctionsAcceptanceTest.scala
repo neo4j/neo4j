@@ -73,6 +73,22 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 2.3, 4.5))))
   }
 
+  test("point function should work with node with only valid properties") {
+    val result = executeWith(pointConfig, "CREATE (n {latitude: 12.78, longitude: 56.7}) RETURN point(n) as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
+  }
+
+  test("point function should work with node with some invalid properties") {
+    val result = executeWith(pointConfig, "CREATE (n {latitude: 12.78, longitude: 56.7, banana: 'yes', some: 1.2, andAlso: [1,2]}) RETURN point(n) as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 56.7, 12.78))))
+  }
+
   test("point function should not work with NaN or infinity") {
     for(invalidDouble <- Seq(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity)) {
       failWithError(Configs.DefaultInterpreted + Configs.SlottedInterpreted + Configs.Version3_3 + Configs.Procs,
