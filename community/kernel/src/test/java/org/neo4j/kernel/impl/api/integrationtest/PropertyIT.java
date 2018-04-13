@@ -32,9 +32,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
@@ -80,27 +78,6 @@ public class PropertyIT extends KernelIntegrationTest
         transaction = newTransaction();
         assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
         assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-        commit();
-    }
-
-    @Test
-    public void shouldUpdateNodePropertyValue() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId = transaction.dataWrite().nodeCreate();
-        int propertyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        transaction.dataWrite().nodeSetProperty( nodeId, propertyId, Values.stringValue( "bozo" ) );
-        commit();
-
-        // WHEN
-        Write write = dataWriteInNewTransaction();
-        write.nodeSetProperty( nodeId, propertyId, Values.of( 42 ) );
-        commit();
-
-        // THEN
-        transaction = newTransaction();
-        assertEquals( 42, nodeGetProperty( transaction, nodeId, propertyId ).asObject() );
         commit();
     }
 
