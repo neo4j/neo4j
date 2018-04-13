@@ -41,7 +41,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -56,16 +56,25 @@ object GeneratedMethodStructure {
 }
 
 
+case class AccessNames(read: Option[String] = None,
+                       tokenRead: Option[String] = None,
+                       schemaRead: Option[String] = None,
+                       cursors: Option[String] = None,
+                       nodeCursor: Option[String] = None,
+                       relationCursor: Option[String] = None,
+                       propertyCursor: Option[String] = None)
+
 class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux: AuxGenerator, tracing: Boolean = true,
                                events: List[String] = List.empty,
                                onClose: Seq[CompletableFinalizer] = Seq.empty,
                                locals: mutable.Map[String, LocalVariable] = mutable.Map.empty
-                              )(implicit context: CodeGenContext)
+                               )(implicit context: CodeGenContext)
   extends MethodStructure[Expression] {
 
   import GeneratedQueryStructure._
   import TypeReference.parameterizedType
 
+  private var accessNames: AccessNames = AccessNames()
   private val _finalizers: mutable.ArrayBuffer[CompletableFinalizer] = mutable.ArrayBuffer()
   _finalizers.appendAll(onClose)
 
@@ -77,8 +86,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                    tracing: Boolean = tracing,
                    events: List[String] = events,
                    onClose: Seq[CompletableFinalizer] = _finalizers,
-                   locals: mutable.Map[String, LocalVariable] = locals): GeneratedMethodStructure = new GeneratedMethodStructure(
-    fields, generator, aux, tracing, events, onClose, locals)
+                   locals: mutable.Map[String, LocalVariable] = locals): GeneratedMethodStructure = {
+    val methods = new GeneratedMethodStructure(
+      fields, generator, aux, tracing, events, onClose, locals)
+    methods.accessNames = accessNames
+    methods
+  }
 
   private case class HashTable(valueType: TypeReference, listType: TypeReference, tableType: TypeReference,
                                get: MethodReference, put: MethodReference, add: MethodReference)
@@ -624,26 +637,103 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def math(method: MethodReference, lhs: Expression, rhs: Expression): Expression =
     invoke(method, lhs, rhs)
 
-  private def dataRead: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
+  private def dataRead: Expression = {
+    val name = accessNames.read match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(read = Some(newName))
+        generator.assign(typeRef[Read], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead")))
 
-  private def tokenRead: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[TokenRead], "getOrLoadTokenRead"))
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
 
-  private def schemaRead: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[SchemaRead], "getOrLoadSchemaRead"))
+  private def tokenRead: Expression = {
+    val name = accessNames.tokenRead match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(tokenRead = Some(newName))
+        generator.assign(typeRef[TokenRead], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[TokenRead], "getOrLoadTokenRead")))
 
-  private def cursors: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors"))
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
 
-  private def nodeCursor: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor"))
+  private def schemaRead: Expression = {
+    val name = accessNames.schemaRead match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(schemaRead = Some(newName))
+        generator.assign(typeRef[SchemaRead], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[SchemaRead], "getOrLoadSchemaRead")))
 
-  private def relationshipScanCursor: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[RelationshipScanCursor], "relationshipScanCursor"))
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
 
-  private def propertyCursor: Expression =
-    invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor"))
+  private def cursors: Expression = {
+    val name = accessNames.cursors match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(cursors = Some(newName))
+        generator.assign(typeRef[CursorFactory], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors")))
+
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
+
+  private def nodeCursor: Expression = {
+    val name = accessNames.nodeCursor match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(nodeCursor = Some(newName))
+        generator.assign(typeRef[NodeCursor], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[NodeCursor], "nodeCursor")))
+
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+   }
+
+  private def relationshipScanCursor: Expression = {
+    val name = accessNames.relationCursor match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(relationCursor = Some(newName))
+        generator.assign(typeRef[RelationshipScanCursor], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[RelationshipScanCursor], "relationshipScanCursor")))
+
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
+
+  private def propertyCursor: Expression = {
+    val name = accessNames.propertyCursor match {
+      case None =>
+        val newName = context.namer.newVarName()
+        accessNames = accessNames.copy(propertyCursor = Some(newName))
+        generator.assign(typeRef[PropertyCursor], newName,
+                         invoke(generator.self(), methodReference(generator.owner(), typeRef[PropertyCursor], "propertyCursor")))
+
+        newName
+      case Some(n) => n
+    }
+    generator.load(name)
+  }
 
   private def nodeManager = get(generator.self(), fields.entityAccessor)
 
