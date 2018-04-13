@@ -27,12 +27,7 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     @Override
     public boolean next()
     {
-        if ( !fetchNext() )
-        {
-            close();
-            return false;
-        }
-        return true;
+        return fetchNext();
     }
 
     @Override

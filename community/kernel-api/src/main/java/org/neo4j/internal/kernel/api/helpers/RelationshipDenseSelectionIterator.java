@@ -43,7 +43,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
     {
         if ( next == RelationshipSelections.UNINITIALIZED )
         {
-            fetchNext();
+            this.next();
             next = relationshipCursor.relationshipReference();
         }
 
