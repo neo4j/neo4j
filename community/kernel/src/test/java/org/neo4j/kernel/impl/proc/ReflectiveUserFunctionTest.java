@@ -191,7 +191,7 @@ public class ReflectiveUserFunctionTest
         exception.expect( ProcedureException.class );
         exception.expectMessage( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
                                  "Please refer to to the documentation for full details.%n" +
-                                 "For your reference, known types are: [boolean, double, java.lang.Boolean, " +
+                                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
                                  "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
                                  "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
                                  "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +

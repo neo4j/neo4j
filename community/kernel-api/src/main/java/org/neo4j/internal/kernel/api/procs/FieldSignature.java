@@ -22,6 +22,9 @@ package org.neo4j.internal.kernel.api.procs;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
+
 import static java.util.Objects.requireNonNull;
 
 /** Represents a type and a name for a field in a record, used to define input and output record signatures. */
@@ -35,6 +38,48 @@ public class FieldSignature
     public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue )
     {
         return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
+    }
+
+    public interface InputMapper
+    {
+        Object map( Object input );
+        AnyValue map( AnyValue input );
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, InputMapper mapper )
+    {
+        return new FieldSignature( name, type, null, false )
+        {
+            @Override
+            public Object map( Object input )
+            {
+                return mapper.map( input );
+            }
+
+            @Override
+            public Object map( AnyValue input, ValueMapper<Object> valueMapper )
+            {
+                return mapper.map( input ).map( valueMapper );
+            }
+        };
+    }
+
+    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, InputMapper mapper )
+    {
+        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false )
+        {
+            @Override
+            public Object map( Object input )
+            {
+                return mapper.map( input );
+            }
+
+            @Override
+            public Object map( AnyValue input, ValueMapper<Object> valueMapper )
+            {
+                return mapper.map( input ).map( valueMapper );
+            }
+        };
     }
 
     public static FieldSignature outputField( String name, Neo4jTypes.AnyType type )
@@ -67,6 +112,17 @@ public class FieldSignature
                         type.toString(), defaultValue.neo4jType().toString() ) );
             }
         }
+    }
+
+    /** Fields that are not supported full stack (ie. by Cypher) need to be mapped from Cypher to internal types */
+    public Object map( Object input )
+    {
+        return input;
+    }
+
+    public Object map( AnyValue input, ValueMapper<Object> mapper )
+    {
+        return input.map( mapper );
     }
 
     public String name()

@@ -68,6 +68,11 @@ public class DefaultParameterValue
         return new DefaultParameterValue( value, Neo4jTypes.NTMap );
     }
 
+    public static DefaultParameterValue ntByteArray( byte[] value )
+    {
+        return new DefaultParameterValue( value, Neo4jTypes.NTByteArray );
+    }
+
     public static DefaultParameterValue ntList( List<?> value, Neo4jTypes.AnyType inner )
     {
         return new DefaultParameterValue( value, Neo4jTypes.NTList( inner ) );
