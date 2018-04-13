@@ -57,6 +57,8 @@ public class HandshakeServerInitializer implements ChildInitializer
     @Override
     public void initChannel( SocketChannel ch ) throws Exception
     {
+        log.info( "Installing handshake server local %s remote %s", ch.localAddress(), ch.remoteAddress() );
+
         pipelineBuilderFactory.server( ch, log )
                 .addFraming()
                 .add( "handshake_server_encoder", new ServerMessageEncoder() )
