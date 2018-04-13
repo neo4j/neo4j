@@ -41,7 +41,7 @@ public class HandshakeClient implements ClientMessageHandler
     private ApplicationSupportedProtocols supportedApplicationProtocol;
     private ModifierProtocolRepository modifierProtocolRepository;
     private Collection<ModifierSupportedProtocols> supportedModifierProtocols;
-    private ApplicationProtocol applicationProtocol;
+    private ApplicationProtocol negotiatedApplicationProtocol;
     private List<Pair<String,Optional<ModifierProtocol>>> negotiatedModifierProtocols;
     private ProtocolStack protocolStack;
     private CompletableFuture<ProtocolStack> future = new CompletableFuture<>();
@@ -127,7 +127,7 @@ public class HandshakeClient implements ClientMessageHandler
         }
         else
         {
-            applicationProtocol = protocol.get();
+            negotiatedApplicationProtocol = protocol.get();
 
             sendSwitchOverRequestIfReady();
         }
@@ -153,7 +153,7 @@ public class HandshakeClient implements ClientMessageHandler
 
     private void sendSwitchOverRequestIfReady()
     {
-        if ( applicationProtocol != null && negotiatedModifierProtocols.size() == supportedModifierProtocols.size() )
+        if ( negotiatedApplicationProtocol != null && negotiatedModifierProtocols.size() == supportedModifierProtocols.size() )
         {
             List<ModifierProtocol> agreedModifierProtocols = negotiatedModifierProtocols
                     .stream()
@@ -161,14 +161,18 @@ public class HandshakeClient implements ClientMessageHandler
                     .flatMap( Streams::ofOptional )
                     .collect( Collectors.toList() );
 
-            protocolStack = new ProtocolStack( applicationProtocol, agreedModifierProtocols );
+            protocolStack = new ProtocolStack( negotiatedApplicationProtocol, agreedModifierProtocols );
             List<Pair<String,String>> switchOverModifierProtocols =
                     agreedModifierProtocols
                             .stream()
                             .map( protocol -> Pair.of( protocol.category(), protocol.implementation() ) )
                             .collect( Collectors.toList() );
 
-            channel.writeAndFlush( new SwitchOverRequest( applicationProtocol.category(), applicationProtocol.implementation(), switchOverModifierProtocols ) );
+            channel.writeAndFlush(
+                    new SwitchOverRequest(
+                            negotiatedApplicationProtocol.category(),
+                            negotiatedApplicationProtocol.implementation(),
+                            switchOverModifierProtocols ) );
         }
     }
 
@@ -202,6 +206,6 @@ public class HandshakeClient implements ClientMessageHandler
 
     private void decline( String message )
     {
-        future.completeExceptionally( new ClientHandshakeException( message ) );
+        future.completeExceptionally( new ClientHandshakeException( message, negotiatedApplicationProtocol, negotiatedModifierProtocols ) );
     }
 }
