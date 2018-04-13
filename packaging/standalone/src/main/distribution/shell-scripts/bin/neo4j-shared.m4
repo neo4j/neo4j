@@ -35,7 +35,7 @@ build_classpath() {
   # augment with tools.jar, will need JDK
   if [ "${JAVA_HOME:-}" ]; then
     JAVA_TOOLS="${JAVA_HOME}/lib/tools.jar"
-    if [ -e $JAVA_TOOLS ]; then
+    if [[ -e $JAVA_TOOLS ]]; then
       CLASSPATH="${CLASSPATH}:${JAVA_TOOLS}"
     fi
   fi
