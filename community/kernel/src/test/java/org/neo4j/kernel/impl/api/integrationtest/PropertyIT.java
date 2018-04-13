@@ -63,57 +63,6 @@ public class PropertyIT extends KernelIntegrationTest
     }
 
     @Test
-    public void nodeHasPropertyIfSet() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId = transaction.dataWrite().nodeCreate();
-
-        // WHEN
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-        transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.stringValue( "bozo" ) );
-
-        // THEN
-        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( true ) );
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ),
-                not( equalTo( Values.NO_VALUE ) ) );
-
-        // WHEN
-        commit();
-        transaction = newTransaction();
-
-        // THEN
-        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( true ) );
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), not( equalTo( Values.NO_VALUE ) ) );
-        commit();
-    }
-
-    @Test
-    public void nodeHasNotPropertyIfUnset() throws Exception
-    {
-        // GIVEN
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        long nodeId = transaction.dataWrite().nodeCreate();
-
-        // WHEN
-        int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( "clown" );
-
-        // THEN
-        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-
-        // WHEN
-        commit();
-
-        transaction = newTransaction();
-
-        // THEN
-        assertThat( nodeHasProperty( transaction, nodeId, propertyKeyId ), is( false ) );
-        assertThat( nodeGetProperty( transaction, nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
-        commit();
-    }
-
-    @Test
     public void shouldRollbackSetNodePropertyValue() throws Exception
     {
         // GIVEN
