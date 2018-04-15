@@ -133,8 +133,10 @@ object CardinalityCostModel extends CostModel {
         val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan)
+        // Make sure we get a minimum cardinality estimate of 1, since it makes no sense to plan based on estimations of 0
+        val effectivePlanCardinality = Cardinality.max(planCardinality, Cardinality.SINGLE)
         val rowCost = costPerRow(plan)
-        val costForThisPlan = planCardinality * rowCost
+        val costForThisPlan = effectivePlanCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }
