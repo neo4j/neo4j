@@ -279,13 +279,13 @@ public final class CompiledEquivalenceUtils
         case 0:
             return 42;
         case 1:
-            return hashCode( array[0] );
+            return array[0].hashCode();
         case 2:
-            return 31 * hashCode( array[0] ) + hashCode( array[1] );
+            return 31 * array[0].hashCode() + array[1].hashCode();
         case 3:
-            return (31 * hashCode( array[0] ) + hashCode( array[1] )) * 31  + hashCode( array[2] );
+            return (31 *  array[0].hashCode() +  array[1].hashCode()) * 31  + array[2].hashCode();
         default:
-            return len * (31 * hashCode( array[0] ) + hashCode( array[len / 2] ) * 31 + hashCode( array[len - 1] ));
+            return len * (31 * array[0].hashCode() + array[len / 2].hashCode() * 31 + array[len - 1].hashCode());
         }
     }
 
