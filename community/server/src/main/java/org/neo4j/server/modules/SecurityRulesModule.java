@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
@@ -53,7 +54,7 @@ public class SecurityRulesModule implements ServerModule
         {
             mountedFilter = new SecurityFilter( securityRules );
 
-            webServer.addFilter( mountedFilter, "/*" );
+            webServer.addFilter( mountedFilter, "/*", Collections.emptyMap() );
 
             for ( SecurityRule rule : securityRules )
             {

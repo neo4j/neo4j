@@ -48,8 +48,11 @@ public class CorsFilter implements Filter
     public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
     public static final String ACCESS_CONTROL_REQUEST_METHOD = "Access-Control-Request-Method";
     public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
+    public static final String VARY = "Vary";
 
     private final Log log;
+
+    private FilterConfig filterConfig;
 
     public CorsFilter( LogProvider logProvider )
     {
@@ -59,6 +62,7 @@ public class CorsFilter implements Filter
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException
     {
+        this.filterConfig = filterConfig;
     }
 
     @Override
@@ -68,7 +72,22 @@ public class CorsFilter implements Filter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, "*" );
+        String uri = "*";
+        if ( filterConfig != null )
+        {
+            uri = filterConfig.getInitParameter( "access_control_allow_origin" );
+        }
+        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, uri );
+        if ( !"*".equals( uri ) )
+        {
+            // If the server specifies an origin host rather than "*", then it must also include Origin in
+            // the Vary response header to indicate to clients that server responses will differ based on
+            // the value of the Origin request header.
+            //
+            // -- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+            //
+            response.setHeader( VARY, "Origin" );
+        }
 
         Enumeration<String> requestMethodEnumeration = request.getHeaders( ACCESS_CONTROL_REQUEST_METHOD );
         if ( requestMethodEnumeration != null )
@@ -96,6 +115,7 @@ public class CorsFilter implements Filter
     @Override
     public void destroy()
     {
+        this.filterConfig = null;
     }
 
     private void addAllowedMethodIfValid( String methodName, HttpServletResponse response )

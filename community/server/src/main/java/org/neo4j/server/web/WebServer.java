@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javax.servlet.Filter;
@@ -60,7 +61,7 @@ public interface WebServer
     void addJAXRSClasses( List<String> classNames, String serverMountPoint, Collection<Injectable<?>> injectables );
     void removeJAXRSClasses( List<String> classNames, String serverMountPoint );
 
-    void addFilter( Filter filter, String pathSpec );
+    void addFilter( Filter filter, String pathSpec, Map<String, String> initParameters );
 
     void removeFilter( Filter filter, String pathSpec );
 

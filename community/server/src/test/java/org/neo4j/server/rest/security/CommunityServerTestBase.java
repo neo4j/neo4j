@@ -50,6 +50,15 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
         server.start();
     }
 
+    protected void startServer( boolean authEnabled, String accessControlAllowOrigin ) throws IOException
+    {
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
+                .withProperty( GraphDatabaseSettings.access_control_allow_origin.name(), accessControlAllowOrigin )
+                .build();
+        server.start();
+    }
+
     protected String basicAuthHeader( String username, String password )
     {
         String usernamePassword = username + ':' + password;

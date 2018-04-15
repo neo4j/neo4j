@@ -20,6 +20,7 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.concurrent.RecentK;
@@ -42,6 +43,7 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.access_control_allow_origin;
 
 /**
  * Mounts the database REST API.
@@ -69,8 +71,9 @@ public class RESTApiModule implements ServerModule
     {
         URI restApiUri = restApiUri( );
 
-        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
-        webServer.addFilter( new CorsFilter( logProvider ), "/*" );
+        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*", Collections.emptyMap() );
+        webServer.addFilter( new CorsFilter( logProvider ), "/*", Collections.singletonMap(
+                "access_control_allow_origin", config.get( access_control_allow_origin ) ) );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
         loadPlugins();
     }
