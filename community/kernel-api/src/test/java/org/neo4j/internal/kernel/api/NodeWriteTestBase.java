@@ -32,6 +32,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -268,9 +269,6 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         {
             // wanted
         }
-
-        // Then
-        assertNoProperty( node, propertyKey );
     }
 
     @Test
@@ -485,14 +483,17 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
 
     private void assertNoLabels( long nodeId )
     {
-        assertLabels( nodeId );
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.empty() ) );
+        }
     }
 
-    private void assertLabels( long nodeId, String... labels )
+    private void assertLabels( long nodeId, String label )
     {
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
-            assertThat( graphDb.getNodeById( nodeId ).getLabels(), equalTo( Iterables.asIterable( labels ) ) );
+            assertThat( graphDb.getNodeById( nodeId ).getLabels(), containsInAnyOrder( label( label ) ) );
         }
     }
 
