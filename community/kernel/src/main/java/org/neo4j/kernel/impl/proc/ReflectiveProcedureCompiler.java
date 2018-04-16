@@ -848,6 +848,8 @@ class ReflectiveProcedureCompiler
                 inject( ctx, cls );
                 Object aggregator = creator.invoke( cls );
 
+                List<FieldSignature> inputSignature = signature.inputSignature();
+                int expectedNumberOfInputs = inputSignature.size();
                 return new Aggregator()
                 {
                     @Override
@@ -855,13 +857,12 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            List<FieldSignature> inputSignature = signature.inputSignature();
-                            if ( inputSignature.size() != input.length )
+                            if ( expectedNumberOfInputs != input.length )
                             {
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                                         "Function `%s` takes %d arguments but %d was provided.",
                                         signature.name(),
-                                        inputSignature.size(), input.length );
+                                        expectedNumberOfInputs, input.length );
                             }
                             // Some input fields are not supported by Cypher and need to be mapped
                             for ( int indexToMap : indexesToMap )
