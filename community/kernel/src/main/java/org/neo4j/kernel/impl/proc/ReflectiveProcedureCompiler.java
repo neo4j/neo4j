@@ -237,8 +237,8 @@ class ReflectiveProcedureCompiler
     }
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess, QualifiedName procName  )
-            throws ProcedureException, IllegalAccessException
+            Optional<String> warning, boolean fullAccess, QualifiedName procName )
+            throws ProcedureException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
@@ -547,24 +547,6 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private static Object[] verifyInput( String type, QualifiedName name, List<FieldSignature> inputSignature, Object[] input,
-            int[] indexesToMap ) throws ProcedureException
-    {
-        // Verify that the number of passed arguments matches the number expected in the mthod signature
-        if ( inputSignature.size() != input.length )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "%s `%s` takes %d arguments but %d was provided.", type, name,
-                    inputSignature.size(), input.length );
-        }
-
-        // Some input fields are not supported by Cypher and need to be mapped
-        for ( int indexToMap : indexesToMap )
-        {
-            input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
-        }
-        return input;
-    }
-
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
     {
         private final ProcedureSignature signature;
@@ -592,15 +574,27 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+                ResourceTracker resourceTracker ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                // verify and possibly map the input
-                input = verifyInput( "Procedure", signature.name(), signature.inputSignature(), input, indexesToMap );
+                List<FieldSignature> inputSignature = signature.inputSignature();
+                if ( inputSignature.size() != input.length )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                            "Procedure `%s` takes %d arguments but %d was provided.",
+                            signature.name(),
+                            inputSignature.size(), input.length );
+                }
+                // Some input fields are not supported by Cypher and need to be mapped
+                for ( int indexToMap : indexesToMap )
+                {
+                    input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
+                }
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -766,8 +760,19 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                // verify and possibly map the input
-                input = verifyInput( "Function", signature.name(), signature.inputSignature(), input, indexesToMap );
+                List<FieldSignature> inputSignature = signature.inputSignature();
+                if ( inputSignature.size() != input.length )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                            "Function `%s` takes %d arguments but %d was provided.",
+                            signature.name(),
+                            inputSignature.size(), input.length );
+                }
+                // Some input fields are not supported by Cypher and need to be mapped
+                for ( int indexToMap : indexesToMap )
+                {
+                    input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
+                }
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -850,8 +855,19 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            // verify and possibly map the input
-                            input = verifyInput( "Function", signature.name(), signature.inputSignature(), input, indexesToMap );
+                            List<FieldSignature> inputSignature = signature.inputSignature();
+                            if ( inputSignature.size() != input.length )
+                            {
+                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                                        "Function `%s` takes %d arguments but %d was provided.",
+                                        signature.name(),
+                                        inputSignature.size(), input.length );
+                            }
+                            // Some input fields are not supported by Cypher and need to be mapped
+                            for ( int indexToMap : indexesToMap )
+                            {
+                                input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
+                            }
 
                             // Call the method
                             updateMethod.invoke( aggregator, input );
@@ -878,7 +894,7 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            return valueConverter.toNeoValue( resultMethod.invoke(aggregator) );
+                            return valueConverter.toNeoValue( resultMethod.invoke( aggregator ) );
                         }
                         catch ( Throwable throwable )
                         {
