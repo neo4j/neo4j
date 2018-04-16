@@ -193,22 +193,6 @@ public class OnlineBackupCommandCcIT
     }
 
     @Test
-    public void backupNotPossibleIfLegacyProtocolSpecified() throws Exception
-    {
-        // given
-        Cluster cluster = startCluster( recordFormat );
-        String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
-
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport",
-                        "--proto=legacy") );
-    }
-
-    @Test
     public void backupDoesntDisplayExceptionWhenSuccessful() throws Exception
     {
         // given

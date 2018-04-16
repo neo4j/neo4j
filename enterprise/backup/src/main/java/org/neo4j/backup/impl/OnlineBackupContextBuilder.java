@@ -26,6 +26,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -64,7 +66,7 @@ class OnlineBackupContextBuilder
     static final String ARG_DFLT_BACKUP_SOURCE = "localhost:6362";
 
     static final String ARG_NAME_PROTO_OVERRIDE = "protocol";
-    static final String ARG_DESC_PROTO_OVERRIDE = "Preferred protocol to use for communication";
+    static final String ARG_DESC_PROTO_OVERRIDE = "Preferred backup protocol";
     static final String ARG_DFLT_PROTO_OVERRIDE = "any";
 
     static final String ARG_NAME_TIMEOUT = "timeout";
@@ -117,6 +119,10 @@ class OnlineBackupContextBuilder
 
     public static Arguments arguments()
     {
+        String argExampleProtoOverride = Stream.of( SelectedBackupProtocol.values() )
+                .map( SelectedBackupProtocol::getName )
+                .sorted()
+                .collect( Collectors.joining( "|" ) );
         return new Arguments()
                 .withArgument( new MandatoryCanonicalPath(
                         ARG_NAME_BACKUP_DIRECTORY, "backup-path", ARG_DESC_BACKUP_DIRECTORY ) )
@@ -124,8 +130,8 @@ class OnlineBackupContextBuilder
                         ARG_NAME_BACKUP_NAME, "graph.db-backup", ARG_DESC_BACKUP_NAME ) )
                 .withArgument( new OptionalNamedArg(
                         ARG_NAME_BACKUP_SOURCE, "address", ARG_DFLT_BACKUP_SOURCE, ARG_DESC_BACKUP_SOURCE ) )
-                .withArgument( new OptionalNamedArg(
-                        ARG_NAME_PROTO_OVERRIDE, "catchup", ARG_DFLT_PROTO_OVERRIDE, ARG_DESC_PROTO_OVERRIDE ) )
+                .withArgument( new OptionalNamedArg( ARG_NAME_PROTO_OVERRIDE, argExampleProtoOverride,
+                        ARG_DFLT_PROTO_OVERRIDE, ARG_DESC_PROTO_OVERRIDE ) )
                 .withArgument( new OptionalBooleanArg(
                         ARG_NAME_FALLBACK_FULL, true, ARG_DESC_FALLBACK_FULL ) )
                 .withArgument( new OptionalNamedArg(
