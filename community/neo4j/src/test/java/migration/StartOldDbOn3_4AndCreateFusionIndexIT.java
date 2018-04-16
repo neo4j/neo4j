@@ -32,15 +32,23 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -56,12 +64,14 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
-public class Start3_2DbOn3_3AndCreateFusionIndexIT
+public class StartOldDbOn3_4AndCreateFusionIndexIT
 {
-    private static final String ZIP_FILE = "3_2-db.zip";
+    private static final String ZIP_FILE_3_2 = "3_2-db.zip";
+    private static final String ZIP_FILE_3_3 = "3_3-db.zip";
 
-    private static final Label LABEL1 = Label.label( "Label1" );
-    private static final Label LABEL2 = Label.label( "Label2" );
+    private static final Label LABEL_LUCENE_10 = Label.label( "Label1" );
+    private static final Label LABEL_FUSION_10 = Label.label( "Label2" );
+    private static final Label LABEL_FUSION_20 = Label.label( "Label3" );
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
 
@@ -74,9 +84,53 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        createIndexDataAndShutdown( db, LABEL_LUCENE_10 );
+    }
+
+    @Ignore( "Here as reference for how 3.3 db was created" )
+    @Test
+    public void create3_3Database() throws Exception
+    {
+        File storeDir = tempStoreDirectory();
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+
+        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
+        GraphDatabaseService db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, LABEL_LUCENE_10 );
+
+        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
+        db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, LABEL_FUSION_10 );
+        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
+    }
+
+    @Test
+    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    {
+        // given
+        File storeDir = unzip( getClass(), ZIP_FILE_3_2, directory.absolutePath() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .newGraphDatabase();
         try
         {
-            createIndexesAndData( db, LABEL1 );
+            verifyIndexes( db, LABEL_LUCENE_10 );
+
+            // when
+            createIndexesAndData( db, LABEL_FUSION_20 );
+
+            // then
+            verifyIndexes( db, LABEL_FUSION_20 );
+
+            // when
+            additionalUpdates( db, LABEL_LUCENE_10 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL_LUCENE_10 );
+            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
+            verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
         }
         finally
         {
@@ -85,21 +139,78 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     }
 
     @Test
-    public void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    public void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
         // given
-        File storeDir = unzip( getClass(), ZIP_FILE, directory.absolutePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        File storeDir = unzip( getClass(), ZIP_FILE_3_3, directory.absolutePath() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .newGraphDatabase();
         try
         {
-            verifyIndexes( db, LABEL1 );
+            verifyIndexes( db, LABEL_LUCENE_10 );
+            verifyIndexes( db, LABEL_FUSION_10 );
 
             // when
-            createIndexesAndData( db, LABEL2 );
+            createIndexesAndData( db, LABEL_FUSION_20 );
 
             // then
-            verifyIndexes( db, LABEL1 );
-            verifyIndexes( db, LABEL2 );
+            verifyIndexes( db, LABEL_FUSION_20 );
+
+            // when
+            additionalUpdates( db, LABEL_LUCENE_10 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL_LUCENE_10 );
+
+            // when
+            additionalUpdates( db, LABEL_FUSION_10 );
+
+            // then
+            verifyAfterAdditionalUpdate( db, LABEL_FUSION_10 );
+            verifyExpectedProvider( db, LABEL_LUCENE_10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR );
+            verifyExpectedProvider( db, LABEL_FUSION_10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR );
+            verifyExpectedProvider( db, LABEL_FUSION_20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void verifyExpectedProvider( GraphDatabaseAPI db, Label label, IndexProvider.Descriptor expectedDescriptor ) throws TransactionFailureException
+    {
+        try ( Transaction tx = db.beginTx();
+              KernelTransaction kernelTransaction =
+                      db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true ) )
+        {
+            TokenRead tokenRead = kernelTransaction.tokenRead();
+            SchemaRead schemaRead = kernelTransaction.schemaRead();
+
+            int labelId = tokenRead.nodeLabel( label.name() );
+            int key1Id = tokenRead.propertyKey( KEY1 );
+            int key2Id = tokenRead.propertyKey( KEY2 );
+
+            CapableIndexReference index = schemaRead.index( labelId, key1Id );
+            assertIndexHasExpectedProvider( expectedDescriptor, index );
+            index = schemaRead.index( labelId, key1Id, key2Id );
+            assertIndexHasExpectedProvider( expectedDescriptor, index );
+            tx.success();
+        }
+    }
+
+    private void assertIndexHasExpectedProvider( IndexProvider.Descriptor expectedDescriptor, CapableIndexReference index )
+    {
+        assertEquals( "same key", expectedDescriptor.getKey(), index.providerKey() );
+        assertEquals( "same version", expectedDescriptor.getVersion(), index.providerVersion() );
+    }
+
+    private void createIndexDataAndShutdown( GraphDatabaseService db, Label label )
+    {
+        try
+        {
+            createIndexesAndData( db, label );
         }
         finally
         {
@@ -129,6 +240,11 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
             tx.success();
         }
 
+        createData( db, label );
+    }
+
+    private void createData( GraphDatabaseService db, Label label )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < 100; i++ )
@@ -145,15 +261,27 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
         }
     }
 
+    private void additionalUpdates( GraphDatabaseAPI db, Label label )
+    {
+        createData( db, label );
+    }
+
     private void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
     {
-        // There should be an index for the label and KEY1 containing 100 nodes
         assertTrue( hasIndex( db, label, KEY1 ) );
         assertEquals( 100, countIndexedNodes( db, label, KEY1 ) );
 
-        // There should be an index for the label and KEY1+KEY2 containing 34 nodes
         assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
         assertEquals( 34, countIndexedNodes( db, label, KEY1, KEY2 ) );
+    }
+
+    private void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
+    {
+        assertTrue( hasIndex( db, label, KEY1 ) );
+        assertEquals( 200, countIndexedNodes( db, label, KEY1 ) );
+
+        assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
+        assertEquals( 68, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
     private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
