@@ -36,9 +36,9 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.LoggingMonitor;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -255,7 +255,7 @@ public abstract class NativeIndexProviderTest
     // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
 
     @Test
-    public void shouldReportInitialStateAsPopulatingIfIndexDoesntExist()
+    public void shouldReportCorrectInitialStateIfIndexDoesntExist()
     {
         // given
         provider = newProvider();
@@ -264,8 +264,16 @@ public abstract class NativeIndexProviderTest
         InternalIndexState state = provider.getInitialState( indexId, descriptor() );
 
         // then
-        assertEquals( InternalIndexState.POPULATING, state );
-        logging.assertContainsLogCallContaining( "Failed to open index" );
+        InternalIndexState expected = expectedStateOnNonExistingSubIndex();
+        assertEquals( expected, state );
+        if ( InternalIndexState.POPULATING == expected )
+        {
+            logging.assertContainsLogCallContaining( "Failed to open index" );
+        }
+        else
+        {
+            logging.assertNoLogCallContaining( "Failed to open index" );
+        }
     }
 
     @Test
@@ -318,6 +326,8 @@ public abstract class NativeIndexProviderTest
     }
 
     /* storeMigrationParticipant */
+
+    protected abstract InternalIndexState expectedStateOnNonExistingSubIndex();
 
     protected abstract Value someValue();
 
