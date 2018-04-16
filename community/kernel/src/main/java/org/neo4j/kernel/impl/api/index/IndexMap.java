@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +31,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -319,7 +321,7 @@ public final class IndexMap implements Cloneable
     private Set<SchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
     {
         Set<SchemaDescriptor> set = new HashSet<>();
-        for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
+        for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
         {
             Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
             if ( forProperty != null )
@@ -333,7 +335,7 @@ public final class IndexMap implements Cloneable
     private int countIndexesByProperties( PrimitiveIntSet properties )
     {
         int count = 0;
-        for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
+        for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
         {
             Set<SchemaDescriptor> forProperty = descriptorsByProperty.get( iterator.next() );
             if ( forProperty != null )

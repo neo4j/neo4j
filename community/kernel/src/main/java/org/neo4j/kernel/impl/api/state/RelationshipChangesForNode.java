@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,7 +32,6 @@ import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -469,7 +471,7 @@ public class RelationshipChangesForNode
     {
         return relationshipsByType -> new PrefetchingIterator<Set<Long>>()
         {
-            private final PrimitiveIntIterator iterTypes = PrimitiveIntCollections.iterator( types );
+            private final IntIterator iterTypes = PrimitiveIntCollections.iterator( types );
 
             @Override
             protected Set<Long> fetchNextOrNull()

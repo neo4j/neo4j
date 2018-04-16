@@ -19,9 +19,10 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 
 public abstract class AbstractIntHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
@@ -33,7 +34,7 @@ public abstract class AbstractIntHopScotchCollection<VALUE> extends AbstractHopS
     }
 
     @Override
-    public PrimitiveIntIterator iterator()
+    public IntIterator intIterator()
     {
         final TableKeyIterator<VALUE> longIterator = new TableKeyIterator<>( table, this );
         return new PrimitiveIntBaseIterator()

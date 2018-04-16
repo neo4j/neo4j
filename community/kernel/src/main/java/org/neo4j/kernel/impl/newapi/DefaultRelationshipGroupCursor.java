@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -51,7 +53,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private PageCursor edgePage;
     private boolean hasCheckedTxState;
     private final PrimitiveIntSet txTypes = Primitive.intSet();
-    private PrimitiveIntIterator txTypeIterator;
+    private IntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor( DefaultCursors pool )
     {
@@ -186,7 +188,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         if ( txTypeIterator == null && !txTypes.isEmpty() )
         {
-            txTypeIterator = txTypes.iterator();
+            txTypeIterator = txTypes.intIterator();
             //here it may be tempting to do txTypes.clear()
             //however that will also clear the iterator
         }

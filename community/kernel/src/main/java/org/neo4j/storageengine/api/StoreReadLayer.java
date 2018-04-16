@@ -19,11 +19,13 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -92,7 +94,7 @@ public interface StoreReadLayer
     /**
      * @return iterator with property keys of all stored graph properties.
      */
-    PrimitiveIntIterator graphGetPropertyKeys();
+    IntIterator graphGetPropertyKeys();
 
     /**
      * @param propertyKeyId property key id to get graph property for.

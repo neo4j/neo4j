@@ -377,7 +377,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 
     private Set<TestRelType> relTypes( StoreSingleNodeCursor cursor )
     {
-        return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).iterator(), this::relTypeForId );
+        return mapToSet( disk.relationshipTypes( disk.newStatement(), cursor.get() ).intIterator(), this::relTypeForId );
     }
 
     private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete )

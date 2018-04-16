@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -337,7 +339,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveIntIterator graphGetPropertyKeys()
+    public IntIterator graphGetPropertyKeys()
     {
         return new PropertyKeyIdIterator( propertyLoader.graphLoadProperties( new IteratingPropertyReceiver<>() ) );
     }

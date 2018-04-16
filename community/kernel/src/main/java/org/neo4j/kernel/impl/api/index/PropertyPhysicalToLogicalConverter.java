@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -53,7 +54,7 @@ public class PropertyPhysicalToLogicalConverter
         PrimitiveIntObjectMap<PropertyBlock> afterMap = Primitive.intObjectMap();
         mapBlocks( nodeId, changes, beforeMap, afterMap );
 
-        PrimitiveIntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
+        final IntIterator uniqueIntIterator = uniqueIntIterator( beforeMap, afterMap );
         while ( uniqueIntIterator.hasNext() )
         {
             int key = uniqueIntIterator.next();
@@ -89,11 +90,11 @@ public class PropertyPhysicalToLogicalConverter
         }
     }
 
-    private PrimitiveIntIterator uniqueIntIterator( PrimitiveIntObjectMap<PropertyBlock> beforeMap,
+    private IntIterator uniqueIntIterator( PrimitiveIntObjectMap<PropertyBlock> beforeMap,
             PrimitiveIntObjectMap<PropertyBlock> afterMap )
     {
-        Iterator<PrimitiveIntIterator> intIterator =
-                asIterator( 2, beforeMap.iterator(), afterMap.iterator() );
+        final Iterator<IntIterator> intIterator =
+                asIterator( 2, beforeMap.intIterator(), afterMap.intIterator() );
         return deduplicate( concat( intIterator ) );
     }
 

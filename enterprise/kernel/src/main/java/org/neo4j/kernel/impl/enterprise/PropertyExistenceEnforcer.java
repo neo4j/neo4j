@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -27,7 +29,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
@@ -321,7 +322,7 @@ class PropertyExistenceEnforcer
     {
         if ( labelIds.size() > mandatoryNodePropertiesByLabel.size() )
         {
-            for ( PrimitiveIntIterator labels = mandatoryNodePropertiesByLabel.iterator(); labels.hasNext(); )
+            for ( IntIterator labels = mandatoryNodePropertiesByLabel.intIterator(); labels.hasNext(); )
             {
                 int label = labels.next();
                 if ( labelIds.contains( label ) )
@@ -332,7 +333,7 @@ class PropertyExistenceEnforcer
         }
         else
         {
-            for ( PrimitiveIntIterator labels = labelIds.iterator(); labels.hasNext(); )
+            for ( IntIterator labels = labelIds.intIterator(); labels.hasNext(); )
             {
                 int label = labels.next();
                 int[] keys = mandatoryNodePropertiesByLabel.get( label );

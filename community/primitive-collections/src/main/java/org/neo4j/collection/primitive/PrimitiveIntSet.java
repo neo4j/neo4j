@@ -19,11 +19,13 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 public interface PrimitiveIntSet extends PrimitiveIntCollection
 {
     boolean add( int value );
 
-    boolean addAll( PrimitiveIntIterator values );
+    boolean addAll( IntIterator values );
 
     boolean contains( int value );
 

@@ -19,11 +19,10 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Arrays;
 import java.util.concurrent.locks.StampedLock;
-
-import org.neo4j.collection.primitive.PrimitiveIntIterable;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 
 /**
  * A basic bitset.
@@ -42,7 +41,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
  * * Bulk operations appear atomic to concurrent readers
  * * Only caveat being that the iterator is not thread-safe
  */
-public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
+public class SimpleBitSet extends StampedLock
 {
     private long lastCheckPointKey;
     private long[] data;
@@ -167,10 +166,9 @@ public class SimpleBitSet extends StampedLock implements PrimitiveIntIterable
     // Views
     //
 
-    @Override
-    public PrimitiveIntIterator iterator()
+    public IntIterator iterator()
     {
-        return new PrimitiveIntIterator()
+        return new IntIterator()
         {
             private int next;
             private final int size = data.length * 64;

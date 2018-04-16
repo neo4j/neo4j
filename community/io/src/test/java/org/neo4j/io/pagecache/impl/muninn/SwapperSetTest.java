@@ -120,7 +120,7 @@ public class SwapperSetTest
             freed.add( id );
             return false;
         } );
-        set.vacuum( swapperIds -> vacuumed.addAll( swapperIds.iterator() ) );
+        set.vacuum( swapperIds -> vacuumed.addAll( swapperIds.intIterator() ) );
 
         allocateAndAddTenThousand( reused, swapper );
 
@@ -152,7 +152,7 @@ public class SwapperSetTest
             set.allocate( swapper );
         }
         PrimitiveIntSet vacuumedIds = Primitive.intSet();
-        set.vacuum( swapperIds -> vacuumedIds.addAll( swapperIds.iterator() ) );
+        set.vacuum( swapperIds -> vacuumedIds.addAll( swapperIds.intIterator() ) );
         if ( !vacuumedIds.isEmpty() )
         {
             throw new AssertionError( "Vacuum found id " + vacuumedIds + " when it should have found nothing" );

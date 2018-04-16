@@ -19,12 +19,13 @@
  */
 package org.neo4j.test.mockito.answer;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
@@ -48,7 +49,7 @@ public class Neo4jMockitoAnswers
                 Resource.EMPTY );
     }
 
-    public static Answer<PrimitiveIntIterator> answerAsPrimitiveIntIteratorFrom( final Iterable<Integer> values )
+    public static Answer<IntIterator> answerAsPrimitiveIntIteratorFrom( final Iterable<Integer> values )
     {
         return invocation -> PrimitiveIntCollections.toPrimitiveIterator( values.iterator() );
     }
