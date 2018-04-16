@@ -8,7 +8,6 @@ Apache Software License, Version 2.0
   Caffeine cache
   ConcurrentLinkedHashMap
   FindBugs-jsr305
-  Guava: Google Core Libraries for Java
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core

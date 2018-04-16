@@ -269,6 +269,10 @@
           <groupId>org.bitbucket.inkytonik.dsprofile</groupId>
           <artifactId>dsprofile_2.11</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
