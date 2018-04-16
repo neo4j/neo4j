@@ -62,6 +62,9 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -295,9 +298,30 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
+    private void createSpatialAndTemporalData( GraphDatabaseAPI db, Label label )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode( label );
+                Object value = i % 2 == 0 ?
+                               Values.pointValue( CoordinateReferenceSystem.Cartesian, i, i ) :
+                               DurationValue.duration( 0, 0, i, 0 );
+                node.setProperty( KEY1, value );
+                if ( i % 3 ==  0 )
+                {
+                    node.setProperty( KEY2, value );
+                }
+            }
+            tx.success();
+        }
+    }
+
     private void additionalUpdates( GraphDatabaseAPI db, Label label )
     {
         createData( db, label );
+        createSpatialAndTemporalData( db, label );
     }
 
     private void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
@@ -312,10 +336,10 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     private void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
     {
         assertTrue( hasIndex( db, label, KEY1 ) );
-        assertEquals( 200, countIndexedNodes( db, label, KEY1 ) );
+        assertEquals( 300, countIndexedNodes( db, label, KEY1 ) );
 
         assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
-        assertEquals( 68, countIndexedNodes( db, label, KEY1, KEY2 ) );
+        assertEquals( 102, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
     private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
