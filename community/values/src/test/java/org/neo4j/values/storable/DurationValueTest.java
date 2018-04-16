@@ -33,6 +33,7 @@ import org.neo4j.values.utils.TemporalParseException;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MICROS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -66,14 +67,14 @@ public class DurationValueTest
         DurationValue neg = duration( 0, 0, 0, -1_400_000_000 );
 
         // then
-        assertEquals( "+nanos", 500_000_000, pos.get( NANOS ) );
+        assertEquals( "+micros", 500_000, pos.get( MICROS ) );
         assertEquals( "+seconds", 1, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, neg.get( NANOS ) );
+        assertEquals( "-micros", -400_000, neg.get( MICROS ) );
         assertEquals( "-seconds", -1, neg.get( SECONDS ) );
 
-        assertEquals( "+nanos", 0, evenPos.get( NANOS ) );
+        assertEquals( "+micros", 0, evenPos.get( MICROS ) );
         assertEquals( "+seconds", 1, evenPos.get( SECONDS ) );
-        assertEquals( "-nanos", 0, evenNeg.get( NANOS ) );
+        assertEquals( "-micros", 0, evenNeg.get( MICROS ) );
         assertEquals( "-seconds", -1, evenNeg.get( SECONDS ) );
     }
 
@@ -86,11 +87,11 @@ public class DurationValueTest
         DurationValue x = duration( 0, 0, 1, -1_400_000_000 );
 
         // then
-        assertEquals( "+nanos", 600_000_000, pos.get( NANOS ) );
+        assertEquals( "+micros", 600_000, pos.get( MICROS ) );
         assertEquals( "+seconds", 3, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -500_000_000, neg.get( NANOS ) );
+        assertEquals( "-micros", -500_000, neg.get( MICROS ) );
         assertEquals( "-seconds", -3, neg.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, x.get( NANOS ) );
+        assertEquals( "-micros", -400_000, x.get( MICROS ) );
         assertEquals( "-seconds", 0, x.get( SECONDS ) );
     }
 
@@ -127,13 +128,7 @@ public class DurationValueTest
         assertEquals( duration( 0, 0, 0, -400000 ), parse( "PT-0.0004S" ) );
         assertEquals( duration( 0, 0, 0, -50000 ), parse( "PT-0.00005S" ) );
         assertEquals( duration( 0, 0, 0, -6000 ), parse( "PT-0.000006S" ) );
-        assertEquals( duration( 0, 0, 0, -700 ), parse( "PT-0.0000007S" ) );
-        assertEquals( duration( 0, 0, 0, -80 ), parse( "PT-0.00000008S" ) );
-        assertEquals( duration( 0, 0, 0, -9 ), parse( "PT-0.000000009S" ) );
 
-        assertEquals( duration( 0, 0, 0, 900_000_000 ), parse( "PT0.900000000S" ) );
-        assertEquals( duration( 0, 0, 0, 800_000_000 ), parse( "PT0.80000000S" ) );
-        assertEquals( duration( 0, 0, 0, 700_000_000 ), parse( "PT0.7000000S" ) );
         assertEquals( duration( 0, 0, 0, 600_000_000 ), parse( "PT0.600000S" ) );
         assertEquals( duration( 0, 0, 0, 500_000_000 ), parse( "PT0.50000S" ) );
         assertEquals( duration( 0, 0, 0, 400_000_000 ), parse( "PT0.4000S" ) );

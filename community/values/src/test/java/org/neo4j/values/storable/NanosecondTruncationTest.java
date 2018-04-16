@@ -33,7 +33,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.MICRO_OF_SECOND;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoUnit.NANOS;
+import static java.time.temporal.ChronoUnit.MICROS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -84,7 +84,6 @@ public class NanosecondTruncationTest
         assertEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 7, UTC ) );
     }
 
-
     @Test
     public void durationShouldEqualSameWithOtherNano()
     {
@@ -114,16 +113,9 @@ public class NanosecondTruncationTest
     }
 
     @Test
-    public void durationShouldTruncateOnParse()
-    {
-        DurationValue d = DurationValue.parse( "PT1.123456789S" );
-        assertEquals( 123456000, d.get( NANOS ) );
-    }
-
-    @Test
     public void timeShouldTruncateOnBuild()
     {
-        Map<String,AnyValue> map = new HashMap<>(  );
+        Map<String,AnyValue> map = new HashMap<>();
         map.put( "hour", Values.intValue( 11 ) );
         map.put( "minute", Values.intValue( 48 ) );
         map.put( "second", Values.intValue( 23 ) );
@@ -136,9 +128,9 @@ public class NanosecondTruncationTest
     }
 
     @Test
-    public void datetimeShouldTruncateOnTruncation ()
+    public void datetimeShouldTruncateOnTruncation()
     {
-        Map<String,AnyValue> map = new HashMap<>(  );
+        Map<String,AnyValue> map = new HashMap<>();
         map.put( "nanosecond", Values.intValue( 1234 ) );
 
         LocalDateTimeValue ldt = localDateTime( 2018, 4, 11, 11, 48, 12, 123456789 );
@@ -155,7 +147,7 @@ public class NanosecondTruncationTest
         DurationValue res1 = dur.mul( Values.doubleValue( 0.5 ) );
         DurationValue res2 = dur.mul( Values.doubleValue( 1.5 ) );
 
-        assertEquals(0, res1.get( NANOS ) );
-        assertEquals(1000, res2.get( NANOS ) );
+        assertEquals(0, res1.get( MICROS ) );
+        assertEquals(1, res2.get( MICROS ) );
     }
 }

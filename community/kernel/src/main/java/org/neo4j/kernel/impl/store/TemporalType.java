@@ -636,7 +636,7 @@ public enum TemporalType
             data[i * BLOCKS_DURATION] = durations[i].get( ChronoUnit.MONTHS );
             data[i * BLOCKS_DURATION + 1] = durations[i].get( ChronoUnit.DAYS );
             data[i * BLOCKS_DURATION + 2] = durations[i].get( ChronoUnit.SECONDS );
-            data[i * BLOCKS_DURATION + 3] = durations[i].get( ChronoUnit.NANOS );
+            data[i * BLOCKS_DURATION + 3] = durations[i].get( ChronoUnit.MICROS ) * 1000;
         }
         TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_DURATION.temporalType );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );

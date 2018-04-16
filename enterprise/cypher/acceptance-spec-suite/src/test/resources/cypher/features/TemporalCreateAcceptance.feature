@@ -385,7 +385,6 @@ Feature: TemporalCreateAcceptance
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70}),
               duration({days: 14, seconds: 70, milliseconds: 1}),
               duration({days: 14, seconds: 70, microseconds: 1}),
-              duration({days: 14, seconds: 70, nanoseconds: 1}),
               duration({minutes: 1.5, seconds: 1})] as d
       RETURN d
       """
@@ -398,7 +397,6 @@ Feature: TemporalCreateAcceptance
       | 'P12Y5M14DT16H13M10S' |
       | 'P14DT1M10.001S' |
       | 'P14DT1M10.000001S' |
-      | 'P14DT1M10.000000001S' |
       | 'PT1M31S' |
     And no side effects
 

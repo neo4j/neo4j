@@ -334,7 +334,7 @@ public class PrettyPrinterTest
 
         duration.writeTo( printer );
 
-        assertEquals( "{duration: {months: 12, days: 45, seconds: 90, nanos: 9911}}", printer.value() );
+        assertEquals( "{duration: {months: 12, days: 45, seconds: 90, micros: 9}}", printer.value() );
     }
 
     @Test
