@@ -99,6 +99,7 @@ public class Server extends LifecycleAdapter
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
+            debugLog.info( serverName + ": bound to " + listenAddress );
         }
         catch ( Exception e )
         {
@@ -108,8 +109,8 @@ public class Server extends LifecycleAdapter
                 String message = serverName + ": address is already bound: " + listenAddress;
                 userLog.error( message );
                 debugLog.error( message, e );
-                throw e;
             }
+            throw e;
         }
     }
 
