@@ -90,6 +90,11 @@ public class SchemaCache
         return constraintRuleById.values();
     }
 
+    public boolean hasConstraintRule( Long constraintRuleId )
+    {
+        return constraintRuleId != null && constraintRuleById.containsKey( constraintRuleId );
+    }
+
     public boolean hasConstraintRule( ConstraintDescriptor descriptor )
     {
         for ( ConstraintRule rule : constraintRuleById.values() )

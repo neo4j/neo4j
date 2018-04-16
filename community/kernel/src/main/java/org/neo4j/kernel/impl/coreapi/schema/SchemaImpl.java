@@ -468,7 +468,7 @@ public class SchemaImpl implements Schema
                 catch ( SchemaRuleNotFoundException | DropIndexFailureException e )
                 {
                     throw new ConstraintViolationException( e.getUserMessage(
-                            new StatementTokenNameLookup( statement.readOperations() ) ) );
+                            new StatementTokenNameLookup( statement.readOperations() ) ), e );
                 }
                 catch ( InvalidTransactionTypeKernelException e )
                 {

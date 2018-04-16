@@ -211,7 +211,9 @@ public class StorageLayer implements StoreReadLayer
         IndexRule rule = indexRule( index );
         if ( rule != null )
         {
-            return rule.getOwningConstraint();
+            // Think of the index as being orphaned if the owning constraint is missing or broken.
+            Long owningConstraint = rule.getOwningConstraint();
+            return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
         }
         return null;
     }
