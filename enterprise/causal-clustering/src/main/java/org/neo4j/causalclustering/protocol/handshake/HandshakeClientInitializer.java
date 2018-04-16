@@ -46,7 +46,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     private final Duration timeout;
     private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstaller;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
-    private final TimeoutStrategy timeoutStrategy;
+    private final TimeoutStrategy handshakeDelay;
     private final Log log;
 
     public HandshakeClientInitializer( ApplicationProtocolRepository applicationProtocolRepository, ModifierProtocolRepository modifierProtocolRepository,
@@ -59,7 +59,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         this.timeout = handshakeTimeout;
         this.protocolInstaller = protocolInstallerRepository;
         this.pipelineBuilderFactory = pipelineBuilderFactory;
-        this.timeoutStrategy = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );
+        this.handshakeDelay = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );
     }
 
     private void installHandlers( Channel channel, HandshakeClient handshakeClient ) throws Exception
@@ -79,14 +79,16 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         HandshakeClient handshakeClient = new HandshakeClient();
         installHandlers( channel, handshakeClient );
 
-        scheduleHandshake( channel, handshakeClient, timeoutStrategy.newTimeout() );
+        log.info( "Scheduling handshake (and timeout) local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+
+        scheduleHandshake( channel, handshakeClient, handshakeDelay.newTimeout() );
         scheduleTimeout( channel, handshakeClient );
     }
 
     /**
      * schedules the handshake initiation after the connection attempt
      */
-    private void scheduleHandshake( SocketChannel ch, HandshakeClient handshakeClient, TimeoutStrategy.Timeout timeout )
+    private void scheduleHandshake( SocketChannel ch, HandshakeClient handshakeClient, TimeoutStrategy.Timeout handshakeDelay )
     {
         ch.eventLoop().schedule( () ->
         {
@@ -96,14 +98,14 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             }
             else if ( ch.isOpen() )
             {
-                timeout.increment();
-                scheduleHandshake( ch, handshakeClient, timeout );
+                handshakeDelay.increment();
+                scheduleHandshake( ch, handshakeClient, handshakeDelay );
             }
             else
             {
                 handshakeClient.failIfNotDone( "Channel closed" );
             }
-        }, timeout.getMillis(), MILLISECONDS );
+        }, handshakeDelay.getMillis(), MILLISECONDS );
     }
 
     private void scheduleTimeout( SocketChannel ch, HandshakeClient handshakeClient )
@@ -118,6 +120,8 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
+        log.info( "Initiating handshake local %s remote %s", channel.localAddress(), channel.remoteAddress() );
+
         SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
         CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, applicationProtocolRepository, modifierProtocolRepository );
 
