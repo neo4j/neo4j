@@ -547,7 +547,8 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private static Object[] verifyInput( String type, QualifiedName name, List<FieldSignature> inputSignature, Object[] input ) throws ProcedureException
+    private static Object[] verifyInput( String type, QualifiedName name, List<FieldSignature> inputSignature, Object[] input,
+            int[] indexesToMap ) throws ProcedureException
     {
         // Verify that the number of passed arguments matches the number expected in the mthod signature
         if ( inputSignature.size() != input.length )
@@ -557,9 +558,9 @@ class ReflectiveProcedureCompiler
         }
 
         // Some input fields are not supported by Cypher and need to be mapped
-        for ( int i = 0; i < input.length; i++ )
+        for ( int indexToMap : indexesToMap )
         {
-            input[i] = inputSignature.get( i ).map( input[i] );
+            input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
         }
         return input;
     }
@@ -570,6 +571,7 @@ class ReflectiveProcedureCompiler
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
         private final Method procedureMethod;
+        private final int[] indexesToMap;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 Method procedureMethod, OutputMapper outputMapper,
@@ -580,6 +582,7 @@ class ReflectiveProcedureCompiler
             this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
+            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -597,7 +600,7 @@ class ReflectiveProcedureCompiler
             try
             {
                 // verify and possibly map the input
-                input = verifyInput( "Procedure", signature.name(), signature.inputSignature(), input );
+                input = verifyInput( "Procedure", signature.name(), signature.inputSignature(), input, indexesToMap );
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -735,6 +738,7 @@ class ReflectiveProcedureCompiler
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final Method udfMethod;
+        private final int[] indexesToMap;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 Method udfMethod, TypeMappers.NeoValueConverter outputMapper,
@@ -745,6 +749,7 @@ class ReflectiveProcedureCompiler
             this.udfMethod = udfMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
+            indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -762,7 +767,7 @@ class ReflectiveProcedureCompiler
             try
             {
                 // verify and possibly map the input
-                input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
+                input = verifyInput( "Function", signature.name(), signature.inputSignature(), input, indexesToMap );
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -801,6 +806,7 @@ class ReflectiveProcedureCompiler
         private final MethodHandle creator;
         private final Method updateMethod;
         private final MethodHandle resultMethod;
+        private final int[] indexesToMap;
 
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle creator, Method updateMethod, MethodHandle resultMethod,
@@ -814,6 +820,7 @@ class ReflectiveProcedureCompiler
             this.resultMethod = resultMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
+            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -844,7 +851,7 @@ class ReflectiveProcedureCompiler
                         try
                         {
                             // verify and possibly map the input
-                            input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
+                            input = verifyInput( "Function", signature.name(), signature.inputSignature(), input, indexesToMap );
 
                             // Call the method
                             updateMethod.invoke( aggregator, input );
@@ -910,5 +917,18 @@ class ReflectiveProcedureCompiler
                 }
             }
         }
+    }
+
+    private static int[] computeIndexesToMap( List<FieldSignature> inputSignature )
+    {
+        ArrayList<Integer> integers = new ArrayList<>();
+        for ( int i = 0; i < inputSignature.size(); i++ )
+        {
+            if ( inputSignature.get( i ).needsMapping() )
+            {
+                integers.add( i );
+            }
+        }
+        return integers.stream().mapToInt( i -> i ).toArray();
     }
 }
