@@ -52,7 +52,7 @@ class EnterpriseContextCreator(codeStructure: CodeStructure[GeneratedQuery]) ext
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics)
+      metricsFactory.newMetrics(planContext.statistics, config)
 
     new CompiledRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
       monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock, codeStructure)

@@ -61,7 +61,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       planSingleQuery(query)
   }
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
-  val realConfig = new RealLogicalPlanningConfiguration
   val cypherCompilerConfig = CypherCompilerConfiguration(
     queryCacheSize = 100,
     statsDivergenceCalculator = PlanFingerprint.divergenceNoDecayCalculator(0.5, 1000),
@@ -71,15 +70,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 10000
+    nonIndexedLabelWarningThreshold = 10000,
+    planWithMinimumCardinalityEstimates = false
   )
+  val realConfig = new RealLogicalPlanningConfiguration(cypherCompilerConfig)
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
     lazy val semanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
     def metricsFactory = new MetricsFactory {
-      def newCostModel() =
+      def newCostModel(ignore: CypherCompilerConfiguration) =
         (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
       def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel) =
@@ -168,7 +169,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics)
+      val metrics = metricsFactory.newMetrics(planContext.statistics, cypherCompilerConfig)
       def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, queryGraphSolver = queryGraphSolver, metrics = metrics, config = cypherCompilerConfig)
 
       val state = CompilationState(queryString, None, IDPPlannerName)
@@ -178,10 +179,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
-      metricsFactory.newMetrics(config.graphStatistics).queryGraphCardinalityModel(qg, input, semanticTable)
+      metricsFactory.newMetrics(config.graphStatistics, cypherCompilerConfig).queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics)
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, cypherCompilerConfig)
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
@@ -204,7 +205,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
-    extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
+    extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(cypherCompilerConfig)(dbStructure))
 
   implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
     semanticTable.resolvedPropertyKeyNames(label)

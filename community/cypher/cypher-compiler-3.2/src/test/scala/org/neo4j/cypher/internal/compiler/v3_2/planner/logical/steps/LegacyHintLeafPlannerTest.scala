@@ -41,13 +41,13 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: LegacyNodeIndexSeek => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, config)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
@@ -67,13 +67,13 @@ class LegacyHintLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTest
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: LegacyNodeIndexSeek => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, config)
     )
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 

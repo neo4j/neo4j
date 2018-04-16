@@ -66,7 +66,7 @@ object CommunityContextCreator extends ContextCreator[CompilerContext] {
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics)
+      metricsFactory.newMetrics(planContext.statistics, config)
 
     new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext, typeConverter, createFingerprintReference,
       monitors, metrics, queryGraphSolver, config, updateStrategy, debugOptions, clock)

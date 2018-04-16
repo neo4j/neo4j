@@ -108,7 +108,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
         errorIfShortestPathFallbackUsedAtRuntime = false,
         errorIfShortestPathHasCommonNodesAtRuntime = true,
         legacyCsvQuoteEscaping = false,
-        nonIndexedLabelWarningThreshold = 10000L
+        nonIndexedLabelWarningThreshold = 10000L,
+        planWithMinimumCardinalityEstimates = false
       ),
       Clock.systemUTC(),
       WrappedMonitors(kernelMonitors),
