@@ -69,67 +69,6 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeL
  */
 public class StoreCopyClient
 {
-    public interface Monitor
-    {
-        void startReceivingStoreFiles();
-
-        void finishReceivingStoreFiles();
-
-        void startReceivingStoreFile( File file );
-
-        void finishReceivingStoreFile( File file );
-
-        void startReceivingTransactions( long startTxId );
-
-        void finishReceivingTransactions( long endTxId );
-
-        void startRecoveringStore();
-
-        void finishRecoveringStore();
-
-        class Adapter implements Monitor
-        {
-            @Override
-            public void startReceivingStoreFiles()
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingStoreFiles()
-            {   // empty
-            }
-
-            @Override
-            public void startReceivingStoreFile( File file )
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingStoreFile( File file )
-            {   // empty
-            }
-
-            @Override
-            public void startReceivingTransactions( long startTxId )
-            {   // empty
-            }
-
-            @Override
-            public void finishReceivingTransactions( long endTxId )
-            {   // empty
-            }
-
-            @Override
-            public void startRecoveringStore()
-            {   // empty
-            }
-
-            @Override
-            public void finishRecoveringStore()
-            {   // empty
-            }
-        }
-    }
 
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
@@ -148,19 +87,19 @@ public class StoreCopyClient
     private final Log log;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final Monitor monitor;
+    private final StoreCopyClientMonitor monitor;
     private final boolean forensics;
     private final FileMoveProvider fileMoveProvider;
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics )
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics )
     {
         this( storeDir, config, kernelExtensions, logProvider, fs, pageCache, monitor, forensics, new FileMoveProvider( pageCache,
                 fs ) );
     }
 
     public StoreCopyClient( File storeDir, Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions, LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache, Monitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
+            FileSystemAbstraction fs, PageCache pageCache, StoreCopyClientMonitor monitor, boolean forensics, FileMoveProvider fileMoveProvider )
     {
         this.storeDir = storeDir;
         this.config = config;

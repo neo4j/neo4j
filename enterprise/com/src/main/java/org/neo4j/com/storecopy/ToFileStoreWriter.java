@@ -40,16 +40,16 @@ public class ToFileStoreWriter implements StoreWriter
 {
     private final File basePath;
     private final FileSystemAbstraction fs;
-    private final StoreCopyClient.Monitor monitor;
+    private final StoreCopyClientMonitor monitor;
     private final PageCache pageCache;
     private final List<FileMoveAction> fileMoveActions;
 
     public ToFileStoreWriter( File graphDbStoreDir, FileSystemAbstraction fs,
-            StoreCopyClient.Monitor monitor, PageCache pageCache, List<FileMoveAction> fileMoveActions )
+            StoreCopyClientMonitor storeCopyClientMonitor, PageCache pageCache, List<FileMoveAction> fileMoveActions )
     {
         this.basePath = graphDbStoreDir;
         this.fs = fs;
-        this.monitor = monitor;
+        this.monitor = storeCopyClientMonitor;
         this.pageCache = pageCache;
         this.fileMoveActions = fileMoveActions;
     }
@@ -64,14 +64,14 @@ public class ToFileStoreWriter implements StoreWriter
             File file = new File( basePath, path );
             file.getParentFile().mkdirs();
 
-            String filename = file.getName();
+            String fullFilePath = file.toString();
 
-            monitor.startReceivingStoreFile( file );
+            monitor.startReceivingStoreFile( fullFilePath );
             try
             {
                 // Note that we don't bother checking if the page cache already has a mapping for the given file.
                 // The reason is that we are copying to a temporary store location, and then we'll move the files later.
-                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( filename ) )
+                if ( !pageCache.fileSystemSupportsFileOperations() && StoreType.canBeManagedByPageCache( file.getName() ) )
                 {
                     int filePageSize = filePageSize( requiredElementAlignment );
                     try ( PagedFile pagedFile = pageCache.map( file, filePageSize, CREATE, WRITE ) )
@@ -87,7 +87,7 @@ public class ToFileStoreWriter implements StoreWriter
             }
             finally
             {
-                monitor.finishReceivingStoreFile( file );
+                monitor.finishReceivingStoreFile( fullFilePath );
             }
         }
         catch ( Throwable t )

@@ -36,8 +36,6 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseHandler;
 import org.neo4j.causalclustering.catchup.CatchupProtocolClientInstaller;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
-import org.neo4j.causalclustering.catchup.CatchupServerHandler;
-import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
 import org.neo4j.causalclustering.catchup.RegularCatchupServerHandler;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
@@ -279,7 +277,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy ),
+                new StoreCopyClient( catchUpClient, platformModule.monitors, logProvider, storeCopyBackoffStrategy ),
                 new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory(), config, platformModule.monitors );
 

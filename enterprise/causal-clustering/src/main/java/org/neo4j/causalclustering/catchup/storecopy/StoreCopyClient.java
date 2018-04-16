@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -32,7 +33,9 @@ import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -45,23 +48,25 @@ public class StoreCopyClient
     private final CatchUpClient catchUpClient;
     private final Log log;
     private TimeoutStrategy backOffStrategy;
+    private final Monitors monitors;
 
-    public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider, TimeoutStrategy backOffStrategy )
+    public StoreCopyClient( CatchUpClient catchUpClient, Monitors monitors, LogProvider logProvider, TimeoutStrategy backOffStrategy )
     {
         this.catchUpClient = catchUpClient;
+        this.monitors = monitors;
         log = logProvider.getLog( getClass() );
         this.backOffStrategy = backOffStrategy;
     }
 
     long copyStoreFiles( CatchupAddressProvider catchupAddressProvider, StoreId expectedStoreId, StoreFileStreamProvider storeFileStreamProvider,
-            Supplier<TerminationCondition> requestWiseTerminationCondition )
+            Supplier<TerminationCondition> requestWiseTerminationCondition, File destDir )
             throws StoreCopyFailedException
     {
         try
         {
             PrepareStoreCopyResponse prepareStoreCopyResponse = prepareStoreCopy( catchupAddressProvider.primary(), expectedStoreId, storeFileStreamProvider );
             copyFilesIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
-                    requestWiseTerminationCondition );
+                    requestWiseTerminationCondition, destDir );
             copyIndexSnapshotIndividually( prepareStoreCopyResponse, expectedStoreId, catchupAddressProvider, storeFileStreamProvider,
                     requestWiseTerminationCondition );
             return prepareStoreCopyResponse.lastTransactionId();
@@ -73,30 +78,42 @@ public class StoreCopyClient
     }
 
     private void copyFilesIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId, CatchupAddressProvider addressProvider,
-            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions, File destDir ) throws StoreCopyFailedException
     {
+        StoreCopyClientMonitor
+                storeCopyClientMonitor = monitors.newMonitor( StoreCopyClientMonitor.class );
+        storeCopyClientMonitor.startReceivingStoreFiles();
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         for ( File file : prepareStoreCopyResponse.getFiles() )
         {
+            storeCopyClientMonitor.startReceivingStoreFile( Paths.get( destDir.toString(), file.getName() ).toString() );
             persistentCallToSecondary( new GetStoreFileRequest( expectedStoreId, file, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ),
                     addressProvider,
                     terminationConditions.get() );
+            storeCopyClientMonitor.finishReceivingStoreFile( Paths.get( destDir.toString(), file.getName() ).toString() );
         }
+        storeCopyClientMonitor.finishReceivingStoreFiles();
     }
 
     private void copyIndexSnapshotIndividually( PrepareStoreCopyResponse prepareStoreCopyResponse, StoreId expectedStoreId,
-            CatchupAddressProvider addressProvider,
-            StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions ) throws StoreCopyFailedException
+            CatchupAddressProvider addressProvider, StoreFileStreamProvider storeFileStream, Supplier<TerminationCondition> terminationConditions )
+            throws StoreCopyFailedException
     {
+        StoreCopyClientMonitor
+                storeCopyClientMonitor = monitors.newMonitor( StoreCopyClientMonitor.class );
         long lastTransactionId = prepareStoreCopyResponse.lastTransactionId();
         PrimitiveLongIterator indexIds = prepareStoreCopyResponse.getIndexIds().iterator();
+        storeCopyClientMonitor.startReceivingIndexSnapshots();
         while ( indexIds.hasNext() )
         {
             long indexId = indexIds.next();
+            storeCopyClientMonitor.startReceivingIndexSnapshot( indexId );
             persistentCallToSecondary( new GetIndexFilesRequest( expectedStoreId, indexId, lastTransactionId ), filesCopyAdaptor( storeFileStream, log ),
                     addressProvider,
                     terminationConditions.get() );
+            storeCopyClientMonitor.finishReceivingIndexSnapshot( indexId );
         }
+        storeCopyClientMonitor.finishReceivingIndexSnapshots();
     }
 
     private void persistentCallToSecondary( CatchUpRequest request, CatchUpResponseAdaptor<StoreCopyFinishedResponse> copyHandler,

@@ -30,7 +30,6 @@ import java.io.Writer;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -56,7 +55,7 @@ public class OnlineBackupCommandBuilder
     private Boolean fallbackToFull;
     private Long timeout;
     private Boolean checkConsistency;
-    private File  consistencyReportLocation;
+    private File consistencyReportLocation;
     private Config additionalConfig;
     private SelectedBackupProtocol selectedBackupProtocol;
     private Boolean consistencyCheckGraph;

@@ -33,6 +33,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +59,7 @@ import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -213,7 +215,7 @@ public class OnlineBackupCommandHaIT
     public void backupDoesNotDisplayExceptionWhenSuccessful() throws Exception
     {
         // given
-        String backupName = "noExceptionTest_" + recordFormat;
+        String backupName = "noErrorTest_" + recordFormat;
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
 
@@ -237,6 +239,51 @@ public class OnlineBackupCommandHaIT
         // then
         assertFalse( byteArrayErrorStream.toString().toLowerCase().contains( "exception" ) );
         assertFalse( byteArrayOutputStream.toString().toLowerCase().contains( "exception" ) );
+    }
+
+    @Test
+    public void reportsProgress() throws Exception
+    {
+        // given
+        String backupName = "reportsProgress_" + recordFormat;
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+
+        // and
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream outputStream = wrapWithNormalOutput( System.out, new PrintStream( byteArrayOutputStream ) );
+
+        // and
+        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
+        PrintStream errorStream = wrapWithNormalOutput( System.err, new PrintStream( byteArrayErrorStream ) );
+
+        // when
+        assertEquals(
+                0,
+                runBackupTool( backupDir, outputStream, errorStream,
+                        "--from", "127.0.0.1:" + backupPort,
+                        "--protocol=common",
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=" + backupName ) );
+
+        // then
+        String output = byteArrayOutputStream.toString();
+        String legacyImplementationDetail = "temp-copy";
+        String location = Paths.get( backupDir.toString(), backupName, legacyImplementationDetail ).toString();
+        assertTrue( output.contains( "Start receiving store files" ) );
+        assertTrue( output.contains( "Finish receiving store files" ) );
+        String tested = Paths.get( location, "neostore.nodestore.db.labels" ).toString();
+        assertTrue( tested, output.contains( format( "Start receiving store file %s", tested ) ) );
+        assertTrue( tested, output.contains( format( "Finish receiving store file %s", tested ) ) );
+        assertFalse( output.contains( "Start receiving transactions from " ) );
+        assertFalse( output.contains( "Finish receiving transactions at " ) );
+        assertTrue( output.contains( "Start recovering store" ) );
+        assertTrue( output.contains( "Finish recovering store" ) );
+        assertFalse( output.contains( "Start receiving index snapshots" ) );
+        assertFalse( output.contains( "Start receiving index snapshot id 1" ) );
+        assertFalse( output.contains( "Finished receiving index snapshot id 1" ) );
+        assertFalse( output.contains( "Finished receiving index snapshots" ) );
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )

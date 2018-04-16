@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -61,6 +62,7 @@ public class BackupSupportingClassesFactory
     protected final FileSystemAbstraction fileSystemAbstraction;
     protected final TransactionLogCatchUpFactory transactionLogCatchUpFactory;
     protected final OutputStream logDestination;
+    protected final OutsideWorld outsideWorld;
 
     protected BackupSupportingClassesFactory( BackupModule backupModule )
     {
@@ -70,6 +72,7 @@ public class BackupSupportingClassesFactory
         this.fileSystemAbstraction = backupModule.getFileSystemAbstraction();
         this.transactionLogCatchUpFactory = backupModule.getTransactionLogCatchUpFactory();
         this.logDestination = backupModule.getOutsideWorld().outStream();
+        this.outsideWorld = backupModule.getOutsideWorld();
     }
 
     /**
@@ -81,6 +84,7 @@ public class BackupSupportingClassesFactory
      */
     BackupSupportingClasses createSupportingClasses( Config config )
     {
+        monitors.addMonitorListener( new BackupOutputMonitor( outsideWorld ) );
         PageCache pageCache = createPageCache( fileSystemAbstraction, config );
         return new BackupSupportingClasses(
                 backupDelegatorFromConfig( pageCache, config ),
@@ -100,7 +104,7 @@ public class BackupSupportingClassesFactory
         TxPullClient txPullClient = new TxPullClient( catchUpClient, monitors );
         ExponentialBackoffStrategy backOffStrategy =
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
-        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, logProvider, backOffStrategy );
+        StoreCopyClient storeCopyClient = new StoreCopyClient( catchUpClient, monitors, logProvider, backOffStrategy );
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, fileSystemAbstraction, pageCache, storeCopyClient,

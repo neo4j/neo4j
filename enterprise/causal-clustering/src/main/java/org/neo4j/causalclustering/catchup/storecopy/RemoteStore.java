@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -127,7 +128,7 @@ public class RemoteStore
             StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( destDir, fs, pageCache, monitors );
             lastFlushedTxId = storeCopyClient.copyStoreFiles( addressProvider, expectedStoreId, streamToDiskProvider,
                         () -> new MaximumTotalTime( config.get( CausalClusteringSettings.store_copy_max_retry_time_per_request ).getSeconds(),
-                                TimeUnit.SECONDS ) );
+                                TimeUnit.SECONDS ), destDir );
 
             log.info( "Store files need to be recovered starting from: %d", lastFlushedTxId );
 
@@ -150,13 +151,14 @@ public class RemoteStore
             boolean asPartOfStoreCopy, boolean keepTxLogsInStoreDir )
             throws IOException, StoreCopyFailedException
     {
+        StoreCopyClientMonitor storeCopyClientMonitor =
+                monitors.newMonitor( StoreCopyClientMonitor.class );
+        storeCopyClientMonitor.startReceivingTransactions( fromTxId );
+        long previousTxId = fromTxId - 1;
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, config,
                 logProvider, fromTxId, asPartOfStoreCopy, keepTxLogsInStoreDir ) )
         {
             log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
-
-            long previousTxId = fromTxId - 1;
-
             CatchupResult lastStatus;
             do
             {
@@ -171,6 +173,10 @@ public class RemoteStore
         catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
+        }
+        finally
+        {
+            storeCopyClientMonitor.finishReceivingTransactions( previousTxId );
         }
     }
 

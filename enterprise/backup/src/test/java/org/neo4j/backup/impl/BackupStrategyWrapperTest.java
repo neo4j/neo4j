@@ -27,7 +27,6 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;

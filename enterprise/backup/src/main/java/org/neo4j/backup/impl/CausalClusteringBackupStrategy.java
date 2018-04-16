@@ -55,6 +55,7 @@ class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupS
         try
         {
             storeId = backupDelegator.fetchStoreId( fromAddress );
+            log.info( "Remote store id is " + storeId );
         }
         catch ( StoreIdDownloadFailedException e )
         {
@@ -82,6 +83,7 @@ class CausalClusteringBackupStrategy extends LifecycleAdapter implements BackupS
         try
         {
             storeId = backupDelegator.fetchStoreId( fromAddress );
+            log.info( "Remote store id is " + storeId );
         }
         catch ( StoreIdDownloadFailedException e )
         {

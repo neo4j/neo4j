@@ -88,6 +88,7 @@ public class StoreCopyClientIT
     private FakeFile indexFileA = new FakeFile( "lucene", "Lucene 123" );
     private Server catchupServer;
     private TestCatchupServerHandler serverHandler;
+    private File targetLocation = new File( "copyTargetLocation" );
 
     private static void writeContents( FileSystemAbstraction fileSystemAbstraction, File file, String contents )
     {
@@ -122,7 +123,8 @@ public class StoreCopyClientIT
 
         ConstantTimeTimeoutStrategy storeCopyBackoffStrategy = new ConstantTimeTimeoutStrategy( 1, TimeUnit.MILLISECONDS );
 
-        subject = new StoreCopyClient( catchUpClient, logProvider, storeCopyBackoffStrategy );
+        Monitors monitors = new Monitors();
+        subject = new StoreCopyClient( catchUpClient, monitors, logProvider, storeCopyBackoffStrategy );
     }
 
     @After
@@ -139,7 +141,7 @@ public class StoreCopyClientIT
 
         // when catchup is performed for valid transactionId and StoreId
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), storeFileStream, () -> defaultTerminationCondition, targetLocation );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -160,7 +162,7 @@ public class StoreCopyClientIT
 
         // when catchup is performed for valid transactionId and StoreId
         CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( from( catchupServer.address().getPort() ) );
-        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition );
+        subject.copyStoreFiles( catchupAddressProvider, serverHandler.getStoreId(), clientStoreFileStream, () -> defaultTerminationCondition, targetLocation );
 
         // then the catchup is successful
         Set<String> expectedFiles = new HashSet<>( Arrays.asList( fileA.getFilename(), fileB.getFilename(), indexFileA.getFilename() ) );
@@ -275,7 +277,7 @@ public class StoreCopyClientIT
             StreamToDiskProvider streamToDiskProvider = new StreamToDiskProvider( storeDir, fsa, pageCache, new Monitors() );
 
             // and
-            subject.copyStoreFiles( addressProvider, storeId, streamToDiskProvider, () -> defaultTerminationCondition );
+            subject.copyStoreFiles( addressProvider, storeId, streamToDiskProvider, () -> defaultTerminationCondition, targetLocation );
 
             // then
             assertEquals( fileContent( new File( storeDir, fileName ) ), finishedContent );

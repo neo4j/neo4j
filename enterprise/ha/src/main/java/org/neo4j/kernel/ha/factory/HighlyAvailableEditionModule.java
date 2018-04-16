@@ -49,7 +49,7 @@ import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.com.Server;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.com.storecopy.StoreCopyClient;
+import org.neo4j.com.storecopy.StoreCopyClientMonitor;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.function.Factory;
@@ -597,7 +597,7 @@ public class HighlyAvailableEditionModule
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
-                        monitors.newMonitor( StoreCopyClient.Monitor.class ),
+                        monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
                         dependencies.provideDependency( TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
@@ -609,7 +609,7 @@ public class HighlyAvailableEditionModule
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
                         monitors.newMonitor( SwitchToSlave.Monitor.class ),
-                        monitors.newMonitor( StoreCopyClient.Monitor.class ),
+                        monitors.newMonitor( StoreCopyClientMonitor.class ),
                         dependencies.provideDependency( NeoStoreDataSource.class ),
                         dependencies.provideDependency( TransactionIdStore.class ),
                         slaveServerFactory, updatePullerProxy, platformModule.pageCache,
