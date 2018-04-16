@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 
+import scala.collection.Iterator.empty
+
 case class LimitPipe(source: Pipe, exp: Expression)
                     (val id: Id = new Id)
   extends PipeWithSource(source) with NumericHelper {
@@ -34,8 +36,21 @@ case class LimitPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    val limit = asInt(exp(state.createOrGetInitialContext())(state))
+    val limit = asLong(exp(state.createOrGetInitialContext())(state))
 
-    input.take(limit)
+    new LimitIterator(limit, input)
+  }
+
+  class LimitIterator(limit: Long, iterator: Iterator[ExecutionContext]) extends Iterator[ExecutionContext] {
+    private var remaining = limit
+
+    def hasNext = remaining > 0 && iterator.hasNext
+
+    def next(): ExecutionContext =
+      if (remaining > 0) {
+        remaining -= 1
+        iterator.next()
+      }
+      else empty.next()
   }
 }
