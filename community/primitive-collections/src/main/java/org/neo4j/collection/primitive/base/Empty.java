@@ -19,12 +19,14 @@
  */
 package org.neo4j.collection.primitive.base;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collections;
 
 import org.neo4j.collection.primitive.PrimitiveCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongCollection;
@@ -118,7 +120,7 @@ public class Empty
         implements PrimitiveIntCollection
     {
         @Override
-        public PrimitiveIntIterator iterator()
+        public IntIterator intIterator()
         {
             return PrimitiveIntCollections.emptyIterator();
         }
@@ -138,7 +140,7 @@ public class Empty
         }
 
         @Override
-        public boolean addAll( PrimitiveIntIterator values )
+        public boolean addAll( IntIterator values )
         {
             throw new UnsupportedOperationException();
         }

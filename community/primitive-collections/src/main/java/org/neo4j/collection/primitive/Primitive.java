@@ -19,6 +19,9 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.hopscotch.IntKeyLongValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
@@ -203,9 +206,9 @@ public class Primitive
         };
     }
 
-    public static PrimitiveIntIterator iterator( final int... ints )
+    public static IntIterator iterator( final int... ints )
     {
-        return new PrimitiveIntIterator()
+        return new IntIterator()
         {
             int i;
 

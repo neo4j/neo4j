@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,7 +28,6 @@ import org.junit.rules.RuleChain;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -267,7 +267,7 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    PrimitiveIntIterator nodeGetPropertyKeys( Transaction transaction, long node )
+    IntIterator nodeGetPropertyKeys( Transaction transaction, long node )
     {
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor();
               PropertyCursor properties = transaction.cursors().allocatePropertyCursor() )
@@ -282,7 +282,7 @@ public abstract class KernelIntegrationTest
                     props.add( properties.propertyKey() );
                 }
             }
-            return props.iterator();
+            return props.intIterator();
         }
     }
 

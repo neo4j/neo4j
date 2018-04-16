@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,9 +49,9 @@ public class PrimitiveIntCollections
     }
 
     /**
-     * Base iterator for simpler implementations of {@link PrimitiveIntIterator}s.
+     * Base iterator for simpler implementations of {@link IntIterator}s.
      */
-    public abstract static class PrimitiveIntBaseIterator implements PrimitiveIntIterator
+    public abstract static class PrimitiveIntBaseIterator implements IntIterator
     {
         private boolean hasNextDecided;
         private boolean hasNext;
@@ -105,7 +107,7 @@ public class PrimitiveIntCollections
         }
     }
 
-    public static PrimitiveIntIterator iterator( final int... items )
+    public static IntIterator iterator( final int... items )
     {
         return new PrimitiveIntBaseIterator()
         {
@@ -120,17 +122,17 @@ public class PrimitiveIntCollections
     }
 
     // Concating
-    public static PrimitiveIntIterator concat( Iterator<PrimitiveIntIterator> iterators )
+    public static IntIterator concat( Iterator<IntIterator> iterators )
     {
         return new PrimitiveIntConcatingIterator( iterators );
     }
 
     public static class PrimitiveIntConcatingIterator extends PrimitiveIntBaseIterator
     {
-        private final Iterator<PrimitiveIntIterator> iterators;
-        private PrimitiveIntIterator currentIterator;
+        private final Iterator<IntIterator> iterators;
+        private IntIterator currentIterator;
 
-        public PrimitiveIntConcatingIterator( Iterator<PrimitiveIntIterator> iterators )
+        public PrimitiveIntConcatingIterator( Iterator<IntIterator> iterators )
         {
             this.iterators = iterators;
         }
@@ -152,13 +154,13 @@ public class PrimitiveIntCollections
             return (currentIterator != null && currentIterator.hasNext()) && next( currentIterator.next() );
         }
 
-        protected final PrimitiveIntIterator currentIterator()
+        protected final IntIterator currentIterator()
         {
             return currentIterator;
         }
     }
 
-    public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final IntPredicate filter )
+    public static IntIterator filter( IntIterator source, final IntPredicate filter )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
@@ -170,7 +172,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static PrimitiveIntIterator deduplicate( PrimitiveIntIterator source )
+    public static IntIterator deduplicate( IntIterator source )
     {
         return new PrimitiveIntFilteringIterator( source )
         {
@@ -186,9 +188,9 @@ public class PrimitiveIntCollections
 
     public abstract static class PrimitiveIntFilteringIterator extends PrimitiveIntBaseIterator implements IntPredicate
     {
-        private final PrimitiveIntIterator source;
+        private final IntIterator source;
 
-        public PrimitiveIntFilteringIterator( PrimitiveIntIterator source )
+        public PrimitiveIntFilteringIterator( IntIterator source )
         {
             this.source = source;
         }
@@ -211,7 +213,7 @@ public class PrimitiveIntCollections
         public abstract boolean test( int testItem );
     }
 
-    public static PrimitiveIntSet asSet( PrimitiveIntIterator iterator )
+    public static PrimitiveIntSet asSet( IntIterator iterator )
     {
         PrimitiveIntSet set = Primitive.intSet();
         while ( iterator.hasNext() )
@@ -228,7 +230,7 @@ public class PrimitiveIntCollections
     public static long[] asLongArray( PrimitiveIntCollection values )
     {
         long[] array = new long[values.size()];
-        PrimitiveIntIterator iterator = values.iterator();
+        final IntIterator iterator = values.intIterator();
         int i = 0;
         while ( iterator.hasNext() )
         {
@@ -237,7 +239,7 @@ public class PrimitiveIntCollections
         return array;
     }
 
-    private static final PrimitiveIntIterator EMPTY = new PrimitiveIntBaseIterator()
+    private static final IntIterator EMPTY = new PrimitiveIntBaseIterator()
     {
         @Override
         protected boolean fetchNext()
@@ -246,7 +248,7 @@ public class PrimitiveIntCollections
         }
     };
 
-    public static PrimitiveIntIterator emptyIterator()
+    public static IntIterator emptyIterator()
     {
         return EMPTY;
     }
@@ -256,7 +258,7 @@ public class PrimitiveIntCollections
         return Empty.EMPTY_PRIMITIVE_INT_SET;
     }
 
-    public static PrimitiveIntIterator toPrimitiveIterator( final Iterator<Integer> iterator )
+    public static IntIterator toPrimitiveIterator( final Iterator<Integer> iterator )
     {
         return new PrimitiveIntBaseIterator()
         {
@@ -277,7 +279,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final PrimitiveIntIterator source )
+    public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final IntIterator source )
     {
         return new Iterator<T>()
         {
@@ -301,7 +303,7 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static void consume( PrimitiveIntIterator source, IntConsumer consumer )
+    public static void consume( IntIterator source, IntConsumer consumer )
     {
         while ( source.hasNext() )
         {
@@ -355,10 +357,10 @@ public class PrimitiveIntCollections
     /**
      * Pulls all items from the {@code iterator} and puts them into a {@link List}, boxing each int.
      *
-     * @param iterator {@link PrimitiveIntIterator} to pull values from.
+     * @param iterator {@link IntIterator} to pull values from.
      * @return a {@link List} containing all items.
      */
-    public static List<Integer> toList( PrimitiveIntIterator iterator )
+    public static List<Integer> toList( IntIterator iterator )
     {
         List<Integer> out = new ArrayList<>();
         while ( iterator.hasNext() )
@@ -372,16 +374,16 @@ public class PrimitiveIntCollections
      * Pulls all items from the {@code iterator} and puts them into a {@link Set}, boxing each int.
      * Any duplicate value will throw {@link IllegalStateException}.
      *
-     * @param iterator {@link PrimitiveIntIterator} to pull values from.
+     * @param iterator {@link IntIterator} to pull values from.
      * @return a {@link Set} containing all items.
      * @throws IllegalStateException for the first encountered duplicate.
      */
-    public static Set<Integer> toSet( PrimitiveIntIterator iterator )
+    public static Set<Integer> toSet( IntIterator iterator )
     {
         return mapToSet( iterator, Integer::new );
     }
 
-    public static <T> Set<T> mapToSet( PrimitiveIntIterator iterator, IntFunction<T> map )
+    public static <T> Set<T> mapToSet( IntIterator iterator, IntFunction<T> map )
     {
         Set<T> set = new HashSet<>();
         while ( iterator.hasNext() )

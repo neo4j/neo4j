@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
@@ -43,7 +44,7 @@ public class PrimitiveIntCollectionsTest
         int[] items = new int[] { 2, 5, 234 };
 
         // WHEN
-        PrimitiveIntIterator iterator = PrimitiveIntCollections.iterator( items );
+        IntIterator iterator = PrimitiveIntCollections.iterator( items );
 
         // THEN
         assertItems( iterator, items );
@@ -64,11 +65,11 @@ public class PrimitiveIntCollectionsTest
     public void concatenateTwoIterators()
     {
         // GIVEN
-        PrimitiveIntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
-        PrimitiveIntIterator otherItems = PrimitiveIntCollections.iterator( 1, 2, 5 );
+        IntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
+        IntIterator otherItems = PrimitiveIntCollections.iterator( 1, 2, 5 );
 
         // WHEN
-        PrimitiveIntIterator iterator = PrimitiveIntCollections.concat( asList( firstItems, otherItems ).iterator() );
+        IntIterator iterator = PrimitiveIntCollections.concat( asList( firstItems, otherItems ).iterator() );
 
         // THEN
         assertItems( iterator, 10, 3, 203, 32, 1, 2, 5 );
@@ -78,10 +79,10 @@ public class PrimitiveIntCollectionsTest
     public void filter()
     {
         // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
+        IntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveIntIterator filtered = PrimitiveIntCollections.filter( items, item -> item != 2 );
+        IntIterator filtered = PrimitiveIntCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
@@ -91,21 +92,21 @@ public class PrimitiveIntCollectionsTest
     public void deduplicate()
     {
         // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
+        IntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
 
         // WHEN
-        PrimitiveIntIterator deduped = PrimitiveIntCollections.deduplicate( items );
+        IntIterator deduped = PrimitiveIntCollections.deduplicate( items );
 
         // THEN
         assertItems( deduped, 1, 2, 3 );
     }
 
-    private static final class CountingPrimitiveIntIteratorResource implements PrimitiveIntIterator, AutoCloseable
+    private static final class CountingPrimitiveIntIteratorResource implements IntIterator, AutoCloseable
     {
-        private final PrimitiveIntIterator delegate;
+        private final IntIterator delegate;
         private final AtomicInteger closeCounter;
 
-        private CountingPrimitiveIntIteratorResource( PrimitiveIntIterator delegate, AtomicInteger closeCounter )
+        private CountingPrimitiveIntIteratorResource( IntIterator delegate, AtomicInteger closeCounter )
         {
             this.delegate = delegate;
             this.closeCounter = closeCounter;
@@ -134,7 +135,7 @@ public class PrimitiveIntCollectionsTest
     public void iteratorAsSet()
     {
         // GIVEN
-        PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
+        IntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
 
         // WHEN
         PrimitiveIntSet set = PrimitiveIntCollections.asSet( items );
@@ -159,7 +160,7 @@ public class PrimitiveIntCollectionsTest
     {
         // GIVEN
         AtomicInteger count = new AtomicInteger( 2 );
-        PrimitiveIntIterator iterator = new PrimitiveIntCollections.PrimitiveIntBaseIterator()
+        IntIterator iterator = new PrimitiveIntCollections.PrimitiveIntBaseIterator()
         {
             @Override
             protected boolean fetchNext()
@@ -208,7 +209,7 @@ public class PrimitiveIntCollectionsTest
         assertEquals( "c", copyMap.get( 3 ) );
     }
 
-    private void assertNoMoreItems( PrimitiveIntIterator iterator )
+    private void assertNoMoreItems( IntIterator iterator )
     {
         assertFalse( iterator + " should have no more items", iterator.hasNext() );
         try
@@ -222,13 +223,13 @@ public class PrimitiveIntCollectionsTest
         }
     }
 
-    private void assertNextEquals( long expected, PrimitiveIntIterator iterator )
+    private void assertNextEquals( long expected, IntIterator iterator )
     {
         assertTrue( iterator + " should have had more items", iterator.hasNext() );
         assertEquals( expected, iterator.next() );
     }
 
-    private void assertItems( PrimitiveIntIterator iterator, int... expectedItems )
+    private void assertItems( IntIterator iterator, int... expectedItems )
     {
         for ( long expectedItem : expectedItems )
         {

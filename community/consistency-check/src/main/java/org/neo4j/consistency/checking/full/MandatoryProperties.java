@@ -19,11 +19,12 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Arrays;
 import java.util.function.Function;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.consistency.RecordType;
@@ -219,7 +220,7 @@ public class MandatoryProperties
         {
             if ( !mandatoryKeys.isEmpty() )
             {
-                for ( PrimitiveIntIterator key = mandatoryKeys.iterator(); key.hasNext(); )
+                for ( IntIterator key = mandatoryKeys.intIterator(); key.hasNext(); )
                 {
                     reporter.report( record, reportClass, recordType ).missingMandatoryProperty( key.next() );
                 }

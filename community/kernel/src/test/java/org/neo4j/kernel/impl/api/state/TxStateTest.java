@@ -1181,7 +1181,7 @@ public class TxStateTest
         state.relationshipDoDelete( relC, relType + 1, startNode, endNode );
 
         // Then
-        assertThat( toList( state.nodeRelationshipTypes( startNode ).iterator() ), equalTo( asList( relType ) ) );
+        assertThat( toList( state.nodeRelationshipTypes( startNode ).intIterator() ), equalTo( asList( relType ) ) );
     }
 
     @Test

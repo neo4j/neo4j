@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
 
@@ -60,7 +61,7 @@ public class Labels implements LabelSet
     {
         long[] labelArray = new long[set.size()];
         int index = 0;
-        PrimitiveIntIterator iterator = set.iterator();
+        final IntIterator iterator = set.intIterator();
         while ( iterator.hasNext() )
         {
             labelArray[index++] = iterator.next();

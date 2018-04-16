@@ -19,7 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
@@ -45,7 +46,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
     }
 
     @Override
-    public boolean addAll( PrimitiveIntIterator values )
+    public boolean addAll( IntIterator values )
     {
         boolean changed = false;
         while ( values.hasNext() )

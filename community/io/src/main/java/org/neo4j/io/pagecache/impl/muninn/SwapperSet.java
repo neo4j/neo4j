@@ -19,11 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+
 import java.util.Arrays;
 import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.io.pagecache.PageSwapper;
 
@@ -99,7 +100,7 @@ final class SwapperSet
         {
             if ( !free.isEmpty() )
             {
-                short id = safeCastIntToShort( free.iterator().next() );
+                short id = safeCastIntToShort( free.intIterator().next() );
                 free.remove( id );
                 swapperMappings[id] = new SwapperMapping( id, swapper );
                 this.swapperMappings = swapperMappings; // Volatile store synchronizes-with loads in getters.
@@ -181,7 +182,7 @@ final class SwapperSet
             // ids whose pages we evicted.
             synchronized ( this )
             {
-                PrimitiveIntIterator itr = freeIds.iterator();
+                final IntIterator itr = freeIds.intIterator();
                 while ( itr.hasNext() )
                 {
                     int freeId = itr.next();
@@ -191,7 +192,7 @@ final class SwapperSet
             }
             synchronized ( free )
             {
-                free.addAll( freeIds.iterator() );
+                free.addAll( freeIds.intIterator() );
             }
         }
     }

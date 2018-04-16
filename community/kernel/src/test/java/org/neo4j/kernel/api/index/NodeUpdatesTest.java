@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -291,7 +291,7 @@ public class NodeUpdatesTest
         }
         return ( nodeId1, propertyIds, sink ) ->
         {
-            PrimitiveIntIterator iterator = propertyIds.iterator();
+            final IntIterator iterator = propertyIds.intIterator();
             while ( iterator.hasNext() )
             {
                 int propertyId = iterator.next();
