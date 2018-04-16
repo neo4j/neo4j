@@ -83,10 +83,10 @@ public class TimeValueTest
     public void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( time( 14, 5, 17, 123000000, UTC ), parse( "140517.123", inUTC ) );
-        assertEquals( time( 14, 5, 17, 1, UTC ), parse( "14:5:17.000000001", inUTC ) );
+        assertEquals( time( 14, 5, 17, 1000, UTC ), parse( "14:5:17.000001", inUTC ) );
         assertEquals( time( 4, 15, 4, 0, UTC ), parse( "4:15:4.000", inUTC ) );
-        assertEquals( time( 9, 7, 19, 999999999, UTC ), parse( "9:7:19.999999999", inUTC ) );
-        assertEquals( time( 3, 4, 1, 123456789, UTC ), parse( "03:04:01.123456789", inUTC ) );
+        assertEquals( time( 9, 7, 19, 999999000, UTC ), parse( "9:7:19.999999", inUTC ) );
+        assertEquals( time( 3, 4, 1, 123456000, UTC ), parse( "03:04:01.123456", inUTC ) );
     }
 
     @Test

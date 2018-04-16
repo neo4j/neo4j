@@ -724,7 +724,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      * In contrast to {@link #get(TemporalUnit)}, this method supports more units, namely:
      *
      * years, hours, minutes, milliseconds, microseconds,
-     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond, nanosecondsOfSecond
+     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond
      */
     public LongValue get( String fieldName )
     {

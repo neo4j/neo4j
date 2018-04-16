@@ -50,8 +50,7 @@ Feature: TemporalCreateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 789, millisecond: 123, microsecond: 456}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 456, millisecond: 123}),
               localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               localtime({hour:12, minute:31, second:14, millisecond: 645}),
               localtime({hour:12, minute:31, second:14}),
@@ -61,8 +60,7 @@ Feature: TemporalCreateAcceptance
       """
     Then the result should be, in order:
       | d                    |
-      | '12:31:14.123456789' |
-      | '12:31:14.645876123' |
+      | '12:31:14.123456'    |
       | '12:31:14.645876'    |
       | '12:31:14.645'       |
       | '12:31:14'           |
@@ -74,15 +72,13 @@ Feature: TemporalCreateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [time({hour:12, minute:31, second:14, nanosecond: 789, millisecond: 123, microsecond: 456}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 3}),
+      UNWIND [time({hour:12, minute:31, second:14, microsecond: 456, millisecond: 123}),
+              time({hour:12, minute:31, second:14, microsecond: 3}),
               time({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, millisecond: 645}),
               time({hour:12, minute:31, second:14}),
               time({hour:12, minute:31}),
               time({hour:12}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               time({hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               time({hour:12, minute:31, second:14, timezone: '+01:00'}),
@@ -92,15 +88,13 @@ Feature: TemporalCreateAcceptance
       """
     Then the result should be, in order:
       | d |
-      | '12:31:14.123456789Z' |
-      | '12:31:14.645876123Z' |
-      | '12:31:14.000000003Z' |
+      | '12:31:14.123456Z' |
+      | '12:31:14.000003Z' |
       | '12:31:14.645876Z' |
       | '12:31:14.645Z' |
       | '12:31:14Z' |
       | '12:31Z' |
       | '12:00Z' |
-      | '12:31:14.645876123+01:00' |
       | '12:31:14.645876+01:00' |
       | '12:31:14.645+01:00' |
       | '12:31:14+01:00' |
@@ -112,30 +106,26 @@ Feature: TemporalCreateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 789, millisecond: 123, microsecond: 456}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 3}),
+      UNWIND [localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 456, millisecond: 123}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 3}),
               localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, millisecond: 645}),
               localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14}),
               localdatetime({year:1984, month:10, day:11, hour:12, minute:31}),
               localdatetime({year:1984, month:10, day:11, hour:12}),
               localdatetime({year:1984, month:10, day:11}),
-              localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, nanosecond: 645876123}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, microsecond: 645876}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12}),
               localdatetime({year:1984, week:10, dayOfWeek:3}),
-              localdatetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, nanosecond: 645876123}),
               localdatetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, microsecond: 645876}),
               localdatetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, millisecond: 645}),
               localdatetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14}),
               localdatetime({year:1984, ordinalDay:202, hour:12, minute:31}),
               localdatetime({year:1984, ordinalDay:202, hour:12}),
               localdatetime({year:1984, ordinalDay:202}),
-              localdatetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, nanosecond: 645876123}),
               localdatetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, microsecond: 645876}),
               localdatetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, millisecond: 645}),
               localdatetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14}),
@@ -147,30 +137,26 @@ Feature: TemporalCreateAcceptance
       """
     Then the result should be, in order:
       | d |
-      | '1984-10-11T12:31:14.123456789' |
-      | '1984-10-11T12:31:14.645876123' |
-      | '1984-10-11T12:31:14.000000003' |
+      | '1984-10-11T12:31:14.123456' |
+      | '1984-10-11T12:31:14.000003' |
       | '1984-10-11T12:31:14.645876' |
       | '1984-10-11T12:31:14.645' |
       | '1984-10-11T12:31:14' |
       | '1984-10-11T12:31' |
       | '1984-10-11T12:00' |
       | '1984-10-11T00:00' |
-      | '1984-03-07T12:31:14.645876123' |
       | '1984-03-07T12:31:14.645876' |
       | '1984-03-07T12:31:14.645' |
       | '1984-03-07T12:31:14' |
       | '1984-03-07T12:31' |
       | '1984-03-07T12:00' |
       | '1984-03-07T00:00' |
-      | '1984-07-20T12:31:14.645876123' |
       | '1984-07-20T12:31:14.645876' |
       | '1984-07-20T12:31:14.645' |
       | '1984-07-20T12:31:14' |
       | '1984-07-20T12:31' |
       | '1984-07-20T12:00' |
       | '1984-07-20T00:00' |
-      | '1984-08-14T12:31:14.645876123' |
       | '1984-08-14T12:31:14.645876' |
       | '1984-08-14T12:31:14.645' |
       | '1984-08-14T12:31:14' |
@@ -184,29 +170,25 @@ Feature: TemporalCreateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 789, millisecond: 123, microsecond: 456}),
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 456, millisecond: 123}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31}),
               datetime({year:1984, month:10, day:11, hour:12}),
               datetime({year:1984, month:10, day:11}),
-              datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, nanosecond: 645876123}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12}),
               datetime({year:1984, week:10, dayOfWeek:3}),
-              datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, nanosecond: 645876123}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31}),
               datetime({year:1984, ordinalDay:202, hour:12}),
               datetime({year:1984, ordinalDay:202}),
-              datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, nanosecond: 645876123}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14}),
@@ -215,28 +197,24 @@ Feature: TemporalCreateAcceptance
               datetime({year:1984, quarter:3, dayOfQuarter: 45}),
               datetime({year:1984}),
 
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'}),
               datetime({year:1984, month:10, day:11, timezone: '+01:00'}),
-              datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, timezone: '+01:00'}),
               datetime({year:1984, week:10, dayOfWeek:3, timezone: '+01:00'}),
-              datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, hour:12, timezone: '+01:00'}),
               datetime({year:1984, ordinalDay:202, timezone: '+01:00'}),
-              datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, millisecond: 645, timezone: '+01:00'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, timezone: '+01:00'}),
@@ -245,28 +223,24 @@ Feature: TemporalCreateAcceptance
               datetime({year:1984, quarter:3, dayOfQuarter: 45, timezone: '+01:00'}),
               datetime({year:1984, timezone: '+01:00'}),
 
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, millisecond: 645, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, month:10, day:11, timezone: 'Europe/Stockholm'}),
-              datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, microsecond: 645876, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, hour:12, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, week:10, dayOfWeek:3, timezone: 'Europe/Stockholm'}),
-              datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, microsecond: 645876, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, millisecond: 645, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, second:14, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, hour:12, minute:31, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, hour:12, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, ordinalDay:202, timezone: 'Europe/Stockholm'}),
-              datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, microsecond: 645876, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, millisecond: 645, timezone: 'Europe/Stockholm'}),
               datetime({year:1984, quarter:3, dayOfQuarter: 45, hour:12, minute:31, second:14, timezone: 'Europe/Stockholm'}),
@@ -281,29 +255,25 @@ Feature: TemporalCreateAcceptance
       """
     Then the result should be, in order:
       | d |
-      | '1984-10-11T12:31:14.123456789Z' |
-      | '1984-10-11T12:31:14.645876123Z' |
+      | '1984-10-11T12:31:14.123456Z' |
       | '1984-10-11T12:31:14.645876Z' |
       | '1984-10-11T12:31:14.645Z' |
       | '1984-10-11T12:31:14Z' |
       | '1984-10-11T12:31Z' |
       | '1984-10-11T12:00Z' |
       | '1984-10-11T00:00Z' |
-      | '1984-03-07T12:31:14.645876123Z' |
       | '1984-03-07T12:31:14.645876Z' |
       | '1984-03-07T12:31:14.645Z' |
       | '1984-03-07T12:31:14Z' |
       | '1984-03-07T12:31Z' |
       | '1984-03-07T12:00Z' |
       | '1984-03-07T00:00Z' |
-      | '1984-07-20T12:31:14.645876123Z' |
       | '1984-07-20T12:31:14.645876Z' |
       | '1984-07-20T12:31:14.645Z' |
       | '1984-07-20T12:31:14Z' |
       | '1984-07-20T12:31Z' |
       | '1984-07-20T12:00Z' |
       | '1984-07-20T00:00Z' |
-      | '1984-08-14T12:31:14.645876123Z' |
       | '1984-08-14T12:31:14.645876Z' |
       | '1984-08-14T12:31:14.645Z' |
       | '1984-08-14T12:31:14Z' |
@@ -311,28 +281,24 @@ Feature: TemporalCreateAcceptance
       | '1984-08-14T12:00Z' |
       | '1984-08-14T00:00Z' |
       | '1984-01-01T00:00Z' |
-      | '1984-10-11T12:31:14.645876123+01:00' |
       | '1984-10-11T12:31:14.645876+01:00' |
       | '1984-10-11T12:31:14.645+01:00' |
       | '1984-10-11T12:31:14+01:00' |
       | '1984-10-11T12:31+01:00' |
       | '1984-10-11T12:00+01:00' |
       | '1984-10-11T00:00+01:00' |
-      | '1984-03-07T12:31:14.645876123+01:00' |
       | '1984-03-07T12:31:14.645876+01:00' |
       | '1984-03-07T12:31:14.645+01:00' |
       | '1984-03-07T12:31:14+01:00' |
       | '1984-03-07T12:31+01:00' |
       | '1984-03-07T12:00+01:00' |
       | '1984-03-07T00:00+01:00' |
-      | '1984-07-20T12:31:14.645876123+01:00' |
       | '1984-07-20T12:31:14.645876+01:00' |
       | '1984-07-20T12:31:14.645+01:00' |
       | '1984-07-20T12:31:14+01:00' |
       | '1984-07-20T12:31+01:00' |
       | '1984-07-20T12:00+01:00' |
       | '1984-07-20T00:00+01:00' |
-      | '1984-08-14T12:31:14.645876123+01:00' |
       | '1984-08-14T12:31:14.645876+01:00' |
       | '1984-08-14T12:31:14.645+01:00' |
       | '1984-08-14T12:31:14+01:00' |
@@ -340,28 +306,24 @@ Feature: TemporalCreateAcceptance
       | '1984-08-14T12:00+01:00' |
       | '1984-08-14T00:00+01:00' |
       | '1984-01-01T00:00+01:00' |
-      | '1984-10-11T12:31:14.645876123+01:00[Europe/Stockholm]' |
       | '1984-10-11T12:31:14.645876+01:00[Europe/Stockholm]' |
       | '1984-10-11T12:31:14.645+01:00[Europe/Stockholm]' |
       | '1984-10-11T12:31:14+01:00[Europe/Stockholm]' |
       | '1984-10-11T12:31+01:00[Europe/Stockholm]' |
       | '1984-10-11T12:00+01:00[Europe/Stockholm]' |
       | '1984-10-11T00:00+01:00[Europe/Stockholm]' |
-      | '1984-03-07T12:31:14.645876123+01:00[Europe/Stockholm]' |
       | '1984-03-07T12:31:14.645876+01:00[Europe/Stockholm]' |
       | '1984-03-07T12:31:14.645+01:00[Europe/Stockholm]' |
       | '1984-03-07T12:31:14+01:00[Europe/Stockholm]' |
       | '1984-03-07T12:31+01:00[Europe/Stockholm]' |
       | '1984-03-07T12:00+01:00[Europe/Stockholm]' |
       | '1984-03-07T00:00+01:00[Europe/Stockholm]' |
-      | '1984-07-20T12:31:14.645876123+02:00[Europe/Stockholm]' |
       | '1984-07-20T12:31:14.645876+02:00[Europe/Stockholm]' |
       | '1984-07-20T12:31:14.645+02:00[Europe/Stockholm]' |
       | '1984-07-20T12:31:14+02:00[Europe/Stockholm]' |
       | '1984-07-20T12:31+02:00[Europe/Stockholm]' |
       | '1984-07-20T12:00+02:00[Europe/Stockholm]' |
       | '1984-07-20T00:00+02:00[Europe/Stockholm]' |
-      | '1984-08-14T12:31:14.645876123+02:00[Europe/Stockholm]' |
       | '1984-08-14T12:31:14.645876+02:00[Europe/Stockholm]' |
       | '1984-08-14T12:31:14.645+02:00[Europe/Stockholm]' |
       | '1984-08-14T12:31:14+02:00[Europe/Stockholm]' |
@@ -369,7 +331,7 @@ Feature: TemporalCreateAcceptance
       | '1984-08-14T12:00+02:00[Europe/Stockholm]' |
       | '1984-08-14T00:00+02:00[Europe/Stockholm]' |
       | '1984-01-01T00:00+01:00[Europe/Stockholm]' |
-      | '1970-01-05T19:46:19.999999999Z' |
+      | '1970-01-05T19:46:19.999999Z' |
       | '1977-07-15T13:34:33.987Z' |
 
     And no side effects

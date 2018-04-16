@@ -27,10 +27,10 @@ Feature: TemporalComparisonAcceptance
       UNWIND [date({year:1980, month:12, day:24}),
               date({year:1984, month:10, day:11})] as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70})] as d
       RETURN x>d, x<d, x>=d, x<=d, x=d
       """
@@ -55,12 +55,12 @@ Feature: TemporalComparisonAcceptance
     When executing query:
       """
       UNWIND [localtime({hour:10, minute:35}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as x
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70})] as d
       RETURN x>d, x<d, x>=d, x<=d, x=d
       """
@@ -85,12 +85,12 @@ Feature: TemporalComparisonAcceptance
     When executing query:
       """
       UNWIND [time({hour:10, minute:0, timezone: '+01:00'}),
-              time({hour:9, minute:35, second:14, nanosecond: 645876123, timezone: '+00:00'})] as x
+              time({hour:9, minute:35, second:14, microsecond: 645876, timezone: '+00:00'})] as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:9, minute:35, second:14, nanosecond: 645876123, timezone: '+00:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:9, minute:35, second:14, microsecond: 645876, timezone: '+00:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70})] as d
       RETURN x>d, x<d, x>=d, x<=d, x=d
       """
@@ -115,12 +115,12 @@ Feature: TemporalComparisonAcceptance
     When executing query:
       """
       UNWIND [localdatetime({year:1980, month:12, day:11, hour:12, minute:31, second:14}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as x
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:9, minute:35, second:14, nanosecond: 645876123, timezone: '+00:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:9, minute:35, second:14, microsecond: 645876, timezone: '+00:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70})] as d
       RETURN x>d, x<d, x>=d, x<=d, x=d
       """
@@ -147,9 +147,9 @@ Feature: TemporalComparisonAcceptance
       UNWIND [datetime({year:1980, month:12, day:11, hour:12, minute:31, second:14, timezone: '+00:00'}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, timezone: '+05:00'})] as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:9, minute:35, second:14, nanosecond: 645876123, timezone: '+00:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:9, minute:35, second:14, microsecond: 645876, timezone: '+00:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, timezone: '+05:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70})] as d
       RETURN x>d, x<d, x>=d, x<=d, x=d
@@ -176,9 +176,9 @@ Feature: TemporalComparisonAcceptance
       """
       WITH duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70}) as x
       UNWIND [date({year:1984, month:10, day:11}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:9, minute:35, second:14, nanosecond: 645876123, timezone: '+00:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:9, minute:35, second:14, microsecond: 645876, timezone: '+00:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, timezone: '+05:00'}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70}),
               duration({years: 12, months:5, days: 14, hours:16, minutes: 13, seconds: 10}),

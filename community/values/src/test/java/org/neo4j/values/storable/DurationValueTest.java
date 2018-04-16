@@ -104,8 +104,8 @@ public class DurationValueTest
         assertEquals( "P2Y4M11D", prettyPrint( 28, 11, 0, 0 ) );
         assertEquals( "PT5S", prettyPrint( 0, 0, 5, 0 ) );
         assertEquals( "PT30H22M8S", prettyPrint( 0, 0, 109328, 0 ) );
-        assertEquals( "PT7.123456789S", prettyPrint( 0, 0, 7, 123_456_789 ) );
-        assertEquals( "PT0.000000001S", prettyPrint( 0, 0, 0, 1 ) );
+        assertEquals( "PT7.123456S", prettyPrint( 0, 0, 7, 123_456_789 ) );
+        assertEquals( "PT0S", prettyPrint( 0, 0, 0, 1 ) );
         assertEquals( "PT0.1S", prettyPrint( 0, 0, 0, 100_000_000 ) );
         assertEquals( "PT0S", prettyPrint( 0, 0, 0, 0 ) );
     }
@@ -264,8 +264,8 @@ public class DurationValueTest
         assertEquals( 0, duration( 0, 0, 0, 0 ).computeHash() );
 
         assertNotEquals(
-                duration( 0, 0, 0, 1 ).computeHash(),
-                duration( 0, 0, 0, 2 ).computeHash() );
+                duration( 0, 0, 0, 1000 ).computeHash(),
+                duration( 0, 0, 0, 2000 ).computeHash() );
         assertNotEquals(
                 duration( 0, 0, 0, 1 ).computeHash(),
                 duration( 0, 0, 1, 0 ).computeHash() );

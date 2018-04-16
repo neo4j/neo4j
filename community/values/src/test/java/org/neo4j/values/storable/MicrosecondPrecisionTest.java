@@ -44,7 +44,7 @@ import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
-public class NanosecondTruncationTest
+public class MicrosecondPrecisionTest
 {
     static final Supplier<ZoneId> inUTC = () -> UTC;
 
@@ -102,42 +102,6 @@ public class NanosecondTruncationTest
         LocalTimeValue lt = localTime( 10, 52, 5, 123456789 );
         assertEquals( 123456000, lt.get( NANO_OF_SECOND ) );
         assertEquals( 123456, lt.get( MICRO_OF_SECOND ) );
-    }
-
-    @Test
-    public void timeShouldTruncateOnParse()
-    {
-        TimeValue t = TimeValue.parse( "10:12:24.123456789", inUTC );
-        assertEquals( 123456000, t.get( NANO_OF_SECOND ) );
-        assertEquals( 123456, t.get( MICRO_OF_SECOND ) );
-    }
-
-    @Test
-    public void timeShouldTruncateOnBuild()
-    {
-        Map<String,AnyValue> map = new HashMap<>();
-        map.put( "hour", Values.intValue( 11 ) );
-        map.put( "minute", Values.intValue( 48 ) );
-        map.put( "second", Values.intValue( 23 ) );
-        map.put( "nanosecond", Values.intValue( 1234 ) );
-
-        TimeValue t = TimeValue.build( VirtualValues.map( map ), inUTC );
-
-        assertEquals( 1000, t.get( NANO_OF_SECOND ) );
-        assertEquals( 1, t.get( MICRO_OF_SECOND ) );
-    }
-
-    @Test
-    public void datetimeShouldTruncateOnTruncation()
-    {
-        Map<String,AnyValue> map = new HashMap<>();
-        map.put( "nanosecond", Values.intValue( 1234 ) );
-
-        LocalDateTimeValue ldt = localDateTime( 2018, 4, 11, 11, 48, 12, 123456789 );
-        DateTimeValue dt = DateTimeValue.truncate( SECONDS, ldt, VirtualValues.map( map ), inUTC );
-
-        assertEquals( 1000, dt.get( NANO_OF_SECOND ) );
-        assertEquals( 1, dt.get( MICRO_OF_SECOND ) );
     }
 
     @Test

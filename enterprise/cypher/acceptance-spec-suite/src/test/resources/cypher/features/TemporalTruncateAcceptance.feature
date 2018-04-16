@@ -24,8 +24,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:2017, month:10, day:11})] as d
       RETURN datetime.truncate('millennium', d) as d1,
              datetime.truncate('millennium', d, {day:2}) as d2,
@@ -46,8 +46,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:2017, month:10, day:11})] as d
       RETURN datetime.truncate('millennium', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -62,8 +62,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('century', d) as d1,
              datetime.truncate('century', d, {day:2}) as d2,
@@ -83,8 +83,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:2017, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:2017, month:10, day:11})] as d
       RETURN datetime.truncate('century', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -99,8 +99,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('decade', d) as d1,
              datetime.truncate('decade', d, {day:2}) as d2,
@@ -120,8 +120,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('decade', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -136,8 +136,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('year', d) as d1,
              datetime.truncate('year', d, {day:2}) as d2,
@@ -157,8 +157,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('year', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -173,8 +173,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:2, day:1})] as d
       RETURN datetime.truncate('weekYear', d) as d1,
              datetime.truncate('weekYear', d, {day:5}) as d2,
@@ -194,8 +194,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:1, day:1, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:2, day:1})] as d
       RETURN datetime.truncate('weekYear', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -210,8 +210,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:11, day:11})] as d
       RETURN datetime.truncate('quarter', d) as d1,
              datetime.truncate('quarter', d, {day:2}) as d2,
@@ -231,8 +231,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:11, day:11})] as d
       RETURN datetime.truncate('quarter', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -247,8 +247,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('month', d) as d1,
              datetime.truncate('month', d, {day:2}) as d2,
@@ -268,8 +268,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('month', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -284,8 +284,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('week', d) as d1,
              datetime.truncate('week', d, {dayOfWeek:2}) as d2,
@@ -305,8 +305,8 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('week', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -321,45 +321,45 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('day', d) as d1,
-             datetime.truncate('day', d, {nanosecond:2}) as d2,
+             datetime.truncate('day', d, {microsecond:2}) as d2,
              localdatetime.truncate('day', d) as d3,
-             localdatetime.truncate('day', d, {nanosecond:2}) as d4,
+             localdatetime.truncate('day', d, {microsecond:2}) as d4,
              date.truncate('day', d) as d5
       """
     Then the result should be, in order:
-      | d1                       | d2                                    | d3                 | d4                              | d5          |
-      | '1984-10-11T00:00+01:00' | '1984-10-11T00:00:00.000000002+01:00' | '1984-10-11T00:00' | '1984-10-11T00:00:00.000000002' |'1984-10-11' |
-      | '1984-10-11T00:00Z'      | '1984-10-11T00:00:00.000000002Z'      | '1984-10-11T00:00' | '1984-10-11T00:00:00.000000002' |'1984-10-11' |
-      | '1984-10-11T00:00Z'      | '1984-10-11T00:00:00.000000002Z'      | '1984-10-11T00:00' | '1984-10-11T00:00:00.000000002' |'1984-10-11' |
+      | d1                       | d2                                 | d3                 | d4                           | d5          |
+      | '1984-10-11T00:00+01:00' | '1984-10-11T00:00:00.000002+01:00' | '1984-10-11T00:00' | '1984-10-11T00:00:00.000002' |'1984-10-11' |
+      | '1984-10-11T00:00Z'      | '1984-10-11T00:00:00.000002Z'      | '1984-10-11T00:00' | '1984-10-11T00:00:00.000002' |'1984-10-11' |
+      | '1984-10-11T00:00Z'      | '1984-10-11T00:00:00.000002Z'      | '1984-10-11T00:00' | '1984-10-11T00:00:00.000002' |'1984-10-11' |
     And no side effects
 
   Scenario: Should truncate time to day
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('day', d) as d1,
-             time.truncate('day', d, {nanosecond:2}) as d2,
+             time.truncate('day', d, {microsecond:2}) as d2,
              localtime.truncate('day', d) as d3,
-             localtime.truncate('day', d, {nanosecond:2}) as d4
+             localtime.truncate('day', d, {microsecond:2}) as d4
       """
     Then the result should be, in order:
-      | d1            | d2                         | d3      | d4                   |
-      | '00:00+01:00' | '00:00:00.000000002+01:00' | '00:00' | '00:00:00.000000002' |
-      | '00:00Z'      | '00:00:00.000000002Z'      | '00:00' | '00:00:00.000000002' |
+      | d1            | d2                      | d3      | d4                |
+      | '00:00+01:00' | '00:00:00.000002+01:00' | '00:00' | '00:00:00.000002' |
+      | '00:00Z'      | '00:00:00.000002Z'      | '00:00' | '00:00:00.000002' |
 
     And no side effects
   Scenario: Should truncate to day with time zone
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               date({year:1984, month:10, day:11})] as d
       RETURN datetime.truncate('day', d, {timezone:'Europe/Stockholm'}) as d1
       """
@@ -374,341 +374,341 @@ Feature: TemporalTruncateAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN datetime.truncate('hour', d) as d1,
-             datetime.truncate('hour', d, {nanosecond:2}) as d2,
+             datetime.truncate('hour', d, {microsecond:2}) as d2,
              datetime.truncate('hour', d, {timezone: 'Europe/Stockholm'}) as d3
       """
     Then the result should be, in order:
-      | d1                       | d2                                    | d3                                          |
-      | '1984-10-11T12:00-01:00' | '1984-10-11T12:00:00.000000002-01:00' |  '1984-10-11T12:00+01:00[Europe/Stockholm]' |
-      | '1984-10-11T12:00Z'      | '1984-10-11T12:00:00.000000002Z'      |  '1984-10-11T12:00+01:00[Europe/Stockholm]' |
+      | d1                       | d2                                 | d3                                          |
+      | '1984-10-11T12:00-01:00' | '1984-10-11T12:00:00.000002-01:00' |  '1984-10-11T12:00+01:00[Europe/Stockholm]' |
+      | '1984-10-11T12:00Z'      | '1984-10-11T12:00:00.000002Z'      |  '1984-10-11T12:00+01:00[Europe/Stockholm]' |
     And no side effects
 
  Scenario: Should truncate localdatetime to hour
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localdatetime.truncate('hour', d) as d1,
-             localdatetime.truncate('hour', d, {nanosecond:2}) as d2
+             localdatetime.truncate('hour', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                      | d2                              |
-      | '1984-10-11T12:00'      | '1984-10-11T12:00:00.000000002' |
-      | '1984-10-11T12:00'      | '1984-10-11T12:00:00.000000002' |
+      | d1                      | d2                           |
+      | '1984-10-11T12:00'      | '1984-10-11T12:00:00.000002' |
+      | '1984-10-11T12:00'      | '1984-10-11T12:00:00.000002' |
     And no side effects
 
  Scenario: Should truncate time to hour
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('hour', d) as d1,
-             time.truncate('hour', d, {nanosecond:2}) as d2,
+             time.truncate('hour', d, {microsecond:2}) as d2,
              time.truncate('hour', d, {timezone: '+01:00'}) as d3
       """
     Then the result should be, in order:
-      | d1            | d2                         | d3            |
-      | '12:00-01:00' | '12:00:00.000000002-01:00' | '12:00+01:00' |
-      | '12:00Z'      | '12:00:00.000000002Z'      | '12:00+01:00' |
-      | '12:00-01:00' | '12:00:00.000000002-01:00' | '12:00+01:00' |
-      | '12:00Z'      | '12:00:00.000000002Z'      | '12:00+01:00' |
+      | d1            | d2                      | d3            |
+      | '12:00-01:00' | '12:00:00.000002-01:00' | '12:00+01:00' |
+      | '12:00Z'      | '12:00:00.000002Z'      | '12:00+01:00' |
+      | '12:00-01:00' | '12:00:00.000002-01:00' | '12:00+01:00' |
+      | '12:00Z'      | '12:00:00.000002Z'      | '12:00+01:00' |
     And no side effects
 
  Scenario: Should truncate localtime to hour
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localtime.truncate('hour', d) as d1,
-             localtime.truncate('hour', d, {nanosecond:2}) as d2
+             localtime.truncate('hour', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1      | d2                   |
-      | '12:00' | '12:00:00.000000002' |
-      | '12:00' | '12:00:00.000000002' |
-      | '12:00' | '12:00:00.000000002' |
-      | '12:00' | '12:00:00.000000002' |
+      | d1      | d2                |
+      | '12:00' | '12:00:00.000002' |
+      | '12:00' | '12:00:00.000002' |
+      | '12:00' | '12:00:00.000002' |
+      | '12:00' | '12:00:00.000002' |
     And no side effects
 
  Scenario: Should truncate datetime to minute
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '-01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '-01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN datetime.truncate('minute', d) as d1,
-             datetime.truncate('minute', d, {nanosecond:2}) as d2,
+             datetime.truncate('minute', d, {microsecond:2}) as d2,
              datetime.truncate('minute', d, {timezone: 'Europe/Stockholm'}) as d3
       """
     Then the result should be, in order:
-      | d1                       | d2                                    | d3                                         |
-      | '1984-10-11T12:31-01:00' | '1984-10-11T12:31:00.000000002-01:00' | '1984-10-11T12:31+01:00[Europe/Stockholm]' |
-      | '1984-10-11T12:31Z'      | '1984-10-11T12:31:00.000000002Z'      | '1984-10-11T12:31+01:00[Europe/Stockholm]' |
+      | d1                       | d2                                 | d3                                         |
+      | '1984-10-11T12:31-01:00' | '1984-10-11T12:31:00.000002-01:00' | '1984-10-11T12:31+01:00[Europe/Stockholm]' |
+      | '1984-10-11T12:31Z'      | '1984-10-11T12:31:00.000002Z'      | '1984-10-11T12:31+01:00[Europe/Stockholm]' |
     And no side effects
 
  Scenario: Should truncate localdatetime to minute
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localdatetime.truncate('minute', d) as d1,
-             localdatetime.truncate('minute', d, {nanosecond:2}) as d2
+             localdatetime.truncate('minute', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                 | d2                              |
-      | '1984-10-11T12:31' | '1984-10-11T12:31:00.000000002' |
-      | '1984-10-11T12:31' | '1984-10-11T12:31:00.000000002' |
+      | d1                 | d2                           |
+      | '1984-10-11T12:31' | '1984-10-11T12:31:00.000002' |
+      | '1984-10-11T12:31' | '1984-10-11T12:31:00.000002' |
     And no side effects
 
  Scenario: Should truncate time to minute
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('minute', d) as d1,
-             time.truncate('minute', d, {nanosecond:2}) as d2
+             time.truncate('minute', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1            | d2                         |
-      | '12:31+01:00' | '12:31:00.000000002+01:00' |
-      | '12:31Z'      | '12:31:00.000000002Z'      |
-      | '12:31+01:00' | '12:31:00.000000002+01:00' |
-      | '12:31Z'      | '12:31:00.000000002Z'      |
+      | d1            | d2                      |
+      | '12:31+01:00' | '12:31:00.000002+01:00' |
+      | '12:31Z'      | '12:31:00.000002Z'      |
+      | '12:31+01:00' | '12:31:00.000002+01:00' |
+      | '12:31Z'      | '12:31:00.000002Z'      |
     And no side effects
 
  Scenario: Should truncate localtime to minute
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localtime.truncate('minute', d) as d1,
-             localtime.truncate('minute', d, {nanosecond:2}) as d2
+             localtime.truncate('minute', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1      | d2                   |
-      | '12:31' | '12:31:00.000000002' |
-      | '12:31' | '12:31:00.000000002' |
-      | '12:31' | '12:31:00.000000002' |
-      | '12:31' | '12:31:00.000000002' |
+      | d1      | d2                |
+      | '12:31' | '12:31:00.000002' |
+      | '12:31' | '12:31:00.000002' |
+      | '12:31' | '12:31:00.000002' |
+      | '12:31' | '12:31:00.000002' |
    And no side effects
 
  Scenario: Should truncate datetime to second
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN datetime.truncate('second', d) as d1,
-             datetime.truncate('second', d, {nanosecond:2}) as d2
+             datetime.truncate('second', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                          | d2                                    |
-      | '1984-10-11T12:31:14+01:00' | '1984-10-11T12:31:14.000000002+01:00' |
-      | '1984-10-11T12:31:14Z'      | '1984-10-11T12:31:14.000000002Z'      |
+      | d1                          | d2                                 |
+      | '1984-10-11T12:31:14+01:00' | '1984-10-11T12:31:14.000002+01:00' |
+      | '1984-10-11T12:31:14Z'      | '1984-10-11T12:31:14.000002Z'      |
     And no side effects
 
  Scenario: Should truncate localdatetime to second
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localdatetime.truncate('second', d) as d1,
-             localdatetime.truncate('second', d, {nanosecond:2}) as d2
+             localdatetime.truncate('second', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                    | d2                              |
-      | '1984-10-11T12:31:14' | '1984-10-11T12:31:14.000000002' |
-      | '1984-10-11T12:31:14' | '1984-10-11T12:31:14.000000002' |
+      | d1                    | d2                           |
+      | '1984-10-11T12:31:14' | '1984-10-11T12:31:14.000002' |
+      | '1984-10-11T12:31:14' | '1984-10-11T12:31:14.000002' |
     And no side effects
 
  Scenario: Should truncate time to second
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('second', d) as d1,
-             time.truncate('second', d, {nanosecond:2}) as d2
+             time.truncate('second', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1               | d2                         |
-      | '12:31:14+01:00' | '12:31:14.000000002+01:00' |
-      | '12:31:14Z'      | '12:31:14.000000002Z'      |
-      | '12:31:14+01:00' | '12:31:14.000000002+01:00' |
-      | '12:31:14Z'      | '12:31:14.000000002Z'      |
+      | d1               | d2                      |
+      | '12:31:14+01:00' | '12:31:14.000002+01:00' |
+      | '12:31:14Z'      | '12:31:14.000002Z'      |
+      | '12:31:14+01:00' | '12:31:14.000002+01:00' |
+      | '12:31:14Z'      | '12:31:14.000002Z'      |
     And no side effects
 
  Scenario: Should truncate localtime to second
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localtime.truncate('second', d) as d1,
-             localtime.truncate('second', d, {nanosecond:2}) as d2
+             localtime.truncate('second', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1         | d2                   |
-      | '12:31:14' | '12:31:14.000000002' |
-      | '12:31:14' | '12:31:14.000000002' |
-      | '12:31:14' | '12:31:14.000000002' |
-      | '12:31:14' | '12:31:14.000000002' |
+      | d1         | d2                |
+      | '12:31:14' | '12:31:14.000002' |
+      | '12:31:14' | '12:31:14.000002' |
+      | '12:31:14' | '12:31:14.000002' |
+      | '12:31:14' | '12:31:14.000002' |
     And no side effects
 
  Scenario: Should truncate datetime to millisecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN datetime.truncate('millisecond', d) as d1,
-             datetime.truncate('millisecond', d, {nanosecond:2}) as d2
+             datetime.truncate('millisecond', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                              | d2                                    |
-      | '1984-10-11T12:31:14.645+01:00' | '1984-10-11T12:31:14.645000002+01:00' |
-      | '1984-10-11T12:31:14.645Z'      | '1984-10-11T12:31:14.645000002Z'      |
+      | d1                              | d2                                 |
+      | '1984-10-11T12:31:14.645+01:00' | '1984-10-11T12:31:14.645002+01:00' |
+      | '1984-10-11T12:31:14.645Z'      | '1984-10-11T12:31:14.645002Z'      |
     And no side effects
 
  Scenario: Should truncate localdatetime to millisecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localdatetime.truncate('millisecond', d) as d1,
-             localdatetime.truncate('millisecond', d, {nanosecond:2}) as d2
+             localdatetime.truncate('millisecond', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                        | d2                              |
-      | '1984-10-11T12:31:14.645' | '1984-10-11T12:31:14.645000002' |
-      | '1984-10-11T12:31:14.645' | '1984-10-11T12:31:14.645000002' |
+      | d1                        | d2                           |
+      | '1984-10-11T12:31:14.645' | '1984-10-11T12:31:14.645002' |
+      | '1984-10-11T12:31:14.645' | '1984-10-11T12:31:14.645002' |
     And no side effects
 
  Scenario: Should truncate time to millisecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('millisecond', d) as d1,
-             time.truncate('millisecond', d, {nanosecond:2}) as d2
+             time.truncate('millisecond', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1                   | d2                         |
-      | '12:31:14.645+01:00' | '12:31:14.645000002+01:00' |
-      | '12:31:14.645Z'      | '12:31:14.645000002Z'      |
-      | '12:31:14.645+01:00' | '12:31:14.645000002+01:00' |
-      | '12:31:14.645Z'      | '12:31:14.645000002Z'      |
+      | d1                   | d2                      |
+      | '12:31:14.645+01:00' | '12:31:14.645002+01:00' |
+      | '12:31:14.645Z'      | '12:31:14.645002Z'      |
+      | '12:31:14.645+01:00' | '12:31:14.645002+01:00' |
+      | '12:31:14.645Z'      | '12:31:14.645002Z'      |
     And no side effects
 
  Scenario: Should truncate localtime to millisecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localtime.truncate('millisecond', d) as d1,
-             localtime.truncate('millisecond', d, {nanosecond:2}) as d2
+             localtime.truncate('millisecond', d, {microsecond:2}) as d2
       """
     Then the result should be, in order:
-      | d1             | d2                   |
-      | '12:31:14.645' | '12:31:14.645000002' |
-      | '12:31:14.645' | '12:31:14.645000002' |
-      | '12:31:14.645' | '12:31:14.645000002' |
-      | '12:31:14.645' | '12:31:14.645000002' |
+      | d1             | d2                |
+      | '12:31:14.645' | '12:31:14.645002' |
+      | '12:31:14.645' | '12:31:14.645002' |
+      | '12:31:14.645' | '12:31:14.645002' |
+      | '12:31:14.645' | '12:31:14.645002' |
     And no side effects
 
  Scenario: Should truncate datetime to microsecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN datetime.truncate('microsecond', d) as d1,
-             datetime.truncate('microsecond', d, {nanosecond:2}) as d2
+             datetime.truncate('microsecond', d, {second:2}) as d2
       """
     Then the result should be, in order:
-      | d1                                 | d2                                    |
-      | '1984-10-11T12:31:14.645876+01:00' | '1984-10-11T12:31:14.645876002+01:00' |
-      | '1984-10-11T12:31:14.645876Z'      | '1984-10-11T12:31:14.645876002Z'      |
+      | d1                                 | d2                                 |
+      | '1984-10-11T12:31:14.645876+01:00' | '1984-10-11T12:31:02.645876+01:00' |
+      | '1984-10-11T12:31:14.645876Z'      | '1984-10-11T12:31:02.645876Z'      |
     And no side effects
 
  Scenario: Should truncate localdatetime to microsecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localdatetime.truncate('microsecond', d) as d1,
-             localdatetime.truncate('microsecond', d, {nanosecond:2}) as d2
+             localdatetime.truncate('microsecond', d, {second:2}) as d2
       """
     Then the result should be, in order:
-      | d1                           | d2                              |
-      | '1984-10-11T12:31:14.645876' | '1984-10-11T12:31:14.645876002' |
-      | '1984-10-11T12:31:14.645876' | '1984-10-11T12:31:14.645876002' |
+      | d1                           | d2                           |
+      | '1984-10-11T12:31:14.645876' | '1984-10-11T12:31:02.645876' |
+      | '1984-10-11T12:31:14.645876' | '1984-10-11T12:31:02.645876' |
     And no side effects
 
  Scenario: Should truncate time to microsecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN time.truncate('microsecond', d) as d1,
-             time.truncate('microsecond', d, {nanosecond:2}) as d2
+             time.truncate('microsecond', d, {second:2}) as d2
       """
     Then the result should be, in order:
-      | d1                      | d2                         |
-      | '12:31:14.645876+01:00' | '12:31:14.645876002+01:00' |
-      | '12:31:14.645876Z'      | '12:31:14.645876002Z'      |
-      | '12:31:14.645876+01:00' | '12:31:14.645876002+01:00' |
-      | '12:31:14.645876Z'      | '12:31:14.645876002Z'      |
+      | d1                      | d2                      |
+      | '12:31:14.645876+01:00' | '12:31:02.645876+01:00' |
+      | '12:31:14.645876Z'      | '12:31:02.645876Z'      |
+      | '12:31:14.645876+01:00' | '12:31:02.645876+01:00' |
+      | '12:31:14.645876Z'      | '12:31:02.645876Z'      |
     And no side effects
 
  Scenario: Should truncate localtime to microsecond
     Given an empty graph
     When executing query:
       """
-      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
-              time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}),
-              localtime({hour:12, minute:31, second:14, nanosecond: 645876123})] as d
+      UNWIND [datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
+              time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
+              localtime({hour:12, minute:31, second:14, microsecond: 645876})] as d
       RETURN localtime.truncate('microsecond', d) as d1,
-             localtime.truncate('microsecond', d, {nanosecond:2}) as d2
+             localtime.truncate('microsecond', d, {second:2}) as d2
       """
     Then the result should be, in order:
-      | d1                | d2                   |
-      | '12:31:14.645876' | '12:31:14.645876002' |
-      | '12:31:14.645876' | '12:31:14.645876002' |
-      | '12:31:14.645876' | '12:31:14.645876002' |
-      | '12:31:14.645876' | '12:31:14.645876002' |
+      | d1                | d2                |
+      | '12:31:14.645876' | '12:31:02.645876' |
+      | '12:31:14.645876' | '12:31:02.645876' |
+      | '12:31:14.645876' | '12:31:02.645876' |
+      | '12:31:14.645876' | '12:31:02.645876' |
     And no side effects

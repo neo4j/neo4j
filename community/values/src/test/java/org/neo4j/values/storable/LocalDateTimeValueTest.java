@@ -41,7 +41,7 @@ public class LocalDateTimeValueTest
     {
         assertEquals(
                 localDateTime( date( 2017, 12, 17 ), localTime( 17, 14, 35, 123456789 ) ),
-                parse( "2017-12-17T17:14:35.123456789" ) );
+                parse( "2017-12-17T17:14:35.123456" ) );
     }
 
     @Test
@@ -84,6 +84,6 @@ public class LocalDateTimeValueTest
     @Test
     public void shouldNotEqualOther()
     {
-        assertNotEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 6 ), localDateTime( 2018, 1, 31, 10, 52, 5, 7 ) );
+        assertNotEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 0 ), localDateTime( 2018, 1, 31, 10, 52, 6, 0 ) );
     }
 }
