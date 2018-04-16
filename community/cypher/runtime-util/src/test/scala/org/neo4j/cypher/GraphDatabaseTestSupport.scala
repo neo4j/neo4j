@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import java.io.File
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting

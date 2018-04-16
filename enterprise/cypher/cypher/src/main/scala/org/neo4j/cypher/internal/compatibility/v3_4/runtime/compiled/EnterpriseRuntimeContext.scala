@@ -71,7 +71,7 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
     val metrics: Metrics = if (planContext == null)
       null
     else
-      metricsFactory.newMetrics(planContext.statistics, evaluator, config)
+      metricsFactory.newMetrics(planContext.statistics, evaluator)
 
     new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
                                 monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, codeStructure, dispatcher)

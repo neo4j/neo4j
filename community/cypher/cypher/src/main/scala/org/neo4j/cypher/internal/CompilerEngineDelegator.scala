@@ -83,7 +83,6 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                               errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                               legacyCsvQuoteEscaping: Boolean,
-                              planWithMinimumCardinalityEstimates: Boolean,
                               logProvider: LogProvider,
                               compatibilityFactory: CompatibilityFactory) {
 
@@ -100,8 +99,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
     legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
-    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
-    planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
+    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
@@ -139,6 +137,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   def parseQuery(preParsedQueryArg: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
+    import org.neo4j.cypher.internal.compatibility.v3_3.helpers._
 
     var preParsedQuery = preParsedQueryArg
     val supportedRuntimes3_1 = Seq(CypherRuntime.interpreted, CypherRuntime.default)

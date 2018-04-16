@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinalities
@@ -27,7 +26,7 @@ import org.neo4j.cypher.internal.util.v3_4.{Cardinality, Cost, CostPerRow, Multi
 import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Property}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
-case class CardinalityCostModel(config: CypherCompilerConfiguration) extends CostModel {
+object CardinalityCostModel extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
@@ -93,7 +92,9 @@ case class CardinalityCostModel(config: CypherCompilerConfiguration) extends Cos
          _: ProcedureCall
     => DEFAULT_COST_PER_ROW
 
-    case _: FindShortestPaths
+    case _: FindShortestPaths |
+         _: DirectedRelationshipByIdSeek |
+         _: UndirectedRelationshipByIdSeek
     => 12.0
 
     case _ // Default
@@ -103,17 +104,6 @@ case class CardinalityCostModel(config: CypherCompilerConfiguration) extends Cos
   private def cardinalityForPlan(plan: LogicalPlan, cardinalities: Cardinalities): Cardinality = plan match {
     case _ => plan.lhs.map(p => cardinalities.get(p.id)).getOrElse(cardinalities.get(plan.id))
   }
-
-  private def minimumCardinalityEstimateForPlan(plan: LogicalPlan): Cardinality = plan match {
-    case _: AllNodesScan | _: NodeByLabelScan | _: NodeIndexScan =>
-      Cardinality(10)
-    case _: NodeIndexContainsScan | _: NodeIndexEndsWithScan =>
-      Cardinality(5)
-    case _ =>
-      Cardinality.SINGLE
-  }
-
-  private val planWithMinimumCardinalityEstimates: Boolean = config.planWithMinimumCardinalityEstimates
 
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities): Cost = {
     val cost = plan match {
@@ -142,13 +132,8 @@ case class CardinalityCostModel(config: CypherCompilerConfiguration) extends Cos
         val lhsCost = plan.lhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input, cardinalities)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan, cardinalities)
-        val effectivePlanCardinality =
-          if (planWithMinimumCardinalityEstimates)
-            Cardinality.max(planCardinality, minimumCardinalityEstimateForPlan(plan))
-          else
-            planCardinality
         val rowCost = costPerRow(plan)
-        val costForThisPlan = effectivePlanCardinality * rowCost
+        val costForThisPlan = planCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }

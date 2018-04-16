@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.planner.v3_4.spi.GraphStatistics
 
 object SimpleMetricsFactory extends MetricsFactory {
-  def newCostModel(config: CypherCompilerConfiguration): CostModel = CardinalityCostModel(config)
+  def newCostModel(): CostModel = CardinalityCostModel
 
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, expressionEvaluator)

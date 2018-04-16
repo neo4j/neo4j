@@ -47,7 +47,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
@@ -57,7 +57,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
     )
 
     // when
@@ -80,7 +80,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(100)
       case _                  => Cost(Double.MaxValue)
     })
@@ -91,7 +91,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val (context, solveds, cardinalities) = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
     )
 
     // when

@@ -66,8 +66,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   class SpyableMetricsFactory extends MetricsFactory {
     def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
-    def newCostModel(config: CypherCompilerConfiguration) =
-      SimpleMetricsFactory.newCostModel(config)
+    def newCostModel() =
+      SimpleMetricsFactory.newCostModel()
     def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel =
       SimpleMetricsFactory.newQueryGraphCardinalityModel(statistics)
   }
@@ -81,7 +81,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) =
-    newMetricsFactory.newMetrics(stats, newExpressionEvaluator, config)
+    newMetricsFactory.newMetrics(stats, newExpressionEvaluator)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
 
@@ -228,8 +228,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = false
+    nonIndexedLabelWarningThreshold = 10000
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {
