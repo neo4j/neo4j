@@ -280,7 +280,8 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     idpIterationDuration = DefaultIDPSolverConfig.iterationDurationLimit,
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
-    legacyCsvQuoteEscaping = false
+    legacyCsvQuoteEscaping = false,
+    planWithMinimumCardinalityEstimates = false
   )
 
   case class haveConstraints(expectedConstraints: String*) extends Matcher[GraphDatabaseQueryService] {

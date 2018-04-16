@@ -47,7 +47,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: NodeByLabelScan => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
@@ -58,7 +58,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
     )
 
     // when
@@ -80,7 +80,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case _: NodeByLabelScan => Cost(100)
       case _                  => Cost(Double.MaxValue)
     })
@@ -91,7 +91,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator])
+      metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config)
     )
 
     // when

@@ -378,5 +378,4 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     graph.createIndex("Crew", "name")
   }
-
 }

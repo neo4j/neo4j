@@ -98,4 +98,5 @@ case class CypherCompilerConfiguration(queryCacheSize: Int,
                                        errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                                        errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                                        legacyCsvQuoteEscaping: Boolean,
-                                       nonIndexedLabelWarningThreshold: Long)
+                                       nonIndexedLabelWarningThreshold: Long,
+                                       planWithMinimumCardinalityEstimates: Boolean)

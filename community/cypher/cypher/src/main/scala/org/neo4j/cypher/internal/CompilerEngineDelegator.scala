@@ -87,6 +87,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
                               errorIfShortestPathFallbackUsedAtRuntime: Boolean,
                               errorIfShortestPathHasCommonNodesAtRuntime: Boolean,
                               legacyCsvQuoteEscaping: Boolean,
+                              planWithMinimumCardinalityEstimates: Boolean,
                               logProvider: LogProvider,
                               compatibilityFactory: CompatibilityFactory) {
 
@@ -103,7 +104,8 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     errorIfShortestPathFallbackUsedAtRuntime = errorIfShortestPathFallbackUsedAtRuntime,
     errorIfShortestPathHasCommonNodesAtRuntime = errorIfShortestPathHasCommonNodesAtRuntime,
     legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
-    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
+    nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold,
+    planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
   )
 
   private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))

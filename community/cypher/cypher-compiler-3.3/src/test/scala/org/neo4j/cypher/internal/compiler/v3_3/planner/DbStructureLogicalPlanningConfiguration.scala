@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import java.util
 
+import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 import org.neo4j.helpers.collection.{Pair, Visitable}
@@ -29,7 +30,7 @@ import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructure
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-object DbStructureLogicalPlanningConfiguration {
+case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherCompilerConfiguration) {
 
   def apply(visitable: Visitable[DbStructureVisitor]): LogicalPlanningConfiguration = {
     val collector = new DbStructureCollector
@@ -43,7 +44,7 @@ object DbStructureLogicalPlanningConfiguration {
     val resolvedPropertyKeys = resolveTokens(lookup.properties())(PropertyKeyId)
     val resolvedRelTypeNames = resolveTokens(lookup.relationshipTypes())(RelTypeId)
 
-    new RealLogicalPlanningConfiguration {
+    new RealLogicalPlanningConfiguration(cypherCompilerConfig) {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
         resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }

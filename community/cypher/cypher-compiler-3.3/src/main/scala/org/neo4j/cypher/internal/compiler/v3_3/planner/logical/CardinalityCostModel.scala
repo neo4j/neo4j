@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{HasLabels, Property}
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
-object CardinalityCostModel extends CostModel {
+case class CardinalityCostModel(config: CypherCompilerConfiguration) extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
@@ -90,9 +91,7 @@ object CardinalityCostModel extends CostModel {
          _: ProcedureCall
     => DEFAULT_COST_PER_ROW
 
-    case _: FindShortestPaths |
-         _: DirectedRelationshipByIdSeek |
-         _: UndirectedRelationshipByIdSeek
+    case _: FindShortestPaths
     => 12.0
 
     case _ // Default
@@ -103,6 +102,17 @@ object CardinalityCostModel extends CostModel {
     case Selection(_, left) => left.solved.estimatedCardinality
     case _ => plan.lhs.map(p => p.solved.estimatedCardinality).getOrElse(plan.solved.estimatedCardinality)
   }
+
+  private def minimumCardinalityEstimateForPlan(plan: LogicalPlan): Cardinality = plan match {
+    case _: AllNodesScan | _: NodeByLabelScan | _: NodeIndexScan =>
+      Cardinality(10)
+    case _: NodeIndexContainsScan | _: NodeIndexEndsWithScan =>
+      Cardinality(5)
+    case _ =>
+      Cardinality.SINGLE
+  }
+
+  private val planWithMinimumCardinalityEstimates: Boolean = config.planWithMinimumCardinalityEstimates
 
   def apply(plan: LogicalPlan, input: QueryGraphSolverInput): Cost = {
     val cost = plan match {
@@ -131,8 +141,13 @@ object CardinalityCostModel extends CostModel {
         val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan)
+        val effectivePlanCardinality =
+          if (planWithMinimumCardinalityEstimates)
+            Cardinality.max(planCardinality, minimumCardinalityEstimateForPlan(plan))
+          else
+            planCardinality
         val rowCost = costPerRow(plan)
-        val costForThisPlan = planCardinality * rowCost
+        val costForThisPlan = effectivePlanCardinality * rowCost
         val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }
