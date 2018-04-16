@@ -96,6 +96,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
     @Override
     public void close() throws IOException
     {
+        shutInstantiateCloseLock();
         forAll( NativeSchemaIndexAccessor::close, this );
     }
 

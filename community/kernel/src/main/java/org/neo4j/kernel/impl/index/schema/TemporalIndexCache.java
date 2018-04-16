@@ -23,8 +23,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.date;
@@ -35,7 +38,7 @@ import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zoned
 import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedTime;
 
 /**
- * Cache for lazily creating parts of the temporal index. Each part is created using the factory
+ * Cache for lazily creating parts of the temporal index. Each getOrCreatePart is created using the factory
  * the first time it is selected in a select() query, or the first time it's explicitly
  * asked for using e.g. date().
  * <p>
@@ -58,6 +61,8 @@ class TemporalIndexCache<T> implements Iterable<T>
     }
 
     private final ConcurrentHashMap<Offset,T> cache = new ConcurrentHashMap<>();
+    private final Lock instantiateCloseLock = new ReentrantLock();
+    private boolean closed;
 
     TemporalIndexCache( Factory<T> factory )
     {
@@ -65,11 +70,11 @@ class TemporalIndexCache<T> implements Iterable<T>
     }
 
     /**
-     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
+     * Select the getOrCreatePart corresponding to the given ValueGroup. Creates the getOrCreatePart if needed,
      * and rethrows any create time exception as a RuntimeException.
      *
      * @param valueGroup target value group
-     * @return selected part
+     * @return selected getOrCreatePart
      */
     T uncheckedSelect( ValueGroup valueGroup )
     {
@@ -99,31 +104,24 @@ class TemporalIndexCache<T> implements Iterable<T>
     }
 
     /**
-     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
+     * Select the getOrCreatePart corresponding to the given ValueGroup. Creates the getOrCreatePart if needed,
      * in which case an exception of type E might be thrown.
      *
      * @param valueGroup target value group
-     * @return selected part
+     * @return selected getOrCreatePart
      */
     T select( ValueGroup valueGroup ) throws IOException
     {
-        try
-        {
-            return uncheckedSelect( valueGroup );
-        }
-        catch ( UncheckedIOException e )
-        {
-            throw e.getCause();
-        }
+        return uncheckedSelect( valueGroup );
     }
 
     /**
-     * Select the part corresponding to the given ValueGroup, apply function to it and return the result.
-     * If the part isn't created yet return orElse.
+     * Select the getOrCreatePart corresponding to the given ValueGroup, apply function to it and return the result.
+     * If the getOrCreatePart isn't created yet return orElse.
      *
      * @param valueGroup target value group
-     * @param function function to apply to part
-     * @param orElse result to return if part isn't created yet
+     * @param function function to apply to getOrCreatePart
+     * @param orElse result to return if getOrCreatePart isn't created yet
      * @param <RESULT> type of result
      * @return the result
      */
@@ -157,95 +155,83 @@ class TemporalIndexCache<T> implements Iterable<T>
         return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
+    private void acquireInstantiateCloseLock()
+    {
+        instantiateCloseLock.lock();
+        if ( closed )
+        {
+            instantiateCloseLock.unlock();
+            throw new IllegalStateException( this + " is already closed" );
+        }
+    }
+
+    void shutInstantiateCloseLock()
+    {
+        acquireInstantiateCloseLock();
+        closed = true;
+        instantiateCloseLock.unlock();
+    }
+
+    private T getOrCreatePart( Offset key, ThrowingSupplier<T,IOException> factory ) throws UncheckedIOException
+    {
+        T existing = cache.get( key );
+        if ( existing != null )
+        {
+            return existing;
+        }
+
+        // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
+        // Concurrent calls to instantiating parts won't contend with each other since there's only
+        // a single writer at a time anyway.
+        acquireInstantiateCloseLock();
+        try
+        {
+            return cache.computeIfAbsent( key, k ->
+            {
+                try
+                {
+                    return factory.get();
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        }
+        finally
+        {
+            instantiateCloseLock.unlock();
+        }
+    }
+
     private T date() throws UncheckedIOException
     {
-        return cache.computeIfAbsent( date, d ->
-        {
-            try
-            {
-                return factory.newDate();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( date, factory::newDate );
     }
 
     private T localDateTime() throws UncheckedIOException
     {
-
-        return cache.computeIfAbsent( localDateTime, d  ->
-        {
-            try
-            {
-                return factory.newLocalDateTime();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( localDateTime, factory::newLocalDateTime );
     }
 
     private T zonedDateTime() throws UncheckedIOException
     {
-        return cache.computeIfAbsent( zonedDateTime, d ->
-        {
-            try
-            {
-                return factory.newZonedDateTime();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( zonedDateTime, factory::newZonedDateTime );
     }
 
     private T localTime() throws UncheckedIOException
     {
-        return cache.computeIfAbsent( localTime, d ->
-        {
-            try
-            {
-                return factory.newLocalTime();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( localTime, factory::newLocalTime );
     }
 
     private T zonedTime() throws UncheckedIOException
     {
-        return cache.computeIfAbsent( zonedTime, d ->
-        {
-            try
-            {
-                return factory.newZonedTime();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( zonedTime, factory::newZonedTime );
     }
 
     private T duration() throws UncheckedIOException
     {
-        return cache.computeIfAbsent( duration, d ->
-        {
-            try
-            {
-                return factory.newDuration();
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        } );
+        return getOrCreatePart( duration, factory::newDuration );
     }
 
     void loadAll()

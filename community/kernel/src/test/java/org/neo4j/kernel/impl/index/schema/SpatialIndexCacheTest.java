@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -32,11 +36,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.Race;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class SpatialIndexCacheTest
 {
-
     @SuppressWarnings( "Duplicates" )
     @Test
     public void stressCache() throws Exception
@@ -68,6 +76,48 @@ public class SpatialIndexCacheTest
         {
             pool.shutdown();
         }
+    }
+
+    @Test
+    public void stressInstantiationWithClose() throws Throwable
+    {
+        // given
+        StringFactory factory = new StringFactory();
+        SpatialIndexCache<String> cache = new SpatialIndexCache<>( factory );
+        Race race = new Race().withRandomStartDelays();
+        MutableInt instantiatedAtClose = new MutableInt();
+        race.addContestant( () ->
+        {
+            try
+            {
+                cache.uncheckedSelect( CoordinateReferenceSystem.WGS84 );
+                cache.uncheckedSelect( CoordinateReferenceSystem.Cartesian_3D );
+            }
+            catch ( IllegalStateException e )
+            {
+                // This exception is OK since it may have been closed
+            }
+        }, 1 );
+        race.addContestant( () ->
+        {
+            cache.shutInstantiateCloseLock();
+            instantiatedAtClose.setValue( count( cache ) );
+        }, 1 );
+
+        // when
+        race.go();
+
+        // then
+        try
+        {
+            cache.uncheckedSelect( CoordinateReferenceSystem.Cartesian );
+            fail( "No instantiation after closed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // good
+        }
+        assertEquals( instantiatedAtClose.intValue(), count( cache ) );
     }
 
     private static final CoordinateReferenceSystem[] coordinateReferenceSystems =

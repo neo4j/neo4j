@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -27,11 +28,14 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.test.Race;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,6 +43,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.values.storable.ValueGroup.DATE;
 import static org.neo4j.values.storable.ValueGroup.DURATION;
 import static org.neo4j.values.storable.ValueGroup.LOCAL_DATE_TIME;
@@ -102,6 +108,48 @@ public class TemporalIndexCacheTest
         {
             pool.shutdown();
         }
+    }
+
+    @Test
+    public void stressInstantiationWithClose() throws Throwable
+    {
+        // given
+        StringFactory factory = new StringFactory();
+        TemporalIndexCache<String> cache = new TemporalIndexCache<>( factory );
+        Race race = new Race().withRandomStartDelays();
+        MutableInt instantiatedAtClose = new MutableInt();
+        race.addContestant( () ->
+        {
+            try
+            {
+                cache.uncheckedSelect( valueGroups[0] );
+                cache.uncheckedSelect( valueGroups[1] );
+            }
+            catch ( IllegalStateException e )
+            {
+                // This exception is OK since it may have been closed
+            }
+        }, 1 );
+        race.addContestant( () ->
+        {
+            cache.shutInstantiateCloseLock();
+            instantiatedAtClose.setValue( count( cache ) );
+        }, 1 );
+
+        // when
+        race.go();
+
+        // then
+        try
+        {
+            cache.uncheckedSelect( valueGroups[2] );
+            fail( "No instantiation after closed" );
+        }
+        catch ( IllegalStateException e )
+        {
+            // good
+        }
+        assertEquals( instantiatedAtClose.intValue(), count( cache ) );
     }
 
     private static final ValueGroup[] valueGroups = {ZONED_DATE_TIME, LOCAL_DATE_TIME, DATE, ZONED_TIME, LOCAL_TIME, DURATION};
