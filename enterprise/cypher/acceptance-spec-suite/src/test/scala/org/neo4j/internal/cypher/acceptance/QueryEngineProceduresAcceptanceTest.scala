@@ -76,5 +76,7 @@ class QueryEngineProceduresAcceptanceTest extends ExecutionEngineFunSuite {
     graphDatabaseService.execute(query)
 
     logProvider.assertContainsLogCallContaining("Called dbms.clearQueryCaches(): Query caches successfully cleared of 1 queries.")
+    graphDatabaseService.shutdown()
+
   }
 }
