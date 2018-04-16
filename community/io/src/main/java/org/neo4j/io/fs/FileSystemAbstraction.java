@@ -30,7 +30,6 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.zip.ZipOutputStream;
@@ -61,16 +60,9 @@ public interface FileSystemAbstraction extends Closeable
     StoreChannel create( File fileName ) throws IOException;
 
     /**
-     * If the filesystem supports it, sets the specified file permissions, otherwise throw.
-     * @throws UnsupportedOperationException if the underlying system does not support POSIX-style permissions
+     * File access controls. See {@link AccessPolicy}.
      */
-    void setPermissions( File fileName, FilePermission ... permissions ) throws IOException;
-
-    /**
-     * If the underlying system supports it, return file permissions
-     * @throws UnsupportedOperationException if the underlying system does not support POSIX-style permissions
-     */
-    Set<FilePermission> getPermissions( File fileName ) throws IOException;
+    void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException;
 
     boolean fileExists( File fileName );
 

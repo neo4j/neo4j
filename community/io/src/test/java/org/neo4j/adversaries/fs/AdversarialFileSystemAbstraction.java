@@ -35,15 +35,14 @@ import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.watcher.AdversarialFileWatcher;
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
-import org.neo4j.io.fs.FilePermission;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -211,17 +210,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void setPermissions( File fileName, FilePermission ... permissions ) throws IOException
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
     {
         adversary.injectFailure( SecurityException.class, IOException.class );
-        delegate.setPermissions( fileName, permissions );
-    }
-
-    @Override
-    public Set<FilePermission> getPermissions( File fileName ) throws IOException
-    {
-        adversary.injectFailure( SecurityException.class, IOException.class );
-        return delegate.getPermissions( fileName );
+        delegate.setAccessPolicy( fileName, policy );
     }
 
     @Override

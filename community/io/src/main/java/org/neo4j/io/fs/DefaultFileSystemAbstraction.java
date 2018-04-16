@@ -37,13 +37,9 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.WatchService;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.io.IOUtils;
@@ -135,20 +131,27 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void setPermissions( File fileName, FilePermission... permissions ) throws IOException
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
     {
-        Set<PosixFilePermission> posixPerms = Arrays.stream( permissions )
-                .map( p -> PosixFilePermission.valueOf( p.name() ) )
-                .collect( Collectors.toSet() );
-        Files.setPosixFilePermissions( fileName.toPath(), posixPerms );
-    }
-
-    @Override
-    public Set<FilePermission> getPermissions( File fileName ) throws IOException
-    {
-        return Files.getPosixFilePermissions( fileName.toPath() ).stream()
-                .map( p -> FilePermission.valueOf( p.name() ) )
-                .collect( Collectors.toSet());
+        switch ( policy )
+        {
+        case CRITICAL:
+            if ( !( // Make unreadable for everyone
+                    fileName.setReadable( false, false ) &&
+                    // .. except us
+                    fileName.setReadable( true, true ) &&
+                    // Make unwritable for everyone
+                    fileName.setWritable( false, false ) &&
+                    // .. except us
+                    fileName.setWritable( true, true )) )
+            {
+                throw new IOException(
+                        String.format( "Failed to set permissions on '%s'", fileName.getAbsolutePath() ) );
+            }
+            break;
+        default:
+            throw new IOException( String.format( "Unknown file policy: %s", policy ) );
+        }
     }
 
     @Override

@@ -31,13 +31,12 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.io.fs.AccessPolicy;
 import org.neo4j.io.fs.FileHandle;
-import org.neo4j.io.fs.FilePermission;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -122,15 +121,9 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public void setPermissions( File fileName, FilePermission... permissions ) throws IOException
+    public void setAccessPolicy( File fileName, AccessPolicy policy ) throws IOException
     {
-        fs.setPermissions( fileName, permissions );
-    }
-
-    @Override
-    public Set<FilePermission> getPermissions( File fileName ) throws IOException
-    {
-        return fs.getPermissions( fileName );
+        fs.setAccessPolicy( fileName, policy );
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 "Neo Technology,"
- * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ * Copyright (c) 2002-2018 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
  *
@@ -24,16 +24,16 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collections;
-import java.util.HashSet;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FilePermission;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assume.assumeTrue;
 
 public class FileRepositorySerializerTest
@@ -42,7 +42,7 @@ public class FileRepositorySerializerTest
     public TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldDisallowGlobalReadsIfPossible() throws Exception
+    public void shouldDisallowGlobalReadsOnUnix() throws Exception
     {
         // Given
         assumeTrue( SystemUtils.IS_OS_UNIX );
@@ -56,7 +56,7 @@ public class FileRepositorySerializerTest
                 Collections.singletonList( new User.Builder().withName( "steve_brookreson" ).build() ) );
 
         // Then
-        assertEquals( fs.getPermissions( authFile ),
-                new HashSet<>( Arrays.asList( FilePermission.OWNER_READ, FilePermission.OWNER_WRITE ) ) );
+        assertThat( Files.getPosixFilePermissions( authFile.toPath() ),
+                containsInAnyOrder(PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_READ));
     }
 }
