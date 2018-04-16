@@ -108,7 +108,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties, _)
         if !containsLabelPredicate(variable, labelName) ||
            !containsPropertyPredicates(variable, properties) =>
         SemanticError(
