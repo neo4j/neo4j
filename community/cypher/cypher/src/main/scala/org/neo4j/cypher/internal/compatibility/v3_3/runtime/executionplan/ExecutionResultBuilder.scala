@@ -30,6 +30,7 @@ import org.neo4j.values.virtual.MapValue
 trait ExecutionResultBuilder {
   def setQueryContext(context: QueryContext)
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
+  def setPrePopulate(setFlag: Boolean)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
   def build(planType: ExecutionMode, params: MapValue,

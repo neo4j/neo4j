@@ -32,7 +32,7 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
     Configs.All.scenarios.map(s =>
     s"CYPHER ${s.preparserOptions} $query").foreach(q => {
       val tx = graph.beginTransaction(KernelTransaction.Type.`explicit`, AUTH_DISABLED)
-      val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
+      val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty), false)
       tx.success()
       result.close()
       tx.close()

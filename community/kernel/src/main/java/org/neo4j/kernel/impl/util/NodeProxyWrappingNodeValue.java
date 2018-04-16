@@ -73,6 +73,12 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         writer.writeNode( node.getId(), l, p );
     }
 
+    public void populate()
+    {
+        labels();
+        properties();
+    }
+
     @Override
     public TextArray labels()
     {

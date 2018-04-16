@@ -103,7 +103,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                               val notifications: Set[Notification]) extends ExecutionPlan {
 
     override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: MapValue): InternalExecutionResult = {
+                     executionMode: ExecutionMode, params: MapValue, prePopulate: Boolean): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       try {

@@ -77,7 +77,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
+            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext, false );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -91,7 +91,7 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
+            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext, false );
         }
         catch ( QueryExecutionKernelException e )
         {

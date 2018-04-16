@@ -43,7 +43,8 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
         params = VirtualValues.EMPTY_MAP,
         decorator = NullPipeDecorator,
         triadicState = mutable.Map.empty,
-        repeatableReads = mutable.Map.empty)
+        repeatableReads = mutable.Map.empty,
+        prePopulateResult = false)
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))

@@ -45,9 +45,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     private var maybeQueryContext: Option[QueryContext] = None
     private var pipeDecorator: PipeDecorator = NullPipeDecorator
     private var exceptionDecorator: CypherException => CypherException = identity
+    private var prePopulate: Boolean = false
 
     def setQueryContext(context: QueryContext) {
       maybeQueryContext = Some(context)
+    }
+
+    override def setPrePopulate(setFlag: Boolean) = {
+      prePopulate = setFlag
     }
 
     def setLoadCsvPeriodicCommitObserver(batchRowCount: Long) {
@@ -68,7 +73,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
               notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator,
-                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty, prePopulateResult = prePopulate)
       try {
         try {
           createResults(state, planType, notificationLogger, runtimeName)

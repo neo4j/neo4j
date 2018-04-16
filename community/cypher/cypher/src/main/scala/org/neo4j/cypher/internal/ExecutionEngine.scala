@@ -82,42 +82,42 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
-  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
+  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext, prePopulate: Boolean): Result = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    profile(query, javaParams, context)
+    profile(query, javaParams, context, prePopulate)
   }
 
-  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
+  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext, prePopulate: Boolean): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams: Map[String, Any] = scalaValues.asShallowScalaMap(javaParams)
-    profile(query, ValueConversion.asValues(scalaParams), context)
+    profile(query, ValueConversion.asValues(scalaParams), context, prePopulate)
   }
 
-  def profile(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
+  def profile(query: String, mapParams: MapValue, context: TransactionalContext, prePopulate: Boolean): Result = {
     val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
     checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
-    preparedPlanExecution.profile(wrappedContext, mapParams)
+    preparedPlanExecution.profile(wrappedContext, mapParams, prePopulate)
   }
 
-  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
+  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext, prePopulate: Boolean): Result = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    execute(query, javaParams, context)
+    execute(query, javaParams, context, prePopulate)
   }
 
-  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
+  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext, prePopulate: Boolean): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
-   execute(query, ValueConversion.asValues(scalaParams), context)
+   execute(query, ValueConversion.asValues(scalaParams), context, prePopulate)
   }
 
-  def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
+  def execute(query: String, mapParams: MapValue, context: TransactionalContext, prePopulate: Boolean): Result = {
     val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
     if (preparedPlanExecution.executionMode.name != "explain") {
       checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
     }
-    preparedPlanExecution.execute(wrappedContext, mapParams)
+    preparedPlanExecution.execute(wrappedContext, mapParams, prePopulate)
   }
 
   protected def parseQuery(queryText: String): ParsedQuery =

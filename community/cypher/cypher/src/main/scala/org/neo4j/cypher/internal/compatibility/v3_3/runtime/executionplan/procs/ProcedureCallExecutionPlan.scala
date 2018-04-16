@@ -70,8 +70,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private val argExprCommands: Seq[expressions.Expression] = argExprs.map(converter.toCommandExpression) ++
     signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
-  override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
-    val input = evaluateArguments(ctx, params)
+  override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue, prePopulate: Boolean): InternalExecutionResult = {
+    val input = evaluateArguments(ctx, params, prePopulate)
 
     val taskCloser = new TaskCloser
     taskCloser.addTask(ctx.transactionalContext.close)
@@ -111,8 +111,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     }
   }
 
-  private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
-    val state = new QueryState(ctx, ExternalCSVResource.empty, params)
+  private def evaluateArguments(ctx: QueryContext, params: MapValue, prePopulate: Boolean): Seq[Any] = {
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params, prePopulateResult = prePopulate)
     argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
   }
 

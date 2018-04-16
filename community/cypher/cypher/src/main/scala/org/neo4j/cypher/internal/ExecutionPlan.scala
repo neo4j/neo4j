@@ -30,7 +30,7 @@ final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, stateme
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result
+  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue, prePopulate: Boolean): Result
 
   def isPeriodicCommit: Boolean
 

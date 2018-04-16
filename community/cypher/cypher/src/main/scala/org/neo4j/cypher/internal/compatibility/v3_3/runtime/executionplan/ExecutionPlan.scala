@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue
 
 abstract class ExecutionPlan {
-  def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult
+  def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue, prePopulate: Boolean): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
   def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult

@@ -93,13 +93,13 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                   isPeriodicCommit: Boolean,
                                   plannerUsed: PlannerName,
                                   override val plannedIndexUsage: Seq[IndexUsage],
-                                  runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
+                                  runFunction: (QueryContext, ExecutionMode, MapValue, Boolean) => InternalExecutionResult,
                                   pipe: Pipe,
                                   config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
-                     params: MapValue): InternalExecutionResult =
-      runFunction(queryContext, planType, params)
+                     params: MapValue, prePopulate: Boolean): InternalExecutionResult =
+      runFunction(queryContext, planType, params, prePopulate)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = fingerprint.isStale(lastTxId, statistics)
 

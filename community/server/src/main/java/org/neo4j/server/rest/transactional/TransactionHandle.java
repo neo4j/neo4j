@@ -368,7 +368,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         try
         {
-            return engine.executeQuery( statement.statement(), statement.parameters(), tc );
+            return engine.executeQuery( statement.statement(), statement.parameters(), tc, false );
         }
         finally
         {

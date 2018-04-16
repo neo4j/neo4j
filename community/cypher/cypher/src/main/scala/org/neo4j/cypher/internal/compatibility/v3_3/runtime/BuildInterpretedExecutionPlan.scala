@@ -79,9 +79,9 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
                                        notificationLogger: InternalNotificationLogger,
                                         runtimeName: RuntimeName):
-  (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
-      val builder = resultBuilderFactory.create()
+  (QueryContext, ExecutionMode, MapValue, Boolean) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue, setPrePopulate: Boolean) => {
+      val builder= resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode
       val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
@@ -92,6 +92,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
         if (!builderContext.transactionalContext.isTopLevelTx)
           throw new PeriodicCommitInOpenTransactionException()
         builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
+        builder.setPrePopulate(setPrePopulate)
       }
 
       if (profiling)
@@ -104,7 +105,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
     * or other resources in here.
     */
-  class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
+  class InterpretedExecutionPlan(val executionPlanFunc: (QueryContext, ExecutionMode, MapValue, Boolean) => InternalExecutionResult,
                                  val logicalPlan: LogicalPlan,
                                  val pipe: Pipe,
                                  override val isPeriodicCommit: Boolean,
@@ -112,8 +113,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                  val fingerprint: PlanFingerprintReference,
                                  val config: CypherCompilerConfiguration) extends ExecutionPlan {
 
-    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
-      executionPlanFunc(queryContext, planType, params)
+    override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue, prePopulate: Boolean): InternalExecutionResult =
+      executionPlanFunc(queryContext, planType, params, prePopulate)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.isStale(lastTxId, statistics)
 

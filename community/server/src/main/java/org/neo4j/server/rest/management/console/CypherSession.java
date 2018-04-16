@@ -60,7 +60,7 @@ public class CypherSession implements ScriptSession
         {
             TransactionalContext tc = cypherExecutor.createTransactionContext( script, emptyMap(), request );
             ExecutionEngine engine = cypherExecutor.getExecutionEngine();
-            Result result = engine.executeQuery( script, emptyMap(), tc );
+            Result result = engine.executeQuery( script, emptyMap(), tc, false );
             resultString = result.resultAsString();
         }
         catch ( SyntaxException error )

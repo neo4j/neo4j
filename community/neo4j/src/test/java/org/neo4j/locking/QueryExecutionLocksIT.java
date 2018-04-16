@@ -210,7 +210,7 @@ public class QueryExecutionLocksIT
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
-            executionEngine.executeQuery( query, Collections.emptyMap(), context );
+            executionEngine.executeQuery( query, Collections.emptyMap(), context, false );
             return new ArrayList<>( context.recordingReadOperationsWrapper.getLockOperationRecords() );
         }
     }

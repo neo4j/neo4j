@@ -45,7 +45,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   extends ExecutionPlan {
 
   override def run(ctx: QueryContext, planType: ExecutionMode,
-                   params: MapValue): InternalExecutionResult = {
+                   params: MapValue, prePopulate: Boolean): InternalExecutionResult = {
     if (planType == ExplainMode) {
       //close all statements
       ctx.transactionalContext.close(success = true)

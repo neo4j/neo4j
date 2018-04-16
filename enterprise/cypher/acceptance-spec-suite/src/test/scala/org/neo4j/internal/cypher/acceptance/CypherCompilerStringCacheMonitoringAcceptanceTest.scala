@@ -123,11 +123,11 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty), false).resultAsString()
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty), false).resultAsString()
 
     logProvider.assertAtLeastOnce(
 

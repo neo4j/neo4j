@@ -73,7 +73,7 @@ public class ExecutionEngineTest
         {
             String query = "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}";
             TransactionalContext tc = createTransactionContext( graph, tx, query );
-            result = executionEngine.executeQuery( query, NO_PARAMS, tc );
+            result = executionEngine.executeQuery( query, NO_PARAMS, tc, false );
 
             verifyResult( result );
 

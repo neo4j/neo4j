@@ -54,12 +54,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context, Boolean prePopulate )
             throws QueryExecutionKernelException
     {
         try
         {
-            return inner.execute( query, parameters, context );
+            return inner.execute( query, parameters, context, prePopulate );
         }
         catch ( CypherException e )
         {
@@ -68,12 +68,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context, Boolean prePopulate )
             throws QueryExecutionKernelException
     {
         try
         {
-            return inner.execute( query, parameters, context );
+            return inner.execute( query, parameters, context, prePopulate );
         }
         catch ( CypherException e )
         {
@@ -82,12 +82,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context, Boolean prePopulate )
             throws QueryExecutionKernelException
     {
         try
         {
-            return inner.profile( query, parameters, context );
+            return inner.profile( query, parameters, context, prePopulate );
         }
         catch ( CypherException e )
         {

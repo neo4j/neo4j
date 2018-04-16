@@ -177,7 +177,8 @@ class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2,
 
   override def run(transactionalContext: TransactionalContextWrapperV3_3,
                    executionMode: CypherExecutionMode,
-                   params: MapValue): Result = {
+                   params: MapValue,
+                   prePopulate: Boolean): Result = {
     var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
     params.foreach(new BiConsumer[String, AnyValue] {
       override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))

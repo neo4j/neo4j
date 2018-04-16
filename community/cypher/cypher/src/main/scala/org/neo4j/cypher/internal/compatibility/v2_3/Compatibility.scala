@@ -130,7 +130,7 @@ trait Compatibility {
 
     override val plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
-    override def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result = {
+    override def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue, prePopulate: Boolean): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new BiConsumer[String, AnyValue] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
