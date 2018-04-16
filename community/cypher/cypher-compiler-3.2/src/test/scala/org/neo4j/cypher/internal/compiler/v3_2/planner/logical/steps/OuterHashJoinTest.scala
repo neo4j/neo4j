@@ -52,7 +52,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -62,7 +62,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics)
+      metrics = factory.newMetrics(hardcodedStatistics, config)
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plans = outerHashJoin(optionalQg, left)
@@ -81,7 +81,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
       case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -91,7 +91,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       strategy = newMockedStrategy(innerPlan),
-      metrics = factory.newMetrics(hardcodedStatistics)
+      metrics = factory.newMetrics(hardcodedStatistics, config)
     )
     val left = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plan = outerHashJoin(optionalQg, left).getOrElse(fail("No result from outerHashJoin"))

@@ -356,5 +356,4 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     graph.createIndex("Crew", "name")
   }
-
 }

@@ -40,7 +40,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
 
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(231))
+    CardinalityCostModel(config)(plan, QueryGraphSolverInput.empty) should equal(Cost(231))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
@@ -54,7 +54,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
     val whatever = QueryGraphSolverInput.empty
 
-    CardinalityCostModel(plan, whatever) should be < CardinalityCostModel(plan, pleaseLazy)
+    CardinalityCostModel(config)(plan, whatever) should be < CardinalityCostModel(config)(plan, pleaseLazy)
   }
 
   test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
@@ -87,10 +87,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     )(solvedWithEstimation(250.0))
 
     val whatever = QueryGraphSolverInput.empty
-    CardinalityCostModel(lazyPlan, whatever) should be > CardinalityCostModel(eagerPlan, whatever)
+    CardinalityCostModel(config)(lazyPlan, whatever) should be > CardinalityCostModel(config)(eagerPlan, whatever)
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
+    CardinalityCostModel(config)(lazyPlan, pleaseLazy) should be < CardinalityCostModel(config)(eagerPlan, pleaseLazy)
   }
 
   test("multiple property expressions are counted for in cost") {
@@ -103,7 +103,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates
     val costForArgument = cardinality *   .1
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
+    CardinalityCostModel(config)(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
   }
 
 }
