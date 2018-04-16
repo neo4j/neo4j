@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.catchup;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.util.Collection;
 import java.util.List;
@@ -116,7 +118,7 @@ public class CatchupProtocolClientInstaller implements ProtocolInstaller<Orienta
                 .add( "hnd_res_file_header", new FileHeaderHandler( protocol, handler, logProvider ) )
                 .add( "hnd_res_file_chunk", new FileChunkHandler( protocol, handler ) )
                 .add( "hnd_res_store_id", new GetStoreIdResponseHandler( protocol, handler ) )
-                .add( "hnd_res_store_listing", new StoreListingResponseHandler( protocol, handler ))
+                .add( "hnd_res_store_listing", new StoreListingResponseHandler( protocol, handler )).add( "err_handle", new CatchupErrorHandler( handler ) )
                 .install();
     }
 
@@ -132,5 +134,29 @@ public class CatchupProtocolClientInstaller implements ProtocolInstaller<Orienta
         return modifiers.stream()
                 .map( ModifierProtocolInstaller::protocols )
                 .collect( Collectors.toList() );
+    }
+
+    private class CatchupErrorHandler extends ChannelInboundHandlerAdapter
+    {
+        private final CatchUpResponseHandler handler;
+
+        CatchupErrorHandler( CatchUpResponseHandler handler )
+        {
+            this.handler = handler;
+        }
+
+        @Override
+        public void channelInactive( ChannelHandlerContext ctx )
+        {
+            handler.onChannelInactive();
+            ctx.fireChannelInactive();
+        }
+
+        @Override
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+        {
+            handler.onException( cause );
+            ctx.fireExceptionCaught( cause );
+        }
     }
 }

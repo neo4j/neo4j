@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -27,8 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunk;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeader;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponse;
-import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.causalclustering.catchup.storecopy.PrepareStoreCopyResponse;
+import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponse;
 import org.neo4j.causalclustering.catchup.tx.TxStreamFinishedResponse;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
@@ -65,7 +64,7 @@ class TrackingResponseHandler implements CatchUpResponseHandler
     }
 
     @Override
-    public boolean onFileContent( FileChunk fileChunk ) throws IOException
+    public boolean onFileContent( FileChunk fileChunk )
     {
         if ( !requestOutcomeSignal.isCancelled() )
         {
@@ -133,6 +132,24 @@ class TrackingResponseHandler implements CatchUpResponseHandler
         {
             recordLastResponse();
             delegate.onStoreListingResponse( requestOutcomeSignal, storeListingRequest );
+        }
+    }
+
+    @Override
+    public void onChannelInactive()
+    {
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            requestOutcomeSignal.completeExceptionally( new IllegalStateException( "Channel inactive" ) );
+        }
+    }
+
+    @Override
+    public void onException( Throwable cause )
+    {
+        if ( !requestOutcomeSignal.isCancelled() )
+        {
+            requestOutcomeSignal.completeExceptionally( cause );
         }
     }
 
