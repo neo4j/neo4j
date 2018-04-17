@@ -54,7 +54,7 @@ public class SecurityRulesModule implements ServerModule
         {
             mountedFilter = new SecurityFilter( securityRules );
 
-            webServer.addFilter( mountedFilter, "/*", Collections.emptyMap() );
+            webServer.addFilter( mountedFilter, "/*" );
 
             for ( SecurityRule rule : securityRules )
             {

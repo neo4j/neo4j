@@ -260,9 +260,9 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void addFilter( Filter filter, String pathSpec, Map<String, String> initParameters )
+    public void addFilter( Filter filter, String pathSpec )
     {
-        filters.add( new FilterDefinition( filter, pathSpec, initParameters ) );
+        filters.add( new FilterDefinition( filter, pathSpec ) );
     }
 
     @Override
@@ -511,9 +511,9 @@ public class Jetty9WebServer implements WebServer
     {
         for ( FilterDefinition filterDef : filters )
         {
-            FilterHolder filterHolder = new FilterHolder( filterDef.getFilter() );
-            filterHolder.setInitParameters( filterDef.initParameters );
-            context.addFilter( filterHolder, filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class ) );
+            context.addFilter( new FilterHolder( filterDef.getFilter() ),
+                    filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class )
+            );
         }
     }
 
@@ -526,13 +526,11 @@ public class Jetty9WebServer implements WebServer
     {
         private final Filter filter;
         private final String pathSpec;
-        private final Map<String, String> initParameters;
 
-        FilterDefinition( Filter filter, String pathSpec, Map<String, String> initParameters )
+        FilterDefinition( Filter filter, String pathSpec )
         {
             this.filter = filter;
             this.pathSpec = pathSpec;
-            this.initParameters = initParameters;
         }
 
         public boolean matches( Filter filter, String pathSpec )

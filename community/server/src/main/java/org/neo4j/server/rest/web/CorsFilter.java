@@ -51,18 +51,32 @@ public class CorsFilter implements Filter
     public static final String VARY = "Vary";
 
     private final Log log;
+    private final String access_control_allow_origin;
+    private final String vary;
 
-    private FilterConfig filterConfig;
-
-    public CorsFilter( LogProvider logProvider )
+    public CorsFilter( LogProvider logProvider, String access_control_allow_origin )
     {
         this.log = logProvider.getLog( getClass() );
+        this.access_control_allow_origin = access_control_allow_origin;
+        if ( "*".equals( access_control_allow_origin ) )
+        {
+            vary = null;
+        }
+        else
+        {
+            // If the server specifies an origin host rather than "*", then it must also include Origin in
+            // the Vary response header to indicate to clients that server responses will differ based on
+            // the value of the Origin request header.
+            //
+            // -- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
+            //
+            vary = "Origin";
+        }
     }
 
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException
     {
-        this.filterConfig = filterConfig;
     }
 
     @Override
@@ -72,21 +86,10 @@ public class CorsFilter implements Filter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        String uri = "*";
-        if ( filterConfig != null )
+        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, access_control_allow_origin );
+        if ( vary != null )
         {
-            uri = filterConfig.getInitParameter( "access_control_allow_origin" );
-        }
-        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, uri );
-        if ( !"*".equals( uri ) )
-        {
-            // If the server specifies an origin host rather than "*", then it must also include Origin in
-            // the Vary response header to indicate to clients that server responses will differ based on
-            // the value of the Origin request header.
-            //
-            // -- https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
-            //
-            response.setHeader( VARY, "Origin" );
+            response.setHeader( VARY, vary );
         }
 
         Enumeration<String> requestMethodEnumeration = request.getHeaders( ACCESS_CONTROL_REQUEST_METHOD );
@@ -115,7 +118,6 @@ public class CorsFilter implements Filter
     @Override
     public void destroy()
     {
-        this.filterConfig = null;
     }
 
     private void addAllowedMethodIfValid( String methodName, HttpServletResponse response )

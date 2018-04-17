@@ -71,9 +71,8 @@ public class RESTApiModule implements ServerModule
     {
         URI restApiUri = restApiUri( );
 
-        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*", Collections.emptyMap() );
-        webServer.addFilter( new CorsFilter( logProvider ), "/*", Collections.singletonMap(
-                "access_control_allow_origin", config.get( access_control_allow_origin ) ) );
+        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
+        webServer.addFilter( new CorsFilter( logProvider, config.get( access_control_allow_origin ) ), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
         loadPlugins();
     }

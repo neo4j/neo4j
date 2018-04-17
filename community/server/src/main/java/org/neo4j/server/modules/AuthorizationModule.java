@@ -64,7 +64,7 @@ public class AuthorizationModule implements ServerModule
             authorizationFilter = createAuthorizationDisabledFilter();
         }
 
-        webServer.addFilter( authorizationFilter, "/*", Collections.emptyMap() );
+        webServer.addFilter( authorizationFilter, "/*" );
     }
 
     @Override

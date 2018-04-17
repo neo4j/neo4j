@@ -61,7 +61,7 @@ public interface WebServer
     void addJAXRSClasses( List<String> classNames, String serverMountPoint, Collection<Injectable<?>> injectables );
     void removeJAXRSClasses( List<String> classNames, String serverMountPoint );
 
-    void addFilter( Filter filter, String pathSpec, Map<String, String> initParameters );
+    void addFilter( Filter filter, String pathSpec );
 
     void removeFilter( Filter filter, String pathSpec );
 
