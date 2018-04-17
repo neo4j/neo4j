@@ -27,7 +27,6 @@ import java.util.function.Function;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
@@ -288,7 +287,7 @@ public interface StoreReadLayer
     /**
      * @return ids of all stored nodes.
      */
-    PrimitiveLongIterator nodesGetAll();
+    LongIterator nodesGetAll();
 
     /**
      * @return ids of all stored relationships. The returned iterator can optionally visit data about

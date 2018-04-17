@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.RecordCursors;
@@ -33,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
  */
 public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCursor
 {
-    private PrimitiveLongIterator iterator;
+    private LongIterator iterator;
     private final InstanceCache<StoreIteratorRelationshipCursor> instanceCache;
 
     public StoreIteratorRelationshipCursor( RelationshipRecord relationshipRecord,
@@ -45,7 +46,7 @@ public class StoreIteratorRelationshipCursor extends StoreAbstractRelationshipCu
         this.instanceCache = instanceCache;
     }
 
-    public StoreIteratorRelationshipCursor init( PrimitiveLongIterator iterator )
+    public StoreIteratorRelationshipCursor init( LongIterator iterator )
     {
         this.iterator = iterator;
         return this;

@@ -23,6 +23,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import java.io.File;
 import java.util.HashMap;
@@ -180,8 +182,7 @@ class TestCatchupServerHandler implements CatchupServerHandler
                 File[] files = new File[list.size()];
                 files = list.toArray( files );
                 long transactionId = 123L;
-                PrimitiveLongSet indexIds = Primitive.longSet();
-                indexIds.add( 13 );
+                LongSet indexIds = LongSets.immutable.of( 13 );
                 channelHandlerContext.writeAndFlush( PrepareStoreCopyResponse.success( files, indexIds, transactionId ) );
                 catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
             }

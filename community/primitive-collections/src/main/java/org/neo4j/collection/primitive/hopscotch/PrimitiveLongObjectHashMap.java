@@ -19,9 +19,10 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
@@ -189,7 +190,7 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         {
             return new Iterator<VALUE>()
             {
-                private final PrimitiveLongIterator iterator = map.iterator();
+                private final LongIterator iterator = map.longIterator();
 
                 @Override
                 public boolean hasNext()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
@@ -167,7 +168,7 @@ public class PrimitiveLongArrayQueueTest
         }
 
         assertEquals( 14, queue.size() );
-        PrimitiveLongIterator iterator = queue.iterator();
+        LongIterator iterator = queue.longIterator();
         for ( int j = 10; j < 24; j++ )
         {
             assertTrue( iterator.hasNext() );
@@ -179,7 +180,7 @@ public class PrimitiveLongArrayQueueTest
     @Test( expected = NoSuchElementException.class )
     public void failToGetNextOnEmptyQueueIterator()
     {
-        createQueue().iterator().next();
+        createQueue().longIterator().next();
     }
 
     @Test

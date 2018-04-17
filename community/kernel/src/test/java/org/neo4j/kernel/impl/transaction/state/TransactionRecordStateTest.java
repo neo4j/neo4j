@@ -230,10 +230,10 @@ public class TransactionRecordStateTest
         // -- later recovering that tx, there should be only one update
         assertTrue( extractor.containsAnyNodeOrPropertyUpdate() );
         PrimitiveLongSet recoveredNodeIds = Primitive.longSet();
-        recoveredNodeIds.addAll( extractor.nodeCommandsById().iterator() );
-        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().iterator() );
+        recoveredNodeIds.addAll( extractor.nodeCommandsById().longIterator() );
+        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().longIterator() );
         assertEquals( 1, recoveredNodeIds.size() );
-        assertEquals( nodeId, recoveredNodeIds.iterator().next() );
+        assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
     }
 
     @Test

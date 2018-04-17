@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Arrays;
 import java.util.function.LongPredicate;
 
@@ -123,7 +125,7 @@ public class PrimitiveLongResourceCollections
 
     private abstract static class PrimitiveLongFilteringResourceIterator extends PrimitiveLongBaseResourceIterator implements LongPredicate
     {
-        private final PrimitiveLongIterator source;
+        private final LongIterator source;
 
         private PrimitiveLongFilteringResourceIterator( PrimitiveLongResourceIterator source )
         {

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
@@ -156,7 +156,7 @@ public class PrimitiveLongDiffSetsTest
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
         diffSet.removeAll( PrimitiveLongCollections.iterator( 1L, 2L ) );
 
-        PrimitiveLongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
+        LongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
         assertEquals( asSet( 5L, 6L, 9L, 10L, 11L ), toSet( augmentedIterator ) );
     }
 

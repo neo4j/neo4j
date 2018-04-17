@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -125,7 +126,7 @@ public class PrepareStoreCopyFilesTest
     @Test
     public void shouldHandleEmptyDescriptors()
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        LongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertEquals( 0, indexIds.size() );
     }
@@ -137,7 +138,7 @@ public class PrepareStoreCopyFilesTest
         existingIds.add( 42 );
         when( indexListingMock.getIndexIds() ).thenReturn( existingIds );
 
-        PrimitiveLongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        LongSet actualIndexIndexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
 
         assertTrue( actualIndexIndexIds.isEmpty() );
     }

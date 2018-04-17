@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -151,7 +151,7 @@ public class DatabaseIndexAccessorTest
         IndexReader reader = accessor.newReader();
 
         // WHEN
-        PrimitiveLongIterator results = reader.query( IndexQuery.exists( PROP_ID ) );
+        LongIterator results = reader.query( IndexQuery.exists( PROP_ID ) );
 
         // THEN
         assertEquals( asSet( nodeId, nodeId2 ), PrimitiveLongCollections.toSet( results ) );
@@ -167,28 +167,28 @@ public class DatabaseIndexAccessorTest
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeFromBInclusive = reader.query( range( PROP_ID, "B", true, null, false ) );
+        LongIterator rangeFromBInclusive = reader.query( range( PROP_ID, "B", true, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromBInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator rangeFromANonInclusive = reader.query( range( PROP_ID, "A", false, null, false ) );
+        LongIterator rangeFromANonInclusive = reader.query( range( PROP_ID, "A", false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( rangeFromANonInclusive ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator emptyLowInclusive = reader.query( range( PROP_ID, "", true, null, false ) );
+        LongIterator emptyLowInclusive = reader.query( range( PROP_ID, "", true, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyLowInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
 
-        PrimitiveLongIterator emptyUpperNonInclusive = reader.query( range( PROP_ID, "B", true, "", false ) );
+        LongIterator emptyUpperNonInclusive = reader.query( range( PROP_ID, "B", true, "", false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyUpperNonInclusive ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator emptyInterval = reader.query( range( PROP_ID, "", true, "", true ) );
+        LongIterator emptyInterval = reader.query( range( PROP_ID, "", true, "", true ) );
         assertThat( PrimitiveLongCollections.asArray( emptyInterval ), LongArrayMatcher.of( 4 ) );
 
-        PrimitiveLongIterator emptyAllNonInclusive = reader.query( range( PROP_ID, "", false, null, false ) );
+        LongIterator emptyAllNonInclusive = reader.query( range( PROP_ID, "", false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( emptyAllNonInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3 ) );
 
-        PrimitiveLongIterator nullNonInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
+        LongIterator nullNonInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( nullNonInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
 
-        PrimitiveLongIterator nullInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
+        LongIterator nullInclusive = reader.query( range( PROP_ID, (String) null, false, null, false ) );
         assertThat( PrimitiveLongCollections.asArray( nullInclusive ), LongArrayMatcher.of( PROP_ID, 2, 3, 4 ) );
     }
 
@@ -199,22 +199,22 @@ public class DatabaseIndexAccessorTest
 
         IndexReader reader = accessor.newReader();
 
-        PrimitiveLongIterator rangeTwoThree = reader.query( range( PROP_ID, 2, true, 3, true ) );
+        LongIterator rangeTwoThree = reader.query( range( PROP_ID, 2, true, 3, true ) );
         assertThat( PrimitiveLongCollections.asArray( rangeTwoThree ), LongArrayMatcher.of( 2, 3 ) );
 
-        PrimitiveLongIterator infiniteMaxRange = reader.query( range( PROP_ID, 2, true, Long.MAX_VALUE, true ) );
+        LongIterator infiniteMaxRange = reader.query( range( PROP_ID, 2, true, Long.MAX_VALUE, true ) );
         assertThat( PrimitiveLongCollections.asArray( infiniteMaxRange ), LongArrayMatcher.of( 2, 3, 4 ) );
 
-        PrimitiveLongIterator infiniteMinRange = reader.query( range( PROP_ID, Long.MIN_VALUE, true, 3, true ) );
+        LongIterator infiniteMinRange = reader.query( range( PROP_ID, Long.MIN_VALUE, true, 3, true ) );
         assertThat( PrimitiveLongCollections.asArray( infiniteMinRange ), LongArrayMatcher.of( PROP_ID, 2, 3 ) );
 
-        PrimitiveLongIterator maxNanInterval = reader.query( range( PROP_ID, 3, true, Double.NaN, true ) );
+        LongIterator maxNanInterval = reader.query( range( PROP_ID, 3, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( maxNanInterval ), LongArrayMatcher.of( 3, 4, 5 ) );
 
-        PrimitiveLongIterator minNanInterval = reader.query( range( PROP_ID, Double.NaN, true, 5, true ) );
+        LongIterator minNanInterval = reader.query( range( PROP_ID, Double.NaN, true, 5, true ) );
         assertThat( PrimitiveLongCollections.asArray( minNanInterval ), LongArrayMatcher.emptyArrayMatcher() );
 
-        PrimitiveLongIterator nanInterval = reader.query( range( PROP_ID, Double.NaN, true, Double.NaN, true ) );
+        LongIterator nanInterval = reader.query( range( PROP_ID, Double.NaN, true, Double.NaN, true ) );
         assertThat( PrimitiveLongCollections.asArray( nanInterval ), LongArrayMatcher.of( 5 ) );
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -27,7 +28,6 @@ import java.util.Arrays;
 import java.util.Deque;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -41,7 +41,7 @@ public class NodeUpdatesIteratorTest
     public void iterateOverEmptyNodeIds()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
-        PrimitiveLongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
+        LongIterator emptyIterator = PrimitiveLongCollections.emptyIterator();
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, emptyIterator );
         assertFalse( nodeUpdatesIterator.hasNext() );
     }
@@ -55,7 +55,7 @@ public class NodeUpdatesIteratorTest
         when( storeView.nodeAsUpdates( 1 ) ).thenReturn( nodeUpdates1 );
         when( storeView.nodeAsUpdates( 2 ) ).thenReturn( nodeUpdates2 );
 
-        PrimitiveLongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
+        LongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, nodeIdIterator );
 
         assertSame( nodeUpdates1, nodeUpdatesIterator.next() );
@@ -77,7 +77,7 @@ public class NodeUpdatesIteratorTest
 
         Deque<NodeUpdates> updates = new ArrayDeque<>( Arrays.asList( nodeUpdates1, nodeUpdates2 ) );
 
-        PrimitiveLongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
+        LongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, nodeIdIterator );
 
         while ( nodeUpdatesIterator.hasNext() )

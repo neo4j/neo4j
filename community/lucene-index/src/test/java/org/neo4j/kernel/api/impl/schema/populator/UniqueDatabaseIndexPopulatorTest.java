@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.store.Directory;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -541,7 +541,7 @@ public class UniqueDatabaseIndexPopulatorTest
         index.maybeRefreshBlocking();
         try ( IndexReader reader = index.getIndexReader() )
         {
-            PrimitiveLongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
+            LongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

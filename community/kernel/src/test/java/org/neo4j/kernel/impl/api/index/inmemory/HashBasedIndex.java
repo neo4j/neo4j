@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -28,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -291,7 +292,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return asResource( toPrimitiveIterator( nodeIds.iterator() ) );
     }
 
-    private PrimitiveLongResourceIterator asResource( PrimitiveLongIterator iterator )
+    private PrimitiveLongResourceIterator asResource( LongIterator iterator )
     {
         return resourceIterator( iterator, null );
     }

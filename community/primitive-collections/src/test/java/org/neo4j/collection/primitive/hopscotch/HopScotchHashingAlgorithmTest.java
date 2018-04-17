@@ -19,13 +19,13 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
@@ -54,7 +54,7 @@ public class HopScotchHashingAlgorithmTest
         }
 
         // WHEN
-        PrimitiveLongIterator iterator = set.iterator();
+        LongIterator iterator = set.longIterator();
         Set<Long> iterated = new HashSet<>();
         for ( int i = 0; i < threshold / 2; i++ )
         {

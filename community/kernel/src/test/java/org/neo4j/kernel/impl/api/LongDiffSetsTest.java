@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 
 import static java.util.Arrays.asList;
@@ -45,7 +45,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 2L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 2L ) );
+        LongIterator actual = diffSets.augment( iterator( 1L, 2L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -61,7 +61,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
+        LongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -77,7 +77,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 1L, 17L, 3L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
+        LongIterator actual = diffSets.augment( iterator( 1L, 17L, 3L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );
@@ -93,7 +93,7 @@ public class LongDiffSetsTest
         Iterator<Long> expected = diffSets.apply( iteratorSource( 19L ) );
 
         // when
-        PrimitiveLongIterator actual = diffSets.augment( iterator( 19L ) );
+        LongIterator actual = diffSets.augment( iterator( 19L ) );
 
         // then
         assertThat( expected, hasSamePrimitiveItems( actual ) );

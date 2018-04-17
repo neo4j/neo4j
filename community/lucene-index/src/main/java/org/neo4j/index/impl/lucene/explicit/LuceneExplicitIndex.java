@@ -28,6 +28,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -330,7 +330,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
         if ( docValuesCollector != null )
         {
             // Add from fulltext tx state
-            PrimitiveLongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneExplicitIndex.KEY_DOC_ID );
+            final LongIterator valuesIterator = docValuesCollector.getValuesIterator( LuceneExplicitIndex.KEY_DOC_ID );
             while ( valuesIterator.hasNext() )
             {
                 set.add( valuesIterator.next() );
@@ -376,7 +376,7 @@ public abstract class LuceneExplicitIndex implements ExplicitIndex
         // This is getting quite low-level though
         DocValuesCollector collector = new DocValuesCollector( false );
         additionsSearcher.search( query, collector );
-        PrimitiveLongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
+        final LongIterator valuesIterator = collector.getValuesIterator( KEY_DOC_ID );
         LongCostume id = new LongCostume();
         while ( valuesIterator.hasNext() )
         {

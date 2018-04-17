@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +31,6 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -271,7 +272,7 @@ public class ImportLogic implements Closeable
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, idMapper );
             LongFunction<Object> inputIdLookup = new NodeInputIdPropertyLookup( neoStore.getTemporaryPropertyStore() );
             executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup, badCollector, memoryUsageStats ) );
-            PrimitiveLongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
+            final LongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
                 executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore, storeUpdateMonitor ) );

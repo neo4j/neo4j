@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -51,7 +52,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private long node;
     private IndexQuery[] query;
     private Value[] values;
-    private PrimitiveLongIterator added = emptyIterator();
+    private LongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
     private boolean needsValues;
     private final DefaultCursors pool;
@@ -306,7 +307,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private PrimitiveLongSet removed( TransactionState txState, PrimitiveLongReadableDiffSets changes )
     {
         PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
-        longSet.addAll( changes.getRemoved().iterator() );
+        longSet.addAll( changes.getRemoved().longIterator() );
         return longSet;
     }
 

@@ -19,8 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdRangeIterator;
@@ -29,7 +30,7 @@ import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**
- * Exposes batches of ids from a {@link RecordStore} as a {@link PrimitiveLongIterator}.
+ * Exposes batches of ids from a {@link RecordStore} as a {@link LongIterator}.
  * It makes use of {@link IdSequence#nextIdBatch(int)} (with default batch size the number of records per page)
  * and caches that batch, exhausting it in {@link #next()} before getting next batch.
  */

@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.index.collector;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 /**
  * Document values iterators that are primitive long iterators that can access value by field from document
  * and provides information about how many items remains in the underlying source.
  */
-public interface ValuesIterator extends PrimitiveLongIterator, DocValuesAccess
+public interface ValuesIterator extends DocValuesAccess, LongIterator
 {
     int remaining();
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 
 import java.net.URL
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
@@ -106,7 +106,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
     translateException(inner.getNodesByLabel(id))
 
-  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
+  override def getNodesByLabelPrimitive(id: Int): LongIterator =
     translateException(inner.getNodesByLabelPrimitive(id))
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
@@ -301,7 +301,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def all: Iterator[T] =
       translateException(inner.all)
 
-    override def allPrimitive: PrimitiveLongIterator =
+    override def allPrimitive: LongIterator =
       translateException(inner.allPrimitive)
 
     override def isDeletedInThisTx(id: Long): Boolean =

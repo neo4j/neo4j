@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.spi.codegen
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 import java.util.{PrimitiveIterator, ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
 import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
@@ -830,14 +831,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (key.size == 1 && key.head._2.repr == LongType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
-      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
+      val variable = generator.declare(typeRef[LongIterator], localName)
       generator.assign(variable, invoke(generator.load(name),
-                                        method[PrimitiveLongSet, PrimitiveLongIterator]("iterator")))
+        method[PrimitiveLongSet, LongIterator]("longIterator")))
       using(generator.whileLoop(
-        invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) { body =>
+        invoke(generator.load(localName), method[LongIterator, Boolean]("hasNext")))) { body =>
 
         body.assign(body.declare(typeRef[Long], keyName),
-                    invoke(body.load(localName), method[PrimitiveLongIterator, Long]("next")))
+          invoke(body.load(localName), method[LongIterator, Long]("next")))
         block(copy(generator = body))
       }
     } else {
@@ -1127,14 +1128,14 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     if (key.size == 1 && key.head._2.repr == LongType) {
       val (keyName, keyType) = key.head
       val localName = context.namer.newVarName()
-      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
+      val variable = generator.declare(typeRef[LongIterator], localName)
       generator.assign(variable, invoke(generator.load(name),
-                                        method[PrimitiveLongLongMap, PrimitiveLongIterator]("iterator")))
+        method[PrimitiveLongLongMap, LongIterator]("longIterator")))
       using(generator.whileLoop(
-        invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) { body =>
+        invoke(generator.load(localName), method[LongIterator, Boolean]("hasNext")))) { body =>
 
         body.assign(body.declare(typeRef[Long], keyName),
-                    invoke(body.load(localName), method[PrimitiveLongIterator, Long]("next")))
+          invoke(body.load(localName), method[LongIterator, Long]("next")))
         body.assign(body.declare(typeRef[Long], valueVar),
                     invoke(body.load(name), method[PrimitiveLongLongMap, Long]("get", typeRef[Long]),
                            body.load(keyName)))

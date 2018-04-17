@@ -19,11 +19,13 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 public interface PrimitiveLongSet extends PrimitiveLongCollection
 {
     boolean add( long value );
 
-    boolean addAll( PrimitiveLongIterator values );
+    boolean addAll( LongIterator values );
 
     boolean contains( long value );
 

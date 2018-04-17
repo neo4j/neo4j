@@ -186,9 +186,9 @@ public class Primitive
         return new PrimitiveIntLongHashMap( new IntKeyLongValueTable( initialCapacity ), NO_MONITOR );
     }
 
-    public static PrimitiveLongIterator iterator( final long... longs )
+    public static LongIterator iterator( final long... longs )
     {
-        return new PrimitiveLongIterator()
+        return new LongIterator()
         {
             int i;
 

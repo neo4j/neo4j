@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -277,7 +278,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             logIndexStateSummary( "start", indexStates );
 
             // Drop placeholder proxies for indexes that need to be rebuilt
-            dropRecoveringIndexes( indexMap, rebuildingDescriptors.iterator() );
+            dropRecoveringIndexes( indexMap, rebuildingDescriptors.longIterator() );
 
             // Rebuild indexes by recreating and repopulating them
             if ( !rebuildingDescriptors.isEmpty() )
@@ -522,7 +523,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         samplingController.sampleIndex( indexMapRef.getIndexId( descriptor ), mode );
     }
 
-    private void dropRecoveringIndexes( IndexMap indexMap, PrimitiveLongIterator indexesToRebuild )
+    private void dropRecoveringIndexes( IndexMap indexMap, LongIterator indexesToRebuild )
             throws IOException
     {
         while ( indexesToRebuild.hasNext() )

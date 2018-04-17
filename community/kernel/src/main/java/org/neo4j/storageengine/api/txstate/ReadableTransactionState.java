@@ -19,10 +19,11 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -109,7 +110,7 @@ public interface ReadableTransactionState
 
     int augmentNodeDegree( long node, int committedDegree, Direction direction, int relType );
 
-    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+    LongIterator augmentNodesGetAll( LongIterator committed );
 
     RelationshipIterator augmentRelationshipsGetAll( RelationshipIterator committed );
 

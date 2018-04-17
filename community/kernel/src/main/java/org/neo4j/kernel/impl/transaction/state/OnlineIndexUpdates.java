@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.helpers.collection.Iterables;
@@ -79,7 +80,7 @@ public class OnlineIndexUpdates implements IndexUpdates
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {
-        PrimitiveLongIterator nodeIds = allKeys( nodeCommands, propertyCommands ).iterator();
+        final LongIterator nodeIds = allKeys( nodeCommands, propertyCommands ).longIterator();
         while ( nodeIds.hasNext() )
         {
             long nodeId = nodeIds.next();
@@ -92,7 +93,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         PrimitiveLongSet union = Primitive.longSet();
         for ( PrimitiveLongObjectMap map : maps )
         {
-            union.addAll( map.iterator() );
+            union.addAll( map.longIterator() );
         }
         return union;
     }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollection;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 
 public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHopScotchCollection<VALUE>
@@ -32,7 +33,7 @@ public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHop
     }
 
     @Override
-    public PrimitiveLongIterator iterator()
+    public LongIterator longIterator()
     {
         return new TableKeyIterator<>( table, this );
     }

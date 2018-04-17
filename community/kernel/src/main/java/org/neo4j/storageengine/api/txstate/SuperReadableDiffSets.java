@@ -19,17 +19,18 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
- * Super class of diff sets where use of {@link PrimitiveLongIterator} can be parameterized
+ * Super class of diff sets where use of {@link LongIterator} can be parameterized
  * to a specific subclass instead.
  */
 public interface SuperReadableDiffSets<T>
@@ -50,7 +51,7 @@ public interface SuperReadableDiffSets<T>
 
     int delta();
 
-    PrimitiveLongIterator augment( PrimitiveLongIterator source );
+    LongIterator augment( LongIterator source );
 
     PrimitiveLongResourceIterator augment( PrimitiveLongResourceIterator source );
 

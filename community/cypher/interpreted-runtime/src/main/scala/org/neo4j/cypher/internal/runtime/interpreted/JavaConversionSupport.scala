@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.eclipse.collections.api.iterator.{IntIterator, LongIterator}
-import org.neo4j.collection.primitive.PrimitiveLongIterator
 
 object JavaConversionSupport {
 
@@ -32,7 +31,7 @@ object JavaConversionSupport {
   def asScalaENFXSafe(iterator: IntIterator): Iterator[Int] = makeENFXSafe(iterator.hasNext, iterator.next)(Some(_))
 
   // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions
-  def mapToScalaENFXSafe[T](iterator: PrimitiveLongIterator)(f: Long => Option[T]): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
+  def mapToScalaENFXSafe[T](iterator: LongIterator)(f: Long => Option[T]): Iterator[T] = makeENFXSafe(iterator.hasNext, iterator.next)(f)
 
   private def makeENFXSafe[S,T](hasMore: () => Boolean, more: () => S)(f: S => Option[T]): Iterator[T] = new Iterator[T] {
     private var _next: Option[T] = fetchNext()

@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -35,7 +36,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
@@ -185,7 +185,7 @@ public class IndexingCompositeQueryAcceptanceTest
         PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
-            PrimitiveLongIterator deleting = toDelete.iterator();
+            LongIterator deleting = toDelete.longIterator();
             while ( deleting.hasNext() )
             {
                 long id = deleting.next();
@@ -211,14 +211,14 @@ public class IndexingCompositeQueryAcceptanceTest
         PrimitiveLongSet found = Primitive.longSet();
         try ( Transaction tx = db.beginTx() )
         {
-            PrimitiveLongIterator toMatching = toChangeToMatch.iterator();
+            LongIterator toMatching = toChangeToMatch.longIterator();
             while ( toMatching.hasNext() )
             {
                 long id = toMatching.next();
                 setProperties( id, values );
                 expected.add( id );
             }
-            PrimitiveLongIterator toNotMatching = toChangeToNotMatch.iterator();
+            LongIterator toNotMatching = toChangeToNotMatch.longIterator();
             while ( toNotMatching.hasNext() )
             {
                 long id = toNotMatching.next();

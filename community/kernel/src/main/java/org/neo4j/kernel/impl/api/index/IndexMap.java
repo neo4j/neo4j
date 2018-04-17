@@ -34,7 +34,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 
@@ -178,9 +177,9 @@ public final class IndexMap implements Cloneable
         return indexesByDescriptor.keySet().iterator();
     }
 
-    public PrimitiveLongIterator indexIds()
+    public LongIterator indexIds()
     {
-        return indexesById.iterator();
+        return indexesById.longIterator();
     }
 
     public int size()

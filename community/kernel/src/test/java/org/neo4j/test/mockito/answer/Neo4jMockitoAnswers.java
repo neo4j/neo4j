@@ -27,7 +27,6 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
@@ -43,7 +42,7 @@ public class Neo4jMockitoAnswers
         return invocation -> values.iterator();
     }
 
-    public static Answer<PrimitiveLongIterator> answerAsPrimitiveLongIteratorFrom( final Iterable<Long> values )
+    public static Answer<LongIterator> answerAsPrimitiveLongIteratorFrom( final Iterable<Long> values )
     {
         return invocation -> PrimitiveLongCollections.resourceIterator( toPrimitiveIterator( values.iterator() ),
                 Resource.EMPTY );
