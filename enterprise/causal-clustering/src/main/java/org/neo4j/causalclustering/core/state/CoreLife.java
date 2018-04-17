@@ -80,12 +80,20 @@ public class CoreLife extends SafeLifecycle
         }
         else
         {
-            snapshotService.awaitState();
-            Optional<JobScheduler.JobHandle> downloadJob = downloadService.downloadJob();
-            if ( downloadJob.isPresent() )
+            try
             {
-                downloadJob.get().waitTermination();
-                startedByDownloader = true;
+                snapshotService.awaitState();
+                Optional<JobScheduler.JobHandle> downloadJob = downloadService.downloadJob();
+                if ( downloadJob.isPresent() )
+                {
+                    downloadJob.get().waitTermination();
+                    startedByDownloader = true;
+                }
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                return;
             }
         }
 
