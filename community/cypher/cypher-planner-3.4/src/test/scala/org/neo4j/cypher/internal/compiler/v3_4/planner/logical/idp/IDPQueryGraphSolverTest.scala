@@ -860,13 +860,13 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx, solveds, cardinalities) =>
       val plan = queryGraphSolver.plan(cfg.qg, ctx, solveds, cardinalities)
       plan should equal(
-        Expand(
-          ProjectEndpoints(
+        ProjectEndpoints(
+          Expand(
             ProjectEndpoints(
               Argument(Set("r2", "r1", "a", "d", "b", "c")),
               "r2", "c", startInScope = true, "d", endInScope = true, None, directed = true, SimplePatternLength),
-            "r1", "a" , startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength),
-          "a", OUTGOING, List(), "d", "r3", ExpandInto))
+            "a", OUTGOING, List(), "d", "r3", ExpandInto),
+          "r1", "a", startInScope = true, "b", endInScope = true, None, directed = true, SimplePatternLength))
     }
   }
 
