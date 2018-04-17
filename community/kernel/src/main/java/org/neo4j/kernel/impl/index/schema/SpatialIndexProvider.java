@@ -140,10 +140,6 @@ public class SpatialIndexProvider extends IndexProvider
         SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
         final Iterable<SpatialIndexFiles.SpatialFileLayout> existing = spatialIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            return InternalIndexState.ONLINE;
-        }
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( SpatialIndexFiles.SpatialFileLayout subIndex : existing )
         {

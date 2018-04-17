@@ -109,10 +109,6 @@ public class TemporalIndexProvider extends IndexProvider
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
 
         final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            return InternalIndexState.ONLINE;
-        }
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( TemporalIndexFiles.FileLayout subIndex : existing )
         {
