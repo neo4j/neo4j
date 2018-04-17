@@ -260,7 +260,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value )
     {
-        // truncate the offset to whole minutes
         this.value = value;
         this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
     }
