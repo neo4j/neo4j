@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.virtual;
 
+<<<<<<< HEAD
+=======
+import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -34,9 +38,12 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Values;
+<<<<<<< HEAD
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
+=======
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 
 public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
@@ -462,8 +469,79 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class DropNoValuesListValue extends ListValue
     {
         private final ListValue inner;
+<<<<<<< HEAD
         private int size = -1;
         DropNoValuesListValue( ListValue inner )
+=======
+        private final Function<AnyValue,AnyValue> transform;
+
+        TransformedListValue( ListValue inner, Function<AnyValue,AnyValue> transform )
+        {
+            this.inner = inner;
+            this.transform = transform;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
+        }
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            writer.beginList( size() );
+            for ( int i = 0; i < inner.size(); i++ )
+            {
+                transform.apply( inner.value( i ) ).writeTo( writer );
+            }
+            writer.endList();
+        }
+
+        @Override
+        public int size()
+        {
+            return inner.size();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return transform.apply( inner.value( offset ) );
+        }
+
+        @Override
+        public AnyValue[] asArray()
+        {
+            int len = size();
+            AnyValue[] anyValues = new AnyValue[len];
+            for ( int i = 0; i < len; i++ )
+            {
+                anyValues[i] = transform.apply( inner.value( i ) );
+            }
+            return anyValues;
+        }
+
+        @Override
+        public int computeHash()
+        {
+            int hashCode = 1;
+            for ( int i = 0; i < size(); i++ )
+            {
+                hashCode = 31 * hashCode + transform.apply( inner.value( i ) ).hashCode();
+            }
+            return hashCode;
+        }
+    }
+
+    static final class FilteredListValue extends ListValue
+    {
+        private final ListValue inner;
+        private final Predicate<AnyValue> filter;
+        private int size = -1;
+
+        FilteredListValue( ListValue inner, Predicate<AnyValue> filter )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
         {
             this.inner = inner;
         }
@@ -475,8 +553,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
+<<<<<<< HEAD
                 if ( value != NO_VALUE )
 
+=======
+                if ( filter.test( value ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                 {
                     value.writeTo( writer );
                 }
@@ -493,7 +575,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                 int s = 0;
                 for ( int i = 0; i < inner.size(); i++ )
                 {
+<<<<<<< HEAD
                     if ( inner.value( i ) != NO_VALUE )
+=======
+                    if ( filter.test( inner.value( i ) ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                     {
                         s++;
                     }
@@ -512,8 +598,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < size; i++ )
             {
                 AnyValue value = inner.value( i );
+<<<<<<< HEAD
                 if ( value != NO_VALUE )
 
+=======
+                if ( filter.test( value ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                 {
                     if ( actualOffset == offset )
                     {
@@ -535,8 +625,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
+<<<<<<< HEAD
 
                 if ( value != NO_VALUE )
+=======
+                if ( filter.test( value ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                 {
                     anyValues[index++] = value;
                 }
@@ -551,8 +645,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
+<<<<<<< HEAD
 
                 if ( value != NO_VALUE )
+=======
+                if ( filter.test( value ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                 {
                     hashCode = 31 * hashCode + value.hashCode();
                 }
@@ -649,7 +747,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
                             return;
                         }
                         AnyValue candidate = inner.value( index++ );
+<<<<<<< HEAD
                         if ( candidate != NO_VALUE )
+=======
+                        if ( filter.test( candidate ) )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
                         {
                             next = candidate;
                             return;

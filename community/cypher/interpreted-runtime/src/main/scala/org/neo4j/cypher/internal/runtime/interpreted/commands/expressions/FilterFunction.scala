@@ -36,6 +36,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
     val list = makeTraversable(value)
     val innerContext = m.createClone()
+<<<<<<< HEAD
     val filtered = new ArrayBuffer[AnyValue]
     val inputs = list.iterator()
     while (inputs.hasNext()) {
@@ -45,6 +46,11 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
       }
     }
     VirtualValues.list(filtered.toArray:_*)
+=======
+    VirtualValues.filter(traversable, new java.util.function.Predicate[AnyValue]() {
+      override def test(v1: AnyValue): Boolean =  predicate.isTrue(innerContext.set(id, v1), state)
+    })
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
   }
 
   def rewrite(f: (Expression) => Expression) =

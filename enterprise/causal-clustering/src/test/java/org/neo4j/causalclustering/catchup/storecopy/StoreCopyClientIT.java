@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+<<<<<<< HEAD
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -27,6 +28,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+=======
+import static org.junit.Assert.assertEquals;
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 
 
 import java.io.File;
@@ -41,7 +45,18 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+<<<<<<< HEAD
 import java.util.concurrent.TimeUnit;
+=======
+import java.util.function.IntPredicate;
+import java.util.function.IntSupplier;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
@@ -67,10 +82,13 @@ import org.neo4j.logging.Level;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
+<<<<<<< HEAD
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+=======
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 
 public class StoreCopyClientIT
 {
@@ -326,8 +344,17 @@ public class StoreCopyClientIT
         StringBuilder stringBuilder = new StringBuilder();
         try ( Reader reader = fsa.openAsReader( file, Charsets.UTF_8 ) )
         {
+<<<<<<< HEAD
             CharBuffer charBuffer = CharBuffer.wrap( new char[chunkSize] );
             while ( reader.read( charBuffer ) != -1 )
+=======
+            final int MAX_BUFFER_SIZE = 100;
+            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[MAX_BUFFER_SIZE] );
+            StringBuilder stringBuilder = new StringBuilder();
+            IntPredicate inRange = betweenZeroAndRange( MAX_BUFFER_SIZE );
+            IntSupplier readNext = unchecked( () -> storeChannel.read( byteBuffer ) );
+            for ( int readBytes = readNext.getAsInt(); inRange.test( readBytes ); readBytes = readNext.getAsInt() )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
             {
                 charBuffer.flip();
                 stringBuilder.append( charBuffer );
@@ -337,7 +364,36 @@ public class StoreCopyClientIT
         return stringBuilder.toString();
     }
 
+<<<<<<< HEAD
     private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
+=======
+    static String fileContent( File file, FileSystemAbstraction fileSystemAbstraction )
+    {
+        return serverFileContentsStringBuilder( file, fileSystemAbstraction ).toString();
+    }
+
+    private static IntSupplier unchecked( ThrowingSupplier<Integer,?> throwableSupplier )
+    {
+        return () ->
+        {
+            try
+            {
+                return throwableSupplier.get();
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+        };
+    }
+
+    private static IntPredicate betweenZeroAndRange( int RANGE )
+    {
+        return bytes -> bytes > 0 && bytes <= RANGE;
+    }
+
+    private String clientFileContents( InMemoryFileSystemStream storeFileStreams, String filename )
+>>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
     {
         return storeFileStreamsProvider.fileStreams().get( filename ).toString();
     }
