@@ -175,7 +175,7 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
 
     private LocalTimeValue( LocalTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value );
     }
 
     @Override

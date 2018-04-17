@@ -20,11 +20,14 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -32,6 +35,21 @@ import static org.junit.Assert.assertEquals;
 
 public class TemporalTypeIT extends AbstractRestFunctionalTestBase
 {
+    private int prevPrecision;
+
+    @Before
+    public void setup()
+    {
+        prevPrecision = Values.getNanoPrecision();
+        Values.setNanoPrecision( 9 );
+    }
+
+    @After
+    public void tearDown()
+    {
+        Values.setNanoPrecision( prevPrecision );
+    }
+
     @Test
     public void shouldWorkWithDateTime() throws Throwable
     {

@@ -263,7 +263,7 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
 
     private LocalDateTimeValue( LocalDateTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value );
         this.epochSecondsInUTC = this.value.toEpochSecond(UTC);
     }
 

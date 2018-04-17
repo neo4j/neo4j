@@ -84,6 +84,9 @@ public final class Values
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
+    public static boolean nanoPrecisionConfigAltered;
+    private static int nanoPrecision = 9;
+
     private Values()
     {
     }
@@ -139,6 +142,16 @@ public final class Values
             return ((FloatingPointValue) value).doubleValue();
         }
         throw new UnsupportedOperationException( format( "Cannot coerce %s to double", value ) );
+    }
+
+    public static void setNanoPrecision( int nanoPrecision )
+    {
+        Values.nanoPrecision = nanoPrecision;
+    }
+
+    public static int getNanoPrecision()
+    {
+        return nanoPrecision;
     }
 
     // DIRECT FACTORY METHODS

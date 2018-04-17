@@ -385,7 +385,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value );
         this.epochSeconds = this.value.toEpochSecond();
     }
 

@@ -838,6 +838,14 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
+    @Description( "Precision of temporal time based values. Must be an integer in the range 0 - 9. " +
+            "Corresponds to the number of decimal points in the subsecond part, i.e. 0 corresponds to second, " +
+            "3 to millisecond, 6 to microsecond and 9 to nanosecond precision. The default is 6 because that is " +
+            "supported by all client libraries. Windows .NET supports 7 decimal points and Java 9 decimal points." )
+
+    public static final Setting<Integer> temporal_nanosecond_precision =
+            setting( "dbms.temporal.nanosecond_precision", INTEGER, "6" );
+
     @Internal
     public static final Setting<Boolean> bolt_logging_enabled = setting( "unsupported.dbms.logs.bolt.enabled",
             BOOLEAN, FALSE );
