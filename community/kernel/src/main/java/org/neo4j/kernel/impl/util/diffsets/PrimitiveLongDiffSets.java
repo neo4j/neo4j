@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.Closeable;
 import java.util.Objects;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
@@ -69,7 +70,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
         return removedElements.contains( element );
     }
 
-    public void removeAll( PrimitiveLongIterator elementsToRemove )
+    public void removeAll( LongIterator elementsToRemove )
     {
         checkRemovedElements();
         while ( elementsToRemove.hasNext() )
@@ -78,7 +79,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
         }
     }
 
-    public void addAll( PrimitiveLongIterator elementsToAdd )
+    public void addAll( LongIterator elementsToAdd )
     {
         checkAddedElements();
         while ( elementsToAdd.hasNext() )
@@ -101,12 +102,12 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
 
     public void visit( PrimitiveLongDiffSetsVisitor visitor )
     {
-        PrimitiveLongIterator addedItems = addedElements.iterator();
+        LongIterator addedItems = addedElements.longIterator();
         while ( addedItems.hasNext() )
         {
             visitor.visitAdded( addedItems.next() );
         }
-        PrimitiveLongIterator removedItems = removedElements.iterator();
+        LongIterator removedItems = removedElements.longIterator();
         while ( removedItems.hasNext() )
         {
             visitor.visitRemoved( removedItems.next() );
@@ -114,7 +115,7 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets, Clo
     }
 
     @Override
-    public PrimitiveLongIterator augment( PrimitiveLongIterator source )
+    public LongIterator augment( LongIterator source )
     {
         return DiffApplyingPrimitiveLongIterator.augment( source, addedElements, removedElements );
     }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +33,6 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveIntObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
@@ -1002,8 +1003,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
         for ( PrimitiveLongDiffSets diffSet : updates.values() )
         {
-            diffs.addAll( diffSet.getAdded().iterator() );
-            diffs.removeAll( diffSet.getRemoved().iterator() );
+            diffs.addAll( diffSet.getAdded().longIterator() );
+            diffs.removeAll( diffSet.getRemoved().longIterator() );
         }
         return diffs;
     }
@@ -1029,8 +1030,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             if ( query.acceptsValue( entry.getKey().getOnlyValue() ) )
             {
                 PrimitiveLongDiffSets diffsets = entry.getValue();
-                diffs.addAll( diffsets.getAdded().iterator() );
-                diffs.removeAll( diffsets.getRemoved().iterator() );
+                diffs.addAll( diffsets.getAdded().longIterator() );
+                diffs.removeAll( diffsets.getRemoved().longIterator() );
             }
         }
         return diffs;
@@ -1095,8 +1096,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
         for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
         {
-            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+            diffs.addAll( diffForSpecificValue.getAdded().longIterator() );
+            diffs.removeAll( diffForSpecificValue.getRemoved().longIterator() );
         }
         return diffs;
     }
@@ -1117,8 +1118,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             if ( ((TextValue) key.getOnlyValue()).stringValue().startsWith( prefix ) )
             {
                 PrimitiveLongDiffSets diffSets = entry.getValue();
-                diffs.addAll( diffSets.getAdded().iterator() );
-                diffs.removeAll( diffSets.getRemoved().iterator() );
+                diffs.addAll( diffSets.getAdded().longIterator() );
+                diffs.removeAll( diffSets.getRemoved().longIterator() );
             }
             else
             {
@@ -1253,7 +1254,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
+    public LongIterator augmentNodesGetAll( LongIterator committed )
     {
         return addedAndRemovedNodes().augment( committed );
     }

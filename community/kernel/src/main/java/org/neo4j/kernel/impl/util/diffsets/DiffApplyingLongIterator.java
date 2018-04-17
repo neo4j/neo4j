@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Iterator;
 import java.util.Set;
 import javax.annotation.Nullable;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 
@@ -67,7 +68,7 @@ class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implements Prim
         abstract boolean fetchNext( DiffApplyingLongIterator self );
     }
 
-    private final PrimitiveLongIterator source;
+    private final LongIterator source;
     private final Iterator<?> addedElementsIterator;
     private final Set<?> addedElements;
     private final Set<?> removedElements;
@@ -75,7 +76,7 @@ class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implements Prim
     private final Resource resource;
     protected Phase phase;
 
-    DiffApplyingLongIterator( PrimitiveLongIterator source, Set<?> addedElements, Set<?> removedElements, @Nullable Resource resource )
+    DiffApplyingLongIterator( LongIterator source, Set<?> addedElements, Set<?> removedElements, @Nullable Resource resource )
     {
         this.source = source;
         this.addedElements = addedElements;
@@ -85,7 +86,7 @@ class DiffApplyingLongIterator extends PrimitiveLongBaseIterator implements Prim
         this.phase = Phase.FILTERED_SOURCE;
     }
 
-    static PrimitiveLongIterator augment( PrimitiveLongIterator source, Set<?> addedElements, Set<?> removedElements )
+    static LongIterator augment( LongIterator source, Set<?> addedElements, Set<?> removedElements )
     {
         return new DiffApplyingLongIterator( source, addedElements, removedElements, null );
     }

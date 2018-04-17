@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.mockito.matcher;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Description;
 import org.hamcrest.DiagnosingMatcher;
 import org.hamcrest.Matcher;
@@ -31,7 +32,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -225,7 +225,7 @@ public class Neo4jMatchers
         return Iterables.asSet( map( Label::name, enums ) );
     }
 
-    public static Matcher<? super Iterator<Long>> hasSamePrimitiveItems( final PrimitiveLongIterator actual )
+    public static Matcher<? super Iterator<Long>> hasSamePrimitiveItems( final LongIterator actual )
     {
         return new TypeSafeDiagnosingMatcher<Iterator<Long>>()
         {

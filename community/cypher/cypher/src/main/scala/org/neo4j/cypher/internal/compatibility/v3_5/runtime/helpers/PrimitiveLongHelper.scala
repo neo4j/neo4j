@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.eclipse.collections.api.iterator.LongIterator
+
 
 object PrimitiveLongHelper {
-  def map[T](in: PrimitiveLongIterator, f: Long => T): Iterator[T] = new Iterator[T] {
+  def map[T](in: LongIterator, f: Long => T): Iterator[T] = new Iterator[T] {
     override def hasNext: Boolean = in.hasNext
 
     override def next(): T = f(in.next())
   }
 
-  def mapPrimitive(in: PrimitiveLongIterator, f: Long => Long): PrimitiveLongIterator = new PrimitiveLongIterator {
+  def mapPrimitive(in: LongIterator, f: Long => Long): LongIterator = new LongIterator {
     override def hasNext: Boolean = in.hasNext
 
     override def next(): Long = f(in.next())

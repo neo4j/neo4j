@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.NoSuchElementException;
 
 /**
@@ -78,7 +80,7 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
     }
 
     @Override
-    public PrimitiveLongIterator iterator()
+    public LongIterator longIterator()
     {
         return new PrimitiveLongArrayQueueIterator();
     }
@@ -135,7 +137,7 @@ public class PrimitiveLongArrayQueue implements PrimitiveLongCollection
         values = newValues;
     }
 
-    private class PrimitiveLongArrayQueueIterator implements PrimitiveLongIterator
+    private class PrimitiveLongArrayQueueIterator implements LongIterator
     {
         private int position;
 

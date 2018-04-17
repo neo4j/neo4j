@@ -31,7 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongCollection;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -78,7 +77,7 @@ public class Empty
         implements PrimitiveLongCollection
     {
         @Override
-        public PrimitiveLongIterator iterator()
+        public LongIterator longIterator()
         {
             return PrimitiveLongCollections.emptyIterator();
         }
@@ -98,7 +97,7 @@ public class Empty
         }
 
         @Override
-        public boolean addAll( PrimitiveLongIterator values )
+        public boolean addAll( LongIterator values )
         {
             throw new UnsupportedOperationException();
         }
@@ -201,7 +200,7 @@ public class Empty
         }
 
         @Override
-        public PrimitiveLongIterator iterator()
+        public LongIterator longIterator()
         {
             return PrimitiveLongCollections.emptyIterator();
         }

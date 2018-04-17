@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -95,7 +96,7 @@ public class PrepareStoreCopyRequestHandler extends SimpleChannelInboundHandler<
 
     private PrepareStoreCopyResponse createSuccessfulResponse( CheckPointer checkPointer, PrepareStoreCopyFiles prepareStoreCopyFiles ) throws IOException
     {
-        PrimitiveLongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
+        LongSet indexIds = prepareStoreCopyFiles.getNonAtomicIndexIds();
         File[] files = prepareStoreCopyFiles.listReplayableFiles();
         long lastCommittedTxId = checkPointer.lastCheckPointedTransactionId();
         return PrepareStoreCopyResponse.success( files, indexIds, lastCommittedTxId );

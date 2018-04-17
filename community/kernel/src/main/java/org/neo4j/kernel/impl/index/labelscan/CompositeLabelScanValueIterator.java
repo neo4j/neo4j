@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceUtils;
 
 /**
- * {@link PrimitiveLongIterator} acting as a combining of multiple {@link PrimitiveLongIterator}
+ * {@link LongIterator} acting as a combining of multiple {@link LongIterator}
  * for merging their results lazily as iterating commences. Both {@code AND} and {@code OR} merging is supported.
  * <p>
  * Source iterators must be sorted in ascending order.
@@ -44,14 +45,14 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implemen
     /**
      * Constructs a {@link CompositeLabelScanValueIterator}.
      *
-     * @param iterators {@link PrimitiveLongIterator iterators} to merge.
+     * @param iterators {@link LongIterator iterators} to merge.
      * @param trueForAll if {@code true} using {@code AND} merging, otherwise {@code OR} merging.
      */
     CompositeLabelScanValueIterator( List<PrimitiveLongResourceIterator> iterators, boolean trueForAll )
     {
         this.toClose = iterators;
         this.atLeastNumberOfLabels = trueForAll ? iterators.size() : 1;
-        for ( PrimitiveLongIterator iterator : iterators )
+        for ( LongIterator iterator : iterators )
         {
             if ( iterator.hasNext() )
             {
@@ -105,9 +106,9 @@ class CompositeLabelScanValueIterator extends PrimitiveLongBaseIterator implemen
     private static class IdAndSource implements Comparable<IdAndSource>
     {
         private long latestReturned;
-        private final PrimitiveLongIterator source;
+        private final LongIterator source;
 
-        private IdAndSource( long latestReturned, PrimitiveLongIterator source )
+        private IdAndSource( long latestReturned, LongIterator source )
         {
             this.latestReturned = latestReturned;
             this.source = source;

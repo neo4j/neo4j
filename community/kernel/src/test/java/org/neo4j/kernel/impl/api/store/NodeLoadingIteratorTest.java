@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -26,7 +27,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -63,7 +63,7 @@ public class NodeLoadingIteratorTest
         map.put( 1L, mockCursor() );
         map.put( 2L, mockCursor() );
         map.put( 3L, mockCursor() );
-        PrimitiveLongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
         NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then
@@ -84,7 +84,7 @@ public class NodeLoadingIteratorTest
         map.put( 1L, mockCursor() );
         map.put( 2L, null );
         map.put( 3L, mockCursor() );
-        PrimitiveLongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator inner = PrimitiveLongCollections.iterator( 1, 2, 3 );
         NodeLoadingIterator iterator = new NodeLoadingIterator( inner, createMapping( map ) );
 
         // when - then

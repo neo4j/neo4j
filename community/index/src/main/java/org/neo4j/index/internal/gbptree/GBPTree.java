@@ -1084,7 +1084,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             PrimitiveLongSet freelistIds = Primitive.longSet();
             freeList.visitFreelistPageIds( freelistIds::add );
             freeList.visitUnacquiredIds( freelistIds::add, unstableGeneration );
-            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.iterator() );
+            boolean checkSpace = consistencyChecker.checkSpace( cursor, freeList.lastId(), freelistIds.longIterator() );
 
             return check && checkSpace;
         }

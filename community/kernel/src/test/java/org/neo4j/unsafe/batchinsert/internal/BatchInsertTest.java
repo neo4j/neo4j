@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,7 +44,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -1428,12 +1428,12 @@ public class BatchInsertTest
         }
     }
 
-    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongIterator primitiveLongIterator )
+    private List<Long> extractPrimitiveLongIteratorAsList( LongIterator longIterator )
     {
         List<Long> actualNodeIds = new ArrayList<>();
-        while ( primitiveLongIterator.hasNext() )
+        while ( longIterator.hasNext() )
         {
-            actualNodeIds.add( primitiveLongIterator.next() );
+            actualNodeIds.add( longIterator.next() );
         }
         return actualNodeIds;
     }

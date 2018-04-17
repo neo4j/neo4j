@@ -19,19 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.values.storable.Value;
 
 /**
- * Wraps number key/value results in a {@link PrimitiveLongIterator}.
+ * Wraps number key/value results in a {@link LongIterator}.
  *
  * @param <KEY> type of {@link NumberSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.

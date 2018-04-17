@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 
@@ -49,7 +51,7 @@ public class PrimitiveLongCollectionsTest
         long[] items = new long[] { 2, 5, 234 };
 
         // WHEN
-        PrimitiveLongIterator iterator = PrimitiveLongCollections.iterator( items );
+        LongIterator iterator = PrimitiveLongCollections.iterator( items );
 
         // THEN
         assertItems( iterator, items );
@@ -59,21 +61,21 @@ public class PrimitiveLongCollectionsTest
     public void filter()
     {
         // GIVEN
-        PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
-        PrimitiveLongIterator filtered = PrimitiveLongCollections.filter( items, item -> item != 2 );
+        LongIterator filtered = PrimitiveLongCollections.filter( items, item -> item != 2 );
 
         // THEN
         assertItems( filtered, 1, 3 );
     }
 
-    private static final class CountingPrimitiveLongIteratorResource implements PrimitiveLongIterator, AutoCloseable
+    private static final class CountingPrimitiveLongIteratorResource implements LongIterator, AutoCloseable
     {
-        private final PrimitiveLongIterator delegate;
+        private final LongIterator delegate;
         private final AtomicInteger closeCounter;
 
-        private CountingPrimitiveLongIteratorResource( PrimitiveLongIterator delegate, AtomicInteger closeCounter )
+        private CountingPrimitiveLongIteratorResource( LongIterator delegate, AtomicInteger closeCounter )
         {
             this.delegate = delegate;
             this.closeCounter = closeCounter;
@@ -122,20 +124,20 @@ public class PrimitiveLongCollectionsTest
     public void indexOf()
     {
         // GIVEN
-        PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
+        Supplier<LongIterator> items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
 
         // THEN
-        assertEquals( -1, PrimitiveLongCollections.indexOf( items.iterator(), 55 ) );
-        assertEquals( 0, PrimitiveLongCollections.indexOf( items.iterator(), 10 ) );
-        assertEquals( 1, PrimitiveLongCollections.indexOf( items.iterator(), 20 ) );
-        assertEquals( 2, PrimitiveLongCollections.indexOf( items.iterator(), 30 ) );
+        assertEquals( -1, PrimitiveLongCollections.indexOf( items.get(), 55 ) );
+        assertEquals( 0, PrimitiveLongCollections.indexOf( items.get(), 10 ) );
+        assertEquals( 1, PrimitiveLongCollections.indexOf( items.get(), 20 ) );
+        assertEquals( 2, PrimitiveLongCollections.indexOf( items.get(), 30 ) );
     }
 
     @Test
     public void iteratorAsSet()
     {
         // GIVEN
-        PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
         PrimitiveLongSet set = PrimitiveLongCollections.asSet( items );
@@ -151,7 +153,7 @@ public class PrimitiveLongCollectionsTest
     public void count()
     {
         // GIVEN
-        PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
         int count = PrimitiveLongCollections.count( items );
@@ -164,7 +166,7 @@ public class PrimitiveLongCollectionsTest
     public void asArray()
     {
         // GIVEN
-        PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
+        LongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
 
         // WHEN
         long[] array = PrimitiveLongCollections.asArray( items );
@@ -191,7 +193,7 @@ public class PrimitiveLongCollectionsTest
     {
         // GIVEN
         AtomicLong count = new AtomicLong( 2 );
-        PrimitiveLongIterator iterator = new PrimitiveLongBaseIterator()
+        LongIterator iterator = new PrimitiveLongBaseIterator()
         {
             @Override
             protected boolean fetchNext()
@@ -259,7 +261,7 @@ public class PrimitiveLongCollectionsTest
         assertEquals( "c", copyMap.get( 3L ) );
     }
 
-    private void assertNoMoreItems( PrimitiveLongIterator iterator )
+    private void assertNoMoreItems( LongIterator iterator )
     {
         assertFalse( iterator + " should have no more items", iterator.hasNext() );
         try
@@ -273,13 +275,13 @@ public class PrimitiveLongCollectionsTest
         }
     }
 
-    private void assertNextEquals( long expected, PrimitiveLongIterator iterator )
+    private void assertNextEquals( long expected, LongIterator iterator )
     {
         assertTrue( iterator + " should have had more items", iterator.hasNext() );
         assertEquals( expected, iterator.next() );
     }
 
-    private void assertItems( PrimitiveLongIterator iterator, long... expectedItems )
+    private void assertItems( LongIterator iterator, long... expectedItems )
     {
         for ( long expectedItem : expectedItems )
         {

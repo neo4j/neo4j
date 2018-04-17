@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,7 +36,6 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
 import org.neo4j.causalclustering.identity.StoreId;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -204,7 +204,7 @@ public class CatchupServerIT
         SimpleCatchupClient simpleCatchupClient = new SimpleCatchupClient( graphDb, fsa, catchupClient, catchupServer, temporaryDirectory, LOG_PROVIDER );
 
         // and
-        PrimitiveLongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).iterator();
+        LongIterator indexIds = getExpectedIndexIds( neoStoreDataSource ).longIterator();
 
         // when
         while ( indexIds.hasNext() )

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
@@ -43,7 +43,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
-  protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
+
+  protected def manyDbHits[A](value: LongIterator): LongIterator = value
   protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits[A](value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
   protected def manyDbHits(count: Int): Int = count
@@ -118,7 +119,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexScan(index: IndexReference): Iterator[NodeValue] = manyDbHits(inner.indexScan(index))
 
-  override def indexScanPrimitive(index: IndexReference): PrimitiveLongIterator = manyDbHits(inner.indexScanPrimitive(index))
+  override def indexScanPrimitive(index: IndexReference): LongIterator = manyDbHits(inner.indexScanPrimitive(index))
 
   override def indexScanByContains(index: IndexReference, value: String): scala.Iterator[NodeValue] =
     manyDbHits(inner.indexScanByContains(index, value))
@@ -128,7 +129,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
 
-  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = manyDbHits(inner.getNodesByLabelPrimitive(id))
+  override def getNodesByLabelPrimitive(id: Int): LongIterator = manyDbHits(inner.getNodesByLabelPrimitive(id))
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
     singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
@@ -261,7 +262,8 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
-  protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
+
+  protected def manyDbHits[A](value: LongIterator): LongIterator = value
 
   override def delete(id: Long): Unit = singleDbHit(inner.delete(id))
 
@@ -280,7 +282,7 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
 
   override def all: Iterator[T] = manyDbHits(inner.all)
 
-  override def allPrimitive: PrimitiveLongIterator = manyDbHits(inner.allPrimitive)
+  override def allPrimitive: LongIterator = manyDbHits(inner.allPrimitive)
 
   override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 

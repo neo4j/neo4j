@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -128,7 +129,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private boolean filterStore;
     private int filterType = NO_ID;
 
-    private PrimitiveLongIterator addedRelationships;
+    private LongIterator addedRelationships;
 
     DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {

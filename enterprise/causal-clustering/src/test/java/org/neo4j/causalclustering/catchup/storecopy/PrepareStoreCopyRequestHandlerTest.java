@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.catchup.storecopy;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -101,8 +103,7 @@ public class PrepareStoreCopyRequestHandlerTest
     public void shouldGetSuccessfulResponseFromPrepareStoreCopyRequest() throws Exception
     {
         // given storeId matches
-        PrimitiveLongSet indexIds = Primitive.longSet();
-        indexIds.add( 1 );
+        LongSet indexIds = LongSets.immutable.of( 1 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
 
@@ -132,8 +133,7 @@ public class PrepareStoreCopyRequestHandlerTest
         PrepareStoreCopyRequestHandler subjectHandler = createHandler( new StoreCopyCheckPointMutex( lock ) );
 
         // and
-        PrimitiveLongSet indexIds = Primitive.longSet();
-        indexIds.add( 42 );
+        LongSet indexIds = LongSets.immutable.of( 42 );
         File[] files = new File[]{new File( "file" )};
         long lastCheckpoint = 1;
         configureProvidedStoreCopyFiles( new StoreResource[0], files, indexIds, lastCheckpoint );
@@ -151,7 +151,7 @@ public class PrepareStoreCopyRequestHandlerTest
         assertEquals( 0, lock.getReadLockCount() );
     }
 
-    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, PrimitiveLongSet indexIds, long lastCommitedTx )
+    private void configureProvidedStoreCopyFiles( StoreResource[] atomicFiles, File[] files, LongSet indexIds, long lastCommitedTx )
             throws IOException
     {
         when( prepareStoreCopyFiles.getAtomicFilesSnapshot() ).thenReturn( atomicFiles );

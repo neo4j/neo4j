@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.commons.compress.utils.Charsets;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -239,7 +240,7 @@ public class StoreCopyClientIT
                     protected void channelRead0( ChannelHandlerContext ctx, PrepareStoreCopyRequest msg )
                     {
                         ctx.write( ResponseMessageType.PREPARE_STORE_COPY_RESPONSE );
-                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, new Empty.EmptyPrimitiveLongSet(), 1 ) );
+                        ctx.writeAndFlush( PrepareStoreCopyResponse.success( new File[]{new File( fileName )}, LongSets.immutable.empty(), 1 ) );
                         catchupServerProtocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
                     }
                 };

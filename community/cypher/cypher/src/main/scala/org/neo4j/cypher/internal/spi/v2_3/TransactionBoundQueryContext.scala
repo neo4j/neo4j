@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.spi.v2_3
 import java.net.URL
 import java.util.function.Predicate
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
 import org.neo4j.cypher.internal.compiler.v2_3._
@@ -698,7 +699,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
   })
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
-    def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
+    def primitiveLongIteratorToScalaIterator(primitiveIterator: LongIterator): Iterator[Long] =
       new Iterator[Long] {
         override def hasNext: Boolean = primitiveIterator.hasNext
 

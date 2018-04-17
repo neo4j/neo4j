@@ -40,6 +40,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,7 +50,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
@@ -231,7 +231,7 @@ class FullTxData extends TxData
             DocValuesCollector docValuesCollector = new DocValuesCollector( prioritizeCorrectness );
             theSearcher.search( query, docValuesCollector );
             Collection<EntityId> result = new ArrayList<>();
-            PrimitiveLongIterator valuesIterator = docValuesCollector.getSortedValuesIterator( KEY_DOC_ID, sorting );
+            final LongIterator valuesIterator = docValuesCollector.getSortedValuesIterator( KEY_DOC_ID, sorting );
             while ( valuesIterator.hasNext() )
             {
                 result.add( new EntityId.IdData( valuesIterator.next() ) );

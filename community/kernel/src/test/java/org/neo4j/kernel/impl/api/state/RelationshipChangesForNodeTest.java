@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
@@ -87,7 +87,7 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 5, TYPE, BOTH );
         changes.addRelationship( 6, TYPE, BOTH );
 
-        PrimitiveLongIterator rawRelationships = changes.getRelationships();
+        LongIterator rawRelationships = changes.getRelationships();
         assertThat( PrimitiveLongCollections.asArray( rawRelationships ), ids( 1, 2, 3, 4, 5, 6 ) );
     }
 
@@ -111,15 +111,15 @@ public class RelationshipChangesForNodeTest
         changes.addRelationship( 11, DECOY_TYPE, OUTGOING );
         changes.addRelationship( 12, DECOY_TYPE, BOTH );
 
-        PrimitiveLongIterator rawIncoming =
+        LongIterator rawIncoming =
                 changes.getRelationships( RelationshipDirection.INCOMING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawIncoming ), ids( 1 ) );
 
-        PrimitiveLongIterator rawOutgoing =
+        LongIterator rawOutgoing =
                 changes.getRelationships( RelationshipDirection.OUTGOING, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawOutgoing ), ids( 2, 3 ) );
 
-        PrimitiveLongIterator rawLoops =
+        LongIterator rawLoops =
                 changes.getRelationships( RelationshipDirection.LOOP, TYPE );
         assertThat( PrimitiveLongCollections.asArray( rawLoops ), ids( 4, 5, 6 ) );
     }

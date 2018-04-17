@@ -28,7 +28,6 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -414,7 +413,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodesGetAll()
+    public LongIterator nodesGetAll()
     {
         return new AllNodeIterator( nodeStore );
     }

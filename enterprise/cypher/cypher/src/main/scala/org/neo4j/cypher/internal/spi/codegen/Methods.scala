@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.spi.codegen
 
 import java.util
 
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.codegen.MethodReference
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
+import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.runtime.compiled.codegen.QueryExecutionEvent
@@ -48,7 +49,7 @@ object Methods {
   val countingTableGet: MethodReference = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
   val countingTableCompositeKeyGet: MethodReference = method[util.HashMap[CompositeKey, Integer], Object]("get", typeRef[Object])
   val compositeKey: MethodReference = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
-  val hasNextLong: MethodReference = method[PrimitiveLongIterator, Boolean]("hasNext")
+  val hasNextLong: MethodReference = method[LongIterator, Boolean]("hasNext")
   val hasMoreRelationship: MethodReference = method[RelationshipIterator, Boolean]("hasNext")
   val createMap: MethodReference = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]]) // Unused
   val createAnyValueMap: MethodReference = method[MapUtil, util.Map[String, AnyValue]]("genericMap", typeRef[Array[Object]])
@@ -97,7 +98,7 @@ object Methods {
   val nodeExists: MethodReference = method[Read, Boolean]("nodeExists", typeRef[Long])
   val countsForNode: MethodReference = method[Read, Long]("countsForNode", typeRef[Int])
   val countsForRel: MethodReference = method[Read, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
-  val nextLong: MethodReference = method[PrimitiveLongIterator, Long]("next")
+  val nextLong: MethodReference = method[LongIterator, Long]("next")
   val fetchNextRelationship: MethodReference = method[RelationshipIterator, Long]("next")
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
   val newRelationshipProxyById: MethodReference = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])

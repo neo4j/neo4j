@@ -19,7 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
@@ -45,7 +46,7 @@ public class PrimitiveLongHashSet extends AbstractLongHopScotchCollection<Object
     }
 
     @Override
-    public boolean addAll( PrimitiveLongIterator values )
+    public boolean addAll( LongIterator values )
     {
         boolean changed = false;
         while ( values.hasNext() )

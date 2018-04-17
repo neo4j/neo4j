@@ -19,10 +19,14 @@
  */
 package org.neo4j.collection.primitive;
 
-public interface PrimitiveLongCollection extends PrimitiveCollection, PrimitiveLongIterable
+import org.eclipse.collections.api.iterator.LongIterator;
+
+public interface PrimitiveLongCollection extends PrimitiveCollection
 {
     /**
      * Visit the keys of this collection, until all have been visited or the visitor returns 'true'.
      */
     <E extends Exception> void visitKeys( PrimitiveLongVisitor<E> visitor ) throws E;
+
+    LongIterator longIterator();
 }

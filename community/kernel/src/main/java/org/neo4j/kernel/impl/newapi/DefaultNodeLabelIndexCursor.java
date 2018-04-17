@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -40,7 +41,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private Read read;
     private long node;
     private LabelSet labels;
-    private PrimitiveLongIterator added;
+    private LongIterator added;
     private Set<Long> removed;
 
     private final DefaultCursors pool;

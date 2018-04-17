@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -60,7 +60,7 @@ public class NativeLabelScanReaderTest
         try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
         {
             // WHEN
-            PrimitiveLongIterator iterator = reader.nodesWithLabel( LABEL_ID );
+            LongIterator iterator = reader.nodesWithLabel( LABEL_ID );
 
             // THEN
             assertArrayEquals( new long[] {
@@ -92,8 +92,8 @@ public class NativeLabelScanReaderTest
             // first check test invariants
             verify( cursor1, never() ).close();
             verify( cursor2, never() ).close();
-            PrimitiveLongIterator first = reader.nodesWithLabel( LABEL_ID );
-            PrimitiveLongIterator second = reader.nodesWithLabel( LABEL_ID );
+            LongIterator first = reader.nodesWithLabel( LABEL_ID );
+            LongIterator second = reader.nodesWithLabel( LABEL_ID );
 
             // getting the second iterator should not have closed the first one
             verify( cursor1, never() ).close();
@@ -145,7 +145,7 @@ public class NativeLabelScanReaderTest
         return new MutableHit<>( key, value );
     }
 
-    private void exhaust( PrimitiveLongIterator iterator )
+    private void exhaust( LongIterator iterator )
     {
         while ( iterator.hasNext() )
         {

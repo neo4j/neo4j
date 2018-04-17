@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Arrays;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -232,7 +234,7 @@ public class PrimitiveArrays
     {
         int i = 0;
         long[] result = new long[collection.size()];
-        PrimitiveLongIterator iterator = collection.iterator();
+        final LongIterator iterator = collection.longIterator();
         while ( iterator.hasNext() )
         {
             result[i++] = iterator.next();

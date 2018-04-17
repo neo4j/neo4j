@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +40,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -296,7 +296,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader, IndexQuery.exists( 0 ) );
+        LongIterator result = query( reader, IndexQuery.exists( 0 ) );
 
         // then
         assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
@@ -307,7 +307,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
     {
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader, IndexQuery.exists( 0 ) );
+        LongIterator result = query( reader, IndexQuery.exists( 0 ) );
 
         // then
         long[] actual = PrimitiveLongCollections.asArray( result );
@@ -326,7 +326,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         for ( IndexEntryUpdate<SchemaIndexDescriptor> update : updates )
         {
             Value value = update.values()[0];
-            PrimitiveLongIterator result = query( reader, IndexQuery.exact( 0, value ) );
+            LongIterator result = query( reader, IndexQuery.exact( 0, value ) );
             assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
         }
     }
@@ -341,7 +341,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         // when
         IndexReader reader = accessor.newReader();
         Object value = generateUniqueValue( updates );
-        PrimitiveLongIterator result = query( reader, IndexQuery.exact( 0, value ) );
+        LongIterator result = query( reader, IndexQuery.exact( 0, value ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
 
@@ -355,7 +355,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader,
+        LongIterator result = query( reader,
                 layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) );
         assertEntityIdHits( extractEntityIds( Arrays.copyOf( updates, updates.length - 1 ), alwaysTrue() ), result );
     }
@@ -370,7 +370,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader,
+        LongIterator result = query( reader,
                 layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) );
         assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
     }
@@ -385,7 +385,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader,
+        LongIterator result = query( reader,
                 layoutUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) );
         assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length - 1 ), alwaysTrue() ), result );
     }
@@ -400,7 +400,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader,
+        LongIterator result = query( reader,
                 layoutUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) );
         assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length ), alwaysTrue() ), result );
     }
@@ -415,7 +415,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
 
         // when
         IndexReader reader = accessor.newReader();
-        PrimitiveLongIterator result = query( reader,
+        LongIterator result = query( reader,
                 layoutUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
@@ -437,12 +437,12 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         long[] expectedOuter = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
         long[] expectedInner = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
-        PrimitiveLongIterator outerIter = query( reader, outerQuery );
+        LongIterator outerIter = query( reader, outerQuery );
         Collection<Long> outerResult = new ArrayList<>();
         while ( outerIter.hasNext() )
         {
             outerResult.add( outerIter.next() );
-            PrimitiveLongIterator innerIter = query( reader, innerQuery );
+            LongIterator innerIter = query( reader, innerQuery );
             assertEntityIdHits( expectedInner, innerIter );
         }
         assertEntityIdHits( expectedOuter, outerResult );
@@ -468,19 +468,19 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         long[] expected3 = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         Collection<Long> result1 = new ArrayList<>();
-        PrimitiveLongIterator iter1 = query( reader, query1 );
+        LongIterator iter1 = query( reader, query1 );
         while ( iter1.hasNext() )
         {
             result1.add( iter1.next() );
 
             Collection<Long> result2 = new ArrayList<>();
-            PrimitiveLongIterator iter2 = query( reader, query2 );
+            LongIterator iter2 = query( reader, query2 );
             while ( iter2.hasNext() )
             {
                 result2.add( iter2.next() );
 
                 Collection<Long> result3 = new ArrayList<>();
-                PrimitiveLongIterator iter3 = query( reader, query3 );
+                LongIterator iter3 = query( reader, query3 );
                 while ( iter3.hasNext() )
                 {
                     result3.add( iter3.next() );
@@ -762,14 +762,14 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey<
         };
     }
 
-    private PrimitiveLongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    private LongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
         reader.query( client, IndexOrder.NONE, query );
         return client;
     }
 
-    private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )
+    private void assertEntityIdHits( long[] expected, LongIterator result )
     {
         long[] actual = PrimitiveLongCollections.asArray( result );
         assertSameContent( expected, actual );

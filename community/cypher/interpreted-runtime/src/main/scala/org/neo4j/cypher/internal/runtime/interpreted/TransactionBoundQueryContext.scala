@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 import java.util.function.Predicate
 
+import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.RawIterator
-import org.neo4j.collection.primitive.{PrimitiveLongIterator, PrimitiveLongResourceIterator}
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
@@ -330,7 +332,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = {
+  override def getNodesByLabelPrimitive(id: Int): LongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
     new PrimitiveCursorIterator {
@@ -461,7 +463,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def allPrimitive: PrimitiveLongIterator = {
+    override def allPrimitive: LongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       new PrimitiveCursorIterator {
@@ -593,7 +595,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def allPrimitive: PrimitiveLongIterator = {
+    override def allPrimitive: LongIterator = {
       val relCursor = allocateAndTraceRelationshipScanCursor()
       reads().allRelationshipsScan(relCursor)
       new PrimitiveCursorIterator {
@@ -618,7 +620,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   abstract class BaseOperations[T] extends Operations[T] {
 
-    def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
+    def primitiveLongIteratorToScalaIterator(primitiveIterator: LongIterator): Iterator[Long] =
       new Iterator[Long] {
         override def hasNext: Boolean = primitiveIterator.hasNext
 

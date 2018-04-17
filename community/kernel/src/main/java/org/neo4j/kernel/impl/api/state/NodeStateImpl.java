@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.eclipse.collections.api.iterator.LongIterator;
+
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -26,7 +28,6 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
@@ -158,25 +159,25 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public PrimitiveLongIterator getAddedRelationships( Direction direction )
+        public LongIterator getAddedRelationships( Direction direction )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
-        public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
+        public LongIterator getAddedRelationships( Direction direction, int[] relTypes )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
-        public PrimitiveLongIterator getAddedRelationships()
+        public LongIterator getAddedRelationships()
         {
             return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override
-        public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+        public LongIterator getAddedRelationships( RelationshipDirection direction, int relType )
         {
             return PrimitiveLongCollections.emptyIterator();
         }
@@ -373,28 +374,28 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
-    public PrimitiveLongIterator getAddedRelationships( Direction direction )
+    public LongIterator getAddedRelationships( Direction direction )
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
-    public PrimitiveLongIterator getAddedRelationships( Direction direction, int[] relTypes )
+    public LongIterator getAddedRelationships( Direction direction, int[] relTypes )
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relTypes ) :
             PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
-    public PrimitiveLongIterator getAddedRelationships()
+    public LongIterator getAddedRelationships()
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships() :
                PrimitiveLongCollections.emptyIterator();
     }
 
     @Override
-    public PrimitiveLongIterator getAddedRelationships( RelationshipDirection direction, int relType )
+    public LongIterator getAddedRelationships( RelationshipDirection direction, int relType )
     {
         return relationshipsAdded != null ? relationshipsAdded.getRelationships( direction, relType ) :
                PrimitiveLongCollections.emptyIterator();

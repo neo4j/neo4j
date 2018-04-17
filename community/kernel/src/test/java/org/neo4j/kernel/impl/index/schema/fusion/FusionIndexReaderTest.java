@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +28,6 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -354,7 +354,7 @@ public class FusionIndexReaderTest
         }
 
         // when
-        PrimitiveLongIterator result = fusionIndexReader.query( exists );
+        LongIterator result = fusionIndexReader.query( exists );
 
         // then
         PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
