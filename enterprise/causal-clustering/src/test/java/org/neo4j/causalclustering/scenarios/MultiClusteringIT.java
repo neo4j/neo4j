@@ -186,7 +186,7 @@ public class MultiClusteringIT
     public void rejoiningFollowerShouldDownloadSnapshotFromCorrectDatabase() throws Exception
     {
         String dbName = getFirstDbName( dbNames );
-        int followerId = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER ).serverId();
+        int followerId = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER ).serverId();
         cluster.removeCoreMemberWithServerId( followerId );
 
         for ( int  i = 0; i < 100; i++ )

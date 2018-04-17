@@ -71,6 +71,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private static final int HAZELCAST_MIN_CLUSTER = 2;
 
+    private final int minimumConsensusSize;
     private final Config config;
     private final MemberId myself;
     private final Log log;
@@ -100,6 +101,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.config = config;
+        this.minimumConsensusSize = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_runtime );
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
@@ -137,6 +139,16 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         if ( this.leaderInfo.term() < leaderInfo.term() )
         {
             this.leaderInfo = leaderInfo;
+        }
+    }
+
+    @Override
+    public void handleStepDown( LeaderInfo leaderInfo, String dbName )
+    {
+        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
+        if ( wasPreviousLeader )
+        {
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, dbName );
         }
     }
 

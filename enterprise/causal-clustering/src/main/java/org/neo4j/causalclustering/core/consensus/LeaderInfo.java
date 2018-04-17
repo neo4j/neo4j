@@ -32,11 +32,23 @@ public class LeaderInfo implements Serializable
 
     private final MemberId memberId;
     private final long term;
+    private boolean isStepDown;
 
     public LeaderInfo( MemberId memberId, long term )
     {
         this.memberId = memberId;
         this.term = term;
+        this.isStepDown = false;
+    }
+
+    public void stepDown()
+    {
+        this.isStepDown = true;
+    }
+
+    public boolean isStepDown()
+    {
+        return isStepDown;
     }
 
     public MemberId memberId()

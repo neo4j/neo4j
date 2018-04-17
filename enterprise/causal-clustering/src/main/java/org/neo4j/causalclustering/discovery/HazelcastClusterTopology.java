@@ -222,7 +222,7 @@ public final class HazelcastClusterTopology
 
         boolean greaterOrEqualTermExists = Optional.ofNullable( expected ).map(l -> l.term() >= leaderInfo.term() ).orElse( false );
 
-        if ( greaterOrEqualTermExists || noUpdate )
+        if ( (greaterOrEqualTermExists || noUpdate) && !leaderInfo.isStepDown() )
         {
             return;
         }

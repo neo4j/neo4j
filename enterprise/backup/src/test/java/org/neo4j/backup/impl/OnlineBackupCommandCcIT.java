@@ -140,7 +140,7 @@ public class OnlineBackupCommandCcIT
         Cluster cluster = startCluster( recordFormat );
 
         // and the database has indexes
-        ClusterHelper.createIndexes( cluster.getDbWithAnyRole( Role.LEADER ).database() );
+        ClusterHelper.createIndexes( cluster.getMemberWithAnyRole( Role.LEADER ).database() );
 
         // and the database is being populated
         AtomicBoolean populateDatabaseFlag = new AtomicBoolean( true );
@@ -229,7 +229,7 @@ public class OnlineBackupCommandCcIT
     {
         // given
         Cluster cluster = startCluster( recordFormat );
-        ClusterHelper.createIndexes( cluster.getDbWithAnyRole( Role.LEADER ).database() );
+        ClusterHelper.createIndexes( cluster.getMemberWithAnyRole( Role.LEADER ).database() );
         String customAddress = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
 
         // and
@@ -356,7 +356,7 @@ public class OnlineBackupCommandCcIT
 
     private static CoreClusterMember clusterLeader( Cluster cluster )
     {
-        return cluster.getDbWithRole( Role.LEADER );
+        return cluster.getMemberWithRole( Role.LEADER );
     }
 
     public static DbRepresentation getBackupDbRepresentation( String name, File backupDir )

@@ -136,7 +136,7 @@ public final class SharedDiscoveryService
 
             boolean greaterOrEqualTermExists = current.map( l -> l.term() >= leaderInfo.term() ).orElse( false );
 
-            boolean success = !(greaterOrEqualTermExists || noUpdate);
+            boolean success = !(greaterOrEqualTermExists || noUpdate) || leaderInfo.isStepDown();
 
             if ( success )
             {

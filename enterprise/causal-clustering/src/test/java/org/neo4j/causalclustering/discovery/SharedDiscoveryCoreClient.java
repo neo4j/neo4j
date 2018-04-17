@@ -91,7 +91,7 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     @Override
     public void setLeader( LeaderInfo newLeader, String dbName )
     {
-        if ( this.leaderInfo.term() < newLeader.term() && newLeader.memberId() != null )
+        if ( this.leaderInfo.term() < newLeader.term() )
         {
             this.leaderInfo = newLeader;
             sharedDiscoveryService.casLeaders( newLeader, localDBName );
@@ -140,6 +140,16 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
         // for the database local to the host upon which this method is called.
         // TODO: evaluate returning clusterId = null for global Topologies returned by allCoreServers()
         return this.coreTopology;
+    }
+
+    @Override
+    public void handleStepDown( LeaderInfo leaderInfo, String dbName )
+    {
+        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
+        if ( wasPreviousLeader )
+        {
+            sharedDiscoveryService.casLeaders( leaderInfo, dbName );
+        }
     }
 
     @Override

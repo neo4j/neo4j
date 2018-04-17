@@ -352,31 +352,51 @@ public class Cluster
         }
     }
 
-    public CoreClusterMember getDbWithRole( Role role )
+    public CoreClusterMember getMemberWithRole( Role role )
     {
-        return getDbWithAnyRole( role );
+        return getMemberWithAnyRole( role );
     }
 
-    public CoreClusterMember getDbWithRole( String dbName, Role role )
+    public List<CoreClusterMember> getAllMembersWithRole( Role role )
     {
-        return getDbWithAnyRole( dbName, role );
+        return getAllMembersWithAnyRole( role );
     }
 
-    public CoreClusterMember getDbWithAnyRole( Role... roles )
+    public CoreClusterMember getMemberWithRole( String dbName, Role role )
+    {
+        return getMemberWithAnyRole( dbName, role );
+    }
+
+    public List<CoreClusterMember> getAllMembersWithRole( String dbName, Role role )
+    {
+        return getAllMembersWithAnyRole( dbName, role );
+    }
+
+    public CoreClusterMember getMemberWithAnyRole( Role... roles )
     {
         String dbName = CausalClusteringSettings.database.getDefaultValue();
-        return getDbWithAnyRole( dbName, roles );
+        return getMemberWithAnyRole( dbName, roles );
     }
 
-    public CoreClusterMember getDbWithAnyRole( String dbName, Role... roles )
+    public List<CoreClusterMember> getAllMembersWithAnyRole( Role... roles )
+    {
+        String dbName = CausalClusteringSettings.database.getDefaultValue();
+        return getAllMembersWithAnyRole( dbName, roles );
+    }
+
+    public CoreClusterMember getMemberWithAnyRole( String dbName, Role... roles )
+    {
+        return getAllMembersWithAnyRole( dbName, roles ).stream().findFirst().orElse( null );
+    }
+
+    public List<CoreClusterMember> getAllMembersWithAnyRole( String dbName, Role... roles )
     {
         ensureDBName( dbName );
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
-        Optional<CoreClusterMember> firstAppropriate = coreMembers.values().stream().filter( m ->
-            m.database() != null && m.dbName().equals( dbName ) &&  roleSet.contains( m.database().getRole() ) ).findFirst();
-
-        return firstAppropriate.orElse( null );
+        return coreMembers.values().stream()
+                .filter( m -> m.database() != null && m.dbName().equals( dbName ) &&  roleSet.contains( m.database().getRole() ) )
+                .collect( Collectors.toList() );
     }
 
     public CoreClusterMember awaitLeader() throws TimeoutException
@@ -401,12 +421,12 @@ public class Cluster
 
     public CoreClusterMember awaitCoreMemberWithRole( Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getDbWithRole( role ), notNull(), timeout, timeUnit );
+        return await( () -> getMemberWithRole( role ), notNull(), timeout, timeUnit );
     }
 
     public CoreClusterMember awaitCoreMemberWithRole( String dbName, Role role, long timeout, TimeUnit timeUnit ) throws TimeoutException
     {
-        return await( () -> getDbWithRole( dbName, role ), notNull(), timeout, timeUnit );
+        return await( () -> getMemberWithRole( dbName, role ), notNull(), timeout, timeUnit );
     }
 
     public int numberOfCoreMembersReportedByTopology()
