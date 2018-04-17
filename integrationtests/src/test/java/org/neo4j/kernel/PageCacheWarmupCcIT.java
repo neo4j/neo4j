@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -58,16 +57,16 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         cluster = clusterRule.startCluster();
     }
 
-    private long warmUpCluster() throws TimeoutException
+    private long warmUpCluster() throws Exception
     {
-        CoreClusterMember leader = cluster.awaitLeader();
-        createTestData( leader.database() );
-        long pagesInMemory = waitForCacheProfile( leader.database() );
+        AtomicLong pagesInMemory = new AtomicLong();
+        cluster.coreTx( (db, tx) -> createTestData( db ) );
+        cluster.coreTx( (db, tx) -> pagesInMemory.set( waitForCacheProfile( db ) ) );
         for ( CoreClusterMember member : cluster.coreMembers() )
         {
             waitForCacheProfile( member.database() );
         }
-        return pagesInMemory;
+        return pagesInMemory.get();
     }
 
     private void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory )
