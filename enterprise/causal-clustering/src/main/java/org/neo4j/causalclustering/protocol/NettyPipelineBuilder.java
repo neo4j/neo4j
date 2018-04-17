@@ -58,6 +58,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
     private final List<HandlerInfo> handlerInfos = new ArrayList<>();
 
     private Predicate<Object> gatePredicate;
+    private Runnable closeHandler;
 
     @SuppressWarnings( "unchecked" )
     private BUILDER self = (BUILDER) this;
@@ -145,6 +146,16 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
         return self;
     }
 
+    public BUILDER onClose( Runnable closeHandler )
+    {
+        if ( this.closeHandler != null )
+        {
+            throw new IllegalStateException( "Cannot have more than one close handler." );
+        }
+        this.closeHandler = closeHandler;
+        return self;
+    }
+
     /**
      * Installs the built pipeline and removes any old pipeline.
      */
@@ -219,12 +230,14 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( "Exception in inbound", cause );
+                ctx.channel().close();
             }
 
             @Override
             public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 log.error( "Unhandled inbound message: " + msg );
+                ctx.channel().close();
             }
 
             // this is the first handler for an outbound message, and attaches a listener to its promise if possible
@@ -240,10 +253,21 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                         if ( !future.isSuccess() )
                         {
                             log.error( "Exception in outbound", future.cause() );
+                            ctx.channel().close();
                         }
                     } );
                 }
                 ctx.write( msg, promise );
+            }
+
+            @Override
+            public void channelInactive( ChannelHandlerContext ctx )
+            {
+                if ( closeHandler != null )
+                {
+                    closeHandler.run();
+                }
+                ctx.fireChannelInactive();
             }
         } );
 
@@ -254,6 +278,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( "Exception in outbound", cause );
+                ctx.channel().close();
             }
 
             // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
@@ -264,6 +289,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                 if ( !(msg instanceof ByteBuf) )
                 {
                     log.error( "Unhandled outbound message: " + msg );
+                    ctx.channel().close();
                 }
                 else
                 {
