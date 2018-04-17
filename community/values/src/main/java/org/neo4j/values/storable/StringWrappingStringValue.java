@@ -78,11 +78,19 @@ final class StringWrappingStringValue extends StringValue
         //NOTE that we are basing the hash code on code points instead of char[] values.
         int length = value.length();
         int codePointCount = 0;
-        for ( int offset = 0, codePoint; offset < length; offset += Character.charCount( codePoint ) )
+        for ( int offset = 0; offset < length; )
         {
-            codePoint = value.codePointAt( offset );
-            hash = hashFunction.update( hash, codePoint );
+            int codePointA = value.codePointAt( offset );
+            int codePointB = 0;
+            offset += Character.charCount( codePointA );
             codePointCount++;
+            if ( offset < length )
+            {
+                codePointB = value.codePointAt( offset );
+                offset += Character.charCount( codePointB );
+                codePointCount++;
+            }
+            hash = hashFunction.update( hash, ((long) codePointA << 32) + codePointB );
         }
         return hashFunction.update( hash, codePointCount );
     }
