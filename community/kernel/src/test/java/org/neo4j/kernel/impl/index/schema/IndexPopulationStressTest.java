@@ -54,7 +54,8 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySu
 public abstract class IndexPopulationStressTest
 {
     @Rule
-    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, IndexPopulationStressTest.class );
+    public PageCacheAndDependenciesRule rules =
+            new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );
 
     protected final SchemaIndexDescriptor descriptor = SchemaIndexDescriptorFactory.forLabel( 0, 0 );
 
