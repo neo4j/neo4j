@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -463,9 +462,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     static final class DropNoValuesListValue extends ListValue
     {
         private final ListValue inner;
-        
         private int size = -1;
-
         DropNoValuesListValue( ListValue inner )
         {
             this.inner = inner;

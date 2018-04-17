@@ -320,7 +320,7 @@ public class StoreCopyClientIT
         return fileContent( file, fsa );
     }
 
-    static String fileContent( File file, FileSystemAbstraction fsa ) throws IOException
+   static String fileContent( File file, FileSystemAbstraction fsa ) throws IOException
     {
         int chunkSize = 128;
         StringBuilder stringBuilder = new StringBuilder();
@@ -336,7 +336,6 @@ public class StoreCopyClientIT
         }
         return stringBuilder.toString();
     }
-
 
     private String clientFileContents( InMemoryStoreStreamProvider storeFileStreamsProvider, String filename )
     {
