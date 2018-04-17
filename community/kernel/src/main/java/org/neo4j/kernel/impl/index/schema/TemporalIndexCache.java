@@ -38,7 +38,7 @@ import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zoned
 import static org.neo4j.kernel.impl.index.schema.TemporalIndexCache.Offset.zonedTime;
 
 /**
- * Cache for lazily creating parts of the temporal index. Each getOrCreatePart is created using the factory
+ * Cache for lazily creating parts of the temporal index. Each part is created using the factory
  * the first time it is selected in a select() query, or the first time it's explicitly
  * asked for using e.g. date().
  * <p>
@@ -62,6 +62,7 @@ class TemporalIndexCache<T> implements Iterable<T>
 
     private final ConcurrentHashMap<Offset,T> cache = new ConcurrentHashMap<>();
     private final Lock instantiateCloseLock = new ReentrantLock();
+    // guarded by instantiateCloseLock
     private boolean closed;
 
     TemporalIndexCache( Factory<T> factory )
@@ -70,11 +71,11 @@ class TemporalIndexCache<T> implements Iterable<T>
     }
 
     /**
-     * Select the getOrCreatePart corresponding to the given ValueGroup. Creates the getOrCreatePart if needed,
+     * Select the path corresponding to the given ValueGroup. Creates the path if needed,
      * and rethrows any create time exception as a RuntimeException.
      *
      * @param valueGroup target value group
-     * @return selected getOrCreatePart
+     * @return selected part
      */
     T uncheckedSelect( ValueGroup valueGroup )
     {
@@ -104,24 +105,31 @@ class TemporalIndexCache<T> implements Iterable<T>
     }
 
     /**
-     * Select the getOrCreatePart corresponding to the given ValueGroup. Creates the getOrCreatePart if needed,
+     * Select the part corresponding to the given ValueGroup. Creates the part if needed,
      * in which case an exception of type E might be thrown.
      *
      * @param valueGroup target value group
-     * @return selected getOrCreatePart
+     * @return selected part
      */
     T select( ValueGroup valueGroup ) throws IOException
     {
-        return uncheckedSelect( valueGroup );
+        try
+        {
+            return uncheckedSelect( valueGroup );
+        }
+        catch ( UncheckedIOException e )
+        {
+            throw e.getCause();
+        }
     }
 
     /**
-     * Select the getOrCreatePart corresponding to the given ValueGroup, apply function to it and return the result.
-     * If the getOrCreatePart isn't created yet return orElse.
+     * Select the part corresponding to the given ValueGroup, apply function to it and return the result.
+     * If the part isn't created yet return orElse.
      *
      * @param valueGroup target value group
-     * @param function function to apply to getOrCreatePart
-     * @param orElse result to return if getOrCreatePart isn't created yet
+     * @param function function to apply to part
+     * @param orElse result to return if part isn't created yet
      * @param <RESULT> type of result
      * @return the result
      */
@@ -155,19 +163,17 @@ class TemporalIndexCache<T> implements Iterable<T>
         return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
-    private void acquireInstantiateCloseLock()
+    private void assertOpen()
     {
-        instantiateCloseLock.lock();
         if ( closed )
         {
-            instantiateCloseLock.unlock();
             throw new IllegalStateException( this + " is already closed" );
         }
     }
 
     void shutInstantiateCloseLock()
     {
-        acquireInstantiateCloseLock();
+        instantiateCloseLock.lock();
         closed = true;
         instantiateCloseLock.unlock();
     }
@@ -183,9 +189,10 @@ class TemporalIndexCache<T> implements Iterable<T>
         // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
         // Concurrent calls to instantiating parts won't contend with each other since there's only
         // a single writer at a time anyway.
-        acquireInstantiateCloseLock();
+        instantiateCloseLock.lock();
         try
         {
+            assertOpen();
             return cache.computeIfAbsent( key, k ->
             {
                 try

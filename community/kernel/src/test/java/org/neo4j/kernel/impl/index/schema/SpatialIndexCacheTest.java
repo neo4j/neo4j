@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -100,7 +97,7 @@ public class SpatialIndexCacheTest
         }, 1 );
         race.addContestant( () ->
         {
-            cache.shutInstantiateCloseLock();
+            cache.closeInstantiateCloseLock();
             instantiatedAtClose.setValue( count( cache ) );
         }, 1 );
 

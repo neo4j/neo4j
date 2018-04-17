@@ -42,6 +42,7 @@ class SpatialIndexCache<T> implements Iterable<T>
     private final Factory<T> factory;
     private ConcurrentHashMap<CoordinateReferenceSystem,T> spatials = new ConcurrentHashMap<>();
     private final Lock instantiateCloseLock = new ReentrantLock();
+    // guarded by instantiateCloseLock
     private boolean closed;
 
     SpatialIndexCache( Factory<T> factory )
@@ -67,9 +68,10 @@ class SpatialIndexCache<T> implements Iterable<T>
         // Instantiate from factory. Do this under lock so that we coordinate with any concurrent call to close.
         // Concurrent calls to instantiating parts won't contend with each other since there's only
         // a single writer at a time anyway.
-        acquireInstantiateCloseLock();
+        instantiateCloseLock.lock();
         try
         {
+            assertOpen();
             return spatials.computeIfAbsent( crs, key ->
             {
                 try
@@ -88,19 +90,17 @@ class SpatialIndexCache<T> implements Iterable<T>
         }
     }
 
-    private void acquireInstantiateCloseLock()
+    protected void assertOpen()
     {
-        instantiateCloseLock.lock();
         if ( closed )
         {
-            instantiateCloseLock.unlock();
             throw new IllegalStateException( this + " is already closed" );
         }
     }
 
-    void shutInstantiateCloseLock()
+    void closeInstantiateCloseLock()
     {
-        acquireInstantiateCloseLock();
+        instantiateCloseLock.lock();
         closed = true;
         instantiateCloseLock.unlock();
     }

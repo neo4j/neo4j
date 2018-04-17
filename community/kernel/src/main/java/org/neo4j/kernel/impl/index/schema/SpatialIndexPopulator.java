@@ -115,7 +115,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        shutInstantiateCloseLock();
+        closeInstantiateCloseLock();
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
