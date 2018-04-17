@@ -58,14 +58,13 @@ object domainsOf {
       case EveryPath(elem) =>
         ofSingle(elem, classOf[PatternElement])
 
-      case NodePattern(maybeVar, labels, maybeProps) =>
-        ofOption(maybeVar, classOf[Variable]) ++ ofSeq(labels, classOf[LabelName]) ++ ofOption(maybeProps, classOf[Expression])
+      case NodePattern(maybeVar, labels, maybeProps, base) =>
+        ofOption(maybeVar, classOf[Variable]) ++ ofSeq(labels, classOf[LabelName]) ++ ofOption(maybeProps, classOf[Expression]) ++ ofOption(base, classOf[Variable])
 
       case Variable(_) => Seq()
 
-      case Return(_, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
+      case Return(_, returnItems, maybeOrderBy, maybeSkip, maybeLimit, _) =>
         ofSingle(returnItems, classOf[ReturnItemsDef]) ++
-          ofOption(maybeGraphReturnItems, classOf[GraphReturnItems]) ++
           ofOption(maybeOrderBy, classOf[OrderBy]) ++
           ofOption(maybeSkip, classOf[Skip]) ++
           ofOption(maybeLimit, classOf[Limit])
@@ -105,7 +104,7 @@ object domainsOf {
           ofSingle(relationship, classOf[RelationshipPattern]) ++
           ofSingle(rightNode, classOf[NodePattern])
 
-      case RelationshipPattern(variable, types, length, properties, _, _) =>
+      case RelationshipPattern(variable, types, length, properties, _, _, _) =>
         ofOption(variable, classOf[Variable]) ++
           ofSeq(types, classOf[RelTypeName]) ++
           ofOption(length.flatten, classOf[Range]) ++
@@ -118,9 +117,8 @@ object domainsOf {
 
       case Namespace(_) => Seq()
 
-      case With(_, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
+      case With(_, returnItems, orderBy, skip, limit, where) =>
         ofSingle(returnItems, classOf[ReturnItemsDef]) ++
-        ofSingle(mandatoryGraphReturnItems, classOf[GraphReturnItems]) ++
         ofOption(orderBy, classOf[OrderBy]) ++
         ofOption(skip, classOf[Skip]) ++
         ofOption(limit, classOf[Limit]) ++
@@ -128,9 +126,6 @@ object domainsOf {
 
       case MapExpression(items) =>
         ofTupledSeq(items, classOf[PropertyKeyName], classOf[Expression])
-
-      case GraphReturnItems(_, items) =>
-        ofSeq(items, classOf[GraphReturnItem])
 
       case FilterExpression(scope, expression) =>
         ofSingle(scope, classOf[FilterScope]) ++

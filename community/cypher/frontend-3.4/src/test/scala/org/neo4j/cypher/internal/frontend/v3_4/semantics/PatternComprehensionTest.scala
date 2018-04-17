@@ -71,7 +71,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
     result.errors shouldBe Seq(
-      SemanticError("Type mismatch: n already defined with conflicting type Boolean (expected Node)", pos, pos)
+      SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos, pos)
     )
   }
 }

@@ -56,8 +56,6 @@ object literalReplacement {
       acc => (r.properties.treeFold(acc)(literalMatcher), None)
     case ContainerIndex(_, _: StringLiteral) =>
       acc => (acc, None)
-    case _: GraphUrl =>
-      acc => (acc, None)
     case l: StringLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {

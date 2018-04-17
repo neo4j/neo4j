@@ -28,7 +28,7 @@ object Pattern {
     case object CreateUnique extends SemanticContext
     case object Expression extends SemanticContext
 
-    case object GraphOf extends SemanticContext
+    case object Construct extends SemanticContext
 
     def name(ctx: SemanticContext): String = ctx match {
       case Match => "MATCH"
@@ -36,7 +36,7 @@ object Pattern {
       case Create => "CREATE"
       case CreateUnique => "CREATE UNIQUE"
       case Expression => "expression"
-      case GraphOf => "GRAPH OF"
+      case Construct => "Construct"
     }
   }
 
@@ -44,7 +44,7 @@ object Pattern {
 
     def apply(pattern: Pattern): Set[Seq[LogicalVariable]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[LogicalVariable], Seq.empty[LogicalVariable])) {
-        case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _), _) =>
+        case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _, _), _) =>
           (acc) =>
             val (seen, duplicates) = acc
 
@@ -132,7 +132,7 @@ class InvalidNodePattern(
                           val id: LogicalVariable
                         )(
                           position: InputPosition
-) extends NodePattern(Some(id), Seq.empty, None)(position) {
+) extends NodePattern(Some(id), Seq.empty, None, None)(position) {
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[InvalidNodePattern]
 
@@ -150,7 +150,8 @@ class InvalidNodePattern(
 
 case class NodePattern(variable: Option[LogicalVariable],
                        labels: Seq[LabelName],
-                       properties: Option[Expression])(val position: InputPosition)
+                       properties: Option[Expression],
+                       baseNode: Option[LogicalVariable] = None)(val position: InputPosition)
   extends PatternElement {
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
@@ -165,7 +166,8 @@ case class RelationshipPattern(
                                 length: Option[Option[Range]],
                                 properties: Option[Expression],
                                 direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false
+                                legacyTypeSeparator: Boolean = false,
+                                baseRel: Option[LogicalVariable] = None
                               )(val position: InputPosition) extends ASTNode {
 
   def isSingleLength: Boolean = length.isEmpty

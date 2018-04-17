@@ -27,30 +27,23 @@ import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("FROM should generate error") {
+  test("MATCH pattern with COPY OF is not allowed") {
     executeAndEnsureError(
-      "FROM GRAPH foo AT 'graph://url' RETURN 1",
-      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
+      "MATCH (a) MATCH (n COPY OF a) RETURN n",
+      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 28 (offset: 27))"
     )
   }
 
-  test("INTO should generate error") {
+  test("MATCH pattern with COPY OF in relationship is not allowed") {
     executeAndEnsureError(
-      "INTO GRAPH foo AT 'graph://url' RETURN 1",
-      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
-    )
-  }
-
-  test("projecting graphs should generate error") {
-    executeAndEnsureError(
-      "WITH GRAPH AT 'url' AS foo MATCH (a) RETURN a.name",
-      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
+      "MATCH (a)-[r]->(b) MATCH ()-[r2 COPY OF r]->() RETURN r2",
+      "COPY OF is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 41 (offset: 40))"
     )
   }
 
   test("return node that's not there") {
     executeAndEnsureError(
-      "match (n) where id(n) = 0 return bar",
+      "MATCH (n) WHERE id(n) = 0 RETURN bar",
       "Variable `bar` not defined (line 1, column 34 (offset: 33))"
     )
   }
@@ -86,13 +79,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("define node and treat it as a relationship") {
     executeAndEnsureError(
       "match (r) where id(r) = 0 match (a)-[r]-(b) return r",
-      "Type mismatch: r already defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
+      "Type mismatch: r defined with conflicting type Node (expected Relationship) (line 1, column 38 (offset: 37))"
     )
   }
 
   test("redefine symbol in match") {
     executeAndEnsureError(
-      "match (a)-[r]-(r) return r", "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
+      "match (a)-[r]-(r) return r", "Type mismatch: r defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
     )
   }
 

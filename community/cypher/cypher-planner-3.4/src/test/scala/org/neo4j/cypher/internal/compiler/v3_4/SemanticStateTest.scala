@@ -99,7 +99,7 @@ class SemanticStateTest extends CypherFunSuite {
       case Left(error) =>
         error.position should equal(DummyPosition(3))
         error.references should be (Seq(DummyPosition(0)))
-        error.msg should equal("Type mismatch: foo already defined with conflicting type Map (expected Node)")
+        error.msg should equal("Type mismatch: foo defined with conflicting type Map (expected Node)")
     }
 
     SemanticState.clean.implicitVariable(Variable("foo")(DummyPosition(0)), CTNode | CTRelationship) chain
@@ -109,7 +109,7 @@ class SemanticStateTest extends CypherFunSuite {
       case Left(error) =>
         error.position should equal(DummyPosition(9))
         error.references should equal(Seq(DummyPosition(0), DummyPosition(3)))
-        error.msg should equal("Type mismatch: foo already defined with conflicting type Node (expected Integer or Relationship)")
+        error.msg should equal("Type mismatch: foo defined with conflicting type Node (expected Integer or Relationship)")
     }
   }
 
