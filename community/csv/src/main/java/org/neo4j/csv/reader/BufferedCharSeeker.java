@@ -215,16 +215,16 @@ public class BufferedCharSeeker implements CharSeeker
 
     private boolean isWhitespace( int ch )
     {
-        return ch == ' ' |
-                ch == Character.SPACE_SEPARATOR |
-                ch == Character.PARAGRAPH_SEPARATOR |
-                ch == '\u00A0' |
-                ch == '\u001C' |
-                ch == '\u001D' |
-                ch == '\u001E' |
-                ch == '\u001F' |
-                ch == '\u2007' |
-                ch == '\u202F' |
+        return ch == ' ' ||
+                ch == Character.SPACE_SEPARATOR ||
+                ch == Character.PARAGRAPH_SEPARATOR ||
+                ch == '\u00A0' ||
+                ch == '\u001C' ||
+                ch == '\u001D' ||
+                ch == '\u001E' ||
+                ch == '\u001F' ||
+                ch == '\u2007' ||
+                ch == '\u202F' ||
                 ch == '\t';
 
     }
