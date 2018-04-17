@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
@@ -63,14 +64,19 @@ public class IndexDefinitionImpl implements IndexDefinition
     @Override
     public void drop()
     {
-        // expected to call assertInUnterminatedTransaction()
-        if ( this.isConstraintIndex() )
+        try
         {
-            throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
-                                             "instead drop the owning uniqueness constraint." );
+            actions.dropIndexDefinitions( this );
         }
-
-        actions.dropIndexDefinitions( this );
+        catch ( ConstraintViolationException e )
+        {
+            if ( this.isConstraintIndex() )
+            {
+                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " +
+                                                 "instead drop the owning uniqueness constraint.", e );
+            }
+            throw e;
+        }
     }
 
     @Override
