@@ -20,7 +20,6 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.concurrent.RecentK;

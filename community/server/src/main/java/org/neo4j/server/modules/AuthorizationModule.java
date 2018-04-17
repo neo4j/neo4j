@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.modules;
 
-import java.util.Collections;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;

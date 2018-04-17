@@ -20,7 +20,6 @@
 package org.neo4j.server.modules;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
