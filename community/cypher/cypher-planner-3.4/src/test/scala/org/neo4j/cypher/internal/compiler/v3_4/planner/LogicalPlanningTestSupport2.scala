@@ -71,7 +71,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = false
+    planWithMinimumCardinalityEstimates = true
   )
   val realConfig = new RealLogicalPlanningConfiguration(cypherCompilerConfig)
 

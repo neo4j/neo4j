@@ -229,7 +229,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000,
-    planWithMinimumCardinalityEstimates = false
+    planWithMinimumCardinalityEstimates = true
   )
 
   def buildPlannerQuery(query: String, lookup: Option[QualifiedName => ProcedureSignature] = None) = {

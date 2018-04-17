@@ -57,7 +57,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       errorIfShortestPathHasCommonNodesAtRuntime = true,
       legacyCsvQuoteEscaping = false,
       nonIndexedLabelWarningThreshold = 10000L,
-      planWithMinimumCardinalityEstimates = false
+      planWithMinimumCardinalityEstimates = true
     )
     Compatibility(config, clock, kernelMonitors,
                       log, CypherPlanner.default, CypherRuntime.default,

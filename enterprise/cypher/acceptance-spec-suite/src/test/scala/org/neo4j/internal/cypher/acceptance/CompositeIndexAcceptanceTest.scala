@@ -152,7 +152,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     result.toComparableResult should equal(List(Map("n" -> n1)))
   }
 
-  test("should use composite index with combined equality and existence predicates") {
+  ignore("should use composite index with combined equality and existence predicates") { // Enable once we support index scan on composite indexes
     // Given
     graph.createIndex("User", "firstname")
     graph.createIndex("User", "lastname")
@@ -169,7 +169,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
-        plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
+        plan should useOperatorWithText("NodeIndexScan", ":User(firstname,lastname)")
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
       }))
