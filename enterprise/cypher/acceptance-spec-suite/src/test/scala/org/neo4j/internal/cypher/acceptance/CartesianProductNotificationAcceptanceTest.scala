@@ -126,7 +126,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = true,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 10000L
+    nonIndexedLabelWarningThreshold = 10000L,
+    false
   )
   private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
