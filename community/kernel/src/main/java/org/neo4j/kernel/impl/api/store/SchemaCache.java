@@ -71,6 +71,11 @@ public class SchemaCache
         return schemaCacheState.constraintRules();
     }
 
+    public boolean hasConstraintRule( Long constraintRuleId )
+    {
+        return schemaCacheState.hasConstraintRule( constraintRuleId );
+    }
+
     public boolean hasConstraintRule( ConstraintDescriptor descriptor )
     {
         return schemaCacheState.hasConstraintRule( descriptor );
@@ -221,6 +226,11 @@ public class SchemaCache
         Iterable<ConstraintRule> constraintRules()
         {
             return constraintRuleById.values();
+        }
+
+        boolean hasConstraintRule( Long constraintRuleId )
+        {
+            return constraintRuleId != null && constraintRuleById.containsKey( constraintRuleId );
         }
 
         boolean hasConstraintRule( ConstraintDescriptor descriptor )
