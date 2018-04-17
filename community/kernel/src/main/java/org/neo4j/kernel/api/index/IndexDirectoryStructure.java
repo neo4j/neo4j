@@ -76,7 +76,7 @@ public abstract class IndexDirectoryStructure
      * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
      * @return the base directory of schema indexing.
      */
-    static File baseSchemaIndexFolder( File databaseStoreDir )
+    public static File baseSchemaIndexFolder( File databaseStoreDir )
     {
         return path( databaseStoreDir, "schema", "index" );
     }

@@ -29,10 +29,13 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.MandatoryNamedArg;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
+import org.neo4j.commandline.arguments.common.Database;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+
+import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 
 public class RestoreDatabaseCli implements AdminCommand
 {
@@ -66,7 +69,7 @@ public class RestoreDatabaseCli implements AdminCommand
 
         try
         {
-            databaseName = arguments.parse( incomingArguments ).get( "database" );
+            databaseName = arguments.parse( incomingArguments ).get( ARG_DATABASE );
             fromPath = arguments.get( "from" );
             forceOverwrite = arguments.getBoolean( "force" );
         }

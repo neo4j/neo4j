@@ -67,6 +67,11 @@ public class Arguments
         return withArgument( new Database() );
     }
 
+    public Arguments withDatabase( String description )
+    {
+        return withArgument( new Database( description ) );
+    }
+
     public Arguments withAdditionalConfig()
     {
         return withArgument( new OptionalCanonicalPath( "additional-config", "config-file-path", "",
