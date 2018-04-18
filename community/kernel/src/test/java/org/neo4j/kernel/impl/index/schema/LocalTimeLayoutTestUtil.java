@@ -42,11 +42,11 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
     private static final LocalTime[] ALL_EXTREME_VALUES = new LocalTime[]
     {
             LocalTime.of(0, 0, 0,  0),
-            LocalTime.of(0,0,0,1 ),
-            LocalTime.of(0,0,0,2 ),
-            LocalTime.of(0,0,0,3 ),
-            LocalTime.of(23,59,59,999_999_998 ),
-            LocalTime.of(23,59,59,999_999_999 )
+            LocalTime.of(0,0,0,1000 ),
+            LocalTime.of(0,0,0,2000 ),
+            LocalTime.of(0,0,0,3000 ),
+            LocalTime.of(23,59,59,999_998_000 ),
+            LocalTime.of(23,59,59,999_999_000 )
     };
 
     public static LocalTimeValue randomLocalTime( Randoms random )

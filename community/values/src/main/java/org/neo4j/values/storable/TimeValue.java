@@ -171,7 +171,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     static OffsetTime defaultTime( ZoneId zoneId )
     {
-        return OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
+        return OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, 0,
                 assertValidZone( () -> ZoneOffset.of( zoneId.toString() ) ) );
     }
 
@@ -260,8 +260,7 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     private TimeValue( OffsetTime value )
     {
-        // truncate the offset to whole minutes
-        this.value = value;
+        this.value = withTruncatedNano( value );
         this.nanosOfDayUTC = TemporalUtil.getNanosOfDayUTC( this.value );
     }
 

@@ -36,14 +36,14 @@ public class ZonedDateTimeSchemaKeyTest
     @Test
     public void compareToSameAsValue()
     {
-        Value[] values = {DateTimeValue.datetime( 9999, 100,  ZoneId.of( "+18:00" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "-18:00" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneOffset.of( "-17:59:59" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "UTC" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "+01:00" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) ),
-                          DateTimeValue.datetime( 10000, 100, ZoneId.of( "+03:00" ) ),
-                          DateTimeValue.datetime( 10000, 101, ZoneId.of( "-18:00" ) )};
+        Value[] values = {DateTimeValue.datetime( 9999, 100000,  ZoneId.of( "+18:00" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneId.of( "-18:00" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneOffset.of( "-17:59:59" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneId.of( "UTC" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneId.of( "+01:00" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneId.of( "Europe/Stockholm" ) ),
+                          DateTimeValue.datetime( 10000, 100000, ZoneId.of( "+03:00" ) ),
+                          DateTimeValue.datetime( 10000, 101000, ZoneId.of( "-18:00" ) )};
 
         ZonedDateTimeSchemaKey keyI = new ZonedDateTimeSchemaKey();
         ZonedDateTimeSchemaKey keyJ = new ZonedDateTimeSchemaKey();

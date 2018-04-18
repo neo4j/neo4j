@@ -32,7 +32,6 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
     private Input seconds;
     private Input milliseconds;
     private Input microseconds;
-    private Input nanoseconds;
 
     @Override
     public final StructureBuilder<Input,Result> add( String field, Input value )
@@ -66,9 +65,6 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
         case "microseconds":
             this.microseconds = value;
             break;
-        case "nanoseconds":
-            this.nanoseconds = value;
-            break;
         default:
             throw new IllegalStateException( "Unknown field: " + field );
         }
@@ -88,7 +84,7 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
                 seconds,
                 milliseconds,
                 microseconds,
-                nanoseconds );
+                null );
     }
 
     abstract Result create(

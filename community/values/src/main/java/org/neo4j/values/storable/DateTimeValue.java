@@ -234,7 +234,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
             private final ZonedDateTime defaulZonedDateTime =
                     ZonedDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
-                            Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue, timezone() );
+                            Field.minute.defaultValue, Field.second.defaultValue, 0, timezone() );
 
             @Override
             public DateTimeValue buildInternal()
@@ -385,7 +385,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
 
     private DateTimeValue( ZonedDateTime value )
     {
-        this.value = value;
+        this.value = withTruncatedNano( value );
         this.epochSeconds = this.value.toEpochSecond();
     }
 

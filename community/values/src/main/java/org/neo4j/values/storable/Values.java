@@ -84,6 +84,9 @@ public final class Values
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
+    protected static final int SUBSECOND_PRECISION = 6;
+    protected static final int NANO_TRUNCATION_FACTOR = (int) Math.pow( 10, 9 - SUBSECOND_PRECISION );
+
     private Values()
     {
     }

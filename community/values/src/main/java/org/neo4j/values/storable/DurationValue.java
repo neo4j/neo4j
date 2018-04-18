@@ -50,6 +50,7 @@ import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MICROS;
 import static java.time.temporal.ChronoUnit.MONTHS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -59,6 +60,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
+import static org.neo4j.values.storable.Values.NANO_TRUNCATION_FACTOR;
+import static org.neo4j.values.storable.Values.SUBSECOND_PRECISION;
 import static org.neo4j.values.utils.TemporalUtil.AVG_DAYS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.AVG_SECONDS_PER_MONTH;
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
@@ -189,7 +192,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
-    private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
+    private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, MICROS ) );
     // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
     private static final Comparator<DurationValue> COMPARATOR =
             Comparator.comparingLong( DurationValue::averageLengthInSeconds )
@@ -212,6 +215,9 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
 
     private DurationValue( long months, long days, long seconds, long nanos )
     {
+        // truncate to defined precision
+        nanos = nanos / NANO_TRUNCATION_FACTOR * NANO_TRUNCATION_FACTOR;
+
         seconds += nanos / NANOS_PER_SECOND;
         nanos %= NANOS_PER_SECOND;
         if ( seconds < 0 && nanos > 0 )
@@ -275,16 +281,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
             + "(?<T>T"
             + "(?:(?<hours>[-+]?[0-9]+(?:[.,][0-9]+)?)H)?"
             + "(?:(?<minutes>[-+]?[0-9]+(?:[.,][0-9]+)?)M)?"
-            + "(?:(?<seconds>[-+]?[0-9]+)(?:[.,](?<subseconds>[0-9]{1,9}))?S)?)?";
+            + String.format( "(?:(?<seconds>[-+]?[0-9]+)(?:[.,](?<subseconds>[0-9]{1,%d}))?S)?)?", SUBSECOND_PRECISION );
     private static final String DATE_BASED_PATTERN = "(?:"
             + "(?<year>[0-9]{4})(?:"
             + "-(?<longMonth>[0-9]{2})-(?<longDay>[0-9]{2})|"
             + "(?<shortMonth>[0-9]{2})(?<shortDay>[0-9]{2}))"
             + ")?(?<time>T"
             + "(?:(?<shortHour>[0-9]{2})(?:(?<shortMinute>[0-9]{2})"
-            + "(?:(?<shortSecond>[0-9]{2})(?:[.,](?<shortSub>[0-9]{1,9}))?)?)?|"
+            + String.format( "(?:(?<shortSecond>[0-9]{2})(?:[.,](?<shortSub>[0-9]{1,%d}))?)?)?|", SUBSECOND_PRECISION )
             + "(?<longHour>[0-9]{2}):(?<longMinute>[0-9]{2})"
-            + "(?::(?<longSecond>[0-9]{2})(?:[.,](?<longSub>[0-9]{1,9}))?)?))?";
+            + String.format( "(?::(?<longSecond>[0-9]{2})(?:[.,](?<longSub>[0-9]{1,%d}))?)?))?", SUBSECOND_PRECISION );
     private static final Pattern PATTERN = Pattern.compile(
             "(?<sign>[-+]?)P(?:" + UNIT_BASED_PATTERN + "|" + DATE_BASED_PATTERN + ")",
             CASE_INSENSITIVE );
@@ -705,8 +711,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                 return days;
             case SECONDS:
                 return seconds;
-            case NANOS:
-                return nanos;
+            case MICROS:
+                return nanos / 1000;
             default:
                 break;
             }
@@ -718,7 +724,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
      * In contrast to {@link #get(TemporalUnit)}, this method supports more units, namely:
      *
      * years, hours, minutes, milliseconds, microseconds,
-     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond, nanosecondsOfSecond
+     * monthsOfYear, minutesOfHour, secondsOfMinute, millisecondsOfSecond, microsecondsOfSecond
      */
     public LongValue get( String fieldName )
     {
@@ -764,12 +770,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         case "microseconds":
             val = seconds * 1000_000 + nanos / 1000;
             break;
-        case "nanosecondsofsecond":
-            val = nanos;
-            break;
-        case "nanoseconds":
-            val = seconds * NANOS_PER_SECOND + nanos;
-            break;
         default:
             throw new UnsupportedTemporalUnitException( "No such field: " + fieldName );
         }
@@ -789,8 +789,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         {
             switch ( (ChronoUnit) unit )
             {
-            case NANOS:
-                return duration( months, days, seconds, nanos + amount );
             case MICROS:
                 return duration( months, days, seconds, nanos + amount * 1000 );
             case MILLIS:

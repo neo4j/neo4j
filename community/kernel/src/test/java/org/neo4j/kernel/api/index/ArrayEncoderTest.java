@@ -113,21 +113,21 @@ public class ArrayEncoderTest
                         Values.pointValue( CoordinateReferenceSystem.WGS84, 2.345, 5.678 ),
                         Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 3, 4, 5 )} );
         assertEncoding( "T1991-03-05|1992-04-06|", new LocalDate[]{DateValue.date( 1991, 3, 5 ).asObjectCopy(), DateValue.date( 1992, 4, 6 ).asObjectCopy()} );
-        assertEncoding( "T12:45:13.000008676|05:04:50.000000076|",
-                new LocalTime[]{LocalTimeValue.localTime( 12, 45, 13, 8676 ).asObjectCopy(), LocalTimeValue.localTime( 5, 4, 50, 76 ).asObjectCopy()} );
-        assertEncoding( "T1991-03-05T12:45:13.000008676|1992-04-06T05:04:50.000000076|",
-                new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 3, 5, 12, 45, 13, 8676 ).asObjectCopy(),
-                        LocalDateTimeValue.localDateTime( 1992, 4, 6, 5, 4, 50, 76 ).asObjectCopy()} );
-        assertEncoding( "T02:45:13.000008676Z|01:05:00.0000003+01:00|05:04:50.000000076+05:00|",
-                new OffsetTime[]{TimeValue.time( 2, 45, 13, 8676, UTC ).asObjectCopy(),
-                        TimeValue.time( OffsetTime.ofInstant( Instant.ofEpochSecond( 300, 300 ), ZoneId.of( "Europe/Stockholm" ) ) ).asObjectCopy(),
-                        TimeValue.time( 5, 4, 50, 76, "+05:00" ).asObjectCopy()} );
-        assertEncoding( "T1991-03-05T02:45:13.000008676Z|1991-03-05T02:45:13.000008676+01:00[Europe/Stockholm]|1992-04-06T05:04:50.000000076+05:00|",
-                new ZonedDateTime[]{DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676, UTC ).asObjectCopy(),
-                        DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy(),
-                        DateTimeValue.datetime( 1992, 4, 6, 5, 4, 50, 76, "+05:00" ).asObjectCopy()} );
-        assertEncoding( "AP165Y11M3DT5.000000012S|P166Y4DT6.000000005S|",
-                new TemporalAmount[]{DurationValue.duration( 1991, 3, 5, 12 ).asObjectCopy(), DurationValue.duration( 1992, 4, 6, 5 ).asObjectCopy()} );
+        assertEncoding( "T12:45:13.008676|05:04:50.000076|",
+                new LocalTime[]{LocalTimeValue.localTime( 12, 45, 13, 8676000 ).asObjectCopy(), LocalTimeValue.localTime( 5, 4, 50, 76000 ).asObjectCopy()} );
+        assertEncoding( "T1991-03-05T12:45:13.008676|1992-04-06T05:04:50.000076|",
+                new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 3, 5, 12, 45, 13, 8676000 ).asObjectCopy(),
+                        LocalDateTimeValue.localDateTime( 1992, 4, 6, 5, 4, 50, 76000 ).asObjectCopy()} );
+        assertEncoding( "T02:45:13.008676Z|01:05:00.0003+01:00|05:04:50.000076+05:00|",
+                new OffsetTime[]{TimeValue.time( 2, 45, 13, 8676000, UTC ).asObjectCopy(),
+                        TimeValue.time( OffsetTime.ofInstant( Instant.ofEpochSecond( 300, 300000 ), ZoneId.of( "Europe/Stockholm" ) ) ).asObjectCopy(),
+                        TimeValue.time( 5, 4, 50, 76000, "+05:00" ).asObjectCopy()} );
+        assertEncoding( "T1991-03-05T02:45:13.008676Z|1991-03-05T02:45:13.008676+01:00[Europe/Stockholm]|1992-04-06T05:04:50.000076+05:00|",
+                new ZonedDateTime[]{DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676000, UTC ).asObjectCopy(),
+                        DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676000, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy(),
+                        DateTimeValue.datetime( 1992, 4, 6, 5, 4, 50, 76000, "+05:00" ).asObjectCopy()} );
+        assertEncoding( "AP165Y11M3DT5.000012S|P166Y4DT6.000005S|",
+                new TemporalAmount[]{DurationValue.duration( 1991, 3, 5, 12000 ).asObjectCopy(), DurationValue.duration( 1992, 4, 6, 5000 ).asObjectCopy()} );
     }
 
     @Test

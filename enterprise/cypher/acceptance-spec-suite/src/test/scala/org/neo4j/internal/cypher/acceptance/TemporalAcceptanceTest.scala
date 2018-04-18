@@ -291,13 +291,13 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   }
 
   test("should not create local time with missing values") {
-    val queries = Seq("{}", "{hour:12, minute:31, nanosecond: 645876123}", "{hour:12,  second:14, microsecond: 645876}",
+    val queries = Seq("{}", "{hour:12, minute:31, microsecond: 645876}", "{hour:12,  second:14, microsecond: 645876}",
       "{hour:12, millisecond: 645}", "{hour:12, second: 45}")
     shouldNotConstructWithArg("localtime", queries)
   }
 
   test("should not create time with missing values") {
-    val queries = Seq("{}", "{hour:12, minute:31, nanosecond: 645876123}", "{hour:12,  second:14, microsecond: 645876}",
+    val queries = Seq("{}", "{hour:12, minute:31, microsecond: 645876}", "{hour:12,  second:14, microsecond: 645876}",
       "{hour:12, millisecond: 645}", "{hour:12, second: 45}")
     shouldNotConstructWithArg("time", queries)
   }
@@ -305,14 +305,14 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not create local date time with missing values") {
     val queries = Seq("{}", "{year:1984, day:11}", "{year:1984, dayOfWeek:3}", "{year:1984, dayOfQuarter:45}",
       "{year:1984, hour:11}", "{year:1984, minute:11}", "{year:1984, second:3}",
-      "{year:1984, millisecond:45}", "{year:1984, microsecond:11}", "{year:1984, nanosecond:3}",
+      "{year:1984, millisecond:45}", "{year:1984, microsecond:11}",
       "{year:1984, month: 2, hour:11}", "{year:1984, month: 2, minute:11}", "{year:1984, month: 2, second:3}",
-      "{year:1984, month: 2, millisecond:45}", "{year:1984, month: 2, microsecond:11}", "{year:1984, month: 2, nanosecond:3}",
+      "{year:1984, month: 2, millisecond:45}", "{year:1984, month: 2, microsecond:11}",
       "{year:1984, week: 2, hour:11}", "{year:1984, week: 2, minute:11}", "{year:1984, week: 2, second:3}",
-      "{year:1984, week: 2, millisecond:45}", "{year:1984, week: 2, microsecond:11}", "{year:1984, week: 2, nanosecond:3}",
+      "{year:1984, week: 2, millisecond:45}", "{year:1984, week: 2, microsecond:11}",
       "{year:1984, quarter: 2, hour:11}", "{year:1984, quarter: 2, minute:11}", "{year:1984, quarter: 2, second:3}",
-      "{year:1984, quarter: 2, millisecond:45}", "{year:1984, quarter: 2, microsecond:11}", "{year:1984, quarter: 2, nanosecond:3}",
-      "{year:1984, month:2, day:8, hour:12, minute:31, nanosecond: 645876123}", "{year:1984, month:2, day:8, hour:12, second:14, microsecond: 645876}",
+      "{year:1984, quarter: 2, millisecond:45}", "{year:1984, quarter: 2, microsecond:11}",
+      "{year:1984, month:2, day:8, hour:12, minute:31, microsecond: 645876123}", "{year:1984, month:2, day:8, hour:12, second:14, microsecond: 645876}",
       "{year:1984, month:2, day:8, hour:12, millisecond: 645}", "{year:1984, month:2, day:8, hour:12, second: 45}")
     shouldNotConstructWithArg("localdatetime", queries)
   }
@@ -329,14 +329,14 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not create date time with missing values") {
     val queries = Seq("{}", "{year:1984, day:11}", "{year:1984, dayOfWeek:3}", "{year:1984, dayOfQuarter:45}",
       "{year:1984, hour:11}", "{year:1984, minute:11}", "{year:1984, second:3}",
-      "{year:1984, millisecond:45}", "{year:1984, microsecond:11}", "{year:1984, nanosecond:3}",
+      "{year:1984, millisecond:45}", "{year:1984, microsecond:11}",
       "{year:1984, month: 2, hour:11}", "{year:1984, month: 2, minute:11}", "{year:1984, month: 2, second:3}",
-      "{year:1984, month: 2, millisecond:45}", "{year:1984, month: 2, microsecond:11}", "{year:1984, month: 2, nanosecond:3}",
+      "{year:1984, month: 2, millisecond:45}", "{year:1984, month: 2, microsecond:11}",
       "{year:1984, week: 2, hour:11}", "{year:1984, week: 2, minute:11}", "{year:1984, week: 2, second:3}",
-      "{year:1984, week: 2, millisecond:45}", "{year:1984, week: 2, microsecond:11}", "{year:1984, week: 2, nanosecond:3}",
+      "{year:1984, week: 2, millisecond:45}", "{year:1984, week: 2, microsecond:11}",
       "{year:1984, quarter: 2, hour:11}", "{year:1984, quarter: 2, minute:11}", "{year:1984, quarter: 2, second:3}",
-      "{year:1984, quarter: 2, millisecond:45}", "{year:1984, quarter: 2, microsecond:11}", "{year:1984, quarter: 2, nanosecond:3}",
-      "{year:1984, month:2, day:8, hour:12, minute:31, nanosecond: 645876123}", "{year:1984, month:2, day:8, hour:12, second:14, microsecond: 645876}",
+      "{year:1984, quarter: 2, millisecond:45}", "{year:1984, quarter: 2, microsecond:11}",
+      "{year:1984, month:2, day:8, hour:12, minute:31, microsecond: 645876}", "{year:1984, month:2, day:8, hour:12, second:14, microsecond: 645876}",
       "{year:1984, month:2, day:8, hour:12, millisecond: 645}", "{year:1984, month:2, day:8, hour:12, second: 45}")
     shouldNotConstructWithArg("datetime", queries)
   }

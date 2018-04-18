@@ -79,12 +79,12 @@ public class TemporalTypeIT extends AbstractRestFunctionalTestBase
     @Test
     public void shouldWorkWithLocalTime() throws Throwable
     {
-        HTTP.Response response = runQuery( "RETURN localtime({hour:12, minute:31, second:14, nanosecond: 645876123})" );
+        HTTP.Response response = runQuery( "RETURN localtime({hour:12, minute:31, second:14, microsecond: 645876})" );
 
         assertEquals( 200, response.status() );
         assertNoErrors( response );
         JsonNode data = getSingleData( response );
-        assertTemporalEquals( data, "12:31:14.645876123", "localtime" );
+        assertTemporalEquals( data, "12:31:14.645876", "localtime" );
     }
 
     @Test

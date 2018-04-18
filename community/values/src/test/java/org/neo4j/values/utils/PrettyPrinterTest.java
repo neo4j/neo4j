@@ -329,12 +329,12 @@ public class PrettyPrinterTest
     @Test
     public void shouldHandleDuration()
     {
-        DurationValue duration = duration( 12, 45, 90, 9911 );
+        DurationValue duration = duration( 12, 45, 90, 9000 );
         PrettyPrinter printer = new PrettyPrinter();
 
         duration.writeTo( printer );
 
-        assertEquals( "{duration: {months: 12, days: 45, seconds: 90, nanos: 9911}}", printer.value() );
+        assertEquals( "{duration: {months: 12, days: 45, seconds: 90, micros: 9}}", printer.value() );
     }
 
     @Test
@@ -351,12 +351,12 @@ public class PrettyPrinterTest
     @Test
     public void shouldHandleLocalTime()
     {
-        LocalTimeValue localTime = localTime( 18, 39, 24, 111222777 );
+        LocalTimeValue localTime = localTime( 18, 39, 24, 111222000 );
         PrettyPrinter printer = new PrettyPrinter();
 
         localTime.writeTo( printer );
 
-        assertEquals( "{localTime: \"18:39:24.111222777\"}", printer.value() );
+        assertEquals( "{localTime: \"18:39:24.111222\"}", printer.value() );
     }
 
     @Test
@@ -367,40 +367,40 @@ public class PrettyPrinterTest
 
         time.writeTo( printer );
 
-        assertEquals( "{time: \"11:19:11.123456789-09:30\"}", printer.value() );
+        assertEquals( "{time: \"11:19:11.123456-09:30\"}", printer.value() );
     }
 
     @Test
     public void shouldHandleLocalDateTime()
     {
-        LocalDateTimeValue localDateTime = localDateTime( 2015, 8, 8, 8, 40, 29, 999888111 );
+        LocalDateTimeValue localDateTime = localDateTime( 2015, 8, 8, 8, 40, 29, 999888000 );
         PrettyPrinter printer = new PrettyPrinter();
 
         localDateTime.writeTo( printer );
 
-        assertEquals( "{localDateTime: \"2015-08-08T08:40:29.999888111\"}", printer.value() );
+        assertEquals( "{localDateTime: \"2015-08-08T08:40:29.999888\"}", printer.value() );
     }
 
     @Test
     public void shouldHandleDateTimeWithTimeZoneId()
     {
-        DateTimeValue datetime = datetime( 2045, 2, 7, 12, 00, 40, 999888999, "Europe/London" );
+        DateTimeValue datetime = datetime( 2045, 2, 7, 12, 00, 40, 999888000, "Europe/London" );
         PrettyPrinter printer = new PrettyPrinter();
 
         datetime.writeTo( printer );
 
-        assertEquals( "{datetime: \"2045-02-07T12:00:40.999888999Z[Europe/London]\"}", printer.value() );
+        assertEquals( "{datetime: \"2045-02-07T12:00:40.999888Z[Europe/London]\"}", printer.value() );
     }
 
     @Test
     public void shouldHandleDateTimeWithTimeZoneOffset()
     {
-        DateTimeValue datetime = datetime( 1988, 4, 19, 10, 12, 59, 112233445, ZoneOffset.ofHoursMinutes( 3, 15 ) );
+        DateTimeValue datetime = datetime( 1988, 4, 19, 10, 12, 59, 112233000, ZoneOffset.ofHoursMinutes( 3, 15 ) );
         PrettyPrinter printer = new PrettyPrinter();
 
         datetime.writeTo( printer );
 
-        assertEquals( "{datetime: \"1988-04-19T10:12:59.112233445+03:15\"}", printer.value() );
+        assertEquals( "{datetime: \"1988-04-19T10:12:59.112233+03:15\"}", printer.value() );
     }
 
     private MapValue props( Object... keyValue )

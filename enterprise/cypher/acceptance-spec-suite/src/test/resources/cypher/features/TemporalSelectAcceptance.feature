@@ -25,7 +25,7 @@ Feature: TemporalSelectAcceptance
     When executing query:
       """
       UNWIND [date({year:1984, month:11, day:11}),
-              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}),
+              localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876}),
               datetime({year:1984, month:11, day:11, hour:12, timezone: '+01:00'})] as dd
       RETURN date(dd) as d1,
              date({date: dd}) as d2,
@@ -46,7 +46,7 @@ Feature: TemporalSelectAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'})] as dd
@@ -56,7 +56,7 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                   | d2                   | d3                   |
-      | '12:31:14.645876123' | '12:31:14.645876123' | '12:31:42.645876123' |
+      | '12:31:14.645876'    | '12:31:14.645876'    | '12:31:42.645876'    |
       | '12:31:14.645876'    | '12:31:14.645876'    | '12:31:42.645876'    |
       | '12:31:14.645'       | '12:31:14.645'       | '12:31:42.645'       |
       | '12:00'              | '12:00'              | '12:00:42'           |
@@ -66,7 +66,7 @@ Feature: TemporalSelectAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: 'Europe/Stockholm'})] as dd
@@ -78,7 +78,7 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                      | d2                      | d3                           | d4                      | d5                           |
-      | '12:31:14.645876123Z'   | '12:31:14.645876123Z'   | '12:31:14.645876123+05:00'   | '12:31:42.645876123Z'   | '12:31:42.645876123+05:00'   |
+      | '12:31:14.645876Z'      | '12:31:14.645876Z'      | '12:31:14.645876+05:00'      | '12:31:42.645876Z'      | '12:31:42.645876+05:00'      |
       | '12:31:14.645876+01:00' | '12:31:14.645876+01:00' | '16:31:14.645876+05:00'      | '12:31:42.645876+01:00' | '16:31:42.645876+05:00'      |
       | '12:31:14.645Z'         | '12:31:14.645Z'         | '12:31:14.645+05:00'         | '12:31:42.645Z'         | '12:31:42.645+05:00'         |
       | '12:00+01:00'           | '12:00+01:00'           | '16:00+05:00'                | '12:00:42+01:00'        | '16:00:42+05:00'             |
@@ -105,7 +105,7 @@ Feature: TemporalSelectAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'})] as tt
@@ -114,7 +114,7 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                              | d2 |
-      | '1984-10-11T12:31:14.645876123' | '1984-10-11T12:31:42.645876123' |
+      | '1984-10-11T12:31:14.645876'    | '1984-10-11T12:31:42.645876' |
       | '1984-10-11T12:31:14.645876'    | '1984-10-11T12:31:42.645876' |
       | '1984-10-11T12:31:14.645'       | '1984-10-11T12:31:42.645' |
       | '1984-10-11T12:00'              | '1984-10-11T12:00:42' |
@@ -127,7 +127,7 @@ Feature: TemporalSelectAcceptance
       UNWIND [date({year:1984, month:10, day:11}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'})] as dd
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'})] as tt
@@ -136,15 +136,15 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                              | d2 |
-      | '1984-10-11T12:31:14.645876123' | '1984-10-28T12:31:42.645876123' |
+      | '1984-10-11T12:31:14.645876'    | '1984-10-28T12:31:42.645876' |
       | '1984-10-11T12:31:14.645876'    | '1984-10-28T12:31:42.645876' |
       | '1984-10-11T12:31:14.645'       | '1984-10-28T12:31:42.645' |
       | '1984-10-11T12:00'              | '1984-10-28T12:00:42' |
-      | '1984-03-07T12:31:14.645876123' | '1984-03-28T12:31:42.645876123' |
+      | '1984-03-07T12:31:14.645876'    | '1984-03-28T12:31:42.645876' |
       | '1984-03-07T12:31:14.645876'    | '1984-03-28T12:31:42.645876' |
       | '1984-03-07T12:31:14.645'       | '1984-03-28T12:31:42.645' |
       | '1984-03-07T12:00'              | '1984-03-28T12:00:42' |
-      | '1984-10-11T12:31:14.645876123' | '1984-10-28T12:31:42.645876123' |
+      | '1984-10-11T12:31:14.645876'    | '1984-10-28T12:31:42.645876' |
       | '1984-10-11T12:31:14.645876'    | '1984-10-28T12:31:42.645876' |
       | '1984-10-11T12:31:14.645'       | '1984-10-28T12:31:42.645' |
       | '1984-10-11T12:00'              | '1984-10-28T12:00:42' |
@@ -189,7 +189,7 @@ Feature: TemporalSelectAcceptance
     Given an empty graph
     When executing query:
       """
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: 'Europe/Stockholm'})] as tt
@@ -200,7 +200,7 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                                                  | d2                                    | d3                                                  | d4 |
-      | '1984-10-11T12:31:14.645876123Z'                    | '1984-10-11T12:31:14.645876123+05:00' | '1984-10-11T12:31:42.645876123Z'                    | '1984-10-11T12:31:42.645876123-10:00[Pacific/Honolulu]' |
+      | '1984-10-11T12:31:14.645876Z'                       | '1984-10-11T12:31:14.645876+05:00'    | '1984-10-11T12:31:42.645876Z'                       | '1984-10-11T12:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645876+01:00'                  | '1984-10-11T16:31:14.645876+05:00'    | '1984-10-11T12:31:42.645876+01:00'                  | '1984-10-11T01:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645Z'                          | '1984-10-11T12:31:14.645+05:00'       | '1984-10-11T12:31:42.645Z'                          | '1984-10-11T12:31:42.645-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:00+01:00[Europe/Stockholm]'          | '1984-10-11T16:00+05:00'              | '1984-10-11T12:00:42+01:00[Europe/Stockholm]'       | '1984-10-11T01:00:42-10:00[Pacific/Honolulu]' |
@@ -213,7 +213,7 @@ Feature: TemporalSelectAcceptance
       UNWIND [date({year:1984, month:10, day:11}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: '+01:00'})] as dd
-      UNWIND [localtime({hour:12, minute:31, second:14, nanosecond: 645876123}),
+      UNWIND [localtime({hour:12, minute:31, second:14, microsecond: 645876}),
               time({hour:12, minute:31, second:14, microsecond: 645876, timezone: '+01:00'}),
               localdatetime({year:1984, week:10, dayOfWeek:3, hour:12, minute:31, second:14, millisecond: 645}),
               datetime({year:1984, month:10, day:11, hour:12, timezone: 'Europe/Stockholm'})] as tt
@@ -224,15 +224,15 @@ Feature: TemporalSelectAcceptance
       """
     Then the result should be, in order:
       | d1                                         | d2                                    | d3                                            | d4 |
-      | '1984-10-11T12:31:14.645876123Z'           | '1984-10-11T12:31:14.645876123+05:00' | '1984-10-28T12:31:42.645876123Z'              | '1984-10-28T12:31:42.645876123-10:00[Pacific/Honolulu]' |
+      | '1984-10-11T12:31:14.645876Z'              | '1984-10-11T12:31:14.645876+05:00'    | '1984-10-28T12:31:42.645876Z'                 | '1984-10-28T12:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645876+01:00'         | '1984-10-11T16:31:14.645876+05:00'    | '1984-10-28T12:31:42.645876+01:00'            | '1984-10-28T01:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645Z'                 | '1984-10-11T12:31:14.645+05:00'       | '1984-10-28T12:31:42.645Z'                    | '1984-10-28T12:31:42.645-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:00+01:00[Europe/Stockholm]' | '1984-10-11T16:00+05:00'              | '1984-10-28T12:00:42+01:00[Europe/Stockholm]' | '1984-10-28T01:00:42-10:00[Pacific/Honolulu]' |
-      | '1984-03-07T12:31:14.645876123Z'           | '1984-03-07T12:31:14.645876123+05:00' | '1984-03-28T12:31:42.645876123Z'              | '1984-03-28T12:31:42.645876123-10:00[Pacific/Honolulu]' |
+      | '1984-03-07T12:31:14.645876Z'              | '1984-03-07T12:31:14.645876+05:00'    | '1984-03-28T12:31:42.645876Z'                 | '1984-03-28T12:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-03-07T12:31:14.645876+01:00'         | '1984-03-07T16:31:14.645876+05:00'    | '1984-03-28T12:31:42.645876+01:00'            | '1984-03-28T01:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-03-07T12:31:14.645Z'                 | '1984-03-07T12:31:14.645+05:00'       | '1984-03-28T12:31:42.645Z'                    | '1984-03-28T12:31:42.645-10:00[Pacific/Honolulu]' |
       | '1984-03-07T12:00+01:00[Europe/Stockholm]' | '1984-03-07T16:00+05:00'              | '1984-03-28T12:00:42+02:00[Europe/Stockholm]' | '1984-03-28T00:00:42-10:00[Pacific/Honolulu]' |
-      | '1984-10-11T12:31:14.645876123Z'           | '1984-10-11T12:31:14.645876123+05:00' | '1984-10-28T12:31:42.645876123Z'              | '1984-10-28T12:31:42.645876123-10:00[Pacific/Honolulu]' |
+      | '1984-10-11T12:31:14.645876Z'              | '1984-10-11T12:31:14.645876+05:00'    | '1984-10-28T12:31:42.645876Z'                 | '1984-10-28T12:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645876+01:00'         | '1984-10-11T16:31:14.645876+05:00'    | '1984-10-28T12:31:42.645876+01:00'            | '1984-10-28T01:31:42.645876-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:31:14.645Z'                 | '1984-10-11T12:31:14.645+05:00'       | '1984-10-28T12:31:42.645Z'                    | '1984-10-28T12:31:42.645-10:00[Pacific/Honolulu]' |
       | '1984-10-11T12:00+01:00[Europe/Stockholm]' | '1984-10-11T16:00+05:00'              | '1984-10-28T12:00:42+01:00[Europe/Stockholm]' | '1984-10-28T01:00:42-10:00[Pacific/Honolulu]' |

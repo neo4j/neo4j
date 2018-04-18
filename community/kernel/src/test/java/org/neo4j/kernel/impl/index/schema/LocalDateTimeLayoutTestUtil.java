@@ -42,8 +42,8 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeSch
             LocalDateTime.of( -999999999, 1, 1, 0, 0, 0,  0),
             LocalDateTime.of( 999999999, 12, 31, 23, 59, 59,  999_999_999),
             LocalDateTime.of( 0, 1, 1, 0,0,0,0 ),
-            LocalDateTime.of( 0, 1, 1, 0,0,0,1),
-            LocalDateTime.of( 0, 1, 1, 0,0,0,2),
+            LocalDateTime.of( 0, 1, 1, 0,0,0,1000),
+            LocalDateTime.of( 0, 1, 1, 0,0,0,2000),
             LocalDateTime.of( -1, 12, 31, 23,59,59,999_999_999 )
     };
 

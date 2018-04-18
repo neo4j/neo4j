@@ -121,15 +121,15 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
 
     assertRangeScan(
       LocalTimeValue.localTime(10000),
-      LocalTimeValue.localTime(10002),
-      LocalTimeValue.localTime(10004),
-      LocalTimeValue.localTime(10006))
+      LocalTimeValue.localTime(12000),
+      LocalTimeValue.localTime(14000),
+      LocalTimeValue.localTime(16000))
 
     assertRangeScan(
       TimeValue.time(10000, ZoneOffset.of("+01:00")),
-      TimeValue.time(10002, ZoneOffset.of("+01:00")),
-      TimeValue.time(10004, ZoneOffset.of("+01:00")),
-      TimeValue.time(10006, ZoneOffset.of("+01:00")))
+      TimeValue.time(12000, ZoneOffset.of("+01:00")),
+      TimeValue.time(14000, ZoneOffset.of("+01:00")),
+      TimeValue.time(16000, ZoneOffset.of("+01:00")))
   }
 
   test("should handle datetime with named zone and second offset") {

@@ -42,14 +42,12 @@ public class DurationBuilderTest
         assertEquals( parse( "PT2352S" ), build( entry( "seconds", of( 2352 ) ).create() ) );
         assertEquals( parse( "PT0.001S" ), build( entry( "milliseconds", of( 1 ) ).create() ) );
         assertEquals( parse( "PT0.000001S" ), build( entry( "microseconds", of( 1 ) ).create() ) );
-        assertEquals( parse( "PT0.000000001S" ), build( entry( "nanoseconds", of( 1 ) ).create() ) );
-        assertEquals( parse( "PT4.003002001S" ), build(
-                entry( "nanoseconds", of( 1 ) )
-                        .entry( "microseconds", of( 2 ) )
+        assertEquals( parse( "PT4.003002S" ), build(
+                entry( "microseconds", of( 2 ) )
                         .entry( "milliseconds", of( 3 ) )
                         .entry( "seconds", of( 4 ) )
                         .create() ) );
-        assertEquals( parse( "P1Y2M3W4DT5H6M7.800000009S" ), build(
+        assertEquals( parse( "P1Y2M3W4DT5H6M7.100009S" ), build(
                 entry( "years", of( 1 ) )
                         .entry( "months", of( 2 ) )
                         .entry( "weeks", of( 3 ) )
@@ -57,9 +55,8 @@ public class DurationBuilderTest
                         .entry( "hours", of( 5 ) )
                         .entry( "minutes", of( 6 ) )
                         .entry( "seconds", of( 7 ) )
-                        .entry( "milliseconds", of( 800 ) )
-                        .entry( "microseconds", of( -900_000 ) )
-                        .entry( "nanoseconds", of( 900_000_009 ) )
+                        .entry( "milliseconds", of( -800 ) )
+                        .entry( "microseconds", of( 900_009 ) )
                         .create() ) );
     }
 

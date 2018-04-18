@@ -69,10 +69,10 @@ public class LocalTimeValueTest
     public void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( localTime( 14, 5, 17, 123000000 ), parse( "140517.123" ) );
-        assertEquals( localTime( 14, 5, 17, 1 ), parse( "14:5:17.000000001" ) );
+        assertEquals( localTime( 14, 5, 17, 999 ), parse( "14:5:17" ) );
         assertEquals( localTime( 4, 15, 4, 0 ), parse( "4:15:4.000" ) );
-        assertEquals( localTime( 9, 7, 19, 999999999 ), parse( "9:7:19.999999999" ) );
-        assertEquals( localTime( 3, 4, 1, 123456789 ), parse( "03:04:01.123456789" ) );
+        assertEquals( localTime( 9, 7, 19, 999999999 ), parse( "9:7:19.999999" ) );
+        assertEquals( localTime( 3, 4, 1, 123456789 ), parse( "03:04:01.123456" ) );
     }
 
     @Test
@@ -123,7 +123,7 @@ public class LocalTimeValueTest
     @Test
     public void shouldNotEqualOther()
     {
-        assertNotEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 7 ) );
+        assertNotEqual( localTime( 10, 52, 5, 1037 ), localTime( 10, 52, 5, 2037 ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

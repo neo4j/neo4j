@@ -48,63 +48,63 @@ Feature: TemporalAccessorAcceptance
     Given an empty graph
     When executing query:
       """
-      WITH localtime({hour:12, minute:31, second:14, nanosecond: 645876123}) as d
-      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond
+      WITH localtime({hour:12, minute:31, second:14, microsecond: 645876}) as d
+      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond
       """
     Then the result should be, in order:
-      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond |
-      | 12     | 31       | 14       | 645           | 645876        | 645876123    |
+      | d.hour | d.minute | d.second | d.millisecond | d.microsecond |
+      | 12     | 31       | 14       | 645           | 645876        |
     And no side effects
 
   Scenario: Should provide accessors for time
     Given an empty graph
     When executing query:
       """
-      WITH time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'+01:00'}) as d
-      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond, d.timezone, d.offset, d.offsetMinutes, d.offsetSeconds
+      WITH time({hour:12, minute:31, second:14, microsecond: 645876, timezone:'+01:00'}) as d
+      RETURN d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.timezone, d.offset, d.offsetMinutes, d.offsetSeconds
       """
     Then the result should be, in order:
-      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone | d.offset | d.offsetMinutes | d.offsetSeconds |
-      | 12     | 31       | 14       | 645           | 645876        | 645876123    | '+01:00'   | '+01:00' | 60              | 3600            |
+      | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.timezone | d.offset | d.offsetMinutes | d.offsetSeconds |
+      | 12     | 31       | 14       | 645           | 645876        | '+01:00'   | '+01:00' | 60              | 3600            |
     And no side effects
 
   Scenario: Should provide accessors for local date time
     Given an empty graph
     When executing query:
       """
-      WITH localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}) as d
+      WITH localdatetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876}) as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter,
-             d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond
+             d.hour, d.minute, d.second, d.millisecond, d.microsecond
       """
     Then the result should be, in order:
-      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond |
-      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    |
+      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond |
+      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        |
     And no side effects
 
   Scenario: Should provide accessors for date time
     Given an empty graph
     When executing query:
       """
-      WITH datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone:'Europe/Stockholm'}) as d
+      WITH datetime({year:1984, month:11, day:11, hour:12, minute:31, second:14, microsecond: 645876, timezone:'Europe/Stockholm'}) as d
       RETURN d.year, d.quarter, d.month, d.week, d.weekYear, d.day, d.ordinalDay, d.weekDay, d.dayOfQuarter,
-             d.hour, d.minute, d.second, d.millisecond, d.microsecond, d.nanosecond,
+             d.hour, d.minute, d.second, d.millisecond, d.microsecond,
              d.timezone, d.offset, d.offsetMinutes, d.offsetSeconds, d.epochSeconds, d.epochMillis
       """
     Then the result should be, in order:
-      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.nanosecond | d.timezone         | d.offset | d.offsetMinutes | d.offsetSeconds | d.epochSeconds | d.epochMillis |
-      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 645876123    | 'Europe/Stockholm' | '+01:00' | 60              | 3600            | 469020674      | 469020674645  |
+      | d.year | d.quarter | d.month | d.week | d.weekYear | d.day | d.ordinalDay | d.weekDay | d.dayOfQuarter | d.hour | d.minute | d.second | d.millisecond | d.microsecond | d.timezone         | d.offset | d.offsetMinutes | d.offsetSeconds | d.epochSeconds | d.epochMillis |
+      | 1984   | 4         | 11      | 45     | 1984       | 11    | 316          | 7         | 42             | 12     | 31       | 14       | 645           | 645876        | 'Europe/Stockholm' | '+01:00' | 60              | 3600            | 469020674      | 469020674645  |
     And no side effects
 
   Scenario: Should provide accessors for duration
     Given an empty graph
     When executing query:
       """
-      WITH duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, nanoseconds: 111111111}) as d
+      WITH duration({years: 1, months:1, days: 1, hours:1, minutes: 1, seconds: 1, microseconds: 111111}) as d
       RETURN d.years, d.months, d.days,
-             d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds, d.nanoseconds,
-             d.monthsOfYear, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond, d.nanosecondsOfSecond
+             d.hours, d.minutes, d.seconds, d.milliseconds, d.microseconds,
+             d.monthsOfYear, d.minutesOfHour, d.secondsOfMinute, d.millisecondsOfSecond, d.microsecondsOfSecond
       """
     Then the result should be, in order:
-      | d.years | d.months | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.nanoseconds | d.monthsOfYear | d.minutesOfHour | d.secondsOfMinute | d.millisecondsOfSecond | d.microsecondsOfSecond | d.nanosecondsOfSecond |
-      | 1       | 13       | 1      | 1       | 61        | 3661      |  3661111       | 3661111111     | 3661111111111 | 1              | 1               | 1                 | 111                    | 111111                 | 111111111             |
+      | d.years | d.months | d.days | d.hours | d.minutes | d.seconds | d.milliseconds | d.microseconds | d.monthsOfYear | d.minutesOfHour | d.secondsOfMinute | d.millisecondsOfSecond | d.microsecondsOfSecond |
+      | 1       | 13       | 1      | 1       | 61        | 3661      |  3661111       | 3661111111     | 1              | 1               | 1                 | 111                    | 111111                 |
     And no side effects

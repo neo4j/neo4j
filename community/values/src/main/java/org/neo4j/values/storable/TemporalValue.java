@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
@@ -57,12 +56,15 @@ import org.neo4j.values.utils.TemporalArithmeticException;
 import org.neo4j.values.utils.TemporalParseException;
 import org.neo4j.values.utils.UnsupportedTemporalUnitException;
 
+import static java.time.temporal.ChronoField.MICRO_OF_SECOND;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 import static org.neo4j.values.storable.TimeValue.time;
+import static org.neo4j.values.storable.Values.NANO_TRUNCATION_FACTOR;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
         extends ScalarValue implements Temporal
@@ -496,7 +498,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             for ( Map.Entry<Field,AnyValue> entry : fields.entrySet() )
             {
                 Field f = entry.getKey();
-                if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond && f != Field.nanosecond )
+                if ( !f.isGroupSelector() && f != Field.timezone && f != Field.millisecond && f != Field.microsecond )
                 {
                     TemporalField temporalField = f.field;
                     result = (Temp) result.with( temporalField, safeCastIntegral( f.name(), entry.getValue(), f.defaultValue ) );
@@ -504,10 +506,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             }
             // Assign all sub-second parts in one step
             if ( supportsTime() &&
-                    (fields.containsKey( Field.millisecond ) || fields.containsKey( Field.microsecond ) || fields.containsKey( Field.nanosecond )) )
+                    (fields.containsKey( Field.millisecond ) || fields.containsKey( Field.microsecond )) )
             {
-                result = (Temp) result.with( Field.nanosecond.field,
-                        validNano( fields.get( Field.millisecond ), fields.get( Field.microsecond ), fields.get( Field.nanosecond ) ) );
+                result = (Temp) result.with( Field.microsecond.field,
+                        validMicrosecond( fields.get( Field.millisecond ), fields.get( Field.microsecond ) ) ) ;
             }
             return result;
         }
@@ -588,7 +590,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         second( ChronoField.SECOND_OF_MINUTE, 0 ),
         millisecond( ChronoField.MILLI_OF_SECOND, 0 ),
         microsecond( ChronoField.MICRO_OF_SECOND, 0 ),
-        nanosecond( ChronoField.NANO_OF_SECOND, 0 ),
         // Read only accessors (not assignable)
         weekYear( IsoFields.WEEK_BASED_YEAR, 0 )//<pre>
         { //</pre>
@@ -993,7 +994,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         private AnyValue second;
         private AnyValue millisecond;
         private AnyValue microsecond;
-        private AnyValue nanosecond;
         private AnyValue time;
 
         ConstructTime()
@@ -1019,9 +1019,6 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             case microsecond:
                 microsecond = assignment( field, microsecond, value );
                 break;
-            case nanosecond:
-                nanosecond = assignment( field, nanosecond, value );
-                break;
             case time:
             case datetime:
                 time = assignment( field, time, value );
@@ -1036,7 +1033,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
             if ( time == null )
             {
                 assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ), Pair.of( second, "second" ),
-                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                        Pair.of( oneOf( millisecond, microsecond ), "subsecond" ) );
             }
         }
     }
@@ -1345,9 +1342,9 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
     }
 
-    static org.neo4j.values.AnyValue oneOf( org.neo4j.values.AnyValue a, org.neo4j.values.AnyValue b, org.neo4j.values.AnyValue c )
+    static AnyValue oneOf( AnyValue a, AnyValue b )
     {
-        return a != null ? a : b != null ? b : c;
+        return a != null ? a : b;
     }
 
     static ZoneId timezoneOf( AnyValue timezone )
@@ -1359,11 +1356,10 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         throw new UnsupportedOperationException( "Cannot convert to ZoneId: " + timezone );
     }
 
-    static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+    static int validMicrosecond( AnyValue millisecond, AnyValue microsecond )
     {
         long ms = safeCastIntegral( "millisecond", millisecond, Field.millisecond.defaultValue );
         long us = safeCastIntegral( "microsecond", microsecond, Field.microsecond.defaultValue );
-        long ns = safeCastIntegral( "nanosecond", nanosecond, Field.nanosecond.defaultValue );
         if ( ms < 0 || ms >= 1000 )
         {
             throw new InvalidValuesArgumentException( "Invalid millisecond: " + ms );
@@ -1372,27 +1368,33 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             throw new InvalidValuesArgumentException( "Invalid microsecond: " + us );
         }
-        if ( ns < 0 || ns >= ( microsecond != null ? 1000 : millisecond != null ? 1000_000 : 1000_000_000 ) )
+        return (int) (ms * 1000 + us);
+    }
+
+    static <TEMP extends Temporal> TEMP withTruncatedNano( TEMP value )
+    {
+        TEMP newValue;
+        try
         {
-            throw new InvalidValuesArgumentException( "Invalid nanosecond: " + ns );
+            int truncatedNano = value.get( NANO_OF_SECOND ) / NANO_TRUNCATION_FACTOR * NANO_TRUNCATION_FACTOR;
+            newValue = (TEMP) value.with( NANO_OF_SECOND, truncatedNano );
         }
-        return (int) (ms * 1000_000 + us * 1000 + ns);
+        catch ( DateTimeException | ArithmeticException e )
+        {
+            throw new IllegalStateException( e.getMessage(), e );
+        }
+        return newValue;
     }
 
     static <TEMP extends Temporal> TEMP updateFieldMapWithConflictingSubseconds( Map<String,AnyValue> fields, TemporalUnit unit, TEMP truncated )
     {
         boolean conflictingMilliSeconds = false;
-        boolean conflictingMicroSeconds = false;
 
         for ( Map.Entry<String,AnyValue> entry : fields.entrySet() )
         {
-            if ( unit == ChronoUnit.MILLIS && ( "microsecond".equals( entry.getKey() ) || "nanosecond".equals( entry.getKey() ) ) )
+            if ( unit == ChronoUnit.MILLIS && ( "microsecond".equals( entry.getKey() ) ) )
             {
                 conflictingMilliSeconds = true;
-            }
-            else if ( unit == ChronoUnit.MICROS && "nanosecond".equals( entry.getKey() ) )
-            {
-                conflictingMicroSeconds = true;
             }
         }
 
@@ -1400,16 +1402,8 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         {
             AnyValue millis = Values.intValue( truncated.get( ChronoField.MILLI_OF_SECOND ) );
             AnyValue micros = fields.remove( "microsecond" );
-            AnyValue nanos = fields.remove( "nanosecond" );
-            int newNanos = validNano( millis, micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
-        }
-        else if ( conflictingMicroSeconds )
-        {
-            AnyValue micros = Values.intValue( truncated.get( ChronoField.MICRO_OF_SECOND ) );
-            AnyValue nanos = fields.remove( "nanosecond" );
-            int newNanos = validNano( null,  micros, nanos );
-            truncated = (TEMP) truncated.with( ChronoField.NANO_OF_SECOND, newNanos );
+            int newMicros = validMicrosecond( millis, micros );
+            truncated = (TEMP) truncated.with( MICRO_OF_SECOND, newMicros );
         }
         return truncated;
     }

@@ -178,8 +178,8 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
         append( Long.toString( days ) );
         append( ", seconds: " );
         append( Long.toString( seconds ) );
-        append( ", nanos: " );
-        append( Long.toString( nanos ) );
+        append( ", micros: " );
+        append( Long.toString( nanos / 1000 ) );
         append( "}}" );
     }
 
