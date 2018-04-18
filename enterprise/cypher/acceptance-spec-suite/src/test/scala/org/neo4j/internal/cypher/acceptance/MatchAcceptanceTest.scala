@@ -607,9 +607,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.All + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()

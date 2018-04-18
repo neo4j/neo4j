@@ -73,7 +73,8 @@ object CypherReductionSupport {
     errorIfShortestPathFallbackUsedAtRuntime = false,
     errorIfShortestPathHasCommonNodesAtRuntime = false,
     legacyCsvQuoteEscaping = false,
-    nonIndexedLabelWarningThreshold = 0)
+    nonIndexedLabelWarningThreshold = 0,
+    planWithMinimumCardinalityEstimates = true)
   private val kernelMonitors = new Monitors
   private val compiler = CypherCompiler(astRewriter, WrappedMonitors(kernelMonitors), stepSequencer, metricsFactory, config, defaultUpdateStrategy,
     CompilerEngineDelegator.CLOCK, CommunityRuntimeContextCreator)
