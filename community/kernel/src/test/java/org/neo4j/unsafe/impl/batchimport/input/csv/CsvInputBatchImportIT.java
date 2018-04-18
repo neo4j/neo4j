@@ -19,30 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-<<<<<<< HEAD
-=======
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.nio.charset.Charset.defaultCharset;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
-import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
-import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
-
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -104,7 +80,6 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
-<<<<<<< HEAD
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 
@@ -129,10 +104,6 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
-=======
-import org.neo4j.values.storable.PointValue;
-
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 public class CsvInputBatchImportIT
 {
     /** Don't support these counts at the moment so don't compute them */
@@ -416,15 +387,9 @@ public class CsvInputBatchImportIT
             // Verify counts, TODO how to get counts store other than this way?
             NeoStores neoStores = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency(
                     RecordStorageEngine.class ).testAccessNeoStores();
-<<<<<<< HEAD
 
             ToIntFunction<String> labelTranslationTable =
                     translationTable( neoStores.getLabelTokenStore(), StatementConstants.ANY_LABEL );
-
-=======
-            ToIntFunction<String> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), ReadOperations.ANY_LABEL );
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
@@ -435,11 +400,7 @@ public class CsvInputBatchImportIT
             }
 
             ToIntFunction<String> relationshipTypeTranslationTable =
-<<<<<<< HEAD
                     translationTable( neoStores.getRelationshipTypeTokenStore(), StatementConstants.ANY_RELATIONSHIP_TYPE );
-=======
-                    translationTable( neoStores.getRelationshipTypeTokenStore(), ReadOperations.ANY_RELATIONSHIP_TYPE );
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {

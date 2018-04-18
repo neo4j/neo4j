@@ -23,11 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-<<<<<<< HEAD
-=======
-import java.util.function.Function;
-import java.util.function.Predicate;
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -70,11 +65,7 @@ public final class VirtualValues
         return new ListValue.ArrayValueListValue( arrayValue );
     }
 
-<<<<<<< HEAD
     public static ListValue dropNoValues( ListValue list )
-=======
-    public static ListValue filter( ListValue list, Predicate<AnyValue> filter )
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
     {
         return new ListValue.DropNoValuesListValue( list );
     }

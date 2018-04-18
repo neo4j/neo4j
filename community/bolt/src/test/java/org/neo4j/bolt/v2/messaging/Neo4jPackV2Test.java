@@ -19,33 +19,6 @@
  */
 package org.neo4j.bolt.v2.messaging;
 
-<<<<<<< HEAD
-=======
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.EPOCH_DAY;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.NANO_OF_DAY;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.DateTimeValue.datetime;
-import static org.neo4j.values.storable.DateValue.epochDate;
-import static org.neo4j.values.storable.DurationValue.duration;
-import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
-import static org.neo4j.values.storable.LocalTimeValue.localTime;
-import static org.neo4j.values.storable.TimeValue.time;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.intValue;
-import static org.neo4j.values.storable.Values.pointValue;
-import static org.neo4j.values.virtual.VirtualValues.list;
-
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
@@ -76,7 +49,6 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.virtual.ListValue;
 
-<<<<<<< HEAD
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
@@ -107,8 +79,6 @@ import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.unsafePointValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-=======
->>>>>>> f5e80af3c9ccd2984f5be2bfad767e59e542dc1f
 public class Neo4jPackV2Test
 {
     private static final String[] TIME_ZONE_NAMES =
