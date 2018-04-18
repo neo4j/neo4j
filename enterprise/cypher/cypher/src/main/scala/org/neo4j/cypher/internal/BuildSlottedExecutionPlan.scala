@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{Execu
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.CacheCheckResult
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, Phase}
@@ -69,7 +68,6 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
   }
 
   private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
-    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       if (ENABLE_DEBUG_PRINTS && PRINT_PLAN_INFO_EARLY) {
         printPlanInfo(from)
@@ -83,8 +81,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
 
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan)
-      val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-                                                              expressionConverters = converters,
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
                                                               pipeBuilderFactory = pipeBuilderFactory)
       val readOnlies = new ReadOnlies
       from.solveds.mapTo(readOnlies, _.readOnly)
@@ -92,7 +89,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                                          from.plannerName, readOnlies, from.cardinalities)
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
+      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, planner) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
@@ -102,6 +99,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                                                         SlottedRuntimeName,
                                                                         readOnlies,
                                                                         from.cardinalities)
+
+      val fp = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
@@ -125,7 +124,6 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
             printPlanInfo(from)
           }
         }
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, Failure(e))
     }
   }

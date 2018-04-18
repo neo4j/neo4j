@@ -93,7 +93,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
-    self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
@@ -107,7 +106,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
-      thisScenario.prepare()
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
@@ -190,7 +188,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
       }
 
       val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
-      baseScenario.prepare()
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -217,7 +214,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               params: Map[String, Any],
                               resultAssertionInTx: Option[(InternalExecutionResult) => Unit],
                               rollback: Boolean = true) = {
-    scenario.prepare()
 
     def execute = {
       executeBefore()
@@ -296,24 +292,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
   }
 }
 
-class NewRuntimeMonitor extends NewRuntimeSuccessRateMonitor {
-  private var traceBuilder = List.newBuilder[NewRuntimeMonitorCall]
-
-  override def unableToHandlePlan(plan: LogicalPlan, e: CantCompileQueryException) {
-    traceBuilder += UnableToCompileQuery(Exceptions.stringify(e))
-  }
-
-  override def newPlanSeen(plan: LogicalPlan) {
-    traceBuilder += NewPlanSeen(plan.toString)
-  }
-
-  def trace = traceBuilder.result()
-
-  def clear() {
-    traceBuilder.clear()
-  }
-}
-
 object NewPlannerMonitor {
 
   sealed trait NewPlannerMonitorCall {
@@ -351,8 +329,6 @@ object NewRuntimeMonitor {
 object CypherComparisonSupport {
 
   val newPlannerMonitor = NewPlannerMonitor
-
-  val newRuntimeMonitor = new NewRuntimeMonitor
 
   case class Versions(versions: Version*) {
     def +(other: Version): Versions = {
@@ -511,8 +487,6 @@ object CypherComparisonSupport {
     }
 
     def preparserOptions: String = s"${version.name} ${planner.preparserOption} ${runtime.preparserOption}"
-
-    def prepare(): Unit = newRuntimeMonitor.clear()
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)

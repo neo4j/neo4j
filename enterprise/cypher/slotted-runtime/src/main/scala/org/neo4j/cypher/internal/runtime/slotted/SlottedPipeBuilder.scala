@@ -46,7 +46,6 @@ import org.neo4j.cypher.internal.v3_5.{expressions => frontEndAst}
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
-                         monitors: Monitors,
                          physicalPlan: PhysicalPlan,
                          readOnly: Boolean,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
@@ -525,15 +524,15 @@ object SlottedPipeBuilder {
 
   case class Factory(physicalPlan: PhysicalPlan)
     extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
+    def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean,
               expressionConverters: ExpressionConverters)
              (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
 
       val expressionToExpression = recursePipes(recurse, planContext) _
 
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
+      val fallback = CommunityPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression)
 
-      new SlottedPipeBuilder(fallback, expressionConverters, monitors, physicalPlan, readOnly, expressionToExpression)
+      new SlottedPipeBuilder(fallback, expressionConverters, physicalPlan, readOnly, expressionToExpression)
     }
   }
 

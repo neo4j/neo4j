@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration.Si
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{HardcodedGraphStatistics, LogicalPlanningTestSupport2}
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IDPPlannerName, PlanContext}
@@ -60,8 +59,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val slottedRewriter = new SlottedRewriter(planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, physicalPlan.slotConfigurations)
     val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder( mock[Clock], mock[Monitors],
-      expressionConverters = converters, pipeBuilderFactory = SlottedPipeBuilder.Factory(physicalPlan))
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(SlottedPipeBuilder.Factory(physicalPlan), converters)
     val context = PipeExecutionBuilderContext(mock[Metrics.CardinalityModel], table, IDPPlannerName, new StubReadOnlies, new StubCardinalities)
     executionPlanBuilder.build(None, logicalPlan)(context, planContext).pipe
   }

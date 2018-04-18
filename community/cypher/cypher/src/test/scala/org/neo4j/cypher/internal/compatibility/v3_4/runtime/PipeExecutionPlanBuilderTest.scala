@@ -67,7 +67,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
 
   val factory = new PipeBuilderFactory {
-    override def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, expressionConverters: ExpressionConverters)
+    override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean, expressionConverters: ExpressionConverters)
                       (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) = new PipeBuilder {
       def build(plan: LogicalPlan) = plan match {
         case LeafPlan(n) => LeafPipe(n)
@@ -85,7 +85,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   private val builder = {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
-    new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory, expressionConverters = converters)
+    new PipeExecutionPlanBuilder(factory, expressionConverters = converters)
   }
   private val planContext = newMockedPlanContext
   private val pipeContext = mock[PipeExecutionBuilderContext]

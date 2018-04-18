@@ -50,21 +50,22 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val cardinalities = from.cardinalities
     val logicalPlan = from.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-      expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
+                                                            pipeBuilderFactory = CommunityPipeBuilderFactory)
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName, readOnlies, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-    val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
+    val PipeInfo(pipe, updating, periodicCommitInfo, planner) = pipeInfo
     val columns = from.statement().returnColumns
-    val resultBuilderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
+    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
     val func = getExecutionPlanFunction(periodicCommitInfo, updating, resultBuilderFactory,
                                         context.notificationLogger, InterpretedRuntimeName, readOnlies, cardinalities)
 
+    val fingerprint = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
       logicalPlan,
       periodicCommitInfo.isDefined,
       planner,
-      context.createFingerprintReference(fp))
+      context.createFingerprintReference(fingerprint))
 
     new CompilationState(from, Success(execPlan))
   }

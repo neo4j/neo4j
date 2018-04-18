@@ -19,38 +19,25 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import java.time.Clock
-
-import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
-import org.neo4j.cypher.internal.planner.v3_5.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.util.v3_5.InternalException
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
 
 import scala.collection.mutable
 
-class PipeExecutionPlanBuilder(clock: Clock,
-                               monitors: Monitors,
-                               pipeBuilderFactory: PipeBuilderFactory,
+class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
   def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
 
     val topLevelPipe = buildPipe(plan)
 
-    val fingerprint = planContext.statistics match {
-      case igs: InstrumentedGraphStatistics =>
-        Some(PlanFingerprint(clock.millis(), planContext.txIdProvider(), igs.snapshot.freeze))
-      case _ =>
-        None
-    }
-
     val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id),
-             periodicCommitInfo, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id), periodicCommitInfo, context.plannerName)
   }
 
   /*
@@ -73,11 +60,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
-    val pipeBuilder = pipeBuilderFactory(
-      monitors = monitors,
-      recurse = p => buildPipe(p),
-      readOnly = context.readOnlies.get(plan.id),
-      expressionConverters = expressionConverters)
+    val pipeBuilder = pipeBuilderFactory(recurse = p => buildPipe(p),
+                                         readOnly = context.readOnlies.get(plan.id),
+                                         expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[Pipe]()
@@ -146,11 +131,11 @@ class PipeExecutionPlanBuilder(clock: Clock,
 }
 
 object CommunityPipeBuilderFactory extends PipeBuilderFactory {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe,
+  def apply(recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
             expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
-    CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, recursePipes(recurse, planContext))
+    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse, planContext))
   }
 
 }

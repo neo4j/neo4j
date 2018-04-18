@@ -60,7 +60,6 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
   override def description: String = "build pipes"
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (physicalPlan, pipelines) = rewritePlan(context, from.logicalPlan, from.semanticTable())
       val converters: ExpressionConverters = new ExpressionConverters(MorselExpressionConverters,
@@ -80,11 +79,9 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
       from.solveds.mapTo(readOnlies, _.readOnly)
       val execPlan = VectorizedExecutionPlan(from.plannerName, operators, pipelines, physicalPlan, fieldNames,
                                              dispatcher, context.notificationLogger, readOnlies, from.cardinalities)
-      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Success(execPlan))
     } catch {
       case e: CantCompileQueryException =>
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
         new CompilationState(from, Failure(e))
     }
   }

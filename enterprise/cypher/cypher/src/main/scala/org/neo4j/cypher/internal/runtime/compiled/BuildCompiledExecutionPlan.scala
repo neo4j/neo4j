@@ -52,7 +52,6 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
   override def postConditions = Set.empty // Can't yet guarantee that we can build an execution plan
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
       val readOnlies = new ReadOnlies
@@ -62,11 +61,9 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
         new CompiledExecutionPlan(compiled,
                                   context.createFingerprintReference(compiled.fingerprint),
                                   notifications(context))
-      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Success(executionPlan))
     } catch {
       case e: CantCompileQueryException =>
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, e)
         new CompilationState(from, Failure(e))
     }
   }

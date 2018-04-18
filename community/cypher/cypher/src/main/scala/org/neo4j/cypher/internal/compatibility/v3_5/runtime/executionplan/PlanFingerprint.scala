@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, NeedsReplan, FineToReuse, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot}
+import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan, StatsDivergenceCalculator}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot, InstrumentedGraphStatistics}
 
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
   if (snapshot.statsValues.isEmpty) {
@@ -62,4 +62,12 @@ class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculat
 object PlanFingerprint {
   def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
     PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
+
+  def take(clock: Clock, txIdProvider: () => Long, graphStatistics: GraphStatistics): Option[PlanFingerprint] =
+    graphStatistics match {
+      case igs: InstrumentedGraphStatistics =>
+        Some(PlanFingerprint(clock.millis(), txIdProvider(), igs.snapshot.freeze))
+      case _ =>
+        None
+    }
 }
