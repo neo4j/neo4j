@@ -51,4 +51,8 @@ public interface CatchUpResponseHandler
     void onCoreSnapshot( CoreSnapshot coreSnapshot );
 
     void onStoreListingResponse( PrepareStoreCopyResponse storeListingRequest );
+
+    void onChannelInactive();
+
+    void onException( Throwable cause );
 }
