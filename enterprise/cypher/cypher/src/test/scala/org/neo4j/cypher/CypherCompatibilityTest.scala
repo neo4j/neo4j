@@ -167,6 +167,13 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
     }
   }
 
+  test("should use settings without regard of case") {
+    runWithConfig(GraphDatabaseSettings.cypher_runtime -> "slotted") {
+      db =>
+        db.execute(QUERY).getExecutionPlanDescription.toString should include("SLOTTED")
+    }
+  }
+
   private def assertProfiled(db: GraphDatabaseCypherService, q: String) {
     val result = db.execute(q)
     result.resultAsString()
