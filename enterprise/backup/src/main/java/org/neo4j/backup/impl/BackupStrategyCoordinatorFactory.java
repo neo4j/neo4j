@@ -21,6 +21,7 @@ package org.neo4j.backup.impl;
 
 import java.util.List;
 
+import org.neo4j.causalclustering.catchup.storecopy.StoreFiles;
 import org.neo4j.com.storecopy.FileMoveProvider;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -70,7 +71,8 @@ class BackupStrategyCoordinatorFactory
         long timeout = onlineBackupContext.getRequiredArguments().getTimeout();
         Config config = onlineBackupContext.getConfig();
 
-        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, logProvider );
+        StoreFiles storeFiles = new StoreFiles( fs, pageCache );
+        BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, logProvider, storeFiles );
         BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, logProvider, timeout );
 
         BackupStrategyWrapper ccStrategyWrapper = wrap( ccStrategy, copyService, pageCache, config, recoveryService );
