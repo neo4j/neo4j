@@ -204,7 +204,7 @@ trait MethodStructure[E] {
   def node(nodeIdVar: String, codeGenType: CodeGenType): E
   def materializeRelationship(relIdVar: String, codeGenType: CodeGenType): E
   def relationship(relIdVar: String, codeGenType: CodeGenType): E
-  def materializeAny(expression: E): E
+  def materializeAny(expression: E, codeGenType: CodeGenType): E
   /** Feed single row to the given visitor */
   def visitorAccept(): Unit
   def setInRow(column: Int, value: E): Unit

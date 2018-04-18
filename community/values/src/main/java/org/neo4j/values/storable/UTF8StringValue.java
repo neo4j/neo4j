@@ -337,48 +337,32 @@ public final class UTF8StringValue extends StringValue
             return super.compareTo( other );
         }
         UTF8StringValue otherUTF8 = (UTF8StringValue) other;
-        return codePointByteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
+        return byteArrayCompare( bytes, offset, byteLength, otherUTF8.bytes, otherUTF8.offset, otherUTF8.byteLength );
     }
 
-    public static int codePointByteArrayCompare( byte[] value1, byte[] value2 )
+    public static int byteArrayCompare( byte[] value1, byte[] value2 )
     {
-        return codePointByteArrayCompare( value1, 0, value1.length, value2, 0, value2.length );
+        return byteArrayCompare( value1, 0, value1.length, value2, 0, value2.length );
     }
 
-    public static int codePointByteArrayCompare( byte[] value1, int value1Offset, int value1Length,
+    public static int byteArrayCompare( byte[] value1, int value1Offset, int value1Length,
             byte[] value2, int value2Offset, int value2Length )
     {
-        int len1 = value1.length;
-        int len2 = value2.length;
+        int len1 = value1Length;
+        int len2 = value2Length;
         int lim = Math.min( len1, len2 );
         int i = 0;
         while ( i < lim )
         {
-            byte b = value1[i];
-            int thisCodePoint;
-            int thatCodePoint = codePointAt( value2, i );
-            if ( b >= 0 )
+            int b1 = ((int) value1[i + value1Offset]) & 0xFF;
+            int b2 = ((int) value2[i + value2Offset]) & 0xFF;
+            if ( b1 != b2 )
             {
-                i++;
-                thisCodePoint = b;
+                return b1 - b2;
             }
-            else
-            {
-                int bytesNeeded = 0;
-                while ( b < 0 )
-                {
-                    bytesNeeded++;
-                    b = (byte) (b << 1);
-                }
-                thisCodePoint = codePoint( value1, b, i, bytesNeeded );
-                i += bytesNeeded;
-            }
-            if ( thisCodePoint != thatCodePoint )
-            {
-                return thisCodePoint - thatCodePoint;
-            }
+            i++;
         }
-        return numberOfCodePoints( value1, value1Offset, value1Length ) - numberOfCodePoints( value2, value2Offset, value2Length );
+        return len1 - len2;
     }
 
     @Override

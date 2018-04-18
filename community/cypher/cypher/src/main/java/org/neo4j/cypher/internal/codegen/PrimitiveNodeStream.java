@@ -25,12 +25,13 @@ import java.util.List;
 import java.util.function.LongFunction;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
 import org.neo4j.graphdb.Node;
+import org.neo4j.values.virtual.VirtualNodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 
-public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
+public class PrimitiveNodeStream extends PrimitiveEntityStream<VirtualNodeValue>
 {
     public PrimitiveNodeStream( LongStream inner )
     {
@@ -61,9 +62,9 @@ public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
 
     @Override
     // This method is only used when we do not know the element type at compile time, so it has to box the elements
-    public Iterator<NodeIdWrapper> iterator()
+    public Iterator<VirtualNodeValue> iterator()
     {
-        return inner.mapToObj( (LongFunction<NodeIdWrapper>) NodeIdWrapperImpl::new ).iterator();
+        return inner.mapToObj( (LongFunction<VirtualNodeValue>) VirtualValues::node ).iterator();
     }
 
     private static final PrimitiveNodeStream empty = new PrimitiveNodeStream( LongStream.empty() );

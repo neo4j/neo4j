@@ -26,10 +26,6 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   assert(nodeIdVar.codeGenType == CodeGenType.primitiveNode || nodeIdVar.codeGenType == CodeGenType.Any)
 
-  private val _codeGenType =
-    if (nodeIdVar.codeGenType == CodeGenType.primitiveNode) CodeGenType.primitiveNode
-    else CodeGenType.Any
-
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) =
@@ -38,5 +34,5 @@ case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def nullable(implicit context: CodeGenContext) = nodeIdVar.nullable
 
-  override def codeGenType(implicit context: CodeGenContext) = _codeGenType
+  override def codeGenType(implicit context: CodeGenContext) = CodeGenType.primitiveNode // MethodStructure.node() always returns a primitive node
 }

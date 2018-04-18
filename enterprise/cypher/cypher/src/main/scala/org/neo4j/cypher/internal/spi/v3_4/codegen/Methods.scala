@@ -26,7 +26,6 @@ import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterato
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
@@ -40,7 +39,7 @@ import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy, RelationshipProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue, VirtualNodeValue, VirtualRelationshipValue}
 
 object Methods {
 
@@ -104,11 +103,12 @@ object Methods {
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
   val newRelationshipProxyById: MethodReference = method[EmbeddedProxySPI, RelationshipProxy]("newRelationshipProxy", typeRef[Long])
   val materializeAnyResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyResult", typeRef[EmbeddedProxySPI], typeRef[Object])
+  val materializeAnyValueResult: MethodReference = method[CompiledConversionUtils, AnyValue]("materializeAnyValueResult", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeNodeValue: MethodReference = method[CompiledConversionUtils, NodeValue]("materializeNodeValue", typeRef[EmbeddedProxySPI], typeRef[Object])
   val materializeRelationshipValue: MethodReference =
     method[CompiledConversionUtils, RelationshipValue]("materializeRelationshipValue", typeRef[EmbeddedProxySPI], typeRef[Object])
-  val nodeId: MethodReference = method[NodeIdWrapper, Long]("id")
-  val relId: MethodReference = method[RelationshipIdWrapper, Long]("id")
+  val nodeId: MethodReference = method[VirtualNodeValue, Long]("id")
+  val relId: MethodReference = method[VirtualRelationshipValue, Long]("id")
   val set: MethodReference = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])
   val visit: MethodReference = method[QueryResultVisitor[_], Boolean]("visit", typeRef[Record])
   val executeOperator: MethodReference = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
@@ -118,7 +118,7 @@ object Methods {
   val unboxBoolean: MethodReference = method[java.lang.Boolean, Boolean]("booleanValue")
   val unboxLong: MethodReference = method[java.lang.Long, Long]("longValue")
   val unboxDouble: MethodReference = method[java.lang.Double, Double]("doubleValue")
-  val unboxNode: MethodReference = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[NodeIdWrapper])
-  val unboxRel: MethodReference = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[RelationshipIdWrapper])
+  val unboxNode: MethodReference = method[CompiledConversionUtils, Long]("unboxNodeOrNull", typeRef[VirtualNodeValue])
+  val unboxRel: MethodReference = method[CompiledConversionUtils, Long]("unboxRelationshipOrNull", typeRef[VirtualRelationshipValue])
   val reboxValue: MethodReference = method[Values, Object]("asObject", typeRef[Value])
 }

@@ -48,6 +48,7 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
@@ -81,25 +82,25 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeNodeReference( long nodeId )
     {
-        writeValue( new NodeIdWrapperImpl( nodeId ) );
+        writeValue( VirtualValues.node( nodeId ) );
     }
 
     @Override
     public void writeNode( long nodeId, TextArray ignore, MapValue properties )
     {
-        writeValue( new NodeIdWrapperImpl( nodeId ) );
+        writeValue( VirtualValues.node( nodeId ) );
     }
 
     @Override
     public void writeRelationshipReference( long relId )
     {
-        writeValue( new RelationshipIdWrapperImpl( relId ) );
+        writeValue( VirtualValues.relationship( relId ) );
     }
 
     @Override
     public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
     {
-        writeValue( new RelationshipIdWrapperImpl( relId ) );
+        writeValue( VirtualValues.relationship( relId ) );
     }
 
     @Override

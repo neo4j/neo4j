@@ -27,7 +27,7 @@ case class AnyProjection(variable: Variable) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
-    structure.materializeAny(structure.loadVariable(variable.name))
+    structure.materializeAny(structure.loadVariable(variable.name), codeGenType)
   }
 
   override def nullable(implicit context: CodeGenContext): Boolean = variable.nullable

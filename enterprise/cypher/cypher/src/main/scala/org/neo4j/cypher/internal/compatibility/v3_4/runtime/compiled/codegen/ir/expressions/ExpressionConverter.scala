@@ -68,6 +68,9 @@ object ExpressionConverter {
 
     case ast.Or(lhs, rhs) => Or(createExpression(lhs), createExpression(rhs)).asPredicate
 
+    case exp: ast.Variable =>
+      createExpression(exp).asPredicate
+
     case _:ast.False => False
     case _:ast.True => True
 

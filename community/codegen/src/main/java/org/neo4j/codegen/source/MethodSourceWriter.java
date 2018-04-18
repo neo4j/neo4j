@@ -454,7 +454,9 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     public void box( Expression expression )
     {
         //For source code we rely on autoboxing
+        append( "(/*box*/ " );
         expression.accept( this );
+        append( ")" );
     }
 
     @Override

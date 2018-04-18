@@ -398,7 +398,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                   |MATCH (n)-[r:KNOWS]->() WITH count(r) as otherKnows, n, userKnows WHERE otherKnows <> userKnows
                   |RETURN userKnows, otherKnows
                 """.stripMargin
-    val expectSucceed = Configs.Interpreted
+    val expectSucceed = Configs.All
 
     // Then
     val resultOnEmpty = executeWith(

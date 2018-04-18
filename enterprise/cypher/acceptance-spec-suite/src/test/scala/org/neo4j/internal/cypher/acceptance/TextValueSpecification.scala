@@ -121,13 +121,13 @@ object TextValueSpecification extends Properties("TextValue") with Configuration
     val stringY = stringValue(y)
     val utf8X = utf8Value(x.getBytes(StandardCharsets.UTF_8))
     val utf8Y = utf8Value(y.getBytes(StandardCharsets.UTF_8))
-    val compare = stringX.compareTo(stringY)
-    compare == stringX.compareTo(utf8Y) &&
-      compare == utf8X.compareTo(stringY) &&
-      compare == utf8X.compareTo(utf8Y) &&
-      compare == -stringY.compareTo(utf8X) &&
-      compare == -utf8Y.compareTo(stringX) &&
-      compare == -utf8Y.compareTo(utf8X)
+    val compare = Math.signum(stringX.compareTo(stringY))
+    compare == Math.signum(stringX.compareTo(utf8Y)) &&
+      compare == Math.signum(utf8X.compareTo(stringY)) &&
+      compare == Math.signum(utf8X.compareTo(utf8Y)) &&
+      compare == Math.signum(-stringY.compareTo(utf8X)) &&
+      compare == Math.signum(-utf8Y.compareTo(stringX)) &&
+      compare == Math.signum(-utf8Y.compareTo(utf8X))
   }
 
   property("compareTo") = forAll { (x: String) =>

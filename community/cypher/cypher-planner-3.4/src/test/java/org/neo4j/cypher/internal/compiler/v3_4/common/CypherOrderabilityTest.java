@@ -26,9 +26,9 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
-import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.util.v3_4.IncomparableValuesException;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 
@@ -45,12 +45,12 @@ public class CypherOrderabilityTest
             new HashMap<Long,Long>(),
 
             // NODE
-            (NodeIdWrapper) () -> 1,
-            (NodeIdWrapper) () -> 2,
+            VirtualValues.node( 1 ),
+            VirtualValues.node( 2 ),
 
             // RELATIONSHIP
-            (RelationshipIdWrapper) () -> 1,
-            (RelationshipIdWrapper) () -> 2,
+            VirtualValues.relationship( 1 ),
+            VirtualValues.relationship( 2 ),
 
             // LIST
             new String[]{"boo"},
@@ -67,7 +67,7 @@ public class CypherOrderabilityTest
             new long[]{1, 2, 3, Long.MIN_VALUE},
             new int[]{1, 2, 3, Integer.MIN_VALUE},
             new Object[]{1L, 2, 3, Double.NaN},
-            new Object[]{1L, 2, 3, (NodeIdWrapper) () -> -1},
+            ValueUtils.of(new Object[]{1L, 2, 3, null}),
             new Long[]{1L, 2L, 4L},
             new int[]{2},
             new Integer[]{3},
@@ -75,7 +75,7 @@ public class CypherOrderabilityTest
             new Double[]{5D},
             new float[]{6},
             new Float[]{7F},
-            new Object[]{(RelationshipIdWrapper) () -> -1},
+            ValueUtils.of(new Object[]{null}),
 
             // TODO: PATH
 
@@ -130,7 +130,7 @@ public class CypherOrderabilityTest
             Double.NaN,
 
             // VOID
-            null,
+            null
     };
 
     @Test
