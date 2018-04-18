@@ -231,7 +231,7 @@ public enum TemporalType
                         {
                             long nanoOfDay = numbers.longValue( i * BLOCKS_TIME );
                             int secondOffset = (int) numbers.longValue( i * BLOCKS_TIME + 1 );
-                            checkValidNanoOfDayWithOffset( nanoOfDay, secondOffset );
+                            checkValidNanoOfDay( nanoOfDay );
                             times[i] = OffsetTime.of( LocalTime.ofNanoOfDay( nanoOfDay ), ZoneOffset.ofTotalSeconds( secondOffset ) );
                         }
                         return Values.timeArray( times );
