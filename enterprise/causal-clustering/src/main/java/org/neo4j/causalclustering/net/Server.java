@@ -26,9 +26,9 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.Future;
 
 import java.net.BindException;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -37,8 +37,13 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 public class Server extends LifecycleAdapter
 {
+    private static final int TIMEOUT_MILLIS = 30000;
+    static final int QUIET_PERIOD_MILLIS = 2000;
+
     private final Log debugLog;
     private final Log userLog;
     private final String serverName;
@@ -134,11 +139,24 @@ public class Server extends LifecycleAdapter
             debugLog.warn( "Interrupted while closing channel." );
         }
 
-        if ( workerGroup != null && workerGroup.shutdownGracefully( 2, 5, TimeUnit.SECONDS ).awaitUninterruptibly( 10, TimeUnit.SECONDS ) )
+        if ( workerGroup != null )
         {
-            debugLog.warn( "Worker group not shutdown within 10 seconds." );
+            // The timeout is the timeout after which new tasks will certainly not be accepted.
+            Future<?> fShutdown = workerGroup.shutdownGracefully( QUIET_PERIOD_MILLIS, TIMEOUT_MILLIS, MILLISECONDS );
+            workerGroup = null;
+
+            fShutdown.addListener( f ->
+            {
+                if ( !f.isSuccess() )
+                {
+                    debugLog.error( "Worker group not shut down successfully" );
+                }
+            } );
+
+            // This waits for any older tasks to surely have been completed.
+            // We wait "forever" here, because it has to be a strict guarantee.
+            fShutdown.awaitUninterruptibly();
         }
-        workerGroup = null;
     }
 
     public ListenSocketAddress address()
