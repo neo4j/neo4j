@@ -85,17 +85,17 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                                               pipeBuilderFactory = pipeBuilderFactory)
       val readOnlies = new ReadOnlies
       from.solveds.mapTo(readOnlies, _.readOnly)
-      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
-                                                         from.plannerName, readOnlies, from.cardinalities)
+      val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnlies, from.cardinalities)
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, planner) = pipeInfo
+      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, physicalPlan.slotConfigurations)
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
+                                                                        from.plannerName,
                                                                         SlottedRuntimeName,
                                                                         readOnlies,
                                                                         from.cardinalities)
@@ -104,7 +104,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func)
+      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, from.plannerName, indexes, func)
 
       if (ENABLE_DEBUG_PRINTS) {
         if (!PRINT_PLAN_INFO_EARLY) {

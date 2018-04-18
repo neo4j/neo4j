@@ -34,8 +34,8 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
 
-  val PlannerName = IDPPlannerName
-  val logicalPlan = Argument()
+  private val PlannerName = IDPPlannerName
+  private val logicalPlan = Argument()
 
   test("produces eager results for updating queries") {
     // GIVEN
@@ -45,8 +45,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     when(context.resources).thenReturn(mock[CloseableResource])
 
-    val pipeInfo = PipeInfo(pipe, updating = true, None, PlannerName)
-    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val pipeInfo = PipeInfo(pipe, updating = true, None)
+    val builderFactory = InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -62,7 +62,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
-    val pipeInfo = PipeInfo(pipe, updating = false, None, PlannerName)
+    val pipeInfo = PipeInfo(pipe, updating = false, None)
     val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
@@ -82,8 +82,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
     when(context.resources).thenReturn(mock[CloseableResource])
-    val pipeInfo = PipeInfo(pipe, updating = false, None, PlannerName)
-    val builderFactory = new InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
+    val pipeInfo = PipeInfo(pipe, updating = false, None)
+    val builderFactory = InterpretedExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan)
 
     // WHEN
     val builder = builderFactory.create()
@@ -98,5 +98,6 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite with LogicalPlanConstr
                     planType: ExecutionMode,
                     params: MapValue,
                     notificationLogger: InternalNotificationLogger,
-                    runtimeName: RuntimeName) = builder.build(planType, params, notificationLogger, runtimeName, new StubReadOnlies, new StubCardinalities)
+                    runtimeName: RuntimeName) =
+    builder.build(planType, params, notificationLogger, PlannerName, runtimeName, new StubReadOnlies, new StubCardinalities)
 }

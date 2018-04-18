@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
-import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
-                    periodicCommit: Option[PeriodicCommitInfo] = None,
-                    plannerUsed: PlannerName)
+                    periodicCommit: Option[PeriodicCommitInfo] = None)
 
 case class PeriodicCommitInfo(size: Option[Long]) {
   def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)

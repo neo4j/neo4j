@@ -52,20 +52,26 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
                                                             pipeBuilderFactory = CommunityPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName, readOnlies, cardinalities)
+    val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnlies, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-    val PipeInfo(pipe, updating, periodicCommitInfo, planner) = pipeInfo
+    val PipeInfo(pipe, updating, periodicCommitInfo) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
-    val func = getExecutionPlanFunction(periodicCommitInfo, updating, resultBuilderFactory,
-                                        context.notificationLogger, InterpretedRuntimeName, readOnlies, cardinalities)
+    val func = getExecutionPlanFunction(periodicCommitInfo,
+                                        updating,
+                                        resultBuilderFactory,
+                                        context.notificationLogger,
+                                        from.plannerName,
+                                        InterpretedRuntimeName,
+                                        readOnlies,
+                                        cardinalities)
 
     val fingerprint = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
-      logicalPlan,
-      periodicCommitInfo.isDefined,
-      planner,
-      context.createFingerprintReference(fingerprint))
+                                                               logicalPlan,
+                                                               periodicCommitInfo.isDefined,
+                                                               from.plannerName,
+                                                               context.createFingerprintReference(fingerprint))
 
     new CompilationState(from, Success(execPlan))
   }
@@ -74,6 +80,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                updating: Boolean,
                                resultBuilderFactory: ExecutionResultBuilderFactory,
                                notificationLogger: InternalNotificationLogger,
+                               plannerName: PlannerName,
                                runtimeName: RuntimeName,
                                readOnlies: ReadOnlies,
                                cardinalities: Cardinalities):
@@ -95,7 +102,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(planType, params, notificationLogger, runtimeName, readOnlies, cardinalities)
+      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnlies, cardinalities)
     }
 
   /**

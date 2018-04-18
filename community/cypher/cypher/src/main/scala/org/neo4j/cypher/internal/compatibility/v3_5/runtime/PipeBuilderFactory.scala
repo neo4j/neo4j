@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpression, Pipe}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NestedPlanExpression}
@@ -31,9 +31,9 @@ trait PipeBuilderFactory {
   def apply(recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
             expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder
+           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): PipeBuilder
 
-  protected def recursePipes(recurse: LogicalPlan => Pipe, planContext: PlanContext)
+  protected def recursePipes(recurse: LogicalPlan => Pipe)
                             (in: frontEndAst.Expression): frontEndAst.Expression = {
 
     val buildPipeExpressions = new Rewriter {

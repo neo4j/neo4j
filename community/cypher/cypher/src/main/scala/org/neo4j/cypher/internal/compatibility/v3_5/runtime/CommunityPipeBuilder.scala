@@ -21,10 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -43,16 +42,18 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
+case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
+                                readOnly: Boolean,
                                 expressionConverters: ExpressionConverters,
-                                rewriteAstExpression: (ASTExpression) => ASTExpression)
-                               (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
+                                rewriteAstExpression: (ASTExpression) => ASTExpression,
+                                tokenContext: TokenContext)
+                               (implicit context: PipeExecutionBuilderContext) extends PipeBuilder {
 
 
   private val buildExpression =
     rewriteAstExpression andThen
       expressionConverters.toCommandExpression andThen
-      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, planContext)))
+      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)))
 
 
   def onLeaf(plan: LogicalPlan): Pipe = {
@@ -423,10 +424,10 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
 
   implicit val table: SemanticTable = context.semanticTable
 
-  private def buildPredicate(expr: ASTExpression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+  private def buildPredicate(expr: ASTExpression)(implicit context: PipeExecutionBuilderContext): Predicate = {
     val rewrittenExpr: ASTExpression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)).asInstanceOf[Predicate]
   }
 
   private def translateColumnOrder(s: ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.pipes.ColumnOrder = s match {

@@ -21,15 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{FakePipe, Pipe}
 import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SameId}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.time.Clocks
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -68,7 +66,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   val factory = new PipeBuilderFactory {
     override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean, expressionConverters: ExpressionConverters)
-                      (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) = new PipeBuilder {
+                      (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext) = new PipeBuilder {
       def onLeaf(plan: LogicalPlan) = plan match {
         case LeafPlan(n) => LeafPipe(n)
       }
@@ -87,7 +85,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     new PipeExecutionPlanBuilder(factory, expressionConverters = converters)
   }
-  private val planContext = newMockedPlanContext
+  private val tokenContext: TokenContext = newMockedPlanContext
   private val pipeContext = mock[PipeExecutionBuilderContext]
   when(pipeContext.readOnlies).thenReturn(new StubReadOnlies)
 
@@ -95,7 +93,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val plan = LeafPlan("a")
     val expectedPipe = LeafPipe("a")
 
-    val result = builder.build(None, plan)(pipeContext, planContext).pipe
+    val result = builder.build(None, plan)(pipeContext, tokenContext).pipe
     result should equal(expectedPipe)
   }
 
@@ -121,7 +119,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
         )
       )
 
-    val result = builder.build(None, plan)(pipeContext, planContext).pipe
+    val result = builder.build(None, plan)(pipeContext, tokenContext).pipe
     result should equal(expectedPipe)
   }
 
@@ -150,7 +148,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
         )
       )
 
-    val result = builder.build(None, plan)(pipeContext, planContext).pipe
+    val result = builder.build(None, plan)(pipeContext, tokenContext).pipe
     result should equal(expectedPipe)
   }
 
@@ -171,7 +169,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
                         OneChildPipe("b", LeafPipe("d")),
                         TwoChildPipe("c", LeafPipe("e"), LeafPipe("f")))
 
-    val result = builder.build(None, plan)(pipeContext, planContext).pipe
+    val result = builder.build(None, plan)(pipeContext, tokenContext).pipe
     result should equal(expectedPipe)
   }
 }

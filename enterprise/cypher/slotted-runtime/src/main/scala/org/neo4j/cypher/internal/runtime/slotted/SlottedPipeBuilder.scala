@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.Physi
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
-import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
@@ -49,7 +48,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                          physicalPlan: PhysicalPlan,
                          readOnly: Boolean,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
-                        (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
+                        (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext)
   extends PipeBuilder {
 
   private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
@@ -336,10 +335,12 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def buildPredicate(expr: frontEndAst.Expression)
-                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+                            (implicit context: PipeExecutionBuilderContext): Predicate = {
     val rewrittenExpr: frontEndAst.Expression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
+    expressionConverters
+      .toCommandPredicate(rewrittenExpr)
+      .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
   }
 
@@ -522,13 +523,13 @@ object SlottedPipeBuilder {
 
   case class Factory(physicalPlan: PhysicalPlan)
     extends PipeBuilderFactory {
-    def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean,
+    override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean,
               expressionConverters: ExpressionConverters)
-             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+             (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): PipeBuilder = {
 
-      val expressionToExpression = recursePipes(recurse, planContext) _
+      val expressionToExpression = recursePipes(recurse) _
 
-      val fallback = CommunityPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression)
+      val fallback = CommunityPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression, tokenContext)
 
       new SlottedPipeBuilder(fallback, expressionConverters, physicalPlan, readOnly, expressionToExpression)
     }

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
@@ -29,15 +29,15 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans, 
 class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
   def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
+           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): PipeInfo = {
 
     val topLevelPipe = buildPipe(plan)
 
     val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id), periodicCommitInfo, context.plannerName)
+    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id), periodicCommitInfo)
   }
 
-  private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
+  private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): Pipe = {
     val pipeBuilder = pipeBuilderFactory(recurse = p => buildPipe(p),
                                          readOnly = context.readOnlies.get(plan.id),
                                          expressionConverters = expressionConverters)
@@ -49,8 +49,8 @@ object CommunityPipeBuilderFactory extends PipeBuilderFactory {
   def apply(recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
             expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
-    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse, planContext))
+           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): CommunityPipeBuilder = {
+    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse), tokenContext)
   }
 }
 
