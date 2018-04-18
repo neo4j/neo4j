@@ -40,12 +40,12 @@ import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
-                                readOnly: Boolean,
-                                expressionConverters: ExpressionConverters,
-                                rewriteAstExpression: (ASTExpression) => ASTExpression,
-                                tokenContext: TokenContext)
-                               (implicit semanticTable: SemanticTable) extends PipeBuilder {
+case class InterpretedPipeBuilder(recurse: LogicalPlan => Pipe,
+                                  readOnly: Boolean,
+                                  expressionConverters: ExpressionConverters,
+                                  rewriteAstExpression: (ASTExpression) => ASTExpression,
+                                  tokenContext: TokenContext)
+                                 (implicit semanticTable: SemanticTable) extends PipeBuilder {
 
   private val buildExpression =
     rewriteAstExpression andThen

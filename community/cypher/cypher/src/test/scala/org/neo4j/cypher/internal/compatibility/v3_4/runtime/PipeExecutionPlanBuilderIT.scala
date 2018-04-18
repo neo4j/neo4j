@@ -54,7 +54,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   private val planBuilder = {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
-    new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
+    new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = InterpretedPipeBuilderFactory)
   }
 
   private def build(logicalPlan: LogicalPlan): PipeInfo = {

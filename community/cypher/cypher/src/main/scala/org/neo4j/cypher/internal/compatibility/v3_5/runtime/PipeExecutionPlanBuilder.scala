@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.CommunityPipeBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeBuilderFactory, PipeExecutionBuilderContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
@@ -46,11 +46,11 @@ class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
   }
 }
 
-object CommunityPipeBuilderFactory extends PipeBuilderFactory {
+object InterpretedPipeBuilderFactory extends PipeBuilderFactory {
   def apply(recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
             expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): CommunityPipeBuilder = {
-    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse), tokenContext)(context.semanticTable)
+           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): InterpretedPipeBuilder = {
+    InterpretedPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse), tokenContext)(context.semanticTable)
   }
 }

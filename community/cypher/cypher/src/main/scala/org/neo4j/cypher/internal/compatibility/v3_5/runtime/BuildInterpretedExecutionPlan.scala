@@ -52,7 +52,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val logicalPlan = from.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
-                                                            pipeBuilderFactory = CommunityPipeBuilderFactory)
+                                                            pipeBuilderFactory = InterpretedPipeBuilderFactory)
     val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnlies, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo) = pipeInfo
