@@ -331,6 +331,20 @@ public class OnlineBackupContextBuilderTest
         }
     }
 
+    @Test
+    public void ipv6CanBeProcessed() throws CommandFailed, IncorrectUsage
+    {
+        // given
+        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+
+        // when
+        OnlineBackupContext context = builder.createContext( requiredAnd( "--from=[fd00:ce10::2]:6362" ) );
+
+        // then
+        assertEquals( "fd00:ce10::2", context.getRequiredArguments().getAddress().getHostname().get() );
+        assertEquals( Integer.valueOf( 6362 ), context.getRequiredArguments().getAddress().getPort().get() );
+    }
+
     private String[] requiredAnd( String... additionalArgs )
     {
         List<String> args = new ArrayList<>();
