@@ -596,8 +596,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         val a2 = createLabeledNode("Artist")
         val c = createLabeledNode("Concert")
         val v = createLabeledNode("Venue")
-        relate(corp, a1, "SIGNED_WITH")
-        relate(corp, a2, "SIGNED_WITH")
+        relate(a1, corp, "SIGNED_WITH")
+        relate(a2, corp, "SIGNED_WITH")
         relate(a1, c, "PERFORMED_AT")
         relate(a2, c, "PERFORMED_AT")
         relate(c, v, "IN")
@@ -611,7 +611,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
         //when
         val result = innerExecuteDeprecated(query, Map.empty)
-    //    val result = profileWithPlannerNew(Configs.AllExceptSlotted, query, Map.empty)
+
+        result.toSet should be(Set(
+          Map("a1" -> a1, "a2" -> a2, "v" -> v),
+          Map("a1" -> a1, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a1, "v" -> v),
+          Map("a1" -> a2, "a2" -> a2, "v" -> v)))
 
         //then
         assertDbHits(2)(result)("NodeByLabelScan")
