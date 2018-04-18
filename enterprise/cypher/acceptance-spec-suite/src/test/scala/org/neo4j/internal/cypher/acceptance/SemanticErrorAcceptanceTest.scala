@@ -127,7 +127,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("cant use toString() on nodes") {
     executeAndEnsureError(
       "MATCH (n) RETURN toString(n)",
-      "Type mismatch: expected Boolean, Float, Integer, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node (line 1, column 27 (offset: 26))"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node (line 1, column 27 (offset: 26))"
     )
   }
 

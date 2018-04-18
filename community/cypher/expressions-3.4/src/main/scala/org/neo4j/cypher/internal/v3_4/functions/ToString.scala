@@ -32,6 +32,7 @@ case object ToString extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTTime), outputType = CTString),
     TypeSignature(argumentTypes = Vector(CTDateTime), outputType = CTString),
     TypeSignature(argumentTypes = Vector(CTLocalTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString)
+    TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTPoint), outputType = CTString)
   )
 }

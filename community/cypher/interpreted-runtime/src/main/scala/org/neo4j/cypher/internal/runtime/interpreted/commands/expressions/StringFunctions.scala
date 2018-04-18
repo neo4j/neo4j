@@ -62,6 +62,7 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
     case v: BooleanValue => Values.stringValue(v.booleanValue().toString)
     case v: TemporalValue[_,_] => Values.stringValue(v.toString)
     case v: DurationValue => Values.stringValue(v.toString)
+    case v: PointValue => Values.stringValue(v.toString)
     case v =>
       throw new ParameterWrongTypeException("Expected a String, Number, Boolean, Temporal or Duration, got: " + v.toString)
   }
