@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.codegen;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -273,20 +274,7 @@ public final class CompiledEquivalenceUtils
      */
     public static int hashCode( AnyValue[] array )
     {
-        int len = array.length;
-        switch ( len )
-        {
-        case 0:
-            return 42;
-        case 1:
-            return array[0].hashCode();
-        case 2:
-            return 31 * array[0].hashCode() + array[1].hashCode();
-        case 3:
-            return (31 *  array[0].hashCode() +  array[1].hashCode()) * 31  + array[2].hashCode();
-        default:
-            return len * (31 * array[0].hashCode() + array[len / 2].hashCode() * 31 + array[len - 1].hashCode());
-        }
+        return Arrays.hashCode( array );
     }
 
     /**

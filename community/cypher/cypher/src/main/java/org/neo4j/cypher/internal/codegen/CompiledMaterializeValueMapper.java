@@ -41,8 +41,10 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeReference;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
@@ -125,22 +127,20 @@ public final class CompiledMaterializeValueMapper
         @Override
         public AnyValue mapNode( VirtualNodeValue value )
         {
-            if ( value instanceof NodeValue )
+            if ( !needsConversion )
             {
-                return value;
+                needsConversion = value instanceof NodeReference;
             }
-            needsConversion = true;
             return value;
         }
 
         @Override
         public AnyValue mapRelationship( VirtualRelationshipValue value )
         {
-            if ( value instanceof RelationshipValue )
+            if ( !needsConversion )
             {
-                return value;
+                needsConversion = value instanceof RelationshipReference;
             }
-            needsConversion = true;
             return value;
         }
 
