@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.api.impl.index.storage.layout.FolderLayout;
 import org.neo4j.string.UTF8;
 
 /**
@@ -39,23 +38,23 @@ public class FailureStorage
     public static final String DEFAULT_FAILURE_FILE_NAME = "failure-message";
 
     private final FileSystemAbstraction fs;
-    private final FolderLayout folderLayout;
+    private final File folder;
     private final String failureFileName;
 
     /**
      * @param failureFileName name of failure files to be created
-     * @param folderLayout describing where failure files should be stored
+     * @param folder describing where failure files should be stored
      */
-    public FailureStorage( FileSystemAbstraction fs, FolderLayout folderLayout, String failureFileName )
+    public FailureStorage( FileSystemAbstraction fs, File folder, String failureFileName )
     {
         this.fs = fs;
-        this.folderLayout = folderLayout;
+        this.folder = folder;
         this.failureFileName = failureFileName;
     }
 
-    public FailureStorage( FileSystemAbstraction fs, FolderLayout folderLayout )
+    public FailureStorage( FileSystemAbstraction fs, File folder )
     {
-        this( fs, folderLayout, DEFAULT_FAILURE_FILE_NAME );
+        this( fs, folder, DEFAULT_FAILURE_FILE_NAME );
     }
 
     /**
@@ -67,7 +66,7 @@ public class FailureStorage
      */
     public synchronized void reserveForIndex() throws IOException
     {
-        fs.mkdirs( folderLayout.getIndexFolder() );
+        fs.mkdirs( folder );
         File failureFile = failureFile();
         try ( StoreChannel channel = fs.create( failureFile ) )
         {
@@ -78,7 +77,6 @@ public class FailureStorage
 
     /**
      * Delete failure file for the given index id
-     *
      */
     public synchronized void clearForIndex()
     {
@@ -130,7 +128,6 @@ public class FailureStorage
 
     File failureFile()
     {
-        File folder = folderLayout.getIndexFolder();
         return new File( folder, failureFileName );
     }
 

@@ -60,7 +60,7 @@ public class PartitionedIndexStorage
         this.fileSystem = fileSystem;
         this.folderLayout = new IndexFolderLayout( rootFolder );
         this.directoryFactory = directoryFactory;
-        this.failureStorage = new FailureStorage( fileSystem, folderLayout );
+        this.failureStorage = new FailureStorage( fileSystem, folderLayout.getIndexFolder() );
     }
 
     /**

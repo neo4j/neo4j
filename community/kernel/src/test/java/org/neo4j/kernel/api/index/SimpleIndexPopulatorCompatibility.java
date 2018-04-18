@@ -107,6 +107,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         final IndexPopulator p = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+        p.create();
         p.close( false );
 
         // WHEN

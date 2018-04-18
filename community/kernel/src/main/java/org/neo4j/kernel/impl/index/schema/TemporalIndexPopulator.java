@@ -30,6 +30,7 @@ import java.util.stream.StreamSupport;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -47,28 +48,27 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
 {
+    private final FailureStorage failureStorage;
+    private String failure;
+
     TemporalIndexPopulator( long indexId,
                             SchemaIndexDescriptor descriptor,
                             IndexSamplingConfig samplingConfig,
                             TemporalIndexFiles temporalIndexFiles,
                             PageCache pageCache,
                             FileSystemAbstraction fs,
-                            IndexProvider.Monitor monitor )
+                            IndexProvider.Monitor monitor,
+                            FailureStorage failureStorage )
     {
         super( new PartFactory( pageCache, fs, temporalIndexFiles, indexId, descriptor, samplingConfig, monitor ) );
+        this.failureStorage = failureStorage;
     }
 
     @Override
     public synchronized void create() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::clear, this );
-
-        // We must make sure to have at least one subindex:
-        // to be able to persist failure and to have the right state in the beginning
-        if ( !this.iterator().hasNext() )
-        {
-            select( ValueGroup.DATE );
-        }
+        failureStorage.reserveForIndex();
     }
 
     @Override
@@ -110,6 +110,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         shutInstantiateCloseLock();
+        if ( !populationCompletedSuccessfully )
+        {
+            failureStorage.storeIndexFailure( failure != null ? failure : "" );
+        }
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
@@ -119,6 +123,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void markAsFailed( String failure )
     {
+        // We store the failure message (on close) in the root of this populator, so that even if there are no parts open it can be accessed.
+        this.failure = failure;
+
+        // Also fail each opened parts so that they get in the correct state.
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.markAsFailed( failure );

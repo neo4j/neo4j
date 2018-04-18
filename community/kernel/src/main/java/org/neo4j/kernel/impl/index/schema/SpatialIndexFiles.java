@@ -46,7 +46,7 @@ class SpatialIndexFiles
     {
         this.fs = fs;
         this.settingsFactory = settingsFactory;
-        indexDirectory = directoryStructure.directoryForIndex( indexId );
+        this.indexDirectory = directoryStructure.directoryForIndex( indexId );
     }
 
     Iterable<SpatialFileLayout> existing()

@@ -163,6 +163,9 @@ class TemporalIndexCache<T> implements Iterable<T>
         return cachedValue != null ? function.apply( cachedValue ) : orElse;
     }
 
+    /**
+     * Must be called while owning the instantiateCloseLock lock
+     */
     private void assertOpen()
     {
         if ( closed )

@@ -90,6 +90,9 @@ class SpatialIndexCache<T> implements Iterable<T>
         }
     }
 
+    /**
+     * Must be called while owning the instantiateCloseLock lock
+     */
     protected void assertOpen()
     {
         if ( closed )

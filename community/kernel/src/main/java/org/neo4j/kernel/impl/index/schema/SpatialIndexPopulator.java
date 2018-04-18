@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -51,6 +52,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
 {
+    private final FailureStorage failureStorage;
+    private String failure;
+
     SpatialIndexPopulator( long indexId,
             SchemaIndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
@@ -58,22 +62,18 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
             PageCache pageCache,
             FileSystemAbstraction fs,
             IndexProvider.Monitor monitor,
-            SpaceFillingCurveConfiguration configuration )
+            SpaceFillingCurveConfiguration configuration,
+            FailureStorage failureStorage )
     {
         super( new PartFactory( pageCache, fs, spatialIndexFiles, indexId, descriptor, monitor, samplingConfig, configuration ) );
+        this.failureStorage = failureStorage;
     }
 
     @Override
     public synchronized void create() throws IOException
     {
         forAll( NativeSchemaIndexPopulator::clear, this );
-
-        // We must make sure to have at least one subindex:
-        // to be able to persist failure and to have the right state in the beginning
-        if ( !this.iterator().hasNext() )
-        {
-            select( CoordinateReferenceSystem.WGS84 );
-        }
+        failureStorage.reserveForIndex();
     }
 
     @Override
@@ -116,6 +116,10 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
         closeInstantiateCloseLock();
+        if ( !populationCompletedSuccessfully )
+        {
+            failureStorage.storeIndexFailure( failure != null ? failure : "" );
+        }
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
@@ -125,6 +129,10 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void markAsFailed( String failure )
     {
+        // We store the failure message (on close) in the root of this populator, so that even if there are no parts open it can be accessed.
+        this.failure = failure;
+
+        // Also fail each opened parts so that they get in the correct state.
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.markAsFailed( failure );

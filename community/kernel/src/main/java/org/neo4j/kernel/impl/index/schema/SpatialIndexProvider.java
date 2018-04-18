@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -103,7 +104,7 @@ public class SpatialIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
-        return new SpatialIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, configuration );
+        return new SpatialIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, configuration, failureStorage( indexId ) );
     }
 
     @Override
@@ -116,6 +117,12 @@ public class SpatialIndexProvider extends IndexProvider
     @Override
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
+        String failure = failureStorage( indexId ).loadIndexFailure();
+        if ( failure != null )
+        {
+            return failure;
+        }
+
         SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
         try
@@ -139,15 +146,14 @@ public class SpatialIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
+        if ( failureStorage( indexId ).loadIndexFailure() != null )
+        {
+            return InternalIndexState.FAILED;
+        }
+
         SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
-        final Iterable<SpatialIndexFiles.SpatialFileLayout> existing = spatialIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.",
-                    new NoSuchFileException( spatialIndexFiles.forCrs( CoordinateReferenceSystem.WGS84 ).indexFile.getAbsolutePath() ) );
-            return InternalIndexState.POPULATING;
-        }
+        Iterable<SpatialIndexFiles.SpatialFileLayout> existing = spatialIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( SpatialIndexFiles.SpatialFileLayout subIndex : existing )
         {
@@ -169,6 +175,11 @@ public class SpatialIndexProvider extends IndexProvider
             }
         }
         return state;
+    }
+
+    private FailureStorage failureStorage( long indexId )
+    {
+        return new FailureStorage( fs, directoryStructure().directoryForIndex( indexId ) );
     }
 
     @Override
