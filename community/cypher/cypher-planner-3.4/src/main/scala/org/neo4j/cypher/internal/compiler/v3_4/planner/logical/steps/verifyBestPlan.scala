@@ -109,7 +109,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
   private def findUnfulfillableIndexHints(query: PlannerQuery, planContext: PlanContext): Seq[UsingIndexHint] = {
     query.allHints.flatMap {
       // using index name:label(property1,property2)
-      case UsingIndexHint(_, LabelName(label), properties)
+      case UsingIndexHint(_, LabelName(label), properties, _)
         if planContext.indexGet(label, properties.map(_.name)).isDefined ||
           planContext.uniqueIndexGet(label, properties.map(_.name)).isDefined => None
       // no such index exists

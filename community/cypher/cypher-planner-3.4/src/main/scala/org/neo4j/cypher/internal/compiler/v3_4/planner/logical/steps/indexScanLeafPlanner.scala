@@ -92,8 +92,8 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
          labelId <- semanticTable.id(labelName))
       yield {
         val hint = qg.hints.collectFirst {
-          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties)
-            if properties.map(_.name) == Seq(propertyKeyName) => hint
+          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
+            if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
         }
         val keyToken = PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head)
         val labelToken = LabelToken(labelName, labelId)

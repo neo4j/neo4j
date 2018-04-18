@@ -50,15 +50,26 @@ sealed trait ExplicitIndexHint extends UsingHint {
   def variables = NonEmptyList(variable)
 }
 
+sealed trait UsingIndexHintSpec {
+  def fulfilledByScan: Boolean
+}
+case object SeekOnly extends UsingIndexHintSpec {
+  override def fulfilledByScan: Boolean = false
+}
+case object SeekOrScan extends UsingIndexHintSpec {
+  override def fulfilledByScan: Boolean = true
+}
+
 case class UsingIndexHint(
                            variable: Variable,
                            label: LabelName,
-                           properties: Seq[PropertyKeyName]
+                           properties: Seq[PropertyKeyName],
+                           spec: UsingIndexHintSpec = SeekOrScan
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
   def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
-  override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
+  override def toString: String = s"USING INDEX ${if(spec == SeekOnly) "SEEK " else ""}${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {

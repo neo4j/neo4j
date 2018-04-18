@@ -122,7 +122,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       val name = idName
       val propertyNames = plannables.map(_.propertyKeyName.name)
       hints.collectFirst {
-        case hint@UsingIndexHint(Variable(`name`), `labelName`, properties)
+        case hint@UsingIndexHint(Variable(`name`), `labelName`, properties, _)
           if properties.map(_.name) == propertyNames => hint
       }
     }
