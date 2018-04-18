@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_2.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelToken, PropertyKeyToken, UsingIndexHint}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.ir.v3_2.IdName
 
 object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {

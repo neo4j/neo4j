@@ -60,4 +60,29 @@ class HintAcceptanceTest
     val result = execute(query)
     result should use("NodeOuterHashJoin")
   }
+
+  test("should do index seek instead of index scan with explicit index seek hint") {
+    graph.createIndex("A", "prop")
+    graph.createIndex("B", "prop")
+
+    graph.inTx {
+      createLabeledNode(Map("prop" -> 42), "A")
+      createLabeledNode(Map("prop" -> 1337), "B")
+    }
+
+    // At the time of writing this test fails with generic index hints:
+    // USING INDEX a:A(prop)
+    // USING INDEX b:B(prop)
+    val query = """EXPLAIN
+                  |LOAD CSV WITH HEADERS FROM 'file:///dummy.csv' AS row
+                  |MATCH (a:A), (b:B)
+                  |USING INDEX SEEK a:A(prop)
+                  |USING INDEX SEEK b:B(prop)
+                  |WHERE a.prop = row.propA AND b.prop = row.propB
+                  |RETURN a.prop, b.prop
+                """.stripMargin
+
+    val result = execute(query)
+    result should useOperationTimes("NodeIndexSeek", 2)
+  }
 }
