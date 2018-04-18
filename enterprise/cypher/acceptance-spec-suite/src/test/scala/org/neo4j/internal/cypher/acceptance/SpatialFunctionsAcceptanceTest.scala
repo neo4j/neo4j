@@ -163,6 +163,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
+  test("point function with invalid coordinate types should give reasonable error") {
+    failWithError(pointConfig + Configs.Procs,
+      "return point({x: 'apa', y: 0, crs: 'cartesian'})", List("String is not a valid coordinate type.", "Cannot assign"))
+  }
+
+  test("point function with invalid crs types should give reasonable error") {
+    failWithError(pointConfig + Configs.Procs,
+      "return point({x: 0, y: 0, crs: 5})", List("java.lang.Long cannot be cast to java.lang.String", "Cannot assign"))
+  }
+
   test("should default to WGS84 if missing geographic CRS") {
     val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),

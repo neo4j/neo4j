@@ -1515,8 +1515,13 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         String timezone;
 
         @Override
-        public void assign( String key, String value )
+        public void assign( String key, Object valueObj )
         {
+            if ( !(valueObj instanceof String) )
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", valueObj, key ) );
+            }
+            String value = (String) valueObj;
             if ( "timezone".equals( key.toLowerCase() ) )
             {
                 if ( timezone == null )
