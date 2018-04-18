@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.protocol;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
+import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.startsWith;
@@ -89,7 +91,8 @@ public class NettyPipelineBuilderTest
         channel.writeOneInbound( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Unhandled inbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() )
+                .error( equalTo( "Unhandled inbound message: %s for channel: %s" ), equalTo( msg ), any( Channel.class ) ) );
         assertFalse( channel.isOpen() );
     }
 
@@ -104,7 +107,8 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Unhandled outbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() )
+                .error( equalTo( "Unhandled outbound message: %s for channel: %s" ), equalTo( msg ), any( Channel.class )  ) );
         assertFalse( channel.isOpen() );
     }
 
