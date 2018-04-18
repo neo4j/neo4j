@@ -437,7 +437,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyRecordsInFile( file, recordCount );
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void writesToPagesMustNotBleedIntoAdjacentPages() throws IOException
     {
         configureStandardPageCache();
