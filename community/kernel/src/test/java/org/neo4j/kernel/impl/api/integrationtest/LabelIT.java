@@ -25,12 +25,10 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.security.AnonymousContext;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class LabelIT extends KernelIntegrationTest
@@ -59,30 +57,6 @@ public class LabelIT extends KernelIntegrationTest
         // then
         assertThat( asCollection( labelIdsAfterCommit ),
                 hasItems( new NamedToken( "label1", label1Id ), new NamedToken( "label2", label2Id ) ) );
-        commit();
-    }
-
-    @Test
-    public void addingAndRemovingLabelInSameTxShouldHaveNoEffect() throws Exception
-    {
-        // Given a node with a label
-        Transaction transaction = newTransaction( AnonymousContext.writeToken() );
-        int label = transaction.tokenWrite().labelGetOrCreateForName( "Label 1" );
-        long node = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().nodeAddLabel( node, label );
-        commit();
-
-        // When I add and remove that label in the same tx
-        Write write = dataWriteInNewTransaction();
-        write.nodeRemoveLabel( node, label );
-        write.nodeAddLabel( node, label );
-
-        // Then commit should not throw exceptions
-        commit();
-
-        // And then the node should have the label
-
-        assertTrue( nodeHasLabel( newTransaction(), node, label ) );
         commit();
     }
 }
