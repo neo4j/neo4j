@@ -254,7 +254,7 @@ public class Neo4jPackV2Test
     @Test
     public void shouldPackLocalDateTimeWithTimeZoneOffset()
     {
-        LocalDateTime localDateTime = LocalDateTime.of( 2015, 3, 23, 19, 15, 59, 10 );
+        LocalDateTime localDateTime = LocalDateTime.of( 2015, 3, 23, 19, 15, 59, 10000 );
         ZoneOffset offset = ZoneOffset.ofHoursMinutes( -5, -15 );
         ZonedDateTime zonedDateTime = ZonedDateTime.of( localDateTime, offset );
 
@@ -264,7 +264,8 @@ public class Neo4jPackV2Test
         buffer.getShort(); // skip struct header
         assertEquals( INT_32, buffer.get() );
         assertEquals( localDateTime.toEpochSecond( UTC ), buffer.getInt() );
-        assertEquals( localDateTime.getNano(), buffer.get() );
+        assertEquals( INT_16, buffer.get() );
+        assertEquals( localDateTime.getNano(), buffer.getShort() );
         assertEquals( INT_16, buffer.get() );
         assertEquals( offset.getTotalSeconds(), buffer.getShort() );
     }
@@ -272,7 +273,7 @@ public class Neo4jPackV2Test
     @Test
     public void shouldPackLocalDateTimeWithTimeZoneId()
     {
-        LocalDateTime localDateTime = LocalDateTime.of( 1999, 12, 30, 9, 49, 20, 999999999 );
+        LocalDateTime localDateTime = LocalDateTime.of( 1999, 12, 30, 9, 49, 20, 999999000 );
         ZoneId zoneId = ZoneId.of( "Europe/Stockholm" );
         ZonedDateTime zonedDateTime = ZonedDateTime.of( localDateTime, zoneId );
 

@@ -160,12 +160,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     {
         Assume.assumeTrue( testSuite.supportsTemporal() );
 
-        DateTimeValue d1 = datetime( 9999, 100, ZoneId.of( "+18:00" ) );
-        DateTimeValue d4 = datetime( 10000, 100, ZoneId.of( "UTC" ) );
-        DateTimeValue d5 = datetime( 10000, 100, ZoneId.of( "+01:00" ) );
-        DateTimeValue d6 = datetime( 10000, 100, ZoneId.of( "Europe/Stockholm" ) );
-        DateTimeValue d7 = datetime( 10000, 100, ZoneId.of( "+03:00" ) );
-        DateTimeValue d8 = datetime( 10000, 101, ZoneId.of( "UTC" ) );
+        DateTimeValue d1 = datetime( 9999, 100000, ZoneId.of( "+18:00" ) );
+        DateTimeValue d4 = datetime( 10000, 100000, ZoneId.of( "UTC" ) );
+        DateTimeValue d5 = datetime( 10000, 100000, ZoneId.of( "+01:00" ) );
+        DateTimeValue d6 = datetime( 10000, 100000, ZoneId.of( "Europe/Stockholm" ) );
+        DateTimeValue d7 = datetime( 10000, 100000, ZoneId.of( "+03:00" ) );
+        DateTimeValue d8 = datetime( 10000, 101000, ZoneId.of( "UTC" ) );
 
         updateAndCommit( asList(
                 add( 1L, descriptor.schema(), d1 ),

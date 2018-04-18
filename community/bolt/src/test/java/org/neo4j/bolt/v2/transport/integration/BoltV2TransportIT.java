@@ -152,7 +152,7 @@ public class BoltV2TransportIT
     @Test
     public void shouldReceiveDuration() throws Exception
     {
-        testReceivingOfBoltV2Value( "RETURN duration({months: 3, days: 100, seconds: 999, nanoseconds: 42})", duration( 3, 100, 999, 42 ) );
+        testReceivingOfBoltV2Value( "RETURN duration({months: 3, days: 100, seconds: 999, microseconds: 42})", duration( 3, 100, 999, 42000 ) );
     }
 
     @Test
