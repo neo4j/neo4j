@@ -529,7 +529,7 @@ object SlottedPipeBuilder {
 
       val expressionToExpression = recursePipes(recurse) _
 
-      val fallback = CommunityPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression, tokenContext)
+      val fallback = CommunityPipeBuilder(recurse, readOnly, expressionConverters, expressionToExpression, tokenContext)(context.semanticTable)
 
       new SlottedPipeBuilder(fallback, expressionConverters, physicalPlan, readOnly, expressionToExpression)
     }

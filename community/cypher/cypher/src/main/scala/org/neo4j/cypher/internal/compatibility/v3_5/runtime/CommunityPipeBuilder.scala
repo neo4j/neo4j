@@ -47,7 +47,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
                                 expressionConverters: ExpressionConverters,
                                 rewriteAstExpression: (ASTExpression) => ASTExpression,
                                 tokenContext: TokenContext)
-                               (implicit context: PipeExecutionBuilderContext) extends PipeBuilder {
+                               (implicit semanticTable: SemanticTable) extends PipeBuilder {
 
 
   private val buildExpression =
@@ -257,10 +257,10 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
         MergeCreateNodePipe(source, idName, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
+        CreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(context.semanticTable), endNode, props.map(buildExpression))(id = id)
+        MergeCreateRelationshipPipe(source, idName, startNode, LazyType(typ)(semanticTable), endNode, props.map(buildExpression))(id = id)
 
       case SetLabels(_, name, labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
@@ -341,7 +341,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
     }
 
     //partition predicates on whether they deal with nodes or rels
-    val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
+    val (nodePreds, relPreds) = predicates.partition(e => semanticTable.seen(e._1) && semanticTable.isNode(e._1))
     val nodeCommand = asCommand(nodePreds)
     val relCommand = asCommand(relPreds)
 
@@ -422,9 +422,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
     }
   }
 
-  implicit val table: SemanticTable = context.semanticTable
-
-  private def buildPredicate(expr: ASTExpression)(implicit context: PipeExecutionBuilderContext): Predicate = {
+  private def buildPredicate(expr: ASTExpression): Predicate = {
     val rewrittenExpr: ASTExpression = rewriteAstExpression(expr)
 
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext)).asInstanceOf[Predicate]

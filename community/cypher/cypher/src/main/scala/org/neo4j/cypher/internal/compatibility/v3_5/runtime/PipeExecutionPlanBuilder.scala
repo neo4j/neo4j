@@ -50,7 +50,7 @@ object CommunityPipeBuilderFactory extends PipeBuilderFactory {
             readOnly: Boolean,
             expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): CommunityPipeBuilder = {
-    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse), tokenContext)
+    CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse), tokenContext)(context.semanticTable)
   }
 }
 
