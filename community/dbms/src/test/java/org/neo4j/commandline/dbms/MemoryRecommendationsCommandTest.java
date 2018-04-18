@@ -201,7 +201,7 @@ public class MemoryRecommendationsCommandTest
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
 
         // when
-        command.execute( array( "--database", databaseName ) );
+        command.execute( array( "--database", databaseName, "--memory", "8g" ) );
 
         // then
         Map<String,String> stringMap = MapUtil.load( new StringReader( output.toString() ) );
