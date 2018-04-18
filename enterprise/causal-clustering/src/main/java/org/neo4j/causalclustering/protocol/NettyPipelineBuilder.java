@@ -37,6 +37,7 @@ import java.util.function.Predicate;
 import org.neo4j.causalclustering.messaging.MessageGate;
 import org.neo4j.logging.Log;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 /**
@@ -229,14 +230,14 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
-                log.error( "Exception in inbound", cause );
+                log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
                 ctx.channel().close();
             }
 
             @Override
             public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
-                log.error( "Unhandled inbound message: " + msg );
+                log.error( "Unhandled inbound message: %s for channel: %s", msg, ctx.channel() );
                 ctx.channel().close();
             }
 
@@ -252,7 +253,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                     promise.addListener( (ChannelFutureListener) future -> {
                         if ( !future.isSuccess() )
                         {
-                            log.error( "Exception in outbound", future.cause() );
+                            log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() );
                             ctx.channel().close();
                         }
                     } );
@@ -277,7 +278,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
-                log.error( "Exception in outbound", cause );
+                log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause );
                 ctx.channel().close();
             }
 
@@ -288,7 +289,7 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             {
                 if ( !(msg instanceof ByteBuf) )
                 {
-                    log.error( "Unhandled outbound message: " + msg );
+                    log.error( "Unhandled outbound message: %s for channel: %s", msg, ctx.channel() );
                     ctx.channel().close();
                 }
                 else

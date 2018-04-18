@@ -40,6 +40,7 @@ import org.neo4j.logging.Log;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -73,7 +74,7 @@ public class NettyPipelineBuilderTest
         channel.writeOneInbound( new Object() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in inbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in inbound" ), equalTo( ex ) ) );
         assertFalse( channel.isOpen() );
     }
 
@@ -88,7 +89,7 @@ public class NettyPipelineBuilderTest
         channel.writeOneInbound( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Unhandled inbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Unhandled inbound message: " + msg ) ) );
         assertFalse( channel.isOpen() );
     }
 
@@ -103,7 +104,7 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( msg );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Unhandled outbound message: " + msg ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Unhandled outbound message: " + msg ) ) );
         assertFalse( channel.isOpen() );
     }
 
@@ -124,7 +125,7 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( new Object() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in outbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in outbound" ), equalTo( ex ) ) );
         assertFalse( channel.isOpen() );
     }
 
@@ -145,7 +146,7 @@ public class NettyPipelineBuilderTest
         channel.writeAndFlush( new Object(), channel.voidPromise() );
 
         // then
-        logProvider.assertExactly( inLog( getClass() ).error( equalTo( "Exception in outbound" ), equalTo( ex ) ) );
+        logProvider.assertExactly( inLog( getClass() ).error( startsWith( "Exception in outbound" ), equalTo( ex ) ) );
         assertFalse( channel.isOpen() );
     }
 
