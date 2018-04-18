@@ -21,17 +21,15 @@ package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.{CommunityPipeBuilder, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{KeyTokenResolver, expressions => commandExpressions}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{DropResultPipe, ColumnOrder => _, _}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}

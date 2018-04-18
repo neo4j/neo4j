@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpression, Pipe}
+import org.neo4j.cypher.internal.util.v3_5.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NestedPlanExpression}
 import org.neo4j.cypher.internal.v3_5.{expressions => frontEndAst}
 

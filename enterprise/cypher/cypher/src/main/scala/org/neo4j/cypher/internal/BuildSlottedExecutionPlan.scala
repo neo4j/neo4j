@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.ReadOnlies
 import org.neo4j.cypher.internal.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeExecutionBuilderContext}
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.runtime.slotted.{SlottedExecutionResultBuilderFactory, SlottedPipeBuilder}
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}

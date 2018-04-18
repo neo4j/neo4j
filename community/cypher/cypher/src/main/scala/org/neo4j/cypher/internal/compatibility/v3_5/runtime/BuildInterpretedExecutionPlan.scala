@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, ProfileMode, QueryContext}
 import org.neo4j.cypher.internal.util.v3_5.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexUsage, LogicalPlan}

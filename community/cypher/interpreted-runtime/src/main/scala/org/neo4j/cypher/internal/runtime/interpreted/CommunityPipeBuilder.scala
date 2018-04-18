@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Literal, ShortestPathExpression}
@@ -48,7 +46,6 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe,
                                 rewriteAstExpression: (ASTExpression) => ASTExpression,
                                 tokenContext: TokenContext)
                                (implicit semanticTable: SemanticTable) extends PipeBuilder {
-
 
   private val buildExpression =
     rewriteAstExpression andThen

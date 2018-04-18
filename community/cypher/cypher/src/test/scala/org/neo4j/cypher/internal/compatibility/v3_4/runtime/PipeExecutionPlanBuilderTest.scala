@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{FakePipe, Pipe}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.util.v3_5.attribution.{Id, SameId}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
@@ -66,19 +67,20 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   val factory = new PipeBuilderFactory {
     override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean, expressionConverters: ExpressionConverters)
-                      (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext) = new PipeBuilder {
-      def onLeaf(plan: LogicalPlan) = plan match {
-        case LeafPlan(n) => LeafPipe(n)
-      }
+                      (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext) =
+      new PipeBuilder {
+        def onLeaf(plan: LogicalPlan) = plan match {
+          case LeafPlan(n) => LeafPipe(n)
+        }
 
-      def onOneChildPlan(plan: LogicalPlan, source: Pipe) = plan match {
-        case OneChildPlan(name, _) => OneChildPipe(name, source)
-      }
+        def onOneChildPlan(plan: LogicalPlan, source: Pipe) = plan match {
+          case OneChildPlan(name, _) => OneChildPipe(name, source)
+        }
 
-      def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe) = plan match {
-        case TwoChildPlan(name, _, _) => TwoChildPipe(name, lhs, rhs)
+        def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe) = plan match {
+          case TwoChildPlan(name, _, _) => TwoChildPipe(name, lhs, rhs)
+        }
       }
-    }
   }
 
   private val builder = {

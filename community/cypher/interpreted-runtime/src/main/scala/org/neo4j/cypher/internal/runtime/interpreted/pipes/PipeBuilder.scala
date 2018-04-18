@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans}
 
-case class PipeExecutionBuilderContext(semanticTable: SemanticTable,
-                                       readOnlies: ReadOnlies,
-                                       cardinalities: Cardinalities)
+trait PipeBuilder extends LogicalPlans.Mapper[Pipe] {
+  override def onLeaf(plan: LogicalPlan): Pipe
+  override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
+}
