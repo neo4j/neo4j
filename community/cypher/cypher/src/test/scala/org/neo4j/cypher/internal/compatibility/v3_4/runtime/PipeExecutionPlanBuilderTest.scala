@@ -69,15 +69,15 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   val factory = new PipeBuilderFactory {
     override def apply(recurse: LogicalPlan => Pipe, readOnly: Boolean, expressionConverters: ExpressionConverters)
                       (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) = new PipeBuilder {
-      def build(plan: LogicalPlan) = plan match {
+      def onLeaf(plan: LogicalPlan) = plan match {
         case LeafPlan(n) => LeafPipe(n)
       }
 
-      def build(plan: LogicalPlan, source: Pipe) = plan match {
+      def onOneChildPlan(plan: LogicalPlan, source: Pipe) = plan match {
         case OneChildPlan(name, _) => OneChildPipe(name, source)
       }
 
-      def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe) = plan match {
+      def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe) = plan match {
         case TwoChildPlan(name, _, _) => TwoChildPipe(name, lhs, rhs)
       }
     }

@@ -24,10 +24,7 @@ import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
-import org.neo4j.cypher.internal.util.v3_5.InternalException
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
 
 class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
@@ -40,93 +37,11 @@ class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
     PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id), periodicCommitInfo, context.plannerName)
   }
 
-  /*
-  Traverses the logical plan tree structure and builds up the corresponding pipe structure. Given a logical plan such as:
-
-          a
-         / \
-        b   c
-       /   / \
-      d   e   f
-
-   populate(a) starts the session, and eagerly adds [a, c, f] to the plan stack. We then immediately pop 'f' from the
-   plan stack, we build a pipe for it add it to the pipe stack, and pop 'c' from the plan stack. Since we are coming from
-   'f', we add [c, e] to the stack and then pop 'e' out again. This is a leaf, so we build a pipe for it and add it to the
-   pipe stack. We now pop 'c' from the plan stack again. This time we are coming from 'e', and so we know we can use
-   two pipes from the pipe stack to use when building 'c'. We add this pipe to the pipe stack and pop 'a' from the plan
-   stack. Since we are coming from 'a's RHS, we add [a,b,d] to the stack. Next step is to pop 'd' out, and build a pipe
-   for it, storing it in the pipe stack. Pop ut 'b' from the plan stack, one pipe from the pipe stack, and build a pipe for 'b'.
-   Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two pipes from the pipe stack to
-   build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
-   */
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
     val pipeBuilder = pipeBuilderFactory(recurse = p => buildPipe(p),
                                          readOnly = context.readOnlies.get(plan.id),
                                          expressionConverters = expressionConverters)
-
-    val planStack = new mutable.Stack[LogicalPlan]()
-    val pipeStack = new mutable.Stack[Pipe]()
-    var comingFrom = plan
-    def populate(plan: LogicalPlan) = {
-      var current = plan
-      while (!current.isLeaf) {
-        planStack.push(current)
-        (current.lhs, current.rhs) match {
-          case (Some(_), Some(right)) =>
-            current = right
-
-          case (Some(left), None) =>
-            current = left
-          case _ => throw new InternalException("This must not be!")
-        }
-      }
-      comingFrom = current
-      planStack.push(current)
-    }
-
-    populate(plan)
-
-    while (planStack.nonEmpty) {
-      val current = planStack.pop()
-
-      (current.lhs, current.rhs) match {
-        case (None, None) =>
-          val newPipe = pipeBuilder
-            .build(current)
-
-          pipeStack.push(newPipe)
-
-        case (Some(_), None) =>
-          val source = pipeStack.pop()
-          val newPipe = pipeBuilder
-            .build(current, source)
-
-          pipeStack.push(newPipe)
-
-        case (Some(left), Some(right)) if right == left =>
-          throw new InternalException(s"Tried to build pipes from bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
-
-        case (Some(left), Some(_)) if comingFrom == left =>
-          val arg1 = pipeStack.pop()
-          val arg2 = pipeStack.pop()
-          val newPipe = pipeBuilder
-            .build(current, arg1, arg2)
-
-          pipeStack.push(newPipe)
-
-        case (Some(left), Some(right)) if comingFrom == right =>
-          planStack.push(current)
-          populate(left)
-      }
-
-      comingFrom = current
-
-    }
-
-    val result = pipeStack.pop()
-    assert(pipeStack.isEmpty, "Should have emptied the stack of pipes by now!")
-
-    result
+    LogicalPlans.map(plan, pipeBuilder)
   }
 }
 
@@ -137,11 +52,10 @@ object CommunityPipeBuilderFactory extends PipeBuilderFactory {
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
     CommunityPipeBuilder(recurse, readOnly, expressionConverters, recursePipes(recurse, planContext))
   }
-
 }
 
-trait PipeBuilder {
-  def build(plan: LogicalPlan): Pipe
-  def build(plan: LogicalPlan, source: Pipe): Pipe
-  def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
+trait PipeBuilder extends LogicalPlans.Mapper[Pipe] {
+  override def onLeaf(plan: LogicalPlan): Pipe
+  override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
 }

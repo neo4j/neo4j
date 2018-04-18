@@ -55,7 +55,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
       (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, planContext)))
 
 
-  def build(plan: LogicalPlan): Pipe = {
+  def onLeaf(plan: LogicalPlan): Pipe = {
     val id = plan.id
     plan match {
       case Argument(_) =>
@@ -93,7 +93,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
 
       case NodeIndexScan(ident, label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)
-//TODO: Check out this warning
+
       case NodeIndexContainsScan(ident, label, propertyKey, valueExpr, _) =>
         NodeIndexContainsScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
 
@@ -102,7 +102,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
     }
   }
 
-  def build(plan: LogicalPlan, source: Pipe): Pipe = {
+  def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = plan.id
     plan match {
       case Projection(_, expressions) =>
@@ -351,7 +351,7 @@ case class CommunityPipeBuilder(recurse: LogicalPlan => Pipe, readOnly: Boolean,
     }
   }
 
-  def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
+  def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     val id = plan.id
     plan match {
       case CartesianProduct(_, _) =>
