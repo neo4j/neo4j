@@ -214,6 +214,9 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
 
+    case PrefixRange(null) =>
+      Iterator.empty
+
     case range: InequalitySeekRange[Any] =>
       indexSeekByPrefixRange(index, range)
 
