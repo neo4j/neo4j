@@ -25,12 +25,10 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -40,21 +38,21 @@ public class FailureStorageTest
 {
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private IndexFolderLayout indexFolderLayout;
+    private File indexFolder;
 
     @Before
     public void before()
     {
         File rootDirectory = new File( "dir" );
         fs.get().mkdirs( rootDirectory );
-        indexFolderLayout = new IndexFolderLayout( rootDirectory );
+        indexFolder = rootDirectory;
     }
 
     @Test
     public void shouldReserveFailureFile() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolder );
 
         // WHEN
         storage.reserveForIndex();
@@ -69,7 +67,7 @@ public class FailureStorageTest
     public void shouldStoreFailure() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolder );
         storage.reserveForIndex();
         String failure = format( "A failure message%nspanning%nmultiple lines." );
 
@@ -87,7 +85,7 @@ public class FailureStorageTest
     public void shouldClearFailure() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolder );
         storage.reserveForIndex();
         String failure = format( "A failure message%nspanning%nmultiple lines." );
         storage.storeIndexFailure( failure );
@@ -106,7 +104,7 @@ public class FailureStorageTest
     public void shouldAppendFailureIfAlreadyExists() throws Exception
     {
         // GIVEN
-        FailureStorage storage = new FailureStorage( fs.get(), indexFolderLayout );
+        FailureStorage storage = new FailureStorage( fs.get(), indexFolder );
         storage.reserveForIndex();
         String failure1 = "Once upon a time there was a first failure";
         String failure2 = "Then there was another";
