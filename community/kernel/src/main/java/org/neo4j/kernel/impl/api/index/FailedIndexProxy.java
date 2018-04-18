@@ -95,7 +95,6 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     @Override
     public void validateBeforeCommit( Value[] tuple )
     {
-        throw new IllegalStateException( "Shouldn't be called on a failed index proxy. Cause:" + getPopulationFailure().asString() );
     }
 
     @Override
