@@ -142,7 +142,7 @@ public class PropertyConstraintsStressIT
         List<Object[]> data = new ArrayList<>();
         for ( IntFunction<?> values : array( STRING_VALUE_GENERATOR, NUMBER_VALUE_GENERATOR ) )
         {
-            for ( ConstraintOperations operations : array( UNIQUE_PROPERTY_CONSTRAINT_OPS, UNIQUE_PROPERTY_CONSTRAINT_OPS,
+            for ( ConstraintOperations operations : array( UNIQUE_PROPERTY_CONSTRAINT_OPS,
                     NODE_PROPERTY_EXISTENCE_CONSTRAINT_OPS, REL_PROPERTY_EXISTENCE_CONSTRAINT_OPS ) )
             {
                 data.add( array( operations, values ) );
@@ -160,7 +160,7 @@ public class PropertyConstraintsStressIT
         clearData();
     }
 
-    private void clearData() throws InterruptedException
+    private void clearData()
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );
@@ -297,7 +297,7 @@ public class PropertyConstraintsStressIT
         } );
     }
 
-    public void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
+    private void shouldNotAllowConstraintsViolationsUnderStress( Operation ops ) throws Exception
     {
         // Given
         HighlyAvailableGraphDatabase master = cluster.getMaster();
