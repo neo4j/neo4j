@@ -303,7 +303,7 @@ public class ForkedProcessorStepTest
     private void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
     {
         // given
-        int batches = 1_000;
+        int batches = 100;
         int processors = Runtime.getRuntime().availableProcessors() * 10;
         Configuration config = new Configuration.Overridden( Configuration.DEFAULT )
         {
