@@ -42,6 +42,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IndexPopulationTest
 {
@@ -63,17 +64,10 @@ public class IndexPopulationTest
         multipleIndexPopulator.indexAllNodes().run();
 
         // when
-        try
-        {
-            indexPopulation.flip();
-        }
-        catch ( ExceptionDuringFlipKernelException e )
-        {
-            // good
-        }
+        indexPopulation.flip();
 
         // then
-        assertTrue(  "flipper should have flipped to failing proxy", flipper.getState() == InternalIndexState.FAILED );
+        assertTrue( "flipper should have flipped to failing proxy", flipper.getState() == InternalIndexState.FAILED );
     }
 
     private OnlineIndexProxy onlineIndexProxy( IndexStoreView storeView )

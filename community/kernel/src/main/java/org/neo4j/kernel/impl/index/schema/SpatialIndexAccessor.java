@@ -106,6 +106,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     @Override
     public void close() throws IOException
     {
+        closeInstantiateCloseLock();
         forAll( NativeSchemaIndexAccessor::close, this );
     }
 

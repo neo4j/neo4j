@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.StreamSupport;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -115,6 +115,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
+        closeInstantiateCloseLock();
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );

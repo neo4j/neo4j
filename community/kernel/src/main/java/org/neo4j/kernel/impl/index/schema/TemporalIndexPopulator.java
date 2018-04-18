@@ -24,9 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.StreamSupport;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -110,6 +109,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
+        shutInstantiateCloseLock();
         for ( NativeSchemaIndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
