@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.Comparison;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
@@ -187,9 +188,9 @@ public abstract class Value extends AnyValue
      * Should return {@code null} for values that cannot be compared
      * under Comparability semantics.
      */
-    Integer unsafeTernaryCompareTo( Value other )
+    Comparison unsafeTernaryCompareTo( Value other )
     {
-        return unsafeCompareTo( other );
+        return Comparison.from( unsafeCompareTo( other ) );
     }
 
     @Override
