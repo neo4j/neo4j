@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -71,7 +72,7 @@ public class TemporalIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
-        return new TemporalIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor );
+        return new TemporalIndexPopulator( indexId, descriptor, samplingConfig, files, pageCache, fs, monitor, failureStorage( indexId ) );
     }
 
     @Override
@@ -84,6 +85,12 @@ public class TemporalIndexProvider extends IndexProvider
     @Override
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
+        String failure = failureStorage( indexId ).loadIndexFailure();
+        if ( failure != null )
+        {
+            return failure;
+        }
+
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
 
         try
@@ -107,15 +114,14 @@ public class TemporalIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
+        if ( failureStorage( indexId ).loadIndexFailure() != null )
+        {
+            return InternalIndexState.FAILED;
+        }
+
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), indexId, descriptor, fs );
 
-        final Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.",
-                    new NoSuchFileException( temporalIndexFiles.date().indexFile.getAbsolutePath() ) );
-            return InternalIndexState.POPULATING;
-        }
+        Iterable<TemporalIndexFiles.FileLayout> existing = temporalIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( TemporalIndexFiles.FileLayout subIndex : existing )
         {
@@ -137,6 +143,11 @@ public class TemporalIndexProvider extends IndexProvider
             }
         }
         return state;
+    }
+
+    private FailureStorage failureStorage( long indexId )
+    {
+        return new FailureStorage( fs, directoryStructure().directoryForIndex( indexId ) );
     }
 
     @Override
