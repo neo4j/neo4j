@@ -59,8 +59,13 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
 
     private long warmUpCluster() throws Exception
     {
+        cluster.awaitLeader(); // Make sure we have a cluster leader. Simplifies debugging.
         AtomicLong pagesInMemory = new AtomicLong();
-        cluster.coreTx( (db, tx) -> createTestData( db ) );
+        cluster.coreTx( (db, tx) ->
+        {
+            createTestData( db );
+            tx.success();
+        } );
         cluster.coreTx( (db, tx) -> pagesInMemory.set( waitForCacheProfile( db ) ) );
         for ( CoreClusterMember member : cluster.coreMembers() )
         {
@@ -79,7 +84,7 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
             @Override
             public void warmupCompleted( long elapsedMillis, long pagesLoaded )
             {
-                pagesLoadedInWarmup.set( pagesInMemory );
+                pagesLoadedInWarmup.set( pagesLoaded );
                 warmupLatch.release();
             }
 
