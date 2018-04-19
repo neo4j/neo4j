@@ -57,7 +57,7 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
     {
         TopLevelGroup()
         {
-            super ( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() );
+            super( "Neo4j-" + INSTANCE_COUNTER.incrementAndGet() );
         }
 
         public void setName( String name ) throws Exception

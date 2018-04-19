@@ -64,12 +64,12 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     {
         cluster.awaitLeader(); // Make sure we have a cluster leader. Simplifies debugging.
         AtomicLong pagesInMemory = new AtomicLong();
-        cluster.coreTx( (db, tx) ->
+        cluster.coreTx( ( db, tx ) ->
         {
             createTestData( db );
             tx.success();
         } );
-        cluster.coreTx( (db, tx) -> pagesInMemory.set( waitForCacheProfile( db ) ) );
+        cluster.coreTx( ( db, tx ) -> pagesInMemory.set( waitForCacheProfile( db ) ) );
         for ( CoreClusterMember member : cluster.coreMembers() )
         {
             waitForCacheProfile( member.database() );
