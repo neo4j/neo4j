@@ -89,6 +89,11 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public void setTopLevelGroupName( String name )
+    {
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return job -> schedule( job, now() );

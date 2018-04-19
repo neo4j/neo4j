@@ -40,7 +40,23 @@ final class GroupedDaemonThreadFactory implements ThreadFactory, ForkJoinPool.Fo
     @Override
     public Thread newThread( @SuppressWarnings( "NullableProblems" ) Runnable job )
     {
-        Thread thread = new Thread( threadGroup, job, group.threadName() );
+        Thread thread = new Thread( threadGroup, job, group.threadName() )
+        {
+            @Override
+            public String toString()
+            {
+                StringBuilder sb = new StringBuilder( "Thread[" ).append( getName() );
+                ThreadGroup group = getThreadGroup();
+                String sep = ", in ";
+                while ( group != null )
+                {
+                    sb.append( sep ).append( group.getName() );
+                    group = group.getParent();
+                    sep = "/";
+                }
+                return sb.append( ']' ).toString();
+            }
+        };
         thread.setDaemon( true );
         return thread;
     }
