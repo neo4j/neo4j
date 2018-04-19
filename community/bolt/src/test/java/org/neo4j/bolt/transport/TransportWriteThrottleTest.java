@@ -57,7 +57,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -185,6 +184,7 @@ public class TransportWriteThrottleTest
         // stop the thread that is trying to acquire the lock
         // otherwise it remains actively spinning even after the test
         when( channel.isWritable() ).thenReturn( true );
+        throttle.release( channel );
         otherThread.get().awaitFuture( future );
     }
 
