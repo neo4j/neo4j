@@ -61,6 +61,7 @@ import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
+import org.neo4j.causalclustering.helper.CompositeEnableable;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.net.InstalledProtocolHandler;
@@ -285,7 +286,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         txPulling.add( copiedStoreRecovery );
 
-        LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
+        CompositeEnableable servicesToStopOnStoreCopy = new CompositeEnableable();
 
         StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase,
                 copiedStoreRecovery, remoteStore, logProvider );

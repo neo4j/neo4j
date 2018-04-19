@@ -30,6 +30,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.causalclustering.helper.Enableable;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -37,7 +38,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class Server extends LifecycleAdapter
+public class Server extends LifecycleAdapter implements Enableable
 {
     private final Log debugLog;
     private final Log userLog;
@@ -50,15 +51,17 @@ public class Server extends LifecycleAdapter
 
     private EventLoopGroup workerGroup;
     private Channel channel;
+    private boolean enabled = true;
+    private boolean stoppedByLifeCycle = true;
 
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
-            String serverName )
+                   String serverName )
     {
         this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName );
     }
 
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
-            ListenSocketAddress listenAddress, String serverName )
+                   ListenSocketAddress listenAddress, String serverName )
     {
         this.childInitializer = childInitializer;
         this.parentHandler = parentHandler;
@@ -77,6 +80,32 @@ public class Server extends LifecycleAdapter
     @Override
     public synchronized void start()
     {
+        stoppedByLifeCycle = false;
+        if ( !enabled )
+        {
+            debugLog.info( "Start call from lifecycle is ignored because server is disabled." );
+        }
+        else
+        {
+            doStart();
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        stoppedByLifeCycle = true;
+        doStop();
+    }
+
+    @Override
+    public void shutdown()
+    {
+        stoppedByLifeCycle = true;
+    }
+
+    private void doStart()
+    {
         if ( channel != null )
         {
             return;
@@ -84,8 +113,7 @@ public class Server extends LifecycleAdapter
 
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
-        ServerBootstrap bootstrap = new ServerBootstrap()
-                .group( workerGroup )
+        ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup )
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
@@ -114,8 +142,12 @@ public class Server extends LifecycleAdapter
         }
     }
 
-    @Override
-    public synchronized void stop()
+    public boolean isRunnig()
+    {
+        return channel != null;
+    }
+
+    private void doStop()
     {
         if ( channel == null )
         {
@@ -144,5 +176,26 @@ public class Server extends LifecycleAdapter
     public ListenSocketAddress address()
     {
         return listenAddress;
+    }
+
+    @Override
+    public synchronized void enable()
+    {
+        enabled = true;
+        if ( !stoppedByLifeCycle )
+        {
+            doStart();
+        }
+        else
+        {
+            debugLog.info( "Server will not start. It was enabled but is stopped by lifecycle" );
+        }
+    }
+
+    @Override
+    public synchronized void disable()
+    {
+        enabled = false;
+        doStop();
     }
 }
