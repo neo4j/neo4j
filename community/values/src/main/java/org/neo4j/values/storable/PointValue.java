@@ -38,6 +38,8 @@ import static java.util.Collections.singletonList;
 
 public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
+    public static String[] ALLOWED_KEYS = new String[]{"crs", "x", "y", "z", "longitude", "latitude", "height", "srid"};
+
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
 
