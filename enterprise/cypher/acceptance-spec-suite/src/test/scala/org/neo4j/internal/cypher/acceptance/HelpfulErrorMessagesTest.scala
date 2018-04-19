@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -90,5 +90,11 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
   test("should provide sensible error message for CREATE UNIQUE in newer runtimes") {
     val query = "MATCH (root { name: 'root' }) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone"
     failWithError(Configs.SlottedInterpreted + Configs.Compiled, query, Seq("The given query is not currently supported in the selected runtime"))
+  }
+
+  test("should give correct error message with invalid number literal in a subtract") {
+    a[SyntaxException] shouldBe thrownBy {
+      innerExecuteDeprecated("with [1a-1] as list return list", Map())
+    }
   }
 }
