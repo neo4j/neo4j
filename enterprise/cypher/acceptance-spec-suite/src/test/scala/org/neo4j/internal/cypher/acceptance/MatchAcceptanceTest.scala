@@ -859,22 +859,43 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("a" -> n)))
   }
 
-  test("should not touch the database when for impossible predicates") {
+  test("should not touch the database when for impossible anded predicates") {
     // Given
     for (_ <- 1 to 50) createNode()
 
     // When
-    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 AND 1 > 5 RETURN n")
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 AND 5 > 1 RETURN n")
 
     // Then
     result.executionPlanDescription().totalDbHits should equal(Some(0))
   }
 
-  test("should remove predicates") {
+  test("should not touch the database when for impossible or'd predicates") {
+    // Given
+    for (_ <- 1 to 50) createNode()
+
+    // When
+    val result = executeWith(Configs.Interpreted, "PROFILE MATCH (n) WHERE 1 = 0 OR 1 > 5 RETURN n")
+
+    // Then
+    result.executionPlanDescription().totalDbHits should equal(Some(0))
+  }
+
+  test("should remove anded predicates that is always true") {
     // Given an empty database
 
     // When
     val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
+
+    // Then
+    result.executionPlanDescription().find("Selection") shouldBe empty
+  }
+
+  test("should remove or'd predicates that is always true") {
+    // Given an empty database
+
+    // When
+    val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE FALSE OR 1 = 1 RETURN n")
 
     // Then
     result.executionPlanDescription().find("Selection") shouldBe empty
