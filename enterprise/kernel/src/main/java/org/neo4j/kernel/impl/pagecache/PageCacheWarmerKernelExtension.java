@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -33,32 +31,24 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
-
 class PageCacheWarmerKernelExtension extends LifecycleAdapter
 {
-    private final JobScheduler scheduler;
     private final AvailabilityGuard availabilityGuard;
     private final Supplier<NeoStoreFileListing> fileListing;
-    private final Log log;
-    private final PageCacheWarmerMonitor monitor;
     private final Config config;
     private final PageCacheWarmer pageCacheWarmer;
-    private volatile JobScheduler.JobHandle profileHandle;
+    private final WarmupAvailabilityListener availabilityListener;
     private volatile boolean started;
 
     PageCacheWarmerKernelExtension(
             JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
             Supplier<NeoStoreFileListing> fileListing, Log log, PageCacheWarmerMonitor monitor, Config config )
     {
-        this.scheduler = scheduler;
         this.availabilityGuard = availabilityGuard;
         this.fileListing = fileListing;
-        this.log = log;
-        this.monitor = monitor;
         this.config = config;
         pageCacheWarmer = new PageCacheWarmer( fs, pageCache, scheduler );
+        availabilityListener = new WarmupAvailabilityListener( scheduler, pageCacheWarmer, config, log, monitor );
     }
 
     @Override
@@ -67,74 +57,9 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         if ( config.get( GraphDatabaseSettings.pagecache_warmup_enabled ) )
         {
             pageCacheWarmer.start();
-            scheduleTryReheat();
+            availabilityGuard.addListener( availabilityListener );
             fileListing.get().registerStoreFileProvider( pageCacheWarmer );
             started = true;
-        }
-    }
-
-    private void scheduleTryReheat()
-    {
-        scheduler.schedule( pageCacheIOHelper, this::tryReheat, 100, TimeUnit.MILLISECONDS );
-    }
-
-    private void tryReheat()
-    {
-        if ( availabilityGuard.isAvailable() )
-        {
-            doReheat();
-            scheduleProfile();
-        }
-        else if ( !availabilityGuard.isShutdown() )
-        {
-            scheduleTryReheat();
-        }
-    }
-
-    private void doReheat()
-    {
-        try
-        {
-            long start = System.nanoTime();
-            pageCacheWarmer.reheat().ifPresent( pagesLoaded ->
-            {
-                long elapsedMillis = NANOSECONDS.toMillis( System.nanoTime() - start );
-                monitor.warmupCompleted( pagesLoaded, elapsedMillis );
-                log.debug( "Active page cache warmup took " + Format.duration( elapsedMillis ) +
-                           " to load " + pagesLoaded + " pages." );
-            } );
-        }
-        catch ( Exception e )
-        {
-            log.debug( "Active page cache warmup failed, " +
-                       "so it may take longer for the cache to be populated with hot data.", e );
-        }
-    }
-
-    private void scheduleProfile()
-    {
-        long frequencyMillis = config.get( GraphDatabaseSettings.pagecache_warmup_profiling_interval ).toMillis();
-        profileHandle = scheduler.scheduleRecurring(
-                pageCacheIOHelper, this::doProfile, frequencyMillis, TimeUnit.MILLISECONDS );
-    }
-
-    private void doProfile()
-    {
-        try
-        {
-            long start = System.nanoTime();
-            pageCacheWarmer.profile().ifPresent( pagesInMemory ->
-            {
-                long elapsedMillis = NANOSECONDS.toMillis( System.nanoTime() - start );
-                monitor.profileCompleted( elapsedMillis, pagesInMemory );
-                log.debug( "Profiled page cache in " + Format.duration( elapsedMillis ) +
-                           ", and found " + pagesInMemory + " pages in memory." );
-            });
-        }
-        catch ( Exception e )
-        {
-            log.debug( "Page cache profiling failed, so no new profile of what data is hot or not was produced. " +
-                       "This may reduce the effectiveness of a future page cache warmup process.", e );
         }
     }
 
@@ -143,12 +68,10 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     {
         if ( started )
         {
-            JobScheduler.JobHandle handle = profileHandle;
-            if ( handle != null )
-            {
-                handle.cancel( false );
-            }
+            availabilityGuard.removeListener( availabilityListener );
+            availabilityListener.unavailable(); // Make sure scheduled jobs get cancelled.
             pageCacheWarmer.stop();
+            started = false;
         }
     }
 }
