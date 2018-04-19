@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.compiled
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
-import ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.runtime.compiled.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
@@ -32,8 +30,9 @@ import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_5.phases.Phase
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.ReadOnlies
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
+import org.neo4j.cypher.internal.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.util.v3_5.TaskCloser
@@ -54,9 +53,13 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-      val readOnlies = new ReadOnlies
-      from.solveds.mapTo(readOnlies, _.readOnly)
-      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName, readOnlies, from.cardinalities)
+      val readOnly = from.solveds(from.logicalPlan.id).readOnly
+      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan,
+                                                    context.planContext,
+                                                    from.semanticTable(),
+                                                    from.plannerName,
+                                                    readOnly,
+                                                    from.cardinalities)
       val executionPlan: ExecutionPlan =
         new CompiledExecutionPlan(compiled,
                                   context.createFingerprintReference(compiled.fingerprint),

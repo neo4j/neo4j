@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -46,7 +47,7 @@ import scala.collection.mutable
 
 class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
+  val pipeBuildContext = pipeExecutionPlanBuilderContext
   val planContext: PlanContext = newMockedPlanContext
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -221,13 +222,11 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
           Resolved("prop", token, TokenType.PropertyKey))))())
   }
 
-  def newMockedPipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
-    val context = mock[PipeExecutionBuilderContext]
-    val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3)))
-
-    when(context.semanticTable).thenReturn(semanticTable)
-    when(context.readOnlies).thenReturn(new StubReadOnlies)
-
-    context
+  def pipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
+    val semanticTable = new SemanticTable(resolvedRelTypeNames =
+                                            mutable.Map("existing1" -> RelTypeId(1),
+                                                        "existing2" -> RelTypeId(2),
+                                                        "existing3" -> RelTypeId(3)))
+    PipeExecutionBuilderContext(semanticTable, readOnly = true, mock[Cardinalities])
   }
 }

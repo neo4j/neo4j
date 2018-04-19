@@ -35,12 +35,12 @@ class PipeExecutionPlanBuilder(pipeBuilderFactory: PipeBuilderFactory,
     val topLevelPipe = buildPipe(plan)
 
     val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    PipeInfo(topLevelPipe, !context.readOnlies.get(plan.id), periodicCommitInfo)
+    PipeInfo(topLevelPipe, periodicCommitInfo)
   }
 
   private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): Pipe = {
     val pipeBuilder = pipeBuilderFactory(recurse = p => buildPipe(p),
-                                         readOnly = context.readOnlies.get(plan.id),
+                                         readOnly = context.readOnly,
                                          expressionConverters = expressionConverters)
     LogicalPlans.map(plan, pipeBuilder)
   }

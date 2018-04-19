@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
@@ -46,25 +46,23 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
-    val readOnlies = new ReadOnlies
-    from.solveds.mapTo(readOnlies, _.readOnly)
+    val readOnly = from.solveds(from.logicalPlan.id).readOnly
     val cardinalities = from.cardinalities
     val logicalPlan = from.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(expressionConverters = converters,
                                                             pipeBuilderFactory = InterpretedPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnlies, cardinalities)
+    val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnly, cardinalities)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-    val PipeInfo(pipe, updating, periodicCommitInfo) = pipeInfo
+    val PipeInfo(pipe, periodicCommitInfo) = pipeInfo
     val columns = from.statement().returnColumns
-    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
+    val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan)
     val func = getExecutionPlanFunction(periodicCommitInfo,
-                                        updating,
                                         resultBuilderFactory,
                                         context.notificationLogger,
                                         from.plannerName,
                                         InterpretedRuntimeName,
-                                        readOnlies,
+                                        readOnly,
                                         cardinalities)
 
     val fingerprint = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
@@ -78,19 +76,18 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
-                               updating: Boolean,
                                resultBuilderFactory: ExecutionResultBuilderFactory,
                                notificationLogger: InternalNotificationLogger,
                                plannerName: PlannerName,
                                runtimeName: RuntimeName,
-                               readOnlies: ReadOnlies,
+                               readOnly: Boolean,
                                cardinalities: Cardinalities):
   (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
     (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
       val builder = resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode
-      val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
+      val builderContext = if (!readOnly || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
 
       builder.setQueryContext(builderContext)
 
@@ -103,7 +100,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnlies, cardinalities)
+      builder.build(planType, params, notificationLogger, plannerName, runtimeName, readOnly, cardinalities)
     }
 
   /**

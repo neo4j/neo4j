@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.frontend.v3_5.semantics.SemanticTable
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 
 case class PipeExecutionBuilderContext(semanticTable: SemanticTable,
-                                       readOnlies: ReadOnlies,
+                                       readOnly: Boolean,
                                        cardinalities: Cardinalities)
