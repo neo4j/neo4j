@@ -263,7 +263,7 @@ class ReflectiveProcedureCompiler
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
             String warning, boolean fullAccess, QualifiedName procName  )
-            throws ProcedureException, IllegalAccessException
+            throws ProcedureException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         OutputMapper outputMapper = outputMappers.mapper( method );
@@ -576,7 +576,8 @@ class ReflectiveProcedureCompiler
             // Verify that the number of passed arguments matches the number expected in the mthod signature
             if ( inputSignature.size() != input.length )
             {
-                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "%s `%s` takes %d arguments but %d was provided.", type, name,
+                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                        "%s `%s` takes %d arguments but %d was provided.", type, name,
                         inputSignature.size(), input.length );
             }
 
@@ -589,29 +590,13 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private static Object[] verifyInput( String type, QualifiedName name, List<FieldSignature> inputSignature, Object[] input ) throws ProcedureException
-    {
-        // Verify that the number of passed arguments matches the number expected in the mthod signature
-        if ( inputSignature.size() != input.length )
-        {
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "%s `%s` takes %d arguments but %d was provided.", type, name,
-                    inputSignature.size(), input.length );
-        }
-
-        // Some input fields are not supported by Cypher and need to be mapped
-        for ( int i = 0; i < input.length; i++ )
-        {
-            input[i] = inputSignature.get( i ).map( input[i] );
-        }
-        return input;
-    }
-
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
     {
         private final ProcedureSignature signature;
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
         private final Method procedureMethod;
+        private final int[] indexesToMap;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 Method procedureMethod, OutputMapper outputMapper,
@@ -622,6 +607,7 @@ class ReflectiveProcedureCompiler
             this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
+            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -631,15 +617,27 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+                ResourceTracker resourceTracker ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                // verify and possibly map the input
-                input = verifyInput( "Procedure", signature.name(), signature.inputSignature(), input );
+                List<FieldSignature> inputSignature = signature.inputSignature();
+                if ( inputSignature.size() != input.length )
+                {
+                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                            "Procedure `%s` takes %d arguments but %d was provided.",
+                            signature.name(),
+                            inputSignature.size(), input.length );
+                }
+                // Some input fields are not supported by Cypher and need to be mapped
+                for ( int indexToMap : indexesToMap )
+                {
+                    input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
+                }
 
                 Object cls = constructor.invoke();
                 //API injection
@@ -777,6 +775,7 @@ class ReflectiveProcedureCompiler
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final Method udfMethod;
+        private final int[] indexesToMap;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 Method udfMethod, TypeMappers.TypeChecker typeChecker,
@@ -787,6 +786,7 @@ class ReflectiveProcedureCompiler
             this.udfMethod = udfMethod;
             this.signature = signature;
             this.typeChecker = typeChecker;
+            indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -803,9 +803,6 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
-                // verify and possibly map the input
-                //input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
-
                 Object cls = constructor.invoke();
                 //API injection
                 inject( ctx, cls );
@@ -843,6 +840,7 @@ class ReflectiveProcedureCompiler
         private final MethodHandle creator;
         private final Method updateMethod;
         private final MethodHandle resultMethod;
+        private final int[] indexesToMap;
 
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle creator, Method updateMethod, MethodHandle resultMethod,
@@ -856,6 +854,7 @@ class ReflectiveProcedureCompiler
             this.resultMethod = resultMethod;
             this.signature = signature;
             this.typeChecker = typeChecker;
+            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -877,6 +876,8 @@ class ReflectiveProcedureCompiler
                 //API injection
                 inject( ctx, cls );
                 Object aggregator = creator.invoke( cls );
+                List<FieldSignature> inputSignature = signature.inputSignature();
+                int expectedNumberOfInputs = inputSignature.size();
 
                 return new UserAggregator()
                 {
@@ -885,8 +886,18 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            // verify and possibly map the input
-                            input = verifyInput( "Function", signature.name(), signature.inputSignature(), input );
+                            if ( expectedNumberOfInputs != input.length )
+                            {
+                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                                        "Function `%s` takes %d arguments but %d was provided.",
+                                        signature.name(),
+                                        expectedNumberOfInputs, input.length );
+                            }
+                            // Some input fields are not supported by Cypher and need to be mapped
+                            for ( int indexToMap : indexesToMap )
+                            {
+                                input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
+                            }
 
                             // Call the method
                             updateMethod.invoke( aggregator, input );
@@ -960,7 +971,20 @@ class ReflectiveProcedureCompiler
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "It is not allowed to define functions in the root namespace please use a namespace, " +
-                            "e.g. `@UserFunction(\"org.example.com.%s\")", name.name() );
+                    "e.g. `@UserFunction(\"org.example.com.%s\")", name.name() );
         }
+    }
+
+    private static int[] computeIndexesToMap( List<FieldSignature> inputSignature )
+    {
+        ArrayList<Integer> integers = new ArrayList<>();
+        for ( int i = 0; i < inputSignature.size(); i++ )
+        {
+            if ( inputSignature.get( i ).needsMapping() )
+            {
+                integers.add( i );
+            }
+        }
+        return integers.stream().mapToInt( i -> i ).toArray();
     }
 }
