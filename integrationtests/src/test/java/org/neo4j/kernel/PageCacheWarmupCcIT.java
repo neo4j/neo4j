@@ -25,9 +25,12 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.ReadReplica;
+import org.neo4j.causalclustering.upstream.strategies.LeaderOnlyStrategy;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -77,6 +80,14 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     private void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory )
     {
         AtomicLong pagesLoadedInWarmup = new AtomicLong();
+        BinaryLatch warmupLatch = injectWarmupLatch( member, pagesLoadedInWarmup );
+        member.start();
+        warmupLatch.await();
+        assertThat( pagesLoadedInWarmup.get(), is( pagesInMemory ) );
+    }
+
+    private BinaryLatch injectWarmupLatch( ClusterMember member, AtomicLong pagesLoadedInWarmup )
+    {
         BinaryLatch warmupLatch = new BinaryLatch();
         Monitors monitors = member.monitors();
         monitors.addMonitorListener( new PageCacheWarmerMonitor()
@@ -93,16 +104,21 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
             {
             }
         } );
-        member.start();
-        warmupLatch.await();
-        assertThat( pagesLoadedInWarmup.get(), is( pagesInMemory ) );
+        return warmupLatch;
+    }
+
+    private void useLeaderOnlyCopyStrategy( ClusterMember<?> member )
+    {
+        member.updateConfig( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY );
+        member.updateConfig( CausalClusteringSettings.multi_dc_license, Settings.TRUE );
     }
 
     @Test
     public void cacheProfilesMustBeIncludedInStoreCopyToCore() throws Exception
     {
         long pagesInMemory = warmUpCluster();
-        ClusterMember member = cluster.addCoreMemberWithId( 4 );
+        CoreClusterMember member = cluster.newCoreMember();
+        useLeaderOnlyCopyStrategy( member );
         verifyWarmupHappensAfterStoreCopy( member, pagesInMemory );
     }
 
@@ -110,7 +126,8 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     public void cacheProfilesMustBeIncludedInStoreCopyToReadReplica() throws Exception
     {
         long pagesInMemory = warmUpCluster();
-        ClusterMember member = cluster.addReadReplicaWithId( 4 );
+        ReadReplica member = cluster.newReadReplica();
+        useLeaderOnlyCopyStrategy( member );
         verifyWarmupHappensAfterStoreCopy( member, pagesInMemory );
     }
 }
