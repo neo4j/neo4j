@@ -46,7 +46,7 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ReadReplica implements ClusterMember
+public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 {
     protected final Map<String,String> config = stringMap();
     protected final DiscoveryServiceFactory discoveryServiceFactory;
