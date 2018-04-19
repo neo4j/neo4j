@@ -23,6 +23,7 @@ import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,8 +42,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.collection.RawIterator;
@@ -62,6 +65,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.READ_REPLICA;
@@ -264,6 +268,20 @@ public class ClusterOverviewIT
             assertEventualOverview( cluster, allOf( containsRole( LEADER, 1 ), containsRole( FOLLOWER, coreMembers - 1 - 2 ) ),
                     coreServerId );
         }
+    }
+
+    @Test
+    public void shouldHaveNoLeaderIfMajorityCoreMembersDead() throws Exception
+    {
+        clusterRule.withNumberOfCoreMembers( 3 );
+        clusterRule.withNumberOfCoreMembers( 2 );
+
+        Cluster cluster = clusterRule.startCluster();
+        List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
+        CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
+        followers.forEach( CoreClusterMember::shutdown );
+
+        assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
     }
 
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )

@@ -94,7 +94,7 @@ public class CoreReplicationIT
         // given
         cluster.awaitLeader();
 
-        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+        CoreGraphDatabase follower = cluster.getMemberWithRole( Role.FOLLOWER ).database();
 
         // when
         try ( Transaction tx = follower.beginTx() )
@@ -156,7 +156,7 @@ public class CoreReplicationIT
         // given
         cluster.awaitLeader();
 
-        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+        CoreGraphDatabase follower = cluster.getMemberWithRole( Role.FOLLOWER ).database();
 
         // when
         try ( Transaction tx = follower.beginTx() )
@@ -185,7 +185,7 @@ public class CoreReplicationIT
         awaitForDataToBeApplied( leader );
         dataMatchesEventually( leader, cluster.coreMembers() );
 
-        CoreGraphDatabase follower = cluster.getDbWithRole( Role.FOLLOWER ).database();
+        CoreGraphDatabase follower = cluster.getMemberWithRole( Role.FOLLOWER ).database();
 
         // when
         try ( Transaction tx = follower.beginTx() )
@@ -334,8 +334,8 @@ public class CoreReplicationIT
                     db.createNode();
                     tx.success();
 
-                    cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
-                    cluster.removeCoreMember( cluster.getDbWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                    cluster.removeCoreMember( cluster.getMemberWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
+                    cluster.removeCoreMember( cluster.getMemberWithAnyRole( Role.FOLLOWER, Role.CANDIDATE ) );
                     latch.countDown();
                 } );
                 fail( "Should have thrown" );

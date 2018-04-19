@@ -216,18 +216,25 @@ public final class HazelcastClusterTopology
     {
         IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
-        LeaderInfo expected = leaderRef.get();
+        LeaderInfo current = leaderRef.get();
+        Optional<LeaderInfo> currentOpt = Optional.ofNullable( current );
 
-        boolean noUpdate = Optional.ofNullable( expected ).map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+        boolean noUpdate =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
-        boolean greaterOrEqualTermExists = Optional.ofNullable( expected ).map(l -> l.term() >= leaderInfo.term() ).orElse( false );
+        int termComparison =  currentOpt.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
-        if ( greaterOrEqualTermExists || noUpdate )
+        boolean greaterTermExists = termComparison > 0;
+
+        boolean invalidTerm = greaterTermExists || ( termComparison == 0 && !leaderInfo.isSteppingDown() );
+
+        boolean success = !( invalidTerm || noUpdate);
+
+        if ( !success )
         {
             return;
         }
 
-        leaderRef.compareAndSet( expected, leaderInfo );
+        leaderRef.compareAndSet( current, leaderInfo );
     }
 
     private static Optional<LeaderInfo> getLeaderForDBName( HazelcastInstance hazelcastInstance, String dbName )

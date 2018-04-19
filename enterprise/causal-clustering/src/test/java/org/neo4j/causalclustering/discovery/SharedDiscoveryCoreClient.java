@@ -143,6 +143,16 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
+    public void handleStepDown( LeaderInfo stepDownLeaderInfo, String dbName )
+    {
+        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
+        if ( wasPreviousLeader )
+        {
+            sharedDiscoveryService.casLeaders( stepDownLeaderInfo, dbName );
+        }
+    }
+
+    @Override
     public String localDBName()
     {
         return localDBName;

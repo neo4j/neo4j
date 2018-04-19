@@ -133,7 +133,7 @@ public class MultiClusterRoutingIT
     public void superCallShouldReturnAllRouters()
     {
         List<CoreGraphDatabase> dbs = dbNames.stream()
-                .map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
+                .map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() ).collect( Collectors.toList() );
 
         Stream<Optional<MultiClusterRoutingResult>> optResults = dbs.stream()
                 .map( db -> callProcedure( db, GET_ROUTERS_FOR_ALL_DATABASES, Collections.emptyMap() ) );
@@ -153,7 +153,7 @@ public class MultiClusterRoutingIT
     public void subCallShouldReturnLocalRouters()
     {
         String dbName = getFirstDbName( dbNames );
-        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getDbWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
+        Stream<CoreGraphDatabase> members = dbNames.stream().map( n -> cluster.getMemberWithAnyRole( n, Role.FOLLOWER, Role.LEADER ).database() );
 
         Map<String,Object> params = new HashMap<>();
         params.put( DATABASE.parameterName(), dbName );
@@ -176,12 +176,12 @@ public class MultiClusterRoutingIT
     public void procedureCallsShouldReflectMembershipChanges() throws Exception
     {
         String dbName = getFirstDbName( dbNames );
-        CoreClusterMember follower = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER );
+        CoreClusterMember follower = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER );
         int followerId = follower.serverId();
 
         cluster.removeCoreMemberWithServerId( followerId );
 
-        CoreGraphDatabase db = cluster.getDbWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
+        CoreGraphDatabase db = cluster.getMemberWithAnyRole( dbName, Role.FOLLOWER, Role.LEADER ).database();
 
         Function<CoreGraphDatabase, Set<Endpoint>> getResult = database ->
         {

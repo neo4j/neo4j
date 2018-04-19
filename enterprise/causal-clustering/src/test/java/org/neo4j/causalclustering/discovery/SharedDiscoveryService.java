@@ -134,9 +134,13 @@ public final class SharedDiscoveryService
 
             boolean noUpdate = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
-            boolean greaterOrEqualTermExists = current.map( l -> l.term() >= leaderInfo.term() ).orElse( false );
+            int termComparison = current.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
-            boolean success = !(greaterOrEqualTermExists || noUpdate);
+            boolean greaterTermExists = termComparison > 0;
+
+            boolean invalidTerm = greaterTermExists || ( termComparison == 0 && !leaderInfo.isSteppingDown() );
+
+            boolean success = !( invalidTerm || noUpdate);
 
             if ( success )
             {

@@ -141,6 +141,16 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
+    public void handleStepDown( LeaderInfo stepDownLeaderInfo, String dbName )
+    {
+        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
+        if ( wasPreviousLeader )
+        {
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, stepDownLeaderInfo, dbName );
+        }
+    }
+
+    @Override
     public Map<MemberId,RoleInfo> allCoreRoles()
     {
         return coreRoles;

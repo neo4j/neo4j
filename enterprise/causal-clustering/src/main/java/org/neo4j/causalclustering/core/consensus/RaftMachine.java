@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -212,9 +213,14 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
+        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm(), outcome.isSteppingDown() );
+
         for ( LeaderListener listener : leaderListeners )
         {
+            if ( outcome.isSteppingDown() )
+            {
+                listener.onLeaderStepDown( leaderInfo );
+            }
             listener.onLeaderSwitch( leaderInfo );
         }
     }
@@ -239,18 +245,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private boolean leaderChanged( Outcome outcome, MemberId oldLeader )
     {
-        if ( oldLeader == null && outcome.getLeader() != null )
-        {
-            return true;
-        }
-        else if ( oldLeader != null && !oldLeader.equals( outcome.getLeader() ) )
-        {
-            return true;
-        }
-
-        //TODO: Add logic for handling leader step-down with no replacement
-
-        return false;
+        return !Objects.equals( oldLeader, outcome.getLeader() );
     }
 
     public synchronized ConsensusOutcome handle( RaftMessages.RaftMessage incomingMessage ) throws IOException
