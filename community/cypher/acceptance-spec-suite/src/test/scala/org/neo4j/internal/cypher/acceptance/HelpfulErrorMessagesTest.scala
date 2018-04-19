@@ -80,4 +80,10 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with NewPlannerTe
       exception.getMessage should include("A single relationship type must be specified for MERGE")
     }
   }
+
+  test("should give correct error message with invalid number literal in a subtract") {
+    a[SyntaxException] shouldBe thrownBy {
+      innerExecute("with [1a-1] as list return list")
+    }
+  }
 }

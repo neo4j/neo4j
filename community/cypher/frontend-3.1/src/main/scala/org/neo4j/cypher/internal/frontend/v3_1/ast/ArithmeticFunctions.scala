@@ -37,7 +37,7 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
     case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.addExact(l.value, r.value)).isFailure =>
-      SemanticError(s"result of ${l.value} + ${r.value} cannot be represented as an integer", position)
+      SemanticError(s"result of ${l.stringVal} + ${r.stringVal} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
 
@@ -144,7 +144,7 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
     case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
-      SemanticError(s"result of ${l.value} - ${r.value} cannot be represented as an integer", position)
+      SemanticError(s"result of ${l.stringVal} - ${r.stringVal} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
 
@@ -180,7 +180,7 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
     case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.multiplyExact(l.value, r.value)).isFailure =>
-      SemanticError(s"result of ${l.value} * ${r.value} cannot be represented as an integer", position)
+      SemanticError(s"result of ${l.stringVal} * ${r.stringVal} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
 
