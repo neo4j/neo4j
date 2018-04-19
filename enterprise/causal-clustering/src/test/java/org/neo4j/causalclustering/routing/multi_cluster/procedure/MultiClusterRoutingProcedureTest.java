@@ -38,7 +38,7 @@ public class MultiClusterRoutingProcedureTest
     @Test
     public void subClusterRoutingProcedureShouldHaveCorrectSignature()
     {
-        GetSubClusterRoutersProcedure proc = new GetSubClusterRoutersProcedure( null, Config.defaults() );
+        GetRoutersForDatabaseProcedure proc = new GetRoutersForDatabaseProcedure( null, Config.defaults() );
 
         ProcedureSignature procSig = proc.signature();
 
@@ -47,15 +47,15 @@ public class MultiClusterRoutingProcedureTest
                 FieldSignature.outputField( "ttl", Neo4jTypes.NTInteger ),
                 FieldSignature.outputField( "routers", Neo4jTypes.NTList( Neo4jTypes.NTMap ) ) );
 
-        assertEquals( "The input signature of the GetSubClusterRoutersProcedure should not change.", procSig.inputSignature(), input );
+        assertEquals( "The input signature of the GetRoutersForDatabaseProcedure should not change.", procSig.inputSignature(), input );
 
-        assertEquals( "The output signature of the GetSubClusterRoutersProcedure should not change.", procSig.outputSignature(), output );
+        assertEquals( "The output signature of the GetRoutersForDatabaseProcedure should not change.", procSig.outputSignature(), output );
     }
 
     @Test
     public void superClusterRoutingProcedureShouldHaveCorrectSignature()
     {
-        GetSuperClusterRoutersProcedure proc = new GetSuperClusterRoutersProcedure( null, Config.defaults() );
+        GetRoutersForAllDatabasesProcedure proc = new GetRoutersForAllDatabasesProcedure( null, Config.defaults() );
 
         ProcedureSignature procSig = proc.signature();
 
@@ -63,6 +63,6 @@ public class MultiClusterRoutingProcedureTest
                 FieldSignature.outputField( "ttl", Neo4jTypes.NTInteger ),
                 FieldSignature.outputField( "routers", Neo4jTypes.NTList( Neo4jTypes.NTMap ) ) );
 
-        assertEquals( "The output signature of the GetSuperClusterRoutersProcedure should not change.", procSig.outputSignature(), output );
+        assertEquals( "The output signature of the GetRoutersForAllDatabasesProcedure should not change.", procSig.outputSignature(), output );
     }
 }

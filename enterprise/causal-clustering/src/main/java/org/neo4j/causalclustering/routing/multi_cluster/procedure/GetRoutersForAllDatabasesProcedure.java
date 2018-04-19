@@ -39,19 +39,19 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
 
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUPER_CLUSTER_ROUTERS;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_ALL_DATABASES;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.ROUTERS;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.TTL;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.causalclustering.routing.Util.extractBoltAddress;
 
-public class GetSuperClusterRoutersProcedure implements CallableProcedure
+public class GetRoutersForAllDatabasesProcedure implements CallableProcedure
 {
 
-    private static final String DESCRIPTION = "Returns router capable endpoints for each database name in a multicluster.";
+    private static final String DESCRIPTION = "Returns router capable endpoints for each database name in a multi-cluster.";
 
     private final ProcedureSignature procedureSignature =
-            procedureSignature( GET_SUPER_CLUSTER_ROUTERS.fullyQualifiedProcedureName() )
+            procedureSignature( GET_ROUTERS_FOR_ALL_DATABASES.fullyQualifiedProcedureName() )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
                     .out( ROUTERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                     .description( DESCRIPTION )
@@ -60,7 +60,7 @@ public class GetSuperClusterRoutersProcedure implements CallableProcedure
     private final TopologyService topologyService;
     private final long timeToLiveMillis;
 
-    public GetSuperClusterRoutersProcedure( TopologyService topologyService, Config config )
+    public GetRoutersForAllDatabasesProcedure( TopologyService topologyService, Config config )
     {
         this.topologyService = topologyService;
         this.timeToLiveMillis = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();

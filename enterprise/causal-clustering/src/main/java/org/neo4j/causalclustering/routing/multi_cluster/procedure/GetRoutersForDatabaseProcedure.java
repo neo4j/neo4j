@@ -39,19 +39,19 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
 
-import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_SUB_CLUSTER_ROUTERS;
+import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ProcedureNames.GET_ROUTERS_FOR_DATABASE;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.DATABASE;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.ROUTERS;
 import static org.neo4j.causalclustering.routing.multi_cluster.procedure.ParameterNames.TTL;
 import static org.neo4j.causalclustering.routing.Util.extractBoltAddress;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
-public class GetSubClusterRoutersProcedure implements CallableProcedure
+public class GetRoutersForDatabaseProcedure implements CallableProcedure
 {
-    private static final String DESCRIPTION = "Returns router capable endpoints for a specific database in a multicluster.";
+    private static final String DESCRIPTION = "Returns router capable endpoints for a specific database in a multi-cluster.";
 
     private final ProcedureSignature procedureSignature =
-            procedureSignature( GET_SUB_CLUSTER_ROUTERS.fullyQualifiedProcedureName() )
+            procedureSignature( GET_ROUTERS_FOR_DATABASE.fullyQualifiedProcedureName() )
                     .in( DATABASE.parameterName(), Neo4jTypes.NTString )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
                     .out( ROUTERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
@@ -61,7 +61,7 @@ public class GetSubClusterRoutersProcedure implements CallableProcedure
     private final TopologyService topologyService;
     private final long timeToLiveMillis;
 
-    public GetSubClusterRoutersProcedure( TopologyService topologyService, Config config )
+    public GetRoutersForDatabaseProcedure( TopologyService topologyService, Config config )
     {
         this.topologyService = topologyService;
         this.timeToLiveMillis = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
