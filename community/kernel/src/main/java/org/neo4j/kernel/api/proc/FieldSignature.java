@@ -48,9 +48,16 @@ public class FieldSignature
     {
         return new FieldSignature( name, type, null, false )
         {
+            @Override
             public Object map( Object input )
             {
                 return mapper.map( input );
+            }
+
+            @Override
+            public boolean needsMapping()
+            {
+                return true;
             }
         };
     }
@@ -59,9 +66,16 @@ public class FieldSignature
     {
         return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false )
         {
+            @Override
             public Object map( Object input )
             {
                 return mapper.map( input );
+            }
+
+            @Override
+            public boolean needsMapping()
+            {
+                return true;
             }
         };
     }
@@ -96,6 +110,11 @@ public class FieldSignature
                         type.toString(), defaultValue.neo4jType().toString() ) );
             }
         }
+    }
+
+    public boolean needsMapping()
+    {
+        return false;
     }
 
     /** Fields that are not supported full stack (ie. by Cypher) need to be mapped from Cypher to internal types */

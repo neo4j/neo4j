@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
