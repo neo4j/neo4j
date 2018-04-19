@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,6 +40,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -48,14 +51,20 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -110,12 +119,16 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     {
         // given
         File storeDir = unzip( getClass(), ZIP_FILE_3_2, directory.absolutePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
-                .newGraphDatabase();
+        IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
+
+        // when
+        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
+
+        // then
+        verifyInitialState( indexRecoveryTracker, 2, InternalIndexState.ONLINE );
         try
         {
+            // then
             verifyIndexes( db, LABEL_LUCENE_10 );
 
             // when
@@ -143,12 +156,16 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     {
         // given
         File storeDir = unzip( getClass(), ZIP_FILE_3_3, directory.absolutePath() );
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
-                .newGraphDatabase();
+        IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
+
+        // when
+        GraphDatabaseAPI db = setupDb( storeDir, indexRecoveryTracker );
+
+        // then
+        verifyInitialState( indexRecoveryTracker, 4, InternalIndexState.ONLINE );
         try
         {
+            // then
             verifyIndexes( db, LABEL_LUCENE_10 );
             verifyIndexes( db, LABEL_FUSION_10 );
 
@@ -176,6 +193,26 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         finally
         {
             db.shutdown();
+        }
+    }
+
+    private GraphDatabaseAPI setupDb( File storeDir, IndexRecoveryTracker indexRecoveryTracker )
+    {
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( indexRecoveryTracker );
+        return (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .setMonitors( monitors )
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
+                .newGraphDatabase();
+    }
+
+    private void verifyInitialState( IndexRecoveryTracker indexRecoveryTracker, int expectedNumberOfIndexes, InternalIndexState expectedInitialState )
+    {
+        assertEquals( "exactly " + expectedNumberOfIndexes + " legacy indexes ", expectedNumberOfIndexes, indexRecoveryTracker.initialStateMap.size() );
+        for ( InternalIndexState actualInitialState : indexRecoveryTracker.initialStateMap.values() )
+        {
+            assertEquals( "initial state is online, don't do recovery", expectedInitialState, actualInitialState );
         }
     }
 
@@ -261,9 +298,30 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
         }
     }
 
+    private void createSpatialAndTemporalData( GraphDatabaseAPI db, Label label )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 100; i++ )
+            {
+                Node node = db.createNode( label );
+                Object value = i % 2 == 0 ?
+                               Values.pointValue( CoordinateReferenceSystem.Cartesian, i, i ) :
+                               DurationValue.duration( 0, 0, i, 0 );
+                node.setProperty( KEY1, value );
+                if ( i % 3 ==  0 )
+                {
+                    node.setProperty( KEY2, value );
+                }
+            }
+            tx.success();
+        }
+    }
+
     private void additionalUpdates( GraphDatabaseAPI db, Label label )
     {
         createData( db, label );
+        createSpatialAndTemporalData( db, label );
     }
 
     private void verifyIndexes( GraphDatabaseAPI db, Label label ) throws Exception
@@ -278,10 +336,10 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
     private void verifyAfterAdditionalUpdate( GraphDatabaseAPI db, Label label ) throws Exception
     {
         assertTrue( hasIndex( db, label, KEY1 ) );
-        assertEquals( 200, countIndexedNodes( db, label, KEY1 ) );
+        assertEquals( 300, countIndexedNodes( db, label, KEY1 ) );
 
         assertTrue( hasIndex( db, label, KEY1, KEY2 ) );
-        assertEquals( 68, countIndexedNodes( db, label, KEY1, KEY2 ) );
+        assertEquals( 102, countIndexedNodes( db, label, KEY1, KEY2 ) );
     }
 
     private int countIndexedNodes( GraphDatabaseAPI db, Label label, String... keys ) throws Exception
@@ -305,7 +363,7 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
                 CapableIndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
 
                 // wait for index to come online
-                db.schema().awaitIndexesOnline(5, TimeUnit.SECONDS );
+                db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
 
                 int count;
                 StorageStatement storeStatement = ((KernelStatement) statement).getStoreStatement();
@@ -338,5 +396,16 @@ public class StartOldDbOn3_4AndCreateFusionIndexIT
             tx.success();
         }
         return false;
+    }
+
+    private class IndexRecoveryTracker extends IndexingService.MonitorAdapter
+    {
+        Map<SchemaIndexDescriptor,InternalIndexState> initialStateMap = new HashMap<>();
+
+        @Override
+        public void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state )
+        {
+            initialStateMap.put( descriptor, state );
+        }
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -44,6 +45,12 @@ public class SpatialIndexProviderTest extends NativeIndexProviderTest
                                        Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
         return new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, true, Config.defaults() );
+    }
+
+    @Override
+    protected InternalIndexState expectedStateOnNonExistingSubIndex()
+    {
+        return InternalIndexState.ONLINE;
     }
 
     @Override

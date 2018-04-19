@@ -69,6 +69,8 @@ import org.neo4j.values.storable.Value;
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -112,6 +114,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public interface Monitor
     {
+        void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state );
+
         void populationCompleteOn( SchemaIndexDescriptor descriptor );
 
         void indexPopulationScanStarting();
@@ -123,6 +127,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public static class MonitorAdapter implements Monitor
     {
+        @Override
+        public void initialState( SchemaIndexDescriptor descriptor, InternalIndexState state )
+        {   // Do nothing
+        }
+
         @Override
         public void populationCompleteOn( SchemaIndexDescriptor descriptor )
         {   // Do nothing
@@ -201,18 +210,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 switch ( initialState )
                 {
                 case ONLINE:
-                    indexProxy =
-                    indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
+                    monitor.initialState( descriptor, ONLINE );
+                    indexProxy = indexProxyCreator.createOnlineIndexProxy( indexId, descriptor, providerDescriptor );
                     break;
                 case POPULATING:
                     // The database was shut down during population, or a crash has occurred, or some other sad thing.
+                    monitor.initialState( descriptor, POPULATING );
                     indexProxy = indexProxyCreator.createRecoveringIndexProxy(
                             indexId, descriptor, providerDescriptor );
                     break;
                 case FAILED:
+                    monitor.initialState( descriptor, FAILED );
                     IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId, descriptor ) );
-                    indexProxy = indexProxyCreator
-                            .createFailedIndexProxy( indexId, descriptor, providerDescriptor, failure );
+                    indexProxy = indexProxyCreator.createFailedIndexProxy( indexId, descriptor, providerDescriptor, failure );
                     break;
                 default:
                     throw new IllegalArgumentException( "" + initialState );

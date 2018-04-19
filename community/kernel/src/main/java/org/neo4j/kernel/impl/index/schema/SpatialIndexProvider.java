@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.nio.file.NoSuchFileException;
 
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
 public class SpatialIndexProvider extends IndexProvider
@@ -142,12 +140,6 @@ public class SpatialIndexProvider extends IndexProvider
         SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), indexId, fs, settingsFactory );
 
         final Iterable<SpatialIndexFiles.SpatialFileLayout> existing = spatialIndexFiles.existing();
-        if ( !existing.iterator().hasNext() )
-        {
-            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.",
-                    new NoSuchFileException( spatialIndexFiles.forCrs( CoordinateReferenceSystem.WGS84 ).indexFile.getAbsolutePath() ) );
-            return InternalIndexState.POPULATING;
-        }
         InternalIndexState state = InternalIndexState.ONLINE;
         for ( SpatialIndexFiles.SpatialFileLayout subIndex : existing )
         {
