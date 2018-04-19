@@ -76,7 +76,7 @@ public class AuthProceduresBase
         getActiveTransactions()
                 .stream()
                 .filter( tx ->
-                     tx.securityContext().subject().hasUsername( username ) &&
+                     tx.subject().hasUsername( username ) &&
                     !tx.isUnderlyingTransaction( currentTx )
                 ).forEach( tx -> tx.markForTermination( Status.Transaction.Terminated ) );
     }
