@@ -27,12 +27,7 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     @Override
     public boolean next()
     {
-        if ( !fetchNext() )
-        {
-            close();
-            return false;
-        }
-        return true;
+        return fetchNext();
     }
 
     @Override
