@@ -125,7 +125,7 @@ public class ReadReplica implements ClusterMember
     @Override
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, Config.defaults( config ),
+        database = new ReadReplicaGraphDatabase( storeDir, memberConfig,
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
                 memberId() );
     }
