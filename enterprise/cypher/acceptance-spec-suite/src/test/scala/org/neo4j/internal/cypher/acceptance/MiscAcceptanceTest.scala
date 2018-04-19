@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
 class MiscAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -34,13 +34,4 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     val result = innerExecute(query)
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
   }
-
-  test("should not be able to use more then Long.MaxValue for LIMIT in interpreted runtime") {
-    val expectedErrorMessage = "Invalid input for LIMIT. Either the string does not have the appropriate format or the provided number is bigger then 2^63-1"
-    val limit = "9223372036854775808" // this equals Long.MaxValue +1
-    val query = "CYPHER runtime = interpreted MATCH (n) RETURN n LIMIT " + limit
-    val error = the [SyntaxException] thrownBy innerExecute(query)
-    error.getMessage should startWith(expectedErrorMessage)
-  }
-
 }
