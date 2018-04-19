@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -71,5 +71,11 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
     graph.execute("CREATE (n:Person {text:'abcxxxdefyyyfff'})")
     failWithError(Configs.Version3_3 + Configs.Version3_2 + Configs.Procs - Configs.Compiled - Configs.AllRulePlanners,
       "MATCH (x:Person) WHERE x.text =~ '*xxx*yyy*' RETURN x.text", List("Invalid Regex:"))
+  }
+
+  test("should give correct error message with invalid number literal in a subtract") {
+    a[SyntaxException] shouldBe thrownBy {
+      innerExecuteDeprecated("with [1a-1] as list return list", Map())
+    }
   }
 }
