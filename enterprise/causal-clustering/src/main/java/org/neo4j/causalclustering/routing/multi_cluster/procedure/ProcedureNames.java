@@ -19,11 +19,7 @@
  */
 package org.neo4j.causalclustering.routing.multi_cluster.procedure;
 
-import java.util.Arrays;
 import org.neo4j.causalclustering.routing.procedure.ProcedureNamesEnum;
-
-import static java.lang.String.join;
-
 
 /**
  * This is part of the cluster / driver interface specification and
@@ -37,8 +33,8 @@ import static java.lang.String.join;
  */
 public enum ProcedureNames implements ProcedureNamesEnum
 {
-    GET_SUB_CLUSTER_ROUTERS( "getSubClusterRoutingTable" ),
-    GET_SUPER_CLUSTER_ROUTERS( "getSuperClusterRoutingTable" );
+    GET_ROUTERS_FOR_DATABASE( "getRoutersForDatabase" ),
+    GET_ROUTERS_FOR_ALL_DATABASES( "getRoutersForAllDatabases" );
 
     private static final String[] nameSpace = new String[]{"dbms", "cluster", "routing"};
     private final String name;

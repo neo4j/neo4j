@@ -80,13 +80,13 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForAllDatabasesProcedure;
+import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForDatabaseProcedure;
 import org.neo4j.causalclustering.upstream.NoOpUpstreamDatabaseStrategiesLoader;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionStrategy;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategiesLoader;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.causalclustering.upstream.strategies.TypicallyConnectToRandomReadReplicaStrategy;
-import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSubClusterRoutersProcedure;
-import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetSuperClusterRoutersProcedure;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
@@ -187,8 +187,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     config, logProvider ) );
         }
 
-        procedures.register( new GetSuperClusterRoutersProcedure( topologyService, config ) );
-        procedures.register( new GetSubClusterRoutersProcedure( topologyService, config ) );
+        procedures.register( new GetRoutersForAllDatabasesProcedure( topologyService, config ) );
+        procedures.register( new GetRoutersForDatabaseProcedure( topologyService, config ) );
         procedures.register( new ClusterOverviewProcedure( topologyService, logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
         procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );

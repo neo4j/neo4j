@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.routing.RoutingResult;
 import org.neo4j.causalclustering.routing.Endpoint;
 
 /**
- * Simple struct containing the the result of Get*ClusterRouting procedure execution.
+ * Simple struct containing the the result of multi-cluster routing procedure execution.
  */
 public class MultiClusterRoutingResult implements RoutingResult
 {

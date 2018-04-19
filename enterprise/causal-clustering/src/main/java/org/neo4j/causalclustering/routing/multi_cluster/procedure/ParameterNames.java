@@ -20,14 +20,14 @@
 package org.neo4j.causalclustering.routing.multi_cluster.procedure;
 
 /**
- * Enumerates the parameter names used for the Get*ClusterRoutersProcedures
+ * Enumerates the parameter names used for the multi-cluster routing procedures
  */
 public enum ParameterNames
 {
     /**
      * Type: IN
      *
-     * An string specifying the database in the multicluster for which to provide routers.
+     * An string specifying the database in the multi-cluster for which to provide routers.
      */
     DATABASE( "database" ),
 
