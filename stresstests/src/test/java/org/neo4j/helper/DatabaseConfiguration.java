@@ -37,6 +37,7 @@ public class DatabaseConfiguration
     {
         settings.put( GraphDatabaseSettings.keep_logical_logs.name(), txPrune );
         settings.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
+        settings.put( GraphDatabaseSettings.check_point_policy.name(), "continuous" );
         return settings;
     }
 
