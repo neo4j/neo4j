@@ -61,7 +61,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(SlottedPipeBuilder.Factory(physicalPlan), converters)
     val context = PipeExecutionBuilderContext(table, true, new StubCardinalities)
-    executionPlanBuilder.build(None, logicalPlan)(context, planContext).pipe
+    executionPlanBuilder.build(logicalPlan)(context, planContext)
   }
 
   private val x = "x"

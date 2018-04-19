@@ -84,9 +84,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                                               pipeBuilderFactory = pipeBuilderFactory)
       val readOnly = from.solveds(from.logicalPlan.id).readOnly
       val pipeBuildContext = PipeExecutionBuilderContext(from.semanticTable(), readOnly, from.cardinalities)
-      val pipeInfo = executionPlanBuilder
-        .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
-      val PipeInfo(pipe: Pipe, periodicCommitInfo) = pipeInfo
+      val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.planContext)
+      val periodicCommitInfo = from.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
       val columns = from.statement().returnColumns
       val resultBuilderFactory =
         new SlottedExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, physicalPlan.slotConfigurations)
@@ -110,7 +109,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
           printPlanInfo(from)
           printRewrittenPlanInfo(logicalPlan)
         }
-        printPipeInfo(physicalPlan.slotConfigurations, pipeInfo)
+        printPipe(physicalPlan.slotConfigurations, pipe)
       }
 
       new CompilationState(from, Success(execPlan))
