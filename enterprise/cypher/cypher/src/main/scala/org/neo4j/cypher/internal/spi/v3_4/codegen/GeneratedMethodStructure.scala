@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -286,7 +286,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   // NOTE: This method assumes that code for converting from null to NoValue for nullable expressions has already been generated outside it
   private def toAnyValue(expression: Expression, codeGenType: CodeGenType, materializeEntities: Boolean): Expression = codeGenType match {
     case CypherCodeGenType(_, _: AnyValueType) =>
-      expression // Already an AnyValue
+      cast(typeRef[AnyValue], expression) // Already an AnyValue
 
     // == Node ==
     case CodeGenType.primitiveNode =>
