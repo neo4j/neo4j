@@ -213,17 +213,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
-        boolean isStepDown = outcome.isSteppingDown();
-
-        if ( isStepDown )
-        {
-            leaderInfo.stepDown();
-        }
+        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm(), outcome.isSteppingDown() );
 
         for ( LeaderListener listener : leaderListeners )
         {
-            if ( isStepDown )
+            if ( outcome.isSteppingDown() )
             {
                 listener.onLeaderStepDown( leaderInfo );
             }
@@ -251,10 +245,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private boolean leaderChanged( Outcome outcome, MemberId oldLeader )
     {
-        Optional<MemberId> oldLeaderOpt = Optional.ofNullable( oldLeader );
-        Optional<MemberId> outcomeLeaderOpt = Optional.ofNullable( outcome.getLeader() );
-
-        return !oldLeaderOpt.equals( outcomeLeaderOpt );
+        return !Objects.equals( oldLeader, outcome.getLeader() );
     }
 
     public synchronized ConsensusOutcome handle( RaftMessages.RaftMessage incomingMessage ) throws IOException

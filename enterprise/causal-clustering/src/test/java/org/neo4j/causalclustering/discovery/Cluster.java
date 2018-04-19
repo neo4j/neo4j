@@ -395,7 +395,9 @@ public class Cluster
         Set<Role> roleSet = Arrays.stream( roles ).collect( toSet() );
 
         return coreMembers.values().stream()
-                .filter( m -> m.database() != null && m.dbName().equals( dbName ) &&  roleSet.contains( m.database().getRole() ) )
+                .filter( m -> m.database() != null )
+                .filter( m -> m.dbName().equals( dbName ) )
+                .filter( m -> roleSet.contains( m.database().getRole() ) )
                 .collect( Collectors.toList() );
     }
 

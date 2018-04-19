@@ -277,7 +277,6 @@ public class ClusterOverviewIT
         clusterRule.withNumberOfCoreMembers( 2 );
 
         Cluster cluster = clusterRule.startCluster();
-        //TODO: address proliferation of Role enums
         List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
         CoreClusterMember leader = cluster.getMemberWithRole( Role.LEADER );
         followers.forEach( CoreClusterMember::shutdown );

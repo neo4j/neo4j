@@ -56,10 +56,10 @@ public interface CoreTopologyService extends TopologyService
      * Set the leader memberId to null for a given database (i.e. Raft consensus group).
      * This is intended to trigger state cleanup for informational procedures like {@link ClusterOverviewProcedure}
      *
-     * @param leaderInfo
-     * @param dbName
+     * @param stepDownLeaderInfo Information about the stepdown event, including term
+     * @param dbName The database for which this topology member should handle a stepdown
      */
-    void handleStepDown( LeaderInfo leaderInfo, String dbName );
+    void handleStepDown( LeaderInfo stepDownLeaderInfo, String dbName );
 
     interface Listener
     {
