@@ -216,7 +216,7 @@ public class ReadReplica implements ClusterMember
 
     public MemberId memberId()
     {
-        return new MemberId( new UUID( serverId, 0 ) );
+        return new MemberId( new UUID( ((long) serverId) << 32, 0 ) );
     }
 
     public int serverId()
