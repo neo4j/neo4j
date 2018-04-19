@@ -48,6 +48,11 @@ public final class TemporalUtil
         return nanosOfDayLocal - offsetSeconds * NANOS_PER_SECOND;
     }
 
+    public static long nanosOfDayToLocal( long nanosOfDayUTC, int offsetSeconds )
+    {
+        return nanosOfDayUTC + (long) offsetSeconds * NANOS_PER_SECOND;
+    }
+
     public static long getNanosOfDayUTC( OffsetTime value )
     {
         long secondsOfDayLocal = value.toLocalTime().toSecondOfDay();

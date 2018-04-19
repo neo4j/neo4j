@@ -23,6 +23,7 @@ import java.time.{ZoneId, ZoneOffset}
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.values.storable._
+import org.neo4j.values.utils.TemporalUtil
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -104,9 +105,9 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   def timeGen: Gen[TimeValue] =
     for { // stay one second off min and max time, to allow getting a bigger and smaller value
-      nanosOfDay <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
+      nanosOfDayLocal <- Gen.chooseNum(NANOS_PER_SECOND, MAX_NANOS_PER_DAY - NANOS_PER_SECOND)
       timeZone <- zoneOffsetGen
-    } yield TimeValue.time(nanosOfDay, timeZone)
+    } yield TimeValue.time(TemporalUtil.nanosOfDayToUTC(nanosOfDayLocal, timeZone.getTotalSeconds), timeZone)
 
   def localTimeGen: Gen[LocalTimeValue] =
     for {
