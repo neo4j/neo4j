@@ -37,7 +37,7 @@ import org.neo4j.causalclustering.core.consensus.schedule.TimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.TimerService.TimerName;
 import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.helper.Enableable;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseSelectionException;
@@ -86,7 +86,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     private final LocalDatabase localDatabase;
     private final Log log;
-    private final Enableable enableDisableOnStoreCopy;
+    private final Suspendable enableDisableOnStoreCopy;
     private final StoreCopyProcess storeCopyProcess;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
@@ -103,7 +103,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
     private volatile long latestTxIdOfUpStream;
 
-    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Enableable enableDisableOnSoreCopy, CatchUpClient catchUpClient,
+    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Suspendable enableDisableOnSoreCopy, CatchUpClient catchUpClient,
                                   UpstreamDatabaseStrategySelector selectionStrategy, TimerService timerService, long txPullIntervalMillis,
                                   BatchingTxApplier applier, Monitors monitors, StoreCopyProcess storeCopyProcess,
                                   Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )

@@ -22,13 +22,13 @@ package org.neo4j.causalclustering.helper;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
-public abstract class EnableableLifeCycle implements Lifecycle, Enableable
+public abstract class SuspendableLifeCycle implements Lifecycle, Suspendable
 {
     private final Log debugLog;
     private boolean stoppedByLifeCycle = true;
     private boolean enabled = true;
 
-    public EnableableLifeCycle( Log debugLog )
+    public SuspendableLifeCycle( Log debugLog )
     {
         this.debugLog = debugLog;
     }

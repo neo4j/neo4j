@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.helper;
 
-public interface Enableable
+public interface Suspendable
 {
     void enable() throws Throwable;
 

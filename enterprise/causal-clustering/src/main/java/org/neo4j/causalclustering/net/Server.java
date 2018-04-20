@@ -30,7 +30,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.helper.EnableableLifeCycle;
+import org.neo4j.causalclustering.helper.SuspendableLifeCycle;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.logging.Log;
@@ -39,7 +39,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 
-public class Server extends EnableableLifeCycle
+public class Server extends SuspendableLifeCycle
 {
     private final Log debugLog;
     private final Log userLog;

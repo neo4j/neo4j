@@ -24,36 +24,36 @@ import java.util.List;
 
 import org.neo4j.function.ThrowingConsumer;
 
-public class CompositeEnableable implements Enableable
+public class CompositeSuspendable implements Suspendable
 {
-    private final List<Enableable> enableables = new ArrayList<>();
+    private final List<Suspendable> suspendables = new ArrayList<>();
 
-    public void add( Enableable enableable )
+    public void add( Suspendable suspendable )
     {
-        enableables.add( enableable );
+        suspendables.add( suspendable );
     }
 
     @Override
     public void enable()
     {
-        doOperation( Enableable::enable, "Enable" );
+        doOperation( Suspendable::enable, "Enable" );
     }
 
     @Override
     public void disable()
     {
-        doOperation( Enableable::disable, "Disable" );
+        doOperation( Suspendable::disable, "Disable" );
     }
 
-    private void doOperation( ThrowingConsumer<Enableable,Throwable> operation, String description )
+    private void doOperation( ThrowingConsumer<Suspendable,Throwable> operation, String description )
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
         {
-            for ( Enableable enableable : enableables )
+            for ( Suspendable suspendable : suspendables )
             {
                 try
                 {
-                    operation.accept( enableable );
+                    operation.accept( suspendable );
                 }
                 catch ( Throwable throwable )
                 {

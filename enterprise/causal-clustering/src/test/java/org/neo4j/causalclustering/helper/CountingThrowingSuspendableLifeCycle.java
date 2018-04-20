@@ -21,9 +21,9 @@ package org.neo4j.causalclustering.helper;
 
 import org.neo4j.logging.NullLog;
 
-public class CountingThrowingEnableableLifeCycle extends EnableableLifeCycle
+public class CountingThrowingSuspendableLifeCycle extends SuspendableLifeCycle
 {
-    public CountingThrowingEnableableLifeCycle()
+    public CountingThrowingSuspendableLifeCycle()
     {
         super( NullLog.getInstance() );
     }

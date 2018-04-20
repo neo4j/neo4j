@@ -19,14 +19,14 @@
  */
 package org.neo4j.causalclustering.helper;
 
-import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.LifeCycleState;
 import org.neo4j.logging.Log;
 
-public class StateAwareEnableableLifeCycle extends EnableableLifeCycle
+public class StateAwareSuspendableLifeCycle extends SuspendableLifeCycle
 {
     public LifeCycleState status;
 
-    StateAwareEnableableLifeCycle( Log debugLog )
+    StateAwareSuspendableLifeCycle( Log debugLog )
     {
         super( debugLog );
     }

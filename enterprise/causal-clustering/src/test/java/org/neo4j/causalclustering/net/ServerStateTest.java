@@ -32,8 +32,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.neo4j.causalclustering.helper.EnableableLifeCycleStateChangeTest;
-import org.neo4j.causalclustering.helper.EnableableLifeCylcleEnableableStateChangeTest;
+import org.neo4j.causalclustering.helper.SuspendableLifeCycleLifeStateChangeTest;
+import org.neo4j.causalclustering.helper.SuspendableLifeCycleSuspendedStateChangeTest;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Level;
@@ -43,8 +43,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
- * More generalized state tests of EnableableLifeCycle can be found {@link EnableableLifeCycleStateChangeTest} and
- * {@link EnableableLifeCylcleEnableableStateChangeTest}
+ * More generalized state tests of SuspendableLifeCycle can be found {@link SuspendableLifeCycleLifeStateChangeTest} and
+ * {@link SuspendableLifeCycleSuspendedStateChangeTest}
  */
 public class ServerStateTest
 {

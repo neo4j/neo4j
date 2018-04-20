@@ -27,15 +27,15 @@ import org.neo4j.function.ThrowingConsumer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class EnableableLifeCycleFailingTest
+public class SuspendableLifeCycleFailingTest
 {
 
-    private CountingThrowingEnableableLifeCycle lifeCycle;
+    private CountingThrowingSuspendableLifeCycle lifeCycle;
 
     @Before
     public void setup() throws Throwable
     {
-        lifeCycle = new CountingThrowingEnableableLifeCycle();
+        lifeCycle = new CountingThrowingSuspendableLifeCycle();
         lifeCycle.init();
     }
 
@@ -45,7 +45,7 @@ public class EnableableLifeCycleFailingTest
         lifeCycle.start();
         lifeCycle.setFailMode();
 
-        runFailing( EnableableLifeCycle::stop );
+        runFailing( SuspendableLifeCycle::stop );
 
         lifeCycle.setSuccessMode();
 
@@ -60,7 +60,7 @@ public class EnableableLifeCycleFailingTest
         lifeCycle.start();
         lifeCycle.setFailMode();
 
-        runFailing( EnableableLifeCycle::shutdown );
+        runFailing( SuspendableLifeCycle::shutdown );
 
         lifeCycle.setSuccessMode();
 
@@ -73,7 +73,7 @@ public class EnableableLifeCycleFailingTest
     public void canStartifDisableFailed() throws Throwable
     {
         lifeCycle.setFailMode();
-        runFailing( EnableableLifeCycle::disable );
+        runFailing( SuspendableLifeCycle::disable );
 
         lifeCycle.setSuccessMode();
         lifeCycle.start();
@@ -81,7 +81,7 @@ public class EnableableLifeCycleFailingTest
         assertEquals( 1, lifeCycle.starts );
     }
 
-    private void runFailing( ThrowingConsumer<EnableableLifeCycle,Throwable> consumer ) throws Throwable
+    private void runFailing( ThrowingConsumer<SuspendableLifeCycle,Throwable> consumer ) throws Throwable
     {
         try
         {

@@ -27,21 +27,21 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.EnableableState;
-import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.SuspendedState;
+import org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.LifeCycleState;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.setInitialState;
+import static org.neo4j.causalclustering.helper.SuspendableLifecycleStateTestHelpers.setInitialState;
 
 @RunWith( Parameterized.class )
-public class EnableableLifeCycleStateChangeTest
+public class SuspendableLifeCycleLifeStateChangeTest
 {
     @Parameterized.Parameter()
     public LifeCycleState fromState;
 
     @Parameterized.Parameter( 1 )
-    public EnableableState fromEnableableState;
+    public SuspendedState fromSuspendedState;
 
     @Parameterized.Parameter( 2 )
     public LifeCycleState toLifeCycleState;
@@ -55,18 +55,18 @@ public class EnableableLifeCycleStateChangeTest
         List<Object[]> params = new ArrayList<>();
         for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
         {
-            for ( EnableableState enableableState : EnableableState.values() )
+            for ( SuspendedState suspendedState : SuspendedState.values() )
             {
                 for ( LifeCycleState toState : lifeCycleOperation() )
                 {
-                    params.add( new Object[]{lifeCycleState, enableableState, toState, expectedResult( enableableState, toState )} );
+                    params.add( new Object[]{lifeCycleState, suspendedState, toState, expectedResult( suspendedState, toState )} );
                 }
             }
         }
         return params;
     }
 
-    private StateAwareEnableableLifeCycle lifeCycle;
+    private StateAwareSuspendableLifeCycle lifeCycle;
 
     private static LifeCycleState[] lifeCycleOperation()
     {
@@ -76,25 +76,25 @@ public class EnableableLifeCycleStateChangeTest
     @Before
     public void setUpServer() throws Throwable
     {
-        lifeCycle = new StateAwareEnableableLifeCycle( new AssertableLogProvider( false ).getLog( "log" ) );
+        lifeCycle = new StateAwareSuspendableLifeCycle( new AssertableLogProvider( false ).getLog( "log" ) );
         setInitialState( lifeCycle, fromState );
-        fromEnableableState.set( lifeCycle );
+        fromSuspendedState.set( lifeCycle );
     }
 
     @Test
-    public void executeEnableable() throws Throwable
+    public void changeLifeState() throws Throwable
     {
         toLifeCycleState.set( lifeCycle );
         assertEquals( shouldBeRunning, lifeCycle.status );
     }
 
-    private static LifeCycleState expectedResult( EnableableState state, LifeCycleState toLifeCycle )
+    private static LifeCycleState expectedResult( SuspendedState state, LifeCycleState toLifeCycle )
     {
-        if ( state == EnableableState.Untouched || state == EnableableState.Enabled )
+        if ( state == SuspendedState.Untouched || state == SuspendedState.Enabled )
         {
             return toLifeCycle;
         }
-        else if ( state == EnableableState.Disabled )
+        else if ( state == SuspendedState.Disabled )
         {
             if ( toLifeCycle == LifeCycleState.Shutdown )
             {

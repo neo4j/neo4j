@@ -22,9 +22,9 @@ package org.neo4j.causalclustering.helper;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-class EnableableLifecycleStateTestHelpers
+class SuspendableLifecycleStateTestHelpers
 {
-    static void setInitialState( StateAwareEnableableLifeCycle lifeCycle, LifeCycleState state ) throws Throwable
+    static void setInitialState( StateAwareSuspendableLifeCycle lifeCycle, LifeCycleState state ) throws Throwable
     {
         for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
         {
@@ -55,22 +55,24 @@ class EnableableLifecycleStateTestHelpers
         }
     }
 
-    enum EnableableState
+    enum SuspendedState
     {
-        Untouched( enableable -> {} ),
-        Enabled( Enableable::enable ),
-        Disabled( Enableable::disable );
+        Untouched( suspendable ->
+                   {
+                   } ),
+        Enabled( Suspendable::enable ),
+        Disabled( Suspendable::disable );
 
-        private final ThrowingConsumer<Enableable,Throwable> consumer;
+        private final ThrowingConsumer<Suspendable,Throwable> consumer;
 
-        EnableableState( ThrowingConsumer<Enableable,Throwable> consumer )
+        SuspendedState( ThrowingConsumer<Suspendable,Throwable> consumer )
         {
             this.consumer = consumer;
         }
 
-        void set( Enableable enableable ) throws Throwable
+        void set( Suspendable suspendable ) throws Throwable
         {
-            consumer.accept( enableable );
+            consumer.accept( suspendable );
         }
     }
 }

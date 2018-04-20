@@ -63,10 +63,10 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderService;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
-import org.neo4j.causalclustering.helper.CompositeEnableable;
+import org.neo4j.causalclustering.helper.CompositeSuspendable;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
-import org.neo4j.causalclustering.helper.Enableable;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.net.InstalledProtocolHandler;
 import org.neo4j.causalclustering.net.Server;
 import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
@@ -89,7 +89,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -147,7 +146,7 @@ public class CoreServerModule
         this.logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
 
-        CompositeEnableable servicesToStopOnStoreCopy = new CompositeEnableable();
+        CompositeSuspendable servicesToStopOnStoreCopy = new CompositeSuspendable();
 
         StateStorage<Long> lastFlushedStorage = platformModule.life.add(
                 new DurableStateStorage<>( platformModule.fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME, new LongIndexMarshal(),
@@ -251,7 +250,7 @@ public class CoreServerModule
         return catchUpClient;
     }
 
-    private CoreStateDownloader createCoreStateDownloader( Enableable servicesToStopOnStoreCopy, CatchUpClient catchUpClient )
+    private CoreStateDownloader createCoreStateDownloader( Suspendable servicesToSuspendOnStoreCopy, CatchUpClient catchUpClient )
     {
         ExponentialBackoffStrategy storeCopyBackoffStrategy =
                 new ExponentialBackoffStrategy( 1, config.get( CausalClusteringSettings.store_copy_backoff_max_wait ).toMillis(), TimeUnit.MILLISECONDS );
@@ -267,8 +266,8 @@ public class CoreServerModule
                 copiedStoreRecovery, remoteStore, logProvider );
 
         CommitStateHelper commitStateHelper = new CommitStateHelper( platformModule.pageCache, platformModule.fileSystem, config );
-        return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider,
-                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, commitStateHelper );
+        return new CoreStateDownloader( localDatabase, servicesToSuspendOnStoreCopy, remoteStore, catchUpClient, logProvider,
+                                        storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, commitStateHelper );
     }
 
     private MembershipWaiterLifecycle createMembershipWaiterLifecycle()
