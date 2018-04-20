@@ -234,13 +234,13 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
                 public PropertyContainer next()
                 {
                     PropertyContainer propertyContainer;
-                    if ( index % 2 == 0 )
+                    if ( (index & 1) == 0 )
                     {
-                        propertyContainer = mapNode( nodes[index / 2] );
+                        propertyContainer = mapNode( nodes[index >> 1] );
                     }
                     else
                     {
-                        propertyContainer = mapRelationship( relationships[index / 2] );
+                        propertyContainer = mapRelationship( relationships[index >> 1] );
                     }
                     index++;
                     return propertyContainer;
