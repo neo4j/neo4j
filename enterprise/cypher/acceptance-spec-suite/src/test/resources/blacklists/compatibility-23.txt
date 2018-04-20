@@ -74,9 +74,6 @@ min() over list values
 //DeleteAcceptance.feature
 Return properties from deleted node
 
-//IndexAcceptance.feature
-STARTS WITH should handle null prefix
-
 //UnwindAcceptance.feature
 Nested unwind with longs
 Nested unwind with doubles

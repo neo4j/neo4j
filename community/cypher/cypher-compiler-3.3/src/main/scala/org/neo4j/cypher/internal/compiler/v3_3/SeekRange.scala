@@ -179,5 +179,5 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
 final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 
-  override def toString: String = prefix.toString
+  override def toString: String = s"STARTS WITH ${if(prefix == null) "null" else prefix.toString}"
 }
