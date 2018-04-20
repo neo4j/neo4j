@@ -211,7 +211,7 @@ public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 
     public void setUpstreamDatabaseSelectionStrategy( String key )
     {
-        config.put( CausalClusteringSettings.upstream_selection_strategy.name(), key );
+        updateConfig( CausalClusteringSettings.upstream_selection_strategy, key );
     }
 
     public MemberId memberId()
