@@ -34,7 +34,7 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
     }
 
     @Override
-    public synchronized void enable() throws Throwable
+    public final synchronized void enable() throws Throwable
     {
         if ( !stoppedByLifeCycle )
         {
@@ -48,20 +48,20 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
     }
 
     @Override
-    public synchronized void disable() throws Throwable
+    public final synchronized void disable() throws Throwable
     {
         stop0();
         enabled = false;
     }
 
     @Override
-    public synchronized void init() throws Throwable
+    public final synchronized void init() throws Throwable
     {
         init0();
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public final synchronized void start() throws Throwable
     {
         if ( !enabled )
         {
@@ -75,14 +75,14 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public final synchronized void stop() throws Throwable
     {
         stop0();
         stoppedByLifeCycle = true;
     }
 
     @Override
-    public synchronized void shutdown() throws Throwable
+    public final synchronized void shutdown() throws Throwable
     {
         shutdown0();
         stoppedByLifeCycle = true;

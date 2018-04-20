@@ -20,12 +20,16 @@
 package org.neo4j.causalclustering.net;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.helper.EnableableLifeCycleStateChangeTest;
@@ -44,52 +48,84 @@ import static org.junit.Assert.assertTrue;
  */
 public class ServerStateTest
 {
+    private static Bootstrap bootstrap;
+    private static EventLoopGroup clientGroup;
     private Server server;
-    private final EventLoopGroup clientGroup = new NioEventLoopGroup();
+    private Channel channel;
+
+    @BeforeClass
+    public static void initialSetup()
+    {
+        clientGroup = new NioEventLoopGroup();
+        bootstrap = new Bootstrap()
+                .group( clientGroup )
+                .channel( NioSocketChannel.class )
+                .handler( new ChannelInitializer<NioSocketChannel>()
+                {
+                    @Override
+                    protected void initChannel( NioSocketChannel ch )
+                    {
+
+                    }
+                } );
+    }
 
     @Before
     public void setUp() throws Throwable
     {
         server = createServer();
         server.init();
-        assertFalse( canConnect( server.address(), clientGroup ) );
+        assertFalse( canConnect() );
     }
 
     @After
     public void tearDown() throws Throwable
     {
-        server.stop();
-        server.shutdown();
+        if ( server != null )
+        {
+            server.stop();
+            server.shutdown();
+        }
+        if ( channel != null )
+        {
+            channel.close();
+        }
+    }
+
+    @AfterClass
+    public static void finalTearDown()
+    {
+        clientGroup.shutdownGracefully();
     }
 
     @Test
     public void shouldStartServerNormally() throws Throwable
     {
         server.start();
-        assertTrue( canConnect( server.address(), clientGroup ) );
+        assertTrue( canConnect() );
     }
 
     @Test
     public void canDisableAndEnableServer() throws Throwable
     {
         server.start();
-        assertTrue( canConnect( server.address(), clientGroup ) );
+        assertTrue( canConnect() );
 
         server.disable();
-        assertFalse( canConnect( server.address(), clientGroup ) );
+        assertFalse( canConnect() );
 
         server.enable();
-        assertTrue( canConnect( server.address(), clientGroup ) );
+        assertTrue( canConnect() );
     }
 
     @Test
     public void serverCannotBeEnabledIfLifeCycleHasNotStarted() throws Throwable
     {
         server.enable();
-        assertFalse( canConnect( server.address(), clientGroup ) );
+        assertFalse( canConnect() );
 
         server.start();
-        assertTrue( canConnect( server.address(), clientGroup ) );
+        assertTrue( canConnect() );
     }
 
     @Test
@@ -98,30 +134,24 @@ public class ServerStateTest
         server.disable();
 
         server.start();
-        assertFalse( canConnect( server.address(), clientGroup ) );
+        assertFalse( canConnect() );
 
         server.enable();
-        assertTrue( canConnect( server.address(), clientGroup ) );
+        assertTrue( canConnect() );
     }
 
     private static Server createServer()
     {
-        return new Server( channel ->
-                           {
-                           }, FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ),
+        return new Server( channel -> {}, FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ),
                            FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ),
                            new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ), "serverName" );
     }
 
-    private static boolean canConnect( ListenSocketAddress socketAddress, EventLoopGroup eventExecutors ) throws InterruptedException
+    private boolean canConnect() throws InterruptedException
     {
-        return new Bootstrap().group( eventExecutors ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<NioSocketChannel>()
-        {
-            @Override
-            protected void initChannel( NioSocketChannel ch )
-            {
-
-            }
-        } ).connect( socketAddress.getHostname(), socketAddress.getPort() ).await().isSuccess();
+        ListenSocketAddress socketAddress = server.address();
+        ChannelFuture channelFuture = bootstrap.connect( socketAddress.getHostname(), socketAddress.getPort() );
+        channel = channelFuture.channel();
+        return channelFuture.await().isSuccess();
     }
 }

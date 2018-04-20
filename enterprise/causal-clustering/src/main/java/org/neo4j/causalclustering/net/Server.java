@@ -37,6 +37,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static java.lang.String.format;
+
 public class Server extends EnableableLifeCycle
 {
     private final Log debugLog;
@@ -161,6 +163,6 @@ public class Server extends EnableableLifeCycle
     @Override
     public String toString()
     {
-        return serverName;
+        return format( "Server[%s]", serverName );
     }
 }

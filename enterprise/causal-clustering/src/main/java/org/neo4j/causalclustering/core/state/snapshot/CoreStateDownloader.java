@@ -211,7 +211,7 @@ public class CoreStateDownloader
         ensure( localDatabase::start, "start local database after store copy" );
 
         coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
-        ensure( enableDisableOnStoreCopy::enable, "start auxiliary services after store copy" );
+        ensure( enableDisableOnStoreCopy::enable, "enable auxiliary services after store copy" );
 
         return true;
     }

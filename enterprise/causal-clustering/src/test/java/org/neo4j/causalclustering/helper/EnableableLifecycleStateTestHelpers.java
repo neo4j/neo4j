@@ -19,27 +19,11 @@
  */
 package org.neo4j.causalclustering.helper;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 class EnableableLifecycleStateTestHelpers
 {
-    static void setEnableableState( Enableable enableable, EnableableState enableableState ) throws Throwable
-    {
-        switch ( enableableState )
-        {
-        case Enabled:
-            enableable.enable();
-            return;
-        case Disabled:
-            enableable.disable();
-            return;
-        case Untouched:
-            return;
-        default:
-            throw new IllegalStateException( "Not recognized state " + enableableState );
-        }
-    }
-
     static void setInitialState( StateAwareEnableableLifeCycle lifeCycle, LifeCycleState state ) throws Throwable
     {
         for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
@@ -53,46 +37,40 @@ class EnableableLifecycleStateTestHelpers
 
     enum LifeCycleState
     {
-        Init
-                {
-                    @Override
-                    void set( Lifecycle lifecycle ) throws Throwable
-                    {
-                        lifecycle.init();
-                    }
-                },
-        Start
-                {
-                    @Override
-                    void set( Lifecycle lifecycle ) throws Throwable
-                    {
-                        lifecycle.start();
-                    }
-                },
-        Stop
-                {
-                    @Override
-                    void set( Lifecycle lifecycle ) throws Throwable
-                    {
-                        lifecycle.stop();
-                    }
-                },
-        Shutdown
-                {
-                    @Override
-                    void set( Lifecycle lifecycle ) throws Throwable
-                    {
-                        lifecycle.shutdown();
-                    }
-                };
+        Init( Lifecycle::init ),
+        Start( Lifecycle::start ),
+        Stop( Lifecycle::stop ),
+        Shutdown( Lifecycle::shutdown );
 
-        abstract void set( Lifecycle lifecycle ) throws Throwable;
+        private final ThrowingConsumer<Lifecycle,Throwable> operation;
+
+        LifeCycleState( ThrowingConsumer<Lifecycle,Throwable> operation )
+        {
+            this.operation = operation;
+        }
+
+        void set( Lifecycle lifecycle ) throws Throwable
+        {
+            operation.accept( lifecycle );
+        }
     }
 
     enum EnableableState
     {
-        Untouched,
-        Enabled,
-        Disabled
+        Untouched( enableable -> {} ),
+        Enabled( Enableable::enable ),
+        Disabled( Enableable::disable );
+
+        private final ThrowingConsumer<Enableable,Throwable> consumer;
+
+        EnableableState( ThrowingConsumer<Enableable,Throwable> consumer )
+        {
+            this.consumer = consumer;
+        }
+
+        void set( Enableable enableable ) throws Throwable
+        {
+            consumer.accept( enableable );
+        }
     }
 }

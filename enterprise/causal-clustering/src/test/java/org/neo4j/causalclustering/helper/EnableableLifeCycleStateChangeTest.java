@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.Lif
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.setEnableableState;
 import static org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.setInitialState;
 
 @RunWith( Parameterized.class )
@@ -79,7 +78,7 @@ public class EnableableLifeCycleStateChangeTest
     {
         lifeCycle = new StateAwareEnableableLifeCycle( new AssertableLogProvider( false ).getLog( "log" ) );
         setInitialState( lifeCycle, fromState );
-        setEnableableState( lifeCycle, fromEnableableState );
+        fromEnableableState.set( lifeCycle );
     }
 
     @Test
