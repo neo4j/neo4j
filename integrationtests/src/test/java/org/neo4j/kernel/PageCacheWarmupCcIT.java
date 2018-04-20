@@ -93,14 +93,14 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         monitors.addMonitorListener( new PageCacheWarmerMonitor()
         {
             @Override
-            public void warmupCompleted( long elapsedMillis, long pagesLoaded )
+            public void warmupCompleted( long pagesLoaded )
             {
                 pagesLoadedInWarmup.set( pagesLoaded );
                 warmupLatch.release();
             }
 
             @Override
-            public void profileCompleted( long elapsedMillis, long pagesInMemory )
+            public void profileCompleted( long pagesInMemory )
             {
             }
         } );

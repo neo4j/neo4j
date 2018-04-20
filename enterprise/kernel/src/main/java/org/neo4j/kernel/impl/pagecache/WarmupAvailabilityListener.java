@@ -22,13 +22,11 @@ package org.neo4j.kernel.impl.pagecache;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Format;
 import org.neo4j.kernel.AvailabilityGuard.AvailabilityListener;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.scheduler.JobScheduler.Groups.pageCacheIOHelper;
 
 class WarmupAvailabilityListener implements AvailabilityListener
@@ -72,14 +70,7 @@ class WarmupAvailabilityListener implements AvailabilityListener
         }
         try
         {
-            long start = System.nanoTime();
-            pageCacheWarmer.reheat().ifPresent( pagesLoaded ->
-            {
-                long elapsedMillis = NANOSECONDS.toMillis( System.nanoTime() - start );
-                monitor.warmupCompleted( elapsedMillis, pagesLoaded );
-                log.debug( "Active page cache warmup took " + Format.duration( elapsedMillis ) +
-                           " to load " + pagesLoaded + " pages." );
-            } );
+            pageCacheWarmer.reheat().ifPresent( monitor::warmupCompleted );
         }
         catch ( Exception e )
         {
@@ -105,14 +96,7 @@ class WarmupAvailabilityListener implements AvailabilityListener
     {
         try
         {
-            long start = System.nanoTime();
-            pageCacheWarmer.profile().ifPresent( pagesInMemory ->
-            {
-                long elapsedMillis = NANOSECONDS.toMillis( System.nanoTime() - start );
-                monitor.profileCompleted( elapsedMillis, pagesInMemory );
-                log.debug( "Profiled page cache in " + Format.duration( elapsedMillis ) +
-                           ", and found " + pagesInMemory + " pages in memory." );
-            } );
+            pageCacheWarmer.profile().ifPresent( monitor::profileCompleted );
         }
         catch ( Exception e )
         {
