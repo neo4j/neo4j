@@ -29,14 +29,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Mode;
+import org.neo4j.procedure.Procedure;
 import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
 import org.neo4j.server.security.enterprise.auth.EnterpriseUserManager;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
@@ -58,10 +67,10 @@ public class PropertyLevelSecurityIT
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseFacade db;
-    private EnterpriseAuthAndUserManager authManager;
     private LoginContext neo;
     private LoginContext smith;
     private LoginContext morpheus;
+    private LoginContext jones;
 
     @Before
     public void setUp() throws Throwable
@@ -70,20 +79,28 @@ public class PropertyLevelSecurityIT
         db = (GraphDatabaseFacade) s.newImpermanentDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( SecuritySettings.property_level_authorization_enabled, "true" )
                 .setConfig( SecuritySettings.property_level_authorization_permissions, "Agent=alias,secret" )
+                .setConfig( SecuritySettings.procedure_roles, "test.*:procRole" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "true" )
                 .newGraphDatabase();
-        authManager = (EnterpriseAuthAndUserManager) db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        EnterpriseAuthAndUserManager authManager = (EnterpriseAuthAndUserManager) db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        Procedures procedures = db.getDependencyResolver().resolveDependency( Procedures.class );
+        procedures.registerProcedure( TestProcedure.class );
         EnterpriseUserManager userManager = authManager.getUserManager();
         userManager.newUser( "Neo", "eon", false );
         userManager.newUser( "Smith", "mr", false );
-        userManager.addRoleToUser( PredefinedRoles.ARCHITECT, "Neo" );
-        userManager.newRole( "Agent", "Smith" );
-        userManager.addRoleToUser( PredefinedRoles.READER, "Smith" );
+        userManager.newUser( "Jones", "mr", false );
         userManager.newUser( "Morpheus", "dealwithit", false );
+
+        userManager.newRole( "procRole", "Jones" );
+        userManager.newRole( "Agent", "Smith", "Jones" );
+
+        userManager.addRoleToUser( PredefinedRoles.ARCHITECT, "Neo" );
+        userManager.addRoleToUser( PredefinedRoles.READER, "Smith" );
         userManager.addRoleToUser( PredefinedRoles.READER, "Morpheus" );
 
         neo = authManager.login( authToken( "Neo", "eon" ) );
         smith = authManager.login( authToken( "Smith", "mr" ) );
+        jones = authManager.login( authToken( "Jones", "mr" ) );
         morpheus = authManager.login( authToken( "Morpheus", "dealwithit" ) );
     }
 
@@ -507,6 +524,34 @@ public class PropertyLevelSecurityIT
         } );
     }
 
+    @Test
+    public void allowedProcedureShouldIgnorePropertyBlacklist() throws Throwable
+    {
+        execute( neo, "CREATE (:Person {name: 'Andersson'}) ", Collections.emptyMap() ).close();
+
+        assertProcedureResult( morpheus, Collections.singletonMap( "Andersson", "N/A" ) );
+        assertProcedureResult( smith, Collections.singletonMap( "Andersson", "N/A" ) );
+        assertProcedureResult( jones, Collections.singletonMap( "Andersson", "N/A" ) );
+
+        execute( neo, "MATCH (n:Person) WHERE n.name = 'Andersson' SET n.alias = 'neo' RETURN n", Collections.emptyMap() ).close();
+
+        assertProcedureResult( morpheus, Collections.singletonMap( "Andersson", "neo" ) );
+        assertProcedureResult( smith, Collections.singletonMap( "Andersson", "N/A" ) );
+        assertProcedureResult( jones, Collections.singletonMap( "Andersson", "neo" ) );
+    }
+
+    private void assertProcedureResult( LoginContext user, Map<String,String> nameAliasMap )
+    {
+        execute( user, "CALL test.getAlias", Collections.emptyMap(), r ->
+        {
+            assertThat( r.hasNext(), equalTo( true ) );
+            Map<String,Object> next = r.next();
+            String name = (String) next.get( "name" );
+            assertThat( nameAliasMap.containsKey( name ), equalTo( true ) );
+            assertThat( next.get( "alias" ), equalTo( nameAliasMap.get( name ) ) );
+        } );
+    }
+
     private void execute( LoginContext subject, String query, Map<String,Object> params, Consumer<Result> consumer )
     {
         Result result;
@@ -528,5 +573,35 @@ public class PropertyLevelSecurityIT
             tx.success();
         }
         return result;
+    }
+
+    @SuppressWarnings( "unused" )
+    public static class TestProcedure
+    {
+        @Context
+        public GraphDatabaseService db;
+
+        @Procedure( name = "test.getAlias", mode = Mode.READ )
+        public Stream<MyOutputRecord> getAlias()
+        {
+            ResourceIterator<Node> nodes = db.findNodes( Label.label( "Person" ) );
+            return nodes
+                    .stream()
+                    .map( n -> new MyOutputRecord( (String) n.getProperty( "name" ),
+                                                   (String) n.getProperty( "alias", "N/A" ) ) );
+        }
+    }
+
+    @SuppressWarnings( "WeakerAccess" )
+    public static class MyOutputRecord
+    {
+        public String name;
+        public String alias;
+
+        public MyOutputRecord( String name, String alias )
+        {
+            this.name = name;
+            this.alias = alias;
+        }
     }
 }
