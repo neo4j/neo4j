@@ -56,8 +56,8 @@ import org.neo4j.kernel.impl.api.store.{DefaultIndexReference, RelationshipItera
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, PathWrappingPathValue, RelationshipProxyWrappingValue}
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 import org.neo4j.values.{AnyValue, ValueMapper}
@@ -372,12 +372,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else cursor.isDense
   }
 
-  override def asObject(value: AnyValue): Any = value match {
-    case node: NodeProxyWrappingNodeValue => node.nodeProxy
-    case edge: RelationshipProxyWrappingValue => edge.relationshipProxy
-    case path: PathWrappingPathValue => path.path()
-    case _ => withAnyOpenQueryContext(_ => value.map(valueMapper))
-  }
+  override def asObject(value: AnyValue): Any = value.map(valueMapper)
 
   class NodeOperations extends BaseOperations[NodeValue] {
 

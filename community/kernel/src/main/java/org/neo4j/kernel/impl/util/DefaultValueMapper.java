@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.Iterator;
+import java.util.function.Function;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
-import org.neo4j.kernel.impl.core.PathProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.NodeReference;
@@ -34,6 +37,8 @@ import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
+
+import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 public class DefaultValueMapper extends ValueMapper.JavaMapper
 {
@@ -75,22 +80,172 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         {
             return ((PathWrappingPathValue) value).path();
         }
-        NodeValue[] nodeValues = value.nodes();
-        RelationshipValue[] relationshipValues = value.relationships();
-        long[] nodes = new long[nodeValues.length];
-        long[] relationships = new long[relationshipValues.length];
-        int[] directedTypes = new int[relationshipValues.length];
-        for ( int i = 0; i < nodes.length; i++ )
+        return new CoreAPIPath( value );
+    }
+
+    private <U, V> Iterable<V> asList( U[] values, Function<U,V> mapper )
+    {
+        return () -> new Iterator<V>()
         {
-            nodes[i] = nodeValues[i].id();
-        }
-        for ( int i = 0; i < relationships.length; i++ )
+            private int index = 0;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < values.length;
+            }
+
+            @Override
+            public V next()
+            {
+                return mapper.apply( values[index++] );
+            }
+        };
+    }
+
+    private <U, V> Iterable<V> asReverseList( U[] values, Function<U,V> mapper )
+    {
+        return () -> new Iterator<V>()
         {
-            RelationshipValue relationship = relationshipValues[i];
-            relationships[i] = relationship.id();
-            int typeId = proxySPI.getRelationshipTypeIdByName( relationship.type().stringValue() );
-            directedTypes[i] = nodes[i] == relationship.startNode().id() ? typeId : ~typeId;
+            private int index = values.length - 1;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index >= 0;
+            }
+
+            @Override
+            public V next()
+            {
+                return mapper.apply( values[index--] );
+            }
+        };
+    }
+
+    private class CoreAPIPath implements Path
+    {
+
+        private final PathValue value;
+
+        CoreAPIPath( PathValue value )
+        {
+            this.value = value;
         }
-        return new PathProxy( proxySPI, nodes, relationships, directedTypes );
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( this == obj )
+            {
+                return true;
+            }
+            if ( obj instanceof CoreAPIPath )
+            {
+                return value.equals( ( (CoreAPIPath) obj).value );
+            }
+            else if ( obj instanceof Path )
+            {
+                Path other = (Path) obj;
+                if ( value.nodes()[0].id() != other.startNode().getId() )
+                {
+                    return false;
+                }
+                return iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        @Override
+        public Node startNode()
+        {
+            return mapNode( value.startNode() );
+        }
+
+        @Override
+        public Node endNode()
+        {
+            return mapNode( value.endNode() );
+        }
+
+        @Override
+        public Relationship lastRelationship()
+        {
+            if ( value.size() == 0 )
+            {
+                return null;
+            }
+            else
+            {
+                return mapRelationship( value.lastRelationship() );
+            }
+        }
+
+        @Override
+        public Iterable<Relationship> relationships()
+        {
+            return asList( value.relationships(), DefaultValueMapper.this::mapRelationship );
+        }
+
+        @Override
+        public Iterable<Relationship> reverseRelationships()
+        {
+            return asReverseList( value.relationships(), DefaultValueMapper.this::mapRelationship );
+        }
+
+        @Override
+        public Iterable<Node> nodes()
+        {
+            return asList( value.nodes(), DefaultValueMapper.this::mapNode );
+        }
+
+        @Override
+        public Iterable<Node> reverseNodes()
+        {
+            return asReverseList( value.nodes(), DefaultValueMapper.this::mapNode );
+        }
+
+        @Override
+        public int length()
+        {
+            return value.size();
+        }
+
+        @Override
+        public Iterator<PropertyContainer> iterator()
+        {
+            return new Iterator<PropertyContainer>()
+            {
+                private final int size = 2 * value.size() + 1;
+                private int index = 0;
+                private final NodeValue[] nodes = value.nodes();
+                private final RelationshipValue[] relationships = value.relationships();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return index < size;
+                }
+
+                @Override
+                public PropertyContainer next()
+                {
+                    PropertyContainer propertyContainer;
+                    if ( index % 2 == 0 )
+                    {
+                        propertyContainer = mapNode( nodes[index / 2] );
+                    }
+                    else
+                    {
+                        propertyContainer = mapRelationship( relationships[index / 2] );
+                    }
+                    index++;
+                    return propertyContainer;
+                }
+            };
+        }
     }
 }
