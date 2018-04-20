@@ -43,10 +43,10 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -213,7 +213,7 @@ public abstract class KernelIntegrationTest
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
             transaction.dataRead().singleNode( node, cursor );
-            return cursor.next() && cursor.labels().contains( label );
+            return cursor.next() && cursor.hasLabel( label );
         }
     }
 

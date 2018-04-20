@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, n
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
-import org.neo4j.kernel.impl.newapi.Labels
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
 class CompiledCursorUtilsTest extends CypherFunSuite {
@@ -113,7 +112,8 @@ class CompiledCursorUtilsTest extends CypherFunSuite {
     // Given
     val nodeCursor = mock[NodeCursor]
     when(nodeCursor.next()).thenReturn(true)
-    when(nodeCursor.labels()).thenReturn(Labels.from(Array(1337L, 42L, 13L)))
+    when(nodeCursor.hasLabel(1337)).thenReturn(true)
+    when(nodeCursor.hasLabel(1980)).thenReturn(false)
 
     // Then
     nodeHasLabel(mock[Read], nodeCursor, 1L, 1337) shouldBe true
