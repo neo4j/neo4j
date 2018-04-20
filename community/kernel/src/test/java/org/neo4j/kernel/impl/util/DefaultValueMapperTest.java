@@ -202,5 +202,4 @@ public class DefaultValueMapperTest
         return Arrays.stream( relationships ).map( ValueUtils::fromRelationshipProxy )
                 .toArray( RelationshipValue[]::new );
     }
-
 }

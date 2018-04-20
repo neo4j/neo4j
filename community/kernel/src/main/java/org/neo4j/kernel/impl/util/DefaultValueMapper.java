@@ -26,6 +26,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
@@ -87,7 +88,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
     {
         return () -> new Iterator<V>()
         {
-            private int index = 0;
+            private int index;
 
             @Override
             public boolean hasNext()
@@ -125,12 +126,23 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
 
     private class CoreAPIPath implements Path
     {
-
         private final PathValue value;
 
         CoreAPIPath( PathValue value )
         {
             this.value = value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return Paths.defaultPathToString( this );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return value.hashCode();
         }
 
         @Override
@@ -142,7 +154,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             }
             if ( obj instanceof CoreAPIPath )
             {
-                return value.equals( ( (CoreAPIPath) obj).value );
+                return value.equals( ((CoreAPIPath) obj).value );
             }
             else if ( obj instanceof Path )
             {
@@ -220,7 +232,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
             return new Iterator<PropertyContainer>()
             {
                 private final int size = 2 * value.size() + 1;
-                private int index = 0;
+                private int index;
                 private final NodeValue[] nodes = value.nodes();
                 private final RelationshipValue[] relationships = value.relationships();
 
@@ -249,3 +261,4 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         }
     }
 }
+
