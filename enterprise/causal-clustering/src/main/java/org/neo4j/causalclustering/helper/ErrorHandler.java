@@ -22,10 +22,31 @@ package org.neo4j.causalclustering.helper;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.ThrowingAction;
+
+
 public class ErrorHandler implements AutoCloseable
 {
     private final List<Throwable> throwables = new ArrayList<>();
     private final String message;
+
+    public static void certainOperations( String description, ThrowingRunnable... actions ) throws RuntimeException
+    {
+        try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
+        {
+            for ( ThrowingRunnable action : actions )
+            {
+                try
+                {
+                    action.run();
+                }
+                catch ( Throwable e )
+                {
+                    errorHandler.add( e );
+                }
+            }
+        }
+    }
 
     public ErrorHandler( String message )
     {
@@ -61,5 +82,10 @@ public class ErrorHandler implements AutoCloseable
             }
             throw runtimeException;
         }
+    }
+
+    public interface ThrowingRunnable
+    {
+        void run() throws Throwable;
     }
 }

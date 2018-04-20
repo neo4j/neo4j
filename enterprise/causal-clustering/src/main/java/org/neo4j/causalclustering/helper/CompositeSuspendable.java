@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.helper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
 
@@ -47,19 +48,8 @@ public class CompositeSuspendable implements Suspendable
 
     private void doOperation( ThrowingConsumer<Suspendable,Throwable> operation, String description )
     {
-        try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
-        {
-            for ( Suspendable suspendable : suspendables )
-            {
-                try
-                {
-                    operation.accept( suspendable );
-                }
-                catch ( Throwable throwable )
-                {
-                    errorHandler.add( throwable );
-                }
-            }
-        }
+        ErrorHandler.certainOperations( description, suspendables.stream()
+                .map( (Function<Suspendable,ErrorHandler.ThrowingRunnable>) suspendable -> () -> operation.accept( suspendable ) )
+                .toArray( ErrorHandler.ThrowingRunnable[]::new ) );
     }
 }
