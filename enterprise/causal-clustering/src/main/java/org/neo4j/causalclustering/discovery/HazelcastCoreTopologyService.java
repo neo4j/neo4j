@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +35,6 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
@@ -141,12 +141,14 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
     }
 
     @Override
-    public void handleStepDown( LeaderInfo stepDownLeaderInfo, String dbName )
+    public void handleStepDown( long term, String dbName )
     {
-        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
-        if ( wasPreviousLeader )
+        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && term == leaderInfo.term();
+        if ( wasLeaderForTerm )
         {
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, stepDownLeaderInfo, dbName );
+            log.info( String.format( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
+                    "to follower.", myself, leaderInfo.term() ) );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.stepDown(), dbName, log);
         }
     }
 
@@ -365,7 +367,8 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
 
         if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
         {
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
+            log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, leaderInfo.term() );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName, log);
         }
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );

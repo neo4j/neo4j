@@ -213,14 +213,11 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private void notifyLeaderChanges( Outcome outcome )
     {
-        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm(), outcome.isSteppingDown() );
+        LeaderInfo leaderInfo = new LeaderInfo( outcome.getLeader(), outcome.getTerm() );
 
         for ( LeaderListener listener : leaderListeners )
         {
-            if ( outcome.isSteppingDown() )
-            {
-                listener.onLeaderStepDown( leaderInfo );
-            }
+            outcome.stepDownTerm().ifPresent( listener::onLeaderStepDown );
             listener.onLeaderSwitch( leaderInfo );
         }
     }

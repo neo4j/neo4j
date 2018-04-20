@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -143,12 +144,14 @@ class SharedDiscoveryCoreClient extends AbstractTopologyService implements CoreT
     }
 
     @Override
-    public void handleStepDown( LeaderInfo stepDownLeaderInfo, String dbName )
+    public void handleStepDown( long stepDownTerm, String dbName )
     {
-        boolean wasPreviousLeader = myself.equals( this.leaderInfo.memberId() );
-        if ( wasPreviousLeader )
+        boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && stepDownTerm == leaderInfo.term();
+        if ( wasLeaderForTerm )
         {
-            sharedDiscoveryService.casLeaders( stepDownLeaderInfo, dbName );
+            log.info( String.format( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
+                    "to follower.", myself, leaderInfo.term() ) );
+            sharedDiscoveryService.casLeaders( leaderInfo.stepDown(), dbName );
         }
     }
 

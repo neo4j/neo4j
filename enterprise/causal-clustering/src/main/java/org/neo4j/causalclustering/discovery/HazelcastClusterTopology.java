@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -212,7 +213,7 @@ public final class HazelcastClusterTopology
         return result;
     }
 
-    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName )
+    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName, Log log )
     {
         IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
@@ -225,9 +226,11 @@ public final class HazelcastClusterTopology
 
         boolean greaterTermExists = termComparison > 0;
 
-        boolean invalidTerm = greaterTermExists || ( termComparison == 0 && !leaderInfo.isSteppingDown() );
+        boolean sameTermButNoStepdown = termComparison == 0 && !leaderInfo.isSteppingDown();
 
-        boolean success = !( invalidTerm || noUpdate);
+        boolean invalidTerm = greaterTermExists || sameTermButNoStepdown;
+
+        boolean success = !( invalidTerm || noUpdate );
 
         if ( !success )
         {

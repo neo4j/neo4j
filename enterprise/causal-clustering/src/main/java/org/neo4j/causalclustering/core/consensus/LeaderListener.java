@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.core.consensus;
 public interface LeaderListener
 {
     void onLeaderSwitch( LeaderInfo leaderInfo );
-    default void onLeaderStepDown( LeaderInfo leaderInfo )
+    default void onLeaderStepDown( long stepDownTerm )
     {
     }
 }
