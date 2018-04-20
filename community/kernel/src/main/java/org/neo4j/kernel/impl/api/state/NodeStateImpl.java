@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -334,7 +335,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( indexDiffs == null )
         {
-            indexDiffs = new HashSet<>();
+            indexDiffs = Collections.newSetFromMap( new IdentityHashMap<PrimitiveLongDiffSets, Boolean>() );
         }
         indexDiffs.add( diff );
     }
