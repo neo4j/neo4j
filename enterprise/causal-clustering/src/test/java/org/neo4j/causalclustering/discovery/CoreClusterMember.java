@@ -295,7 +295,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void disableCatchupServer()
+    public void disableCatchupServer() throws Throwable
     {
         database.disableCatchupServer();
     }

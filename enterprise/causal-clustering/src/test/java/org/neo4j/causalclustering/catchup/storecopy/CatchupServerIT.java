@@ -90,7 +90,7 @@ public class CatchupServerIT
     private DefaultFileSystemAbstraction fsa = fileSystemRule.get();
 
     @Before
-    public void startDb()
+    public void startDb() throws Throwable
     {
         temporaryDirectory = testDirectory.directory();
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fsa ).newEmbeddedDatabase( testDirectory.graphDbDir() );
@@ -106,7 +106,7 @@ public class CatchupServerIT
     }
 
     @After
-    public void stopDb() throws IOException
+    public void stopDb() throws Throwable
     {
         pageCache.flushAndForce();
         if ( graphDb != null )

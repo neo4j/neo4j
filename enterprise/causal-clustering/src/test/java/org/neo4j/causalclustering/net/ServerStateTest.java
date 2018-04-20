@@ -48,7 +48,7 @@ public class ServerStateTest
     private final EventLoopGroup clientGroup = new NioEventLoopGroup();
 
     @Before
-    public void setUp() throws InterruptedException
+    public void setUp() throws Throwable
     {
         server = createServer();
         server.init();
@@ -56,21 +56,21 @@ public class ServerStateTest
     }
 
     @After
-    public void tearDown()
+    public void tearDown() throws Throwable
     {
         server.stop();
         server.shutdown();
     }
 
     @Test
-    public void shouldStartServerNormally() throws InterruptedException
+    public void shouldStartServerNormally() throws Throwable
     {
         server.start();
         assertTrue( canConnect( server.address(), clientGroup ) );
     }
 
     @Test
-    public void canDisableAndEnableServer() throws InterruptedException
+    public void canDisableAndEnableServer() throws Throwable
     {
         server.start();
         assertTrue( canConnect( server.address(), clientGroup ) );
@@ -83,7 +83,7 @@ public class ServerStateTest
     }
 
     @Test
-    public void serverCannotBeEnabledIfLifeCycleHasNotStarted() throws InterruptedException
+    public void serverCannotBeEnabledIfLifeCycleHasNotStarted() throws Throwable
     {
         server.enable();
         assertFalse( canConnect( server.address(), clientGroup ) );
@@ -93,7 +93,7 @@ public class ServerStateTest
     }
 
     @Test
-    public void serverCannotStartIfDisabled() throws InterruptedException
+    public void serverCannotStartIfDisabled() throws Throwable
     {
         server.disable();
 

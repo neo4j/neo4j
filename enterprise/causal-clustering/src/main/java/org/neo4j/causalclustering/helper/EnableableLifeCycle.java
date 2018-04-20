@@ -34,9 +34,8 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
     }
 
     @Override
-    public void enable()
+    public void enable() throws Throwable
     {
-        enabled = true;
         if ( !stoppedByLifeCycle )
         {
             start0();
@@ -45,25 +44,25 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
         {
             debugLog.info( "%s will not start. It was enabled but is stopped by lifecycle", this );
         }
+        enabled = true;
     }
 
     @Override
-    public void disable()
+    public void disable() throws Throwable
     {
-        enabled = false;
         stop0();
+        enabled = false;
     }
 
     @Override
-    public void init()
+    public void init() throws Throwable
     {
         init0();
     }
 
     @Override
-    public void start()
+    public void start() throws Throwable
     {
-        stoppedByLifeCycle = false;
         if ( !enabled )
         {
             debugLog.info( "Start call from lifecycle is ignored because %s is disabled.", this );
@@ -72,27 +71,28 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
         {
             start0();
         }
+        stoppedByLifeCycle = false;
     }
 
     @Override
-    public void stop()
+    public void stop() throws Throwable
     {
-        stoppedByLifeCycle = true;
         stop0();
+        stoppedByLifeCycle = true;
     }
 
     @Override
-    public void shutdown()
+    public void shutdown() throws Throwable
     {
-        stoppedByLifeCycle = true;
         shutdown0();
+        stoppedByLifeCycle = true;
     }
 
-    protected abstract void init0();
+    protected abstract void init0() throws Throwable;
 
-    protected abstract void start0();
+    protected abstract void start0() throws Throwable;
 
-    protected abstract void stop0();
+    protected abstract void stop0() throws Throwable;
 
-    protected abstract void shutdown0();
+    protected abstract void shutdown0() throws Throwable;
 }
