@@ -31,7 +31,10 @@ An object representing a valid Neo4j Server object
 Retrieve the PrunSrv command line to install a Neo4j Server
 
 .PARAMETER ForServerUninstall
-Retrieve the PrunSrv command line to install a Neo4j Server
+Retrieve the PrunSrv command line to uninstall a Neo4j Server
+
+.PARAMETER ForServerUpdate
+Retrieve the PrunSrv command line to update a Neo4j Server
 
 .PARAMETER ForConsole
 Retrieve the PrunSrv command line to start a Neo4j Server in the console.
@@ -55,6 +58,9 @@ Function Get-Neo4jPrunsrv
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerUninstallInvoke')]
     [switch]$ForServerUninstall
+
+    ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ServerUpdateInvoke')]
+    [switch]$ForServerUpdate
 
     ,[Parameter(Mandatory=$true,ValueFromPipeline=$false,ParameterSetName='ConsoleInvoke')]
     [switch]$ForConsole
@@ -92,8 +98,13 @@ Function Get-Neo4jPrunsrv
 
     # Build the PRUNSRV command line
     switch ($PsCmdlet.ParameterSetName) {
-      "ServerInstallInvoke"   {
+      "ServerInstallInvoke"     {
         $PrunArgs += @("`"//IS//$($Name)`"")
+      }
+      "ServerUpdateInvoke" {
+        $PrunArgs += @("`"//US//$($Name)`"")
+      }
+      {$_ -in @("ServerInstallInvoke", "ServerUpdateInvoke")} {
 
         $JvmOptions = @()
 
@@ -158,10 +169,10 @@ Function Get-Neo4jPrunsrv
         $PrunArgs += @("`"--StopClass=$($serverMainClass)`"",
                        "`"--StartClass=$($serverMainClass)`"")
       }
-      "ServerUninstallInvoke" { $PrunArgs += @("`"//DS//$($Name)`"") }
-      "ConsoleInvoke"         { $PrunArgs += @("`"//TS//$($Name)`"") }
+      "ServerUninstallInvoke"   { $PrunArgs += @("`"//DS//$($Name)`"") }
+      "ConsoleInvoke"           { $PrunArgs += @("`"//TS//$($Name)`"") }
       default {
-        throw "Unknown ParameterSerName $($PsCmdlet.ParameterSetName)"
+        throw "Unknown ParameterSetName $($PsCmdlet.ParameterSetName)"
         return $null
       }
     }
