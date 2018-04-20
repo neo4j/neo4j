@@ -76,13 +76,13 @@ public class Server extends EnableableLifeCycle
     }
 
     @Override
-    public void init0()
+    protected void init0()
     {
         // do nothing
     }
 
     @Override
-    public void start0()
+    protected void start0()
     {
         if ( channel != null )
         {
@@ -121,7 +121,7 @@ public class Server extends EnableableLifeCycle
     }
 
     @Override
-    public void stop0()
+    protected void stop0()
     {
         if ( channel == null )
         {
@@ -148,7 +148,7 @@ public class Server extends EnableableLifeCycle
     }
 
     @Override
-    public void shutdown0()
+    protected void shutdown0()
     {
         // do nothing
     }

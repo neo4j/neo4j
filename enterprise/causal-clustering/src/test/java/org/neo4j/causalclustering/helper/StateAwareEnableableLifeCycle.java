@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.helper;
 
-import org.neo4j.causalclustering.helper.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.LifeCycleState;
 import org.neo4j.logging.Log;
 
 public class StateAwareEnableableLifeCycle extends EnableableLifeCycle
@@ -32,25 +32,25 @@ public class StateAwareEnableableLifeCycle extends EnableableLifeCycle
     }
 
     @Override
-    public void start0()
+    protected void start0()
     {
         status = LifeCycleState.Start;
     }
 
     @Override
-    public void stop0()
+    protected void stop0()
     {
         status = LifeCycleState.Stop;
     }
 
     @Override
-    public void shutdown0()
+    protected void shutdown0()
     {
         status = LifeCycleState.Shutdown;
     }
 
     @Override
-    public void init0()
+    protected void init0()
     {
         status = LifeCycleState.Init;
     }

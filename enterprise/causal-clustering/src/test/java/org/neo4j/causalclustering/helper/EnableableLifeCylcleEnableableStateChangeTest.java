@@ -27,16 +27,16 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.causalclustering.helper.ServerStateTestHelpers.EnableableState;
-import org.neo4j.causalclustering.helper.ServerStateTestHelpers.LifeCycleState;
-import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.EnableableState;
+import org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.LifeCycleState;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setEnableableState;
-import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setInitialState;
+import static org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.setEnableableState;
+import static org.neo4j.causalclustering.helper.EnableableLifecycleStateTestHelpers.setInitialState;
 
 @RunWith( Parameterized.class )
-public class ServeLifeCycleStateChangeTest
+public class EnableableLifeCylcleEnableableStateChangeTest
 {
     @Parameterized.Parameter()
     public LifeCycleState fromState;
@@ -45,10 +45,10 @@ public class ServeLifeCycleStateChangeTest
     public EnableableState fromEnableableState;
 
     @Parameterized.Parameter( 2 )
-    public LifeCycleState toLifeCycleState;
+    public EnableableState toEnableableState;
 
     @Parameterized.Parameter( 3 )
-    public LifeCycleState shouldBeRunning;
+    public LifeCycleState shouldEndInState;
 
     @Parameterized.Parameters( name = "From {0} and {1} to {2} should end in {3}" )
     public static Iterable<Object[]> data()
@@ -58,9 +58,9 @@ public class ServeLifeCycleStateChangeTest
         {
             for ( EnableableState enableableState : EnableableState.values() )
             {
-                for ( LifeCycleState toState : lifeCycleOperation() )
+                for ( EnableableState toEnableable : toEnableableState() )
                 {
-                    params.add( new Object[]{lifeCycleState, enableableState, toState, expectedResult( enableableState, toState )} );
+                    params.add( new Object[]{lifeCycleState, enableableState, toEnableable, expectedResult( lifeCycleState, enableableState, toEnableable )} );
                 }
             }
         }
@@ -69,15 +69,15 @@ public class ServeLifeCycleStateChangeTest
 
     private StateAwareEnableableLifeCycle lifeCycle;
 
-    private static LifeCycleState[] lifeCycleOperation()
+    private static EnableableState[] toEnableableState()
     {
-        return new LifeCycleState[]{LifeCycleState.Start, LifeCycleState.Stop};
+        return new EnableableState[]{EnableableState.Enabled, EnableableState.Disabled};
     }
 
     @Before
     public void setUpServer() throws Throwable
     {
-        lifeCycle = new StateAwareEnableableLifeCycle( new AssertableLogProvider( false ).getLog( "log" ) );
+        lifeCycle = new StateAwareEnableableLifeCycle( NullLogProvider.getInstance().getLog( "log" ) );
         setInitialState( lifeCycle, fromState );
         setEnableableState( lifeCycle, fromEnableableState );
     }
@@ -85,30 +85,30 @@ public class ServeLifeCycleStateChangeTest
     @Test
     public void executeEnableable() throws Throwable
     {
-        toLifeCycleState.set( lifeCycle );
-        assertEquals( shouldBeRunning, lifeCycle.status );
+        setEnableableState( lifeCycle, toEnableableState );
+        assertEquals( shouldEndInState, lifeCycle.status );
     }
 
-    private static LifeCycleState expectedResult( EnableableState state, LifeCycleState toLifeCycle )
+    private static LifeCycleState expectedResult( LifeCycleState fromState, EnableableState fromEnableableState, EnableableState toEnableable )
     {
-        if ( state == EnableableState.Untouched || state == EnableableState.Enabled )
+        if ( toEnableable == EnableableState.Disabled )
         {
-            return toLifeCycle;
+            return LifeCycleState.Stop;
         }
-        else if ( state == EnableableState.Disabled )
+        else if ( toEnableable == EnableableState.Enabled )
         {
-            if ( toLifeCycle == LifeCycleState.Shutdown )
+            if ( fromEnableableState == EnableableState.Disabled )
             {
-                return toLifeCycle;
+                if ( fromState == LifeCycleState.Init || fromState == LifeCycleState.Shutdown )
+                {
+                    return LifeCycleState.Stop;
+                }
             }
-            else
-            {
-                return LifeCycleState.Stop;
-            }
+            return fromState;
         }
         else
         {
-            throw new IllegalStateException( "Unknown state " + state );
+            throw new IllegalStateException( "Should not transition to any other state got: " + toEnableable );
         }
     }
 }

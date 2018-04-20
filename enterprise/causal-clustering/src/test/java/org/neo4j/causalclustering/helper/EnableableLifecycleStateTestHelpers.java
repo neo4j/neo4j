@@ -19,30 +19,10 @@
  */
 package org.neo4j.causalclustering.helper;
 
-import org.neo4j.causalclustering.net.Server;
-import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.logging.Level;
-import org.neo4j.ports.allocation.PortAuthority;
 
-class ServerStateTestHelpers
+class EnableableLifecycleStateTestHelpers
 {
-    static void teardown( Server server )
-    {
-        server.stop();
-        server.shutdown();
-    }
-
-    static Server createServer()
-    {
-        return new Server( channel ->
-                           {
-                           }, FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ),
-                           FormattedLogProvider.withDefaultLogLevel( Level.DEBUG ).toOutputStream( System.out ),
-                           new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ), "serverName" );
-    }
-
     static void setEnableableState( Enableable enableable, EnableableState enableableState ) throws Throwable
     {
         switch ( enableableState )

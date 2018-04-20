@@ -88,11 +88,11 @@ public abstract class EnableableLifeCycle implements Lifecycle, Enableable
         shutdown0();
     }
 
-    public abstract void init0();
+    protected abstract void init0();
 
-    public abstract void start0();
+    protected abstract void start0();
 
-    public abstract void stop0();
+    protected abstract void stop0();
 
-    public abstract void shutdown0();
+    protected abstract void shutdown0();
 }
