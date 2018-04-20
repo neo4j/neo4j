@@ -36,6 +36,7 @@ import org.mockito.ArgumentCaptor;
 import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -183,9 +184,15 @@ public class TransportWriteThrottleTest
 
         // stop the thread that is trying to acquire the lock
         // otherwise it remains actively spinning even after the test
-        when( channel.isWritable() ).thenReturn( true );
-        throttle.release( channel );
-        otherThread.get().awaitFuture( future );
+        future.cancel( true );
+        try
+        {
+            otherThread.get().awaitFuture( future );
+            fail( "Exception expected" );
+        }
+        catch ( CancellationException ignore )
+        {
+        }
     }
 
     @Test
