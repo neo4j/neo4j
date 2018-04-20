@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.NUMBER;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.STRING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.SPATIAL;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.STRING;
+import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.TEMPORAL;
 
 enum FusionVersion
 {
@@ -36,7 +36,7 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
                     return new FusionSelector00();
                 }
@@ -50,7 +50,7 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
                     return new FusionSelector10();
                 }
@@ -64,7 +64,7 @@ enum FusionVersion
                 }
 
                 @Override
-                FusionIndexProvider.Selector selector()
+                SlotSelector slotSelector()
                 {
                     return new FusionSelector20();
                 }
@@ -72,5 +72,5 @@ enum FusionVersion
 
     abstract int[] aliveSlots();
 
-    abstract FusionIndexProvider.Selector selector();
+    abstract SlotSelector slotSelector();
 }

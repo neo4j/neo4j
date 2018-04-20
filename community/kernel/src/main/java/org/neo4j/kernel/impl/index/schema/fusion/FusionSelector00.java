@@ -19,68 +19,42 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.values.storable.Value;
+import java.util.function.Function;
 
-import static org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import static org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.LUCENE;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.SPATIAL;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.TEMPORAL;
+import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.values.storable.ValueGroup;
 
 /**
  * Selector for index provider "lucene-1.x".
  * The version name "00" comes from lucene-1.x originally not being a fusion index.
  */
-public class FusionSelector00 implements FusionIndexProvider.Selector
+public class FusionSelector00 implements SlotSelector
 {
     @Override
-    public void validateSatisfied( Object[] instances )
+    public void validateSatisfied( IndexProvider[] instances )
     {
         FusionIndexBase.validateSelectorInstances( instances, LUCENE, SPATIAL, TEMPORAL );
     }
 
     @Override
-    public int selectSlot( Value... values )
+    public <V> int selectSlot( V[] values, Function<V,ValueGroup> groupOf )
     {
         if ( values.length > 1 )
         {
             return LUCENE;
         }
 
-        Value singleValue = values[0];
-        switch ( singleValue.valueGroup().category() )
+        ValueGroup singleGroup = groupOf.apply( values[0] );
+        switch ( singleGroup.category() )
         {
         case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:
             return TEMPORAL;
+        case UNKNOWN:
+            return UNKNOWN;
         default:
             return LUCENE;
-        }
-    }
-
-    @Override
-    public IndexReader select( IndexReader[] instances, IndexQuery... predicates )
-    {
-        if ( predicates.length > 1 )
-        {
-            return instances[LUCENE];
-        }
-
-        IndexQuery predicate = predicates[0];
-        switch ( predicate.valueGroup().category() )
-        {
-        case GEOMETRY:
-            return instances[SPATIAL];
-        case TEMPORAL:
-            return instances[TEMPORAL];
-        case UNKNOWN:
-            return null;
-        default:
-            return instances[LUCENE];
         }
     }
 }
