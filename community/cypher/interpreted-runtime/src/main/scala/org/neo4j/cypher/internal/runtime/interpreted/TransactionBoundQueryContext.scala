@@ -94,7 +94,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx, statementProvider.get(), query)
+    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx, query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
 
@@ -182,13 +182,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                              types: Option[Array[Int]]): Iterator[RelationshipValue] = {
     val read = reads()
     val cursor = nodeCursor
+    val cursors = transactionalContext.cursors
+
     read.singleNode(node, cursor)
-    if (!cursor.next())Iterator.empty
+    if (!cursor.next()) Iterator.empty
     else {
       val selectionCursor = dir match {
-        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
-        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
-        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
+        case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
+        case INCOMING => incomingCursor(cursors, cursor, types.orNull)
+        case BOTH => allCursor(cursors, cursor, types.orNull)
       }
       new CursorIterator[RelationshipValue] {
         override protected def close(): Unit = selectionCursor.close()
@@ -207,13 +209,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                                types: Option[Array[Int]]): RelationshipIterator = {
     val read = reads()
     val cursor = nodeCursor
+    val cursors = transactionalContext.cursors
     read.singleNode(node, cursor)
     if (!cursor.next()) RelationshipIterator.EMPTY
     else {
       val selectionCursor = dir match {
-        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
-        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
-        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), cursor, types.orNull)
+        case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
+        case INCOMING => incomingCursor(cursors, cursor, types.orNull)
+        case BOTH => allCursor(cursors, cursor, types.orNull)
       }
       new RelationshipCursorIterator(selectionCursor)
     }
@@ -222,13 +225,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection,
                                                types: Option[Array[Int]]): RelationshipSelectionCursor = {
     val read = reads()
-    read.singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) RelationshipSelectionCursor.EMPTY
+    val cursor = nodeCursor
+    val cursors = transactionalContext.cursors
+    read.singleNode(node, cursor)
+    if (!cursor.next()) RelationshipSelectionCursor.EMPTY
     else {
       dir match {
-        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
-        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
-        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case OUTGOING => outgoingCursor(cursors, cursor, types.orNull)
+        case INCOMING => incomingCursor(cursors, cursor, types.orNull)
+        case BOTH => allCursor(cursors, cursor, types.orNull)
       }
     }
   }
