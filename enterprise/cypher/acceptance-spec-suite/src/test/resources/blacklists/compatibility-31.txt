@@ -9,6 +9,3 @@ Ordering for lists, descending
 Shorthand case with filter should work as expected
 equality with boolean lists
 optional equality with boolean lists
-
-//IndexAcceptance.feature
- STARTS WITH should handle null prefix

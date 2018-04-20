@@ -136,6 +136,9 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
 
+    case PrefixRange(null) =>
+      Iterator.empty
+
     case range: InequalitySeekRange[Any] =>
       indexSeekByPrefixRange(index, range)
 
