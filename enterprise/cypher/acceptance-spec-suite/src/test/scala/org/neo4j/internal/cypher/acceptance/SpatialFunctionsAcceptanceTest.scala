@@ -31,8 +31,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("toString on points") {
-    val result = executeWith(latestPointConfig,  "RETURN toString(point({x:1, y:2})) AS s")
-    result.toList should equal(List(Map("s" -> "Point{cartesian, [1.0, 2.0]}")))
+    executeWith(latestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
+    executeWith(latestPointConfig, "RETURN toString(point({longitude:1, latitude:2, height:3})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, z: 3.0, crs: 'wgs-84-3d'})")))
   }
 
   test("point function should work with literal map") {
