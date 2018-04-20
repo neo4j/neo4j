@@ -30,6 +30,32 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  test("should handle negative node id gracefully") {
+    createNode("id" -> 0)
+    for (i <- 1 to 1000) createNode("id" -> i)
+    val result = executeWith(
+      Configs.CommunityInterpreted,
+      "MATCH (n) WHERE id(n) IN {ids} RETURN n.id",
+      params = Map("ids" -> List(-2, -3, 0, -4)))
+    result.executionPlanDescription() should useOperators("NodeByIdSeek")
+    result.toList should equal(List(Map("n.id" -> 0)))
+  }
+
+  test("should handle negative relationship id gracefully") {
+    var prevNode = createNode("id" -> 0)
+    for (i <- 1 to 1000) {
+      val n = createNode("id" -> i)
+      relate(prevNode, n)
+      prevNode = n
+    }
+    val result = executeWith(
+      Configs.CommunityInterpreted,
+      "MATCH ()-[r]->() WHERE id(r) IN {ids} RETURN id(r)",
+      params = Map("ids" -> List(-2, -3, 0, -4)))
+    result.executionPlanDescription() should useOperators("DirectedRelationshipByIdSeek")
+    result.toList should equal(List(Map("id(r)" -> 0)))
+  }
+
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")

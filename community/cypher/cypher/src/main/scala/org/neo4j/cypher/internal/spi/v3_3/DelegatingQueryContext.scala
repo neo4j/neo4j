@@ -274,8 +274,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
 
-  override def exists(id: Long): Boolean = singleDbHit(inner.exists(id))
-
   override def getByIdIfExists(id: Long): Option[T] = singleDbHit(inner.getByIdIfExists(id))
 }
 
