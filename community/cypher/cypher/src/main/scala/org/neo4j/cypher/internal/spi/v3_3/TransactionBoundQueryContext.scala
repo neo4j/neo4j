@@ -411,11 +411,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
 
-    override def exists(id: Long): Boolean =
-      transactionalContext.statement.readOperations().nodeExists(id)
-
     override def getByIdIfExists(id: Long): Option[Node] =
-      if (transactionalContext.statement.readOperations().nodeExists(id))
+      if (id >= 0 && transactionalContext.statement.readOperations().nodeExists(id))
         Some(entityAccessor.newNodeProxyById(id))
       else
         None
@@ -476,13 +473,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getByIdIfExists(id: Long): Option[RelationshipProxy] = try {
-      var relationship: RelationshipProxy = null
-      transactionalContext.statement.readOperations().relationshipVisit(id, new RelationshipVisitor[Exception] {
-        override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
-          relationship = entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
-        }
-      })
-      Option(relationship)
+      if (id < 0)
+        None
+      else {
+        var relationship: RelationshipProxy = null
+        transactionalContext.statement.readOperations().relationshipVisit(id, new RelationshipVisitor[Exception] {
+          override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
+            relationship = entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
+          }
+        })
+        Option(relationship)
+      }
     } catch {
       case e: exceptions.EntityNotFoundException => None
     }
@@ -509,14 +510,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
 
-    override def exists(id: Long): Boolean = {
-      try {
-        transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
-        true
-      } catch {
-        case e: exceptions.EntityNotFoundException => false
-      }
-    }
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
@@ -826,9 +819,4 @@ object TransactionBoundQueryContext {
 
     def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
   }
-}
-
-object NoopVisitor extends RelationshipVisitor[RuntimeException] {
-  // should just throw if the relationship is missing
-  override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {}
 }
