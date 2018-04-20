@@ -163,10 +163,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
-    val cursor = nodeCursor
-    reads().singleNode(node, cursor)
-    if (!cursor.next()) false
-    else cursor.labels().contains(label)
+    if (label == StatementConstants.NO_SUCH_LABEL) false
+    else {
+      val cursor = nodeCursor
+      reads().singleNode(node, cursor)
+      if (!cursor.next()) false
+      else cursor.hasLabel(label)
+    }
   }
 
   override def getOrCreateLabelId(labelName: String): Int = {

@@ -130,6 +130,30 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     }
 
     @Override
+    public boolean hasLabel( int label )
+    {
+        if ( hasChanges() )
+        {
+            TransactionState txState = read.txState();
+            if ( txState.nodeStateLabelDiffSets( getId() ).getAdded().contains( label ) )
+            {
+                return true;
+            }
+        }
+
+        //Get labels from store and put in intSet, unfortunately we get longs back
+        long[] longs = NodeLabelsField.get( this, labelCursor() );
+        for ( long labelToken : longs )
+        {
+            if ( labelToken == label )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public boolean hasProperties()
     {
         return nextProp != NO_ID;

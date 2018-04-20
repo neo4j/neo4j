@@ -213,7 +213,7 @@ public abstract class KernelIntegrationTest
         try ( NodeCursor cursor = transaction.cursors().allocateNodeCursor() )
         {
             transaction.dataRead().singleNode( node, cursor );
-            return cursor.next() && cursor.labels().contains( label );
+            return cursor.next() && cursor.hasLabel( label );
         }
     }
 

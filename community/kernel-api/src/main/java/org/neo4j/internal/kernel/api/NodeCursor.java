@@ -28,6 +28,8 @@ public interface NodeCursor extends Cursor
 
     LabelSet labels();
 
+    boolean hasLabel( int label );
+
     boolean hasProperties();
 
     void relationships( RelationshipGroupCursor cursor );
