@@ -55,16 +55,16 @@ Function Invoke-Neo4j
     [Parameter(Mandatory=$false,ValueFromPipeline=$false,Position=0)]
     [string]$Command = ''
   )
-  
+
   Begin
   {
   }
-  
+
   Process
   {
-    try 
+    try
     {
-      $HelpText = "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service } < -Verbose >"
+      $HelpText = "Usage: neo4j { console | start | stop | restart | status | install-service | uninstall-service | update-service } < -Verbose >"
 
       # Determine the Neo4j Home Directory.  Uses the NEO4J_HOME enironment variable or a parent directory of this script
       $Neo4jHome = Get-Neo4jEnv 'NEO4J_HOME'
@@ -73,7 +73,7 @@ Function Invoke-Neo4j
       }
       if ($Neo4jHome -eq $null) { throw "Could not determine the Neo4j home Directory.  Set the NEO4J_HOME environment variable and retry" }  
       Write-Verbose "Neo4j Root is '$Neo4jHome'"
-      
+
       $thisServer = Get-Neo4jServer -Neo4jHome $Neo4jHome -ErrorAction Stop
       if ($thisServer -eq $null) { throw "Unable to determine the Neo4j Server installation information" }
       Write-Verbose "Neo4j Server Type is '$($thisServer.ServerType)'"
@@ -105,7 +105,7 @@ Function Invoke-Neo4j
         }
         "restart" {
           Write-Verbose "Restart command specified"
-          
+
           $result = (Stop-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
           if ($result -ne 0) { Return $result}
           Return (Start-Neo4jServer -Service -Neo4jServer $thisServer -ErrorAction Stop)
@@ -121,6 +121,10 @@ Function Invoke-Neo4j
         "uninstall-service" {
           Write-Verbose "Uninstall command specified"
           Return [int](Uninstall-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
+        }
+        "update-service" {
+          Write-Verbose "Update command specified"
+          Return [int](Update-Neo4jServer -Neo4jServer $thisServer -ErrorAction Stop)
         }
         default {
           if ($Command -ne '') { Write-StdErr "Unknown command $Command" }
