@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.net;
+package org.neo4j.causalclustering.helper;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,14 +27,13 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.causalclustering.net.ServerStateTestHelpers.EnableableState;
-import org.neo4j.causalclustering.net.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.ServerStateTestHelpers.EnableableState;
+import org.neo4j.causalclustering.helper.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.LifeCycleState.values;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.createServer;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.setEnableableState;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.setInitialState;
+import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setEnableableState;
+import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setInitialState;
 
 @RunWith( Parameterized.class )
 public class ServeLifeCycleStateChangeTest
@@ -50,13 +48,13 @@ public class ServeLifeCycleStateChangeTest
     public LifeCycleState toLifeCycleState;
 
     @Parameterized.Parameter( 3 )
-    public boolean shouldBeRunning;
+    public LifeCycleState shouldBeRunning;
 
-    @Parameterized.Parameters( name = "From {0} and {1} to {2} Server is running ? {3}" )
+    @Parameterized.Parameters( name = "From {0} and {1} to {2} should end in {3}" )
     public static Iterable<Object[]> data()
     {
         List<Object[]> params = new ArrayList<>();
-        for ( LifeCycleState lifeCycleState : values() )
+        for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
         {
             for ( EnableableState enableableState : EnableableState.values() )
             {
@@ -69,7 +67,7 @@ public class ServeLifeCycleStateChangeTest
         return params;
     }
 
-    private Server server;
+    private StateAwareEnableableLifeCycle lifeCycle;
 
     private static LifeCycleState[] lifeCycleOperation()
     {
@@ -79,44 +77,34 @@ public class ServeLifeCycleStateChangeTest
     @Before
     public void setUpServer() throws Throwable
     {
-        server = createServer();
-        setInitialState( server, fromState );
-        setEnableableState( server, fromEnableableState );
-    }
-
-    @After
-    public void shutdown()
-    {
-        ServerStateTestHelpers.teardown( server );
+        lifeCycle = new StateAwareEnableableLifeCycle( new AssertableLogProvider( false ).getLog( "log" ) );
+        setInitialState( lifeCycle, fromState );
+        setEnableableState( lifeCycle, fromEnableableState );
     }
 
     @Test
     public void executeEnableable() throws Throwable
     {
-        toLifeCycleState.set( server );
-        assertEquals( shouldBeRunning, server.isRunnig() );
+        toLifeCycleState.set( lifeCycle );
+        assertEquals( shouldBeRunning, lifeCycle.status );
     }
 
-    private static boolean expectedResult( EnableableState state, LifeCycleState toLifeCycle )
+    private static LifeCycleState expectedResult( EnableableState state, LifeCycleState toLifeCycle )
     {
         if ( state == EnableableState.Untouched || state == EnableableState.Enabled )
         {
-            if ( toLifeCycle == LifeCycleState.Stop || toLifeCycle == LifeCycleState.Shutdown )
-            {
-                return false;
-            }
-            else if ( toLifeCycle == LifeCycleState.Start )
-            {
-                return true;
-            }
-            else
-            {
-                throw new IllegalStateException( "Should not transition to state " + toLifeCycle );
-            }
+            return toLifeCycle;
         }
         else if ( state == EnableableState.Disabled )
         {
-            return false;
+            if ( toLifeCycle == LifeCycleState.Shutdown )
+            {
+                return toLifeCycle;
+            }
+            else
+            {
+                return LifeCycleState.Stop;
+            }
         }
         else
         {

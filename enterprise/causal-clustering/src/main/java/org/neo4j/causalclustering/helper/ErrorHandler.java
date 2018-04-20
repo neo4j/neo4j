@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.helper;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ErrorHandler implements AutoCloseable
@@ -36,11 +35,6 @@ public class ErrorHandler implements AutoCloseable
     public void add( Throwable throwable )
     {
         throwables.add( throwable );
-    }
-
-    public List<Throwable> throwables()
-    {
-        return Collections.unmodifiableList( throwables );
     }
 
     @Override

@@ -84,7 +84,7 @@ public class ReadReplicaToReadReplicaCatchupIT
 
         for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
         {
-            coreClusterMember.stopCatchupServer();
+            coreClusterMember.disableCatchupServer();
         }
 
         // when

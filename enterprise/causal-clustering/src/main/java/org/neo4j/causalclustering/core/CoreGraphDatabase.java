@@ -57,8 +57,8 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
         return getDependencyResolver().resolveDependency( RaftMachine.class ).currentRole();
     }
 
-    public void stopCatchupServer()
+    public void disableCatchupServer()
     {
-        ((EnterpriseCoreEditionModule) editionModule).stopCatchupServer();
+        ((EnterpriseCoreEditionModule) editionModule).disableCatchupServer();
     }
 }

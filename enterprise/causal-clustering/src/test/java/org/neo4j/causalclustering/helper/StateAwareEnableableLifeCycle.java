@@ -19,9 +19,39 @@
  */
 package org.neo4j.causalclustering.helper;
 
-public interface Enableable
-{
-    void enable() throws Throwable;
+import org.neo4j.causalclustering.helper.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.logging.Log;
 
-    void disable() throws Throwable;
+public class StateAwareEnableableLifeCycle extends EnableableLifeCycle
+{
+    public LifeCycleState status;
+
+    StateAwareEnableableLifeCycle( Log debugLog )
+    {
+        super( debugLog );
+    }
+
+    @Override
+    public void start0()
+    {
+        status = LifeCycleState.Start;
+    }
+
+    @Override
+    public void stop0()
+    {
+        status = LifeCycleState.Stop;
+    }
+
+    @Override
+    public void shutdown0()
+    {
+        status = LifeCycleState.Shutdown;
+    }
+
+    @Override
+    public void init0()
+    {
+        status = LifeCycleState.Init;
+    }
 }

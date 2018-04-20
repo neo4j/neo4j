@@ -49,6 +49,7 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.IdGenerationException;
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
+import org.neo4j.causalclustering.helper.ErrorHandler;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;

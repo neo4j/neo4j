@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.net;
+package org.neo4j.causalclustering.helper;
 
+import org.neo4j.causalclustering.net.Server;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.FormattedLogProvider;
@@ -42,15 +43,15 @@ class ServerStateTestHelpers
                            new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ), "serverName" );
     }
 
-    static void setEnableableState( Server server, EnableableState enableableState )
+    static void setEnableableState( Enableable enableable, EnableableState enableableState ) throws Throwable
     {
         switch ( enableableState )
         {
         case Enabled:
-            server.enable();
+            enableable.enable();
             return;
         case Disabled:
-            server.disable();
+            enableable.disable();
             return;
         case Untouched:
             return;
@@ -59,13 +60,13 @@ class ServerStateTestHelpers
         }
     }
 
-    static void setInitialState( Server server, LifeCycleState state ) throws Throwable
+    static void setInitialState( StateAwareEnableableLifeCycle lifeCycle, LifeCycleState state ) throws Throwable
     {
         for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
         {
             if ( lifeCycleState.compareTo( state ) <= 0 )
             {
-                lifeCycleState.set( server );
+                lifeCycleState.set( lifeCycle );
             }
         }
     }

@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.net;
+package org.neo4j.causalclustering.helper;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,14 +27,13 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.causalclustering.net.ServerStateTestHelpers.EnableableState;
-import org.neo4j.causalclustering.net.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.causalclustering.helper.ServerStateTestHelpers.EnableableState;
+import org.neo4j.causalclustering.helper.ServerStateTestHelpers.LifeCycleState;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.LifeCycleState.values;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.createServer;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.setEnableableState;
-import static org.neo4j.causalclustering.net.ServerStateTestHelpers.setInitialState;
+import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setEnableableState;
+import static org.neo4j.causalclustering.helper.ServerStateTestHelpers.setInitialState;
 
 @RunWith( Parameterized.class )
 public class ServerEnableableStateChangeTest
@@ -50,26 +48,26 @@ public class ServerEnableableStateChangeTest
     public EnableableState toEnableableState;
 
     @Parameterized.Parameter( 3 )
-    public boolean shouldBeRunning;
+    public LifeCycleState shouldEndInState;
 
-    @Parameterized.Parameters( name = "From {0} and {1} to {2} Server is running ? {3}" )
+    @Parameterized.Parameters( name = "From {0} and {1} to {2} should end in {3}" )
     public static Iterable<Object[]> data()
     {
         List<Object[]> params = new ArrayList<>();
-        for ( LifeCycleState lifeCycleState : values() )
+        for ( LifeCycleState lifeCycleState : LifeCycleState.values() )
         {
             for ( EnableableState enableableState : EnableableState.values() )
             {
                 for ( EnableableState toEnableable : toEnableableState() )
                 {
-                    params.add( new Object[]{lifeCycleState, enableableState, toEnableable, expectedResult( lifeCycleState, toEnableable )} );
+                    params.add( new Object[]{lifeCycleState, enableableState, toEnableable, expectedResult( lifeCycleState, enableableState, toEnableable )} );
                 }
             }
         }
         return params;
     }
 
-    private Server server;
+    private StateAwareEnableableLifeCycle lifeCycle;
 
     private static EnableableState[] toEnableableState()
     {
@@ -79,33 +77,34 @@ public class ServerEnableableStateChangeTest
     @Before
     public void setUpServer() throws Throwable
     {
-        server = createServer();
-        setInitialState( server, fromState );
-        setEnableableState( server, fromEnableableState );
-    }
-
-    @After
-    public void shutdown()
-    {
-        ServerStateTestHelpers.teardown( server );
+        lifeCycle = new StateAwareEnableableLifeCycle( NullLogProvider.getInstance().getLog( "log" ) );
+        setInitialState( lifeCycle, fromState );
+        setEnableableState( lifeCycle, fromEnableableState );
     }
 
     @Test
-    public void executeEnableable()
+    public void executeEnableable() throws Throwable
     {
-        setEnableableState( server, toEnableableState );
-        assertEquals( shouldBeRunning, server.isRunnig() );
+        setEnableableState( lifeCycle, toEnableableState );
+        assertEquals( shouldEndInState, lifeCycle.status );
     }
 
-    private static boolean expectedResult( LifeCycleState fromState, EnableableState toEnableable )
+    private static LifeCycleState expectedResult( LifeCycleState fromState, EnableableState fromEnableableState, EnableableState toEnableable )
     {
         if ( toEnableable == EnableableState.Disabled )
         {
-            return false;
+            return LifeCycleState.Stop;
         }
         else if ( toEnableable == EnableableState.Enabled )
         {
-            return fromState != LifeCycleState.Stop && fromState != LifeCycleState.Shutdown && fromState != LifeCycleState.Init;
+            if ( fromEnableableState == EnableableState.Disabled )
+            {
+                if ( fromState == LifeCycleState.Init || fromState == LifeCycleState.Shutdown )
+                {
+                    return LifeCycleState.Stop;
+                }
+            }
+            return fromState;
         }
         else
         {

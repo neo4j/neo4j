@@ -22,6 +22,8 @@ package org.neo4j.causalclustering.helper;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.function.ThrowingConsumer;
+
 public class CompositeEnableable implements Enableable
 {
     private final List<Enableable> enableables = new ArrayList<>();
@@ -34,12 +36,30 @@ public class CompositeEnableable implements Enableable
     @Override
     public void enable()
     {
-        enableables.forEach( Enableable::enable );
+        doOperation( Enableable::enable, "Enable" );
     }
 
     @Override
     public void disable()
     {
-        enableables.forEach( Enableable::disable );
+        doOperation( Enableable::disable, "Disable" );
+    }
+
+    private void doOperation( ThrowingConsumer<Enableable,Throwable> operation, String description )
+    {
+        try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
+        {
+            for ( Enableable enableable : enableables )
+            {
+                try
+                {
+                    operation.accept( enableable );
+                }
+                catch ( Throwable throwable )
+                {
+                    errorHandler.add( throwable );
+                }
+            }
+        }
     }
 }

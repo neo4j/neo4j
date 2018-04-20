@@ -30,15 +30,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.helper.Enableable;
+import org.neo4j.causalclustering.helper.EnableableLifeCycle;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-public class Server extends LifecycleAdapter implements Enableable
+public class Server extends EnableableLifeCycle
 {
     private final Log debugLog;
     private final Log userLog;
@@ -51,8 +50,6 @@ public class Server extends LifecycleAdapter implements Enableable
 
     private EventLoopGroup workerGroup;
     private Channel channel;
-    private boolean enabled = true;
-    private boolean stoppedByLifeCycle = true;
 
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
                    String serverName )
@@ -63,6 +60,7 @@ public class Server extends LifecycleAdapter implements Enableable
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
                    ListenSocketAddress listenAddress, String serverName )
     {
+        super( debugLogProvider.getLog( Server.class ) );
         this.childInitializer = childInitializer;
         this.parentHandler = parentHandler;
         this.listenAddress = listenAddress;
@@ -78,33 +76,13 @@ public class Server extends LifecycleAdapter implements Enableable
     }
 
     @Override
-    public synchronized void start()
+    public void init0()
     {
-        stoppedByLifeCycle = false;
-        if ( !enabled )
-        {
-            debugLog.info( "Start call from lifecycle is ignored because server is disabled." );
-        }
-        else
-        {
-            doStart();
-        }
+        // do nothing
     }
 
     @Override
-    public void stop()
-    {
-        stoppedByLifeCycle = true;
-        doStop();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        stoppedByLifeCycle = true;
-    }
-
-    private void doStart()
+    public void start0()
     {
         if ( channel != null )
         {
@@ -142,12 +120,8 @@ public class Server extends LifecycleAdapter implements Enableable
         }
     }
 
-    public boolean isRunnig()
-    {
-        return channel != null;
-    }
-
-    private void doStop()
+    @Override
+    public void stop0()
     {
         if ( channel == null )
         {
@@ -173,29 +147,20 @@ public class Server extends LifecycleAdapter implements Enableable
         workerGroup = null;
     }
 
+    @Override
+    public void shutdown0()
+    {
+        // do nothing
+    }
+
     public ListenSocketAddress address()
     {
         return listenAddress;
     }
 
     @Override
-    public synchronized void enable()
+    public String toString()
     {
-        enabled = true;
-        if ( !stoppedByLifeCycle )
-        {
-            doStart();
-        }
-        else
-        {
-            debugLog.info( "Server will not start. It was enabled but is stopped by lifecycle" );
-        }
-    }
-
-    @Override
-    public synchronized void disable()
-    {
-        enabled = false;
-        doStop();
+        return serverName;
     }
 }

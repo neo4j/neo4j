@@ -501,8 +501,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
 
-    public void stopCatchupServer()
+    public void disableCatchupServer()
     {
-        coreServerModule.catchupServer().stop();
+        coreServerModule.catchupServer().disable();
     }
 }
