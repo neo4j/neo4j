@@ -41,6 +41,7 @@ public class ProcedureSignature
     private final List<FieldSignature> inputSignature;
     private final List<FieldSignature> outputSignature;
     private final Mode mode;
+    private final boolean admin;
     private final String deprecated;
     private final String[] allowed;
     private final String description;
@@ -50,6 +51,7 @@ public class ProcedureSignature
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
+            boolean admin,
             String deprecated,
             String[] allowed,
             String description,
@@ -59,6 +61,7 @@ public class ProcedureSignature
         this.inputSignature = unmodifiableList( inputSignature );
         this.outputSignature = outputSignature == VOID ? outputSignature : unmodifiableList( outputSignature );
         this.mode = mode;
+        this.admin = admin;
         this.deprecated = deprecated;
         this.allowed = allowed;
         this.description = description;
@@ -73,6 +76,11 @@ public class ProcedureSignature
     public Mode mode()
     {
         return mode;
+    }
+
+    public boolean admin()
+    {
+        return admin;
     }
 
     public Optional<String> deprecated()
@@ -158,6 +166,7 @@ public class ProcedureSignature
         private String[] allowed = new String[0];
         private String description;
         private String warning;
+        private boolean admin;
 
         public Builder( String[] namespace, String name )
         {
@@ -208,6 +217,12 @@ public class ProcedureSignature
             return this;
         }
 
+        public Builder admin( boolean admin )
+        {
+            this.admin = admin;
+            return this;
+        }
+
         public Builder warning( String warning )
         {
             this.warning =  warning;
@@ -216,7 +231,7 @@ public class ProcedureSignature
 
         public ProcedureSignature build()
         {
-            return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
+            return new ProcedureSignature( name, inputSignature, outputSignature, mode, admin, deprecated, allowed,
                     description, warning );
         }
     }
