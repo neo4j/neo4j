@@ -479,10 +479,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.kernelTransaction.locks().releaseExclusiveNodeLock(obj)
 
-    override def exists(id: Long): Boolean = reads().nodeExists(id)
-
     override def getByIdIfExists(id: Long): Option[NodeValue] =
-      if (reads().nodeExists(id))
+      if (id >= 0 && reads().nodeExists(id))
         Some(fromNodeProxy(entityAccessor.newNodeProxy(id)))
       else
         None
@@ -563,13 +561,20 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     override def getByIdIfExists(id: Long): Option[RelationshipValue] = {
-      val cursor = relationshipScanCursor
-      reads().singleRelationship(id, cursor)
-      if (cursor.next())
-        Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, cursor.sourceNodeReference(), cursor.`type`(),
-                                                                       cursor.targetNodeReference())))
-      else
+      if (id < 0)
         None
+      else {
+        val cursor = relationshipScanCursor
+        reads().singleRelationship(id, cursor)
+        if (cursor.next()) {
+          val src = cursor.sourceNodeReference()
+          val dst = cursor.targetNodeReference()
+          val relProxy = entityAccessor.newRelationshipProxy(id, src, cursor.`type`(), dst)
+          Some(fromRelationshipProxy(relProxy))
+        }
+        else
+          None
+      }
     }
 
     override def all: Iterator[RelationshipValue] = {
@@ -606,8 +611,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     override def releaseExclusiveLock(obj: Long): Unit =
       transactionalContext.kernelTransaction.locks().releaseExclusiveRelationshipLock(obj)
-
-    override def exists(id: Long): Boolean = reads().relationshipExists(id)
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int =
