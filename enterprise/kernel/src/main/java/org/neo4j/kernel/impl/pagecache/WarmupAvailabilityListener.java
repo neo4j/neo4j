@@ -38,7 +38,14 @@ class WarmupAvailabilityListener implements AvailabilityListener
     private final Config config;
     private final Log log;
     private final PageCacheWarmerMonitor monitor;
-    private volatile JobScheduler.JobHandle profileHandle;
+
+    // We use the monitor lock to guard the job handle. However, it could happen that a job has already started, ends
+    // up waiting for the lock while it's being held by another thread calling `unavailable()`. In that case, we need
+    // to make sure that the signal to stop is not lost. Cancelling a job handle only works on jobs that haven't
+    // started yet, since we don't propagate an interrupt. This is why we check the `available` field in the
+    // `scheduleProfile` method.
+    private volatile boolean available;
+    private JobScheduler.JobHandle jobHandle; // Guarded by `this`.
 
     WarmupAvailabilityListener( JobScheduler scheduler, PageCacheWarmer pageCacheWarmer,
                                 Config config, Log log, PageCacheWarmerMonitor monitor )
@@ -51,13 +58,18 @@ class WarmupAvailabilityListener implements AvailabilityListener
     }
 
     @Override
-    public void available()
+    public synchronized void available()
     {
-        scheduler.schedule( pageCacheIOHelper, this::startWarmup );
+        available = true;
+        jobHandle = scheduler.schedule( pageCacheIOHelper, this::startWarmup );
     }
 
     private void startWarmup()
     {
+        if ( !available )
+        {
+            return;
+        }
         try
         {
             long start = System.nanoTime();
@@ -78,10 +90,14 @@ class WarmupAvailabilityListener implements AvailabilityListener
         scheduleProfile();
     }
 
-    private void scheduleProfile()
+    private synchronized void scheduleProfile()
     {
+        if ( !available )
+        {
+            return;
+        }
         long frequencyMillis = config.get( GraphDatabaseSettings.pagecache_warmup_profiling_interval ).toMillis();
-        profileHandle = scheduler.scheduleRecurring(
+        jobHandle = scheduler.scheduleRecurring(
                 pageCacheIOHelper, this::doProfile, frequencyMillis, TimeUnit.MILLISECONDS );
     }
 
@@ -106,13 +122,13 @@ class WarmupAvailabilityListener implements AvailabilityListener
     }
 
     @Override
-    public void unavailable()
+    public synchronized void unavailable()
     {
-        JobScheduler.JobHandle handle = profileHandle;
-        if ( handle != null )
+        available = false;
+        if ( jobHandle != null )
         {
-            handle.cancel( false );
-            profileHandle = null;
+            jobHandle.cancel( false );
+            jobHandle = null;
         }
     }
 }
