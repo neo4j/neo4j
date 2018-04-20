@@ -21,7 +21,6 @@ package org.neo4j.server.security.enterprise.auth.plugin;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -457,9 +456,8 @@ public class PropertyLevelSecurityIT
     }
 
     // RELATIONSHIPS
-    // TODO: when the realtionship properties are returned through PropertyCursor as well this should be unignored and expanded upon
 
-    @Ignore
+    @Test
     public void shouldBehaveLikeDataIsMissingForRelationshipProperties() throws Throwable
     {
         execute( neo, "CREATE (n {name: 'Andersson'}) CREATE (m { name: 'Betasson'}) CREATE (n)-[:Neighbour]->(m)", Collections.emptyMap() ).close();
