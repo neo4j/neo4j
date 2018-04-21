@@ -58,6 +58,14 @@ class ToStringAcceptanceTest extends ExecutionEngineFunSuite with Matchers {
     }
   }
 
+  test("Path should provide sensible toString") {
+    val data = makeModel()
+    val result = graph.execute("MATCH p = (:A)-->(:B)-->(:C) RETURN p")
+    result.columnAs("p").next().toString should (
+      be(s"(?)-[?,${data("ab")}]-(?)-[?,${data("bc")}]-(?)") or
+        be(s"(${data("a")})-[${data("ab")}:KNOWS]->(${data("b")})-[${data("bc")}:KNOWS]->(${data("c")})"))
+  }
+
   test("Path should provide sensible toString within transactions") {
     val data = makeModel()
     graph.inTx {

@@ -136,7 +136,7 @@ public class DefaultValueMapper extends ValueMapper.JavaMapper
         @Override
         public String toString()
         {
-            return Paths.defaultPathToString( this );
+            return Paths.defaultPathToStringWithNotInTransactionFallback( this );
         }
 
         @Override
