@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast.{NodeFromSlot, RelationshipFromSlot}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.DropResultPipe
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
@@ -38,8 +39,9 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral, Expression => AstExpression}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
@@ -230,12 +232,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         }
         EagerAggregationSlottedPipe(source, slots, grouping, aggregation)(id)
 
-      case Distinct(_, groupingExpressions) =>
-        val grouping = groupingExpressions.map {
-          case (key, expression) =>
-            slots(key) -> convertExpressions(expression)
-        }
-        DistinctSlottedPipe(source, slots, grouping)(id)
+      case Distinct(_, groupingExpressions: Map[String, AstExpression]) =>
+        distinctPipe(groupingExpressions, slots, source, id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
         val fromSlot = slots(startNode)
@@ -343,6 +341,67 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
       .asInstanceOf[Predicate]
+  }
+
+  private def distinctPipe(projections: Map[String, AstExpression],
+                           slots: SlotConfiguration,
+                           source: Pipe,
+                           id: Id): Pipe = {
+
+    trait DistinctPhysicalOp {
+      def addExpression(column: String, e: AstExpression): DistinctPhysicalOp
+    }
+
+    case class AllPrimitive(offsets: Seq[Int]) extends DistinctPhysicalOp {
+      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = e match {
+        case v: NodeFromSlot =>
+          AllPrimitive(offsets :+ v.offset)
+        case v: RelationshipFromSlot =>
+          AllPrimitive(offsets :+ v.offset)
+        case _ =>
+          References
+      }
+    }
+
+    object Empty extends DistinctPhysicalOp {
+      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = e match {
+        case v: NodeFromSlot =>
+          AllPrimitive(Seq(v.offset))
+        case v: RelationshipFromSlot =>
+          AllPrimitive(Seq(v.offset))
+        case _ =>
+          References
+      }
+    }
+
+    object References extends DistinctPhysicalOp {
+      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = References
+    }
+
+    val runtimeProjections = projections.map {
+      case (key, expression) =>
+        slots(key) -> convertExpressions(expression)
+    }
+
+    val physicalDistinctOp = projections.foldLeft[DistinctPhysicalOp](Empty) {
+      case (a: DistinctPhysicalOp, (column, expression)) =>
+        a.addExpression(column, expression)
+    }
+
+    physicalDistinctOp match {
+      case AllPrimitive(offsets) if offsets.size == 1 =>
+        val (toSlot, runtimeExpression) = runtimeProjections.head
+        DistinctSlottedSinglePrimitivePipe(source, slots, toSlot, offsets.head, runtimeExpression)(id)
+
+      case AllPrimitive(offsets) =>
+        DistinctSlottedPrimitivePipe(source, slots, offsets.toArray, runtimeProjections)(id)
+
+      case References =>
+        DistinctSlottedPipe(source, slots, runtimeProjections)(id)
+
+      case Empty =>
+        throw new RuntimeException("This should have been prevented at semantic checking")
+    }
   }
 
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
