@@ -175,9 +175,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout );
 
         /** Execute a cypher statement */
-        Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context );
-
-        /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
 
         AutoIndexing autoIndexing();

@@ -85,20 +85,6 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String, Object> parameters, TransactionalContext transactionalContext )
-    {
-        try
-        {
-            availability.assertDatabaseAvailable();
-            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
-        }
-        catch ( QueryExecutionKernelException e )
-        {
-            throw e.asUserException();
-        }
-    }
-
-    @Override
     public AutoIndexing autoIndexing()
     {
         return dataSource.autoIndexing;

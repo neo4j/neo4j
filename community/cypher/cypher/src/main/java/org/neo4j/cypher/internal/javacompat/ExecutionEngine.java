@@ -86,21 +86,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
-            throws QueryExecutionKernelException
-    {
-        try
-        {
-            return inner.execute( query, parameters, context );
-        }
-        catch ( CypherException e )
-        {
-            throw new QueryExecutionKernelException( e );
-        }
-    }
-
-    @Override
-    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result profileQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException
     {
         try

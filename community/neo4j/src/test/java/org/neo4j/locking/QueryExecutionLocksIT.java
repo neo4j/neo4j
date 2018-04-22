@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.empty;
@@ -192,7 +193,7 @@ public class QueryExecutionLocksIT
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
-            executionEngine.executeQuery( query, Collections.emptyMap(), context );
+            executionEngine.executeQuery( query, VirtualValues.emptyMap(), context );
             return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }
     }

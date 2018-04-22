@@ -58,14 +58,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
-            throws QueryExecutionKernelException
-    {
-        return executeWithRetries( query, parameters, context, super::executeQuery );
-    }
-
-    @Override
-    public Result profileQuery( String query, Map<String,Object> parameters, TransactionalContext context )
+    public Result profileQuery( String query, MapValue parameters, TransactionalContext context )
             throws QueryExecutionKernelException
     {
         return executeWithRetries( query, parameters, context, super::profileQuery );
