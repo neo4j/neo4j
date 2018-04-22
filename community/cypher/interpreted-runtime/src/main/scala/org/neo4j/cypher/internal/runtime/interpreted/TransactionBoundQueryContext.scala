@@ -372,7 +372,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     else cursor.isDense
   }
 
-  override def asObject(value: AnyValue): Any = withAnyOpenQueryContext(_ => value.map(valueMapper))
+  override def asObject(value: AnyValue): Any = value.map(valueMapper)
 
   class NodeOperations extends BaseOperations[NodeValue] {
 
