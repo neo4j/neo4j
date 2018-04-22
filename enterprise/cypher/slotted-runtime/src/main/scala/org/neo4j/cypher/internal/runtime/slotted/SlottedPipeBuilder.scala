@@ -33,13 +33,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Aggre
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.runtime.slotted.expressions.{RelationshipFromSlot, NodeFromSlot}
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.util.v3_5.AssertionUtils._
 import org.neo4j.cypher.internal.util.v3_5.InternalException
+import org.neo4j.cypher.internal.util.v3_5.attribution.Id
 import org.neo4j.cypher.internal.util.v3_5.symbols._
-import org.neo4j.cypher.internal.v3_5.expressions.{Equals, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_5.expressions.{Equals, SignedDecimalIntegerLiteral, Expression => AstExpression}
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.{expressions => frontEndAst}
@@ -52,9 +54,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                         (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
   extends PipeBuilder {
-
-  private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
-    rewriteAstExpression andThen expressionConverters.toCommandExpression
 
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
@@ -74,12 +73,12 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case NodeIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(column, label, propertyKeys,
-                                  valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
+          valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id)
 
       case NodeUniqueIndexSeek(column, label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(column, label, propertyKeys,
-                                  valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, slots, argumentSize)(id = id)
 
       case NodeByLabelScan(column, label, _) =>
         NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, argumentSize)(id)
@@ -92,26 +91,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
-  }
-
-  private def generateSlotAccessorFunctions(slots: SlotConfiguration) = {
-    slots.foreachSlot {
-      case (key, slot) =>
-        val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
-        val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
-        val primitiveNodeSetter =
-          if (slot.typ.isAssignableFrom(CTNode))
-            Some(SlottedPipeBuilderUtils.makeSetPrimitiveNodeInSlotFunctionFor(slot))
-          else
-            None
-        val primitiveRelationshipSetter =
-          if (slot.typ.isAssignableFrom(CTRelationship))
-            Some(SlottedPipeBuilderUtils.makeSetPrimitiveRelationshipInSlotFunctionFor(slot))
-          else
-            None
-
-       slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
-    }
   }
 
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
@@ -194,7 +173,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case CreateNode(_, idName, labels, props) =>
         CreateNodeSlottedPipe(source, idName, slots, labels.map(LazyLabel.apply),
-                               props.map(convertExpressions))(id)
+          props.map(convertExpressions))(id)
 
       case MergeCreateNode(_, idName, labels, props) =>
         MergeCreateNodeSlottedPipe(source, idName, slots, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
@@ -230,12 +209,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         }
         EagerAggregationSlottedPipe(source, slots, grouping, aggregation)(id)
 
-      case Distinct(_, groupingExpressions) =>
-        val grouping = groupingExpressions.map {
-          case (key, expression) =>
-            slots(key) -> convertExpressions(expression)
-        }
-        DistinctSlottedPipe(source, slots, grouping)(id)
+      case Distinct(_, groupingExpressions: Map[String, AstExpression]) =>
+        chooseDistinctPipe(groupingExpressions, slots, source, id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
         val fromSlot = slots(startNode)
@@ -299,50 +274,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _ =>
         fallback.build(plan, source)
-        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+      //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
-  }
-
-  private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
-    !slots.isAlias(k) &&
-      slots.get(k).forall(_.isInstanceOf[RefSlot])
-  }
-
-  private def translateColumnOrder(slots: SlotConfiguration, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
-    case plans.Ascending(name) =>
-      slots.get(name) match {
-        case Some(slot) => pipes.Ascending(slot)
-        case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
-      }
-
-    case plans.Descending(name) =>
-      slots.get(name) match {
-        case Some(slot) => pipes.Descending(slot)
-        case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
-      }
-  }
-
-  private def createProjectionsForResult(columns: Seq[String], slots: SlotConfiguration) = {
-    val runtimeColumns: Seq[(String, commandExpressions.Expression)] =
-      columns.map(createProjectionForIdentifier(slots))
-    runtimeColumns
-  }
-
-  private def createProjectionForIdentifier(slots: SlotConfiguration)(identifier: String) = {
-    val slot = slots.get(identifier).getOrElse(
-      throw new InternalException(s"Did not find `$identifier` in the slot configuration")
-    )
-    identifier -> SlottedPipeBuilder.projectSlotExpression(slot)
-  }
-
-  private def buildPredicate(expr: frontEndAst.Expression)
-                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
-    val rewrittenExpr: frontEndAst.Expression = rewriteAstExpression(expr)
-
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
-      .asInstanceOf[Predicate]
   }
 
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
@@ -451,10 +386,125 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _ =>
         fallback.build(plan, lhs, rhs)
-        //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+      //throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
+  }
+
+  private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
+    rewriteAstExpression andThen expressionConverters.toCommandExpression
+
+  private def generateSlotAccessorFunctions(slots: SlotConfiguration) = {
+    slots.foreachSlot {
+      case (key, slot) =>
+        val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
+        val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
+        val primitiveNodeSetter =
+          if (slot.typ.isAssignableFrom(CTNode))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveNodeInSlotFunctionFor(slot))
+          else
+            None
+        val primitiveRelationshipSetter =
+          if (slot.typ.isAssignableFrom(CTRelationship))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveRelationshipInSlotFunctionFor(slot))
+          else
+            None
+
+       slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
+    }
+  }
+
+  private def refSlotAndNotAlias(slots: SlotConfiguration, k: String) = {
+    !slots.isAlias(k) &&
+      slots.get(k).forall(_.isInstanceOf[RefSlot])
+  }
+
+  private def translateColumnOrder(slots: SlotConfiguration, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
+    case plans.Ascending(name) =>
+      slots.get(name) match {
+        case Some(slot) => pipes.Ascending(slot)
+        case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
+      }
+
+    case plans.Descending(name) =>
+      slots.get(name) match {
+        case Some(slot) => pipes.Descending(slot)
+        case None => throw new InternalException(s"Did not find `$name` in the slot configuration")
+      }
+  }
+
+  private def createProjectionsForResult(columns: Seq[String], slots: SlotConfiguration) = {
+    val runtimeColumns: Seq[(String, commandExpressions.Expression)] =
+      columns.map(createProjectionForIdentifier(slots))
+    runtimeColumns
+  }
+
+  private def createProjectionForIdentifier(slots: SlotConfiguration)(identifier: String) = {
+    val slot = slots.get(identifier).getOrElse(
+      throw new InternalException(s"Did not find `$identifier` in the slot configuration")
+    )
+    identifier -> SlottedPipeBuilder.projectSlotExpression(slot)
+  }
+
+  private def buildPredicate(expr: frontEndAst.Expression)
+                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+    val rewrittenExpr: frontEndAst.Expression = rewriteAstExpression(expr)
+
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
+      .asInstanceOf[Predicate]
+  }
+
+  private def chooseDistinctPipe(groupingExpressions: Map[String, AstExpression],
+                           slots: SlotConfiguration,
+                           source: Pipe,
+                           id: Id): Pipe = {
+
+    /**
+      * We use these objects to figure out:
+      * a) can we use the primitive distinct pipe?
+      * b) if we can, what offsets are interesting
+      */
+    trait DistinctPhysicalOp {
+      def addExpression(e: AstExpression): DistinctPhysicalOp
+    }
+
+    case class AllPrimitive(offsets: Seq[Int]) extends DistinctPhysicalOp {
+      override def addExpression(e: AstExpression): DistinctPhysicalOp = e match {
+        case v: NodeFromSlot =>
+          AllPrimitive(offsets :+ v.offset)
+        case v: RelationshipFromSlot =>
+          AllPrimitive(offsets :+ v.offset)
+        case _ =>
+          References
+      }
+    }
+
+    object References extends DistinctPhysicalOp {
+      override def addExpression(e: AstExpression): DistinctPhysicalOp = References
+    }
+
+    val runtimeProjections: Map[Slot, Expression] = groupingExpressions.map {
+      case (key, expression) =>
+        slots(key) -> convertExpressions(expression)
+    }
+
+    val physicalDistinctOp = groupingExpressions.foldLeft[DistinctPhysicalOp](AllPrimitive(Seq.empty)) {
+      case (acc: DistinctPhysicalOp, (_, expression)) =>
+        acc.addExpression(expression)
+    }
+
+    physicalDistinctOp match {
+      case AllPrimitive(offsets) if offsets.size == 1 =>
+        val (toSlot, runtimeExpression) = runtimeProjections.head
+        DistinctSlottedSinglePrimitivePipe(source, slots, toSlot, offsets.head, runtimeExpression)(id)
+
+      case AllPrimitive(offsets) =>
+        DistinctSlottedPrimitivePipe(source, slots, offsets.sorted.toArray, runtimeProjections)(id)
+
+      case References =>
+        DistinctSlottedPipe(source, slots, runtimeProjections)(id)
+    }
   }
 
   // Verifies the assumption that all shared slots are arguments with slot offsets within the first argument size number of slots
@@ -537,23 +587,6 @@ object SlottedPipeBuilder {
     }
   }
 
-  private def projectSlotExpression(slot: Slot): Expression = slot match {
-    case LongSlot(offset, false, CTNode) =>
-      slottedExpressions.NodeFromSlot(offset)
-    case LongSlot(offset, true, CTNode) =>
-      slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
-    case LongSlot(offset, false, CTRelationship) =>
-      slottedExpressions.RelationshipFromSlot(offset)
-    case LongSlot(offset, true, CTRelationship) =>
-      slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
-
-    case RefSlot(offset, _, _) =>
-      slottedExpressions.ReferenceFromSlot(offset)
-
-    case _ =>
-      throw new InternalException(s"Do not know how to project $slot")
-  }
-
   type RowMapping = (ExecutionContext, QueryState) => ExecutionContext
 
   //compute mapping from incoming to outgoing pipe line, the slot order may differ
@@ -607,6 +640,23 @@ object SlottedPipeBuilder {
         outgoing
     }
 
+  }
+
+  private def projectSlotExpression(slot: Slot): Expression = slot match {
+    case LongSlot(offset, false, CTNode) =>
+      slottedExpressions.NodeFromSlot(offset)
+    case LongSlot(offset, true, CTNode) =>
+      slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
+    case LongSlot(offset, false, CTRelationship) =>
+      slottedExpressions.RelationshipFromSlot(offset)
+    case LongSlot(offset, true, CTRelationship) =>
+      slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
+
+    case RefSlot(offset, _, _) =>
+      slottedExpressions.ReferenceFromSlot(offset)
+
+    case _ =>
+      throw new InternalException(s"Do not know how to project $slot")
   }
 
   def translateColumnOrder(slots: SlotConfiguration, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
