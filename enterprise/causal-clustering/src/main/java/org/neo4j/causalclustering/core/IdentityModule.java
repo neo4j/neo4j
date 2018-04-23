@@ -70,6 +70,8 @@ public class IdentityModule
         {
             throw new RuntimeException( e );
         }
+
+        platformModule.jobScheduler.setTopLevelGroupName( "Core " + myself );
     }
 
     public MemberId myself()

@@ -152,6 +152,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         LogService logging = platformModule.logging;
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
+        platformModule.jobScheduler.setTopLevelGroupName( "ReadReplica " + myself );
 
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;

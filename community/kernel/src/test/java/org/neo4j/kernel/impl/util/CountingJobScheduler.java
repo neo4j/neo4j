@@ -40,6 +40,12 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
+    public void setTopLevelGroupName( String name )
+    {
+        delegate.setTopLevelGroupName( name );
+    }
+
+    @Override
     public Executor executor( Group group )
     {
         return delegate.executor( group );

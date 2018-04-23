@@ -86,12 +86,12 @@ class PageCacheWarmupTestSupport
         }
 
         @Override
-        public void warmupCompleted( long elapsedMillis, long pagesLoaded )
+        public void warmupCompleted( long pagesLoaded )
         {
         }
 
         @Override
-        public void profileCompleted( long elapsedMillis, long pagesInMemory )
+        public void profileCompleted( long pagesInMemory )
         {
             pageCount.set( pagesInMemory );
             profileLatch.release();
@@ -109,12 +109,12 @@ class PageCacheWarmupTestSupport
         }
 
         @Override
-        public void warmupCompleted( long elapsedMillis, long pagesLoaded )
+        public void warmupCompleted( long pagesLoaded )
         {
         }
 
         @Override
-        public void profileCompleted( long elapsedMillis, long pagesInMemory )
+        public void profileCompleted( long pagesInMemory )
         {
             await();
             monitors.removeMonitorListener( this );
