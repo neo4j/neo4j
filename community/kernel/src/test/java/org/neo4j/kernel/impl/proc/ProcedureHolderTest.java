@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.NoSuchElementException;
@@ -45,6 +44,21 @@ public class ProcedureHolderTest
         // then
         assertThat( procHolder.get( qualifiedName ), equalTo( item ) );
         assertThat( procHolder.idOf( qualifiedName ), equalTo( 0 ) );
+    }
+
+    @Test
+    public void okToHaveProcsOnlyDifferByCase()
+    {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        procHolder.put( new QualifiedName( new String[0], "CASESENSITIVE" ), "CASESENSITIVEItem", false );
+        procHolder.put( new QualifiedName( new String[0], "CaseSensitive" ), "CaseSensitiveItem", false );
+
+        // then
+        assertThat( procHolder.get( new QualifiedName( new String[0], "CASESENSITIVE" ) ), equalTo( "CASESENSITIVEItem" ) );
+        assertThat( procHolder.get( new QualifiedName( new String[0], "CaseSensitive" ) ), equalTo( "CaseSensitiveItem" ) );
+        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CASESENSITIVE" ) ), equalTo( 0 ) );
+        assertThat( procHolder.idOf( new QualifiedName( new String[0], "CaseSensitive" ) ), equalTo( 1 ) );
     }
 
     @Test
