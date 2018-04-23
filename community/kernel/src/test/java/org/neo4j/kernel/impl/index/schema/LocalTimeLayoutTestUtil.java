@@ -51,7 +51,7 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeSchemaKey, 
 
     public static LocalTimeValue randomLocalTime( Randoms random )
     {
-        return LocalTimeValue.localTime(random.nextLong( 0, MAX_NANOS_PER_DAY ) );
+        return LocalTimeValue.localTime( random.randomLocalTime() );
     }
 
     LocalTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )

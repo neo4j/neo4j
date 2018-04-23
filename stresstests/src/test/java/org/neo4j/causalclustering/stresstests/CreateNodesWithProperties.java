@@ -30,6 +30,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helper.Workload;
 import org.neo4j.kernel.impl.util.CappedLogger;
 import org.neo4j.logging.Log;
+import org.neo4j.test.Randoms;
 
 class CreateNodesWithProperties extends Workload
 {
@@ -64,6 +65,7 @@ class CreateNodesWithProperties extends Workload
     protected void doWork()
     {
         txLogger.info( "SuccessCount: " + txSuccessCount + " FailCount: " + txFailCount );
+        Randoms randoms = new Randoms();
 
         try
         {
@@ -72,7 +74,7 @@ class CreateNodesWithProperties extends Workload
                 Node node = db.createNode( label );
                 for ( int i = 1; i <= 8; i++ )
                 {
-                    node.setProperty( prop( i ), "let's add some data here so the transaction logs rotate more often..." );
+                    node.setProperty( prop( i ), randoms.propertyValue() );
                 }
                 tx.success();
             } );

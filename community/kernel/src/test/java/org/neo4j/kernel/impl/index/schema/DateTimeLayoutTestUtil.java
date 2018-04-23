@@ -53,7 +53,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeSchemaKe
 
     public static DateTimeValue randomDateTime( Randoms random )
     {
-        return DateTimeValue.datetime( random.nextLong( (-999_999_999L - 1970) * 365 * 24 * 60 * 60, (999_999_999L - 1970) * 365 * 24 * 60 * 60 ), 0, UTC );
+        return DateTimeValue.datetime( random.randomDateTime() );
     }
 
     DateTimeLayoutTestUtil( SchemaIndexDescriptor schemaIndexDescriptor )
