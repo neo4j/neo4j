@@ -87,4 +87,12 @@ class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QuerySta
         | RETURN a.name""".stripMargin)
     result.columnAs("a.name").toList should be (List())
   }
+
+  test("should distinguish between one and multiple spaces in strings"){
+    graph.execute("CREATE (:Label{prop:'1 2'})")
+    graph.execute("CREATE (:Label{prop:'1  2'})")
+
+    val result = innerExecute( "MATCH (n:Label) RETURN length(n.prop) as l")
+    result.toSet should equal(Set(Map("l" -> 3), Map("l" -> 4)))
+  }
 }
