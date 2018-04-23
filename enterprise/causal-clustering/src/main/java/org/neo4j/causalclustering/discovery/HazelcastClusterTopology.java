@@ -213,14 +213,14 @@ public final class HazelcastClusterTopology
         return result;
     }
 
-    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName, Log log )
+    static void casLeaders( HazelcastInstance hazelcastInstance, LeaderInfo leaderInfo, String dbName )
     {
         IAtomicReference<LeaderInfo> leaderRef = hazelcastInstance.getAtomicReference( DB_NAME_LEADER_TERM_PREFIX + dbName );
 
         LeaderInfo current = leaderRef.get();
         Optional<LeaderInfo> currentOpt = Optional.ofNullable( current );
 
-        boolean noUpdate =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+        boolean sameLeader =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
         int termComparison =  currentOpt.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
@@ -228,11 +228,7 @@ public final class HazelcastClusterTopology
 
         boolean sameTermButNoStepdown = termComparison == 0 && !leaderInfo.isSteppingDown();
 
-        boolean invalidTerm = greaterTermExists || sameTermButNoStepdown;
-
-        boolean success = !( invalidTerm || noUpdate );
-
-        if ( !success )
+        if ( sameLeader || greaterTermExists || sameTermButNoStepdown )
         {
             return;
         }

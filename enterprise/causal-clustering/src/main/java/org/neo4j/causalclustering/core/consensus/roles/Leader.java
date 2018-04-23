@@ -87,7 +87,7 @@ public class Leader implements RaftMessageHandler
                 return outcome;
             }
 
-            stepDownToFollower( outcome, ctx.term() );
+            stepDownToFollower( outcome, ctx );
             log.info( "Moving to FOLLOWER state after receiving heartbeat at term %d (my term is " + "%d) from %s",
                     heartbeat.leaderTerm(), ctx.term(), heartbeat.from() );
             Heart.beat( ctx, outcome, heartbeat, log );
@@ -113,7 +113,7 @@ public class Leader implements RaftMessageHandler
         {
             if ( !isQuorum( ctx.votingMembers().size(), ctx.heartbeatResponses().size() ) )
             {
-                stepDownToFollower( outcome, ctx.term() );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after not receiving heartbeat responses in this election timeout " +
                         "period. Heartbeats received: %s", ctx.heartbeatResponses() );
             }
@@ -142,7 +142,7 @@ public class Leader implements RaftMessageHandler
             else
             {
                 // There is a new leader in a later term, we should revert to follower. (§5.1)
-                stepDownToFollower( outcome, ctx.term() );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after receiving append request at term %d (my term is " +
                         "%d) from %s", req.leaderTerm(), ctx.term(), req.from() );
                 Appending.handleAppendEntriesRequest( ctx, outcome, req, log );
@@ -162,7 +162,7 @@ public class Leader implements RaftMessageHandler
             else if ( response.term() > ctx.term() )
             {
                 outcome.setNextTerm( response.term() );
-                stepDownToFollower( outcome, ctx.term() );
+                stepDownToFollower( outcome, ctx );
                 log.info( "Moving to FOLLOWER state after receiving append response at term %d (my term is " +
                         "%d) from %s", response.term(), ctx.term(), response.from() );
                 outcome.replaceFollowerStates( new FollowerStates<>() );
@@ -235,7 +235,7 @@ public class Leader implements RaftMessageHandler
         {
             if ( req.term() > ctx.term() )
             {
-                stepDownToFollower( outcome, ctx.term() );
+                stepDownToFollower( outcome, ctx );
                 log.info(
                         "Moving to FOLLOWER state after receiving vote request at term %d (my term is " + "%d) from %s",
                         req.term(), ctx.term(), req.from() );
@@ -286,7 +286,7 @@ public class Leader implements RaftMessageHandler
             {
                 if ( req.term() > ctx.term() )
                 {
-                    stepDownToFollower( outcome, ctx.term() );
+                    stepDownToFollower( outcome, ctx );
                     log.info( "Moving to FOLLOWER state after receiving pre vote request from %s at term %d (I am at %d)",
                             req.from(), req.term(), ctx.term() );
                 }
@@ -307,9 +307,9 @@ public class Leader implements RaftMessageHandler
             return outcome;
         }
 
-        private void stepDownToFollower( Outcome outcome, long inTerm )
+        private void stepDownToFollower( Outcome outcome, ReadableRaftState raftState )
         {
-            outcome.steppingDown( inTerm );
+            outcome.steppingDown( raftState.term() );
             outcome.setNextRole( FOLLOWER );
             outcome.setLeader( null );
         }

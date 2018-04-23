@@ -23,19 +23,20 @@ import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.URI;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -57,6 +58,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -66,6 +68,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
 import static org.neo4j.causalclustering.discovery.RoleInfo.READ_REPLICA;
@@ -271,10 +274,10 @@ public class ClusterOverviewIT
     }
 
     @Test
-    public void shouldHaveNoLeaderIfMajorityCoreMembersDead() throws Exception
+    public void shouldDiscoverTimeoutBasedLeaderStepdown() throws Exception
     {
         clusterRule.withNumberOfCoreMembers( 3 );
-        clusterRule.withNumberOfCoreMembers( 2 );
+        clusterRule.withNumberOfReadReplicas( 2 );
 
         Cluster cluster = clusterRule.startCluster();
         List<CoreClusterMember> followers = cluster.getAllMembersWithRole( Role.FOLLOWER );
@@ -282,6 +285,27 @@ public class ClusterOverviewIT
         followers.forEach( CoreClusterMember::shutdown );
 
         assertEventualOverview( cluster, containsRole( LEADER, 0 ), leader.serverId() );
+    }
+
+    @Test
+    public void shouldDiscoverGreaterTermBasedLeaderStepdown() throws Exception
+    {
+        int originalCoreMembers = 3;
+        clusterRule.withNumberOfCoreMembers( originalCoreMembers );
+
+        Cluster cluster = clusterRule.startCluster();
+        CoreClusterMember leader = cluster.awaitLeader();
+        leader.config().augment( CausalClusteringSettings.refuse_to_be_leader, Settings.TRUE );
+
+        List<MemberInfo> preElectionOverview = clusterOverview( leader.database() );
+
+        CoreClusterMember follower = cluster.getMemberWithRole( Role.FOLLOWER );
+        follower.raft().triggerElection( Clock.systemUTC() );
+
+        assertEventualOverview( cluster, allOf(
+                containsRole( LEADER, 1 ),
+                containsRole( FOLLOWER, originalCoreMembers - 1 ),
+                not( equalTo( preElectionOverview ) ) ), leader.serverId() );
     }
 
     private void assertEventualOverview( Cluster cluster, Matcher<List<MemberInfo>> expected, int coreServerId )

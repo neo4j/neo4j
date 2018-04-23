@@ -146,9 +146,9 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         boolean wasLeaderForTerm = Objects.equals( myself, leaderInfo.memberId() ) && term == leaderInfo.term();
         if ( wasLeaderForTerm )
         {
-            log.info( String.format( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
-                    "to follower.", myself, leaderInfo.term() ) );
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.stepDown(), dbName, log);
+            log.info( "Step down event detected. This topology member, with MemberId %s, was leader in term %s, now moving " +
+                    "to follower.", myself, leaderInfo.term() );
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo.stepDown(), dbName );
         }
     }
 
@@ -368,7 +368,7 @@ public class HazelcastCoreTopologyService extends AbstractTopologyService implem
         if ( leaderInfo.memberId() != null && leaderInfo.memberId().equals( myself ) )
         {
             log.info( "Leader %s updating leader info for database %s and term %s", myself, localDBName, leaderInfo.term() );
-            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName, log);
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, leaderInfo, localDBName );
         }
 
         coreRoles = HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );

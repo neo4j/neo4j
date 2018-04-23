@@ -132,17 +132,15 @@ public final class SharedDiscoveryService
         {
             Optional<LeaderInfo> current = Optional.ofNullable( leaderMap.get( dbName ) );
 
-            boolean noUpdate = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+            boolean sameLeader = current.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
             int termComparison = current.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
             boolean greaterTermExists = termComparison > 0;
 
-            boolean invalidTerm = greaterTermExists || ( termComparison == 0 && !leaderInfo.isSteppingDown() );
+            boolean sameTermButNoStepDown = termComparison == 0 && !leaderInfo.isSteppingDown();
 
-            boolean success = !( invalidTerm || noUpdate);
-
-            if ( success )
+            if ( !( greaterTermExists || sameTermButNoStepDown || sameLeader ) )
             {
                 leaderMap.put( dbName, leaderInfo );
             }
