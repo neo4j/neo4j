@@ -104,7 +104,7 @@ public class StoreCopyClientIT
     }
 
     @Before
-    public void setup()
+    public void setup() throws Throwable
     {
         serverHandler = new TestCatchupServerHandler( logProvider, testDirectory, fsa );
         serverHandler.addFile( fileA );
@@ -128,7 +128,7 @@ public class StoreCopyClientIT
     }
 
     @After
-    public void shutdown()
+    public void shutdown() throws Throwable
     {
         catchupServer.stop();
     }

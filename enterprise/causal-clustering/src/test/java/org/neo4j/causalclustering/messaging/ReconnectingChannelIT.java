@@ -91,14 +91,14 @@ public class ReconnectingChannelIT
     }
 
     @After
-    public void after()
+    public void after() throws Throwable
     {
         elg.shutdownGracefully( 0, DEFAULT_TIMEOUT_MS, MILLISECONDS ).awaitUninterruptibly();
         server.stop();
     }
 
     @Test
-    public void shouldBeAbleToSendMessage() throws Exception
+    public void shouldBeAbleToSendMessage() throws Throwable
     {
         // given
         server.start();
@@ -114,7 +114,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldAllowDeferredSend() throws Exception
+    public void shouldAllowDeferredSend() throws Throwable
     {
         // given
         channel.start();
@@ -144,7 +144,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldReconnectAfterServerComesBack() throws Exception
+    public void shouldReconnectAfterServerComesBack() throws Throwable
     {
         // given
         server.start();
@@ -180,7 +180,7 @@ public class ReconnectingChannelIT
     }
 
     @Test
-    public void shouldNotAllowSendingOnDisposedChannel() throws Exception
+    public void shouldNotAllowSendingOnDisposedChannel() throws Throwable
     {
         // given
         server.start();

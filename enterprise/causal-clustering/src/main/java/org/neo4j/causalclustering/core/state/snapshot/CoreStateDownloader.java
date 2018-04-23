@@ -37,9 +37,9 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -51,7 +51,7 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 public class CoreStateDownloader
 {
     private final LocalDatabase localDatabase;
-    private final Lifecycle startStopOnStoreCopy;
+    private final Suspendable suspendOnStoreCopy;
     private final RemoteStore remoteStore;
     private final CatchUpClient catchUpClient;
     private final Log log;
@@ -60,13 +60,13 @@ public class CoreStateDownloader
     private final CoreSnapshotService snapshotService;
     private CommitStateHelper commitStateHelper;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, RemoteStore remoteStore,
-            CatchUpClient catchUpClient, LogProvider logProvider, StoreCopyProcess storeCopyProcess,
-            CoreStateMachines coreStateMachines, CoreSnapshotService snapshotService,
-            CommitStateHelper commitStateHelper )
+    public CoreStateDownloader( LocalDatabase localDatabase, Suspendable suspendOnStoreCopy, RemoteStore remoteStore,
+                                CatchUpClient catchUpClient, LogProvider logProvider, StoreCopyProcess storeCopyProcess,
+                                CoreStateMachines coreStateMachines, CoreSnapshotService snapshotService,
+                                CommitStateHelper commitStateHelper )
     {
         this.localDatabase = localDatabase;
-        this.startStopOnStoreCopy = startStopOnStoreCopy;
+        this.suspendOnStoreCopy = suspendOnStoreCopy;
         this.remoteStore = remoteStore;
         this.catchUpClient = catchUpClient;
         this.log = logProvider.getLog( getClass() );
@@ -129,7 +129,7 @@ public class CoreStateDownloader
             return false;
         }
 
-        ensure( startStopOnStoreCopy::stop, "stop auxiliary services before store copy" );
+        ensure( suspendOnStoreCopy::disable, "disable auxiliary services before store copy" );
         ensure( localDatabase::stopForStoreCopy, "stop local database for store copy" );
 
         log.info( "Downloading snapshot from core server at %s", primary );
@@ -211,7 +211,7 @@ public class CoreStateDownloader
         ensure( localDatabase::start, "start local database after store copy" );
 
         coreStateMachines.installCommitProcess( localDatabase.getCommitProcess() );
-        ensure( startStopOnStoreCopy::start, "start auxiliary services after store copy" );
+        ensure( suspendOnStoreCopy::enable, "enable auxiliary services after store copy" );
 
         return true;
     }

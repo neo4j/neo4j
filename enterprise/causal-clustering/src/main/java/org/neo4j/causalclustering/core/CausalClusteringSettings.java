@@ -40,7 +40,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.GZIP;
 import static org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols.Implementations.LZ4;

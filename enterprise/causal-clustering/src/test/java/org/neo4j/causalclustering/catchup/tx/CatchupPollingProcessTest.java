@@ -36,13 +36,13 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.CountingTimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.upstream.UpstreamDatabaseStrategySelector;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.FakeClockJobScheduler;
@@ -89,7 +89,7 @@ public class CatchupPollingProcessTest
         when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( Optional.of( coreMemberAddress ) );
     }
 
-    private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
+    private final Suspendable startStopOnStoreCopy = mock( Suspendable.class );
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy, catchUpClient, strategyPipeline, timerService,
@@ -181,10 +181,10 @@ public class CatchupPollingProcessTest
 
         // then
         verify( localDatabase ).stopForStoreCopy();
-        verify( startStopOnStoreCopy ).stop();
+        verify( startStopOnStoreCopy ).disable();
         verify( storeCopyProcess ).replaceWithStoreFrom( any( CatchupAddressProvider.class ), eq( storeId ) );
         verify( localDatabase ).start();
-        verify( startStopOnStoreCopy ).start();
+        verify( startStopOnStoreCopy ).enable();
         verify( txApplier ).refreshFromNewStore();
 
         // then

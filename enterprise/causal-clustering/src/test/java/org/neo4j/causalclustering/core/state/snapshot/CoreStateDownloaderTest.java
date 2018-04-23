@@ -35,10 +35,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertFalse;
@@ -54,7 +54,7 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 public class CoreStateDownloaderTest
 {
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
-    private final Lifecycle startStopLife = mock( Lifecycle.class );
+    private final Suspendable startStopLife = mock( Suspendable.class );
     private final RemoteStore remoteStore = mock( RemoteStore.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
@@ -109,10 +109,10 @@ public class CoreStateDownloaderTest
         downloader.downloadSnapshot( catchupAddressProvider );
 
         // then
-        verify( startStopLife ).stop();
+        verify( startStopLife ).disable();
         verify( localDatabase ).stopForStoreCopy();
         verify( localDatabase ).start();
-        verify( startStopLife ).start();
+        verify( startStopLife ).enable();
     }
 
     @Test

@@ -294,9 +294,9 @@ public class CoreClusterMember implements ClusterMember<CoreGraphDatabase>
         return raftLogDir;
     }
 
-    public void stopCatchupServer()
+    public void disableCatchupServer() throws Throwable
     {
-        database.stopCatchupServer();
+        database.disableCatchupServer();
     }
 
     int discoveryPort()

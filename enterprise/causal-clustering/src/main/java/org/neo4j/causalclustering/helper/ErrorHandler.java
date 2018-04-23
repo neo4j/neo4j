@@ -17,16 +17,41 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.helper;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ErrorHandler implements AutoCloseable
 {
     private final List<Throwable> throwables = new ArrayList<>();
     private final String message;
+
+    /**
+     * Ensures each action is executed. Any throwables will be saved and thrown after all actions have been executed. The first caught throwable will be cause
+     * and any other will be added as suppressed.
+     *
+     * @param description The exception message if any are thrown.
+     * @param actions Throwing runnables to execute.
+     * @throws RuntimeException thrown if any action throws after all have been executed.
+     */
+    public static void runAll( String description, ThrowingRunnable... actions ) throws RuntimeException
+    {
+        try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
+        {
+            for ( ThrowingRunnable action : actions )
+            {
+                try
+                {
+                    action.run();
+                }
+                catch ( Throwable e )
+                {
+                    errorHandler.add( e );
+                }
+            }
+        }
+    }
 
     public ErrorHandler( String message )
     {
@@ -36,11 +61,6 @@ public class ErrorHandler implements AutoCloseable
     public void add( Throwable throwable )
     {
         throwables.add( throwable );
-    }
-
-    public List<Throwable> throwables()
-    {
-        return Collections.unmodifiableList( throwables );
     }
 
     @Override
@@ -67,5 +87,10 @@ public class ErrorHandler implements AutoCloseable
             }
             throw runtimeException;
         }
+    }
+
+    public interface ThrowingRunnable
+    {
+        void run() throws Throwable;
     }
 }
