@@ -337,7 +337,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         // Start CRS object
         inOrder.verify( jsonGenerator ).writeStartObject();
         // Code
-        inOrder.verify( jsonGenerator ).writeFieldName( "code" );
+        inOrder.verify( jsonGenerator ).writeFieldName( "srid" );
         inOrder.verify( jsonGenerator ).writeNumber( crs.getCode() );
         // Name
         inOrder.verify( jsonGenerator ).writeFieldName( "name" );

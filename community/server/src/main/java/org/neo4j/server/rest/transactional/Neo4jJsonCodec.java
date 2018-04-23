@@ -131,7 +131,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         else if ( value instanceof CRS )
         {
             CRS crs = (CRS) value;
-            writeMap( out, genericMap( new LinkedHashMap<>(), "code", crs.getCode(), "name", crs.getType(), "type", "link", "properties",
+            writeMap( out, genericMap( new LinkedHashMap<>(), "srid", crs.getCode(), "name", crs.getType(), "type", "link", "properties",
                     genericMap( new LinkedHashMap<>(), "href", crs.getHref() + "ogcwkt/", "type", "ogcwkt" ) ) );
         }
         else if ( value instanceof Temporal || value instanceof TemporalAmount )
