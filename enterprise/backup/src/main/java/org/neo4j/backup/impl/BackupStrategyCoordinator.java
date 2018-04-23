@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -32,15 +33,26 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.KernelEventHandlers;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;
 
@@ -108,30 +120,21 @@ class BackupStrategyCoordinator
             causesOfFailure.forEach( commandFailed::addSuppressed );
             throw commandFailed;
         }
-        pruneLogs( destination.toFile(), pageCache, outsideWorld.fileSystem() );
+        removeUnnecessaryTransactionLogs( destination.toFile(), outsideWorld.fileSystem() );
         if ( requiredArgs.isDoConsistencyCheck() )
         {
             performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, destination );
         }
     }
 
-    private void pruneLogs( File backupDirectory, PageCache pageCache, FileSystemAbstraction fileSystemAbstraction )
+    private void removeUnnecessaryTransactionLogs( File backupDirectory, FileSystemAbstraction fileSystemAbstraction )
     {
-        LogFiles logFiles = null;
-        try
-        {
-            logFiles = LogFilesBuilder.activeFilesBuilder( backupDirectory, fileSystemAbstraction, pageCache )
-                    .build();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        LogPruneStrategyFactory logPruneStrategyFactory = new LogPruneStrategyFactory();
-        Clock clock = Clock.systemDefaultZone();
-        Config config = Config.defaults();
-        LogPruningImpl logPruningImpl = new LogPruningImpl( fileSystemAbstraction, logFiles, logProvider, logPruneStrategyFactory, clock, config );
-        logPruningImpl.pruneLogs( logFiles.getHighestLogVersion() );
+        ForceCheckpointBackupService forceCheckpointBackupService = new ForceCheckpointBackupService();
+        LogFiles logFiles = forceCheckpointBackupService.getLogFiles( backupDirectory, pageCache, fileSystemAbstraction );
+
+        forceCheckpointBackupService.forceRotation( logFiles, logProvider );
+        forceCheckpointBackupService.forceCheckpoint( backupDirectory );
+        forceCheckpointBackupService.forcePrune( fileSystemAbstraction, logFiles, logProvider );
     }
 
     private static Supplier<CommandFailed> commandFailedWithCause( Fallible<BackupStrategyOutcome> cause )

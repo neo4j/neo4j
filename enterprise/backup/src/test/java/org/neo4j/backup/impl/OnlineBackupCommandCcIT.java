@@ -421,12 +421,17 @@ public class OnlineBackupCommandCcIT
         return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
 
+    private int runBackupToolFromSameJvm( String... args ) throws Exception
+    {
+        return runBackupToolFromSameJvmToGetExitCode( testDirectory.absolutePath(), testDirectory.absolutePath().getName(), args );
+    }
+
     /**
      * This unused method is used for debugging, so don't remove
      */
-    private int runBackupToolFromSameJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( testDirectory.absolutePath(), testDirectory.absolutePath().getName() )
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
                ? 0 : 1;
     }
 }

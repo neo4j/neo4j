@@ -64,12 +64,17 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.tools.dump.TransactionLogAnalyzer;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.greaterThan;
@@ -79,6 +84,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.runBackupToolFromSameJvmToGetExitCode;
 import static org.neo4j.backup.impl.OnlineBackupCommandCcIT.wrapWithNormalOutput;
 import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
@@ -311,41 +317,78 @@ public class OnlineBackupCommandHaIT
         String backupName = "backupName" + recordFormat;
         File backupLocation = new File( backupDir, backupName );
         String address = "localhost:" + port;
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir, "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+        assertEquals( 0, runBackupToolFromSameJvmToGetExitCode( backupDir, backupName, "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--protocol=common",
                 "--name=" + backupName ) );
 
         // and the database contains a few more transactions
-        LongStream.range( 0, 5 ).forEach( number -> createSomeData( db ) );
+        LongStream.range( 0, 50 ).forEach( number -> createSomeData( db ) );
 
         // when we perform an incremental backup
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir, "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+        assertEquals( 0, runBackupToolFromSameJvmToGetExitCode( backupDir, backupName,
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
                 "--name=" + backupName ) );
 
         // then there is only 1 transaction file containing 1 transaction
-        Collection<File> backupTransactionFiles = transactionFiles( backupDir );
-//        assertThat( backupTransactionFiles, hasSize( 1 ) ); // TODO actually zero? wtf
-        LogFiles logFiles = readLogFiles( backupDir );
+        LogFiles logFiles = readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+
+        // and there is only 1 log file
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
         assertEquals( lowestTxIdInLogFiles, highestTxIdInLogFiles );
-        assertTrue( lowestTxIdInLogFiles > 1 );
+
+        // and there is only 1 transaction in said log file
+        File logFile = logFiles.getLogFileForVersion( lowestTxIdInLogFiles );
+        List<LogEntry[]> transactions = logEntries( logFile );
+        assertEquals( 1, transactions.size() );
+        assertEquals( LogEntryByteCodes.CHECK_POINT, transactions.get( 0 )[0].getType() );
+    }
+
+    private List<LogEntry[]> logEntries( File logFile )
+    {
+        if ( logFile.isDirectory() )
+        {
+            throw new RuntimeException( "Expected individual log file not directory" );
+        }
+        TransactionLogAnalyzer transactionLogAnalyzer = new TransactionLogAnalyzer();
+        List<LogEntry[]> listOfTransactions = new ArrayList<>();
+        TransactionLogAnalyzer.Monitor monitor = new TransactionLogAnalyzer.Monitor()
+        {
+            @Override
+            public void transaction( LogEntry[] transactionEntries )
+            {
+                listOfTransactions.add( transactionEntries );
+            }
+        };
+        InvalidLogEntryHandler invalidLogEntryHandler = new InvalidLogEntryHandler()
+        {
+            @Override
+            public boolean handleInvalidEntry( Exception e, LogPosition position )
+            {
+                throw new RuntimeException( position.toString(), e );
+            }
+        };
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        try
+        {
+            transactionLogAnalyzer.analyze( fileSystemAbstraction, logFile, invalidLogEntryHandler, monitor );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        return listOfTransactions;
     }
 
     private LogFiles readLogFiles( File backupDir ) throws IOException
     {
         FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction );
-        return LogFilesBuilder.activeFilesBuilder( backupDir, fileSystemAbstraction, pageCache )
-                .build();
-    }
-
-    private Collection<File> transactionFiles( File dbLocation ) throws IOException
-    {
-        Collection<File> txFiles = new ArrayList<>();
-        DirectoryStream<Path> dirStream = Files.newDirectoryStream( dbLocation.toPath(), "neostore.transaction.db.*" );
-        dirStream.forEach( path -> txFiles.add( path.toFile() ) );
-        dirStream.close();
-        return txFiles;
+//        return LogFilesBuilder.builder( backupDir, fileSystemAbstraction ).build();
+        return LogFilesBuilder.activeFilesBuilder( backupDir, fileSystemAbstraction, pageCache ).build();
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
