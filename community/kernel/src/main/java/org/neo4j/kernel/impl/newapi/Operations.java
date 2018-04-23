@@ -881,7 +881,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        ktx.txState().indexRuleDoAdd( indexDescriptor );
+        ktx.txState().indexRuleDoAdd( indexDescriptor, null );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
 

@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.RelationshipChangeVisitorAdapter;
@@ -110,7 +111,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
 
     private GraphState graphState;
+
+    /**
+     * The {@link SchemaIndexDescriptor} keys in {@link #indexChanges} have a corresponding entry in {@link #specificIndexProviders},
+     * but may have been set there in cases where the default is to be used (which is the typical case). Keep these two in sync.
+     */
     private DiffSets<SchemaIndexDescriptor> indexChanges;
+    private Map<SchemaIndexDescriptor,IndexProvider.Descriptor> specificIndexProviders;
+
     private DiffSets<ConstraintDescriptor> constraintsChanges;
 
     private RemovalsCountingDiffSets nodes;
@@ -300,14 +308,14 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return new ConstraintDiffSetsVisitor( visitor );
     }
 
-    private static DiffSetsVisitor<SchemaIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
+    private DiffSetsVisitor<SchemaIndexDescriptor> indexVisitor( final TxStateVisitor visitor )
     {
         return new DiffSetsVisitor<SchemaIndexDescriptor>()
         {
             @Override
             public void visitAdded( SchemaIndexDescriptor index )
             {
-                visitor.visitAddedIndex( index );
+                visitor.visitAddedIndex( index, specificIndexProviders.get( index ) );
             }
 
             @Override
@@ -780,12 +788,20 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void indexRuleDoAdd( SchemaIndexDescriptor descriptor )
+    public void indexRuleDoAdd( SchemaIndexDescriptor descriptor, IndexProvider.Descriptor providerDescriptor )
     {
         DiffSets<SchemaIndexDescriptor> diff = indexChangesDiffSets();
         if ( !diff.unRemove( descriptor ) )
         {
             diff.add( descriptor );
+        }
+        if ( specificIndexProviders == null )
+        {
+            specificIndexProviders = new HashMap<>();
+        }
+        if ( providerDescriptor != null )
+        {
+            specificIndexProviders.put( descriptor, providerDescriptor );
         }
         changed();
     }

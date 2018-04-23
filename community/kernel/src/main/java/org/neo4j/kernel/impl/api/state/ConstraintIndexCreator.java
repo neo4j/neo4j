@@ -55,8 +55,7 @@ import org.neo4j.kernel.impl.api.store.DefaultCapableIndexReference;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
-        .CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
@@ -280,7 +279,7 @@ public class ConstraintIndexCreator
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
             SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
-            ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index );
+            ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index, null );
             transaction.success();
             return index;
         }

@@ -177,10 +177,19 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( SchemaIndexDescriptor index )
+    public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
     {
-        IndexProvider.Descriptor providerDescriptor =
-                indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        if ( providerDescriptor == null )
+        {
+            // No specific provider descriptor, use the default
+            providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
+        }
+        else if ( indexProviderMap.apply( providerDescriptor ) == null )
+        {
+            // A specific provider descriptor, verify that it exists
+            throw new IllegalArgumentException( "Specified non-existent provider '" + providerDescriptor + "' for created index " + index );
+        }
+
         IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );
     }

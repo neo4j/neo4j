@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,11 +39,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -69,6 +74,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -266,8 +272,8 @@ public class TxStateTest
     public void shouldAddAndGetByLabel()
     {
         // WHEN
-        state.indexRuleDoAdd( indexOn_1_1 );
-        state.indexRuleDoAdd( indexOn_2_1 );
+        state.indexRuleDoAdd( indexOn_1_1, null );
+        state.indexRuleDoAdd( indexOn_2_1, null );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ),
@@ -278,10 +284,55 @@ public class TxStateTest
     public void shouldAddAndGetByRuleId()
     {
         // GIVEN
-        state.indexRuleDoAdd( indexOn_1_1 );
+        state.indexRuleDoAdd( indexOn_1_1, null );
 
         // THEN
         assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );
+    }
+
+    @Test
+    public void shouldRememberSpecificallySetIndexProviderDescriptor() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        // given
+        IndexProvider.Descriptor specificProvider = new IndexProvider.Descriptor( "myProvider", "9.9" );
+        state.indexRuleDoAdd( indexOn_1_1, specificProvider );
+
+        // when
+        AtomicReference<IndexProvider.Descriptor> visitedProviderDescriptor = new AtomicReference<>();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
+            {
+                visitedProviderDescriptor.set( providerDescriptor );
+            }
+        } );
+
+        // then
+        assertEquals( specificProvider, visitedProviderDescriptor.get() );
+    }
+
+    @Test
+    public void shouldUseNullForUnspecifiedIndexProviderDescriptor() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        // given
+        state.indexRuleDoAdd( indexOn_1_1, null );
+
+        // when
+        MutableBoolean called = new MutableBoolean();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
+            {
+                // then
+                assertNull( providerDescriptor );
+                called.setTrue();
+            }
+        } );
+
+        // and then
+        assertTrue( called.booleanValue() );
     }
 
     // endregion
