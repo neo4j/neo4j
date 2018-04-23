@@ -141,6 +141,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             labels = nodes.labels();
             assertEquals( "number of labels", 1, labels.numberOfLabels() );
             int fooLabel = labels.label( 0 );
+            assertTrue( nodes.hasLabel( fooLabel ) );
             assertFalse( "should only access a single node", nodes.next() );
 
             // when
@@ -151,6 +152,8 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             labels = nodes.labels();
             assertEquals( "number of labels", 1, labels.numberOfLabels() );
             int barLabel = labels.label( 0 );
+            assertFalse( nodes.hasLabel( fooLabel ) );
+            assertTrue( nodes.hasLabel( barLabel ) );
             assertFalse( "should only access a single node", nodes.next() );
 
             // when
@@ -161,6 +164,9 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             labels = nodes.labels();
             assertEquals( "number of labels", 1, labels.numberOfLabels() );
             int bazLabel = labels.label( 0 );
+            assertFalse( nodes.hasLabel( fooLabel ) );
+            assertFalse( nodes.hasLabel( barLabel ) );
+            assertTrue( nodes.hasLabel( bazLabel ) );
             assertFalse( "should only access a single node", nodes.next() );
 
             assertNotEquals( "distinct labels", fooLabel, barLabel );
@@ -183,6 +189,10 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
                 assertEquals( bazLabel, labels.label( 0 ) );
                 assertEquals( barLabel, labels.label( 1 ) );
             }
+            assertFalse( nodes.hasLabel( fooLabel ) );
+            assertTrue( nodes.hasLabel( barLabel ) );
+            assertTrue( nodes.hasLabel( barLabel ) );
+
             assertFalse( "should only access a single node", nodes.next() );
 
             // when
@@ -192,6 +202,9 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertTrue( "should access defined node", nodes.next() );
             labels = nodes.labels();
             assertEquals( "number of labels", 0, labels.numberOfLabels() );
+            assertFalse( nodes.hasLabel( fooLabel ) );
+            assertFalse( nodes.hasLabel( barLabel ) );
+            assertFalse( nodes.hasLabel( barLabel ) );
             assertFalse( "should only access a single node", nodes.next() );
         }
     }
