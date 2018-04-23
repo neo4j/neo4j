@@ -69,7 +69,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         graph.execute(firstQuery).resultAsString()
         graph.execute(secondQuery).resultAsString()
 
-        val actual = cacheListener.trace
+        val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
         val expected = List(
           s"cacheFlushDetected",
           s"cacheMiss: CYPHER 3.4 $query",
