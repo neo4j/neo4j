@@ -33,7 +33,7 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description.
  * Procedure uniqueness is currently *only* on the namespace/name level - no procedure overloading allowed (yet).
  */
-public class ProcedureSignature
+public class ProcedureSignature implements Signature
 {
     public static final List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
 
@@ -65,6 +65,7 @@ public class ProcedureSignature
         this.warning = warning;
     }
 
+    @Override
     public QualifiedName name()
     {
         return name;
@@ -75,16 +76,19 @@ public class ProcedureSignature
         return mode;
     }
 
+    @Override
     public Optional<String> deprecated()
     {
         return Optional.ofNullable( deprecated );
     }
 
+    @Override
     public String[] allowed()
     {
         return allowed;
     }
 
+    @Override
     public List<FieldSignature> inputSignature()
     {
         return inputSignature;
@@ -100,6 +104,7 @@ public class ProcedureSignature
         return outputSignature == VOID;
     }
 
+    @Override
     public Optional<String> description()
     {
         return Optional.ofNullable( description );

@@ -34,7 +34,7 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
  * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
  */
-public final class UserFunctionSignature
+public final class UserFunctionSignature implements Signature
 {
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
@@ -58,16 +58,19 @@ public final class UserFunctionSignature
         this.allowed = allowed;
     }
 
+    @Override
     public QualifiedName name()
     {
         return name;
     }
 
+    @Override
     public Optional<String> deprecated()
     {
         return Optional.ofNullable( deprecated );
     }
 
+    @Override
     public List<FieldSignature> inputSignature()
     {
         return inputSignature;
@@ -78,11 +81,13 @@ public final class UserFunctionSignature
         return type;
     }
 
+    @Override
     public Optional<String> description()
     {
         return Optional.ofNullable( description );
     }
 
+    @Override
     public String[] allowed()
     {
         return allowed;

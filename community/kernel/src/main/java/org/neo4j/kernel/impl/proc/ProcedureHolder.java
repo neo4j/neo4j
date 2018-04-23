@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.Signature;
 
 /**
  * Simple in memory store for procedures.
@@ -33,7 +34,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
  * Should only be accessed from a single thread
  * @param <T> the type to be stored
  */
-class ProcedureHolder<T>
+class ProcedureHolder<T extends Signature>
 {
     private final Map<QualifiedName,Integer> nameToId = new HashMap<>();
     private final ArrayList<T> store = new ArrayList<>();
