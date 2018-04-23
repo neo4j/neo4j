@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static java.util.Collections.emptySet;
 
@@ -135,9 +136,14 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            if ( txState.nodeStateLabelDiffSets( getId() ).getAdded().contains( label ) )
+            ReadableDiffSets<Integer> diffSets = txState.nodeStateLabelDiffSets( getId() );
+            if ( diffSets.getAdded().contains( label ) )
             {
                 return true;
+            }
+            if ( diffSets.getRemoved().contains( label ) )
+            {
+                return false;
             }
         }
 
@@ -147,6 +153,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         {
             if ( labelToken == label )
             {
+                assert (int) labelToken == labelToken : "value too big to be represented as and int";
                 return true;
             }
         }

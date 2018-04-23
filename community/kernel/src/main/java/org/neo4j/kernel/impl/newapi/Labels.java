@@ -83,6 +83,7 @@ public class Labels implements LabelSet
         //label sizes (≤100 labels)
         for ( long label : labels )
         {
+            assert (int) label == label : "value too big to be represented as and int";
             if ( label == labelToken )
             {
                 return true;
