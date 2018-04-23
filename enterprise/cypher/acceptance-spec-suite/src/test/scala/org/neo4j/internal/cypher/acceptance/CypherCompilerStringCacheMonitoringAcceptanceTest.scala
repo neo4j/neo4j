@@ -27,6 +27,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
 import org.neo4j.logging.AssertableLogProvider
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Map
 
@@ -123,11 +124,11 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
 
     createLabeledNode("Dog")
     (0 until 50).foreach { _ => createLabeledNode("Person") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    engine.execute(query, VirtualValues.emptyMap(), graph.transactionalContext(query = query -> Map.empty)).resultAsString()
 
     // when
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    engine.execute(query, VirtualValues.emptyMap(), graph.transactionalContext(query = query -> Map.empty)).resultAsString()
 
     logProvider.assertAtLeastOnce(
 

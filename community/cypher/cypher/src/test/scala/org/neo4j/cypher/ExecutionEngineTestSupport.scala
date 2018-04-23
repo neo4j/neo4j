@@ -27,13 +27,19 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, JavaListWrapper, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 import scala.collection.JavaConverters._
+import scala.collection.Map
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -99,14 +105,35 @@ trait ExecutionEngineHelper {
 
   def eengine: ExecutionEngine
 
+  def asMapValue(map: Map[String, Any]): MapValue = {
+    val keys = map.keys.toArray
+    val values = map.values.map(asValue).toArray
+    VirtualValues.map(keys, values)
+  }
+
+  def asValue(any: Any): AnyValue =
+    any match {
+      case map: Map[String, Any] => asMapValue(map)
+      case array: Array[_] => Values.of(array)
+      case iterable: Iterable[_] => VirtualValues.list(iterable.map(asValue).toArray:_*)
+      case traversable: TraversableOnce[_] => VirtualValues.list(traversable.map(asValue).toArray:_*)
+      case x => ValueUtils.of(x)
+    }
+
   def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
+    RewindableExecutionResult(eengine.execute(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
+
+  def execute(q: String, params: Map[String, Any]): InternalExecutionResult =
+    RewindableExecutionResult(eengine.execute(q, asMapValue(params), graph.transactionalContext(query = q -> params.toMap)))
+
+  def executeOfficial(q: String, params: (String, Any)*): Result =
+    eengine.execute(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
 
   def profile(q: String, params: (String, Any)*): InternalExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
+    RewindableExecutionResult(eengine.profile(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
 
   def executeScalar[T](q: String, params: (String, Any)*): T = {
-    val res = eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap))
+    val res = eengine.execute(q, asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
     scalar[T](asScalaResult(res).toList)
   }
 
@@ -124,12 +151,4 @@ trait ExecutionEngineHelper {
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 
   def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)
-
-  implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
-
-    def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
-  }
 }

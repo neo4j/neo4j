@@ -301,7 +301,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val threads = (0 until updates).map { i =>
       new Thread(new Runnable {
         override def run(): Unit = {
-          eengine.execute(s"$query", Map.empty[String, Any])
+          execute(query)
         }
       })
     }
@@ -312,6 +312,6 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     assert(result == resultValue, s": we lost updates!")
 
     // Reset for run on next planner
-    eengine.execute("MATCH (n) DETACH DELETE n", Map.empty[String, Any])
+    execute("MATCH (n) DETACH DELETE n")
   }
 }

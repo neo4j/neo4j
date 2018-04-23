@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
 import org.neo4j.logging.NullLogProvider
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class KillQueryTest extends ExecutionEngineFunSuite {
@@ -110,7 +111,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
           try {
             val transactionalContext: TransactionalContext = contextFactory.newContext(connectionInfo, tx, query, EMPTY_MAP)
             tcs.put(transactionalContext)
-            val result = engine.execute(query, Map.empty[String, AnyRef], transactionalContext)
+            val result = engine.execute(query, VirtualValues.emptyMap(), transactionalContext)
             result.resultAsString()
             tx.success()
           }

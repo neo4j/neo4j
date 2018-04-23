@@ -53,8 +53,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   require(queryService != null, "Can't work with a null graph database")
 
-  // true means we run inside REST server
-  protected val isServer = false
   private val resolver = queryService.getDependencyResolver
   private val lastCommittedTxId = LastCommittedTxIdProvider(queryService)
   private val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
@@ -80,35 +78,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
-  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
-    // we got deep scala parameters => convert to deep java parameters
-    val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    profile(query, javaParams, context)
-  }
-
-  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
-    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
-    val scalaParams: Map[String, Any] = scalaValues.asShallowScalaMap(javaParams)
-    profile(query, ValueConversion.asValues(scalaParams), context)
-  }
-
   def profile(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
     val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
     checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
     preparedPlanExecution.profile(wrappedContext, mapParams)
-  }
-
-  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
-    // we got deep scala parameters => convert to deep java parameters
-    val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
-    execute(query, javaParams, context)
-  }
-
-  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
-    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
-    // TODO: Should we use ValueUtils.asMapValue here like in GraphDatabaseFacade
-    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
-   execute(query, ValueConversion.asValues(scalaParams), context)
   }
 
   def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
@@ -158,14 +131,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     try {
 
       val externalTransactionalContext = TransactionalContextWrapper(transactionalContext)
-      val preParsedQuery = try {
-        preParseQuery(queryText)
-      } catch {
-        case e: SyntaxException =>
-          externalTransactionalContext.close(success = false)
-          throw e
-      }
-      val executionMode = preParsedQuery.executionMode
+      val preParsedQuery = preParseQuery(queryText, externalTransactionalContext)
       val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
       var n = 0
@@ -224,7 +190,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         } else {
           tc.cleanForReuse()
           tc.notifyPlanningCompleted(plan.plannerInfo)
-          return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc, queryParamNames)
+          return (PreparedPlanExecution(plan, preParsedQuery.executionMode, extractedParameters), tc, queryParamNames)
         }
 
         n += 1
@@ -233,6 +199,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
+
+  private def preParseQuery(queryText: String, externalTransactionalContext: TransactionalContextWrapper): PreParsedQuery =
+    try {
+      preParseQuery(queryText)
+    } catch {
+      case e: SyntaxException =>
+        externalTransactionalContext.close(success = false)
+        throw e
+    }
 
   @throws(classOf[ParameterNotFoundException])
   private def checkParameters(queryParams: Seq[String], givenParams: MapValue, extractedParams: Map[String, Any]) {

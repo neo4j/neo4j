@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.values.virtual.VirtualValues
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -81,19 +82,19 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should show_java_source") {
-    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n", Map.empty[String, Object])
+    val res = executeOfficial("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n")
     res.resultAsString()
     shouldContainSourceCode(res.getExecutionPlanDescription)
   }
 
   test("should show_bytecode") {
-    val res = eengine.execute("CYPHER debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
+    val res = executeOfficial("CYPHER debug=show_bytecode MATCH (n) RETURN n")
     res.resultAsString()
     shouldContainByteCode(res.getExecutionPlanDescription)
   }
 
   test("should show_java_source and show_bytecode") {
-    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
+    val res = executeOfficial("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n")
     res.resultAsString()
     shouldContainSourceCode(res.getExecutionPlanDescription)
     shouldContainByteCode(res.getExecutionPlanDescription)
@@ -160,10 +161,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"
       }
-      val result = eengine.profile(s"$prepend $query", Map.empty[String, Object])
-      result.resultAsString()
-      val executionResult = result.getExecutionPlanDescription
-      executionResult
+      val result = profile(s"$prepend $query")
+      result.dumpToString()
+      result.executionPlanDescription()
     }
   }
 }

@@ -202,12 +202,4 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
       res.getExecutionPlanDescription
     }
   }
-
-  implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): Result =
-      engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
-
-    def execute(query: String, params: Map[String, Any]): Result =
-      engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
-  }
 }
