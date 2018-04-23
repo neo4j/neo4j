@@ -19,12 +19,17 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.NoSuchElementException;
 
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class ProcedureHolderTest
 {
@@ -57,5 +62,31 @@ public class ProcedureHolderTest
         assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0 ) );
     }
 
-    // Add test for overriding functions/procs
+    @Test
+    public void canOverwriteFunctionAndChangeCaseSensitivity()
+    {
+        // given
+        ProcedureHolder<String> procHolder = new ProcedureHolder<>();
+        QualifiedName qualifiedName = new QualifiedName( new String[0], "CaseInSensitive" );
+        String item = "CaseInSensitiveItem";
+        procHolder.put( qualifiedName, item, true );
+
+        // then
+        QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
+        assertThat( procHolder.get( lowerCaseName ), equalTo( item ) );
+        assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0 ) );
+
+        // and then
+        procHolder.put( qualifiedName, item, false );
+        assertNull( procHolder.get( lowerCaseName ) );
+        try
+        {
+            procHolder.idOf( lowerCaseName );
+            fail( "Should have failed to find with lower case" );
+        }
+        catch ( NoSuchElementException e )
+        {
+            // expected
+        }
+    }
 }

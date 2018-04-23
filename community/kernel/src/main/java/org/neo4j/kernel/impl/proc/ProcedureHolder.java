@@ -65,6 +65,10 @@ class ProcedureHolder<T>
         {
             caseInsensitveName2Id.put( toLowerCaseName( name ), id );
         }
+        else
+        {
+            caseInsensitveName2Id.remove( toLowerCaseName( name ) );
+        }
     }
 
     int idOf( QualifiedName name )
