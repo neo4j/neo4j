@@ -30,6 +30,11 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   val equalityConfig = Configs.Interpreted - Configs.OldAndRule
   val latestPointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
+  test("toString on points") {
+    executeWith(latestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
+    executeWith(latestPointConfig, "RETURN toString(point({longitude:1, latitude:2, height:3})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, z: 3.0, crs: 'wgs-84-3d'})")))
+  }
+
   test("point function should work with literal map") {
     val result = executeWith(pointConfig, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
@@ -177,6 +182,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
+  }
+
+  test("point function with invalid coordinate types should give reasonable error") {
+    failWithError(pointConfig + Configs.Procs,
+      "return point({x: 'apa', y: 0, crs: 'cartesian'})", List("String is not a valid coordinate type.", "Cannot assign"))
+  }
+
+  test("point function with invalid crs types should give reasonable error") {
+    failWithError(pointConfig + Configs.Procs,
+      "return point({x: 0, y: 0, crs: 5})", List("java.lang.Long cannot be cast to java.lang.String", "Cannot assign"))
   }
 
   test("should default to WGS84 if missing geographic CRS") {

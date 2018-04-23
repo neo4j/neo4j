@@ -22,6 +22,7 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.spatial.CRS;
@@ -221,7 +222,9 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     @Override
     public String toString()
     {
-        return format( "Point{%s, %s}", getCoordinateReferenceSystem().getName(), Arrays.toString( coordinate ) );
+        String coordString = coordinate.length == 2 ? format( "x: %s, y: %s", coordinate[0], coordinate[1] ) :
+                             format( "x: %s, y: %s, z: %s", coordinate[0], coordinate[1], coordinate[2] );
+        return format( "point({%s, crs: '%s'})", coordString, getCoordinateReferenceSystem().getName() );
     }
 
     /**
@@ -278,7 +281,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
 
     public static PointValue fromMap( MapValue map )
     {
-        PointCSVHeaderInformation fields = new PointCSVHeaderInformation();
+        PointBuilder fields = new PointBuilder();
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
             fields.assign( entry.getKey().toLowerCase(), entry.getValue() );
@@ -301,27 +304,27 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
      */
     public static PointValue parse( CharSequence text, CSVHeaderInformation fieldsFromHeader )
     {
-        PointCSVHeaderInformation fieldsFromData = parseHeaderInformation( text );
+        PointBuilder fieldsFromData = parseHeaderInformation( text );
         if ( fieldsFromHeader != null )
         {
             // Merge InputFields: Data fields override header fields
-            if ( !(fieldsFromHeader instanceof PointCSVHeaderInformation) )
+            if ( !(fieldsFromHeader instanceof PointBuilder) )
             {
                 throw new IllegalStateException( "Wrong header information type: " + fieldsFromHeader );
             }
-            fieldsFromData.mergeWithHeader( (PointCSVHeaderInformation) fieldsFromHeader );
+            fieldsFromData.mergeWithHeader( (PointBuilder) fieldsFromHeader );
         }
         return fromInputFields( fieldsFromData );
     }
 
-    public static PointCSVHeaderInformation parseHeaderInformation( CharSequence text )
+    public static PointBuilder parseHeaderInformation( CharSequence text )
     {
-        PointCSVHeaderInformation fields = new PointCSVHeaderInformation();
+        PointBuilder fields = new PointBuilder();
         Value.parseHeaderInformation( text, "point", fields );
         return fields;
     }
 
-    private static CoordinateReferenceSystem findSpecifiedCRS( PointCSVHeaderInformation fields )
+    private static CoordinateReferenceSystem findSpecifiedCRS( PointBuilder fields )
     {
         String crsValue = fields.crs;
         int sridValue = fields.srid;
@@ -346,7 +349,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     /**
      * This contains the logic to decide the default coordinate reference system based on the input fields
      */
-    private static PointValue fromInputFields( PointCSVHeaderInformation fields )
+    private static PointValue fromInputFields( PointBuilder fields )
     {
         CoordinateReferenceSystem crs = findSpecifiedCRS( fields );
         double[] coordinates;
@@ -457,7 +460,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         }
     }
 
-    private static class PointCSVHeaderInformation implements CSVHeaderInformation
+    private static class PointBuilder implements CSVHeaderInformation
     {
         private String crs;
         private Double x;
@@ -468,135 +471,52 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
         private Double height;
         private int srid = -1;
 
-        private void checkUnassigned( Object key, String fieldName )
-        {
-            if ( key != null )
-            {
-                throw new InvalidValuesArgumentException( String.format( "Duplicate field '%s' is not allowed." , fieldName ) );
-            }
-        }
-
-        public void assign( String key, AnyValue value )
-        {
-            if ( value instanceof IntegralValue )
-            {
-                assignIntegral( key, ((IntegralValue) value).longValue() );
-            }
-            else if ( value instanceof FloatingPointValue )
-            {
-                assignFloatingPoint( key, ((FloatingPointValue) value).doubleValue() );
-            }
-            else if ( value instanceof TextValue )
-            {
-                assignTextValue( key, ((TextValue) value).stringValue() );
-            }
-            else
-            {
-                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
-            }
-        }
-
-        private void assignTextValue( String key, String value )
-        {
-            String lowercaseKey = key.toLowerCase();
-            switch ( lowercaseKey )
-            {
-            case "crs":
-                checkUnassigned( crs, lowercaseKey );
-                crs = quotesPattern.matcher( value ).replaceAll( "" );
-                break;
-            default:
-                throwOnUnrecognizedKey( key );
-            }
-        }
-
-        private void assignFloatingPoint( String key, double value )
-        {
-            String lowercaseKey = key.toLowerCase();
-            switch ( lowercaseKey )
-            {
-            case "x":
-                checkUnassigned( x, lowercaseKey );
-                x = value;
-                break;
-            case "y":
-                checkUnassigned( y, lowercaseKey );
-                y = value;
-                break;
-            case "z":
-                checkUnassigned( z, lowercaseKey );
-                z = value;
-                break;
-            case "longitude":
-                checkUnassigned( longitude, lowercaseKey );
-                longitude = value;
-                break;
-            case "latitude":
-                checkUnassigned( latitude, lowercaseKey );
-                latitude = value;
-                break;
-            case "height":
-                checkUnassigned( height, lowercaseKey );
-                height = value;
-                break;
-            default:
-                throwOnUnrecognizedKey( key );
-            }
-        }
-
-        private void assignIntegral( String key, long value )
+        @Override
+        public void assign( String key, Object value )
         {
             switch ( key.toLowerCase() )
             {
+            case "crs":
+                checkUnassigned( crs, key );
+                assignTextValue( key, value, str -> crs = quotesPattern.matcher( str ).replaceAll( "" ) );
+                break;
             case "x":
+                checkUnassigned( x, key );
+                assignFloatingPoint( key, value, i -> x = i );
+                break;
             case "y":
+                checkUnassigned( y, key );
+                assignFloatingPoint( key, value, i -> y = i );
+                break;
             case "z":
+                checkUnassigned( z, key );
+                assignFloatingPoint( key, value, i -> z = i );
+                break;
             case "longitude":
+                checkUnassigned( longitude, key );
+                assignFloatingPoint( key, value, i -> longitude = i );
+                break;
             case "latitude":
+                checkUnassigned( latitude, key );
+                assignFloatingPoint( key, value, i -> latitude = i );
+                break;
             case "height":
-                assignFloatingPoint( key, (double) value );
+                checkUnassigned( height, key );
+                assignFloatingPoint( key, value, i -> height = i );
                 break;
             case "srid":
                 if ( srid != -1 )
                 {
-                    throw new InvalidValuesArgumentException( "Duplicate field 'srid' is not allowed." );
+                    throw new InvalidValuesArgumentException( String.format( "Duplicate field '%s' is not allowed.", key ) );
                 }
-                srid = (int) value;
+                assignIntegral( key, value, i -> srid = i );
                 break;
             default:
                 throwOnUnrecognizedKey( key );
             }
         }
 
-        public void assign( String key, String value )
-        {
-            switch ( key.toLowerCase() )
-            {
-            case "crs":
-                assignTextValue( key, value );
-                break;
-            case "x":
-            case "y":
-            case "z":
-            case "longitude":
-            case "latitude":
-            case "height":
-                assignFloatingPoint( key, assertConvertible( () -> Double.parseDouble( value ) ) );
-                break;
-            case "srid":
-                assignIntegral( key, assertConvertible( () -> Integer.parseInt( value ) ) );
-                break;
-            default:
-                throwOnUnrecognizedKey( key );
-            }
-        }
-
-        private void throwOnUnrecognizedKey( String key )
-        {
-            throw new InvalidValuesArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
-        }
-
-        void mergeWithHeader( PointCSVHeaderInformation header )
+        void mergeWithHeader( PointBuilder header )
         {
             this.crs = this.crs == null ? header.crs : this.crs;
             this.x = this.x == null ? header.x : this.x;
@@ -607,17 +527,82 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             this.height = this.height == null ? header.height : this.height;
             this.srid = this.srid == -1 ? header.srid : this.srid;
         }
-    }
 
-    private static <T extends Number> T assertConvertible( Supplier<T> func )
-    {
-        try
+        private void assignTextValue( String key, Object value, Consumer<String> assigner )
         {
-            return func.get();
+            if ( value instanceof String )
+            {
+                assigner.accept( (String) value );
+            }
+            else if ( value instanceof TextValue )
+            {
+                assigner.accept( ((TextValue) value).stringValue() );
+            }
+            else
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
+            }
         }
-        catch ( NumberFormatException e )
+
+        private void assignFloatingPoint( String key, Object value, Consumer<Double> assigner )
         {
-            throw new InvalidValuesArgumentException( e.getMessage(), e );
+            if ( value instanceof String )
+            {
+                assigner.accept( assertConvertible( () -> Double.parseDouble( (String) value ) ) );
+            }
+            else if ( value instanceof IntegralValue )
+            {
+                assigner.accept( ((IntegralValue) value).doubleValue() );
+            }
+            else if ( value instanceof FloatingPointValue )
+            {
+                assigner.accept( ((FloatingPointValue) value).doubleValue() );
+            }
+            else
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
+            }
+        }
+
+        private void assignIntegral( String key, Object value, Consumer<Integer> assigner )
+        {
+            if ( value instanceof String )
+            {
+                assigner.accept( assertConvertible( () -> Integer.parseInt( (String) value ) ) );
+            }
+            else if ( value instanceof IntegralValue )
+            {
+                assigner.accept( (int) ((IntegralValue) value).longValue() );
+            }
+            else
+            {
+                throw new InvalidValuesArgumentException( String.format( "Cannot assign %s to field %s", value, key ) );
+            }
+        }
+
+        private void throwOnUnrecognizedKey( String key )
+        {
+            throw new InvalidValuesArgumentException( String.format( "Unknown key '%s' for creating new point", key ) );
+        }
+
+        private <T extends Number> T assertConvertible( Supplier<T> func )
+        {
+            try
+            {
+                return func.get();
+            }
+            catch ( NumberFormatException e )
+            {
+                throw new InvalidValuesArgumentException( e.getMessage(), e );
+            }
+        }
+
+        private void checkUnassigned( Object key, String fieldName )
+        {
+            if ( key != null )
+            {
+                throw new InvalidValuesArgumentException( String.format( "Duplicate field '%s' is not allowed.", fieldName ) );
+            }
         }
     }
 }

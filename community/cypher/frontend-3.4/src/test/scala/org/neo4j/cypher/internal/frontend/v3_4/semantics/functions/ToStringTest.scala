@@ -33,15 +33,16 @@ class ToStringTest extends FunctionTestBase("toString")  {
     testValidTypes(CTLocalTime)(CTString)
     testValidTypes(CTLocalDateTime)(CTString)
     testValidTypes(CTDateTime)(CTString)
+    testValidTypes(CTPoint)(CTString)
   }
 
   test("should fail type check for incompatible arguments") {
     testInvalidApplication(CTRelationship)(
-      "Type mismatch: expected Boolean, Float, Integer, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Relationship"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Relationship"
     )
 
     testInvalidApplication(CTNode)(
-      "Type mismatch: expected Boolean, Float, Integer, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node"
+      "Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Node"
     )
   }
 
