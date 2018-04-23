@@ -189,7 +189,7 @@ public class HaCountsIT
             int labelId = ktx.tokenWrite().labelGetOrCreateForName( label.name() );
             int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyName );
             IndexReference index = ktx.schemaWrite()
-                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ) );
+                                                   .indexCreate( SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ), null );
             tx.success();
             return DefaultIndexReference.toDescriptor( index );
         }

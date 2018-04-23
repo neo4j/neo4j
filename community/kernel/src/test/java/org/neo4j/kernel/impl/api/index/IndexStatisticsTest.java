@@ -549,7 +549,7 @@ public class IndexStatisticsTest
                 int labelId = ktx.tokenWrite().labelGetOrCreateForName( labelName );
                 int propertyKeyId = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyName );
                 LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyId );
-                index = ktx.schemaWrite().indexCreate( descriptor );
+                index = ktx.schemaWrite().indexCreate( descriptor, null );
             }
             tx.success();
             return index;

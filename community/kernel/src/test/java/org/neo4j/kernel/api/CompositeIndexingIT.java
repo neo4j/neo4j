@@ -89,7 +89,7 @@ public class CompositeIndexingIT
             }
             else
             {
-                ktx.schemaWrite().indexCreate( index.schema() );
+                ktx.schemaWrite().indexCreate( index.schema(), null );
             }
             tx.success();
         }

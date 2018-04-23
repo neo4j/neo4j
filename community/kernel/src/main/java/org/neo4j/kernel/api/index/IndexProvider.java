@@ -309,6 +309,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements Comparab
             return version;
         }
 
+        /**
+         * @return a combination of {@link #getKey()} and {@link #getVersion()} with a '-' in between.
+         */
+        public String name()
+        {
+            return key + "-" + version;
+        }
+
         @Override
         public int hashCode()
         {

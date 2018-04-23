@@ -240,7 +240,7 @@ public class GraphDbStructureGuideTest
     {
         KernelTransaction ktx = ktx();
 
-        return ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ) );
+        return ktx.schemaWrite().indexCreate( SchemaDescriptorFactory.forLabel( labelId, pkId ), null );
 
     }
 

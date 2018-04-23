@@ -31,12 +31,13 @@ import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 public interface SchemaWrite
 {
     /**
-     * Create index from schema descriptor
+     * Create index from schema descriptor. Optionally a specific provider name can be specified.
      *
      * @param descriptor description of the index
+     * @param providerName specific index provider this index will be created for. If {@code null} then the default configured will be used.
      * @return the newly created index
      */
-    IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException;
+    IndexReference indexCreate( SchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
 
     /**
      * Drop the given index

@@ -538,6 +538,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
+        // These strings are supposed to match provider names, i.e. key-version, see IndexProvider.Descriptor#name()
         NATIVE20( "lucene+native-2.0" ),
         NATIVE10( "lucene+native-1.0" ),
         LUCENE10( "lucene-1.0" );

@@ -71,6 +71,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
@@ -81,6 +82,8 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexProviderDescriptorByName;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -127,6 +130,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final DefaultCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
+    private final IndexProviderMap indexProviderMap;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -137,7 +141,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             DefaultCursors cursors,
             AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics )
+            ConstraintSemantics constraintSemantics,
+            IndexProviderMap indexProviderMap )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -148,6 +153,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         this.cursors = cursors;
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
+        this.indexProviderMap = indexProviderMap;
     }
 
     public void initialize()
@@ -873,7 +879,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
+    public IndexReference indexCreate( SchemaDescriptor descriptor, String providerName ) throws SchemaKernelException
     {
         acquireExclusiveLabelLock( descriptor.keyId() );
         ktx.assertOpen();
@@ -881,7 +887,17 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        ktx.txState().indexRuleDoAdd( indexDescriptor, null );
+        IndexProvider.Descriptor providerDescriptor = null;
+        if ( providerName != null )
+        {
+            IndexProviderDescriptorByName candidates = new IndexProviderDescriptorByName( providerName );
+            indexProviderMap.accept( candidates );
+
+            // We have to have a one-to-one mapping to the specified provider name, otherwise we can't be sure which.
+            // Having this method fail if that's not the case is OK since that's a user error and way before commit.
+            providerDescriptor = candidates.single();
+        }
+        ktx.txState().indexRuleDoAdd( indexDescriptor, providerDescriptor );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
 
