@@ -74,7 +74,7 @@ public class FusionIndexProviderTest
     private IndexProvider[] aliveProviders;
     private IndexProvider fusionIndexProvider;
     private SlotSelector slotSelector;
-    private Selector<IndexProvider> selector;
+    private InstanceSelector<IndexProvider> instanceSelector;
 
     @Parameterized.Parameters( name = "{0}" )
     public static FusionVersion[] versions()
@@ -111,7 +111,7 @@ public class FusionIndexProviderTest
             for ( Value value : group )
             {
                 // when
-                IndexProvider selected = selector.select( slotSelector.selectSlot( array( value ), GROUP_OF ) );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( value ), GROUP_OF ) );
 
                 // then
                 assertSame( orLucene( providers[i] ), selected );
@@ -124,7 +124,7 @@ public class FusionIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                IndexProvider selected = selector.select( slotSelector.selectSlot( array( firstValue, secondValue ), GROUP_OF ) );
+                IndexProvider selected = instanceSelector.select( slotSelector.selectSlot( array( firstValue, secondValue ), GROUP_OF ) );
 
                 // then
                 assertSame( providers[LUCENE], selected );
@@ -320,7 +320,7 @@ public class FusionIndexProviderTest
                 providers[TEMPORAL],
                 providers[LUCENE],
                 fusionVersion.slotSelector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
-        selector = new Selector<>( providers );
+        instanceSelector = new InstanceSelector<>( providers );
     }
 
     private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )

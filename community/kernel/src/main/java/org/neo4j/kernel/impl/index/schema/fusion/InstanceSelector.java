@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.util.function.IntFunction;
+
 /**
  * Selects an instance given a certain slot.
  * @param <T> type of instance
  */
-class Selector<T>
+class InstanceSelector<T>
 {
     private final T[] instances;
-    private final ThrowingIntFunction<T,? extends Exception> factory;
+    private final IntFunction<T> factory;
 
     /**
      * @param instances fully instantiated instances so that no factory is needed.
      */
-    Selector( T[] instances )
+    InstanceSelector( T[] instances )
     {
         this( instances, slot ->
         {
@@ -41,9 +43,9 @@ class Selector<T>
 
     /**
      * @param instances uninstantiated instances, instantiated lazily by the {@code factory}.
-     * @param factory {@link ThrowingIntFunction} for instantiating instances for specific slots.
+     * @param factory {@link IntFunction} for instantiating instances for specific slots.
      */
-    Selector( T[] instances, ThrowingIntFunction<T,? extends Exception> factory )
+    InstanceSelector( T[] instances, IntFunction<T> factory )
     {
         this.instances = instances;
         this.factory = factory;
@@ -53,15 +55,7 @@ class Selector<T>
     {
         if ( instances[slot] == null )
         {
-            try
-            {
-                instances[slot] = factory.apply( slot );
-            }
-            catch ( Exception e )
-            {
-                // TODO figure out how to handle this
-                throw new RuntimeException( e );
-            }
+            instances[slot] = factory.apply( slot );
         }
         return instances[slot];
     }

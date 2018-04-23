@@ -28,12 +28,12 @@ import org.neo4j.values.storable.ValueGroup;
  * Selector for index provider "lucene-1.x".
  * The version name "00" comes from lucene-1.x originally not being a fusion index.
  */
-public class FusionSelector00 implements SlotSelector
+public class FusionSlotSelector00 implements SlotSelector
 {
     @Override
     public void validateSatisfied( IndexProvider[] instances )
     {
-        FusionIndexBase.validateSelectorInstances( instances, LUCENE, SPATIAL, TEMPORAL );
+        SlotSelector.validateSelectorInstances( instances, LUCENE, SPATIAL, TEMPORAL );
     }
 
     @Override

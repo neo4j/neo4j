@@ -40,9 +40,10 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     private final DropAction dropAction;
     private final boolean archiveFailedIndex;
 
-    FusionIndexPopulator( SlotSelector slotSelector, Selector<IndexPopulator> selector, long indexId, DropAction dropAction, boolean archiveFailedIndex )
+    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, DropAction dropAction,
+            boolean archiveFailedIndex )
     {
-        super( slotSelector, selector );
+        super( slotSelector, instanceSelector );
         this.indexId = indexId;
         this.dropAction = dropAction;
         this.archiveFailedIndex = archiveFailedIndex;
@@ -52,20 +53,20 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public void create() throws IOException
     {
         dropAction.drop( indexId, archiveFailedIndex );
-        forAll( IndexPopulator::create, selector );
+        forAll( IndexPopulator::create, instanceSelector );
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexPopulator::drop, selector );
+        forAll( IndexPopulator::drop, instanceSelector );
         dropAction.drop( indexId );
     }
 
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        Selector<Collection<IndexEntryUpdate<?>>> batchSelector = new Selector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
+        InstanceSelector<Collection<IndexEntryUpdate<?>>> batchSelector = new InstanceSelector<>( new Collection[INSTANCE_COUNT], slot -> new ArrayList<>() );
         for ( IndexEntryUpdate<?> update : updates )
         {
             batchSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).add( update );
@@ -77,7 +78,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
             Collection<IndexEntryUpdate<?>> batch = batchSelector.getIfInstantiated( slot );
             if ( batch != null )
             {
-                this.selector.select( slot ).add( batch );
+                this.instanceSelector.select( slot ).add( batch );
             }
         }
     }
@@ -89,34 +90,34 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
         // Manual loop due do multiple exception types
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            selector.select( slot ).verifyDeferredConstraints( propertyAccessor );
+            instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
         }
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        Selector<IndexUpdater> updaterSelector =
-                new Selector<>( new IndexUpdater[INSTANCE_COUNT], slot -> selector.select( slot ).newPopulatingUpdater( accessor ) );
+        InstanceSelector<IndexUpdater> updaterSelector =
+                new InstanceSelector<>( new IndexUpdater[INSTANCE_COUNT], slot -> instanceSelector.select( slot ).newPopulatingUpdater( accessor ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( populator -> populator.close( populationCompletedSuccessfully ), selector );
+        forAll( populator -> populator.close( populationCompletedSuccessfully ), instanceSelector );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( populator -> populator.markAsFailed( failure ), selector );
+        forAll( populator -> populator.markAsFailed( failure ), instanceSelector );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        selector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).includeSample( update );
+        instanceSelector.select( slotSelector.selectSlot( update.values(), GROUP_OF ) ).includeSample( update );
     }
 
     @Override

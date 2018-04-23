@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.util.Arrays;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -50,4 +52,25 @@ interface SlotSelector
      * @return a slot number, or {@link #UNKNOWN} if no single slot could be selected. This typically means that all slots are needed.
      */
     <V> int selectSlot( V[] values, Function<V,ValueGroup> groupOf );
+
+    /**
+     * Standard utility method for typical implementation of {@link SlotSelector#validateSatisfied(IndexProvider[])}.
+     *
+     * @param instances instances to validate.
+     * @param aliveIndex slots to ensure have been initialized with non-empty instances.
+     */
+    static void validateSelectorInstances( Object[] instances, int... aliveIndex )
+    {
+        for ( int i = 0; i < instances.length; i++ )
+        {
+            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
+            boolean actual = instances[i] != IndexProvider.EMPTY;
+            if ( expected != actual )
+            {
+                throw new IllegalArgumentException(
+                        String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
+                                Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
+            }
+        }
+    }
 }

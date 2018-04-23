@@ -119,7 +119,7 @@ public class FusionIndexPopulatorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexPopulator = new FusionIndexPopulator( fusionVersion.slotSelector(), new Selector<>( populators ), indexId, dropAction, false );
+        fusionIndexPopulator = new FusionIndexPopulator( fusionVersion.slotSelector(), new InstanceSelector<>( populators ), indexId, dropAction, false );
     }
 
     private void resetMocks()

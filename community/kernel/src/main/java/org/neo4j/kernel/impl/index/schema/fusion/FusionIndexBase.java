@@ -44,20 +44,20 @@ public abstract class FusionIndexBase<T>
     static Function<Value,ValueGroup> GROUP_OF = Value::valueGroup;
 
     final SlotSelector slotSelector;
-    final Selector<T> selector;
+    final InstanceSelector<T> instanceSelector;
 
-    FusionIndexBase( SlotSelector slotSelector, Selector<T> selector )
+    FusionIndexBase( SlotSelector slotSelector, InstanceSelector<T> instanceSelector )
     {
         this.slotSelector = slotSelector;
-        this.selector = selector;
+        this.instanceSelector = instanceSelector;
     }
 
     /**
-     * Short-hand for calling the static {@link #instancesAs(Selector, Object[], ThrowingFunction)}, here with the local {@link #selector}.
+     * Short-hand for calling the static {@link #instancesAs(InstanceSelector, Object[], ThrowingFunction)}, here with the local {@link #instanceSelector}.
      */
     <R,E extends Exception> R[] instancesAs( R[] target, ThrowingFunction<T,R,E> converter ) throws E
     {
-        return instancesAs( selector, target, converter );
+        return instancesAs( instanceSelector, target, converter );
     }
 
     /**
@@ -65,7 +65,7 @@ public abstract class FusionIndexBase<T>
      * one which creates another instance. All those instances are returned as an array, or actually put into an array
      * created by the caller to avoid reflection to instantiate the array.
      *
-     * @param selector {@link Selector} to use as the source.
+     * @param instanceSelector {@link InstanceSelector} to use as the source.
      * @param target array to put the created instances into, also returned.
      * @param converter {@link ThrowingFunction} which converts from the source to target instance.
      * @param <S> type of source instance.
@@ -74,21 +74,21 @@ public abstract class FusionIndexBase<T>
      * @return the target array which was passed in, now populated.
      * @throws E exception from converter.
      */
-    static <S,T,E extends Exception> T[] instancesAs( Selector<S> selector, T[] target, ThrowingFunction<S,T,E> converter ) throws E
+    static <S,T,E extends Exception> T[] instancesAs( InstanceSelector<S> instanceSelector, T[] target, ThrowingFunction<S,T,E> converter ) throws E
     {
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            target[slot] = converter.apply( selector.select( slot ) );
+            target[slot] = converter.apply( instanceSelector.select( slot ) );
         }
         return target;
     }
 
-    static <T, E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer, Selector<T> selector ) throws E
+    static <T, E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer, InstanceSelector<T> instanceSelector ) throws E
     {
         E exception = null;
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            T instance = selector.getIfInstantiated( slot );
+            T instance = instanceSelector.getIfInstantiated( slot );
             if ( instance != null )
             {
                 exception = consume( exception, consumer, instance );
@@ -100,12 +100,12 @@ public abstract class FusionIndexBase<T>
         }
     }
 
-    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Selector<T> selector ) throws E
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, InstanceSelector<T> instanceSelector ) throws E
     {
         E exception = null;
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            exception = consume( exception, consumer, selector.select( slot ) );
+            exception = consume( exception, consumer, instanceSelector.select( slot ) );
         }
         if ( exception != null )
         {
@@ -123,12 +123,12 @@ public abstract class FusionIndexBase<T>
      * <pre>
      *    public void drop() throws IOException
      *    {
-     *        forAll( IndexAccessor::drop, firstAccessor, secondAccessor, thirdAccessor );
+     *        forAll( IndexAccessor::drop, accessorList );
      *    }
      * </pre>
      *
      * @param consumer lambda function to call on each object passed
-     * @param subjects varargs array of objects to call the function on
+     * @param subjects {@link Iterable} of objects to call the function on
      * @param <E> the type of exception anticipated, inferred from the lambda
      * @throws E if consumption fails with this exception
      */
@@ -146,6 +146,8 @@ public abstract class FusionIndexBase<T>
     }
 
     /**
+     * See {@link #forAll(ThrowingConsumer, Iterable)}
+     *
      * Method for calling a lambda function on many objects when it is expected that the function might
      * throw an exception. First exception will be thrown and subsequent will be suppressed.
      *
@@ -178,20 +180,5 @@ public abstract class FusionIndexBase<T>
             exception = Exceptions.chain( exception, (E) e );
         }
         return exception;
-    }
-
-    static void validateSelectorInstances( Object[] instances, int... aliveIndex )
-    {
-        for ( int i = 0; i < instances.length; i++ )
-        {
-            boolean expected = PrimitiveIntCollections.contains( aliveIndex, i );
-            boolean actual = instances[i] != IndexProvider.EMPTY;
-            if ( expected != actual )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Only indexes expected to be separated from IndexProvider.EMPTY are %s but was %s",
-                                Arrays.toString( aliveIndex ), Arrays.toString( instances ) ) );
-            }
-        }
     }
 }

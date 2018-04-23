@@ -48,12 +48,12 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     private final DropAction dropAction;
 
     FusionIndexAccessor( SlotSelector slotSelector,
-            Selector<IndexAccessor> selector,
+            InstanceSelector<IndexAccessor> instanceSelector,
             long indexId,
             SchemaIndexDescriptor descriptor,
             DropAction dropAction )
     {
-        super( slotSelector, selector );
+        super( slotSelector, instanceSelector );
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.dropAction = dropAction;
@@ -62,39 +62,41 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexAccessor::drop, selector );
+        forAll( IndexAccessor::drop, instanceSelector );
         dropAction.drop( indexId );
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        Selector<IndexUpdater> updaterSelector = new Selector<>( new IndexUpdater[INSTANCE_COUNT], slot -> selector.select( slot ).newUpdater( mode ) );
+        InstanceSelector<IndexUpdater> updaterSelector = new InstanceSelector<>( new IndexUpdater[INSTANCE_COUNT],
+                slot -> instanceSelector.select( slot ).newUpdater( mode ) );
         return new FusionIndexUpdater( slotSelector, updaterSelector );
     }
 
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        forAll( accessor -> accessor.force( ioLimiter ), selector );
+        forAll( accessor -> accessor.force( ioLimiter ), instanceSelector );
     }
 
     @Override
     public void refresh() throws IOException
     {
-        forAll( IndexAccessor::refresh, selector );
+        forAll( IndexAccessor::refresh, instanceSelector );
     }
 
     @Override
     public void close() throws IOException
     {
-        forAll( IndexAccessor::close, selector );
+        forAll( IndexAccessor::close, instanceSelector );
     }
 
     @Override
     public IndexReader newReader()
     {
-        Selector<IndexReader> readerSelector = new Selector<>( new IndexReader[INSTANCE_COUNT], slot -> selector.select( slot ).newReader() );
+        InstanceSelector<IndexReader> readerSelector = new InstanceSelector<>( new IndexReader[INSTANCE_COUNT],
+                slot -> instanceSelector.select( slot ).newReader() );
         return new FusionIndexReader( slotSelector, readerSelector, descriptor );
     }
 
@@ -156,7 +158,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     {
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            selector.select( slot ).verifyDeferredConstraints( propertyAccessor );
+            instanceSelector.select( slot ).verifyDeferredConstraints( propertyAccessor );
         }
     }
 
@@ -166,7 +168,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
         boolean isDirty = false;
         for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
         {
-            isDirty |= selector.select( slot ).isDirty();
+            isDirty |= instanceSelector.select( slot ).isDirty();
         }
         return isDirty;
     }
@@ -174,6 +176,6 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public void validateBeforeCommit( Value[] tuple )
     {
-        selector.select( slotSelector.selectSlot( tuple, GROUP_OF ) ).validateBeforeCommit( tuple );
+        instanceSelector.select( slotSelector.selectSlot( tuple, GROUP_OF ) ).validateBeforeCommit( tuple );
     }
 }

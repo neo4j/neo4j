@@ -121,7 +121,7 @@ public class FusionIndexReaderTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new Selector<>( readers ),
+        fusionIndexReader = new FusionIndexReader( fusionVersion.slotSelector(), new InstanceSelector<>( readers ),
                 SchemaIndexDescriptorFactory.forLabel( LABEL_KEY, PROP_KEY ) );
     }
 

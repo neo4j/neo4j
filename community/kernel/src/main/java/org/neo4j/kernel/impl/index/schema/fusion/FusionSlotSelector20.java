@@ -24,16 +24,17 @@ import java.util.function.Function;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.ValueGroup;
 
+
 /**
- * Selector for "lucene+native-1.x".
- * Separates numbers into native index.
+ * Selector for "lucene+native-2.x".
+ * Separates strings, numbers, temporal and spatial into native index.
  */
-public class FusionSelector10 implements SlotSelector
+public class FusionSlotSelector20 implements SlotSelector
 {
     @Override
     public void validateSatisfied( IndexProvider[] instances )
     {
-        FusionIndexBase.validateSelectorInstances( instances, NUMBER, LUCENE, SPATIAL, TEMPORAL );
+        SlotSelector.validateSelectorInstances( instances, STRING, NUMBER, SPATIAL, TEMPORAL, LUCENE );
     }
 
     @Override
@@ -49,6 +50,8 @@ public class FusionSelector10 implements SlotSelector
         {
         case NUMBER:
             return NUMBER;
+        case TEXT:
+            return STRING;
         case GEOMETRY:
             return SPATIAL;
         case TEMPORAL:

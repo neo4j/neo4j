@@ -28,14 +28,11 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -118,7 +115,7 @@ public class FusionIndexUpdaterTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new Selector( updaters ) );
+        fusionIndexUpdater = new FusionIndexUpdater( fusionVersion.slotSelector(), new InstanceSelector( updaters ) );
     }
 
     private void resetMocks()

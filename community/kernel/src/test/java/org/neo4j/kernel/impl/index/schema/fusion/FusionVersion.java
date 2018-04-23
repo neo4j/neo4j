@@ -38,7 +38,7 @@ enum FusionVersion
                 @Override
                 SlotSelector slotSelector()
                 {
-                    return new FusionSelector00();
+                    return new FusionSlotSelector00();
                 }
             },
     v10
@@ -52,7 +52,7 @@ enum FusionVersion
                 @Override
                 SlotSelector slotSelector()
                 {
-                    return new FusionSelector10();
+                    return new FusionSlotSelector10();
                 }
             },
     v20
@@ -66,7 +66,7 @@ enum FusionVersion
                 @Override
                 SlotSelector slotSelector()
                 {
-                    return new FusionSelector20();
+                    return new FusionSlotSelector20();
                 }
             };
 

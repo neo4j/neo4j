@@ -135,9 +135,8 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor =
-                new FusionIndexAccessor( fusionVersion.slotSelector(), new Selector<>( accessors ), indexId, mock( SchemaIndexDescriptor.class ),
-                        dropAction );
+        fusionIndexAccessor = new FusionIndexAccessor( fusionVersion.slotSelector(), new InstanceSelector<>( accessors ), indexId,
+                mock( SchemaIndexDescriptor.class ), dropAction );
     }
 
     private void resetMocks()
