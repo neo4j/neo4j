@@ -53,7 +53,7 @@ class DurationFunction implements CallableUserFunction
                     Collections.singletonList( inputField( "input", Neo4jTypes.NTAny ) ),
                     Neo4jTypes.NTDuration, null, new String[0],
                     DurationFunction.class.getAnnotation( Description.class ).value(),
-                    true);
+                    true );
 
     static void register( Procedures procedures ) throws ProcedureException
     {
@@ -126,7 +126,7 @@ class DurationFunction implements CallableUserFunction
                     new QualifiedName( new String[] {"duration"}, unit ),
                     SIGNATURE, Neo4jTypes.NTDuration, null, new String[0],
                     String.format(
-                            DESCRIPTION, unitString ), true);
+                            DESCRIPTION, unitString ), true );
         }
 
         @Override

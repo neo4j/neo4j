@@ -39,7 +39,7 @@ public class ProcedureHolderTest
 
         // then
         assertThat( procHolder.get( qualifiedName ), equalTo( item ) );
-        assertThat( procHolder.idOf( qualifiedName ), equalTo( 0) );
+        assertThat( procHolder.idOf( qualifiedName ), equalTo( 0 ) );
     }
 
     @Test
@@ -54,8 +54,7 @@ public class ProcedureHolderTest
         // then
         QualifiedName lowerCaseName = new QualifiedName( new String[0], "caseinsensitive" );
         assertThat( procHolder.get( lowerCaseName ), equalTo( item ) );
-        assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0) );
-
+        assertThat( procHolder.idOf( lowerCaseName ), equalTo( 0 ) );
     }
 
     // Add test for overriding functions/procs

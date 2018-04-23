@@ -48,7 +48,7 @@ public final class UserFunctionSignature
             String deprecated,
             String[] allowed,
             String description,
-            boolean caseInsensitive)
+            boolean caseInsensitive )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
