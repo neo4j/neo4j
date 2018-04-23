@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.core.IMap;
@@ -219,17 +220,15 @@ public final class HazelcastClusterTopology
         LeaderInfo current = leaderRef.get();
         Optional<LeaderInfo> currentOpt = Optional.ofNullable( current );
 
-        boolean noUpdate =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
+        boolean sameLeader =  currentOpt.map( LeaderInfo::memberId ).equals( Optional.ofNullable( leaderInfo.memberId() ) );
 
         int termComparison =  currentOpt.map( l -> Long.compare( l.term(), leaderInfo.term() ) ).orElse( -1 );
 
         boolean greaterTermExists = termComparison > 0;
 
-        boolean invalidTerm = greaterTermExists || ( termComparison == 0 && !leaderInfo.isSteppingDown() );
+        boolean sameTermButNoStepdown = termComparison == 0 && !leaderInfo.isSteppingDown();
 
-        boolean success = !( invalidTerm || noUpdate);
-
-        if ( !success )
+        if ( sameLeader || greaterTermExists || sameTermButNoStepdown )
         {
             return;
         }
