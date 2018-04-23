@@ -48,7 +48,7 @@ public class CompositeSuspendable implements Suspendable
 
     private void doOperation( ThrowingConsumer<Suspendable,Throwable> operation, String description )
     {
-        ErrorHandler.certainOperations( description, suspendables.stream()
+        ErrorHandler.runAll( description, suspendables.stream()
                 .map( (Function<Suspendable,ErrorHandler.ThrowingRunnable>) suspendable -> () -> operation.accept( suspendable ) )
                 .toArray( ErrorHandler.ThrowingRunnable[]::new ) );
     }

@@ -38,7 +38,7 @@ public class ErrorHandlerTest
         AtomicBoolean bool = new AtomicBoolean( false );
         try
         {
-            ErrorHandler.certainOperations( "test", Assert::fail, () ->
+            ErrorHandler.runAll( "test", Assert::fail, () ->
             {
                 bool.set( true );
                 throw new IllegalStateException( FAILMESSAGE );

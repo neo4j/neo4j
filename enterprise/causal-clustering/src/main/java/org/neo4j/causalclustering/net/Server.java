@@ -93,7 +93,8 @@ public class Server extends SuspendableLifeCycle
 
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
-        ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup )
+        ServerBootstrap bootstrap = new ServerBootstrap()
+                .group( workerGroup )
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )

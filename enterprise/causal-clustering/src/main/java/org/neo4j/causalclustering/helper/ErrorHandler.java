@@ -22,15 +22,20 @@ package org.neo4j.causalclustering.helper;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.function.ThrowingAction;
-
-
 public class ErrorHandler implements AutoCloseable
 {
     private final List<Throwable> throwables = new ArrayList<>();
     private final String message;
 
-    public static void certainOperations( String description, ThrowingRunnable... actions ) throws RuntimeException
+    /**
+     * Ensures each action is executed. Any throwables will be saved and thrown after all actions have been executed. The first caught throwable will be cause
+     * and any other will be added as suppressed.
+     *
+     * @param description The exception message if any are thrown.
+     * @param actions Throwing runnables to execute.
+     * @throws RuntimeException thrown if any action throws after all have been executed.
+     */
+    public static void runAll( String description, ThrowingRunnable... actions ) throws RuntimeException
     {
         try ( ErrorHandler errorHandler = new ErrorHandler( description ) )
         {
