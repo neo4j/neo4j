@@ -25,6 +25,7 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
 
@@ -54,7 +55,7 @@ public interface TxStateVisitor extends AutoCloseable
     void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed ) throws
             ConstraintValidationException;
 
-    void visitAddedIndex( SchemaIndexDescriptor element );
+    void visitAddedIndex( SchemaIndexDescriptor element, IndexProvider.Descriptor providerDescriptor );
 
     void visitRemovedIndex( SchemaIndexDescriptor element );
 
@@ -117,7 +118,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( SchemaIndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
         {
         }
 
@@ -224,9 +225,9 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( SchemaIndexDescriptor index )
+        public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
         {
-            actual.visitAddedIndex( index );
+            actual.visitAddedIndex( index, providerDescriptor );
         }
 
         @Override

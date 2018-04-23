@@ -155,7 +155,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 2, kernel.transactions.size() );
         TransactionState tx1 = kernel.transactions.get( 0 ).txState();
         SchemaIndexDescriptor newIndex = SchemaIndexDescriptorFactory.uniqueForLabel( 123, 456 );
-        verify( tx1 ).indexRuleDoAdd( newIndex );
+        verify( tx1 ).indexRuleDoAdd( newIndex, null );
         verifyNoMoreInteractions( tx1 );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( LABEL_ID, PROPERTY_KEY_ID );
