@@ -191,7 +191,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
   test("point function with invalid crs types should give reasonable error") {
     failWithError(pointConfig + Configs.Procs,
-      "return point({x: 0, y: 0, crs: 5})", List("java.lang.Long cannot be cast to java.lang.String", "Cannot assign"))
+      "return point({x: 0, y: 0, crs: 5})", List("java.lang.Long cannot be cast to java.lang.String", "java.lang.Long incompatible with java.lang.String", "Cannot assign"))
   }
 
   test("should default to WGS84 if missing geographic CRS") {
