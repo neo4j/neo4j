@@ -36,8 +36,11 @@ import java.util.Set;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -53,6 +56,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.helpers.ArrayUtil.without;
@@ -498,6 +502,30 @@ public class FusionIndexAccessorTest
         fusionIndexAccessor.validateBeforeCommit( new Value[] {stringValue( "test value" )} );
 
         // then no exception was thrown
+    }
+
+    @Test
+    public void shouldInstantiateReadersLazily()
+    {
+        // when getting a new reader, no part-reader should be instantiated
+        IndexReader fusionReader = fusionIndexAccessor.newReader();
+        for ( int j = 0; j < aliveAccessors.length; j++ )
+        {
+            // then
+            verifyNoMoreInteractions( aliveAccessors[j] );
+        }
+    }
+
+    @Test
+    public void shouldInstantiateUpdatersLazily()
+    {
+        // when getting a new reader, no part-reader should be instantiated
+        IndexUpdater updater = fusionIndexAccessor.newUpdater( IndexUpdateMode.ONLINE );
+        for ( int j = 0; j < aliveAccessors.length; j++ )
+        {
+            // then
+            verifyNoMoreInteractions( aliveAccessors[j] );
+        }
     }
 
     static void assertResultContainsAll( Set<Long> result, List<Long> expectedEntries )

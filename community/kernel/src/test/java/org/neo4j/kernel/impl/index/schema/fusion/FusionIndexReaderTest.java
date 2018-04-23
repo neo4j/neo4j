@@ -365,6 +365,39 @@ public class FusionIndexReaderTest
         }
     }
 
+    @Test
+    public void shouldInstantiatePartLazilyForSpecificValueGroupQuery() throws IndexNotApplicableKernelException
+    {
+        // given
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        for ( int i = 0; i < readers.length; i++ )
+        {
+            if ( readers[i] != IndexReader.EMPTY )
+            {
+                // when
+                Value value = values[i][0];
+                fusionIndexReader.query( IndexQuery.exact( 0, value ) );
+                for ( int j = 0; j < readers.length; j++ )
+                {
+                    // then
+                    if ( readers[j] != IndexReader.EMPTY )
+                    {
+                        if ( i == j )
+                        {
+                            verify( readers[i] ).query( any( IndexQuery.class ) );
+                        }
+                        else
+                        {
+                            verifyNoMoreInteractions( readers[j] );
+                        }
+                    }
+                }
+            }
+
+            initiateMocks();
+        }
+    }
+
     private void verifyQueryWithCorrectReader( IndexReader expectedReader, IndexQuery... indexQuery )
             throws IndexNotApplicableKernelException
     {

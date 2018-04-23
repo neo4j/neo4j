@@ -28,19 +28,24 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.helpers.ArrayUtil.without;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
@@ -346,5 +351,38 @@ public class FusionIndexUpdaterTest
     public void closeMustThrowIfAllThrow() throws Exception
     {
         FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow( fusionIndexUpdater, aliveUpdaters );
+    }
+
+    @Test
+    public void shouldInstantiatePartLazilyForSpecificValueGroupUpdates() throws IOException, IndexEntryConflictException
+    {
+        // given
+        Value[][] values = FusionIndexTestHelp.valuesByGroup();
+        for ( int i = 0; i < updaters.length; i++ )
+        {
+            if ( updaters[i] != SwallowingIndexUpdater.INSTANCE )
+            {
+                // when
+                Value value = values[i][0];
+                fusionIndexUpdater.process( add( value ) );
+                for ( int j = 0; j < updaters.length; j++ )
+                {
+                    // then
+                    if ( updaters[j] != SwallowingIndexUpdater.INSTANCE )
+                    {
+                        if ( i == j )
+                        {
+                            verify( updaters[i] ).process( any( IndexEntryUpdate.class ) );
+                        }
+                        else
+                        {
+                            verifyNoMoreInteractions( updaters[j] );
+                        }
+                    }
+                }
+            }
+
+            initiateMocks();
+        }
     }
 }
