@@ -46,16 +46,17 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ReadReplica implements ClusterMember<ReadReplicaGraphDatabase>
 {
-    private final DiscoveryServiceFactory discoveryServiceFactory;
+    protected final DiscoveryServiceFactory discoveryServiceFactory;
     private final File neo4jHome;
-    private final File storeDir;
+    protected final File storeDir;
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final Config memberConfig;
-    private ReadReplicaGraphDatabase database;
-    private Monitors monitors;
+    protected ReadReplicaGraphDatabase database;
+    protected Monitors monitors;
     private final ThreadGroup threadGroup;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
