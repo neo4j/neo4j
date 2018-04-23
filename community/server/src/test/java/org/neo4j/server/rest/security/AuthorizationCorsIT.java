@@ -137,7 +137,7 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
     {
         testCorsAllowMethods( method, "*" );
     }
-    
+
     private void testCorsAllowMethods( HttpMethod method, String origin ) throws Exception
     {
         HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
