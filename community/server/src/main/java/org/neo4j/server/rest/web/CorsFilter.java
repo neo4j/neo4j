@@ -51,14 +51,14 @@ public class CorsFilter implements Filter
     public static final String VARY = "Vary";
 
     private final Log log;
-    private final String access_control_allow_origin;
+    private final String accessControlAllowOrigin;
     private final String vary;
 
-    public CorsFilter( LogProvider logProvider, String access_control_allow_origin )
+    public CorsFilter( LogProvider logProvider, String accessControlAllowOrigin )
     {
         this.log = logProvider.getLog( getClass() );
-        this.access_control_allow_origin = access_control_allow_origin;
-        if ( "*".equals( access_control_allow_origin ) )
+        this.accessControlAllowOrigin = accessControlAllowOrigin;
+        if ( "*".equals( accessControlAllowOrigin ) )
         {
             vary = null;
         }
@@ -86,7 +86,7 @@ public class CorsFilter implements Filter
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, access_control_allow_origin );
+        response.setHeader( ACCESS_CONTROL_ALLOW_ORIGIN, accessControlAllowOrigin );
         if ( vary != null )
         {
             response.setHeader( VARY, vary );
