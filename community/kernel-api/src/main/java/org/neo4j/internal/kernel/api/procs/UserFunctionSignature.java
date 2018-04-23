@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.procs;
 
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,7 +32,7 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a function, made up of its namespace, name, and input/output description.
  * Function uniqueness is currently *only* on the namespace/name level - no function overloading allowed (yet).
  */
-public final class UserFunctionSignature implements Signature
+public final class UserFunctionSignature
 {
     private final QualifiedName name;
     private final List<FieldSignature> inputSignature;
@@ -42,13 +40,15 @@ public final class UserFunctionSignature implements Signature
     private final String[] allowed;
     private final String deprecated;
     private final String description;
+    private final boolean caseInsensitive;
 
     public UserFunctionSignature( QualifiedName name,
             List<FieldSignature> inputSignature,
             Neo4jTypes.AnyType type,
             String deprecated,
             String[] allowed,
-            String description )
+            String description,
+            boolean caseInsensitive)
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -56,21 +56,19 @@ public final class UserFunctionSignature implements Signature
         this.deprecated = deprecated;
         this.description = description;
         this.allowed = allowed;
+        this.caseInsensitive = caseInsensitive;
     }
 
-    @Override
     public QualifiedName name()
     {
         return name;
     }
 
-    @Override
     public Optional<String> deprecated()
     {
         return Optional.ofNullable( deprecated );
     }
 
-    @Override
     public List<FieldSignature> inputSignature()
     {
         return inputSignature;
@@ -81,16 +79,19 @@ public final class UserFunctionSignature implements Signature
         return type;
     }
 
-    @Override
     public Optional<String> description()
     {
         return Optional.ofNullable( description );
     }
 
-    @Override
     public String[] allowed()
     {
         return allowed;
+    }
+
+    public boolean caseInsensitive()
+    {
+        return caseInsensitive;
     }
 
     @Override
@@ -175,7 +176,7 @@ public final class UserFunctionSignature implements Signature
             {
                 throw new IllegalStateException( "output type must be set" );
             }
-            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description );
+            return new UserFunctionSignature( name, inputSignature, outputType, deprecated, allowed, description,false  );
         }
     }
 

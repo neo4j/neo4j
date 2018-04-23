@@ -33,7 +33,7 @@ import static java.util.Collections.unmodifiableList;
  * This describes the signature of a procedure, made up of its namespace, name, and input/output description.
  * Procedure uniqueness is currently *only* on the namespace/name level - no procedure overloading allowed (yet).
  */
-public class ProcedureSignature implements Signature
+public class ProcedureSignature
 {
     public static final List<FieldSignature> VOID = unmodifiableList( new ArrayList<>() );
 
@@ -45,15 +45,18 @@ public class ProcedureSignature implements Signature
     private final String[] allowed;
     private final String description;
     private final String warning;
+    private final boolean caseInsensitive;
 
-    public ProcedureSignature( QualifiedName name,
+    public ProcedureSignature(
+            QualifiedName name,
             List<FieldSignature> inputSignature,
             List<FieldSignature> outputSignature,
             Mode mode,
             String deprecated,
             String[] allowed,
             String description,
-            String warning )
+            String warning,
+            boolean caseInsensitive )
     {
         this.name = name;
         this.inputSignature = unmodifiableList( inputSignature );
@@ -63,9 +66,9 @@ public class ProcedureSignature implements Signature
         this.allowed = allowed;
         this.description = description;
         this.warning = warning;
+        this.caseInsensitive = caseInsensitive;
     }
 
-    @Override
     public QualifiedName name()
     {
         return name;
@@ -76,19 +79,21 @@ public class ProcedureSignature implements Signature
         return mode;
     }
 
-    @Override
     public Optional<String> deprecated()
     {
         return Optional.ofNullable( deprecated );
     }
 
-    @Override
     public String[] allowed()
     {
         return allowed;
     }
 
-    @Override
+    public boolean caseInsensitive()
+    {
+        return caseInsensitive;
+    }
+
     public List<FieldSignature> inputSignature()
     {
         return inputSignature;
@@ -104,7 +109,6 @@ public class ProcedureSignature implements Signature
         return outputSignature == VOID;
     }
 
-    @Override
     public Optional<String> description()
     {
         return Optional.ofNullable( description );
@@ -222,7 +226,7 @@ public class ProcedureSignature implements Signature
         public ProcedureSignature build()
         {
             return new ProcedureSignature( name, inputSignature, outputSignature, mode, deprecated, allowed,
-                    description, warning );
+                    description, warning, false );
         }
     }
 

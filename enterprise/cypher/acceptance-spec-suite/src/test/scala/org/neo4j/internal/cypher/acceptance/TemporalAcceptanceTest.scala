@@ -49,6 +49,20 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     shouldReturnSomething("datetime({epochSeconds:timestamp() / 1000})")
   }
 
+  test("should find case insensitive names for built in functions") {
+    for (s <- Seq("dAtE", "lOcAlTiMe", "TiMe", "lOcAlDaTeTiMe", "DaTeTiMe")) {
+      shouldReturnSomething(s"$s()")
+      shouldReturnSomething(s"$s.traNsaction()")
+      shouldReturnSomething(s"$s.staTement()")
+      shouldReturnSomething(s"$s.reaLtime()")
+      shouldReturnSomething(s"$s.traNsaction('America/Los_Angeles')")
+      shouldReturnSomething(s"$s.staTEment('America/Los_Angeles')")
+      shouldReturnSomething(s"$s.reaLTime('America/Los_Angeles')")
+    }
+    shouldReturnSomething("DateTime({epochMillis:timestamp()})")
+    shouldReturnSomething("DateTime({epochSeconds:timestamp() / 1000})")
+  }
+
   // Should handle temporal and duration as parameters, also with compiled
   test("should handle temporal parameter") {
 

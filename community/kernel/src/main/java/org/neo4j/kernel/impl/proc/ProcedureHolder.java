@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.Signature;
 
 /**
  * Simple in memory store for procedures.
@@ -34,14 +35,15 @@ import org.neo4j.internal.kernel.api.procs.Signature;
  * Should only be accessed from a single thread
  * @param <T> the type to be stored
  */
-class ProcedureHolder<T extends Signature>
+class ProcedureHolder<T>
 {
     private final Map<QualifiedName,Integer> nameToId = new HashMap<>();
+    private final Map<QualifiedName,Integer> caseInsensitveName2Id = new HashMap<>();
     private final ArrayList<T> store = new ArrayList<>();
 
     T get( QualifiedName name )
     {
-        Integer id = nameToId.get( name );
+        Integer id = name2Id( name );
         if ( id == null )
         {
             return null;
@@ -54,20 +56,48 @@ class ProcedureHolder<T extends Signature>
         return store.get( id );
     }
 
-    void put( QualifiedName name, T item )
+    void put( QualifiedName name, T item, boolean caseInsensitive )
     {
         int id = store.size();
         store.add( item );
         nameToId.put( name, id );
+        if ( caseInsensitive )
+        {
+            caseInsensitveName2Id.put( toLowerCaseName( name ), id );
+        }
     }
 
     int idOf( QualifiedName name )
     {
-        return nameToId.get( name );
+        Integer id = name2Id( name );
+        if ( id == null )
+        {
+            throw new NoSuchElementException();
+        }
+
+        return id;
     }
 
     List<T> all()
     {
         return Collections.unmodifiableList( store );
+    }
+
+    private Integer name2Id( QualifiedName name )
+    {
+        Integer id = nameToId.get( name );
+        if ( id == null )
+        { // Did not find it in the case sensitive lookup - let's check for case insensitive objects
+            QualifiedName lowerCaseName = toLowerCaseName( name );
+            id = caseInsensitveName2Id.get( lowerCaseName );
+        }
+        return id;
+    }
+
+    private QualifiedName toLowerCaseName( QualifiedName name )
+    {
+        String[] lowerCaseNamespace = Arrays.stream( name.namespace() ).map( String::toLowerCase ).toArray( String[]::new );
+        String lowercaseName = name.name().toLowerCase();
+        return new QualifiedName( lowerCaseNamespace, lowercaseName );
     }
 }
