@@ -58,7 +58,7 @@ case class PreParsedQuery(statement: String, rawStatement: String, version: Cyph
       case _ => s"strategy=${updateStrategy.name}"
     }
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $statement".replaceAll("\\s+", " ")
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $statement"
   }
 }
 
