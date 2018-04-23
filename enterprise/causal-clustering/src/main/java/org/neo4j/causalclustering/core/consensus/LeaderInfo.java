@@ -39,11 +39,19 @@ public class LeaderInfo implements Serializable
         this( memberId, term, false );
     }
 
-    public LeaderInfo( MemberId memberId, long term, boolean isSteppingDown )
+    private LeaderInfo( MemberId memberId, long term, boolean isSteppingDown )
     {
         this.memberId = memberId;
         this.term = term;
         this.isSteppingDown = isSteppingDown;
+    }
+
+    /**
+     * Produces a new LeaderInfo object for a step down event, setting memberId to null but maintaining the current term.
+     */
+    public LeaderInfo stepDown()
+    {
+        return new LeaderInfo( null, this.term, true );
     }
 
     public boolean isSteppingDown()
