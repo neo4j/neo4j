@@ -94,9 +94,7 @@ public final class Values
      *
      * To get Comparability semantics, use .ternaryCompare
      */
-    private static final ValueComparator comp = new ValueComparator( ValueGroup::compareTo );
-    public static final Comparator<Value> COMPARATOR = comp;
-    public static final TernaryComparator<Value> TERNARY_COMPARATOR = comp;
+    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {

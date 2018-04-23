@@ -29,6 +29,7 @@ import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Comparison;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 import org.neo4j.values.utils.PrettyPrinter;
@@ -159,13 +160,13 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     }
 
     @Override
-    Integer unsafeTernaryCompareTo( Value otherValue )
+    Comparison unsafeTernaryCompareTo( Value otherValue )
     {
         PointValue other = (PointValue) otherValue;
 
         if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )
         {
-            return null;
+            return Comparison.UNDEFINED;
         }
 
         int result = 0;
@@ -176,13 +177,13 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             {
                 if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) )
                 {
-                    return null;
+                    return Comparison.UNDEFINED;
                 }
                 result = cmpVal;
             }
         }
 
-        return result;
+        return Comparison.from( result );
     }
 
     @Override
@@ -262,19 +263,17 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     {
         if ( lower != null )
         {
-            Integer compareLower = this.unsafeTernaryCompareTo( lower );
-            if ( compareLower == null || compareLower < 0 || compareLower == 0 && !includeLower )
+            Comparison compareLower = this.unsafeTernaryCompareTo( lower );
+            if ( compareLower == Comparison.UNDEFINED || compareLower == Comparison.SMALLER_THAN || compareLower == Comparison.EQUAL && !includeLower )
             {
                 return false;
             }
         }
         if ( upper != null )
         {
-            Integer compareUpper = this.unsafeTernaryCompareTo( upper );
-            if ( compareUpper == null || compareUpper > 0 || compareUpper == 0 && !includeUpper )
-            {
-                return false;
-            }
+            Comparison compareUpper = this.unsafeTernaryCompareTo( upper );
+            return compareUpper != Comparison.UNDEFINED && compareUpper != Comparison.GREATER_THAN &&
+                   (compareUpper != Comparison.EQUAL || includeUpper);
         }
         return true;
     }

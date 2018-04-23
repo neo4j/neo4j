@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.AnyValues
+import org.neo4j.values.{AnyValues, Comparison}
 import org.neo4j.values.storable._
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
@@ -37,25 +37,25 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     else (l, r) match {
       case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
       case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (n1: NumberValue, n2: NumberValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: TextValue, n2: TextValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: BooleanValue, n2: BooleanValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: DateValue, n2: DateValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: LocalTimeValue, n2: LocalTimeValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: TimeValue, n2: TimeValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: LocalDateTimeValue, n2: LocalDateTimeValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: DateTimeValue, n2: DateTimeValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: NumberValue, n2: NumberValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: TextValue, n2: TextValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: BooleanValue, n2: BooleanValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: PointValue, n2: PointValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: DateValue, n2: DateValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: LocalTimeValue, n2: LocalTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: TimeValue, n2: TimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: LocalDateTimeValue, n2: LocalDateTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: DateTimeValue, n2: DateTimeValue) => compare(undefinedToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case _ => None
     }
     res
   }
 
-  private def nullToNone(i: java.lang.Integer) : Option[Int] = {
+  private def undefinedToNone(i: Comparison) : Option[Int] = {
     // Do NOT use Option here (as suggested by the warning).
     // This would lead to NullPointerExceptions when i == null
-    if(i == null) None
-    else Some(i)
+    if(i == Comparison.UNDEFINED) None
+    else Some(i.value())
   }
 
   def sign: String
