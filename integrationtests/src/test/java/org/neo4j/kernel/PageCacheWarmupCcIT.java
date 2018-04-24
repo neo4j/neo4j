@@ -24,8 +24,10 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -39,8 +41,10 @@ import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
 {
@@ -49,27 +53,49 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
             .withNumberOfReadReplicas( 0 )
             .withSharedCoreParam( UdcSettings.udc_enabled, Settings.FALSE )
             .withSharedCoreParam( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" )
+            .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, Settings.TRUE )
+            .withSharedCoreParam( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY )
+            // Restored to default value to decrease the risk of leader changes:
+            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "7s" )
             .withSharedReadReplicaParam( UdcSettings.udc_enabled, Settings.FALSE )
-            .withSharedReadReplicaParam( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" );
+            .withSharedReadReplicaParam( GraphDatabaseSettings.pagecache_warmup_profiling_interval, "100ms" )
+            .withSharedReadReplicaParam( CausalClusteringSettings.multi_dc_license, Settings.TRUE )
+            .withSharedReadReplicaParam( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY );
 
     private Cluster cluster;
+    private AtomicReference<CoreGraphDatabase> leaderRef;
 
     @Before
     public void setup() throws Exception
     {
         cluster = clusterRule.startCluster();
+        leaderRef = new AtomicReference<>();
     }
 
     private long warmUpCluster() throws Exception
     {
-        cluster.awaitLeader(); // Make sure we have a cluster leader. Simplifies debugging.
-        AtomicLong pagesInMemory = new AtomicLong();
+        cluster.awaitLeader(); // Make sure we have a cluster leader.
         cluster.coreTx( ( db, tx ) ->
         {
+            // Verify that we really do have a somewhat stable leader.
+            db.createNode();
+            tx.success();
+        } );
+        cluster.coreTx( ( db, tx ) ->
+        {
+            // Alright, assuming this leader holds up, create the test data.
+            leaderRef.set( db );
             createTestData( db );
             tx.success();
         } );
-        cluster.coreTx( ( db, tx ) -> pagesInMemory.set( waitForCacheProfile( db ) ) );
+        AtomicLong pagesInMemory = new AtomicLong();
+        cluster.coreTx( ( db, tx ) ->
+        {
+            // Now we can wait for the profile on the leader.
+            pagesInMemory.set( waitForCacheProfile( db ) );
+            // Make sure that this is still the same leader that we profiled:
+            assumeLeaderUnchanged( db );
+        } );
         for ( CoreClusterMember member : cluster.coreMembers() )
         {
             waitForCacheProfile( member.database() );
@@ -77,13 +103,21 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         return pagesInMemory.get();
     }
 
-    private void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory )
+    private void assumeLeaderUnchanged( CoreGraphDatabase db )
+    {
+        assumeThat( leaderRef.get(), sameInstance( db ) );
+    }
+
+    private void verifyWarmupHappensAfterStoreCopy( ClusterMember member, long pagesInMemory ) throws Exception
     {
         AtomicLong pagesLoadedInWarmup = new AtomicLong();
         BinaryLatch warmupLatch = injectWarmupLatch( member, pagesLoadedInWarmup );
         member.start();
         warmupLatch.await();
-        assertThat( pagesLoadedInWarmup.get(), is( pagesInMemory ) );
+        // First make sure that the leader hasn't changed:
+        cluster.coreTx( ( db, tx ) -> assumeLeaderUnchanged( db ) );
+        // Then check that we warmup up all right:
+        assertThat( pagesLoadedInWarmup.get(), greaterThanOrEqualTo( pagesInMemory ) );
     }
 
     private BinaryLatch injectWarmupLatch( ClusterMember member, AtomicLong pagesLoadedInWarmup )
@@ -107,18 +141,11 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
         return warmupLatch;
     }
 
-    private void useLeaderOnlyCopyStrategy( ClusterMember<?> member )
-    {
-        member.updateConfig( CausalClusteringSettings.upstream_selection_strategy, LeaderOnlyStrategy.IDENTITY );
-        member.updateConfig( CausalClusteringSettings.multi_dc_license, Settings.TRUE );
-    }
-
     @Test
     public void cacheProfilesMustBeIncludedInStoreCopyToCore() throws Exception
     {
         long pagesInMemory = warmUpCluster();
         CoreClusterMember member = cluster.newCoreMember();
-        useLeaderOnlyCopyStrategy( member );
         verifyWarmupHappensAfterStoreCopy( member, pagesInMemory );
     }
 
@@ -127,7 +154,6 @@ public class PageCacheWarmupCcIT extends PageCacheWarmupTestSupport
     {
         long pagesInMemory = warmUpCluster();
         ReadReplica member = cluster.newReadReplica();
-        useLeaderOnlyCopyStrategy( member );
         verifyWarmupHappensAfterStoreCopy( member, pagesInMemory );
     }
 }
