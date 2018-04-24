@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.runtime.LongArraySet
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -72,8 +73,8 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
             seen.add(keys)
             // Found something! Set it as the next element to yield, and exit
             val outgoing = SlottedExecutionContext(slots)
-            setValuesInOutput.foreach {
-              _ (next, state, outgoing)
+            for(setter <- setValuesInOutput) {
+              setter(next, state, outgoing)
             }
             buffer = outgoing
             return

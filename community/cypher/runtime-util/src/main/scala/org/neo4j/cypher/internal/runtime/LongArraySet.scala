@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.slotted.pipes
+package org.neo4j.cypher.internal.runtime
 
 import java.lang.Integer.highestOneBit
 import java.util
-import org.neo4j.cypher.internal.runtime.slotted.pipes.LongArraySet._
+import org.neo4j.cypher.internal.runtime.LongArraySet._
+
 /**
   * When you need to have a set of arrays of longs representing entities - look no further
   *
