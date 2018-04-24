@@ -94,7 +94,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
     val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
     val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx, query)
+    val neo4jTransactionalContext = context.copyFrom(context.graph, guard, statementProvider, locker, newTx,
+                                                     statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
 
