@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
@@ -111,7 +111,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
         }
 
         @Override
-        public MutableIntSet relationshipTypes()
+        public IntSet relationshipTypes()
         {
             return new IntHashSet();
         }
@@ -323,7 +323,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     }
 
     @Override
-    public MutableIntSet relationshipTypes()
+    public IntSet relationshipTypes()
     {
         if ( hasAddedRelationships() )
         {

@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.IntSet;
 
 import java.util.Set;
 
@@ -59,7 +59,7 @@ public interface NodeState extends PropertyContainerState
 
     void accept( NodeState.Visitor visitor ) throws ConstraintValidationException;
 
-    MutableIntSet relationshipTypes();
+    IntSet relationshipTypes();
 
     long getId();
 
