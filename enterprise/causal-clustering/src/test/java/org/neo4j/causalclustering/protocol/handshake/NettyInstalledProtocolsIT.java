@@ -255,7 +255,7 @@ public class NettyInstalledProtocolsIT
             eventLoopGroup = new NioEventLoopGroup();
             Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             handshakeClientInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                    protocolInstallerRepository, pipelineBuilderFactory, handshakeTimeout, logProvider );
+                    protocolInstallerRepository, pipelineBuilderFactory, handshakeTimeout, logProvider, logProvider );
             bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( handshakeClientInitializer );
         }
 

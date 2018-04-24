@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,15 +32,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -95,9 +96,9 @@ public class SharedDiscoveryServiceIT
         jobScheduler.init();
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory
-                .coreTopologyService( config(), member, jobScheduler, logProvider, userLogProvider, hostnameResolver,
-                        new TopologyServiceNoRetriesStrategy() );
+        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), member,
+                jobScheduler, logProvider, userLogProvider, hostnameResolver, new TopologyServiceNoRetriesStrategy(),
+                new Monitors() );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 

@@ -46,7 +46,6 @@ import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
  */
 public class CausalClusterInProcessRunner
 {
-
     public static void main( String[] args )
     {
         try
@@ -79,5 +78,4 @@ public class CausalClusterInProcessRunner
         }
         System.exit( 0 );
     }
-
 }

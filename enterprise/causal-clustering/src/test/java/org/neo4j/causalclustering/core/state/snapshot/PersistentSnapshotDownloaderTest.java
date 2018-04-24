@@ -29,6 +29,7 @@ import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
@@ -57,7 +58,8 @@ public class PersistentSnapshotDownloaderTest
         final CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
         final Log log = mock( Log.class );
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader(
-                catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout(), () -> dbHealth );
+                catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout(), () -> dbHealth,
+                new Monitors() );
 
         // when
         persistentSnapshotDownloader.run();
@@ -80,7 +82,8 @@ public class PersistentSnapshotDownloaderTest
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader(
-                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth );
+                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth,
+                new Monitors() );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
@@ -107,7 +110,7 @@ public class PersistentSnapshotDownloaderTest
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader( null,
-                applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth );
+                applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth, new Monitors() );
 
         // when
         Thread thread = new Thread( persistentSnapshotDownloader );
@@ -132,7 +135,8 @@ public class PersistentSnapshotDownloaderTest
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader(
-                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth );
+                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth,
+                new Monitors() );
 
         // when
         persistentSnapshotDownloader.run();
@@ -154,7 +158,8 @@ public class PersistentSnapshotDownloaderTest
 
         final Log log = mock( Log.class );
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader(
-                catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout(), () -> dbHealth );
+                catchupAddressProvider, applicationProcess, coreStateDownloader, log, new NoTimeout(), () -> dbHealth,
+                new Monitors() );
 
         // when
         persistentSnapshotDownloader.run();
@@ -177,7 +182,8 @@ public class PersistentSnapshotDownloaderTest
         final Log log = mock( Log.class );
         NoTimeout timeout = new NoTimeout();
         PersistentSnapshotDownloader persistentSnapshotDownloader = new PersistentSnapshotDownloader(
-                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth );
+                catchupAddressProvider, applicationProcess, coreStateDownloader, log, timeout, () -> dbHealth,
+                new Monitors() );
 
         Thread thread = new Thread( persistentSnapshotDownloader );
 
