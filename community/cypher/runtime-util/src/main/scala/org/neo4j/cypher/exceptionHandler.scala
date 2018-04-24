@@ -125,7 +125,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         exceptionHandler.arithmeticException(e.getMessage, e)
       case e: TemporalParseException =>
         if (e.getParsedData == null) {
-          exceptionHandler.syntaxException(e.getMessage, "", null, e)
+          exceptionHandler.syntaxException(e.getMessage, "", None, e)
         }
         else {
           exceptionHandler.syntaxException(e.getMessage, e.getParsedData, Option(e.getErrorIndex), e)
