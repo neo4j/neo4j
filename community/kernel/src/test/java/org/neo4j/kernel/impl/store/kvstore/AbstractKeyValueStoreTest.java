@@ -585,7 +585,7 @@ public class AbstractKeyValueStoreTest
             return wasFound;
         } );
         return state;
-    };
+    }
 
     private void setState( Store store, ProgressiveState<String> workingState )
             throws IOException
