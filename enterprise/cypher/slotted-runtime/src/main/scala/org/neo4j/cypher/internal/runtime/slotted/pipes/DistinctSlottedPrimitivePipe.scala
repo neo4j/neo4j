@@ -63,8 +63,11 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
       private def pullNextElementFromSource(): Unit = {
         buffer = null
         while (input.nonEmpty) { // Let's pull data until we find something not already seen
-          val next = input.next()
-          val keys: Array[Long] = primitiveSlots.map(next.getLongAt)
+          val next: ExecutionContext = input.next()
+
+          // Create key array
+          val keys = buildKey(next)
+
           if (!seen.contains(keys)) {
             seen.add(keys)
             // Found something! Set it as the next element to yield, and exit
@@ -89,5 +92,15 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
           current
         }
     }
+  }
+
+  private def buildKey(next: ExecutionContext): Array[Long] = {
+    val keys = new Array[Long](primitiveSlots.length)
+    var i = 0
+    while(i < primitiveSlots.length) {
+      keys(i) = next.getLongAt(primitiveSlots(i))
+      i += 1
+    }
+    keys
   }
 }

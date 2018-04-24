@@ -349,33 +349,22 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                            id: Id): Pipe = {
 
     trait DistinctPhysicalOp {
-      def addExpression(column: String, e: AstExpression): DistinctPhysicalOp
+      def addExpression(e: AstExpression): DistinctPhysicalOp
     }
 
     case class AllPrimitive(offsets: Seq[Int]) extends DistinctPhysicalOp {
-      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = e match {
+      override def addExpression(e: AstExpression): DistinctPhysicalOp = e match {
         case v: NodeFromSlot =>
           AllPrimitive(offsets :+ v.offset)
         case v: RelationshipFromSlot =>
           AllPrimitive(offsets :+ v.offset)
-        case _ =>
-          References
-      }
-    }
-
-    object Empty extends DistinctPhysicalOp {
-      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = e match {
-        case v: NodeFromSlot =>
-          AllPrimitive(Seq(v.offset))
-        case v: RelationshipFromSlot =>
-          AllPrimitive(Seq(v.offset))
         case _ =>
           References
       }
     }
 
     object References extends DistinctPhysicalOp {
-      override def addExpression(column: String, e: AstExpression): DistinctPhysicalOp = References
+      override def addExpression(e: AstExpression): DistinctPhysicalOp = References
     }
 
     val runtimeProjections = projections.map {
@@ -383,9 +372,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         slots(key) -> convertExpressions(expression)
     }
 
-    val physicalDistinctOp = projections.foldLeft[DistinctPhysicalOp](Empty) {
-      case (a: DistinctPhysicalOp, (column, expression)) =>
-        a.addExpression(column, expression)
+    val physicalDistinctOp = projections.foldLeft[DistinctPhysicalOp](AllPrimitive(Seq.empty)) {
+      case (a: DistinctPhysicalOp, (_, expression)) =>
+        a.addExpression(expression)
     }
 
     physicalDistinctOp match {
@@ -398,9 +387,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case References =>
         DistinctSlottedPipe(source, slots, runtimeProjections)(id)
-
-      case Empty =>
-        throw new RuntimeException("This should have been prevented at semantic checking")
     }
   }
 

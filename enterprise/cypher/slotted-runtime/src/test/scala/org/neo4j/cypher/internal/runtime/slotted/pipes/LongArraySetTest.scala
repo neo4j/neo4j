@@ -48,6 +48,15 @@ class LongArraySetTest extends FunSuite with Matchers {
           fail(s"Value was missing: ${util.Arrays.toString(x)}")
       }
 
+      (0 to size) foreach { _ =>
+        val tuple = new Array[Long](width)
+        (0 until width) foreach { i => tuple(i) = r.nextLong() }
+        val a = tested.contains(tuple)
+        val b = validator.contains(tuple)
+
+        if(a != b)
+          fail(s"Value: ${util.Arrays.toString(tuple)} LongArraySet $a mutable.HashSet")
+      }
     }
   }
 

@@ -21,12 +21,20 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import java.lang.Integer.highestOneBit
 import java.util
-
+import org.neo4j.cypher.internal.runtime.slotted.pipes.LongArraySet._
+/**
+  * When you need to have a set of arrays of longs representing entities - look no further
+  *
+  * This set will keep all it's state in a single long[] array, marking unused slots
+  * using 0xF000000000000000L, that will never be used for node or relationship id's.
+  *
+  * @param capacity The initial capacity for the set. Must be a power of 2
+  * @param longsPerEntry All arrays in the set must be of the same length
+  */
 class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
-  val NO_ID = 0xF000000000000000L
-
   assert((capacity & (capacity - 1)) == 0, "Size must be a power of 2")
+  assert(longsPerEntry > 0, "Number of elements must be larger than 0")
 
   private var table = new Table(capacity)
 
@@ -40,6 +48,34 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     result == 1
   }
 
+  def add(value: Array[Long]): Unit = {
+    assert(value.length == longsPerEntry)
+    var offset = offsetFor(value)
+
+    while (true) {
+      table.checkSlot(offset, value) match {
+        case VALUE_FOUND =>
+          // Set already contains value - do nothing
+          return
+
+        case SLOT_EMPTY if table.timeToResize =>
+          // We know that the value does not yet exist in the set, but there is not space for it
+          resize()
+          // Need to re-start the linear probing after resizing
+          offset = offsetFor(value)
+
+        case SLOT_EMPTY =>
+          // The value does not yet exist in the set, and here is a free spot
+          table.addValueToSet(value, offset)
+          return
+
+        case CONTINUE_PROBING =>
+          // Spot already taken. Continue linear probe looking for an empty spot
+          offset = (offset + 1) & table.tableMask
+      }
+    }
+  }
+
   private def resize(): Unit = {
     val oldSize = table.capacity
     val oldTable = table
@@ -50,12 +86,12 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     var i = 0
     while (i < oldSize) {
       val fromIdx = i * longsPerEntry
-      if (oldTable.inner(fromIdx) != NO_ID) {
+      if (oldTable.inner(fromIdx) != NOT_IN_USE) {
         System.arraycopy(oldTable.inner, fromIdx, currentValue, 0, longsPerEntry)
         var slotOffset = offsetFor(currentValue)
         var statusForSlot = table.checkSlot(slotOffset, currentValue)
 
-        while (statusForSlot != 0) {
+        while (statusForSlot != SLOT_EMPTY) {
           slotOffset = (slotOffset + 1) & table.tableMask
           statusForSlot = table.checkSlot(slotOffset, currentValue)
         }
@@ -66,71 +102,36 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     }
   }
 
-  def add(value: Array[Long]): Unit = {
-    assert(value.size == longsPerEntry)
-    var offset = offsetFor(value)
-
-    while (true) {
-      val i = table.checkSlot(offset, value)
-      i match {
-        case 1 =>
-          // Set already contains value - do nothing
-          return
-
-        case 0 if table.timeToResize =>
-          // We know that the value does not yet exist in the set, but there is not space for it
-          resize()
-          // Need to re-start the linear probing after resizing
-          offset = offsetFor(value)
-
-        case 0 =>
-          table.addValueToSet(value, offset)
-          return
-
-        case _ =>
-          // Spot already taken. Continue linear probe looking for an empty spot
-          offset = (offset + 1) & table.tableMask
-      }
-    }
-  }
-
   private def offsetFor(value: Array[Long]) = {
     util.Arrays.hashCode(value) & table.tableMask
   }
 
-  class Table(val capacity: Int) {
+  private class Table(val capacity: Int) {
     private val resizeLimit = (capacity * 0.75).toInt
 
     val tableMask: Int = highestOneBit(this.capacity) - 1
 
     val inner: Array[Long] = new Array[Long](capacity * longsPerEntry)
-    java.util.Arrays.fill(inner, NO_ID)
+    java.util.Arrays.fill(inner, NOT_IN_USE)
 
     private var numberOfEntries: Int = 0
 
     def timeToResize: Boolean = numberOfEntries >= resizeLimit
 
-    /**
-      * Return values mean:
-      * 0   Slot is empty
-      * 1   Slot contains value
-      * -1  Slot occupied by something else
-      */
     def checkSlot(offset: Int, value: Array[Long]): Int = {
-
       val startOffset = offset * longsPerEntry
 
-      if (inner(startOffset) == NO_ID)
-        return 0
+      if (inner(startOffset) == NOT_IN_USE)
+        return SLOT_EMPTY
       else {
         var i = 0
         while (i < longsPerEntry) {
-          if (inner(startOffset + i) != value(i)) return -1
+          if (inner(startOffset + i) != value(i)) return CONTINUE_PROBING
           i += 1
         }
       }
 
-      1
+      VALUE_FOUND
     }
 
     def addValueToSet(value: Array[Long], offset: Int): Unit = {
@@ -139,9 +140,13 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
       numberOfEntries += 1
     }
-
   }
-
-
 }
 
+object LongArraySet {
+  // Constants
+  val NOT_IN_USE = 0xF000000000000000L
+  val SLOT_EMPTY = 0
+  val VALUE_FOUND = 1
+  val CONTINUE_PROBING = -1
+}
