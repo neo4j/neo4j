@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
@@ -90,7 +91,7 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
 
     public interface Supplier
     {
-        IndexDescriptor getIndexDescriptor();
+        IndexDescriptor getIndexDescriptor( IndexProviderMap indexProviderMap );
     }
 
     private final SchemaDescriptor schema;
@@ -130,9 +131,9 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
      * @param supplier supplier to get a index descriptor from
      * @return true if the supplied index descriptor equals this index descriptor
      */
-    public boolean isSame( Supplier supplier )
+    public boolean isSame( Supplier supplier, IndexProviderMap indexProviderMap )
     {
-        return this.equals( supplier.getIndexDescriptor() );
+        return this.equals( supplier.getIndexDescriptor( indexProviderMap ) );
     }
 
     /**

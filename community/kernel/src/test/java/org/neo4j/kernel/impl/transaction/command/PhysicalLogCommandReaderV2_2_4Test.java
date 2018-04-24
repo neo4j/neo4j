@@ -51,7 +51,7 @@ public class PhysicalLogCommandReaderV2_2_4Test
         removeCommand.serialize( channel );
 
         // WHEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY );
+        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
         assertTrue( reader.read( channel ) instanceof IndexDefineCommand );
         RemoveCommand readRemoveCommand = (RemoveCommand) reader.read( channel );
 

@@ -81,7 +81,7 @@ public class ReplayRaftLog
                 {
                     ReplicatedTransaction tx = (ReplicatedTransaction) content;
                     ReplicatedTransactionFactory.extractTransactionRepresentation( tx, new byte[0],
-                            new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) ).accept( element ->
+                            new RecordStorageCommandReaderFactory() ).accept( element ->
                     {
                         System.out.println( element );
                         return false;

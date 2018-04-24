@@ -30,9 +30,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -63,7 +64,7 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator(), IndexProviderMap.EMPTY );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
@@ -74,7 +75,7 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator(), IndexProviderMap.EMPTY );
 
         IndexRule rule1 = newIndexRule( 10, 11, 12 );
         IndexRule rule2 = newIndexRule( 13, 14, 15 );
@@ -339,7 +340,7 @@ public class SchemaCacheTest
 
     private IndexRule newIndexRule( long id, int label, int propertyKey )
     {
-        return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR );
+        return IndexRule.indexRule( id, SchemaDescriptorFactory.forLabel( label, propertyKey ), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
@@ -359,8 +360,8 @@ public class SchemaCacheTest
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
-        return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyIterator() : Arrays.asList( rules ).iterator() );
+        return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0) ? Collections.emptyIterator()
+                                                                                                : Arrays.asList( rules ).iterator(), IndexProviderMap.EMPTY );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

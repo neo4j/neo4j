@@ -79,6 +79,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -135,7 +136,6 @@ import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
@@ -454,8 +454,8 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().get( rule.getProviderDescriptor() )
-                .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
+            IndexPopulator populator = storeAccess.indexes().get( rule.getProviderDescriptor() ).getPopulator( rule.getId(),
+                    rule.getIndexDescriptor( IndexProviderMap.EMPTY ), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -567,7 +567,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            IndexDescriptor descriptor = indexRule.getIndexDescriptor( IndexProviderMap.EMPTY );
             IndexAccessor accessor = storeAccess.indexes().
                     get( indexRule.getProviderDescriptor() ).getOnlineAccessor( indexRule.getId(), descriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
@@ -603,10 +603,10 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = storeAccess.indexes().get( indexRule.getProviderDescriptor() )
-                    .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
+            IndexAccessor accessor = storeAccess.indexes().get( indexRule.getProviderDescriptor() ).getOnlineAccessor( indexRule.getId(),
+                    indexRule.getIndexDescriptor( IndexProviderMap.EMPTY ), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
+            updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor( IndexProviderMap.EMPTY ).schema(), values( indexRule ) ) );
             updater.close();
             accessor.force( IOLimiter.unlimited() );
             accessor.close();
@@ -2250,7 +2250,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord recordBefore = new DynamicRecord( id );
                 DynamicRecord recordAfter = recordBefore.clone();
 
-                IndexRule rule = IndexRule.indexRule( id, forLabel( labelId, propertyKeyIds ), DESCRIPTOR );
+                IndexRule rule =
+                        IndexRule.indexRule( id, SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds ), DESCRIPTOR, IndexDescriptor.Type.GENERAL );
                 Collection<DynamicRecord> records = serializeRule( rule, recordAfter );
 
                 tx.createSchema( singleton( recordBefore ), records, rule );

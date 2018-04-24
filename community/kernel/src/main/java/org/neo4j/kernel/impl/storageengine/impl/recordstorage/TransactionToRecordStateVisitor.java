@@ -180,7 +180,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     public void visitAddedIndex( IndexDescriptor index )
     {
         IndexProvider.Descriptor providerDescriptor = indexProviderMap.getProviderFor( index ).getProviderDescriptor();
-        IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor, index.identifier() );
+        IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index.schema(), providerDescriptor, index.identifier(), "", index.type() );
         recordState.createSchemaRule( rule );
     }
 

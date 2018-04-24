@@ -202,7 +202,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyIterator() );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyIterator(), indexProviderMap );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), indexProviderMap );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
@@ -230,13 +230,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             storeLayer = new StorageLayer(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
-                    storeStatementSupplier, schemaCache );
+                    storeStatementSupplier, schemaCache, indexProviderMap );
 
             explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
-            commandReaderFactory = new RecordStorageCommandReaderFactory( indexProviderMap );
+            commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );

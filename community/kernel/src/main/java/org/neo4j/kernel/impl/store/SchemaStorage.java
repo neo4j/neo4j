@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class SchemaStorage implements SchemaRuleAccess
@@ -62,7 +60,7 @@ public class SchemaStorage implements SchemaRuleAccess
      */
     public IndexRule indexGetForSchema( final IndexDescriptor descriptor )
     {
-        Iterator<IndexRule> rules = loadAllSchemaRules( descriptor::isSame, IndexRule.class, false );
+        Iterator<IndexRule> rules = loadAllSchemaRules( ( supplier ) -> descriptor.isSame( supplier, indexProviderMap ), IndexRule.class, false );
 
         IndexRule foundRule = null;
 

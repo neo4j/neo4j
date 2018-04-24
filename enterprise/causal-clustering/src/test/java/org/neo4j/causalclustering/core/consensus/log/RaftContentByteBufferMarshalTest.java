@@ -95,7 +95,7 @@ public class RaftContentByteBufferMarshalTest
                 (ReplicatedTransaction) serializer.unmarshal( new NetworkReadableClosableChannelNetty4( buf ) );
 
         TransactionRepresentation txOut = ReplicatedTransactionFactory.extractTransactionRepresentation( out,
-                extraHeader, new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
+                extraHeader, new RecordStorageCommandReaderFactory() );
 
         // then
         assertEquals( in, out );

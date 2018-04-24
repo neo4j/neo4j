@@ -190,7 +190,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProxy indexProxy;
 
                 long indexId = indexRule.getId();
-                IndexDescriptor descriptor = indexRule.getIndexDescriptor();
+                IndexDescriptor descriptor = indexRule.getIndexDescriptor( providerMap );
                 IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
                 IndexProvider provider = providerMap.get( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexId, descriptor );
@@ -740,7 +740,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     indexMap.putIndexProxy( ruleId, index );
                     continue;
                 }
-                final IndexDescriptor descriptor = rule.getIndexDescriptor();
+                final IndexDescriptor descriptor = rule.getIndexDescriptor( providerMap );
                 Descriptor providerDescriptor = rule.getProviderDescriptor();
                 boolean flipToTentative = rule.canSupportUniqueConstraint();
                 if ( state == State.RUNNING )

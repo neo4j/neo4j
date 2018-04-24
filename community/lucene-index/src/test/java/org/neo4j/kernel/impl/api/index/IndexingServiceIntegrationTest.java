@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
@@ -130,7 +131,7 @@ public class IndexingServiceIntegrationTest
         int propertyId = propertyKeyTokenHolder.getIdByName( PROPERTY_NAME );
 
         IndexRule rule = IndexRule.indexRule(
-                schemaStore.nextId(), SchemaIndexDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor );
+                schemaStore.nextId(), SchemaDescriptorFactory.forLabel( foodId, propertyId ), indexDescriptor, IndexDescriptor.Type.GENERAL);
         indexingService.createIndexes( rule );
         IndexProxy indexProxy = indexingService.getIndexProxy( rule.getId() );
 

@@ -32,7 +32,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
@@ -932,8 +934,8 @@ public class NeoStoreTransactionApplierTest
             IndexProvider.Descriptor providerDescriptor )
     {
         //TODO: Consider testing composite indexes
-        return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( label, propertyKeyId ),
-                providerDescriptor );
+        return IndexRule.indexRule( id, SchemaDescriptorFactory.forLabel( label, propertyKeyId ),
+                providerDescriptor,  IndexDescriptor.Type.GENERAL);
     }
 
     private static IndexRule constraintIndexRule( long id, int label, int propertyKeyId,

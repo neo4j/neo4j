@@ -65,7 +65,7 @@ public class NodeCommandTest
     public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NeoStores neoStores;

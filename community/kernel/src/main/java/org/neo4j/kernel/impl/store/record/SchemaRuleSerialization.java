@@ -37,12 +37,12 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.*;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
 
 public class SchemaRuleSerialization
@@ -79,11 +79,10 @@ public class SchemaRuleSerialization
      * Parse a SchemaRule from the provided buffer.
      * @param id the id to give the returned Schema Rule
      * @param source the buffer to parse from
-     * @param indexProviderMap
      * @return a SchemaRule
      * @throws MalformedSchemaRuleException if bytes in the buffer do encode a valid SchemaRule
      */
-    public static SchemaRule deserialize( long id, ByteBuffer source, IndexProviderMap indexProviderMap ) throws MalformedSchemaRuleException
+    public static SchemaRule deserialize( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         int legacyLabelOrRelTypeId = source.getInt();
         byte schemaRuleType = source.get();
@@ -91,7 +90,7 @@ public class SchemaRuleSerialization
         switch ( schemaRuleType )
         {
         case INDEX_RULE:
-            return readIndexRule( id, source, indexProviderMap );
+            return readIndexRule( id, source );
         case CONSTRAINT_RULE:
             return readConstraintRule( id, source );
         default:
@@ -187,15 +186,14 @@ public class SchemaRuleSerialization
         length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
 
         length += 1; // index type
-        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
-        if ( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
+        if ( indexRule.type() == Type.UNIQUE )
         {
             length += 8; // owning constraint id
         }
 
-        length += indexDescriptor.schema().computeWith( schemaSizeComputer );
+        length += indexRule.schema().computeWith( schemaSizeComputer );
         length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
-        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.metadata() );
+        length += UTF8.computeRequiredByteBufferSize( indexRule.getMetadata() );
         return length;
     }
 
@@ -225,7 +223,7 @@ public class SchemaRuleSerialization
 
     // READ INDEX
 
-    private static IndexRule readIndexRule( long id, ByteBuffer source, IndexProviderMap indexProviderMap ) throws MalformedSchemaRuleException
+    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         byte indexRuleType = source.get();
@@ -236,7 +234,7 @@ public class SchemaRuleSerialization
         {
             LabelSchemaDescriptor schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, indexProviderMap.get( indexProvider ).indexDescriptorFor( schema, name, "" ), indexProvider, name );
+            return IndexRule.indexRule( id, schema, indexProvider, name, "", Type.GENERAL );
         }
         case UNIQUE_INDEX:
         {
@@ -251,8 +249,7 @@ public class SchemaRuleSerialization
             MultiTokenSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
             String metadata = readMetaData( source );
-            IndexDescriptor indexDescriptor = indexProviderMap.get( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
-            return IndexRule.indexRule( id, indexDescriptor, indexProvider, name );
+            return IndexRule.indexRule( id, nonSchema, indexProvider, name, metadata, Type.NON_SCHEMA );
         }
 
         default:
@@ -416,8 +413,8 @@ public class SchemaRuleSerialization
         UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
         UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
 
-        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
-        switch ( indexDescriptor.type() )
+        Type type = indexRule.type();
+        switch ( type )
         {
         case GENERAL:
             target.put( GENERAL_INDEX );
@@ -436,13 +433,12 @@ public class SchemaRuleSerialization
             break;
 
         default:
-            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    indexDescriptor.type() ) );
+            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.", type ) );
         }
 
-        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        indexRule.schema().processWith( new SchemaDescriptorSerializer( target ) );
         UTF8.putEncodedStringInto( indexRule.getName(), target );
-        UTF8.putEncodedStringInto( indexDescriptor.metadata(), target );
+        UTF8.putEncodedStringInto( indexRule.getMetadata(), target );
         return target.array();
     }
 

@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -172,7 +173,8 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         while ( indexRules.hasNext() )
         {
             IndexRule rule = indexRules.next();
-            indexes.put( rule.getId(), rule.getIndexDescriptor() );
+            //TODO do something here, mayhaps, to avoid using the empty provider map
+            indexes.put( rule.getId(), rule.getIndexDescriptor( IndexProviderMap.EMPTY ) );
         }
         return indexes;
     }

@@ -41,7 +41,7 @@ public class PhysicalLogNeoCommandReaderV2Test
         // Number 12 will do just fine.
 
         // GIVEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY );
+        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         AddRelationshipCommand command = new AddRelationshipCommand();
         byte indexNameId = (byte)12;
@@ -77,7 +77,7 @@ public class PhysicalLogNeoCommandReaderV2Test
          */
 
         // GIVEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY );
+        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         // Here we take advantage of the fact that all index commands have the same header written out
         AddRelationshipCommand command = new AddRelationshipCommand();

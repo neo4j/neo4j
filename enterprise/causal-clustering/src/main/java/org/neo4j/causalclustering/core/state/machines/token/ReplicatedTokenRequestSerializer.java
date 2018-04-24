@@ -121,9 +121,8 @@ public class ReplicatedTokenRequestSerializer
         ByteBuf txBuffer = Unpooled.wrappedBuffer( commandBytes );
         NetworkReadableClosableChannelNetty4 channel = new NetworkReadableClosableChannelNetty4( txBuffer );
 
-        //TODO empty index provider map, investigate if we need a rel one.
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
 
         LogEntryCommand entryRead;
         List<StorageCommand> commands = new LinkedList<>();

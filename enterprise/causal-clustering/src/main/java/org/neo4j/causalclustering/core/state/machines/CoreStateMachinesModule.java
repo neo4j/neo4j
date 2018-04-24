@@ -149,18 +149,16 @@ public class CoreStateMachinesModule
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         TokenRegistry<RelationshipTypeToken> relationshipTypeTokenRegistry = new TokenRegistry<>( "RelationshipType" );
-        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder =
-                new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator,
-                        this.idGeneratorFactory, dependencies );
+        ReplicatedRelationshipTypeTokenHolder relationshipTypeTokenHolder = dependencies.satisfyDependency(
+                new ReplicatedRelationshipTypeTokenHolder( relationshipTypeTokenRegistry, replicator, this.idGeneratorFactory, dependencies ) );
 
         TokenRegistry<Token> propertyKeyTokenRegistry = new TokenRegistry<>( "PropertyKey" );
-        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder =
-                new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory,
-                        dependencies );
+        ReplicatedPropertyKeyTokenHolder propertyKeyTokenHolder = dependencies.satisfyDependency(
+                new ReplicatedPropertyKeyTokenHolder( propertyKeyTokenRegistry, replicator, this.idGeneratorFactory, dependencies ) );
 
         TokenRegistry<Token> labelTokenRegistry = new TokenRegistry<>( "Label" );
         ReplicatedLabelTokenHolder labelTokenHolder =
-                new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
+                dependencies.satisfyDependency( new ReplicatedLabelTokenHolder( labelTokenRegistry, replicator, this.idGeneratorFactory, dependencies ) );
 
         ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine =
                 new ReplicatedLockTokenStateMachine( lockTokenState );

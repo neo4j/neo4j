@@ -88,7 +88,7 @@ public class IndexDefineCommandTest
         command.serialize( channel );
 
         // THEN
-        CommandReader commandReader = new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ).byVersion(
+        CommandReader commandReader = new RecordStorageCommandReaderFactory().byVersion(
                 LogEntryVersion.CURRENT.byteCode() );
         IndexDefineCommand read = (IndexDefineCommand) commandReader.read( channel );
         assertEquals( command.getIndexNameIdRange(), read.getIndexNameIdRange() );

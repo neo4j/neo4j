@@ -40,6 +40,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -105,7 +107,6 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
 import static org.neo4j.kernel.impl.store.record.IndexRule.indexRule;
@@ -212,7 +213,7 @@ public class TransactionRecordStateTest
         // -- an index
         long ruleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        SchemaRule rule = indexRule( ruleId, forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR );
+        SchemaRule rule = indexRule( ruleId, SchemaDescriptorFactory.forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
         recordState.createSchemaRule( rule );
         apply( neoStores, recordState );
 

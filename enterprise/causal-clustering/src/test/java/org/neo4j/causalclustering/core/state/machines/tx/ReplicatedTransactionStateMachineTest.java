@@ -72,7 +72,7 @@ public class ReplicatedTransactionStateMachineTest
 
         ReplicatedTransactionStateMachine stateMachine = new ReplicatedTransactionStateMachine(
                 commandIndexTracker, lockState( lockSessionId ), batchSize, logProvider, () -> cursorTracer,
-                EmptyVersionContextSupplier.EMPTY, new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
+                EmptyVersionContextSupplier.EMPTY, new RecordStorageCommandReaderFactory() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         // when
@@ -101,7 +101,7 @@ public class ReplicatedTransactionStateMachineTest
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ),
                         batchSize, logProvider,
                         PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY,
-                        new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
+                        new RecordStorageCommandReaderFactory() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();
@@ -145,7 +145,7 @@ public class ReplicatedTransactionStateMachineTest
         ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( currentLockSessionId ), batchSize, logProvider,
                         PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY,
-                        new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ) );
+                        new RecordStorageCommandReaderFactory() );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         AtomicBoolean called = new AtomicBoolean();

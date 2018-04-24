@@ -50,7 +50,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
 
     public VersionAwareLogEntryReader()
     {
-        this( new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
+        this( new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
     }
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory,

@@ -39,7 +39,7 @@ import static org.junit.Assert.assertFalse;
 public class LogEntryParserDispatcherV6Test
 {
     private final LogEntryVersion version = LogEntryVersion.CURRENT;
-    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY );
+    private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 

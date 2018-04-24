@@ -43,9 +43,8 @@ public class TxPullResponseDecoder extends ByteToMessageDecoder
     {
         NetworkReadableClosableChannelNetty4 logChannel = new NetworkReadableClosableChannelNetty4( msg );
         StoreId storeId = StoreIdMarshal.INSTANCE.unmarshal( logChannel );
-        //TODO empty index provider map, investigate if we need a rel one.
         LogEntryReader<NetworkReadableClosableChannelNetty4> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalTransactionCursor<NetworkReadableClosableChannelNetty4> transactionCursor =
                 new PhysicalTransactionCursor<>( logChannel, reader );
 

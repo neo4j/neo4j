@@ -55,25 +55,25 @@ public class PhysicalLogCommandReadersTest
     @Test
     public void readRelGroupWithHugeTypeInV2_2_4() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY ) );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4() );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV2_2_10() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10( IndexProviderMap.EMPTY ) );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10() );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV3_0() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY ) );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0() );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV3_0_2() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY ) );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2() );
     }
 
     private static void assertDoesNotKnowAboutRelGroups( CommandReader reader )

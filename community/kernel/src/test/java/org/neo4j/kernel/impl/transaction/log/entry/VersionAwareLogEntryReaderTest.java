@@ -163,7 +163,7 @@ public class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), invalidLogEntryHandler );
+                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();
@@ -203,7 +203,7 @@ public class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), invalidLogEntryHandler );
+                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();

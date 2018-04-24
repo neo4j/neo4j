@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
@@ -111,10 +112,11 @@ public class StorageLayer implements StoreReadLayer
     private final PropertyLoader propertyLoader;
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
+    private final IndexProviderMap indexProviderMap;
 
-    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
-            IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
+    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTokenHolder,
+            SchemaStorage schemaStorage, NeoStores neoStores, IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier,
+            SchemaCache schemaCache, IndexProviderMap indexProviderMap )
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
@@ -128,6 +130,7 @@ public class StorageLayer implements StoreReadLayer
         this.counts = neoStores.getCounts();
         this.propertyLoader = new PropertyLoader( neoStores );
         this.schemaCache = schemaCache;
+        this.indexProviderMap = indexProviderMap;
     }
 
     @Override
@@ -604,7 +607,7 @@ public class StorageLayer implements StoreReadLayer
     {
         for ( IndexRule rule : schemaCache.indexRules() )
         {
-            if ( rule.getIndexDescriptor().equals( index ) )
+            if ( rule.getIndexDescriptor( indexProviderMap ).equals( index ) )
             {
                 return rule;
             }
@@ -702,8 +705,8 @@ public class StorageLayer implements StoreReadLayer
                         " with startNode:" + startNode + " and endNode:" + endNode );
     }
 
-    private static Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
+    private Iterator<IndexDescriptor> toIndexDescriptors( Iterable<IndexRule> rules )
     {
-        return Iterators.map( IndexRule::getIndexDescriptor, rules.iterator() );
+        return Iterators.map( indexRule -> indexRule.getIndexDescriptor( indexProviderMap ), rules.iterator() );
     }
 }

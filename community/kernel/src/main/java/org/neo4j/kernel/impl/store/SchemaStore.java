@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -82,6 +81,6 @@ public class SchemaStore extends AbstractDynamicStore
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        return SchemaRuleSerialization.deserialize( id, scratchBuffer, indexProviderMap );
+        return SchemaRuleSerialization.deserialize( id, scratchBuffer );
     }
 }

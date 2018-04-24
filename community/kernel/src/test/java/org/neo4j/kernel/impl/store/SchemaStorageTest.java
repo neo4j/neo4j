@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
@@ -148,7 +149,7 @@ public class SchemaStorageTest
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -174,7 +175,7 @@ public class SchemaStorageTest
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.getIndexDescriptor().type() );
+        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
     }
 
     @Test
@@ -338,7 +339,7 @@ public class SchemaStorageTest
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
-        assertEquals( type, rule.getIndexDescriptor().type() );
+        assertEquals( type, rule.type() );
     }
 
     private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
@@ -361,9 +362,7 @@ public class SchemaStorageTest
     private IndexRule makeIndexRule( long ruleId, String label, String propertyKey )
     {
         return IndexRule.indexRule(
-                ruleId,
-                SchemaIndexDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ),
-                PROVIDER_DESCRIPTOR );
+                ruleId, SchemaDescriptorFactory.forLabel( labelId( label ), propId( propertyKey ) ), PROVIDER_DESCRIPTOR, IndexDescriptor.Type.GENERAL );
     }
 
     private IndexRule makeIndexRuleForConstraint( long ruleId, String label, String propertyKey,

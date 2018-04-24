@@ -153,7 +153,7 @@ public class TransactionLogCatchUpWriterTest
     private void verifyCheckpointInLog( LogFiles logFiles )
     {
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
+                new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         final LogTailScanner logTailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
