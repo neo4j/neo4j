@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateSelecto
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-object pickBestPlanUsingHintsAndCost extends ((LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector) {
+trait CandidateSelectorFactory extends ((LogicalPlanningContext, Solveds, Cardinalities) => CandidateSelector)
+
+object pickBestPlanUsingHintsAndCost extends CandidateSelectorFactory {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")
   private val baseOrdering = implicitly[Ordering[(Int, Double, Int)]]
 
