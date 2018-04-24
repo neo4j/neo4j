@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupClientBuilder;
-import org.neo4j.causalclustering.catchup.CatchupProtocolServerInstaller;
 import org.neo4j.causalclustering.catchup.CatchupServerBuilder;
 import org.neo4j.causalclustering.catchup.CatchupServerHandler;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
@@ -72,16 +71,8 @@ import org.neo4j.causalclustering.helper.Suspendable;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.net.InstalledProtocolHandler;
 import org.neo4j.causalclustering.net.Server;
-import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.Protocol.ApplicationProtocols;
-import org.neo4j.causalclustering.protocol.Protocol.ModifierProtocols;
-import org.neo4j.causalclustering.protocol.ProtocolInstaller;
-import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
-import org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ApplicationSupportedProtocols;
-import org.neo4j.causalclustering.protocol.handshake.HandshakeServerInitializer;
-import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -95,7 +86,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
 import static org.neo4j.time.Clocks.systemClock;
@@ -189,23 +179,11 @@ public class CoreServerModule
         ApplicationSupportedProtocols supportedCatchupProtocols = supportedProtocolCreator.createSupportedCatchupProtocol();
         Collection<ModifierSupportedProtocols> supportedModifierProtocols = supportedProtocolCreator.createSupportedModifierProtocols();
 
-        ApplicationProtocolRepository catchupProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), supportedCatchupProtocols );
-        ModifierProtocolRepository modifierProtocolRepository = new ModifierProtocolRepository( ModifierProtocols.values(), supportedModifierProtocols );
-
         CatchupServerHandler catchupServerHandler = new RegularCatchupServerHandler( platformModule.monitors,
                 logProvider, localDatabase::storeId, platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 fileSystem, platformModule.storeCopyCheckPointMutex, snapshotService,
                 new CheckpointerSupplier( platformModule.dependencies ) );
-
-        CatchupProtocolServerInstaller.Factory catchupProtocolServerInstaller = new CatchupProtocolServerInstaller.Factory( serverPipelineBuilderFactory,
-                logProvider, catchupServerHandler );
-
-        ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository = new ProtocolInstallerRepository<>(
-                singletonList( catchupProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
-
-        HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( catchupProtocolRepository, modifierProtocolRepository,
-                protocolInstallerRepository, serverPipelineBuilderFactory, logProvider );
 
         catchupServer = new CatchupServerBuilder( catchupServerHandler )
                 .serverHandler( installedProtocolsHandler )
