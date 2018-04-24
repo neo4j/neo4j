@@ -50,12 +50,13 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
         Supplier<Kernel> kernel = lazySingleton( spi::kernel );
         Neo4jTransactionalContext.Creator contextCreator =
-                ( tx, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(),
+                ( tx, initialStatement, executingQuery ) -> new Neo4jTransactionalContext( queryService.get(),
 
                         guard,
                     txBridge,
                     locker,
                     tx,
+                    initialStatement,
                     executingQuery,
                     kernel.get()
                 );
@@ -73,13 +74,14 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         Kernel kernel = resolver.resolveDependency( Kernel.class );
         Guard guard = resolver.resolveDependency( Guard.class );
         Neo4jTransactionalContext.Creator contextCreator =
-                ( tx, executingQuery ) ->
+                ( tx, initialStatement, executingQuery ) ->
                         new Neo4jTransactionalContext(
                                 queryService,
                                 guard,
                                 txBridge,
                                 locker,
                                 tx,
+                                initialStatement,
                                 executingQuery,
                                 kernel
                         );
@@ -110,6 +112,6 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         ExecutingQuery executingQuery = initialStatement.queryRegistration().startQueryExecution(
                 connectionWithUserName, queryText, queryParameters
         );
-        return contextCreator.create( tx, executingQuery );
+        return contextCreator.create( tx, initialStatement, executingQuery );
     }
 }

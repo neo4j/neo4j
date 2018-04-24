@@ -70,6 +70,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
             ThreadToStatementContextBridge txBridge,
             PropertyContainerLocker locker,
             InternalTransaction initialTransaction,
+            Statement intitialStatement,
             ExecutingQuery executingQuery,
             Kernel kernel
     )
@@ -84,7 +85,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         this.transaction = initialTransaction;
         this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
-        this.statement = kernelTransaction.acquireStatement();
+        this.statement = intitialStatement;
         this.kernel = kernel;
     }
 
@@ -245,7 +246,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public TransactionalContext beginInNewThread()
     {
         InternalTransaction newTx = graph.beginTransaction( transactionType, securityContext );
-        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, newTx, executingQuery, kernel );
+        return new Neo4jTransactionalContext( graph, guard, txBridge, locker, newTx, txBridge.get(),
+                executingQuery, kernel );
     }
 
     private void checkNotTerminated()
@@ -333,16 +335,18 @@ public class Neo4jTransactionalContext implements TransactionalContext
             Guard guard,
             ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
             InternalTransaction initialTransaction,
+            Statement initialStatement,
             ExecutingQuery executingQuery )
     {
         return new Neo4jTransactionalContext( graph, guard, txBridge, locker, initialTransaction,
-                executingQuery, kernel );
+                initialStatement, executingQuery, kernel );
     }
 
     interface Creator
     {
         Neo4jTransactionalContext create(
                 InternalTransaction tx,
+                Statement initialStatement,
                 ExecutingQuery executingQuery
         );
     }
