@@ -117,13 +117,8 @@ public abstract class AbstractStep<T> implements Step<T>
             return false;
         }
 
-        if ( endOfUpstream && queuedBatches.get() == 0 )
-        {   // Upstream has run out and we've processed everything upstream sent us
-            return false;
-        }
-
         // We're still working
-        return true;
+        return !endOfUpstream || queuedBatches.get() != 0;
     }
 
     protected boolean isPanic()

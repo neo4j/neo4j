@@ -344,11 +344,8 @@ public class Cd extends TransactionProvidingApp
             }
 
             Relationship relationship = current.asRelationship();
-            if ( relationship.getStartNode().getId() == newId.getId() ||
-                relationship.getEndNode().getId() == newId.getId() )
-            {
-                return true;
-            }
+            return relationship.getStartNode().getId() == newId.getId() ||
+                    relationship.getEndNode().getId() == newId.getId();
         }
         return false;
     }

@@ -89,10 +89,7 @@ public abstract class AbstractHopScotchCollection<VALUE> implements PrimitiveCol
         if ( this.getClass() == other.getClass() )
         {
             AbstractHopScotchCollection that = (AbstractHopScotchCollection) other;
-            if ( this.size() == that.size() )
-            {
-                return true;
-            }
+            return this.size() == that.size();
         }
         return false;
     }

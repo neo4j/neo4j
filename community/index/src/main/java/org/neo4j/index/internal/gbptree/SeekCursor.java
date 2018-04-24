@@ -683,12 +683,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             return false;
         }
 
-        if ( goToSuccessor() )
-        {
-            return false;
-        }
-
-        return true;
+        return !goToSuccessor();
     }
 
     /**
@@ -1118,13 +1113,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             lastFollowedPointerGeneration = 0;
             expectedCurrentNodeGeneration = currentNodeGeneration;
         }
-        else if ( currentNodeGeneration != expectedCurrentNodeGeneration )
-        {
-            // We've read more than once from this node and between reads the node generation has changed.
-            // This means the node has been reused.
-            return false;
-        }
-        return true;
+        // We've read more than once from this node and between reads the node generation has changed.
+        // This means the node has been reused.
+        return !( currentNodeGeneration == expectedCurrentNodeGeneration );
     }
 
     /**

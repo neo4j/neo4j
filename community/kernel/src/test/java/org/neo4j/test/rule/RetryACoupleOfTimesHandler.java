@@ -77,10 +77,7 @@ public class RetryACoupleOfTimesHandler implements RetryHandler
         if ( t instanceof Status.HasStatus )
         {
             Status status = ((Status.HasStatus) t).status();
-            if ( status.code().classification() == Status.Classification.TransientError )
-            {
-                return true;
-            }
+            return status.code().classification() == Status.Classification.TransientError;
         }
         return false;
     };

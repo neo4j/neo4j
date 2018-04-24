@@ -209,10 +209,7 @@ public class DefaultBoltConnection implements BoltConnection
             while ( loop );
 
             // assert only if we'll stay alive
-            if ( !willClose() )
-            {
-                assert !machine.hasOpenStatement();
-            }
+            assert willClose() || !machine.hasOpenStatement();
         }
         catch ( BoltConnectionAuthFatality ex )
         {

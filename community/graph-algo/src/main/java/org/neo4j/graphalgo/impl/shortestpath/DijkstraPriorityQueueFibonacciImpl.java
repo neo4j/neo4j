@@ -80,16 +80,9 @@ public class DijkstraPriorityQueueFibonacciImpl<CostType> implements
             final HeapObject other = (HeapObject) obj;
             if ( node == null )
             {
-                if ( other.node != null )
-                {
-                    return false;
-                }
+                return other.node == null;
             }
-            else if ( !node.equals( other.node ) )
-            {
-                return false;
-            }
-            return true;
+            return node.equals(other.node);
         }
 
         @Override

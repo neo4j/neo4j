@@ -358,10 +358,7 @@ public abstract class IndexQuery
                 if ( to != null )
                 {
                     int compare = Values.COMPARATOR.compare( value, to );
-                    if ( compare > 0 || !toInclusive && compare == 0 )
-                    {
-                        return false;
-                    }
+                    return compare <= 0 && (toInclusive || compare != 0);
                 }
                 return true;
             }

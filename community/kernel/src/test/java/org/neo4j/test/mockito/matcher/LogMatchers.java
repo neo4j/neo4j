@@ -110,14 +110,7 @@ public class LogMatchers
                         }
                     }
 
-                    if ( actualEntries.hasNext() )
-                    {
-                        // Too many actual entries!
-                        return false;
-                    }
-
-                    // All good in the hood :)
-                    return true;
+                    return !actualEntries.hasNext();
                 }
             }
 
