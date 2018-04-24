@@ -544,7 +544,7 @@ public abstract class SwitchToSlave
                 moveAfterCopy.move( moves, fromDirectory, toDirectory );
             };
             storeCopyClient.copyStore(
-                    requester, cancellationRequest, moveAfterCopyWithLogging );
+                    requester, cancellationRequest, moveAfterCopyWithLogging, false );
 
             startServicesAgain();
             userLog.info( "Finished copying store from master" );
