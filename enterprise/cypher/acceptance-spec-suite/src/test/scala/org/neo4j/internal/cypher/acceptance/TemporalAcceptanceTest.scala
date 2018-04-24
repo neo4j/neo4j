@@ -687,6 +687,15 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     }
   }
 
+  test("should not allow invalid time fields") {
+    for (arg <- Seq("2018-04-01T12:45:45+45", "2018-04-01T12:45:65+05", "2018-04-01T12:65:45+05", "2018-04-01T65:45:45+05", "2018-04-65T12:45:45+05", "2018-65-01T12:45:45+05")) {
+      val query = s"RETURN datetime('$arg') as value"
+      withClue(s"Executing $query") {
+        failWithError(failConf2, query, Seq("Invalid value for", "not in valid range"))
+      }
+    }
+  }
+
   // Accessors
 
   test("should not provide undefined accessors for date") {
