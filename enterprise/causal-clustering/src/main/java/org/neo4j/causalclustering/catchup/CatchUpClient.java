@@ -143,8 +143,7 @@ public class CatchUpClient extends LifecycleAdapter
                 throw new ConnectException( "Channel is not connected" );
             }
             nettyChannel.write( request.messageType() );
-            nettyChannel.closeFuture().addListener( (ChannelFutureListener) future -> handler.onClose() );
-            nettyChannel.writeAndFlush( request ).addListener( ChannelFutureListener.CLOSE_ON_FAILURE );
+            nettyChannel.writeAndFlush( request );
         }
 
         Optional<Long> millisSinceLastResponse()
@@ -163,6 +162,8 @@ public class CatchUpClient extends LifecycleAdapter
         {
             ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
             nettyChannel = channelFuture.sync().channel();
+            nettyChannel.closeFuture().addListener( (ChannelFutureListener) future -> handler.onClose() );
+
         }
 
         @Override

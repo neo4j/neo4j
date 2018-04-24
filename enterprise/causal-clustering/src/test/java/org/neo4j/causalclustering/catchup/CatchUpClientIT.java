@@ -23,9 +23,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +32,9 @@ import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.time.Clock;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.net.Server;
@@ -45,6 +46,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class CatchUpClientIT
@@ -72,9 +74,10 @@ public class CatchUpClientIT
         String hostname = "localhost";
         int port = PortAuthority.allocatePort();
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( hostname, port );
+        AtomicBoolean wasClosedByClient = new AtomicBoolean( false );
 
         Server emptyServer = catchupServer( listenSocketAddress );
-        CatchUpClient closingClient = closingChannelCatchupClient();
+        CatchUpClient closingClient = closingChannelCatchupClient( wasClosedByClient );
 
         lifeSupport.add( emptyServer );
         lifeSupport.add( closingClient );
@@ -85,6 +88,7 @@ public class CatchUpClientIT
 
         // then
         assertClosedChannelException( hostname, port, closingClient );
+        assertTrue( wasClosedByClient.get() );
     }
 
     @Test
@@ -94,9 +98,10 @@ public class CatchUpClientIT
         String hostname = "localhost";
         int port = PortAuthority.allocatePort();
         ListenSocketAddress listenSocketAddress = new ListenSocketAddress( hostname, port );
+        AtomicBoolean wasClosedByServer = new AtomicBoolean( false );
 
-        Server closingChannelServer = closingChannelCatchupServer( listenSocketAddress );
-        CatchUpClient emptyClient = catchupClient();
+        Server closingChannelServer = closingChannelCatchupServer( listenSocketAddress, wasClosedByServer );
+        CatchUpClient emptyClient = emptyClient();
 
         lifeSupport.add( closingChannelServer );
         lifeSupport.add( emptyClient );
@@ -107,6 +112,19 @@ public class CatchUpClientIT
 
         // then
         assertClosedChannelException( hostname, port, emptyClient );
+        assertTrue( wasClosedByServer.get() );
+    }
+
+    private CatchUpClient emptyClient()
+    {
+        return catchupClient( new MessageToByteEncoder<GetStoreIdRequest>()
+        {
+            @Override
+            protected void encode( ChannelHandlerContext channelHandlerContext, GetStoreIdRequest getStoreIdRequest, ByteBuf byteBuf )
+            {
+                byteBuf.writeByte( (byte) 1 );
+            }
+        } );
     }
 
     private void assertClosedChannelException( String hostname, int port, CatchUpClient closingClient )
@@ -130,25 +148,27 @@ public class CatchUpClientIT
         return new CatchUpResponseAdaptor<>();
     }
 
-    private CatchUpClient closingChannelCatchupClient()
+    private CatchUpClient closingChannelCatchupClient( AtomicBoolean wasClosedByClient )
     {
         return catchupClient( new MessageToByteEncoder()
         {
             @Override
             protected void encode( ChannelHandlerContext ctx, Object msg, ByteBuf out )
             {
+                wasClosedByClient.set( true );
                 ctx.channel().close();
             }
         } );
     }
 
-    private Server closingChannelCatchupServer( ListenSocketAddress listenSocketAddress )
+    private Server closingChannelCatchupServer( ListenSocketAddress listenSocketAddress, AtomicBoolean wasClosedByServer )
     {
-        return catchupServer( listenSocketAddress, new SimpleChannelInboundHandler<NioSocketChannel>()
+        return catchupServer( listenSocketAddress, new ByteToMessageDecoder()
         {
             @Override
-            protected void channelRead0( ChannelHandlerContext ctx, NioSocketChannel msg )
+            protected void decode( ChannelHandlerContext ctx, ByteBuf byteBuf, List<Object> list )
             {
+                wasClosedByServer.set( true );
                 ctx.channel().close();
             }
         } );
