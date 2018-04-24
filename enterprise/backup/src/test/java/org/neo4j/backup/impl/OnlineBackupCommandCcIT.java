@@ -34,11 +34,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -268,6 +273,38 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database should rotate tx files after each transaction
+        clusterRule = clusterRule.withSharedCoreParam( GraphDatabaseSettings.keep_logical_logs, "1 txs" );
+
+        // and database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        File backupLocation = new File( backupDir, backupName );
+        String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions with multiple tx files
+        IntStream.range( 0, 500_000 ).forEach( number -> createSomeData( cluster ) );
+        assertTrue( cluster.awaitLeader().getLogFileNames().size() > 1 );
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // then there is only 1 transaction file containing 1 transaction
+        Collection<File> txLogFiles = transactionFiles( backupLocation );
+        File expectedTxLogFile = new File( backupLocation, "neostore.transaction.db.1" ); // not 0
+        assertEquals( 1, txLogFiles.size() );
+        assertEquals( expectedTxLogFile, txLogFiles.stream().findFirst().get() );
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -317,6 +354,14 @@ public class OnlineBackupCommandCcIT
                 second.close();
             }
         };
+    }
+
+    private Collection<File> transactionFiles( File dbLocation ) throws IOException
+    {
+        Collection<File> txFiles = new ArrayList<>();
+        DirectoryStream<Path> dirStream = Files.newDirectoryStream( dbLocation.toPath(), "neostore.transaction.db.*" );
+        dirStream.forEach( path -> txFiles.add( path.toFile() ) );
+        return txFiles;
     }
 
     private void repeatedlyPopulateDatabase( Cluster cluster, AtomicBoolean continueFlagReference )
@@ -376,12 +421,17 @@ public class OnlineBackupCommandCcIT
         return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
 
+    private int runBackupToolFromSameJvm( String... args ) throws Exception
+    {
+        return runBackupToolFromSameJvmToGetExitCode( testDirectory.absolutePath(), testDirectory.absolutePath().getName(), args );
+    }
+
     /**
      * This unused method is used for debugging, so don't remove
      */
-    private int runBackupToolFromSameJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( testDirectory.absolutePath(), testDirectory.absolutePath().getName() )
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
                ? 0 : 1;
     }
 }

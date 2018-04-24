@@ -175,7 +175,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * Prune up to the version pointed from the latest check point,
              * since it might be an earlier version than the current log version.
              */
-            logPruning.pruneLogs( logPosition.getLogVersion() );
+            logPruning.pruneLogs( logPosition.getLogVersion() ); // TODO OnBaHaIT test says checkpoint 0 smth, investigate here
             lastCheckPointedTx = lastClosedTransactionId;
             return lastClosedTransactionId;
         }
