@@ -67,7 +67,7 @@ public class BackupHaIT
                 backupPath, "basic" ) ) );
 
         // Add some new data
-        DbRepresentation afterChange = createSomeData( cluster.getMaster() );
+        DbRepresentation afterChange = createSomeData( cluster.getMaster() ).get();
         cluster.sync();
 
         // Verify that backed up database can be started and compare representation
@@ -90,7 +90,7 @@ public class BackupHaIT
                     backupPath, "anyinstance" ) ) );
 
             // Add some new data
-            DbRepresentation afterChange = createSomeData( cluster.getMaster() );
+            DbRepresentation afterChange = createSomeData( cluster.getMaster() ).get();
             cluster.sync();
 
             // Verify that old data is back

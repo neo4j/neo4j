@@ -157,7 +157,7 @@ class BackupService
             storeCopier.copyStore(
                     storeCopyRequester,
                     CancellationRequest.NEVER_CANCELLED,
-                    MoveAfterCopy.moveReplaceExisting() );
+                    MoveAfterCopy.moveReplaceExisting(), false );
 
             bumpDebugDotLogFileVersion( targetDirectory, timestamp );
             boolean consistent = false;
@@ -216,8 +216,7 @@ class BackupService
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
-        // In case someone deleted the logical log from a full backup
-        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), "1 txs" );
         return tempDbConfig;
     }
 
