@@ -100,7 +100,7 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
             return id;
         }
 
-        id = tokenCreator.getOrCreate( name );
+        id = tokenCreator.createToken( name );
         try
         {
             tokenCache.put( tokenFactory.newToken( name, id ) );

@@ -23,5 +23,13 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 public interface TokenCreator
 {
-    int getOrCreate( String name ) throws KernelException;
+    /**
+     * Create a token by the given name and return the newly allocated id for this token.
+     *
+     * It is assumed that the token name is not already being used.
+     * @param name The token name to allocate.
+     * @return The id of the allocated token name.
+     * @throws KernelException If the inner transaction used to allocate the token encountered a problem.
+     */
+    int createToken( String name ) throws KernelException;
 }

@@ -28,7 +28,7 @@ public class ReadOnlyTokenCreator
         implements TokenCreator
 {
     @Override
-    public int getOrCreate( String name ) throws ReadOnlyDbException
+    public int createToken( String name ) throws ReadOnlyDbException
     {
         throw new ReadOnlyDbException();
     }

@@ -49,7 +49,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     }
 
     @Override
-    public synchronized int getOrCreate( String name ) throws KernelException
+    public synchronized int createToken( String name ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
         try ( Session session = kernel.beginSession( LoginContext.AUTH_DISABLED ) )
