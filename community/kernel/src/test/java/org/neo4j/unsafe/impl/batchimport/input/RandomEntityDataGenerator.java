@@ -122,21 +122,16 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<Randoms>
     private static Object randomProperty( Entry entry, Randoms random )
     {
         String type = entry.extractor().name();
-        if ( type.equals( "String" ) )
+        switch ( type )
         {
-            return random.string( 5, 20, Randoms.CSA_LETTERS_AND_DIGITS );
-        }
-        else if ( type.equals( "long" ) )
-        {
-            return random.nextInt( Integer.MAX_VALUE );
-        }
-        else if ( type.equals( "int" ) )
-        {
-            return random.nextInt( 20 );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "" + entry );
+            case "String":
+                return random.string(5, 20, Randoms.CSA_LETTERS_AND_DIGITS);
+            case "long":
+                return random.nextInt( Integer.MAX_VALUE );
+            case "int":
+                return random.nextInt(20);
+            default:
+                throw new IllegalArgumentException( "" + entry );
         }
     }
 
