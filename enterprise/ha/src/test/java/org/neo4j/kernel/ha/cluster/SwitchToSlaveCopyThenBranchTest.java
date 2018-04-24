@@ -87,6 +87,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -123,7 +124,8 @@ public class SwitchToSlaveCopyThenBranchTest
         doThrow( new RuntimeException() ).doNothing().when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ),
-                any( MoveAfterCopy.class ) );
+                any( MoveAfterCopy.class ),
+                anyBoolean() );
 
         SwitchToSlaveCopyThenBranch switchToSlave = newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
 
@@ -235,7 +237,8 @@ public class SwitchToSlaveCopyThenBranchTest
         } ).when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ),
-                any( MoveAfterCopy.class ) );
+                any( MoveAfterCopy.class ),
+                anyBoolean() );
 
         PageCache pageCacheMock = mock( PageCache.class );
         PagedFile pagedFileMock = mock( PagedFile.class );
@@ -263,7 +266,7 @@ public class SwitchToSlaveCopyThenBranchTest
         InOrder inOrder = Mockito.inOrder( storeCopyClient, branchPolicy );
 
         inOrder.verify( storeCopyClient ).copyStore( any( StoreCopyClient.StoreCopyRequester.class ),
-                any( CancellationRequest.class ), any( MoveAfterCopy.class ) ) ;
+                any( CancellationRequest.class ), any( MoveAfterCopy.class ), anyBoolean() ) ;
         inOrder.verify( branchPolicy ).handle( new File(""), pageCacheMock, NullLogService.getInstance() );
     }
 

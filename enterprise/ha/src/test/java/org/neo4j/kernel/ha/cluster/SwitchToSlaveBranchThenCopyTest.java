@@ -83,6 +83,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -119,7 +120,8 @@ public class SwitchToSlaveBranchThenCopyTest
         doThrow( new RuntimeException() ).doNothing().when( storeCopyClient ).copyStore(
                 any( StoreCopyClient.StoreCopyRequester.class ),
                 any( CancellationRequest.class ),
-                any( MoveAfterCopy.class ) );
+                any( MoveAfterCopy.class ),
+                anyBoolean() );
 
         SwitchToSlaveBranchThenCopy switchToSlave = newSwitchToSlaveSpy( pageCacheMock, storeCopyClient );
 
