@@ -43,6 +43,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -64,12 +65,12 @@ public class ClusteringModule
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
+        Monitors monitors = platformModule.monitors;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
-        topologyService = discoveryServiceFactory
-                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
-                        userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
+        topologyService = discoveryServiceFactory.coreTopologyService( config, myself, platformModule.jobScheduler,
+                logProvider, userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ), monitors );
 
         life.add( topologyService );
 
@@ -89,7 +90,7 @@ public class ClusteringModule
         int minimumCoreHosts = config.get( CausalClusteringSettings.minimum_core_cluster_size_at_formation );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, dbNameStorage, topologyService, Clocks.systemClock(), () -> sleep( 100 ), 300_000,
-                coreBootstrapper, dbName, minimumCoreHosts, logProvider );
+                coreBootstrapper, dbName, minimumCoreHosts, platformModule.monitors );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

@@ -112,6 +112,7 @@ public class CoreServerModule
     private final Config config;
     private final JobScheduler jobScheduler;
     private final LogProvider logProvider;
+    private final LogProvider userLogProvider;
     private final PlatformModule platformModule;
 
     public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
@@ -137,7 +138,7 @@ public class CoreServerModule
         final LifeSupport life = platformModule.life;
 
         this.logProvider = logging.getInternalLogProvider();
-        LogProvider userLogProvider = logging.getUserLogProvider();
+        this.userLogProvider = logging.getUserLogProvider();
 
         CompositeSuspendable servicesToStopOnStoreCopy = new CompositeSuspendable();
 
@@ -170,8 +171,9 @@ public class CoreServerModule
         CatchUpClient catchUpClient = createCatchupClient( clientPipelineBuilderFactory );
         CoreStateDownloader downloader = createCoreStateDownloader( servicesToStopOnStoreCopy, catchUpClient );
 
-        this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader, commandApplicationProcess, logProvider,
-                new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout(), databaseHealthSupplier );
+        this.downloadService = new CoreStateDownloaderService( platformModule.jobScheduler, downloader,
+                commandApplicationProcess, logProvider, new ExponentialBackoffStrategy( 1, 30, SECONDS ).newTimeout(),
+                databaseHealthSupplier, platformModule.monitors );
 
         this.membershipWaiterLifecycle = createMembershipWaiterLifecycle();
 
@@ -225,7 +227,7 @@ public class CoreServerModule
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
 
         CatchUpClient catchUpClient = new CatchupClientBuilder( supportedCatchupProtocols, supportedModifierProtocols, clientPipelineBuilderFactory,
-                handshakeTimeout, logProvider, systemClock() ).build();
+                handshakeTimeout, logProvider, userLogProvider, systemClock() ).build();
         platformModule.life.add( catchUpClient );
         return catchUpClient;
     }
@@ -254,7 +256,7 @@ public class CoreServerModule
     {
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
         MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler,
-                dbHealthSupplier, electionTimeout * 4, logProvider );
+                dbHealthSupplier, electionTimeout * 4, logProvider, platformModule.monitors );
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
         return new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
     }

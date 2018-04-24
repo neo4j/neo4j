@@ -24,14 +24,15 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 public interface DiscoveryServiceFactory
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself,
-            JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
+            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy,
+            Monitors monitors );
 
     TopologyService topologyService( Config config, LogProvider logProvider,
             JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,

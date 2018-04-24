@@ -49,6 +49,7 @@ import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
+import org.neo4j.causalclustering.diagnostics.CoreMonitor;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.TopologyService;
@@ -59,11 +60,6 @@ import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
-import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.logging.BetterMessageLogger;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.logging.NullMessageLogger;
@@ -83,6 +79,11 @@ import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ModifierProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ModifierSupportedProtocols;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingPluginLoader;
+import org.neo4j.causalclustering.routing.load_balancing.LoadBalancingProcessor;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForMultiDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.GetServersProcedureForSingleDC;
+import org.neo4j.causalclustering.routing.load_balancing.procedure.LegacyGetServersProcedure;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForAllDatabasesProcedure;
 import org.neo4j.causalclustering.routing.multi_cluster.procedure.GetRoutersForDatabaseProcedure;
 import org.neo4j.causalclustering.upstream.NoOpUpstreamDatabaseStrategiesLoader;
@@ -209,6 +210,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         final File storeDir = platformModule.storeDir;
         final LifeSupport life = platformModule.life;
 
+        CoreMonitor.register( logging.getInternalLogProvider(), logging.getUserLogProvider(), platformModule.monitors );
+
         final File dataDir = config.get( GraphDatabaseSettings.data_directory );
         final ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, storeDir, false );
         try
@@ -275,7 +278,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository,
-                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider );
+                protocolInstallerRepository, clientPipelineBuilderFactory, handshakeTimeout, logProvider, platformModule.logging.getUserLogProvider() );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;

@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -37,11 +38,11 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
     @Override
     public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy )
+            TopologyServiceRetryStrategy topologyServiceRetryStrategy, Monitors monitors )
     {
         configureHazelcast( config, logProvider );
         return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
-                topologyServiceRetryStrategy );
+                topologyServiceRetryStrategy, monitors );
     }
 
     @Override
@@ -54,9 +55,9 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
                 logProvider, config, myself );
     }
 
-    public static void configureHazelcast( Config config, LogProvider logProvider )
+    protected static void configureHazelcast( Config config, LogProvider logProvider )
     {
-        // tell hazelcast to not phone home
+        GroupProperty.WAIT_SECONDS_BEFORE_JOIN.setSystemProperty( "1" );
         GroupProperty.PHONE_HOME_ENABLED.setSystemProperty( "false" );
         GroupProperty.SOCKET_BIND_ANY.setSystemProperty( "false" );
         GroupProperty.SHUTDOWNHOOK_ENABLED.setSystemProperty( "false" );

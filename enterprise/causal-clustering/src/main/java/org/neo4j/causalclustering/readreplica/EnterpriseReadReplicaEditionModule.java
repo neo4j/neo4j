@@ -249,7 +249,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                     ModifierProtocolInstaller.allClientInstallers );
             Duration handshakeTimeout = config.get( CausalClusteringSettings.handshake_timeout );
             return new HandshakeClientInitializer( applicationProtocolRepository, modifierProtocolRepository, protocolInstallerRepository,
-                    clientPipelineBuilderFactory, handshakeTimeout, logProvider );
+                    clientPipelineBuilderFactory, handshakeTimeout, logProvider, userLogProvider );
         };
 
         CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), channelInitializer ) );
