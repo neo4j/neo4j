@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CancellationRequest;
 import org.neo4j.helpers.collection.Visitor;
@@ -112,7 +113,7 @@ public class StoreCopyClient
         this.fileMoveProvider = fileMoveProvider;
     }
 
-    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy ) throws Exception
+    public void copyStore( StoreCopyRequester requester, CancellationRequest cancellationRequest, MoveAfterCopy moveAfterCopy, boolean keepTxLogs ) throws Exception
     {
         // Create a temp directory (or clean if present)
         File tempStore = new File( storeDir, StoreUtil.TEMP_COPY_DIRECTORY_NAME );
@@ -144,7 +145,7 @@ public class StoreCopyClient
             checkCancellation( cancellationRequest, tempStore );
 
             // Run recovery, so that the transactions we just wrote into the active log will be applied.
-            recoverDatabase( tempStore );
+            recoverDatabase( tempStore, keepTxLogs );
 
             // All is well, move the streamed files to the real store directory.
             // Start with the files written through the page cache. Should only be record store files.
@@ -254,7 +255,7 @@ public class StoreCopyClient
         }
     }
 
-    private GraphDatabaseService newTempDatabase( File tempStore )
+    private GraphDatabaseService newTempDatabase( File tempStore, boolean keepTxLogs )
     {
         ExternallyManagedPageCache.GraphDatabaseFactoryWithPageCacheFactory factory =
                 ExternallyManagedPageCache.graphDatabaseFactoryWithPageCache( pageCache );
@@ -265,7 +266,7 @@ public class StoreCopyClient
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.pagecache_warmup_enabled, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
-                .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.keep_logical_logs, keepTxLogs ? Settings.TRUE : Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
                 .newGraphDatabase();
