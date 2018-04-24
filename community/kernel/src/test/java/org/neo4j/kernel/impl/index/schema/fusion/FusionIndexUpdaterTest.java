@@ -327,20 +327,22 @@ public class FusionIndexUpdaterTest
     @Test
     public void closeMustThrowIfAnyThrow() throws Exception
     {
-        for ( IndexUpdater updater : aliveUpdaters )
+        for ( int i = 0; i < aliveUpdaters.length; i++ )
         {
+            IndexUpdater updater = aliveUpdaters[i];
             FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( updater, fusionIndexUpdater );
-            resetMocks();
+            initiateMocks();
         }
     }
 
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( IndexUpdater updater : aliveUpdaters )
+        for ( int i = 0; i < aliveUpdaters.length; i++ )
         {
+            IndexUpdater updater = aliveUpdaters[i];
             FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( updater, fusionIndexUpdater, without( aliveUpdaters, updater ) );
-            resetMocks();
+            initiateMocks();
         }
     }
 

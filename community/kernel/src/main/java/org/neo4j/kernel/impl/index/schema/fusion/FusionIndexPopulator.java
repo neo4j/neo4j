@@ -53,13 +53,13 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public void create() throws IOException
     {
         dropAction.drop( indexId, archiveFailedIndex );
-        forAll( IndexPopulator::create, instanceSelector );
+        instanceSelector.forAll( IndexPopulator::create );
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexPopulator::drop, instanceSelector );
+        instanceSelector.forAll( IndexPopulator::drop );
         dropAction.drop( indexId );
     }
 
@@ -105,13 +105,13 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( populator -> populator.close( populationCompletedSuccessfully ), instanceSelector );
+        instanceSelector.close( populator -> populator.close( populationCompletedSuccessfully ) );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( populator -> populator.markAsFailed( failure ), instanceSelector );
+        instanceSelector.forAll( populator -> populator.markAsFailed( failure ) );
     }
 
     @Override
@@ -123,6 +123,6 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( instancesAs( new IndexSample[INSTANCE_COUNT], IndexPopulator::sampleResult ) );
+        return combineSamples( instanceSelector.instancesAs( new IndexSample[INSTANCE_COUNT], IndexPopulator::sampleResult ) );
     }
 }

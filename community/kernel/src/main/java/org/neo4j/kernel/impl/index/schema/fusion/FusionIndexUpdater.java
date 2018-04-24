@@ -72,7 +72,7 @@ class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexU
     {
         try
         {
-            forInstantiated( IndexUpdater::close, instanceSelector );
+            instanceSelector.close( IndexUpdater::close );
         }
         catch ( IOException | IndexEntryConflictException | RuntimeException e )
         {

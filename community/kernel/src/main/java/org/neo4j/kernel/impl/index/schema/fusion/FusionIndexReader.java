@@ -52,7 +52,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public void close()
     {
-        forInstantiated( Resource::close, instanceSelector );
+        instanceSelector.close( Resource::close );
     }
 
     @Override
@@ -64,15 +64,16 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     @Override
     public IndexSampler createSampler()
     {
-        return new FusionIndexSampler( instancesAs( new IndexSampler[INSTANCE_COUNT], IndexReader::createSampler ) );
+        return new FusionIndexSampler( instanceSelector.instancesAs( new IndexSampler[INSTANCE_COUNT], IndexReader::createSampler ) );
     }
 
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         int slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
-        return slot != UNKNOWN ? instanceSelector.select( slot ).query( predicates )
-                               : concat( instancesAs( new PrimitiveLongResourceIterator[INSTANCE_COUNT], reader -> reader.query( predicates ) ) );
+        return slot != UNKNOWN
+               ? instanceSelector.select( slot ).query( predicates )
+               : concat( instanceSelector.instancesAs( new PrimitiveLongResourceIterator[INSTANCE_COUNT], reader -> reader.query( predicates ) ) );
     }
 
     @Override
@@ -95,7 +96,7 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                     descriptor.schema().getPropertyIds() );
             cursor.initialize( descriptor, multiProgressor, predicates );
-            forAll( reader -> reader.query( multiProgressor, indexOrder, predicates ), instanceSelector );
+            instanceSelector.forAll( reader -> reader.query( multiProgressor, indexOrder, predicates ) );
         }
     }
 

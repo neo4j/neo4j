@@ -22,15 +22,10 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.Arrays;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 
 /**
  * Acting as a simplifier for the multiplexing that is going in inside a fusion index. A fusion index consists of multiple parts,
@@ -50,67 +45,6 @@ public abstract class FusionIndexBase<T>
     {
         this.slotSelector = slotSelector;
         this.instanceSelector = instanceSelector;
-    }
-
-    /**
-     * Short-hand for calling the static {@link #instancesAs(InstanceSelector, Object[], ThrowingFunction)}, here with the local {@link #instanceSelector}.
-     */
-    <R,E extends Exception> R[] instancesAs( R[] target, ThrowingFunction<T,R,E> converter ) throws E
-    {
-        return instancesAs( instanceSelector, target, converter );
-    }
-
-    /**
-     * Convenience method typically for calling a method on each of the sub-parts of a fusion entity,
-     * one which creates another instance. All those instances are returned as an array, or actually put into an array
-     * created by the caller to avoid reflection to instantiate the array.
-     *
-     * @param instanceSelector {@link InstanceSelector} to use as the source.
-     * @param target array to put the created instances into, also returned.
-     * @param converter {@link ThrowingFunction} which converts from the source to target instance.
-     * @param <S> type of source instance.
-     * @param <T> type of target instance.
-     * @param <E> type of exception that converter may throw.
-     * @return the target array which was passed in, now populated.
-     * @throws E exception from converter.
-     */
-    static <S,T,E extends Exception> T[] instancesAs( InstanceSelector<S> instanceSelector, T[] target, ThrowingFunction<S,T,E> converter ) throws E
-    {
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            target[slot] = converter.apply( instanceSelector.select( slot ) );
-        }
-        return target;
-    }
-
-    static <T, E extends Exception> void forInstantiated( ThrowingConsumer<T,E> consumer, InstanceSelector<T> instanceSelector ) throws E
-    {
-        E exception = null;
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            T instance = instanceSelector.getIfInstantiated( slot );
-            if ( instance != null )
-            {
-                exception = consume( exception, consumer, instance );
-            }
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
-    }
-
-    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, InstanceSelector<T> instanceSelector ) throws E
-    {
-        E exception = null;
-        for ( int slot = 0; slot < INSTANCE_COUNT; slot++ )
-        {
-            exception = consume( exception, consumer, instanceSelector.select( slot ) );
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
     }
 
     /**

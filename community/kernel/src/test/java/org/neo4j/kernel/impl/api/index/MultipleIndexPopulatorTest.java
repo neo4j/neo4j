@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
@@ -53,9 +54,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -386,7 +387,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        doThrow( getPopulatorException() ).when( indexPopulator2 )
+        doThrow( new UncheckedIOException( getPopulatorException() ) ).when( indexPopulator2 )
                 .newPopulatingUpdater( any( PropertyAccessor.class ) );
 
         IndexUpdater multipleIndexUpdater =
@@ -490,7 +491,7 @@ public class MultipleIndexPopulatorTest
 
     private void checkPopulatorFailure( IndexPopulator populator ) throws IOException
     {
-        verify( populator ).markAsFailed( startsWith( "java.io.IOException: something went wrong" ) );
+        verify( populator ).markAsFailed( contains( "something went wrong" ) );
         verify( populator ).close( false );
     }
 

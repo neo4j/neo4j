@@ -301,9 +301,10 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustThrowIfCloseAnyThrow() throws Exception
     {
-        for ( IndexPopulator alivePopulator : alivePopulators )
+        for ( int i = 0; i < alivePopulators.length; i++ )
         {
             // given
+            IndexPopulator alivePopulator = alivePopulators[i];
             IOException failure = new IOException( "fail" );
             doThrow( failure ).when( alivePopulator ).close( anyBoolean() );
 
@@ -313,8 +314,7 @@ public class FusionIndexPopulatorTest
                 return null;
             } );
 
-            // reset throw for testing of next populator
-            doAnswer( invocation -> null ).when( alivePopulator ).close( anyBoolean() );
+            initiateMocks();
         }
     }
 
@@ -344,10 +344,11 @@ public class FusionIndexPopulatorTest
     @Test
     public void closeMustCloseOthersIfAnyThrow() throws Exception
     {
-        for ( IndexPopulator throwingPopulator : alivePopulators )
+        for ( int i = 0; i < alivePopulators.length; i++ )
         {
+            IndexPopulator throwingPopulator = alivePopulators[i];
             verifyOtherCloseOnThrow( throwingPopulator );
-            resetMocks();
+            initiateMocks();
         }
     }
 

@@ -251,20 +251,22 @@ public class FusionIndexAccessorTest
     @Test
     public void closeMustThrowIfOneThrow() throws Exception
     {
-        for ( IndexAccessor accessor : aliveAccessors )
+        for ( int i = 0; i < aliveAccessors.length; i++ )
         {
+            IndexAccessor accessor = aliveAccessors[i];
             verifyFusionCloseThrowOnSingleCloseThrow( accessor, fusionIndexAccessor );
-            resetMocks();
+            initiateMocks();
         }
     }
 
     @Test
     public void closeMustCloseOthersIfOneThrow() throws Exception
     {
-        for ( IndexAccessor accessor : aliveAccessors )
+        for ( int i = 0; i < aliveAccessors.length; i++ )
         {
+            IndexAccessor accessor = aliveAccessors[i];
             verifyOtherIsClosedOnSingleThrow( accessor, fusionIndexAccessor, without( aliveAccessors, accessor ) );
-            resetMocks();
+            initiateMocks();
         }
     }
 

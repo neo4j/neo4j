@@ -43,8 +43,6 @@ import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.instancesAs;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.INSTANCE_COUNT;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.SlotSelector.NUMBER;
@@ -102,7 +100,7 @@ public class FusionIndexProvider extends IndexProvider
     public IndexPopulator getPopulator( long indexId, SchemaIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         IndexPopulator[] populators =
-                instancesAs( providers, new IndexPopulator[INSTANCE_COUNT], provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) );
+                providers.instancesAs( new IndexPopulator[INSTANCE_COUNT], provider -> provider.getPopulator( indexId, descriptor, samplingConfig ) );
         return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), indexId, dropAction, archiveFailedIndex );
     }
 
@@ -111,7 +109,7 @@ public class FusionIndexProvider extends IndexProvider
             IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexAccessor[] accessors =
-                instancesAs( providers, new IndexAccessor[INSTANCE_COUNT], provider -> provider.getOnlineAccessor( indexId, descriptor, samplingConfig ) );
+                providers.instancesAs( new IndexAccessor[INSTANCE_COUNT], provider -> provider.getOnlineAccessor( indexId, descriptor, samplingConfig ) );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), indexId, descriptor, dropAction );
     }
 
@@ -119,7 +117,7 @@ public class FusionIndexProvider extends IndexProvider
     public String getPopulationFailure( long indexId, SchemaIndexDescriptor descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
-        forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ), providers );
+        providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, indexId, descriptor ) );
         String failure = builder.toString();
         if ( !failure.isEmpty() )
         {
@@ -146,7 +144,7 @@ public class FusionIndexProvider extends IndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, SchemaIndexDescriptor descriptor )
     {
-        InternalIndexState[] states = instancesAs( providers, new InternalIndexState[INSTANCE_COUNT], p -> p.getInitialState( indexId, descriptor ) );
+        InternalIndexState[] states = providers.instancesAs( new InternalIndexState[INSTANCE_COUNT], p -> p.getInitialState( indexId, descriptor ) );
         if ( Arrays.stream( states ).anyMatch( state -> state == FAILED ) )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
@@ -165,7 +163,7 @@ public class FusionIndexProvider extends IndexProvider
     public IndexCapability getCapability( SchemaIndexDescriptor schemaIndexDescriptor )
     {
         IndexCapability[] capabilities =
-                instancesAs( providers, new IndexCapability[INSTANCE_COUNT], provider -> provider.getCapability( schemaIndexDescriptor ) );
+                providers.instancesAs( new IndexCapability[INSTANCE_COUNT], provider -> provider.getCapability( schemaIndexDescriptor ) );
         return new UnionIndexCapability( capabilities )
         {
             @Override

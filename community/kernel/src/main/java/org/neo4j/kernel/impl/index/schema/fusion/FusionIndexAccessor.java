@@ -62,7 +62,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public void drop() throws IOException
     {
-        forAll( IndexAccessor::drop, instanceSelector );
+        instanceSelector.forAll( IndexAccessor::drop );
         dropAction.drop( indexId );
     }
 
@@ -77,19 +77,19 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public void force( IOLimiter ioLimiter ) throws IOException
     {
-        forAll( accessor -> accessor.force( ioLimiter ), instanceSelector );
+        instanceSelector.forAll( accessor -> accessor.force( ioLimiter ) );
     }
 
     @Override
     public void refresh() throws IOException
     {
-        forAll( IndexAccessor::refresh, instanceSelector );
+        instanceSelector.forAll( IndexAccessor::refresh );
     }
 
     @Override
     public void close() throws IOException
     {
-        forAll( IndexAccessor::close, instanceSelector );
+        instanceSelector.close( IndexAccessor::close );
     }
 
     @Override
@@ -103,7 +103,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long>[] entries = instancesAs( new BoundedIterable[INSTANCE_COUNT], IndexAccessor::newAllEntriesReader );
+        BoundedIterable<Long>[] entries = instanceSelector.instancesAs( new BoundedIterable[INSTANCE_COUNT], IndexAccessor::newAllEntriesReader );
         return new BoundedIterable<Long>()
         {
             @Override
@@ -149,7 +149,8 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     @Override
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
-        return concatResourceIterators( iterator( instancesAs( new ResourceIterator[INSTANCE_COUNT], accessor -> accessor.snapshotFiles() ) ) );
+        return concatResourceIterators(
+                iterator( instanceSelector.instancesAs( new ResourceIterator[INSTANCE_COUNT], accessor -> accessor.snapshotFiles() ) ) );
     }
 
     @Override
