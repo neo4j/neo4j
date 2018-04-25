@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.runtime.LongArraySet._
   * When you need to have a set of arrays of longs representing entities - look no further
   *
   * This set will keep all it's state in a single long[] array, marking unused slots
-  * using 0xF000000000000000L, that will never be used for node or relationship id's.
+  * using 0xF000000000000000L, a value that should never be used for node or relationship id's.
   *
   * @param capacity The initial capacity for the set. Must be a power of 2
-  * @param longsPerEntry All arrays in the set must be of the same length
+  * @param longsPerEntry All arrays in the set must be of this length
   */
 class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
@@ -45,8 +45,8 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     do {
       result = table.checkSlot(key, value)
       key = (key + 1) & table.tableMask
-    } while (result == -1)
-    result == 1
+    } while (result == CONTINUE_PROBING)
+    result == VALUE_FOUND
   }
 
   def add(value: Array[Long]): Unit = {
@@ -81,17 +81,20 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     val oldSize = table.capacity
     val oldTable = table
     table = new Table(oldSize * 2)
-    // Instead of using a lot of small arrays, we use this one for most everything
+
+    // Creating the key array outside of the copy loop allows us to reuse the same array for all elements
     val currentValue = new Array[Long](longsPerEntry)
 
     var i = 0
     while (i < oldSize) {
       val fromIdx = i * longsPerEntry
       if (oldTable.inner(fromIdx) != NOT_IN_USE) {
+        // Copy over the longs from the source to the key array
         System.arraycopy(oldTable.inner, fromIdx, currentValue, 0, longsPerEntry)
         var slotOffset = offsetFor(currentValue)
         var statusForSlot = table.checkSlot(slotOffset, currentValue)
 
+        // Linear probe until we find an unused slot. No need to check for size here - we are already inside of resize()
         while (statusForSlot != SLOT_EMPTY) {
           slotOffset = (slotOffset + 1) & table.tableMask
           statusForSlot = table.checkSlot(slotOffset, currentValue)
@@ -103,19 +106,18 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     }
   }
 
-  private def offsetFor(value: Array[Long]) = {
+  private def offsetFor(value: Array[Long]): Int =
     util.Arrays.hashCode(value) & table.tableMask
-  }
 
   private class Table(val capacity: Int) {
+    private var numberOfEntries: Int = 0
     private val resizeLimit = (capacity * 0.75).toInt
 
+
     val tableMask: Int = highestOneBit(this.capacity) - 1
-
     val inner: Array[Long] = new Array[Long](capacity * longsPerEntry)
-    java.util.Arrays.fill(inner, NOT_IN_USE)
 
-    private var numberOfEntries: Int = 0
+    java.util.Arrays.fill(inner, NOT_IN_USE)
 
     def timeToResize: Boolean = numberOfEntries >= resizeLimit
 
@@ -138,7 +140,6 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
     def addValueToSet(value: Array[Long], offset: Int): Unit = {
       val startOffset = offset * longsPerEntry
       System.arraycopy(value, 0, inner, startOffset, longsPerEntry)
-
       numberOfEntries += 1
     }
   }
@@ -146,8 +147,8 @@ class LongArraySet(capacity: Int = 32, longsPerEntry: Int) {
 
 object LongArraySet {
   // Constants
-  val NOT_IN_USE = 0xF000000000000000L
-  val SLOT_EMPTY = 0
-  val VALUE_FOUND = 1
-  val CONTINUE_PROBING = -1
+  val NOT_IN_USE: Long = 0xF000000000000000L
+  val SLOT_EMPTY: Int = 0
+  val VALUE_FOUND: Int = 1
+  val CONTINUE_PROBING: Int = -1
 }
