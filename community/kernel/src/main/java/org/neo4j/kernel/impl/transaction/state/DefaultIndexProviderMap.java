@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -81,7 +83,7 @@ public class DefaultIndexProviderMap implements IndexProviderMap
             return provider;
         }
 
-        throw notFound( providerDescriptor );
+        throw notFound( providerDescriptor.name() );
     }
 
     @Override
@@ -96,15 +98,22 @@ public class DefaultIndexProviderMap implements IndexProviderMap
         throw notFound( providerDescriptorName );
     }
 
-    private IllegalArgumentException notFound( Object key )
+    private IllegalArgumentException notFound( String name )
     {
-        return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
-                " whereas available providers in this session being " + indexProvidersByDescriptor + ", and default being " + defaultIndexProvider );
+        return new IllegalArgumentException( "Tried to get index provider with name " + name +
+                " whereas available providers in this session being " + Arrays.toString( indexProviderNames() ) + ", and default being " +
+                defaultIndexProvider.getProviderDescriptor().name() );
     }
 
     @Override
     public void accept( Consumer<IndexProvider> visitor )
     {
         indexProvidersByDescriptor.values().forEach( visitor );
+    }
+
+    private String[] indexProviderNames()
+    {
+        Set<String> providerNames = indexProvidersByName.keySet();
+        return providerNames.toArray( new String[providerNames.size()] );
     }
 }
