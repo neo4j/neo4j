@@ -186,6 +186,12 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<Duration> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout",
             DURATION, "60s" );
 
+    @Description( "Value of the HTTP Strict-Transport-Security (HSTS) response header. " +
+                  "This header tells browsers that a webpage should only be accessed using HTTPS instead of HTTP. It is attached to every HTTPS response. " +
+                  "Setting is not set by default so 'Strict-Transport-Security' header is not sent. " +
+                  "Value is expected to contain dirictives like 'max-age', 'includeSubDomains' and 'preload'." )
+    public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
+
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
                   "commands with semi-colon." )

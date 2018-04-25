@@ -367,7 +367,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @param value The initial value to give the setting.
      */
     @Nonnull
-    public static Config defaults( @Nonnull final Setting<?> setting, @Nonnull final String value )
+    public static Config defaults( @Nonnull final Setting<?> setting, final String value )
     {
         return builder().withSetting( setting, value ).build();
     }

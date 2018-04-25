@@ -25,8 +25,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
@@ -37,11 +37,15 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.InsecureTrustManager;
 
 import static com.sun.jersey.client.urlconnection.HTTPSProperties.PROPERTY_HTTPS_PROPERTIES;
+import static java.util.Collections.emptyList;
 import static org.eclipse.jetty.http.HttpHeader.SERVER;
+import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -50,16 +54,6 @@ import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPort
 public class HttpHeadersIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        server = serverOnRandomPorts().withHttpsEnabled()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
-
-        server.start();
-    }
 
     @After
     public void tearDown() throws Exception
@@ -73,32 +67,117 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotSendJettyVersionWithHttpResponseHeaders() throws Exception
     {
-        URI httpUri = server.baseUri();
-        testNoJettyVersionInResponseHeaders( httpUri );
+        startServer();
+        testNoJettyVersionInResponseHeaders( httpUri() );
     }
 
     @Test
     public void shouldNotSendJettyVersionWithHttpsResponseHeaders() throws Exception
     {
-        URI httpsUri = server.httpsUri().orElseThrow( IllegalStateException::new );
-        testNoJettyVersionInResponseHeaders( httpsUri );
+        startServer();
+        testNoJettyVersionInResponseHeaders( httpsUri() );
+    }
+
+    @Test
+    public void shouldNotSendHstsHeaderWithHttpResponse() throws Exception
+    {
+        startServer( "max-age=3600" );
+        assertNull( runRequestAndGetHstsHeaderValue( httpUri() ) );
+    }
+
+    @Test
+    public void shouldSendHstsHeaderWithHttpsResponse() throws Exception
+    {
+        String hstsValue = "max-age=31536000; includeSubDomains";
+        startServer( hstsValue );
+        assertEquals( hstsValue, runRequestAndGetHstsHeaderValue( httpsUri() ) );
+    }
+
+    @Test
+    public void shouldNotSendHstsHeaderWithHttpsResponseWhenNotConfigured() throws Exception
+    {
+        startServer();
+        assertNull( runRequestAndGetHstsHeaderValue( httpsUri() ) );
+    }
+
+    private void startServer() throws Exception
+    {
+        startServer( null );
+    }
+
+    private void startServer( String hstsValue ) throws Exception
+    {
+        server = buildServer( hstsValue );
+        server.start();
+    }
+
+    private CommunityNeoServer buildServer( String hstsValue ) throws Exception
+    {
+        CommunityServerBuilder builder = serverOnRandomPorts()
+                .withHttpsEnabled()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() );
+
+        if ( hstsValue != null )
+        {
+            builder.withProperty( ServerSettings.http_strict_transport_security.name(), hstsValue );
+        }
+
+        return builder.build();
+    }
+
+    private URI httpUri()
+    {
+        return server.baseUri();
+    }
+
+    private URI httpsUri()
+    {
+        return server.httpsUri().orElseThrow( IllegalStateException::new );
     }
 
     private static void testNoJettyVersionInResponseHeaders( URI baseUri ) throws Exception
+    {
+        MultivaluedMap<String,String> headers = runRequestAndGetHeaders( baseUri );
+
+        assertNull( headers.get( SERVER.asString() ) ); // no 'Server' header
+
+        for ( List<String> values : headers.values() )
+        {
+            assertFalse( values.stream().anyMatch( value -> value.toLowerCase().contains( "jetty" ) ) ); // no 'jetty' in other header values
+        }
+    }
+
+    private static String runRequestAndGetHstsHeaderValue( URI baseUri ) throws Exception
+    {
+        List<String> values = runRequestAndGetHeaderValues( baseUri, STRICT_TRANSPORT_SECURITY );
+        if ( values.isEmpty() )
+        {
+            return null;
+        }
+        else if ( values.size() == 1 )
+        {
+            return values.get( 0 );
+        }
+        else
+        {
+            throw new IllegalStateException( "Unexpected number of " + STRICT_TRANSPORT_SECURITY.asString() + " header values: " + values );
+        }
+    }
+
+    private static List<String> runRequestAndGetHeaderValues( URI baseUri, HttpHeader header ) throws Exception
+    {
+        return runRequestAndGetHeaders( baseUri ).getOrDefault( header.asString(), emptyList() );
+    }
+
+    private static MultivaluedMap<String,String> runRequestAndGetHeaders( URI baseUri ) throws Exception
     {
         URI uri = baseUri.resolve( "db/data/transaction/commit" );
         ClientRequest request = createClientRequest( uri );
 
         ClientResponse response = createClient().handle( request );
-
         assertEquals( 200, response.getStatus() );
 
-        MultivaluedMap<String,String> headers = response.getHeaders();
-        assertNull( headers.get( SERVER.name() ) ); // no 'Server' header
-        for ( List<String> values : headers.values() )
-        {
-            assertFalse( values.stream().anyMatch( value -> value.toLowerCase().contains( "jetty" ) ) ); // no 'jetty' in other header values
-        }
+        return response.getHeaders();
     }
 
     private static ClientRequest createClientRequest( URI uri )
