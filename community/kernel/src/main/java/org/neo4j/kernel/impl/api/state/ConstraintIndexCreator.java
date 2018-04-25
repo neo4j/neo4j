@@ -42,12 +42,14 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -91,9 +93,11 @@ public class ConstraintIndexCreator
      * <li>Leave this method, knowing that the uniqueness constraint rule will be added to tx state
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
+     *
+     * Btw providerDescriptor is allowed to be null, where default configured will be used.
      */
     public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction,
-            SchemaDescriptor descriptor ) throws TransactionFailureException, CreateConstraintFailureException,
+            SchemaDescriptor descriptor, IndexProvider.Descriptor providerDescriptor ) throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
@@ -102,7 +106,7 @@ public class ConstraintIndexCreator
         SchemaRead schemaRead = transaction.schemaRead();
         try
         {
-            index = getOrCreateUniquenessConstraintIndex( schemaRead, transaction.tokenRead(), descriptor );
+            index = getOrCreateUniquenessConstraintIndex( schemaRead, transaction.tokenRead(), descriptor, providerDescriptor );
         }
         catch ( AlreadyConstrainedException e )
         {
@@ -242,7 +246,7 @@ public class ConstraintIndexCreator
     }
 
     private CapableIndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead,
-            TokenRead tokenRead, SchemaDescriptor schema )
+            TokenRead tokenRead, SchemaDescriptor schema, IndexProvider.Descriptor providerDescriptor )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
         CapableIndexReference descriptor = schemaRead.index( schema.keyId(), schema.getPropertyIds() );
@@ -265,21 +269,22 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        SchemaIndexDescriptor indexDescriptor = createConstraintIndex( schema );
+        SchemaIndexDescriptor indexDescriptor = createConstraintIndex( schema, providerDescriptor );
         IndexProxy indexProxy = indexingService.getIndexProxy( indexDescriptor.schema() );
         return new DefaultCapableIndexReference( indexDescriptor.type() == Type.UNIQUE, indexProxy.getIndexCapability(),
                 indexProxy.getProviderDescriptor(), indexDescriptor.schema().keyId(),
                 indexDescriptor.schema().getPropertyIds() );
     }
 
-    public SchemaIndexDescriptor createConstraintIndex( final SchemaDescriptor schema )
+    public SchemaIndexDescriptor createConstraintIndex( final SchemaDescriptor schema, IndexProvider.Descriptor providerDescriptor )
     {
         try ( Session session = kernelSupplier.get().beginSession( AUTH_DISABLED );
               Transaction transaction = session.beginTransaction( Transaction.Type.implicit );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
             SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.uniqueForSchema( schema );
-            ((KernelTransactionImplementation) transaction).txState().indexRuleDoAdd( index, null );
+            TransactionState transactionState = ((KernelTransactionImplementation) transaction).txState();
+            transactionState.indexRuleDoAdd( index, providerDescriptor );
             transaction.success();
             return index;
         }

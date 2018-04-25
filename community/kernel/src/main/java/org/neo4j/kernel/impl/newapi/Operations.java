@@ -82,7 +82,6 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.index.IndexProviderDescriptorByName;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference;
@@ -872,16 +871,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor );
 
         SchemaIndexDescriptor indexDescriptor = SchemaIndexDescriptorFactory.forSchema( descriptor );
-        IndexProvider.Descriptor providerDescriptor = null;
-        if ( providerName != null )
-        {
-            IndexProviderDescriptorByName candidates = new IndexProviderDescriptorByName( providerName );
-            indexProviderMap.accept( candidates );
-
-            // We have to have a one-to-one mapping to the specified provider name, otherwise we can't be sure which.
-            // Having this method fail if that's not the case is OK since that's a user error and way before commit.
-            providerDescriptor = candidates.single();
-        }
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
         ktx.txState().indexRuleDoAdd( indexDescriptor, providerDescriptor );
         return DefaultIndexReference.fromDescriptor( indexDescriptor );
     }
@@ -919,7 +909,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String providerName )
             throws SchemaKernelException
     {
         //Lock
@@ -934,12 +924,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.CONSTRAINT_CREATION, descriptor );
 
         // Create constraints
-        indexBackedConstraintCreate( constraint );
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
+        indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException
     {
         //Lock
         acquireExclusiveLabelLock( descriptor.getLabelId() );
@@ -960,7 +951,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
 
         //create constraint
-        indexBackedConstraintCreate( constraint );
+        IndexProvider.Descriptor providerDescriptor = providerName != null ? indexProviderMap.apply( providerName ).getProviderDescriptor() : null;
+        indexBackedConstraintCreate( constraint, providerDescriptor );
         return constraint;
     }
 
@@ -1189,7 +1181,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return SchemaDescriptorFactory.forLabel( index.label(), index.properties() );
     }
 
-    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint )
+    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, IndexProvider.Descriptor providerDescriptor )
             throws CreateConstraintFailureException
     {
         SchemaDescriptor descriptor = constraint.schema();
@@ -1214,7 +1206,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                         return;
                     }
                 }
-                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor );
+                long indexId = constraintIndexCreator.createUniquenessConstraintIndex( ktx, descriptor, providerDescriptor );
                 if ( !allStoreHolder.constraintExists( constraint ) )
                 {
                     // This looks weird, but since we release the label lock while awaiting population of the index

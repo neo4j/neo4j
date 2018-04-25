@@ -716,7 +716,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
   def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.IndexDescriptor] = try {
     IdempotentResult(
       DefaultIndexReference.toDescriptor(
-      tc.kernelTransaction.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId), null))
+      tc.kernelTransaction.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
     )
   } catch {
     case _: AlreadyIndexedException =>

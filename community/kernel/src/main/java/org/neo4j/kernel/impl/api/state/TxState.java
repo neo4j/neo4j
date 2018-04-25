@@ -810,6 +810,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     public void indexDoDrop( SchemaIndexDescriptor descriptor )
     {
         indexChangesDiffSets().remove( descriptor );
+        if ( specificIndexProviders != null )
+        {
+            specificIndexProviders.remove( descriptor );
+        }
         changed();
     }
 

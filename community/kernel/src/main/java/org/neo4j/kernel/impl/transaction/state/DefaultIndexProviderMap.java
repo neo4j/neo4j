@@ -28,11 +28,13 @@ import java.util.function.Consumer;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 
 public class DefaultIndexProviderMap implements IndexProviderMap
 {
     private final IndexProvider defaultIndexProvider;
     private final Map<IndexProvider.Descriptor,IndexProvider> indexProviders = new HashMap<>();
+    private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
 
     public DefaultIndexProviderMap( IndexProvider defaultIndexProvider )
     {
@@ -43,18 +45,25 @@ public class DefaultIndexProviderMap implements IndexProviderMap
                                     Iterable<IndexProvider> additionalIndexProviders )
     {
         this.defaultIndexProvider = defaultIndexProvider;
-        indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
+        put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
         for ( IndexProvider provider : additionalIndexProviders )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
             Objects.requireNonNull( providerDescriptor );
-            IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            IndexProvider existing = put( providerDescriptor, provider );
             if ( existing != null )
             {
                 throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
                         providerDescriptor + ". First loaded " + existing + " then " + provider );
             }
         }
+    }
+
+    private IndexProvider put( Descriptor providerDescriptor, IndexProvider provider )
+    {
+        IndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+        indexProvidersByName.put( providerDescriptor.name(), provider );
+        return existing;
     }
 
     @Override
@@ -64,17 +73,33 @@ public class DefaultIndexProviderMap implements IndexProviderMap
     }
 
     @Override
-    public IndexProvider apply( IndexProvider.Descriptor descriptor )
+    public IndexProvider apply( IndexProvider.Descriptor providerDescriptor )
     {
-        IndexProvider provider = indexProviders.get( descriptor );
+        IndexProvider provider = indexProviders.get( providerDescriptor );
         if ( provider != null )
         {
             return provider;
         }
 
-        throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
-                descriptor + " whereas available providers in this session being " + indexProviders +
-                ", and default being " + defaultIndexProvider );
+        throw notFound( providerDescriptor );
+    }
+
+    @Override
+    public IndexProvider apply( String providerDescriptorName ) throws IndexProviderNotFoundException
+    {
+        IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
+        if ( provider != null )
+        {
+            return provider;
+        }
+
+        throw notFound( providerDescriptorName );
+    }
+
+    private IllegalArgumentException notFound( Object key )
+    {
+        return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
+                " whereas available providers in this session being " + indexProviders + ", and default being " + defaultIndexProvider );
     }
 
     @Override
