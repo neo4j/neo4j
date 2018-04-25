@@ -20,13 +20,19 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.List;
+import java.util.function.IntPredicate;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.TokenFactory;
+
+import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
+import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
 /**
  * Keeps a cache of tokens using {@link InMemoryTokenCache}.
@@ -82,12 +88,13 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
         }
         catch ( Throwable e )
         {
-            throw new TransactionFailureException( "Could not create token", e );
+            throw new TransactionFailureException( "Could not create token.", e );
         }
     }
 
     /**
      * Create and put new token in cache.
+     *
      * @param name token name
      * @return newly created token id
      * @throws KernelException
@@ -110,6 +117,79 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
             throw new IllegalStateException( "Newly created token should be unique.", e );
         }
         return id;
+    }
+
+    @Override
+    public void getOrCreateIds( String[] names, int[] ids )
+    {
+        if ( names.length != ids.length )
+        {
+            throw new IllegalArgumentException( "Name and id arrays must have the same length." );
+        }
+        // Assume all tokens exist and try to resolve them. Break out on the first missing token.
+        boolean hasUnresolvedTokens = resolveIds( names, ids, ALWAYS_TRUE_INT );
+
+        if ( hasUnresolvedTokens )
+        {
+            createMissingTokens( names, ids );
+        }
+    }
+
+    private boolean resolveIds( String[] names, int[] ids, IntPredicate unresolvedIndexCheck )
+    {
+        boolean foundUnresolvable = false;
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            Integer id = tokenCache.getId( names[i] );
+            if ( id != null )
+            {
+                ids[i] = id;
+            }
+            else
+            {
+                foundUnresolvable = true;
+                if ( unresolvedIndexCheck.test( i ) )
+                {
+                    // If the check returns `true`, it's a signal that we should stop early.
+                    break;
+                }
+            }
+        }
+        return foundUnresolvable;
+    }
+
+    private synchronized void createMissingTokens( String[] names, int[] ids )
+    {
+        // We redo the resolving under the lock, to make sure that these ids are really missing, and won't be
+        // created concurrently with us.
+        PrimitiveIntSet unresolvedIndexes = Primitive.intSet();
+        resolveIds( names, ids, i -> !unresolvedIndexes.add( i ) );
+        if ( !unresolvedIndexes.isEmpty() )
+        {
+            // We still have unresolved ids to create.
+            createUnresolvedTokens( unresolvedIndexes, names, ids );
+            unresolvedIndexes.visitKeys( i ->
+            {
+                tokenCache.put( tokenFactory.newToken( names[i], ids[i] ) );
+                return false;
+            } );
+        }
+    }
+
+    private void createUnresolvedTokens( PrimitiveIntSet unresolvedIndexes, String[] names, int[] ids )
+    {
+        try
+        {
+            tokenCreator.createTokens( names, ids, unresolvedIndexes );
+        }
+        catch ( ReadOnlyDbException e )
+        {
+            throw new TransactionFailureException( e.getMessage(), e );
+        }
+        catch ( Throwable e )
+        {
+            throw new TransactionFailureException( "Could not create tokens.", e );
+        }
     }
 
     @Override
@@ -138,6 +218,12 @@ public abstract class DelegatingTokenHolder<TOKEN extends Token> extends Lifecyc
             return NO_ID;
         }
         return id;
+    }
+
+    @Override
+    public boolean getIdsByNames( String[] names, int[] ids )
+    {
+        return resolveIds( names, ids, ALWAYS_FALSE_INT );
     }
 
     @Override
