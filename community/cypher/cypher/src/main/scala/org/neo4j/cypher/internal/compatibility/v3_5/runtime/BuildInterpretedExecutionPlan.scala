@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime
 
-import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprint, PlanFingerprintReference, ReusabilityInfo}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.Profiler
@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases._
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{InternalNotificationLogger, Phase}
-import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -117,7 +116,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
       executionPlanFunc(queryContext, planType, params)
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = MaybeReusable(fingerprint)
+    override def reusability: ReusabilityInfo = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = InterpretedRuntimeName
 

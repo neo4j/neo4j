@@ -70,7 +70,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
 
   override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 
-  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): ReusabilityInfo = FineToReuse // TODO: Should this really always be reused?
+  override def reusability: ReusabilityInfo = FineToReuse // TODO: Should this really always be reused?
 
   override def plannerUsed: PlannerName = ProcedurePlannerName
 

@@ -142,8 +142,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): ReusabilityInfo =
-      MaybeReusable(fingerprint)
+    override def reusability: ReusabilityInfo = MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
   }

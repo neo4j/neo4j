@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.FineToReuse
+import org.neo4j.cypher.internal.{FineToReuse, ReusabilityInfo}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, ProcedurePlannerName}
@@ -143,7 +143,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   override def runtimeUsed = ProcedureRuntimeName
 
-  override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = FineToReuse
+  override def reusability: ReusabilityInfo = FineToReuse
 
   override def plannerUsed = ProcedurePlannerName
 }
