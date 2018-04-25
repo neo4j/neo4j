@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.StrictnessMode
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Cardinality
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
@@ -43,10 +43,13 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   errorIfShortestPathHasCommonNodesAtRuntime: Boolean = true,
                                   legacyCsvQuoteEscaping: Boolean = DEFAULT_LEGACY_STYLE_QUOTING,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
-                                  leafPlanUpdater: LogicalPlan => LogicalPlan = identity) {
-  def withStrictness(strictness: StrictnessMode) = copy(input = input.withPreferredStrictness(strictness))
+                                  leafPlanUpdater: LogicalPlan => LogicalPlan = identity,
+                                  costComparisonListener: CostComparisonListener) {
+  def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
+    copy(input = input.withPreferredStrictness(strictness))
 
-  def withUpdatedCardinalityInformation(plan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities) = copy(input = input.recurse(plan, solveds, cardinalities))
+  def withUpdatedCardinalityInformation(plan: LogicalPlan, solveds: Solveds, cardinalities: Cardinalities): LogicalPlanningContext =
+    copy(input = input.recurse(plan, solveds, cardinalities))
 
   def forExpressionPlanning(nodes: Iterable[Variable], rels: Iterable[Variable]): LogicalPlanningContext = {
     val tableWithNodes = nodes.foldLeft(semanticTable) { case (table, node) => table.addNode(node) }
@@ -57,11 +60,11 @@ case class LogicalPlanningContext(planContext: PlanContext,
     )
   }
 
-  def statistics = planContext.statistics
+  def statistics: GraphStatistics = planContext.statistics
 
-  def cost = metrics.cost
+  def cost: CostModel = metrics.cost
 
-  def cardinality = metrics.cardinality
+  def cardinality: CardinalityModel = metrics.cardinality
 }
 
 object NodeIdName {

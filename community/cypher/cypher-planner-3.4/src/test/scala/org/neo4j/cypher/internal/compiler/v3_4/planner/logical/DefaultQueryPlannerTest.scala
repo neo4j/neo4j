@@ -24,7 +24,7 @@ import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, Hint}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
@@ -131,5 +131,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],
     config = QueryPlannerConfiguration.default,
-    notificationLogger = devNullLogger)
+    notificationLogger = devNullLogger,
+    costComparisonListener = devNullListener)
 }
