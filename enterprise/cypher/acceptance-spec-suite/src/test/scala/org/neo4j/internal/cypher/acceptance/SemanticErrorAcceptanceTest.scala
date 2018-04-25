@@ -469,9 +469,17 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       "integer, 10508455564958384115, is too large")
   }
 
+  test("should not be able to use more then Long.MaxValue for LIMIT in interpreted runtime") {
+    val expectedErrorMessage = "Invalid input for LIMIT. Either the string does not have the appropriate format or the" +
+      " provided number is bigger then 2^63-1 (line 1, column 55 (offset: 54))"
+    val limit = "9223372036854775808" // this equals Long.MaxValue +1
+    executeAndEnsureError(
+      "CYPHER runtime = interpreted MATCH (n) RETURN n LIMIT " + limit,
+      expectedErrorMessage)
+  }
+
   private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
-
     import scala.collection.JavaConverters._
 
     try {
