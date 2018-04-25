@@ -61,6 +61,11 @@ public class AnonymousContext implements LoginContext
         return new AnonymousContext( AccessMode.Static.WRITE_ONLY );
     }
 
+    public static AnonymousContext full()
+    {
+        return new AnonymousContext( AccessMode.Static.FULL );
+    }
+
     @Override
     public AuthSubject subject()
     {

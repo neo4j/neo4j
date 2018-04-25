@@ -323,7 +323,11 @@ public class BuiltInProceduresTest
                         "Query JMX management data by domain and name. For instance, \"org.neo4j:*\"", "READ" ),
                 record( "dbms.clearQueryCaches",
                         "dbms.clearQueryCaches() :: (value :: STRING?)",
-                        "Clears all query caches.", "DBMS" )
+                        "Clears all query caches.", "DBMS" ),
+                record( "db.createIndex",
+                        "db.createIndex(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", lucene+native-2.0 )) - " +
+                                "YIELD index, providerName, status", "WRITE" )
         ) );
     }
 
@@ -383,7 +387,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes()
+    public void shouldCloseStatementIfExceptionIsThrownDbRelationshipTypes()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
