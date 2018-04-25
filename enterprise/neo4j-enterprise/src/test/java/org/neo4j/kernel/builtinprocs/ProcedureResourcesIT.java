@@ -350,6 +350,9 @@ public class ProcedureResourcesIT
             proc.withParam( "'dbms.logs.query.enabled'" );
             proc.withParam( "'false'" );
             break;
+        case "db.createIndex":
+            proc.withParam( "':Person(name)'" );
+            proc.withParam( "'lucene+native-2.0'" );
         default:
         }
         return proc;

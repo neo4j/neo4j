@@ -96,6 +96,7 @@ import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
+import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -386,6 +387,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+        // todo should readReplicas have access to those procedures?
+        procedures.registerProcedure( EnterpriseBuiltInProcedures.class, true );
         procedures.register( new ReadReplicaRoleProcedure() );
     }
 

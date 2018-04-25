@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -98,13 +100,26 @@ public class DefaultIndexProviderMap implements IndexProviderMap
 
     private IllegalArgumentException notFound( Object key )
     {
-        return new IllegalArgumentException( "Tried to get index provider for an existing index with provider " + key +
-                " whereas available providers in this session being " + indexProviders + ", and default being " + defaultIndexProvider );
+        return new IllegalArgumentException( "Tried to get index provider with name " + key +
+                " whereas available providers in this session being " + Arrays.toString( indexProviderNames() ) + ", and default being " +
+                defaultIndexProvider.getProviderDescriptor().name() );
     }
 
     @Override
     public void accept( Consumer<IndexProvider> visitor )
     {
         indexProviders.values().forEach( visitor );
+    }
+
+    private String[] indexProviderNames()
+    {
+        Collection<IndexProvider> providerList = indexProviders.values();
+        String[] providerNames = new String[providerList.size()];
+        int index = 0;
+        for ( IndexProvider indexProvider : providerList )
+        {
+            providerNames[index++] = indexProvider.getProviderDescriptor().name();
+        }
+        return providerNames;
     }
 }

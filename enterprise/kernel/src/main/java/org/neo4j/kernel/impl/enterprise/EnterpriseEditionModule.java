@@ -26,12 +26,13 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
+import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInProcedures;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
@@ -60,6 +61,7 @@ public class EnterpriseEditionModule extends CommunityEditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+        procedures.registerProcedure( EnterpriseBuiltInProcedures.class, true );
     }
 
     public EnterpriseEditionModule( PlatformModule platformModule )
