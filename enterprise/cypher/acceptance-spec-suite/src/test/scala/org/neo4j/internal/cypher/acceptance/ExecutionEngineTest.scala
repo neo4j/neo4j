@@ -47,7 +47,7 @@ import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  val startConf = Configs.CommunityInterpreted - Configs.Version3_3
+  private val startConf = Configs.CommunityInterpreted - Configs.Version3_3
 
   test("shouldGetRelationshipById") {
     val n = createNode()
@@ -849,12 +849,6 @@ order by a.COL1""".format(a, b))
     result.toList shouldBe empty
   }
 
-  test("should be able to prettify queries") {
-    val query = "match (n)-->(x) return n"
-
-    eengine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
-  }
-
   test("doctest gone wild") {
     // given
     executeWith(Configs.UpdateConf, "CREATE (n:Actor {name:'Tom Hanks'})")
@@ -964,6 +958,8 @@ order by a.COL1""".format(a, b))
   )
 
   case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends TimingCompilationTracer.EventListener {
+    override def startQueryCompilation(query: String): Unit = {}
+
     override def queryCompiled(event: QueryEvent): Unit = {
       if(event.phases().asScala.exists(_.phase() == CompilationPhase.LOGICAL_PLANNING)) {
         planRequests.append(event.query())
@@ -1033,7 +1029,7 @@ order by a.COL1""".format(a, b))
     ))
   }
 
-  private def readOnlyEngine()(run: ExecutionEngine => Unit) = {
+  private def readOnlyEngine()(run: ExecutionEngine => Unit): Unit = {
     FileUtils.deleteRecursively(new File("target/readonly"))
     val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
     old.shutdown()

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.procs
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_5.FineToReuse
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, ProcedurePlannerName}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext

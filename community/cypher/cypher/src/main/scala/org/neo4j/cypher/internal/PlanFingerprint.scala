@@ -17,46 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
+package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot, InstrumentedGraphStatistics}
 
 case class PlanFingerprint(creationTimeMillis: Long, lastCheckTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot) {
   if (snapshot.statsValues.isEmpty) {
     throw new IllegalArgumentException("Cannot create plan fingerprint with empty graph statistics snapshot")
   }
-}
-
-class PlanFingerprintReference(clock: Clock, divergence: StatsDivergenceCalculator,
-                               private var fingerprint: Option[PlanFingerprint]) {
-
-  def checkPlanReusability(lastCommittedTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = {
-    fingerprint.fold[CacheCheckResult](FineToReuse) { f =>
-      lazy val currentTimeMillis = clock.millis()
-      lazy val currentTxId = lastCommittedTxId()
-
-      val stale = divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
-        check(currentTxId != f.txId,
-          () => {
-            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
-          }) &&
-        check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
-          () => {
-            fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
-          })
-
-      if(stale) {
-        val secondsSinceReplan = ((currentTimeMillis - f.creationTimeMillis) / 1000).toInt
-        NeedsReplan(secondsSinceReplan)
-      } else
-        FineToReuse
-    }
-  }
-
-  private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
 }
 
 object PlanFingerprint {
@@ -71,3 +41,5 @@ object PlanFingerprint {
         None
     }
 }
+
+class PlanFingerprintReference(var fingerprint: Option[PlanFingerprint])

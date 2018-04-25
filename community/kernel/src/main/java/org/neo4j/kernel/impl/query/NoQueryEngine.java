@@ -40,12 +40,6 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public String prettify( String query )
-    {
-        throw noQueryEngine();
-    }
-
-    @Override
     public Result profileQuery( String query, MapValue parameter, TransactionalContext context )
     {
         throw noQueryEngine();

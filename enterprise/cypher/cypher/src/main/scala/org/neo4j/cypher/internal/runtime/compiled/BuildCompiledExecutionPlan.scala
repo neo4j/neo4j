@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.compiled
 
 import org.neo4j.cypher.internal.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.{MaybeReusable, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
@@ -62,7 +63,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                                                     from.cardinalities)
       val executionPlan: ExecutionPlan =
         new CompiledExecutionPlan(compiled,
-                                  context.createFingerprintReference(compiled.fingerprint),
+                                  new PlanFingerprintReference(compiled.fingerprint),
                                   notifications(context))
       new CompilationState(from, Success(executionPlan))
     } catch {
@@ -121,7 +122,8 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
       }
     }
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) = fingerprint.checkPlanReusability(lastTxId, statistics)
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics) =
+      MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = CompiledRuntimeName
 

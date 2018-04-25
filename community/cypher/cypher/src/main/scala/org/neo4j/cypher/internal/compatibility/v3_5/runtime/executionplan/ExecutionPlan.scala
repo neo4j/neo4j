@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
+import org.neo4j.cypher.internal.ReusabilityInfo
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
-import org.neo4j.cypher.internal.compiler.v3_5.CacheCheckResult
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, InternalExecutionResult, QueryContext}
@@ -31,7 +31,7 @@ abstract class ExecutionPlan {
   def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult
   def isPeriodicCommit: Boolean
   def plannerUsed: PlannerName
-  def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult
+  def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): ReusabilityInfo
   def runtimeUsed: RuntimeName
   def plannedIndexUsage: Seq[IndexUsage] = Seq.empty
 }

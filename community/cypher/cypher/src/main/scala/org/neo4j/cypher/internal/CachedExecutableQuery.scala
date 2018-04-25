@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper, ValueConversion}
-import org.neo4j.graphdb.Result
-import org.neo4j.values.virtual.{MapValue, VirtualValues}
+import org.neo4j.values.virtual.MapValue
 
-case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
-  def execute(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
-    plan.run(transactionalContext, executionMode, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
-
-  def profile(transactionalContext: TransactionalContextWrapper, params: MapValue): Result =
-    plan.run(transactionalContext, CypherExecutionMode.profile, VirtualValues.combine(params,ValueConversion.asValues(extractedParams)))
-}
+/**
+  * A fully compiled query in executable form.
+  *
+  * @param plan The executable plan.
+  * @param paramNames Names of all parameters for this query, explicit and auto-parametrized.
+  * @param extractedParams The names and values of the auto-parametrized parameters for this query.
+  */
+case class CachedExecutableQuery(plan: ExecutionPlan,
+                                 paramNames: Seq[String],
+                                 extractedParams: MapValue)

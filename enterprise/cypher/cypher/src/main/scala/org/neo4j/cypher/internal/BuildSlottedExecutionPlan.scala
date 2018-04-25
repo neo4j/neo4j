@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotAllocation.Physi
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{ExecutionPlan => RuntimeExecutionPlan, _}
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_5.CacheCheckResult
 import org.neo4j.cypher.internal.compiler.v3_5.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -98,7 +97,7 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                                                                         from.cardinalities)
 
       val fp = PlanFingerprint.take(context.clock, context.planContext.txIdProvider, context.planContext.statistics)
-      val fingerprint = context.createFingerprintReference(fp)
+      val fingerprint = new PlanFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
       val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, from.plannerName, indexes, func)
@@ -143,8 +142,8 @@ object BuildSlottedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logical
                      params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult =
-      fingerprint.checkPlanReusability(lastTxId, statistics)
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): ReusabilityInfo =
+      MaybeReusable(fingerprint)
 
     override def runtimeUsed: RuntimeName = SlottedRuntimeName
   }

@@ -31,10 +31,6 @@ class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) extends ((K, => V) => V)
     override def apply(t: K): V = f
   })
 
-  def getOrElseUpdateByKey(key: K, f: K => V): V = inner.get(key, new Function[K, V] {
-    override def apply(t: K): V = f(t)
-  })
-
   def get(key: K): Option[V] = Option(inner.getIfPresent(key))
 
   def put(key: K, value: V) = inner.put(key, value)

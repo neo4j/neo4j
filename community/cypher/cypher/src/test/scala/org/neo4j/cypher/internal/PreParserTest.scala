@@ -19,29 +19,27 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.InvalidArgumentException
+import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherVersion, InvalidArgumentException}
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
 
-class CypherStatementWithOptionsTest extends CypherFunSuite {
+class PreParserTest extends CypherFunSuite {
+
+  val preParser = new PreParser(CypherVersion.default, CypherPlanner.default, CypherRuntime.default, 0)
 
   test("should not allow inconsistent planner options") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER planner=cost planner=rule RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER planner=cost planner=rule RETURN 42"))
   }
 
   test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
   }
 
   test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER 2.3 CYPHER 3.1 RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 2.3 CYPHER 3.1 RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("EXPLAIN PROFILE RETURN 42"))
-    intercept[InvalidArgumentException](CypherStatementWithOptions("PROFILE EXPLAIN RETURN 42"))
-  }
-
-  private implicit def parse(arg: String): PreParsedStatement = {
-    CypherPreParser(arg)
+    intercept[InvalidArgumentException](preParser.preParseQuery("EXPLAIN PROFILE RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
   }
 }

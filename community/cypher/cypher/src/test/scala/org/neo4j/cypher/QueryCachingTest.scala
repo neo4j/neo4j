@@ -89,7 +89,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       log.clear()
     }
 
-    override def cacheFlushDetected(justBeforeKey: Statement): Unit = {
+    override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {
       log += s"cacheFlushDetected"
     }
 

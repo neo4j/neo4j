@@ -46,7 +46,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    override def cacheFlushDetected(justBeforeKey: api.Statement) {
+    override def cacheFlushDetected(sizeBeforeFlush: Long) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 

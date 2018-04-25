@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrap
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse}
 import org.neo4j.cypher.internal.frontend.v3_5.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_5.notification.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.frontend.v3_5.phases.CompilationPhaseTracer.CompilationPhase
@@ -123,7 +122,7 @@ object BuildVectorizedExecutionPlan extends Phase[EnterpriseRuntimeContext, Logi
 
     override def isPeriodicCommit: Boolean = false
 
-    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): CacheCheckResult = FineToReuse // TODO: This is a lie.
+    override def checkPlanResusability(lastTxId: () => Long, statistics: GraphStatistics): ReusabilityInfo = FineToReuse // TODO: This is a lie.
 
     override def runtimeUsed: RuntimeName = MorselRuntimeName
   }

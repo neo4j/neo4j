@@ -20,19 +20,17 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.compiler.v3_5.CacheCheckResult
-import org.neo4j.cypher.internal.runtime.interpreted.{LastCommittedTxIdProvider, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result
+  def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
 
-  def isPeriodicCommit: Boolean
-
-  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult
+  def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo
 
   // This is to force eager calculation
   val plannerInfo: PlannerInfo

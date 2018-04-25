@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
-import org.neo4j.logging.NullLogProvider
+import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -53,9 +53,8 @@ class KillQueryTest extends ExecutionEngineFunSuite {
       createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
     }
 
-    val logProvider = NullLogProvider.getInstance()
-    val compatibilityFactory = new CommunityCompatibilityFactory(graph, kernelMonitors, logProvider)
-    val engine = new ExecutionEngine(graph, logProvider, compatibilityFactory)
+    val logProvider: LogProvider = NullLogProvider.getInstance()
+    val engine = ExecutionEngineHelper.createEngine(graph)
 
     val query = "MATCH (n:Label) WHERE n.x > 12 RETURN n.name"
 

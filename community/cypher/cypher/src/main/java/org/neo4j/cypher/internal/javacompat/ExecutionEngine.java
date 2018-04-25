@@ -19,17 +19,25 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import java.util.Map;
+import java.time.Clock;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompatibilityFactory;
+import org.neo4j.cypher.internal.CypherConfiguration;
+import org.neo4j.cypher.internal.StringCacheMonitor;
+import org.neo4j.cypher.internal.tracing.CompilationTracer;
+import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecution;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.ResultBuffer;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.values.virtual.MapValue;
 
@@ -51,7 +59,21 @@ public class ExecutionEngine implements QueryExecutionEngine
      */
     public ExecutionEngine( GraphDatabaseQueryService queryService, LogProvider logProvider, CompatibilityFactory compatibilityFactory )
     {
-        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider, compatibilityFactory );
+        DependencyResolver resolver = queryService.getDependencyResolver();
+        Monitors monitors = resolver.resolveDependency( Monitors.class );
+        CacheTracer cacheTracer = new MonitoringCacheTracer( monitors.newMonitor( StringCacheMonitor.class ) );
+        Config config = resolver.resolveDependency( Config.class );
+        CypherConfiguration cypherConfiguration = CypherConfiguration.fromConfig( config );
+        CompilationTracer tracer =
+                new TimingCompilationTracer( monitors.newMonitor( TimingCompilationTracer.EventListener.class ) );
+        inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService,
+                                                               monitors,
+                                                               tracer,
+                                                               cacheTracer,
+                                                               cypherConfiguration,
+                                                               compatibilityFactory,
+                                                               logProvider,
+                                                               Clock.systemUTC() );
     }
 
     @Override
@@ -60,7 +82,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.execute( query, parameters, context );
+            return inner.execute( query, parameters, context, false );
         }
         catch ( CypherException e )
         {
@@ -91,7 +113,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.profile( query, parameters, context );
+            return inner.execute( query, parameters, context, true );
         }
         catch ( CypherException e )
         {
@@ -103,19 +125,6 @@ public class ExecutionEngine implements QueryExecutionEngine
     public boolean isPeriodicCommit( String query )
     {
         return inner.isPeriodicCommit( query );
-    }
-
-    /**
-     * Turns a valid Cypher query and returns it with keywords in uppercase,
-     * and new-lines in the appropriate places.
-     *
-     * @param query The query to make pretty
-     * @return The same query, but prettier
-     */
-    @Override
-    public String prettify( String query )
-    {
-        return inner.prettify( query );
     }
 
     @Override

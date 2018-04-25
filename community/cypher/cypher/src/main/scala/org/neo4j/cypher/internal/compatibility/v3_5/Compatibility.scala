@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlann
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v3_5.expressions.Parameter
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -99,12 +100,13 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                               preParsedQuery.debugOptions,
                               Some(preParsedQuery.offset), preparationTracer))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, planningTracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContext, planningTracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
-        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
+        val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
+                                    TransactionalContextWrapper(transactionalContext), notificationLogger))
         //Context used to create logical plans
         val logicalPlanIdGen = new SequentialIdGen()
         val context = contextCreatorv3_5.create(planningTracer, notificationLogger, planContext,
@@ -136,7 +138,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         else
           createPlan.produceWithExistingTX
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_4
@@ -144,11 +146,11 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan_v3_5],
-                           monitor: CypherCacheFlushingMonitor[CacheAccessor[Statement, ExecutionPlan_v3_5]],
+                           monitor: CypherCacheFlushingMonitor,
                            planContext: PlanContext,
                            planCacheFactory: () => LFUCache[Statement, ExecutionPlan_v3_5]): QueryCache[Statement, ExecutionPlan_v3_5] =
     planContext.getOrCreateFromSchemaState(cacheAccessor, {
-      monitor.cacheFlushDetected(cacheAccessor)
+      monitor.cacheFlushDetected(-1)
       val lRUCache = planCacheFactory()
       new QueryCache(cacheAccessor, lRUCache)
     })

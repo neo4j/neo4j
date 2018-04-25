@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.codegen
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.{PlanFingerprint, PlanFingerprintReference}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.executionplan.GeneratedQuery

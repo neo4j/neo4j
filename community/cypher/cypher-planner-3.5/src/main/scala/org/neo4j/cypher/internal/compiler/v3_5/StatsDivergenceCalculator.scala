@@ -19,11 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5
 
-sealed trait CacheCheckResult
-
-case class NeedsReplan(secondsSinceReplan: Int) extends CacheCheckResult
-case object FineToReuse extends CacheCheckResult
-
 sealed trait StatsDivergenceCalculator {
   val initialThreshold: Double
   val initialMillis: Long

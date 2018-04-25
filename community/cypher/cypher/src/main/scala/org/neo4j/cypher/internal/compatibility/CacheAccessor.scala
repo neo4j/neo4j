@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
-import org.neo4j.cypher.internal.compiler.v3_5.{CacheCheckResult, FineToReuse, NeedsReplan}
+import org.neo4j.cypher.internal.{FineToReuse, NeedsReplan, ReusabilityInfo}
 
 trait CacheAccessor[K <: AnyRef, T <: AnyRef] {
   def getOrElseUpdate(cache: LFUCache[K, T])(key: K, f: => T): T
@@ -31,7 +31,7 @@ trait PlanProducer[T] {
 }
 
 class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], cache: LFUCache[K, T]) {
-  def getOrElseUpdate(key: K, userKey: String, checkPlanStillValid: T => CacheCheckResult, produce: PlanProducer[T]): (T, Boolean) = {
+  def getOrElseUpdate(key: K, userKey: String, checkPlanStillValid: T => ReusabilityInfo, produce: PlanProducer[T]): (T, Boolean) = {
     if (cache.size == 0)
       (produce.produceWithExistingTX, false)
     else {

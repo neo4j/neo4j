@@ -77,7 +77,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    override def cacheFlushDetected(justBeforeKey: CacheAccessor[Statement, ExecutionPlan]) {
+    override def cacheFlushDetected(sizeBeforeFlush: Long) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
@@ -101,15 +101,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
-      val parsedQuery = compiler.produceParsedQuery(PreParsedQuery(query, query,
+      val parsedQuery = compiler.produceParsedQuery(PreParsedQuery(query, DummyPosition(0), query,
+                                                                   isPeriodicCommit = false,
                                                                    CypherVersion.default,
                                                                    CypherExecutionMode.default,
                                                                    CypherPlanner.default,
                                                                    CypherRuntime.default,
                                                                    CypherUpdateStrategy.default,
-                                                                   debugOptions)(DummyPosition(0)),
+                                                                   debugOptions),
                                                     noTracing, Set.empty)
-      val context = TransactionalContextWrapper(graph.transactionalContext(query = query -> Map.empty))
+      val context = graph.transactionalContext(query = query -> Map.empty)
       parsedQuery.plan(context, noTracing)
       context.close(true)
     }

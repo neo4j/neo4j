@@ -39,11 +39,10 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlann
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.{ExplainMode, InternalExecutionResult, NormalMode, ProfileMode}
-import org.neo4j.cypher.internal.util.v3_5.InputPosition
 import org.neo4j.cypher.internal.v3_5.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.{ExplicitIndexUsage, PlannerInfo, SchemaIndexUsage}
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
@@ -104,17 +103,17 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
     }
   }
 
-  protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_5, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset: InputPosition)
+  protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_5, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
-    private def queryContext(transactionalContext: TransactionalContextWrapper) = {
-      val ctx = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
+    private def queryContext(transactionalContext: TransactionalContext) = {
+      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext))(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
+    def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode,
             params: MapValue): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainMode
@@ -127,7 +126,7 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
         val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
         new ExecutionResult(new ClosingExecutionResult(
-          transactionalContext.tc.executingQuery(),
+          transactionalContext.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq: _*),
           runSafelyDuringRuntime
         )(kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])))
@@ -136,7 +135,7 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): CacheCheckResult =
+    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo =
       inner.checkPlanResusability(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
 
     override val plannerInfo: PlannerInfo = {
@@ -170,8 +169,8 @@ object LatestRuntimeVariablePlannerCompatibility {
   }
 }
 
-trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T) {}
+trait CypherCacheFlushingMonitor {
+  def cacheFlushDetected(sizeBeforeFlush: Long) {}
 }
 
 trait CypherCacheHitMonitor[T] {
@@ -180,8 +179,8 @@ trait CypherCacheHitMonitor[T] {
   def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
 }
 
-trait CypherCacheMonitor[T, E] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor[E]
-trait AstCacheMonitor[STATEMENT <: AnyRef] extends CypherCacheMonitor[STATEMENT, CacheAccessor[STATEMENT, ExecutionPlan_v3_5]]
+trait CypherCacheMonitor[T] extends CypherCacheHitMonitor[T] with CypherCacheFlushingMonitor
+trait AstCacheMonitor[STATEMENT <: AnyRef] extends CypherCacheMonitor[STATEMENT]
 
 trait InfoLogger {
   def info(message: String)

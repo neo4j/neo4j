@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_3.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_3, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_3, TransactionBoundPlanContext => TransactionBoundPlanContextV3_3}
 import org.neo4j.cypher.internal.util.v3_5.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
@@ -112,17 +113,17 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         preParsedQuery.debugOptions,
         Some(helpers.as3_3(preParsedQuery.offset)), as3_3(preparationTracer)))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, planningTracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContext, planningTracer: CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
         //Context used for db communication during planning
-        val tcv3_5 = TransactionalContextWrapper(transactionalContext.tc)
+        val tcv3_5 = TransactionalContextWrapper(transactionalContext)
 
         // Create graph-statistics to be shared between 3.3 logical planning and 3.4 physical planning
         val graphStatisticsSnapshotv3_5 = new MutableGraphStatisticsSnapshotv3_5()
         val graphStatisticsV3_3 = new WrappedInstrumentedGraphStatistics(
-          TransactionBoundGraphStatisticsV3_3(transactionalContext.dataRead, transactionalContext.schemaRead),
+          TransactionBoundGraphStatisticsV3_3(tcv3_5.dataRead, tcv3_5.schemaRead),
           graphStatisticsSnapshotv3_5)
 
         val planContextV3_3 = new ExceptionTranslatingPlanContextV3_3(
@@ -130,7 +131,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
             notificationLoggerV3_3, graphStatisticsV3_3))
 
         val graphStatisticsv3_5 = InstrumentedGraphStatisticsv3_5(
-          TransactionBoundGraphStatistics(transactionalContext.dataRead, transactionalContext.schemaRead),
+          TransactionBoundGraphStatistics(tcv3_5.dataRead, tcv3_5.schemaRead),
           graphStatisticsSnapshotv3_5)
         val planContextv3_5 = new ExceptionTranslatingPlanContextv3_5(
           new TransactionBoundPlanContext(tcv3_5, notificationLoggerv3_5, graphStatisticsv3_5))
@@ -183,7 +184,7 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         // Log notifications/warnings from planning
         notificationLoggerV3_3.notifications.map(helpers.as3_4).foreach(notificationLoggerv3_5.log)
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
       }
 
       override protected val trier: Try[phases.BaseState] = preparedSyntacticQueryForV_3_3
@@ -191,11 +192,11 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
   }
 
   private def provideCache(cacheAccessor: CacheAccessor[StatementV3_3, ExecutionPlan_v3_5],
-                           monitor: CypherCacheFlushingMonitor[CacheAccessor[StatementV3_3, ExecutionPlan_v3_5]],
+                           monitor: CypherCacheFlushingMonitor,
                            planContext: v3_3.spi.PlanContext,
                            planCacheFactory: () => LFUCache[StatementV3_3, ExecutionPlan_v3_5]): QueryCache[StatementV3_3, ExecutionPlan_v3_5] =
     planContext.getOrCreateFromSchemaState(cacheAccessor, {
-      monitor.cacheFlushDetected(cacheAccessor)
+      monitor.cacheFlushDetected(-1)
       val lRUCache = planCacheFactory()
       new QueryCache(cacheAccessor, lRUCache)
     })

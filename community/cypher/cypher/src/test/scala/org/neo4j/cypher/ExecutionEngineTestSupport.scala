@@ -24,18 +24,19 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, JavaListWrapper, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.util.v3_4.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, MonitoringCacheTracer}
+import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.tracing.CompilationTracer
+import org.neo4j.cypher.internal.util.v3_5.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.{AnyValue, AnyValues}
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
 
 import scala.collection.JavaConverters._
@@ -90,9 +91,17 @@ object ExecutionEngineHelper {
   def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
+    val cacheTracer = new MonitoringCacheTracer( kernelMonitors.newMonitor( classOf[StringCacheMonitor] ) )
     val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
+    val config = resolver.resolveDependency(classOf[Config])
 
-    new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
+    new ExecutionEngine(graphDatabaseCypherService,
+                        kernelMonitors,
+                        CompilationTracer.NO_COMPILATION_TRACING,
+                        cacheTracer,
+                        CypherConfiguration.fromConfig(config),
+                        compatibilityFactory,
+                        logProvider)
   }
 }
 
@@ -114,7 +123,10 @@ trait ExecutionEngineHelper {
   def asValue(any: Any): AnyValue =
     any match {
       case map: Map[String, Any] => asMapValue(map)
-      case array: Array[_] => Values.of(array)
+      case array: Array[AnyRef] =>
+        val value = Values.unsafeOf(array, false)
+        if (value == null) VirtualValues.list(array.map(asValue):_*)
+        else value
       case iterable: Iterable[_] => VirtualValues.list(iterable.map(asValue).toArray:_*)
       case traversable: TraversableOnce[_] => VirtualValues.list(traversable.map(asValue).toArray:_*)
       case x => ValueUtils.of(x)

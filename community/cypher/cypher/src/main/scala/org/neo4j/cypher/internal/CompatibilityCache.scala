@@ -70,7 +70,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration) =
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): v3_3compat.Compatibility[_,_,_] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) =>
         throw new InvalidArgumentException("The rule planner is no longer a valid planner option in Neo4j 3.3. If you need to use it, please select compatibility mode Cypher 3.1")

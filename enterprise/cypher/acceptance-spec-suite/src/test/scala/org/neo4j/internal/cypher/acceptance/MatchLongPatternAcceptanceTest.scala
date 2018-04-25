@@ -247,11 +247,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     val graph = new GraphDatabaseCypherService(new ImpermanentGraphDatabase(new File("target/test-data/pattern-acceptance"), config))
     try {
-      val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
-      val logProvider = NullLogProvider.getInstance()
-      // FIXME: probably both?
-      val factory = new CommunityCompatibilityFactory(graph, monitors, logProvider)
-      val engine = new ExecutionEngine(graph, logProvider, factory)
+      val engine = ExecutionEngineHelper.createEngine(graph)
       run(engine, graph)
     } finally {
       graph.shutdown()
