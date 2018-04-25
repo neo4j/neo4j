@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
-import org.neo4j.cypher.internal.runtime.LongArraySet
+import org.neo4j.cypher.internal.runtime.{LongArraySet, PrefetchingIterator}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -54,16 +54,11 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
   //===========================================================================
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
-
-    new Iterator[ExecutionContext] {
+    new PrefetchingIterator[ExecutionContext] {
       private val seen = new LongArraySet(32, projections.size)
-      private var buffer: ExecutionContext = _
 
-      pullNextElementFromSource()
-
-      private def pullNextElementFromSource(): Unit = {
-        buffer = null
-        while (input.nonEmpty) { // Let's pull data until we find something not already seen
+      override def produceNext(): Option[ExecutionContext] = {
+        while (input.nonEmpty) {
           val next: ExecutionContext = input.next()
 
           // Create key array
@@ -73,32 +68,23 @@ case class DistinctSlottedPrimitivePipe(source: Pipe,
             seen.add(keys)
             // Found something! Set it as the next element to yield, and exit
             val outgoing = SlottedExecutionContext(slots)
-            for(setter <- setValuesInOutput) {
+            for (setter <- setValuesInOutput) {
               setter(next, state, outgoing)
             }
-            buffer = outgoing
-            return
+
+            return Some(next)
           }
         }
+
+        None
       }
-
-      override def hasNext: Boolean = buffer != null
-
-      override def next(): ExecutionContext =
-        if (isEmpty)
-          Iterator.empty.next() // Throw a good exception
-        else {
-          val current = buffer
-          pullNextElementFromSource()
-          current
-        }
     }
   }
 
   private def buildKey(next: ExecutionContext): Array[Long] = {
     val keys = new Array[Long](primitiveSlots.length)
     var i = 0
-    while(i < primitiveSlots.length) {
+    while (i < primitiveSlots.length) {
       keys(i) = next.getLongAt(primitiveSlots(i))
       i += 1
     }

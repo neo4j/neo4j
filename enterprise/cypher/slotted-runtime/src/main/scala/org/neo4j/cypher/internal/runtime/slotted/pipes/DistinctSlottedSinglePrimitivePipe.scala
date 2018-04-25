@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.collection.primitive.Primitive
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{Slot, SlotConfiguration}
+import org.neo4j.cypher.internal.runtime.PrefetchingIterator
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeWithSource, QueryState}
@@ -50,15 +51,10 @@ case class DistinctSlottedSinglePrimitivePipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-
-    new Iterator[ExecutionContext] {
+    new PrefetchingIterator[ExecutionContext] {
       private val seen = Primitive.longSet()
-      private var buffer: ExecutionContext = _
 
-      pullNextElementFromSource()
-
-      private def pullNextElementFromSource(): Unit = {
-        buffer = null
+      override def produceNext(): Option[ExecutionContext] = {
         while (input.nonEmpty) { // Let's pull data until we find something not already seen
           val next = input.next()
           val id = next.getLongAt(offset)
@@ -68,22 +64,12 @@ case class DistinctSlottedSinglePrimitivePipe(source: Pipe,
             val outgoing = SlottedExecutionContext(slots)
             val outputValue = expression(next, state)
             setInSlot(outgoing, outputValue)
-            buffer = outgoing
-            return
+            return Some(next)
           }
         }
+
+        None
       }
-
-      override def hasNext: Boolean = buffer != null
-
-      override def next(): ExecutionContext =
-        if (isEmpty)
-          Iterator.empty.next() // Throw a good exception
-        else {
-          val current = buffer
-          pullNextElementFromSource()
-          current
-        }
     }
   }
 }
