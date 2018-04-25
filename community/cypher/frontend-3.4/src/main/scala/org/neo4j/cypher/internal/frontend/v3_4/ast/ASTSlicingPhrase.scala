@@ -45,12 +45,17 @@ trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
   }
 
   private def literalShouldBeUnsignedInteger: SemanticCheck = {
-    expression match {
-      case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
-      case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
-      case lit: Literal => error(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, " +
-                                  "must be a positive integer", lit.position)
-      case _ => SemanticCheckResult.success
+    try {
+      expression match {
+        case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
+        case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
+        case lit: Literal => error(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, " +
+          "must be a positive integer", lit.position)
+        case _ => SemanticCheckResult.success
+      }
+    } catch {
+      case nfe: NumberFormatException => SemanticError("Invalid input for " + name +
+        ". Either the string does not have the appropriate format or the provided number is bigger then 2^63-1", expression.position)
     }
   }
 }
