@@ -168,7 +168,7 @@ abstract class RelationshipDenseSelection
      *
      * @return True is a valid relationship was found
      */
-    protected final boolean fetchNext()
+    protected boolean fetchNext()
     {
         if ( onRelationship )
         {

@@ -1018,7 +1018,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try ( PageCursor cursor = storeFile.io( getNumberOfReservedLowIds(), PF_SHARED_READ_LOCK ) )
         {
-            getRecordByCursor( id, record, mode, cursor );
+            readIntoRecord( id, record, mode, cursor );
             return record;
         }
         catch ( IOException e )
@@ -1028,7 +1028,20 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public final void getRecordByCursor( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
+    public void getRecordByCursor( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
+    {
+        try
+        {
+            readIntoRecord( id, record, mode, cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+    }
+
+    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id
@@ -1036,28 +1049,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         record.setId( id );
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try
+        if ( cursor.next( pageId ) )
         {
-            if ( cursor.next( pageId ) )
+            // There is a page in the store that covers this record, go read it
+            do
             {
-                // There is a page in the store that covers this record, go read it
-                do
-                {
-                    prepareForReading( cursor, offset, record );
-                    recordFormat.read( record, cursor, mode, recordSize );
-                }
-                while ( cursor.shouldRetry() );
-                checkForDecodingErrors( cursor, id, mode );
-                verifyAfterReading( record, mode );
+                prepareForReading( cursor, offset, record );
+                recordFormat.read( record, cursor, mode, recordSize );
             }
-            else
-            {
-                verifyAfterNotRead( record, mode );
-            }
+            while ( cursor.shouldRetry() );
+            checkForDecodingErrors( cursor, id, mode );
+            verifyAfterReading( record, mode );
         }
-        catch ( IOException e )
+        else
         {
-            throw new UnderlyingStorageException( e );
+            verifyAfterNotRead( record, mode );
         }
     }
 
