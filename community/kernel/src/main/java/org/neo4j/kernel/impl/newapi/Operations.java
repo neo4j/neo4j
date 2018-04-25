@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -54,7 +55,6 @@ import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -95,8 +95,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
-import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext
-        .CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -258,7 +257,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         return true;
     }
 
-    public boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
+    private boolean nodeDelete( long node, boolean lock ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
 
@@ -281,8 +280,12 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             ktx.statementLocks().optimistic().acquireExclusive( ktx.lockTracer(), ResourceTypes.NODE, node );
         }
-        if ( allStoreHolder.nodeExistsInStore( node ) )
+
+        allStoreHolder.singleNode( node, nodeCursor );
+        if ( nodeCursor.next() )
         {
+            acquireSharedNodeLabelLocks();
+
             autoIndexing.nodes().entityRemoved( this, node );
             ktx.txState().nodeDoDelete( node );
             return true;
@@ -290,6 +293,12 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         // tried to delete node that does not exist
         return false;
+    }
+
+    // Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
+    private void acquireSharedNodeLabelLocks()
+    {
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, nodeCursor.labels().all() );
     }
 
     private boolean relationshipDelete( long relationship, boolean lock ) throws AutoIndexingKernelException
@@ -439,35 +448,34 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
-    public boolean nodeRemoveLabel( long node, int nodeLabel ) throws EntityNotFoundException
+    public boolean nodeRemoveLabel( long node, int labelId ) throws EntityNotFoundException
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
         singleNode( node );
 
-        if ( !nodeCursor.labels().contains( nodeLabel ) )
+        if ( !nodeCursor.labels().contains( labelId ) )
         {
             //the label wasn't there, nothing to do
             return false;
         }
 
-        ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
-        updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
+        acquireSharedLabelLock( labelId );
+        ktx.txState().nodeDoRemoveLabel( labelId, node );
+        updater.onLabelChange( labelId, nodeCursor, propertyCursor, REMOVED_LABEL );
         return true;
     }
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
             throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
-
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
 
         singleNode( node );
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL,
-                nodeCursor.labels().all() );
+        acquireSharedNodeLabelLocks();
         Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
                 allStoreHolder.constraintsGetAll() );
         Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
@@ -523,6 +531,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         if ( existingValue != NO_VALUE )
         {
+            acquireSharedNodeLabelLocks();
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey );
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
