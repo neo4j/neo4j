@@ -461,7 +461,7 @@ public class SchemaImpl implements Schema
                     int labelId = tokenWrite.labelGetOrCreateForName( indexDefinition.getLabel().name() );
                     int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
                     LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyIds );
-                    transaction.schemaWrite().indexCreate( descriptor, null );
+                    transaction.schemaWrite().indexCreate( descriptor );
                     return indexDefinition;
                 }
 

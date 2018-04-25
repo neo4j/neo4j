@@ -181,7 +181,7 @@ public class IndexIT extends KernelIntegrationTest
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor );
 
-        SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
+        SchemaIndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor, null );
         // then
         Transaction transaction = newTransaction();
         assertEquals( emptySet(), asSet( transaction.schemaRead().constraintsGetForLabel( labelId ) ) );

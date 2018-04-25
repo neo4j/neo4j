@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.txstate;
 
+import javax.annotation.Nullable;
+
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -85,7 +87,7 @@ public interface TransactionState extends ReadableTransactionState
      * @param providerDescriptor specific {@link IndexProvider.Descriptor} to use for this index to be created.
      * This provider descriptor is allowed to be null, which will be interpreted as simply using the default instead.
      */
-    void indexRuleDoAdd( SchemaIndexDescriptor descriptor, IndexProvider.Descriptor providerDescriptor );
+    void indexRuleDoAdd( SchemaIndexDescriptor descriptor, @Nullable IndexProvider.Descriptor providerDescriptor );
 
     void indexDoDrop( SchemaIndexDescriptor descriptor );
 

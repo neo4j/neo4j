@@ -313,6 +313,56 @@ public class TxStateTest
     }
 
     @Test
+    public void shouldForgetSpecificallySetIndexProviderDescriptorOnDrop() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        // given
+        IndexProvider.Descriptor specificProvider = new IndexProvider.Descriptor( "myProvider", "9.9" );
+        state.indexRuleDoAdd( indexOn_1_1, specificProvider );
+        state.indexDoDrop( indexOn_1_1 );
+        state.indexRuleDoAdd( indexOn_1_1, null );
+
+        // when
+        MutableBoolean called = new MutableBoolean();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
+            {
+                assertNull( providerDescriptor );
+                called.setTrue();
+            }
+        } );
+
+        // then
+        assertTrue( called.booleanValue() );
+    }
+
+    @Test
+    public void shouldSpecificallySetIndexProviderDescriptorOnRecreate() throws ConstraintValidationException, CreateConstraintFailureException
+    {
+        // given
+        IndexProvider.Descriptor specificProvider = new IndexProvider.Descriptor( "myProvider", "9.9" );
+        IndexProvider.Descriptor specificProvider2 = new IndexProvider.Descriptor( "myOtherProvider", "7.7" );
+        state.indexRuleDoAdd( indexOn_1_1, specificProvider );
+        state.indexDoDrop( indexOn_1_1 );
+        state.indexRuleDoAdd( indexOn_1_1, specificProvider2 );
+
+        // when
+        AtomicReference<IndexProvider.Descriptor> visitedProviderDescriptor = new AtomicReference<>();
+        state.accept( new TxStateVisitor.Adapter()
+        {
+            @Override
+            public void visitAddedIndex( SchemaIndexDescriptor index, IndexProvider.Descriptor providerDescriptor )
+            {
+                visitedProviderDescriptor.set( providerDescriptor );
+            }
+        } );
+
+        // then
+        assertEquals( specificProvider2, visitedProviderDescriptor.get() );
+    }
+
+    @Test
     public void shouldUseNullForUnspecifiedIndexProviderDescriptor() throws ConstraintValidationException, CreateConstraintFailureException
     {
         // given

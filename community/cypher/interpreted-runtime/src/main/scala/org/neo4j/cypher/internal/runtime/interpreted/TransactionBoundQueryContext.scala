@@ -640,7 +640,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
     val kernelDescriptor = cypherToKernelSchema(descriptor)
     try {
-      IdempotentResult(transactionalContext.kernelTransaction.schemaWrite().indexCreate(kernelDescriptor, null))
+      IdempotentResult(transactionalContext.kernelTransaction.schemaWrite().indexCreate(kernelDescriptor))
     } catch {
       case _: AlreadyIndexedException =>
         val indexReference = transactionalContext.kernelTransaction.schemaRead().index(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*)

@@ -27,7 +27,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 public interface IndexProviderMap extends Function<IndexProvider.Descriptor,IndexProvider>
 {
     @Override
-    IndexProvider apply( IndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
+    IndexProvider apply( IndexProvider.Descriptor providerDescriptor ) throws IndexProviderNotFoundException;
+
+    IndexProvider apply( String providerDescriptorName ) throws IndexProviderNotFoundException;
 
     IndexProvider getDefaultProvider();
 

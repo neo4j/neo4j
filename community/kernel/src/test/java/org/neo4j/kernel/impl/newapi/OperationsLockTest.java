@@ -465,7 +465,7 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor ) ).thenReturn( 42L );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, null ) ).thenReturn( 42L );
         when( storeReadLayer.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when
