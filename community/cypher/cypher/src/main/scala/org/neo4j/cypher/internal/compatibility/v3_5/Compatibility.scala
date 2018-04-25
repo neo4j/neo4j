@@ -55,11 +55,20 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                                                    runtime: CypherRuntime,
                                                                                    updateStrategy: CypherUpdateStrategy,
                                                                                    runtimeBuilder: RuntimeBuilder[T],
-                                                                                   contextCreatorv3_5: ContextCreator[CONTEXT])
-  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config, clock, kernelMonitors, log, planner, runtime, updateStrategy, runtimeBuilder, contextCreatorv3_5) {
+                                                                                   contextCreatorv3_5: ContextCreator[CONTEXT],
+                                                                                   txIdProvider: () => Long)
+  extends LatestRuntimeVariablePlannerCompatibility[CONTEXT, T, Statement](config,
+                                                                           clock,
+                                                                           kernelMonitors,
+                                                                           log,
+                                                                           planner,
+                                                                           runtime,
+                                                                           updateStrategy,
+                                                                           runtimeBuilder,
+                                                                           contextCreatorv3_5,
+                                                                           txIdProvider) {
 
   val monitors: Monitors = WrappedMonitors(kernelMonitors)
-  val cacheMonitor: AstCacheMonitor[Statement] = monitors.newMonitor[AstCacheMonitor[Statement]]("cypher3.4")
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher3.4")
 
   val maybePlannerNamev3_5: Option[CostBasedPlannerName] = planner match {
@@ -118,25 +127,28 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
         val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
-        val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
-        val isStale = (plan: ExecutionPlan_v3_5) => plan.checkPlanResusability(planContext.txIdProvider, planContext.statistics)
+
+        checkForSchemaChanges(planContext)
 
         //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
-        val createPlan = new PlanProducer[ExecutionPlan_v3_5] {
-          override def produceWithExistingTX: ExecutionPlan_v3_5 = {
-            val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-            LogicalPlanNotifications
-              .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
-              .foreach(notificationLogger.log)
+        def createPlan(): ExecutionPlan_v3_5 = {
+          val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
+          LogicalPlanNotifications
+            .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
+            .foreach(notificationLogger.log)
 
-            val result = createExecPlan.transform(logicalPlanState, context)
-            result.maybeExecutionPlan.get
-          }
+          val result = createExecPlan.transform(logicalPlanState, context)
+          result.maybeExecutionPlan.get
         }
-        val executionPlan = if (preParsedQuery.debugOptions.isEmpty)
-          cache.getOrElseUpdate(syntacticQuery.statement(), syntacticQuery.queryText, isStale, createPlan)._1
-        else
-          createPlan.produceWithExistingTX
+
+        val executionPlan =
+          if (preParsedQuery.debugOptions.isEmpty)
+            planCache.computeIfAbsentOrStale(syntacticQuery.statement(),
+                                             transactionalContext,
+                                             createPlan,
+                                             syntacticQuery.queryText).executableQuery
+          else
+            createPlan()
 
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications), preparedQuery.extractedParams(), queryParamNames)
       }
@@ -145,15 +157,8 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
     }
   }
 
-  private def provideCache(cacheAccessor: CacheAccessor[Statement, ExecutionPlan_v3_5],
-                           monitor: CypherCacheFlushingMonitor,
-                           planContext: PlanContext,
-                           planCacheFactory: () => LFUCache[Statement, ExecutionPlan_v3_5]): QueryCache[Statement, ExecutionPlan_v3_5] =
-    planContext.getOrCreateFromSchemaState(cacheAccessor, {
-      monitor.cacheFlushDetected(-1)
-      val lRUCache = planCacheFactory()
-      new QueryCache(cacheAccessor, lRUCache)
-    })
+  private def checkForSchemaChanges(planContext: PlanContext): Unit =
+    planContext.getOrCreateFromSchemaState(this, planCache.clear())
 
   override val runSafelyDuringPlanning: RunSafely = runSafely
   override val runSafelyDuringRuntime: RunSafely = runSafely

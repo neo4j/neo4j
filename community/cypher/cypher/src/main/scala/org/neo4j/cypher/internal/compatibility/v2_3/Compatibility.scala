@@ -121,8 +121,8 @@ trait Compatibility {
       }
     }
 
-    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo = {
-      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
+    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = {
+      val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
       if (stale)
         NeedsReplan(0)
       else

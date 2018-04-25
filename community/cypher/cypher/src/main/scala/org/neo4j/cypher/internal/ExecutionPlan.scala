@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -30,7 +29,7 @@ trait ExecutionPlan {
 
   def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result
 
-  def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo
+  def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo
 
   // This is to force eager calculation
   val plannerInfo: PlannerInfo

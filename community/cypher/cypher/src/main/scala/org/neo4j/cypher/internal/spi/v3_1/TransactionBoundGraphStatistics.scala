@@ -25,9 +25,14 @@ import org.neo4j.cypher.internal.frontend.v3_1.{LabelId, NameId, PropertyKeyId, 
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 import org.neo4j.kernel.impl.api.store.DefaultIndexReference
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 object TransactionBoundGraphStatistics {
-  def apply(read: Read, schemaRead: SchemaRead) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
+  def apply(transactionalContext: TransactionalContext): StatisticsCompletingGraphStatistics =
+    apply(transactionalContext.kernelTransaction().dataRead(), transactionalContext.kernelTransaction().schemaRead())
+
+  def apply(read: Read, schemaRead: SchemaRead): StatisticsCompletingGraphStatistics =
+    new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(read, schemaRead))
 
   private class BaseTransactionBoundGraphStatistics(read: Read, schemaRead: SchemaRead) extends GraphStatistics {
 

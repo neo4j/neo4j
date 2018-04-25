@@ -18,11 +18,11 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
                                             divergence: StatsDivergenceCalculator,
                                             lastCommittedTxIdProvider: () => Long,
-                                            plan: EXECUTABLE_QUERY => ExecutionPlan) {
+                                            reusabilityInfo: (EXECUTABLE_QUERY, TransactionalContext) => ReusabilityInfo) {
 
   def staleness(transactionalContext: TransactionalContext,
                 cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
-    val reusability = plan(cachedExecutableQuery).reusabilityInfo(lastCommittedTxIdProvider, TransactionalContextWrapper(transactionalContext))
+    val reusability = reusabilityInfo(cachedExecutableQuery, transactionalContext)
     reusability match {
       case MaybeReusable(ref) if ref.fingerprint.nonEmpty =>
         val ktx = transactionalContext.kernelTransaction()

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.Compatibility
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator => CommunityRuntimeContextCreatorv3_5}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_3 => v3_3compat}
 import org.neo4j.cypher.internal.compiler.v3_5.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.util.v3_5.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
@@ -77,7 +78,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       case _ =>
         v3_3compat.Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5)
+          CommunityRuntimeContextCreatorV3_3, CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
 
   override def create(spec: PlannerSpec_v3_5, config: CypherCompilerConfiguration): Compatibility[_,_] =
@@ -87,7 +88,7 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelMoni
       case _ =>
         Compatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, log,
                           spec.planner, spec.runtime, spec.updateStrategy, CommunityRuntimeBuilder,
-                          CommunityRuntimeContextCreatorv3_5)
+                          CommunityRuntimeContextCreatorv3_5, LastCommittedTxIdProvider(graph))
     }
 }
 

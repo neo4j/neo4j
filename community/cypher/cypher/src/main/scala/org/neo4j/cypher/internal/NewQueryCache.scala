@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal
 
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import org.neo4j.cypher.CypherExecutionMode
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -30,7 +29,9 @@ import org.neo4j.values.virtual.{MapValue, VirtualValues}
 /**
   * The result of one cache lookup.
   */
-sealed trait CacheLookup[EXECUTABLE_QUERY]
+sealed trait CacheLookup[EXECUTABLE_QUERY] {
+  def executableQuery: EXECUTABLE_QUERY
+}
 case class CacheHit[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
 case class CacheMiss[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extends CacheLookup[EXECUTABLE_QUERY]
 
@@ -38,11 +39,11 @@ case class CacheMiss[EXECUTABLE_QUERY](executableQuery: EXECUTABLE_QUERY) extend
   * Tracer for cache activity.
   */
 trait CacheTracer[QUERY_KEY] {
-  def queryCacheHit(queryKey: QUERY_KEY): Unit
+  def queryCacheHit(queryKey: QUERY_KEY, metaData: String): Unit
 
-  def queryCacheMiss(queryKey: QUERY_KEY): Unit
+  def queryCacheMiss(queryKey: QUERY_KEY, metaData: String): Unit
 
-  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int): Unit
+  def queryCacheStale(queryKey: QUERY_KEY, secondsSincePlan: Int, metaData: String): Unit
 
   def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit
 }
@@ -73,30 +74,32 @@ class NewQueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximum
     *
     * @param queryKey the queryKey to retrieve the execution plan for
     * @param tc TransactionalContext in which to compile and compute staleness
-    * @param compiler Compiler to use if the query is not cached or stale
+    * @param compile Compiler to use if the query is not cached or stale
+    * @param metaData String which will be passed to the CacheTracer
     * @return A CacheLookup with an CachedExecutionPlan
     */
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
-                             compiler: TransactionalContext => EXECUTABLE_QUERY
+                             compile: () => EXECUTABLE_QUERY,
+                             metaData: String = ""
                             ): CacheLookup[EXECUTABLE_QUERY] = {
     if (maximumSize == 0)
-      CacheMiss(compiler(tc))
+      CacheMiss(compile())
     else {
       inner.getIfPresent(queryKey) match {
         case NOT_PRESENT =>
-          compileAndCache(queryKey, tc, compiler)
+          compileAndCache(queryKey, tc, compile, metaData)
 
         case BEING_RECOMPILED =>
-          awaitConcurrentReplan(queryKey)
+          awaitConcurrentReplan(queryKey, metaData)
 
         case executableQuery =>
           stalenessCaller.staleness(tc, executableQuery) match {
             case NotStale =>
-              hit(queryKey, executableQuery)
+              hit(queryKey, executableQuery, metaData)
             case Stale(secondsSincePlan) =>
-              tracer.queryCacheStale(queryKey, secondsSincePlan)
-              compileAndCache(queryKey, tc, compiler)
+              tracer.queryCacheStale(queryKey, secondsSincePlan, metaData)
+              compileAndCache(queryKey, tc, compile, metaData)
           }
       }
     }
@@ -111,39 +114,46 @@ class NewQueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximum
     */
   private def compileAndCache(queryKey: QUERY_KEY,
                         tc: TransactionalContext,
-                        compiler: TransactionalContext => EXECUTABLE_QUERY
+                        compile: () => EXECUTABLE_QUERY,
+                        metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val currentValue = inner.asMap().put(queryKey, BEING_RECOMPILED)
     currentValue match {
       case BEING_RECOMPILED =>
-        awaitConcurrentReplan(queryKey)
+        awaitConcurrentReplan(queryKey, metaData)
 
       case x =>
-        val newExecutableQuery = compiler(tc)
+        val newExecutableQuery = compile()
         inner.put(queryKey, newExecutableQuery)
-        miss(queryKey, newExecutableQuery)
+        miss(queryKey, newExecutableQuery, metaData)
     }
   }
 
   /**
     * Some other thread already started compiling this query. Let's what for that and use that plan.
     */
-  private def awaitConcurrentReplan(queryKey: QUERY_KEY): CacheMiss[EXECUTABLE_QUERY] = {
+  private def awaitConcurrentReplan(queryKey: QUERY_KEY,
+                                    metaData: String
+                                   ): CacheMiss[EXECUTABLE_QUERY] = {
     var cachedExecutableQuery = inner.getIfPresent(queryKey)
     while (cachedExecutableQuery == BEING_RECOMPILED) {
       Thread.`yield`()
       cachedExecutableQuery = inner.getIfPresent(queryKey)
     }
-    miss(queryKey, cachedExecutableQuery)
+    miss(queryKey, cachedExecutableQuery, metaData)
   }
 
-  private def hit(queryKey: QUERY_KEY, executableQuery: EXECUTABLE_QUERY) = {
-    tracer.queryCacheHit(queryKey)
+  private def hit(queryKey: QUERY_KEY,
+                  executableQuery: EXECUTABLE_QUERY,
+                  metaData: String) = {
+    tracer.queryCacheHit(queryKey, metaData)
     CacheHit(executableQuery)
   }
 
-  private def miss(queryKey: QUERY_KEY, newExecutableQuery: EXECUTABLE_QUERY) = {
-    tracer.queryCacheMiss(queryKey)
+  private def miss(queryKey: QUERY_KEY,
+                   newExecutableQuery: EXECUTABLE_QUERY,
+                   metaData: String) = {
+    tracer.queryCacheMiss(queryKey, metaData)
     CacheMiss(newExecutableQuery)
   }
 
@@ -163,7 +173,7 @@ class NewQueryCache[QUERY_KEY <: AnyRef, EXECUTABLE_QUERY <: AnyRef](val maximum
 
 object NewQueryCache {
   val BEING_RECOMPILED_PLAN: ExecutionPlan = new ExecutionPlan {
-    override def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo = ???
+    override def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo = ???
     override def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: MapValue): Result = ???
     override val plannerInfo: PlannerInfo = null
   }

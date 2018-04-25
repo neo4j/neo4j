@@ -59,10 +59,10 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
                      runtime: CypherRuntime,
                      updateStrategy: CypherUpdateStrategy,
                      runtimeBuilder: RuntimeBuilder[T],
-                     contextCreatorv3_5: ContextCreator[CONTEXT3_4]) {
+                     contextCreatorV3_5: ContextCreator[CONTEXT3_4],
+                     txIdProvider: () => Long) {
 
   // abstract stuff
-  protected val cacheMonitor: AstCacheMonitor[STATEMENT]
   protected val maybePlannerNamev3_5: Option[CostBasedPlannerName]
   protected val runSafelyDuringPlanning: RunSafely
   protected val runSafelyDuringRuntime: RunSafely
@@ -74,9 +74,14 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
   protected val logger: InfoLogger = new StringInfoLogger(log)
   protected val monitorsv3_5: Monitors = WrappedMonitorsv3_5(kernelMonitors)
 
-  protected lazy val cacheAccessor: MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_5] = new MonitoringCacheAccessor[STATEMENT, ExecutionPlan_v3_5](cacheMonitor)
+  protected val cacheTracer: CacheTracer[STATEMENT] = monitorsv3_5.newMonitor[CacheTracer[STATEMENT]]("cypher3.4")
 
-  protected def planCacheFactory(): LFUCache[STATEMENT, ExecutionPlan_v3_5] = new LFUCache[STATEMENT, ExecutionPlan_v3_5](configv3_5.queryCacheSize)
+  protected lazy val planCache: AstQueryCache[STATEMENT] =
+    new AstQueryCache(configv3_5.queryCacheSize,
+                      cacheTracer,
+                      clock,
+                      configv3_5.statsDivergenceCalculator,
+                      txIdProvider)
 
   protected def queryGraphSolverv3_5: QueryGraphSolver = LatestRuntimeVariablePlannerCompatibility.createQueryGraphSolver(
     maybePlannerNamev3_5.getOrElse(CostBasedPlannerName.default),
@@ -97,10 +102,14 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
       }
   }
 
-  protected def logStalePlanRemovalMonitor(log: InfoLogger) = new AstCacheMonitor[STATEMENT] {
-    override def cacheDiscard(key: STATEMENT, userKey: String, secondsSinceReplan: Int) {
-      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $userKey")
+  protected def logStalePlanRemovalMonitor(log: InfoLogger) = new CacheTracer[STATEMENT] {
+    override def queryCacheStale(key: STATEMENT, secondsSinceReplan: Int, metaData: String) {
+      log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds: $metaData")
     }
+
+    override def queryCacheHit(queryKey: STATEMENT, metaData: String): Unit = {}
+    override def queryCacheMiss(queryKey: STATEMENT, metaData: String): Unit = {}
+    override def queryCacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {}
   }
 
   protected class ExecutionPlanWrapper(inner: ExecutionPlan_v3_5, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
@@ -135,8 +144,8 @@ STATEMENT <: AnyRef](configv3_5: CypherCompilerConfiguration,
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
-    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContextWrapper): ReusabilityInfo =
-      inner.checkPlanResusability(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.dataRead, ctx.schemaRead))
+    def reusabilityInfo(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityInfo =
+      inner.checkPlanResusability(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
 
     override val plannerInfo: PlannerInfo = {
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {

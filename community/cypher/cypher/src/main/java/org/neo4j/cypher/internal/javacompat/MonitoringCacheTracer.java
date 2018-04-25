@@ -35,19 +35,19 @@ public class MonitoringCacheTracer implements CacheTracer<String>
     }
 
     @Override
-    public void queryCacheHit( String queryKey )
+    public void queryCacheHit( String queryKey, String metaData )
     {
         monitor.cacheHit( queryKey );
     }
 
     @Override
-    public void queryCacheMiss( String queryKey )
+    public void queryCacheMiss( String queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
     }
 
     @Override
-    public void queryCacheStale( String queryKey, int secondsSincePlan )
+    public void queryCacheStale( String queryKey, int secondsSincePlan, String metaData )
     {
         monitor.cacheDiscard( queryKey, "", secondsSincePlan );
     }

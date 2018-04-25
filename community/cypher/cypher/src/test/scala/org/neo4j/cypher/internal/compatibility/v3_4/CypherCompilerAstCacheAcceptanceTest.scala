@@ -22,18 +22,15 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.util.v3_5.DummyPosition
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_5.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_5.phases.{CompilationPhaseTracer, Transformer}
+import org.neo4j.cypher.internal.util.v3_5.DummyPosition
 import org.neo4j.cypher.internal.util.v3_5.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.compatibility.{AstCacheMonitor, CacheAccessor}
-import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.{CacheTracer, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
@@ -59,29 +56,36 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       nonIndexedLabelWarningThreshold = 10000L,
       planWithMinimumCardinalityEstimates = true
     )
-    Compatibility(config, clock, kernelMonitors,
-                      log, CypherPlanner.default, CypherRuntime.default,
-                      CypherUpdateStrategy.default, CommunityRuntimeBuilder, CommunityRuntimeContextCreator)
+    Compatibility(config,
+                  clock,
+                  kernelMonitors,
+                  log,
+                  CypherPlanner.default,
+                  CypherRuntime.default,
+                  CypherUpdateStrategy.default,
+                  CommunityRuntimeBuilder,
+                  CommunityRuntimeContextCreator,
+                  () => 1)
   }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
     override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted"
   }
 
-  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends AstCacheMonitor[Statement] {
-    override def cacheHit(key: Statement) {
+  class CacheCounter(var counts: CacheCounts = CacheCounts()) extends CacheTracer[Statement] {
+    override def queryCacheHit(key: Statement, metaData: String) {
       counts = counts.copy(hits = counts.hits + 1)
     }
 
-    override def cacheMiss(key: Statement) {
+    override def queryCacheMiss(key: Statement, metaData: String) {
       counts = counts.copy(misses = counts.misses + 1)
     }
 
-    override def cacheFlushDetected(sizeBeforeFlush: Long) {
+    override def queryCacheFlush(sizeBeforeFlush: Long) {
       counts = counts.copy(flushes = counts.flushes + 1)
     }
 
-    override def cacheDiscard(key: Statement, ignored: String, secondsSinceReplan: Int): Unit = {
+    override def queryCacheStale(key: Statement, secondsSincePlan: Int, metaData: String): Unit = {
       counts = counts.copy(evicted = counts.evicted + 1)
     }
   }
@@ -201,7 +205,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     runQuery(query)
 
     // then
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1, evicted = 1))
+    counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1, evicted = 1))
   }
 
   test("should not evict query because of unrelated statistics change") {

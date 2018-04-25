@@ -52,20 +52,26 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   require(queryService != null, "Can't work with a null graph database")
 
-  val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
-  val planStalenessCaller = new PlanStalenessCaller[CachedExecutableQuery](clock,
-                                                                           config.statsDivergenceCalculator,
-                                                                           LastCommittedTxIdProvider(queryService),
-                                                                           cachedExecutableQuery => cachedExecutableQuery.plan)
-  val queryCache: NewQueryCache[String, CachedExecutableQuery] =
+  private val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
+  private val lastCommittedTxIdProvider = LastCommittedTxIdProvider(queryService)
+  private def planReusabilitiy(cachedExecutableQuery: CachedExecutableQuery,
+                               transactionalContext: TransactionalContext): ReusabilityInfo =
+    cachedExecutableQuery.plan.reusabilityInfo(lastCommittedTxIdProvider, transactionalContext)
+
+  private val planStalenessCaller =
+    new PlanStalenessCaller[CachedExecutableQuery](clock,
+                                                   config.statsDivergenceCalculator,
+                                                   lastCommittedTxIdProvider,
+                                                   planReusabilitiy)
+  private val queryCache: NewQueryCache[String, CachedExecutableQuery] =
     new NewQueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer, NewQueryCache.BEING_RECOMPILED)
 
-  val compilerEngineDelegator: CompilerEngineDelegator =
+  private val compilerEngineDelegator: CompilerEngineDelegator =
     new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityFactory)
 
   private val parsedQueries = new LFUCache[String, ParsedQuery](config.queryCacheSize)
 
-  val schemaHelper = new SchemaHelper(queryCache)
+  private val schemaHelper = new SchemaHelper(queryCache)
 
   def profile(query: String, params: MapValue, context: TransactionalContext): Result =
     execute(query, params, context, profile = true)
@@ -110,7 +116,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         val schemaToken = schemaHelper.readSchemaToken(tc)
         val cacheLookup = queryCache.computeIfAbsentOrStale(cacheKey,
                                                             tc,
-                                                            tc => compileQuery(preParsedQuery, tracer, tc))
+                                                            () => compileQuery(preParsedQuery, tracer, tc))
         cacheLookup match {
           case CacheHit(executableQuery) =>
             if (schemaHelper.lockLabels(schemaToken, executableQuery.plan, preParsedQuery.version, tc)) {
