@@ -19,18 +19,26 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -77,6 +85,57 @@ public class IndexProcedures implements AutoCloseable
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
     }
 
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
+    {
+        return createIndex( indexSpecification, providerName, "index created",
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.indexCreate( descriptor, Optional.of( provider ), Optional.empty() ) );
+    }
+
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint( String indexSpecification, String providerName ) throws ProcedureException
+    {
+        return createIndex( indexSpecification, providerName, "uniqueness constraint online",
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, Optional.of( provider ) ) );
+    }
+
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String indexSpecification, String providerName ) throws ProcedureException
+    {
+        return createIndex( indexSpecification, providerName, "node key constraint online",
+                ( schemaWrite, descriptor, provider ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, Optional.of( provider ) ) );
+    }
+
+    private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName, String statusMessage,
+            IndexCreator indexCreator ) throws ProcedureException
+    {
+        assertProviderNameNotNull( providerName );
+        IndexSpecifier index = parse( indexSpecification );
+        int labelId = getOrCreateLabelId( index.label() );
+        int[] propertyKeyIds = getOrCreatePropertyIds( index.properties() );
+        try
+        {
+            SchemaWrite schemaWrite = ktx.schemaWrite();
+            LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
+            indexCreator.create( schemaWrite, labelSchemaDescriptor, providerName );
+            return Stream.of( new BuiltInProcedures.SchemaIndexInfo( indexSpecification, providerName, statusMessage ) );
+        }
+        catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
+        {
+            throw new ProcedureException( e.status(), e, e.getMessage() );
+        }
+    }
+
+    private void assertProviderNameNotNull( String providerName ) throws ProcedureException
+    {
+        if ( providerName == null )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, indexProviderNullMessage() );
+        }
+    }
+
+    private String indexProviderNullMessage()
+    {
+        return "Could not create index with specified index provider being null.";
+    }
+
     private IndexSpecifier parse( String specification )
     {
         return new IndexSpecifier( specification );
@@ -101,10 +160,38 @@ public class IndexProcedures implements AutoCloseable
             int propertyKeyId = ktx.tokenRead().propertyKey( propertyKeyNames[i] );
             if ( propertyKeyId == TokenRead.NO_TOKEN )
             {
-                throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s",
-                        propertyKeyNames );
+                throw new ProcedureException( Status.Schema.PropertyKeyAccessFailed, "No such property key %s", propertyKeyNames[i] );
             }
             propertyKeyIds[i] = propertyKeyId;
+        }
+        return propertyKeyIds;
+    }
+
+    private int getOrCreateLabelId( String labelName ) throws ProcedureException
+    {
+        try
+        {
+            return ktx.tokenWrite().labelGetOrCreateForName( labelName );
+        }
+        catch ( TooManyLabelsException | IllegalTokenNameException e )
+        {
+            throw new ProcedureException( e.status(), e, e.getMessage() );
+        }
+    }
+
+    private int[] getOrCreatePropertyIds( String[] propertyKeyNames ) throws ProcedureException
+    {
+        int[] propertyKeyIds = new int[propertyKeyNames.length];
+        for ( int i = 0; i < propertyKeyIds.length; i++ )
+        {
+            try
+            {
+                propertyKeyIds[i] = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyNames[i] );
+            }
+            catch ( IllegalTokenNameException e )
+            {
+                throw new ProcedureException( e.status(), e, e.getMessage() );
+            }
         }
         return propertyKeyIds;
     }
@@ -175,5 +262,11 @@ public class IndexProcedures implements AutoCloseable
     public void close()
     {
         statement.close();
+    }
+
+    @FunctionalInterface
+    private interface IndexCreator
+    {
+        void create( SchemaWrite schemaWrite, LabelSchemaDescriptor descriptor, String providerName ) throws SchemaKernelException;
     }
 }

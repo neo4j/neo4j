@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.neo4j.graphdb.Direction;
@@ -40,12 +41,16 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class DbRepresentation
 {
     private final Map<Long,NodeRep> nodes = new TreeMap<>();
+    private final Set<IndexDefinition> schemaIndexes = new HashSet<>();
+    private final Set<ConstraintDefinition> constraints = new HashSet<>();
     private long highestNodeId;
     private long highestRelationshipId;
 
@@ -70,6 +75,14 @@ public class DbRepresentation
                     result.highestRelationshipId =
                             Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
 
+                }
+                for ( IndexDefinition indexDefinition : db.schema().getIndexes() )
+                {
+                    result.schemaIndexes.add( indexDefinition );
+                }
+                for ( ConstraintDefinition constraintDefinition : db.schema().getConstraints() )
+                {
+                    result.constraints.add( constraintDefinition );
                 }
                 return result;
             }
@@ -115,10 +128,56 @@ public class DbRepresentation
         return compareWith( (DbRepresentation) obj ).isEmpty();
     }
 
+    // Accessed from HA-robustness, needs to be public
+    @SuppressWarnings( "WeakerAccess" )
     public Collection<String> compareWith( DbRepresentation other )
     {
         Collection<String> diffList = new ArrayList<>();
         DiffReport diff = new CollectionDiffReport( diffList );
+        nodeDiff( other, diff );
+        indexDiff( other, diff );
+        constraintDiff( other, diff );
+        return diffList;
+    }
+
+    private void constraintDiff( DbRepresentation other, DiffReport diff )
+    {
+        for ( ConstraintDefinition constraint : constraints )
+        {
+            if ( !other.constraints.contains( constraint ) )
+            {
+                diff.add( "I have constraint " + constraint + " which other doesn't" );
+            }
+        }
+        for ( ConstraintDefinition otherConstraint : other.constraints )
+        {
+            if ( !constraints.contains( otherConstraint ) )
+            {
+                diff.add( "Other has constraint " + otherConstraint + " which I don't" );
+            }
+        }
+    }
+
+    private void indexDiff( DbRepresentation other, DiffReport diff )
+    {
+        for ( IndexDefinition schemaIndex : schemaIndexes )
+        {
+            if ( !other.schemaIndexes.contains( schemaIndex ) )
+            {
+                diff.add( "I have schema index " + schemaIndex + " which other doesn't" );
+            }
+        }
+        for ( IndexDefinition otherSchemaIndex : other.schemaIndexes )
+        {
+            if ( !schemaIndexes.contains( otherSchemaIndex ) )
+            {
+                diff.add( "Other has schema index " + otherSchemaIndex + " which I don't" );
+            }
+        }
+    }
+
+    private void nodeDiff( DbRepresentation other, DiffReport diff )
+    {
         for ( NodeRep node : nodes.values() )
         {
             NodeRep otherNode = other.nodes.get( node.id );
@@ -137,7 +196,6 @@ public class DbRepresentation
                 diff.add( "Other has node " + id + " which I don't" );
             }
         }
-        return diffList;
     }
 
     @Override
@@ -237,7 +295,7 @@ public class DbRepresentation
                 if ( thisIndex.size() != otherIndex.size() )
                 {
                     diff.add( "other index had a different mapping count than me for node " + this + " mine:" +
-                              thisIndex + ", other:" + otherIndex );
+                            thisIndex + ", other:" + otherIndex );
                     continue;
                 }
 
@@ -247,14 +305,14 @@ public class DbRepresentation
                             otherIndex.get( indexEntry.getKey() ) ) )
                     {
                         diff.add( "other index had a different value indexed for " + indexEntry.getKey() + "=" +
-                                  indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) +
-                                  " for " + this );
+                                indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) +
+                                " for " + this );
                     }
                 }
             }
         }
 
-        protected void compareWith( NodeRep other, DiffReport diff )
+        void compareWith( NodeRep other, DiffReport diff )
         {
             if ( other.id != id )
             {
@@ -356,14 +414,13 @@ public class DbRepresentation
             }
         }
 
-        protected boolean compareWith( PropertiesRep other, DiffReport diff )
+        protected void compareWith( PropertiesRep other, DiffReport diff )
         {
             boolean equals = props.equals( other.props );
             if ( !equals )
             {
                 diff.add( "Properties diff for " + entityToString + " mine:" + props + ", other:" + other.props );
             }
-            return equals;
         }
 
         @Override

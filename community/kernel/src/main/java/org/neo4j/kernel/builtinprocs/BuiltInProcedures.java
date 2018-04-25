@@ -67,6 +67,7 @@ import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.SCHEMA;
 import static org.neo4j.procedure.Mode.WRITE;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
@@ -218,6 +219,35 @@ public class BuiltInProcedures
                 .map( constraint -> constraint.prettyPrint( tokens ) )
                 .sorted()
                 .map( ConstraintResult::new );
+    }
+
+    @Description( "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
+            "YIELD index, providerName, status" )
+    @Procedure( name = "db.createIndex", mode = SCHEMA )
+    public Stream<SchemaIndexInfo> createIndex(
+            @Name( "index" ) String index,
+            @Name( "providerName" ) String providerName )
+            throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            return indexProcedures.createIndex( index, providerName );
+        }
+    }
+
+    @Description( "Create a unique property constraint with index backed by specified index provider " +
+            "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
+            "YIELD index, providerName, status" )
+    @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
+    public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
+            @Name( "index" ) String index,
+            @Name( "providerName" ) String providerName )
+            throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            return indexProcedures.createUniquePropertyConstraint( index, providerName );
+        }
     }
 
     @Description( "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`" )
@@ -823,6 +853,20 @@ public class BuiltInProcedures
             this.state = state;
             this.type = type;
             this.provider = provider;
+        }
+    }
+
+    public static class SchemaIndexInfo
+    {
+        public final String index;
+        public final String providerName;
+        public final String status;
+
+        public SchemaIndexInfo( String index, String providerName, String status )
+        {
+            this.index = index;
+            this.providerName = providerName;
+            this.status = status;
         }
     }
 
