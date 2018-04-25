@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThrowable;
 
@@ -60,7 +62,7 @@ public class BackupStrategyCoordinatorTest
 
     // dependencies
     private final ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
-    private final ForceCheckpointBackupService forceCheckpointBackupService = mock( ForceCheckpointBackupService.class );
+    private final CleanTxLogService cleanTxLogService = mock( CleanTxLogService.class );
     private final OutsideWorld outsideWorld = mock( OutsideWorld.class );
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
@@ -86,7 +88,7 @@ public class BackupStrategyCoordinatorTest
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
-        subject = new BackupStrategyCoordinator( consistencyCheckService, forceCheckpointBackupService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, cleanTxLogService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
     }
 
@@ -236,7 +238,7 @@ public class BackupStrategyCoordinatorTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupStrategyCoordinator( consistencyCheckService, forceCheckpointBackupService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, cleanTxLogService, outsideWorld, logProvider, progressMonitorFactory,
                 Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
@@ -265,9 +267,7 @@ public class BackupStrategyCoordinatorTest
         }
 
         // then
-        verify( forceCheckpointBackupService, never() ).forceCheckpoint();
-        verify( forceCheckpointBackupService, never() ).forcePrune();
-        verify( forceCheckpointBackupService, never() ).forceRotation();
+        verifyZeroInteractions( cleanTxLogService );
     }
 
     @Test
@@ -280,9 +280,7 @@ public class BackupStrategyCoordinatorTest
         subject.performBackup( onlineBackupContext );
 
         // then
-        verify( forceCheckpointBackupService, times( 1 ) ).forceCheckpoint();
-        verify( forceCheckpointBackupService, times( 1 ) ).forcePrune();
-        verify( forceCheckpointBackupService, times( 1 ) ).forceRotation();
+        verify( cleanTxLogService, times( 1 ) ).removeUnnecessaryTransactionLogs( any() );
     }
 
     /**

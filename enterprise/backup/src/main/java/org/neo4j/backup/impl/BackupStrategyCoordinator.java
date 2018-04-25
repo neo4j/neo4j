@@ -33,11 +33,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -54,17 +50,17 @@ class BackupStrategyCoordinator
     private static final int STATUS_CC_INCONSISTENT = 3;
 
     private final ConsistencyCheckService consistencyCheckService;
-    private final ForceCheckpointBackupService forceCheckpointBackupService;
+    private final CleanTxLogService cleanTxLogService;
     private final OutsideWorld outsideWorld;
     private final LogProvider logProvider;
     private final ProgressMonitorFactory progressMonitorFactory;
     private final List<BackupStrategyWrapper> strategies;
 
-    BackupStrategyCoordinator( ConsistencyCheckService consistencyCheckService, ForceCheckpointBackupService forceCheckpointBackupService,
+    BackupStrategyCoordinator( ConsistencyCheckService consistencyCheckService, CleanTxLogService cleanTxLogService,
             OutsideWorld outsideWorld, LogProvider logProvider, ProgressMonitorFactory progressMonitorFactory, List<BackupStrategyWrapper> strategies )
     {
         this.consistencyCheckService = consistencyCheckService;
-        this.forceCheckpointBackupService = forceCheckpointBackupService;
+        this.cleanTxLogService = cleanTxLogService;
         this.outsideWorld = outsideWorld;
         this.logProvider = logProvider;
         this.progressMonitorFactory = progressMonitorFactory;
@@ -106,25 +102,11 @@ class BackupStrategyCoordinator
             causesOfFailure.forEach( commandFailed::addSuppressed );
             throw commandFailed;
         }
-        removeUnnecessaryTransactionLogs( destination.toFile(), outsideWorld.fileSystem() );
+        cleanTxLogService.removeUnnecessaryTransactionLogs( destination.toFile() );
         if ( requiredArgs.isDoConsistencyCheck() )
         {
             performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, destination );
         }
-    }
-
-    private void removeUnnecessaryTransactionLogs( File backupDirectory, FileSystemAbstraction fileSystemAbstraction )
-    {
-        LifeSupport lifeSupport = new LifeSupport();
-        lifeSupport.add( forceCheckpointBackupService );
-
-        lifeSupport.init();
-        lifeSupport.start();
-        forceCheckpointBackupService.forceRotation();
-        forceCheckpointBackupService.forceCheckpoint();
-        forceCheckpointBackupService.forcePrune( );
-        lifeSupport.stop();
-        lifeSupport.shutdown();
     }
 
     private static Supplier<CommandFailed> commandFailedWithCause( Fallible<BackupStrategyOutcome> cause )

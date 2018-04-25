@@ -303,31 +303,13 @@ public class OnlineBackupCommandCcIT
                         "--backup-dir=" + backupDir,
                         "--name=" + backupName ) );
 
-        // then there is only 1 transaction file containing 1 transaction
+        // then there are no transaction files
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
         LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
-
-        // and there are 2 log files - one with the latest transactions, the other only with a checkpoint
         long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
         long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
-        assertThat( highestTxIdInLogFiles, greaterThan( lowestTxIdInLogFiles ) );
-
-        // and the first log file has been pruned
-        assertThat( lowestTxIdInLogFiles, greaterThan( 0L ) );
-
-        // and there is at least 1 transaction in the first tx log file
-        File lowestLogFile = logFiles.getLogFileForVersion( lowestTxIdInLogFiles );
-        Pair<List<LogEntry[]>,List<CheckPoint>> processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( lowestLogFile );
-        List<LogEntry[]> transactions = processedLogFile.first();
-        assertThat(  transactions.size(), greaterThan( 1 ));
-
-        // and there are no transactions in the latest log file
-        File highestLogFile = logFiles.getLogFileForVersion( highestTxIdInLogFiles );
-        processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( highestLogFile );
-        transactions = processedLogFile.first();
-        List<CheckPoint> checkPoints = processedLogFile.other();
-        assertEquals( 0, transactions.size() );
-        assertThat( checkPoints.size(), greaterThan( 1 ) );
+        assertEquals( -1, lowestTxIdInLogFiles );
+        assertEquals( -1, highestTxIdInLogFiles );
     }
 
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
