@@ -44,7 +44,7 @@ trait StringCacheMonitor extends CypherCacheMonitor[String]
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer,
+                      val cacheTracer: CacheTracer[String],
                       val config: CypherConfiguration,
                       val compatibilityFactory: CompatibilityFactory,
                       val logProvider: LogProvider,
@@ -53,8 +53,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   require(queryService != null, "Can't work with a null graph database")
 
   val preParser = new PreParser(config.version, config.planner, config.runtime, config.queryCacheSize)
-  val planStalenessCaller = new PlanStalenessCaller(clock, config.statsDivergenceCalculator, LastCommittedTxIdProvider(queryService))
-  val queryCache = new NewQueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer)
+  val planStalenessCaller = new PlanStalenessCaller[CachedExecutableQuery](clock,
+                                                                           config.statsDivergenceCalculator,
+                                                                           LastCommittedTxIdProvider(queryService),
+                                                                           cachedExecutableQuery => cachedExecutableQuery.plan)
+  val queryCache: NewQueryCache[String, CachedExecutableQuery] =
+    new NewQueryCache(config.queryCacheSize, planStalenessCaller, cacheTracer, NewQueryCache.BEING_RECOMPILED)
+
   val compilerEngineDelegator: CompilerEngineDelegator =
     new CompilerEngineDelegator(queryService, kernelMonitors, config, logProvider, compatibilityFactory)
 

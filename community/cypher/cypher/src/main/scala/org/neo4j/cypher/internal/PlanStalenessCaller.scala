@@ -15,13 +15,14 @@ import org.neo4j.kernel.impl.query.TransactionalContext
   *                   statistics, and how much time has passed.
   * @param lastCommittedTxIdProvider Reports the id of the latest committed transaction.
   */
-class PlanStalenessCaller(clock: Clock,
-                          divergence: StatsDivergenceCalculator,
-                          lastCommittedTxIdProvider: () => Long) {
+class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
+                                            divergence: StatsDivergenceCalculator,
+                                            lastCommittedTxIdProvider: () => Long,
+                                            plan: EXECUTABLE_QUERY => ExecutionPlan) {
 
   def staleness(transactionalContext: TransactionalContext,
-                cachedExecutableQuery: CachedExecutableQuery): Staleness = {
-    val reusability = cachedExecutableQuery.plan.reusabilityInfo(lastCommittedTxIdProvider, TransactionalContextWrapper(transactionalContext))
+                cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
+    val reusability = plan(cachedExecutableQuery).reusabilityInfo(lastCommittedTxIdProvider, TransactionalContextWrapper(transactionalContext))
     reusability match {
       case MaybeReusable(ref) if ref.fingerprint.nonEmpty =>
         val ktx = transactionalContext.kernelTransaction()

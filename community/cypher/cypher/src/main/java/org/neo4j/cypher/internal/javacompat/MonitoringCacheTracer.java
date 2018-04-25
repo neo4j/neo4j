@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.StringCacheMonitor;
 /**
  * Adapter for passing CacheTraces into the Monitoring infrastructure.
  */
-public class MonitoringCacheTracer implements CacheTracer
+public class MonitoringCacheTracer implements CacheTracer<String>
 {
     private final StringCacheMonitor monitor;
 

@@ -8,7 +8,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class SchemaToken(x: Long) extends AnyVal
 
-class SchemaHelper(val queryCache: NewQueryCache) {
+class SchemaHelper(val queryCache: NewQueryCache[_,_]) {
 
   private val schemaToken = new AtomicLong()
 
