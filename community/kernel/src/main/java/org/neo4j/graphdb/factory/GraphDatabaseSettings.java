@@ -850,12 +850,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
 
-    @Description( "Value of the Access-Control-Allow-Origin header sent over any HTTP or HTTPS " +
-            "connector. This defaults to '*', which allows broadest compatibility. Note " +
-            "that any URI provided here limits HTTP/HTTPS access to that URI only." )
-    public static final Setting<String> access_control_allow_origin =
-            setting( "dbms.connectors.access_control_allow_origin", STRING, "*" );
-
     @Internal
     public static final Setting<Boolean> bolt_logging_enabled = setting( "unsupported.dbms.logs.bolt.enabled",
             BOOLEAN, FALSE );
