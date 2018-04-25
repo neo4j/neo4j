@@ -573,30 +573,30 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         if ( limiter == null )
         {
             throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
         assertNotClosed();
-        flushAllPages( limiter );
+        List<PagedFile> files = listExistingMappings();
+        flushAllPages( files, limiter );
         clearEvictorException();
     }
 
-    private void flushAllPages( IOLimiter limiter ) throws IOException
+    private void flushAllPages( List<PagedFile> files, IOLimiter limiter ) throws IOException
     {
         try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
         {
-            FileMapping fileMapping = mappedFiles;
-            while ( fileMapping != null )
+            for ( PagedFile file : files )
             {
-                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( fileMapping.pagedFile.swapper ) )
+                MuninnPagedFile muninnPagedFile = (MuninnPagedFile) file;
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( muninnPagedFile.swapper ) )
                 {
                     FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-                    fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                    muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
                 }
-                fileMapping = fileMapping.next;
             }
             syncDevice();
         }
