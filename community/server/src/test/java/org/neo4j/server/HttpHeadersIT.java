@@ -25,17 +25,16 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.HTTPSProperties;
-import org.eclipse.jetty.http.HttpHeader;
 import org.junit.After;
 import org.junit.Test;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -50,9 +49,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
+import static org.neo4j.server.security.ssl.HttpsRequestCustomizer.PUBLIC_KEY_PINS_HTTP_HEADER;
 
 public class HttpHeadersIT extends ExclusiveServerTestBase
 {
+    private static final String HSTS_HEADER_VALUE = "max-age=31536000; includeSubDomains; preload";
+    private static final String HPKP_HEADER_VALUE = "max-age=5184000; " +
+                                                    "pin-sha256=\"d6qzRu9zOECb90Uez27xWltNsj0e1Md7GkYYkVoZWmM=\"; " +
+                                                    "pin-sha256=\"E9CZ9INDbd+2eRQozYqqbQ2yXLVKB9+xcprMF+44U1g=\"; " +
+                                                    "includeSubDomains";
+
     private CommunityNeoServer server;
 
     @After
@@ -81,16 +87,15 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotSendHstsHeaderWithHttpResponse() throws Exception
     {
-        startServer( "max-age=3600" );
+        startServer( HSTS_HEADER_VALUE, null );
         assertNull( runRequestAndGetHstsHeaderValue( httpUri() ) );
     }
 
     @Test
     public void shouldSendHstsHeaderWithHttpsResponse() throws Exception
     {
-        String hstsValue = "max-age=31536000; includeSubDomains";
-        startServer( hstsValue );
-        assertEquals( hstsValue, runRequestAndGetHstsHeaderValue( httpsUri() ) );
+        startServer( HSTS_HEADER_VALUE, null );
+        assertEquals( HSTS_HEADER_VALUE, runRequestAndGetHstsHeaderValue( httpsUri() ) );
     }
 
     @Test
@@ -100,18 +105,39 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
         assertNull( runRequestAndGetHstsHeaderValue( httpsUri() ) );
     }
 
-    private void startServer() throws Exception
+    @Test
+    public void shouldNotSendHpkpHeaderWithHttpResponse() throws Exception
     {
-        startServer( null );
+        startServer( null, HPKP_HEADER_VALUE );
+        assertNull( runRequestAndGetHpkpHeaderValue( httpUri() ) );
     }
 
-    private void startServer( String hstsValue ) throws Exception
+    @Test
+    public void shouldSendHpkpHeaderWithHttpsResponse() throws Exception
     {
-        server = buildServer( hstsValue );
+        startServer( null, HPKP_HEADER_VALUE );
+        assertEquals( HPKP_HEADER_VALUE, runRequestAndGetHpkpHeaderValue( httpsUri() ) );
+    }
+
+    @Test
+    public void shouldNotSendHpkpHeaderWithHttpsResponseWhenNotConfigured() throws Exception
+    {
+        startServer();
+        assertNull( runRequestAndGetHpkpHeaderValue( httpsUri() ) );
+    }
+
+    private void startServer() throws Exception
+    {
+        startServer( null, null );
+    }
+
+    private void startServer( String hstsValue, String hpkpValue ) throws Exception
+    {
+        server = buildServer( hstsValue, hpkpValue );
         server.start();
     }
 
-    private CommunityNeoServer buildServer( String hstsValue ) throws Exception
+    private CommunityNeoServer buildServer( String hstsValue, String hpkpValue ) throws Exception
     {
         CommunityServerBuilder builder = serverOnRandomPorts()
                 .withHttpsEnabled()
@@ -120,6 +146,10 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
         if ( hstsValue != null )
         {
             builder.withProperty( ServerSettings.http_strict_transport_security.name(), hstsValue );
+        }
+        if ( hpkpValue != null )
+        {
+            builder.withProperty( ServerSettings.http_public_key_pins.name(), hpkpValue );
         }
 
         return builder.build();
@@ -137,7 +167,7 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static void testNoJettyVersionInResponseHeaders( URI baseUri ) throws Exception
     {
-        MultivaluedMap<String,String> headers = runRequestAndGetHeaders( baseUri );
+        Map<String,List<String>> headers = runRequestAndGetHeaders( baseUri );
 
         assertNull( headers.get( SERVER.asString() ) ); // no 'Server' header
 
@@ -149,7 +179,17 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
 
     private static String runRequestAndGetHstsHeaderValue( URI baseUri ) throws Exception
     {
-        List<String> values = runRequestAndGetHeaderValues( baseUri, STRICT_TRANSPORT_SECURITY );
+        return runRequestAndGetHeaderValue( baseUri, STRICT_TRANSPORT_SECURITY.asString() );
+    }
+
+    private static String runRequestAndGetHpkpHeaderValue( URI baseUri ) throws Exception
+    {
+        return runRequestAndGetHeaderValue( baseUri, PUBLIC_KEY_PINS_HTTP_HEADER );
+    }
+
+    private static String runRequestAndGetHeaderValue( URI baseUri, String header ) throws Exception
+    {
+        List<String> values = runRequestAndGetHeaderValues( baseUri, header );
         if ( values.isEmpty() )
         {
             return null;
@@ -164,12 +204,12 @@ public class HttpHeadersIT extends ExclusiveServerTestBase
         }
     }
 
-    private static List<String> runRequestAndGetHeaderValues( URI baseUri, HttpHeader header ) throws Exception
+    private static List<String> runRequestAndGetHeaderValues( URI baseUri, String header ) throws Exception
     {
-        return runRequestAndGetHeaders( baseUri ).getOrDefault( header.asString(), emptyList() );
+        return runRequestAndGetHeaders( baseUri ).getOrDefault( header, emptyList() );
     }
 
-    private static MultivaluedMap<String,String> runRequestAndGetHeaders( URI baseUri ) throws Exception
+    private static Map<String,List<String>> runRequestAndGetHeaders( URI baseUri ) throws Exception
     {
         URI uri = baseUri.resolve( "db/data/transaction/commit" );
         ClientRequest request = createClientRequest( uri );

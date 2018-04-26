@@ -192,6 +192,12 @@ public class ServerSettings implements LoadableConfig
                   "Value is expected to contain dirictives like 'max-age', 'includeSubDomains' and 'preload'." )
     public static final Setting<String> http_strict_transport_security = setting( "dbms.security.http_strict_transport_security", STRING, NO_DEFAULT );
 
+    @Description( "Value of the HTTP Public Key Pinning (HPKP) response header. " +
+                  "This header tells browsers about the public keys that belong to a webpage. It is attached to every HTTPS response. " +
+                  "Setting is not set by default so 'Public-Key-Pins' header is not sent. " +
+                  "Value is expected to contain dirictives like 'pin-sha256', 'max-age', 'includeSubDomains' and 'report-uri'." )
+    public static final Setting<String> http_public_key_pins = setting( "dbms.security.http_public_key_pins", STRING, NO_DEFAULT );
+
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
                   "commands with semi-colon." )

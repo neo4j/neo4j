@@ -28,17 +28,22 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.ServerSettings;
 
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;
+import static org.neo4j.server.configuration.ServerSettings.http_public_key_pins;
+import static org.neo4j.server.configuration.ServerSettings.http_strict_transport_security;
 
 public class HttpsRequestCustomizer implements HttpConfiguration.Customizer
 {
+    public static final String PUBLIC_KEY_PINS_HTTP_HEADER = "Public-Key-Pins";
+
     private final HttpField hstsResponseField;
+    private final HttpField hpkpResponseField;
 
     public HttpsRequestCustomizer( Config config )
     {
         hstsResponseField = createHstsResponseField( config );
+        hpkpResponseField = createHpkpResponseField( config );
     }
 
     @Override
@@ -46,19 +51,37 @@ public class HttpsRequestCustomizer implements HttpConfiguration.Customizer
     {
         request.setScheme( HttpScheme.HTTPS.asString() );
 
-        if ( hstsResponseField != null )
+        addResponseFieldIfConfigured( request, hstsResponseField );
+        addResponseFieldIfConfigured( request, hpkpResponseField );
+    }
+
+    private static void addResponseFieldIfConfigured( Request request, HttpField field )
+    {
+        if ( field != null )
         {
-            request.getResponse().getHttpFields().add( hstsResponseField );
+            request.getResponse().getHttpFields().add( field );
         }
     }
 
     private static HttpField createHstsResponseField( Config config )
     {
-        String configuredValue = config.get( ServerSettings.http_strict_transport_security );
+        String configuredValue = config.get( http_strict_transport_security );
         if ( StringUtils.isBlank( configuredValue ) )
         {
             return null;
         }
         return new PreEncodedHttpField( STRICT_TRANSPORT_SECURITY, configuredValue );
+    }
+
+    private static HttpField createHpkpResponseField( Config config )
+    {
+        String configuredValue = config.get( http_public_key_pins );
+        if ( StringUtils.isBlank( configuredValue ) )
+        {
+            return null;
+        }
+        // unable to use PreEncodedHttpField because of a bug, see https://github.com/eclipse/jetty.project/pull/2488
+        // should be possible to handle HSTS and HPKP field creation after bug is fixed in jetty version we depend on
+        return new HttpField( PUBLIC_KEY_PINS_HTTP_HEADER, configuredValue );
     }
 }
