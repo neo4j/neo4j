@@ -30,10 +30,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
-import org.neo4j.commandline.arguments.common.Database;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
@@ -222,8 +219,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( "# Based on the above, the following memory settings are recommended:" );
         print( initialHeapSize.name() + "=" + heap );
         print( maxHeapSize.name() + "=" + heap );
-        // print this generic memory calculation as commented out, for reference
-        print( (specificDb ? "#" : "") + pagecache_memory.name() + "=" + pagecache );
+        print( pagecache_memory.name() + "=" + pagecache );
 
         if ( !specificDb )
         {
@@ -232,42 +228,54 @@ public class MemoryRecommendationsCommand implements AdminCommand
         String databaseName = arguments.get( ARG_DATABASE );
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         File storeDir = getConfig( configFile, databaseName ).get( database_path );
+        long pageCacheSize = dbSpecificPageCacheSize( storeDir );
+        long luceneSize = dbSpecificLuceneSize( storeDir );
 
         print( "#" );
-        print( "# A minimal page cache memory setting to fully map the database contents of '" + storeDir.getAbsolutePath() + "':" );
-        print( pagecache_memory.name() + "=" + dbSpecificPageCacheMemory( storeDir ) );
+        print( "# The numbers below have been derived based on your current data volume in database and index configuration of database '" + databaseName +
+                "'." );
+        print( "# They can be used as an input into more detailed memory analysis." );
+        print( "# Lucene indexes: " + bytesToString( luceneSize ) );
+        print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
     }
 
-    private FilenameFilter getNativeIndexFileFilter( Path baseSchemaIndexPath )
+    private long dbSpecificPageCacheSize( File storeDir )
+    {
+        return sumStoreFiles( storeDir ) + sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( false ) );
+    }
+
+    private long dbSpecificLuceneSize( File storeDir )
+    {
+        return sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( true ) );
+    }
+
+    private FilenameFilter getNativeIndexFileFilter( boolean inverse )
     {
         return ( dir, name ) ->
         {
             File file = new File( dir, name );
-            // Lucene index files lives in:
-            // - schema/index/lucene/<indexId>/<partition>/.....
-            // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
-            if ( outsideWorld.fileSystem().isDirectory( file ) && (file.toPath().getParent().equals( baseSchemaIndexPath ) && name.equals( "lucene" ) ||
-                    file.toPath().getNameCount() - baseSchemaIndexPath.getNameCount() == 3 && name.startsWith( "lucene-" )) )
+            if ( outsideWorld.fileSystem().isDirectory( file ) )
             {
-                // Do not go down lucene directory
+                // Always go down directories
+                return true;
+            }
+            if ( name.equals( FailureStorage.DEFAULT_FAILURE_FILE_NAME ) )
+            {
+                // Never include failure-storage files
                 return false;
             }
-            return true;
+
+            Path path = file.toPath();
+            int nameCount = path.getNameCount();
+            // Lucene index files lives in:
+            // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
+            boolean isLuceneFilePart1 = nameCount >= 3 && path.getName( nameCount - 3 ).toString().startsWith( "lucene-" );
+            // - schema/index/lucene/<indexId>/<partition>/.....
+            boolean isLuceneFilePart2 = nameCount >= 4 && path.getName( nameCount - 4 ).toString().equals( "lucene" );
+
+            boolean isLuceneFile = isLuceneFilePart1 || isLuceneFilePart2;
+            return inverse == isLuceneFile;
         };
-    }
-
-    private String dbSpecificPageCacheMemory( File storeDir )
-    {
-        long total = 0;
-
-        // All neostore files
-        total += sumStoreFiles( storeDir );
-
-        // All native index files
-        File baseSchemaIndexDir = baseSchemaIndexFolder( storeDir );
-        total += sumNativeIndexFiles( baseSchemaIndexDir, getNativeIndexFileFilter( baseSchemaIndexDir.toPath() ) );
-
-        return bytesToString( total );
     }
 
     private long sumStoreFiles( File storeDir )
@@ -287,7 +295,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return total;
     }
 
-    private long sumNativeIndexFiles( File file, FilenameFilter filter )
+    private long sumIndexFiles( File file, FilenameFilter filter )
     {
         long total = 0;
         if ( outsideWorld.fileSystem().isDirectory( file ) )
@@ -297,7 +305,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
             {
                 for ( File child : children )
                 {
-                    total += sumNativeIndexFiles( child, filter );
+                    total += sumIndexFiles( child, filter );
                 }
             }
         }

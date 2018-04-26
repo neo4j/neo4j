@@ -60,6 +60,7 @@ import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -199,26 +200,37 @@ public class MemoryRecommendationsCommandTest
             }
         };
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
+        String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
         // when
         command.execute( array( "--database", databaseName, "--memory", "8g" ) );
 
         // then
-        Map<String,String> stringMap = MapUtil.load( new StringReader( output.toString() ) );
-        long expectedSize = calculatePageCacheFileSize( storeDir );
-        assertThat( stringMap.get( pagecache_memory.name() ), is( bytesToString( expectedSize ) ) );
+        String memrecString = output.toString();
+        Map<String,String> stringMap = MapUtil.load( new StringReader( memrecString ) );
+        assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
+        assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
+
+        long[] expectedSizes = calculatePageCacheFileSize( storeDir );
+        long expectedPageCacheSize = expectedSizes[0];
+        long expectedLuceneSize = expectedSizes[1];
+        assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
+        assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( expectedPageCacheSize ) ) );
     }
 
-    private long calculatePageCacheFileSize( File storeDir ) throws IOException
+    private long[] calculatePageCacheFileSize( File storeDir ) throws IOException
     {
-        MutableLong total = new MutableLong();
+        MutableLong pageCacheTotal = new MutableLong();
+        MutableLong luceneTotal = new MutableLong();
         for ( StoreType storeType : StoreType.values() )
         {
             if ( storeType.isRecordStore() )
             {
                 File file = new File( storeDir, storeType.getStoreFile().storeFileName() );
                 long length = file.length();
-                total.add( length );
+                pageCacheTotal.add( length );
             }
         }
 
@@ -231,14 +243,14 @@ public class MemoryRecommendationsCommandTest
                 Path name = path.getName( path.getNameCount() - 3 );
                 boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
                         (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
-                if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) && !isLuceneFile )
+                if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) )
                 {
-                    total.add( file.length() );
+                    (isLuceneFile ? luceneTotal : pageCacheTotal).add( file.length() );
                 }
                 return FileVisitResult.CONTINUE;
             }
         } );
-        return total.longValue();
+        return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
     private void createDatabaseWithNativeIndexes( File storeDir )
@@ -260,7 +272,7 @@ public class MemoryRecommendationsCommandTest
 
                 try ( Transaction tx = db.beginTx() )
                 {
-                    for ( int i = 0; i < 1_000; i++ )
+                    for ( int i = 0; i < 10_000; i++ )
                     {
                         db.createNode( LABEL_ONE ).setProperty( key, randomIndexValue( i ) );
                     }
@@ -276,7 +288,7 @@ public class MemoryRecommendationsCommandTest
 
     private Object randomIndexValue( int i )
     {
-        switch ( i % 10 )
+        switch ( i % 11 )
         {
         case 0:
             return i;
@@ -298,6 +310,8 @@ public class MemoryRecommendationsCommandTest
             return Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 2 );
         case 9:
             return Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2, 3 );
+        case 10:
+            return new long[]{i, i + 1, i + 2, i + 3, i + 4, i + 5};
         default:
             throw new UnsupportedOperationException( "Unexpected" );
         }
