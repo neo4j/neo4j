@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.proc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -100,7 +99,12 @@ class ProcedureHolder<T>
 
     private QualifiedName toLowerCaseName( QualifiedName name )
     {
-        String[] lowerCaseNamespace = Arrays.stream( name.namespace() ).map( String::toLowerCase ).toArray( String[]::new );
+        String[] oldNs = name.namespace();
+        String[] lowerCaseNamespace = new String[oldNs.length];
+        for ( int i = 0; i < oldNs.length; i++ )
+        {
+            lowerCaseNamespace[i] = oldNs[i].toLowerCase();
+        }
         String lowercaseName = name.name().toLowerCase();
         return new QualifiedName( lowerCaseNamespace, lowercaseName );
     }
