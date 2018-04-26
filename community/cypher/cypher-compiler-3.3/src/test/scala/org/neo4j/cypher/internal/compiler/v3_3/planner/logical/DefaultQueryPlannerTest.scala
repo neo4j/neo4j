@@ -23,7 +23,7 @@ import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, Expression, Hint}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
@@ -102,6 +102,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(producer.planStarProjection(any(), any(), any())(any())).thenReturn(lp)
     when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
+    when(context.costComparisonListener).thenReturn(devNullListener)
     val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())
 
     // when
@@ -123,5 +124,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     semanticTable = semanticTable,
     strategy = mock[QueryGraphSolver],
     config = QueryPlannerConfiguration.default,
-    notificationLogger = devNullLogger)
+    notificationLogger = devNullLogger,
+    costComparisonListener = devNullListener)
 }
